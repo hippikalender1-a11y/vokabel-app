@@ -16,7 +16,7 @@ function lsSet(key, value) {
 }
 
 // ── Defaults ───────────────────────────────────────────────────────────────
-function defaultEinstellungen() { return { modus: "einfach" }; }
+function defaultEinstellungen() { return { modus: "einfach", autoplay: false, vorlesen: ["E1"] }; }
 function defaultSessionSlots() {
   return [1,2,3,4,5].map(n => ({ slot: n, name: "", konfiguration: null }))
     .concat([{ slot: 6, name: "Zuletzt verwendet", konfiguration: null }]);
@@ -34,31 +34,123 @@ function neueListeObjekt(id, name) {
   };
 }
 
+// ── Info-Seitenumbruch ─────────────────────────────────────────────────────
+function splitInSeiten(text, maxChars = 120) {
+  if (!text || text.length <= maxChars) return [text || ""];
+  const seiten = [];
+  let rest = text.trim();
+  while (rest.length > maxChars) {
+    let cut = rest.lastIndexOf(' ', maxChars);
+    if (cut <= 0) cut = maxChars;
+    seiten.push(rest.slice(0, cut));
+    rest = rest.slice(cut).trim();
+  }
+  if (rest) seiten.push(rest);
+  return seiten;
+}
+
+// ── MC-Buttons generieren ─────────────────────────────────────────────────
+function generiereButtons(vokabeln, aktVok, antwortTyp) {
+  const richtigTeile = (aktVok[antwortTyp]?.wert || "").split('/').map(s => s.trim()).filter(Boolean);
+  const eigenesFalsch = aktVok[antwortTyp]?.falsch || [];
+  const gewaehltesFalsch = [...eigenesFalsch].sort(() => Math.random() - 0.5).slice(0, 3);
+  if (gewaehltesFalsch.length < 3) {
+    const andere = vokabeln
+      .filter(v => v.id !== aktVok.id && v[antwortTyp])
+      .flatMap(v => (v[antwortTyp].wert || "").split('/').map(s => s.trim()))
+      .filter(a => !richtigTeile.includes(a) && !gewaehltesFalsch.includes(a));
+    const unique = [...new Set(andere)].sort(() => Math.random() - 0.5);
+    gewaehltesFalsch.push(...unique.slice(0, 3 - gewaehltesFalsch.length));
+  }
+  const alle = [
+    ...richtigTeile.map(t => ({ text: t, korrekt: true, status: "neutral" })),
+    ...gewaehltesFalsch.map(t => ({ text: t, korrekt: false, status: "neutral" })),
+  ].sort(() => Math.random() - 0.5);
+  return { buttons: alle, richtig: richtigTeile };
+}
+
+// ── Text-to-Speech ─────────────────────────────────────────────────────────
+function spalteLang(typ) {
+  if (typ.startsWith('E')) return 'en-US';
+  if (typ.startsWith('D')) return 'de-DE';
+  return 'de-DE';
+}
+function sprich(text, lang) {
+  if (!text || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.split('/')[0].trim());
+  u.lang = lang || 'de-DE';
+  window.speechSynthesis.speak(u);
+}
+
+// ── KI-Prompt-Generator ────────────────────────────────────────────────────
+function generierePrompt(thema, anzahl, falsch, beispiele, synonyme, modus) {
+  const f = Math.min(20, Math.max(0, parseInt(falsch) || 0));
+  const n = Math.max(1, parseInt(anzahl) || 20);
+  const t = thema.trim() || "(Thema eingeben)";
+
+  const falschBsp = f > 0
+    ? ["went","come","came","goes","gone","going"].slice(0, f).join(" | ")
+    : null;
+  const falschteil = falschBsp ? ` || ${falschBsp}` : "";
+
+  const infoKopf = [beispiele ? "Beispielsatz" : null, synonyme ? "Synonyme" : null].filter(Boolean);
+  const infoDaten = [beispiele ? "He goes to school every day." : null, synonyme ? "start, begin, head" : null].filter(Boolean);
+
+  const kopfzeile = `Englisch // Deutsch${infoKopf.length ? " // " + infoKopf.join(" // ") : ""}`;
+  const datenzeile = `go${falschteil} // gehen${falschteil}${infoDaten.length ? " // " + infoDaten.join(" // ") : ""}`;
+
+  const regeln = [
+    `- Spalten durch " // " trennen`,
+    f > 0 ? `- Direkt nach jedem Wort " || " schreiben, dann genau ${f} falsche Antworten für Multiple Choice, mit " | " getrennt` : null,
+    f > 0 ? `- Falsche Antworten sollen ähnlich klingen oder thematisch verwandt sein, aber eindeutig falsch` : null,
+    beispiele ? `- Die Spalte „Beispielsatz" enthält je einen natürlichen Beispielsatz auf Englisch (keine falschen Antworten)` : null,
+    synonyme ? `- Die Spalte „Synonyme" enthält 2–4 englische Synonyme, kommagetrennt (keine falschen Antworten)` : null,
+    `- Keine Nummerierung, keine Erklärungen — nur den rohen Text ausgeben`,
+  ].filter(Boolean).join("\n");
+
+  const einleitung = modus === "foto"
+    ? `Erkenne und extrahiere alle Vokabeln aus dem beigefügten Bild und formatiere sie exakt wie folgt.`
+    : `Erstelle eine Vokabelliste zum Thema „${t}" mit genau ${n} Einträgen.`;
+
+  return `${einleitung}
+
+Format — erste Zeile = Spaltennamen, ab Zeile 2 je eine Vokabel:
+${kopfzeile}
+${datenzeile}
+
+Regeln:
+${regeln}`;
+}
+
+// ── Datum-Formatierung ─────────────────────────────────────────────────────
+function formatDatum(isoString) {
+  if (!isoString) return "Nie";
+  const d = new Date(isoString);
+  const diff = Math.floor((Date.now() - d) / 86400000);
+  if (diff === 0) return "Heute";
+  if (diff === 1) return "Gestern";
+  if (diff < 7) return `vor ${diff} Tagen`;
+  return d.toLocaleDateString('de-DE', {day:'numeric', month:'numeric', year:'2-digit'});
+}
+
 // ── Import-Parser ──────────────────────────────────────────────────────────
 function parseKolumne(teil) {
   const idx = teil.indexOf('||');
   if (idx === -1) return { wert: teil.trim(), falsch: [] };
   const wert = teil.slice(0, idx).trim();
-  const falschStr = teil.slice(idx + 2).trim();
-  return { wert, falsch: falschStr.split('|').map(f => f.trim()).filter(Boolean) };
+  return { wert, falsch: teil.slice(idx + 2).split('|').map(f => f.trim()).filter(Boolean) };
 }
-function parseZeile(zeile) {
-  return zeile.split('//').map(t => parseKolumne(t));
-}
+function parseZeile(zeile) { return zeile.split('//').map(t => parseKolumne(t)); }
 
-// ── Antwort-Varianten (Klammer-Logik) ─────────────────────────────────────
+// ── Antwort-Varianten ──────────────────────────────────────────────────────
 function generiereVarianten(wert) {
   const match = wert.match(/^\(([^)]*?)-?\)(.*)$/);
   if (!match) return [wert.toLowerCase().trim()];
   const prefix = match[1].replace(/-$/, "");
   const rest = match[2].trim();
-  return [
-    wert, rest,
-    prefix + rest,
-    prefix + "-" + rest,
-    `(${prefix})${rest}`,
-    `(${prefix}-)${rest}`,
-    `(${prefix}-) ${rest}`,
+  return [wert, rest, prefix+rest, prefix+"-"+rest,
+    `(${prefix})${rest}`, `(${prefix}-)${rest}`, `(${prefix}-) ${rest}`
   ].map(v => v.toLowerCase().trim());
 }
 function istRichtigeAntwort(eingabe, wert) {
@@ -67,34 +159,43 @@ function istRichtigeAntwort(eingabe, wert) {
 
 // ── Scoring ────────────────────────────────────────────────────────────────
 function berechneNeuenScore(fortschritt, ereignis, sessionFalschAnzahl, modus) {
-  const f = fortschritt || { score: 0, streak: 0, aufgedecktStreak: 0, letzteAbfrage: null };
+  const f = fortschritt || { score:0, streak:0, aufgedecktStreak:0, letzteAbfrage:null };
   const neu = { ...f, letzteAbfrage: new Date().toISOString() };
   if (ereignis === "richtig") {
-    neu.score += 1;
-    neu.streak += 1;
-    neu.aufgedecktStreak = 0;
+    neu.score += 1; neu.streak += 1; neu.aufgedecktStreak = 0;
     if (neu.streak >= 3) neu.score = Math.max(neu.score, 2);
   } else if (ereignis === "falsch") {
-    neu.streak = 0;
-    neu.aufgedecktStreak = 0;
+    neu.streak = 0; neu.aufgedecktStreak = 0;
     if (sessionFalschAnzahl <= 2) neu.score -= 1;
     else if (sessionFalschAnzahl <= 5) neu.score -= 2;
     else neu.score -= 3;
   } else if (ereignis === "aufgedeckt") {
-    neu.streak = 0;
-    neu.aufgedecktStreak += 1;
+    neu.streak = 0; neu.aufgedecktStreak += 1;
     if (modus === "schwer") neu.score -= 1;
     if (neu.aufgedecktStreak >= 3 && neu.score > -100) neu.score = -100;
   }
   return neu;
 }
 function speichereScore(liste, vokId, neuFortschritt) {
-  const updated = {
-    ...liste,
-    vokabeln: liste.vokabeln.map(v =>
-      v.id === vokId ? { ...v, fortschritt: neuFortschritt } : v
-    )
-  };
+  const updated = { ...liste, vokabeln: liste.vokabeln.map(v => v.id === vokId ? {...v, fortschritt: neuFortschritt} : v) };
+  lsSet(SK.liste(liste.id), updated);
+  return updated;
+}
+
+// ── Diktat-Hilfsfunktionen ─────────────────────────────────────────────────
+function diktatHint(wort, aufgedeckt) {
+  if (!aufgedeckt) return null;
+  return wort.split('').map((ch, i) => i < aufgedeckt ? ch : '·').join(' ');
+}
+function berechneDiktatScore(fortschritt, ereignis) {
+  const f = fortschritt || { score:0, letzteAbfrage:null };
+  const neu = { ...f, letzteAbfrage: new Date().toISOString() };
+  if (ereignis === "richtig") neu.score += 1;
+  else if (ereignis === "aufgedeckt") neu.score -= 1;
+  return neu;
+}
+function speichereDiktatScore(liste, vokId, neuFortschritt) {
+  const updated = { ...liste, vokabeln: liste.vokabeln.map(v => v.id === vokId ? {...v, diktatFortschritt: neuFortschritt} : v) };
   lsSet(SK.liste(liste.id), updated);
   return updated;
 }
@@ -104,94 +205,126 @@ const C = {
   bg:"#f7f5f0", surface:"#ffffff", border:"#e0dbd2",
   accent:"#2d6a4f", accentHi:"#40916c", danger:"#c0392b",
   text:"#1a1a1a", muted:"#6b6560", tag:"#e8f5e9", tagText:"#2d6a4f",
-  richtig:"#1b5e20", richtigBg:"#e8f5e9", falsch:"#b71c1c", falschBg:"#ffebee",
 };
 
 const CSS = `
-  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-  body { background:${C.bg}; font-family:system-ui,sans-serif; color:${C.text}; }
-  .app { max-width:600px; margin:0 auto; padding:0 0 80px; }
-  .topbar { background:${C.surface}; border-bottom:1px solid ${C.border}; padding:14px 16px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:10; }
-  .topbar-title { font-size:1.05rem; font-weight:700; flex:1; }
-  .topbar-back { background:none; border:none; color:${C.accent}; font-size:0.9rem; font-weight:600; cursor:pointer; }
-  .tabs { display:flex; background:${C.surface}; border-bottom:1px solid ${C.border}; }
-  .tab { flex:1; padding:12px 4px; font-size:0.82rem; font-weight:600; color:${C.muted}; background:none; border:none; cursor:pointer; border-bottom:2px solid transparent; }
-  .tab.aktiv { color:${C.accent}; border-bottom-color:${C.accent}; }
-  .sektion { padding:20px 16px 0; }
-  .sektion-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-  .sektion-label { font-size:0.72rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:${C.muted}; }
-  .karte { background:${C.surface}; border:1px solid ${C.border}; border-radius:12px; overflow:hidden; margin-bottom:16px; }
-  .karte-zeile { display:flex; align-items:center; padding:14px 16px; border-bottom:1px solid ${C.border}; gap:12px; }
-  .karte-zeile:last-child { border-bottom:none; }
-  .karte-zeile-info { flex:1; min-width:0; }
-  .karte-zeile-name { font-weight:600; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .karte-zeile-sub { font-size:0.78rem; color:${C.muted}; margin-top:2px; }
-  .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 18px; border-radius:10px; font-size:0.88rem; font-weight:600; cursor:pointer; border:none; font-family:inherit; transition: opacity .15s; }
-  .btn:active { opacity:.8; }
-  .btn-primary { background:${C.accent}; color:#fff; }
-  .btn-ghost { background:transparent; color:${C.accent}; border:1.5px solid ${C.accent}; }
-  .btn-sm { padding:6px 12px; font-size:0.8rem; }
-  .btn-danger { background:transparent; color:${C.danger}; border:1.5px solid ${C.danger}; }
-  .btn-icon { background:none; border:none; cursor:pointer; padding:6px 10px; border-radius:8px; color:${C.muted}; font-size:0.85rem; font-weight:600; }
-  .inp { width:100%; background:${C.bg}; border:1.5px solid ${C.border}; border-radius:10px; padding:11px 14px; font-size:0.95rem; color:${C.text}; outline:none; font-family:inherit; }
-  .inp:focus { border-color:${C.accent}; background:#fff; }
-  .inp::placeholder { color:${C.muted}; }
-  textarea.inp { resize:vertical; font-family:monospace; font-size:0.82rem; line-height:1.5; }
-  select.inp { cursor:pointer; }
-  .inp-label { font-size:0.8rem; font-weight:600; color:${C.muted}; margin-bottom:6px; display:block; }
-  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:flex-end; justify-content:center; z-index:100; padding:16px; }
-  .modal { background:${C.surface}; border-radius:16px; width:100%; max-width:500px; padding:24px; }
-  .modal-titel { font-size:1.1rem; font-weight:700; margin-bottom:16px; }
-  .modal-actions { display:flex; gap:10px; margin-top:20px; justify-content:flex-end; }
-  .leer { text-align:center; padding:48px 24px; color:${C.muted}; }
-  .leer-text { font-size:0.9rem; line-height:1.5; margin-top:8px; }
-  .spalten-badge { font-size:0.68rem; font-weight:700; padding:1px 6px; border-radius:4px; background:${C.border}; color:${C.muted}; margin-right:3px; }
-  .spalten-badge.aktiv { background:${C.tag}; color:${C.tagText}; }
-  .typ-btn { font-size:0.78rem; font-weight:700; padding:4px 10px; border-radius:6px; border:1.5px solid ${C.border}; background:${C.bg}; color:${C.muted}; cursor:pointer; font-family:inherit; }
-  .typ-btn.aktiv { background:${C.accent}; color:#fff; border-color:${C.accent}; }
-  .typ-btn.x.aktiv { background:${C.danger}; border-color:${C.danger}; color:#fff; }
-  .typ-btn:disabled { opacity:0.3; cursor:not-allowed; }
-  .toggle-row { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; }
-  .toggle-label { font-weight:600; font-size:0.9rem; }
-  .toggle-sub { font-size:0.78rem; color:${C.muted}; margin-top:2px; }
-  .toggle-btn { display:flex; border-radius:8px; overflow:hidden; border:1.5px solid ${C.border}; }
-  .toggle-opt { padding:6px 14px; font-size:0.82rem; font-weight:600; background:none; border:none; cursor:pointer; color:${C.muted}; font-family:inherit; }
-  .toggle-opt.aktiv { background:${C.accent}; color:#fff; }
-  .meldung-info { background:#e8f4fd; color:#1565c0; border:1px solid #bbdefb; padding:12px 16px; border-radius:10px; font-size:0.85rem; margin-bottom:16px; line-height:1.6; }
-  .fehler { color:${C.danger}; font-size:0.82rem; margin-top:8px; margin-bottom:8px; }
-  .fab { position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:28px; background:${C.accent}; color:#fff; font-size:1.6rem; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,.2); z-index:20; }
-  .spalten-zuweisung { padding:14px 16px; border-bottom:1px solid ${C.border}; }
-  .spalten-zuweisung:last-child { border-bottom:none; }
-  .typ-buttons { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
-  .vok-wert { font-size:0.88rem; }
-  .vok-falsch { font-size:0.75rem; color:${C.muted}; }
-  .score-badge { font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:10px; }
-  .score-pos { background:#e8f5e9; color:#2d6a4f; }
-  .score-neg { background:#ffebee; color:#c0392b; }
-  .score-null { background:${C.border}; color:${C.muted}; }
-  /* Quiz */
-  .quiz-frage-box { background:${C.surface}; border:1px solid ${C.border}; border-radius:14px; padding:20px; margin-bottom:14px; }
-  .quiz-label { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:${C.muted}; margin-bottom:8px; }
-  .quiz-frage-text { font-size:1.5rem; font-weight:700; line-height:1.3; }
-  .quiz-info-text { font-size:0.85rem; color:${C.muted}; margin-top:8px; }
-  .quiz-antwort-box { background:${C.surface}; border:1.5px solid ${C.border}; border-radius:14px; padding:18px; margin-bottom:14px; transition: border-color .2s, background .2s; }
-  .quiz-antwort-box.richtig { border-color:${C.accentHi}; background:${C.richtigBg}; }
-  .quiz-antwort-box.falsch { border-color:${C.danger}; background:${C.falschBg}; }
-  .quiz-antwort-box.aufgedeckt { border-color:${C.border}; background:#fffde7; }
-  .quiz-antwort-box.weitere { border-color:#7b1fa2; background:#f3e5f5; }
-  .quiz-loesung-text { font-size:1.2rem; font-weight:600; margin-top:8px; }
-  .quiz-feedback { font-size:0.88rem; font-weight:600; margin-top:6px; }
-  .quiz-feedback.ok { color:${C.richtig}; }
-  .quiz-feedback.nein { color:${C.falsch}; }
-  .quiz-feedback.info { color:#6a1b9a; }
-  .quiz-fortschritt { font-size:0.82rem; color:${C.muted}; }
-  .quiz-aktionen { display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#f7f5f0;font-family:system-ui,sans-serif;color:#1a1a1a;}
+  .app{max-width:600px;margin:0 auto;padding:0 0 80px;}
+  .topbar{background:#fff;border-bottom:1px solid #e0dbd2;padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;}
+  .topbar-title{font-size:1.05rem;font-weight:700;flex:1;}
+  .topbar-back{background:#2d6a4f;color:#fff;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;padding:8px 14px;border-radius:10px;font-family:inherit;transition:opacity .15s;flex-shrink:0;}
+  .topbar-back:active{opacity:.8;}
+  .tabs{display:flex;background:#fff;border-bottom:1px solid #e0dbd2;}
+  .tab{flex:1;padding:12px 4px;font-size:0.82rem;font-weight:600;color:#6b6560;background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;}
+  .tab.aktiv{color:#2d6a4f;border-bottom-color:#2d6a4f;}
+  .sektion{padding:20px 16px 0;}
+  .sektion-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .sektion-label{font-size:0.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#6b6560;}
+  .karte{background:#fff;border:1px solid #e0dbd2;border-radius:12px;overflow:hidden;margin-bottom:16px;}
+  .karte-zeile{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #e0dbd2;gap:12px;}
+  .karte-zeile:last-child{border-bottom:none;}
+  .karte-zeile-info{flex:1;min-width:0;}
+  .karte-zeile-name{font-weight:600;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .karte-zeile-sub{font-size:0.78rem;color:#6b6560;margin-top:2px;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:10px;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s;}
+  .btn:active{opacity:.8;}
+  .btn-primary{background:#2d6a4f;color:#fff;}
+  .btn-ghost{background:transparent;color:#2d6a4f;border:1.5px solid #2d6a4f;}
+  .btn-sm{padding:6px 12px;font-size:0.8rem;}
+  .btn-danger{background:transparent;color:#c0392b;border:1.5px solid #c0392b;}
+  .btn-icon{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;color:#6b6560;font-size:0.82rem;font-weight:600;}
+  .btn-icon:hover{background:#f0ede8;}
+  .inp{width:100%;background:#f7f5f0;border:1.5px solid #e0dbd2;border-radius:10px;padding:11px 14px;font-size:0.95rem;color:#1a1a1a;outline:none;font-family:inherit;}
+  .inp:focus{border-color:#2d6a4f;background:#fff;}
+  .inp::placeholder{color:#c0bcb7;}
+  textarea.inp{resize:vertical;font-family:monospace;font-size:0.82rem;line-height:1.5;}
+  select.inp{cursor:pointer;}
+  .inp-label{font-size:0.8rem;font-weight:600;color:#6b6560;margin-bottom:6px;display:block;}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;z-index:100;padding:16px;}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:500px;padding:24px;}
+  .modal-titel{font-size:1.1rem;font-weight:700;margin-bottom:16px;}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
+  .leer{text-align:center;padding:48px 24px;color:#6b6560;}
+  .leer-text{font-size:0.9rem;line-height:1.5;margin-top:8px;}
+  .spalten-badge{font-size:0.68rem;font-weight:700;padding:1px 6px;border-radius:4px;background:#ece9e4;color:#b0aba5;margin-right:3px;}
+  .spalten-badge.aktiv{background:#e8f5e9;color:#2d6a4f;}
+  .typ-btn{font-size:0.78rem;font-weight:600;padding:5px 10px;border-radius:6px;border:1.5px solid #e0dbd2;background:#f7f5f0;color:#6b6560;cursor:pointer;font-family:inherit;}
+  .typ-btn.aktiv{background:#2d6a4f;color:#fff;border-color:#2d6a4f;}
+  .typ-btn:disabled{opacity:0.3;cursor:not-allowed;}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;}
+  .toggle-label{font-weight:600;font-size:0.9rem;}
+  .toggle-sub{font-size:0.78rem;color:#6b6560;margin-top:2px;}
+  .toggle-btn{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid #e0dbd2;}
+  .toggle-opt{padding:6px 14px;font-size:0.82rem;font-weight:600;background:none;border:none;cursor:pointer;color:#6b6560;font-family:inherit;}
+  .toggle-opt.aktiv{background:#2d6a4f;color:#fff;}
+  .meldung-info{background:#e8f4fd;color:#1565c0;border:1px solid #bbdefb;padding:12px 16px;border-radius:10px;font-size:0.85rem;margin-bottom:16px;line-height:1.6;}
+  .fehler{color:#c0392b;font-size:0.82rem;margin-top:8px;margin-bottom:8px;}
+  .fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:28px;background:#2d6a4f;color:#fff;font-size:1.6rem;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:20;}
+  .spalten-zuweisung{padding:14px 16px;border-bottom:1px solid #e0dbd2;}
+  .spalten-zuweisung:last-child{border-bottom:none;}
+  .typ-buttons{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .import-kompakt{display:flex;align-items:center;gap:8px;margin-top:6px;}
+  .import-beispiel{font-size:0.78rem;color:#6b6560;margin-top:3px;}
+  .import-zaehler{font-size:0.82rem;color:#6b6560;margin-bottom:12px;}
+  .import-zaehler strong{color:#2d6a4f;}
+  .slot-chip{padding:7px 13px;border-radius:8px;border:1.5px solid #e0dbd2;background:#f7f5f0;font-size:0.78rem;font-weight:600;color:#6b6560;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .slot-chip.belegt{background:#e8f5e9;border-color:#2d6a4f;color:#2d6a4f;}
+  .slot-chip.zuletzt{background:#fffde7;border-color:#f9a825;color:#e65100;}
+  .slot-chip.leer{opacity:0.35;cursor:default;}
+  .score-badge{font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:10px;}
+  .score-pos{background:#e8f5e9;color:#2d6a4f;}
+  .score-neg{background:#ffebee;color:#c0392b;}
+  .score-null{background:#e0dbd2;color:#6b6560;}
+  .quiz-frage-box{background:#fff;border:1px solid #e0dbd2;border-radius:14px;padding:20px;margin-bottom:14px;}
+  .quiz-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6b6560;margin-bottom:6px;}
+  .quiz-frage-text{font-size:1.5rem;font-weight:700;line-height:1.3;}
+  .quiz-info-text{font-size:0.85rem;color:#6b6560;margin-top:6px;}
+  .quiz-antwort-box{background:#fff;border:1.5px solid #e0dbd2;border-radius:14px;padding:18px;margin-bottom:14px;transition:border-color .2s,background .2s;min-height:120px;}
+  .quiz-antwort-box.richtig{border-color:#40916c;background:#e8f5e9;}
+  .quiz-antwort-box.falsch{border-color:#c0392b;background:#ffebee;}
+  .quiz-antwort-box.aufgedeckt{background:#fffde7;border-color:#f9a825;}
+  .quiz-antwort-box.weitere{border-color:#7b1fa2;background:#f3e5f5;}
+  .quiz-antwort-box.spalte-ok{border-color:#40916c;background:#e8f5e9;}
+  .quiz-loesung-text{font-size:1.15rem;font-weight:600;margin-top:8px;}
+  .quiz-feedback{font-size:0.88rem;font-weight:600;margin-top:6px;}
+  .quiz-feedback.ok{color:#1b5e20;}
+  .quiz-feedback.nein{color:#b71c1c;}
+  .quiz-feedback.info{color:#6a1b9a;}
+  .quiz-fortschritt{font-size:0.82rem;color:#6b6560;}
+  .quiz-aktionen{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;}
+  .quiz-action-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;background:#fff;border-top:1px solid #e0dbd2;padding:12px 16px 20px;display:flex;gap:10px;flex-wrap:wrap;z-index:20;}
+  .quiz-liste-sticky{position:sticky;top:57px;background:#fff;border-bottom:1px solid #e0dbd2;padding:8px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:9;}
+  .vok-zeile{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid #f0ede8;cursor:pointer;}
+  .vok-zeile:last-child{border-bottom:none;}
+  .vok-zeile:active{background:#f7f5f0;}
+  .vok-nr{font-size:0.72rem;color:#6b6560;min-width:28px;text-align:right;flex-shrink:0;}
+  .spalten-rolle-btn{font-size:0.72rem;font-weight:700;padding:4px 8px;border-radius:6px;border:1.5px solid #e0dbd2;background:#f7f5f0;color:#6b6560;cursor:pointer;font-family:inherit;}
+  .spalten-rolle-btn.frage{background:#2d6a4f;color:#fff;border-color:#2d6a4f;}
+  .spalten-rolle-btn.antwort{background:#2d6a4f;color:#fff;border-color:#2d6a4f;}
+  .spalten-rolle-btn.info{background:#f9a825;color:#fff;border-color:#f9a825;}
+  .spalten-modus-btn{font-size:0.72rem;font-weight:700;padding:4px 8px;border-radius:6px;border:1.5px solid #e0dbd2;background:#f7f5f0;color:#6b6560;cursor:pointer;font-family:inherit;}
+  .spalten-modus-btn.aktiv{background:#52b788;color:#fff;border-color:#52b788;}
+  .quiz-vorig{background:#f0f7f0;border:1px solid #c8e6c9;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:0.88rem;color:#2d6a4f;}
+  .quiz-vorig-label{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#40916c;margin-bottom:3px;}
+  .quiz-setup-check{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e0dbd2;cursor:pointer;}
+  .quiz-setup-check:last-child{border-bottom:none;}
+  .checkbox{width:20px;height:20px;border-radius:5px;border:2px solid #e0dbd2;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#f7f5f0;}
+  .checkbox.checked{background:#2d6a4f;border-color:#2d6a4f;color:#fff;}
+  .diktat-hint{font-size:1.8rem;font-weight:700;letter-spacing:0.2em;color:#2d6a4f;margin:10px 0 6px;font-family:monospace;}
+  .diktat-uebersetzung{font-size:0.85rem;color:#6b6560;margin-top:4px;}
+  .diktat-play-btn{background:none;border:none;font-size:3rem;cursor:pointer;display:block;margin:8px auto;line-height:1;}
+  .diktat-summary-zeile{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0ede8;}
 `;
 
 const TYPEN = ["E1","E2","D1","D2","i1","i2"];
+const APP_VERSION = (() => {
+  const d = new Date(__BUILD_TIME__);
+  return d.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
+    + ' ' + d.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'});
+})();
 
 export default function VokabelApp() {
-  // ── Haupt-State ──────────────────────────────────────────────────────────
   const [tab, setTab] = useState("listen");
   const [listenIndex, setListenIndex] = useState([]);
   const [einstellungen, setEinstellungen] = useState(defaultEinstellungen());
@@ -201,8 +334,12 @@ export default function VokabelApp() {
   const [modal, setModal] = useState(null);
   const [modalInput, setModalInput] = useState("");
   const [modalFehler, setModalFehler] = useState("");
+  const [editSpalteTyp, setEditSpalteTyp] = useState(null);
 
-  // ── Import-State ─────────────────────────────────────────────────────────
+  const [bearbeiteVokabel, setBearbeiteVokabel] = useState(null);
+  const [bearbeiteEingaben, setBearbeiteEingaben] = useState({});
+  const [mergeQuelleId, setMergeQuelleId] = useState("");
+
   const [importText, setImportText] = useState("");
   const [importParsed, setImportParsed] = useState(null);
   const [importMapping, setImportMapping] = useState({});
@@ -211,34 +348,75 @@ export default function VokabelApp() {
   const [importBestehendId, setImportBestehendId] = useState("");
   const [importFehler, setImportFehler] = useState("");
 
-  // ── Quiz-State ────────────────────────────────────────────────────────────
+  const [quizAusgewaehlt, setQuizAusgewaehlt] = useState([]);
   const [quizFrageTyp, setQuizFrageTyp] = useState("");
-  const [quizAntwortTyp, setQuizAntwortTyp] = useState("");
+  const [quizAntwortTypenGeordnet, setQuizAntwortTypenGeordnet] = useState([]);
+  const [quizInfoTypenSession, setQuizInfoTypenSession] = useState([]);
+  const [quizSpalteModus, setQuizSpalteModus] = useState({}); // {typ:"tippen"|"mc"}
+  const [quizZeigeInfo, setQuizZeigeInfo] = useState({});
+  const [quizModus, setQuizModus] = useState("sequenziell");
+  const [quizDiktatSpalte, setQuizDiktatSpalte] = useState("E1");
+  const [quizDiktatUebersetzung, setQuizDiktatUebersetzung] = useState("D1");
+  const [quizListeAufgeklappt, setQuizListeAufgeklappt] = useState(false);
+  const [quizCheckboxAuswahl, setQuizCheckboxAuswahl] = useState(new Set());
+  const [quizVonBisModus, setQuizVonBisModus] = useState(false);
+  const [quizVonBisErster, setQuizVonBisErster] = useState(null);
+  const [promptThema, setPromptThema] = useState("");
+  const [promptAnzahl, setPromptAnzahl] = useState(20);
+  const [promptBeispiele, setPromptBeispiele] = useState(false);
+  const [promptFalsch, setPromptFalsch] = useState(3);
+  const [promptModus, setPromptModus] = useState("generieren");
+  const [promptSynonyme, setPromptSynonyme] = useState(false);
+  const [promptKopiert, setPromptKopiert] = useState(false);
+  const [statistikSort, setStatistikSort] = useState("score-asc");
+  const [statistikFilter, setStatistikFilter] = useState("alle");
+  const [sessionSlots, setSessionSlots] = useState([]);
+  const [quizBereichTyp, setQuizBereichTyp] = useState("alle");
+  const [quizBereichVon, setQuizBereichVon] = useState(1);
+  const [quizBereichBis, setQuizBereichBis] = useState("");
+  const [quizReihenfolge, setQuizReihenfolge] = useState("zufall");
+  const [quizSchlechtesteAnzahl, setQuizSchlechtesteAnzahl] = useState(20);
   const [quiz, setQuiz] = useState(null);
   const eingabeRef = useRef(null);
+  const flashTimerRef = useRef(null);
 
-  // ── Init ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     setListenIndex(lsGet(SK.listenIndex, []));
     setEinstellungen(lsGet(SK.einstellungen, defaultEinstellungen()));
-    if (!lsGet(SK.sessionSlots)) lsSet(SK.sessionSlots, defaultSessionSlots());
+    let slots = lsGet(SK.sessionSlots);
+    if (!slots) { slots = defaultSessionSlots(); lsSet(SK.sessionSlots, slots); }
+    setSessionSlots(slots);
   }, []);
 
   useEffect(() => {
     if (aktiveListeId) setAktiveListe(lsGet(SK.liste(aktiveListeId)));
-  }, [aktiveListeId]);
+  }, [aktiveListeId, ansicht]);
 
   useEffect(() => {
     if (ansicht === "quiz" && eingabeRef.current) eingabeRef.current.focus();
-  }, [ansicht, quiz?.index, quiz?.phase]);
+  }, [ansicht, quiz?.index, quiz?.phase, quiz?.antwortTypIndex]);
+
+  useEffect(() => {
+    if (ansicht !== "quiz" || !quiz || quiz.phase !== "eingabe" || quiz.flash) return;
+    if (quiz.modus === "diktat") {
+      const text = quiz.vokabeln?.[quiz.index]?.[quiz.diktatSpalte]?.wert;
+      if (text) sprich(text, spalteLang(quiz.diktatSpalte));
+      return;
+    }
+    if (!einstellungen.autoplay) return;
+    if (!(einstellungen.vorlesen || ["E1"]).includes(quiz.frageTyp)) return;
+    const text = quiz.vokabeln?.[quiz.index]?.[quiz.frageTyp]?.wert;
+    if (text) sprich(text, spalteLang(quiz.frageTyp));
+  }, [quiz?.index, ansicht, einstellungen.autoplay]);
 
   useEffect(() => {
     if (ansicht !== "quiz" || !quiz) return;
-    if (quiz.phase !== "richtig" && quiz.phase !== "aufgedeckt") return;
+    if (quiz.phase !== "aufgedeckt") return;
     const handler = (e) => {
       if (e.key === "Enter" || e.key === "w" || e.key === "W") {
         e.preventDefault();
-        naechsteVokabel();
+        if (quiz.modus === "diktat") naechsteDiktatVokabel();
+        else naechsteVokabel();
       }
     };
     document.addEventListener("keydown", handler);
@@ -254,9 +432,7 @@ export default function VokabelApp() {
   function erstelleListe() {
     const name = modalInput.trim();
     if (!name) { setModalFehler("Bitte einen Namen eingeben."); return; }
-    if (listenIndex.some(l => l.name.toLowerCase() === name.toLowerCase())) {
-      setModalFehler("Name bereits vorhanden."); return;
-    }
+    if (listenIndex.some(l => l.name.toLowerCase() === name.toLowerCase())) { setModalFehler("Name bereits vorhanden."); return; }
     const id = "liste_" + Date.now();
     lsSet(SK.liste(id), neueListeObjekt(id, name));
     speichereIndex([...listenIndex, { id, name }]);
@@ -266,12 +442,10 @@ export default function VokabelApp() {
   function umbenennen() {
     const name = modalInput.trim();
     if (!name) { setModalFehler("Bitte einen Namen eingeben."); return; }
-    if (listenIndex.some(l => l.id !== aktiveListeId && l.name.toLowerCase() === name.toLowerCase())) {
-      setModalFehler("Name bereits vorhanden."); return;
-    }
-    speichereIndex(listenIndex.map(l => l.id === aktiveListeId ? { ...l, name } : l));
+    if (listenIndex.some(l => l.id !== aktiveListeId && l.name.toLowerCase() === name.toLowerCase())) { setModalFehler("Name bereits vorhanden."); return; }
+    speichereIndex(listenIndex.map(l => l.id === aktiveListeId ? {...l, name} : l));
     const aktuell = lsGet(SK.liste(aktiveListeId));
-    if (aktuell) { const u = { ...aktuell, name }; lsSet(SK.liste(aktiveListeId), u); setAktiveListe(u); }
+    if (aktuell) { const u = {...aktuell, name}; lsSet(SK.liste(aktiveListeId), u); setAktiveListe(u); }
     setModal(null); setModalInput(""); setModalFehler("");
   }
 
@@ -281,9 +455,75 @@ export default function VokabelApp() {
     setModal(null); setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null);
   }
 
-  function oeffneModal(typ) {
-    setModalInput(typ === "umbenennen" && aktiveListe ? aktiveListe.name : "");
+  function speichereSpaltenname() {
+    if (!editSpalteTyp || !aktiveListe) return;
+    const updated = { ...aktiveListe, spalten: { ...aktiveListe.spalten, [editSpalteTyp]: { ...aktiveListe.spalten[editSpalteTyp], name: modalInput.trim() } } };
+    lsSet(SK.liste(aktiveListeId), updated);
+    setAktiveListe(updated);
+    speichereIndex(listenIndex); // trigger re-render
+    setModal(null); setModalInput(""); setEditSpalteTyp(null);
+  }
+
+  function oeffneModal(typ, extra) {
+    if (typ === "umbenennen") setModalInput(aktiveListe?.name || "");
+    else if (typ === "spalte-umbenennen" && extra) {
+      setEditSpalteTyp(extra);
+      setModalInput(aktiveListe?.spalten[extra]?.name || "");
+    } else setModalInput("");
     setModalFehler(""); setModal(typ);
+  }
+
+  // ── Vokabel-Verwaltung ────────────────────────────────────────────────────
+  function oeffneVokabelBearbeiten(vok) {
+    const aktiveSpalten = TYPEN.filter(t => aktiveListe.spalten[t].aktiv);
+    const eingaben = {};
+    aktiveSpalten.forEach(typ => {
+      if (vok[typ]) {
+        const falschStr = vok[typ].falsch?.length > 0 ? ' || ' + vok[typ].falsch.join(' | ') : '';
+        eingaben[typ] = vok[typ].wert + falschStr;
+      } else {
+        eingaben[typ] = '';
+      }
+    });
+    setBearbeiteVokabel(vok);
+    setBearbeiteEingaben(eingaben);
+    setModal('vokabel-bearbeiten');
+  }
+
+  function speichereVokabelBearbeitung() {
+    if (!bearbeiteVokabel || !aktiveListe) return;
+    const aktiveSpalten = TYPEN.filter(t => aktiveListe.spalten[t].aktiv);
+    const updated = { id: bearbeiteVokabel.id, fortschritt: bearbeiteVokabel.fortschritt };
+    aktiveSpalten.forEach(typ => {
+      const raw = (bearbeiteEingaben[typ] || '').trim();
+      if (raw) updated[typ] = parseKolumne(raw);
+    });
+    const neueListe = { ...aktiveListe, vokabeln: aktiveListe.vokabeln.map(v => v.id === updated.id ? updated : v) };
+    lsSet(SK.liste(aktiveListeId), neueListe);
+    setAktiveListe(neueListe);
+    setModal(null); setBearbeiteVokabel(null); setBearbeiteEingaben({});
+  }
+
+  function loescheVokabel(vokId) {
+    const neueListe = { ...aktiveListe, vokabeln: aktiveListe.vokabeln.filter(v => v.id !== vokId) };
+    lsSet(SK.liste(aktiveListeId), neueListe);
+    setAktiveListe(neueListe);
+    setModal(null); setBearbeiteVokabel(null);
+  }
+
+  function fuehreListenZusammen() {
+    if (!mergeQuelleId || mergeQuelleId === aktiveListeId) return;
+    const quelle = lsGet(SK.liste(mergeQuelleId));
+    if (!quelle) return;
+    const ziel = { ...aktiveListe, spalten: {...aktiveListe.spalten}, vokabeln: [...aktiveListe.vokabeln], naechste_id: aktiveListe.naechste_id };
+    TYPEN.forEach(typ => {
+      if (!ziel.spalten[typ].aktiv && quelle.spalten[typ].aktiv)
+        ziel.spalten[typ] = { name: quelle.spalten[typ].name, aktiv: true };
+    });
+    quelle.vokabeln.forEach(v => ziel.vokabeln.push({ ...v, id: ziel.naechste_id++ }));
+    lsSet(SK.liste(aktiveListeId), ziel);
+    setAktiveListe(ziel);
+    setModal(null); setMergeQuelleId('');
   }
 
   // ── Import-Aktionen ───────────────────────────────────────────────────────
@@ -314,72 +554,293 @@ export default function VokabelApp() {
     });
   }
 
+  function getBestehendeListe() {
+    if (!importBestehendId) return null;
+    return lsGet(SK.liste(importBestehendId));
+  }
+
+  // Gibt die Ziel-Optionen für bestehende Liste zurück:
+  // aktive Spalten (by name) + freie Slots (als "Neu: typ")
+  function getBestehendZielOptionen(bl) {
+    if (!bl) return [];
+    return TYPEN.map(typ => ({
+      typ,
+      label: bl.spalten[typ].aktiv ? bl.spalten[typ].name || typ : null,
+      neu: !bl.spalten[typ].aktiv,
+    }));
+  }
+
   function fuehreImportDurch() {
     const abfragbar = Object.values(importMapping).filter(t => t && !t.startsWith('i'));
-    if (abfragbar.length < 2) {
-      setImportFehler("Mindestens 2 abfragbare Spalten (E1/E2/D1/D2) müssen zugewiesen sein.");
-      return;
-    }
-    function aktualisiereSpaltennamen(liste) {
-      Object.entries(importMapping).forEach(([idx, typ]) => {
-        if (typ) liste.spalten[typ] = { name: importParsed.header[Number(idx)].wert, aktiv: true };
-      });
-    }
+    if (abfragbar.length < 2) { setImportFehler("Mindestens 2 abfragbare Spalten müssen zugewiesen sein."); return; }
+
+    const istBestehend = importZielTyp === "bestehend";
+    const bl = istBestehend ? getBestehendeListe() : null;
+
     function bauVokabeln(liste) {
       importParsed.daten.forEach(zeile => {
         const vok = { id: liste.naechste_id++ };
         Object.entries(importMapping).forEach(([idx, typ]) => {
-          if (typ && zeile[Number(idx)]) {
-            vok[typ] = { wert: zeile[Number(idx)].wert, falsch: zeile[Number(idx)].falsch };
-          }
+          if (typ && zeile[Number(idx)]) vok[typ] = { wert: zeile[Number(idx)].wert, falsch: zeile[Number(idx)].falsch };
         });
         liste.vokabeln.push(vok);
       });
     }
-    if (importZielTyp === "neu") {
-      const name = importNeuName.trim();
-      if (!name) { setImportFehler("Bitte einen Namen eingeben."); return; }
-      if (listenIndex.some(l => l.name.toLowerCase() === name.toLowerCase())) {
-        setImportFehler("Name bereits vorhanden."); return;
-      }
-      const id = "liste_" + Date.now();
-      const liste = neueListeObjekt(id, name);
-      aktualisiereSpaltennamen(liste);
-      bauVokabeln(liste);
-      lsSet(SK.liste(id), liste);
-      speichereIndex([...listenIndex, { id, name }]);
-    } else {
+
+    function aktualisiereSpaltennamen(liste) {
+      Object.entries(importMapping).forEach(([idx, typ]) => {
+        if (!typ) return;
+        if (istBestehend && bl && bl.spalten[typ].aktiv) {
+          // Bestehende Spalte: Name bleibt
+          if (!liste.spalten[typ].aktiv) liste.spalten[typ] = { name: bl.spalten[typ].name, aktiv: true };
+        } else {
+          // Neue Spalte: Import-Header-Name
+          liste.spalten[typ] = { name: importParsed.header[Number(idx)].wert, aktiv: true };
+        }
+      });
+    }
+
+    if (istBestehend) {
       if (!importBestehendId) { setImportFehler("Bitte eine Liste auswählen."); return; }
       const liste = lsGet(SK.liste(importBestehendId));
       if (!liste) { setImportFehler("Liste nicht gefunden."); return; }
       aktualisiereSpaltennamen(liste);
       bauVokabeln(liste);
       lsSet(SK.liste(importBestehendId), liste);
+    } else {
+      const name = importNeuName.trim();
+      if (!name) { setImportFehler("Bitte einen Namen eingeben."); return; }
+      if (listenIndex.some(l => l.name.toLowerCase() === name.toLowerCase())) { setImportFehler("Name bereits vorhanden."); return; }
+      const id = "liste_" + Date.now();
+      const liste = neueListeObjekt(id, name);
+      aktualisiereSpaltennamen(liste);
+      bauVokabeln(liste);
+      lsSet(SK.liste(id), liste);
+      speichereIndex([...listenIndex, { id, name }]);
     }
     resetImport();
     setAnsicht("uebersicht");
   }
 
   // ── Quiz-Aktionen ─────────────────────────────────────────────────────────
-  function starteQuiz() {
-    const voks = aktiveListe.vokabeln
-      .filter(v => v[quizFrageTyp] && v[quizAntwortTyp])
-      .sort(() => Math.random() - 0.5);
+  function toggleQuizSpalte(typ) {
+    setQuizAusgewaehlt(prev => {
+      if (prev.includes(typ)) {
+        if (quizFrageTyp === typ) setQuizFrageTyp("");
+        setQuizAntwortTypenGeordnet(p => p.filter(t => t !== typ));
+        setQuizInfoTypenSession(p => p.filter(t => t !== typ));
+        setQuizSpalteModus(p => { const n = {...p}; delete n[typ]; return n; });
+        return prev.filter(t => t !== typ);
+      }
+      return [...prev, typ];
+    });
+  }
+
+  function toggleSpalteRolle(typ, rolle) {
+    if (rolle === "frage") {
+      if (quizFrageTyp === typ) { setQuizFrageTyp(""); }
+      else {
+        setQuizFrageTyp(typ);
+        setQuizAntwortTypenGeordnet(p => p.filter(t => t !== typ));
+        setQuizInfoTypenSession(p => p.filter(t => t !== typ));
+      }
+    } else if (rolle === "antwort") {
+      if (quizAntwortTypenGeordnet.includes(typ)) {
+        setQuizAntwortTypenGeordnet(p => p.filter(t => t !== typ));
+      } else {
+        if (quizFrageTyp === typ) setQuizFrageTyp("");
+        setQuizInfoTypenSession(p => p.filter(t => t !== typ));
+        setQuizAntwortTypenGeordnet(p => [...p, typ]);
+        setQuizSpalteModus(p => ({...p, [typ]: p[typ] || "tippen"}));
+      }
+    } else if (rolle === "info") {
+      if (quizInfoTypenSession.includes(typ)) {
+        setQuizInfoTypenSession(p => p.filter(t => t !== typ));
+      } else {
+        if (quizFrageTyp === typ) setQuizFrageTyp("");
+        setQuizAntwortTypenGeordnet(p => p.filter(t => t !== typ));
+        setQuizInfoTypenSession(p => [...p, typ]);
+      }
+    }
+  }
+
+  function toggleInfoSpalte(typ) {
+    setQuizZeigeInfo(prev => ({...prev, [typ]: !prev[typ]}));
+  }
+
+  function toggleVokCheckbox(vokId, alleBasisvoks) {
+    if (quizVonBisModus && quizVonBisErster !== null) {
+      // Von-Bis: select range between first and this
+      const i1 = alleBasisvoks.findIndex(v => v.id === quizVonBisErster);
+      const i2 = alleBasisvoks.findIndex(v => v.id === vokId);
+      if (i1 >= 0 && i2 >= 0) {
+        const from = Math.min(i1, i2), to = Math.max(i1, i2);
+        setQuizCheckboxAuswahl(prev => {
+          const neu = new Set(prev);
+          for (let i = from; i <= to; i++) neu.add(alleBasisvoks[i].id);
+          return neu;
+        });
+      }
+      setQuizVonBisModus(false);
+      setQuizVonBisErster(null);
+    } else {
+      setQuizVonBisErster(vokId);
+      setQuizCheckboxAuswahl(prev => {
+        const neu = new Set(prev);
+        if (neu.has(vokId)) neu.delete(vokId); else neu.add(vokId);
+        return neu;
+      });
+    }
+  }
+
+  function speichereKonfigInSlot(nummer, name) {
+    const konfiguration = {
+      quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet,
+      quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
+      quizModus, quizBereichTyp, quizBereichVon, quizBereichBis,
+      quizReihenfolge, quizSchlechtesteAnzahl,
+      quizDiktatSpalte, quizDiktatUebersetzung,
+    };
+    const aktuell = lsGet(SK.sessionSlots, defaultSessionSlots());
+    const updated = aktuell.map(s => s.slot === nummer ? {...s, name, konfiguration} : s);
+    lsSet(SK.sessionSlots, updated);
+    setSessionSlots(updated);
+  }
+
+  function ladeKonfigAusSlot(slot) {
+    const k = slot.konfiguration;
+    if (!k) return;
+    setQuizAusgewaehlt(k.quizAusgewaehlt || []);
+    setQuizFrageTyp(k.quizFrageTyp || "");
+    setQuizAntwortTypenGeordnet(k.quizAntwortTypenGeordnet || []);
+    setQuizInfoTypenSession(k.quizInfoTypenSession || []);
+    setQuizSpalteModus(k.quizSpalteModus || {});
+    setQuizZeigeInfo(k.quizZeigeInfo || {});
+    setQuizModus(k.quizModus || "sequenziell");
+    setQuizBereichTyp(k.quizBereichTyp || "alle");
+    setQuizBereichVon(k.quizBereichVon || 1);
+    setQuizBereichBis(k.quizBereichBis || "");
+    setQuizReihenfolge(k.quizReihenfolge || "zufall");
+    setQuizSchlechtesteAnzahl(k.quizSchlechtesteAnzahl || 20);
+    setQuizDiktatSpalte(k.quizDiktatSpalte || "E1");
+    setQuizDiktatUebersetzung(k.quizDiktatUebersetzung !== undefined ? k.quizDiktatUebersetzung : "D1");
+    setQuizCheckboxAuswahl(new Set());
+  }
+
+  function initQuizDefaults() {
+    if (!aktiveListe) return;
+    const abfragbar = TYPEN.filter(t => !t.startsWith('i') && aktiveListe.spalten[t].aktiv);
+    const infoVerfuegbar = TYPEN.filter(t => t.startsWith('i') && aktiveListe.spalten[t].aktiv);
+    const ausgewaehlt = (abfragbar.includes('E1') && abfragbar.includes('D1'))
+      ? ['E1', 'D1'] : abfragbar.slice(0, 2);
+    const frageTyp = ausgewaehlt.find(t => t.startsWith('D')) || ausgewaehlt[0] || '';
+    const antwortTypen = ausgewaehlt.filter(t => t !== frageTyp);
+    const spalteModus = {};
+    antwortTypen.forEach(t => { spalteModus[t] = 'tippen'; });
+    const zeigeInfo = {};
+    infoVerfuegbar.forEach(t => { zeigeInfo[t] = true; });
+    setQuizAusgewaehlt(ausgewaehlt);
+    setQuizFrageTyp(frageTyp);
+    setQuizAntwortTypenGeordnet(antwortTypen);
+    setQuizInfoTypenSession([]);
+    setQuizSpalteModus(spalteModus);
+    setQuizZeigeInfo(zeigeInfo);
+    setQuizModus('sequenziell');
+    setQuizBereichTyp('alle');
+    setQuizBereichVon(1);
+    setQuizBereichBis('');
+    setQuizReihenfolge('zufall');
+    setQuizSchlechtesteAnzahl(20);
+    setQuizCheckboxAuswahl(new Set());
+    setQuizListeAufgeklappt(false);
+    setQuizVonBisModus(false);
+    setQuizVonBisErster(null);
+  }
+
+  function starteDiktat() {
+    speichereKonfigInSlot(6, "Zuletzt verwendet");
+    let voks = aktiveListe.vokabeln.filter(v => v[quizDiktatSpalte]);
+    if (quizBereichTyp === "bereich" || quizCheckboxAuswahl.size > 0) {
+      const von = Math.max(1, parseInt(quizBereichVon) || 1);
+      const bis = parseInt(quizBereichBis) || voks.length;
+      voks = voks.filter((v, idx) => {
+        const inRange = quizBereichTyp === "bereich" && idx + 1 >= von && idx + 1 <= bis;
+        return inRange || quizCheckboxAuswahl.has(v.id);
+      });
+    }
+    if (quizReihenfolge === "schlechteste") {
+      const n = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl) || 1), voks.length);
+      voks = [...voks].sort((a, b) => (a.diktatFortschritt?.score ?? 0) - (b.diktatFortschritt?.score ?? 0)).slice(0, n);
+    }
+    if (quizReihenfolge !== "listennr") voks = [...voks].sort(() => Math.random() - 0.5);
     if (voks.length === 0) return;
-    const teile = voks[0][quizAntwortTyp].wert.split('/').map(s => s.trim());
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     setQuiz({
-      liste: aktiveListe,
-      frageTyp: quizFrageTyp,
-      antwortTyp: quizAntwortTyp,
-      vokabeln: voks,
-      index: 0,
-      phase: "eingabe",
-      eingabe: "",
-      antwortTeile: teile,
-      weitereIndices: [],
-      weiterePos: 0,
-      sessionFalsch: {},
-      feedback: "",
+      modus: "diktat",
+      diktatSpalte: quizDiktatSpalte,
+      diktatUeberspalte: quizDiktatUebersetzung,
+      liste: aktiveListe, vokabeln: voks, index: 0,
+      phase: "eingabe", eingabe: "", flash: false,
+      diktatAufgedeckt: 0, diktatErgebnisse: [], feedback: "",
+    });
+    setAnsicht("quiz");
+  }
+
+  function starteQuiz() {
+    if (quizModus === "diktat") { starteDiktat(); return; }
+    speichereKonfigInSlot(6, "Zuletzt verwendet");
+    // Sequenziell: Frage + geordnete Antworten; Rotierend: alle ausgewählten rotieren
+    const alleAbfragbar = quizModus === "rotierend"
+      ? quizAusgewaehlt
+      : [quizFrageTyp, ...quizAntwortTypenGeordnet].filter(Boolean);
+    const sitzungsInfoTypen = [
+      ...quizInfoTypenSession,
+      ...TYPEN.filter(t => t.startsWith('i') && aktiveListe.spalten[t].aktiv && quizZeigeInfo[t]),
+    ];
+
+    let voks = aktiveListe.vokabeln.filter(v => alleAbfragbar.every(t => v[t]));
+
+    // Bereich + Checkbox mit OR
+    if (quizBereichTyp === "bereich" || quizCheckboxAuswahl.size > 0) {
+      const von = Math.max(1, parseInt(quizBereichVon) || 1);
+      const bis = parseInt(quizBereichBis) || voks.length;
+      voks = voks.filter((v, idx) => {
+        const inRange = quizBereichTyp === "bereich" && idx + 1 >= von && idx + 1 <= bis;
+        const inCheckbox = quizCheckboxAuswahl.has(v.id);
+        return inRange || inCheckbox;
+      });
+    }
+
+    if (quizReihenfolge === "schlechteste") {
+      const n = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl) || 1), voks.length);
+      voks = [...voks].sort((a, b) => (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0)).slice(0, n);
+    }
+    if (quizReihenfolge !== "listennr") voks = [...voks].sort(() => Math.random() - 0.5);
+    if (voks.length === 0) return;
+
+    function getFA(idx) {
+      if (quizModus === "rotierend") {
+        const ft = alleAbfragbar[idx % alleAbfragbar.length];
+        return { frageTyp: ft, antwortTypen: alleAbfragbar.filter(t => t !== ft) };
+      }
+      return { frageTyp: quizFrageTyp, antwortTypen: quizAntwortTypenGeordnet };
+    }
+
+    const { frageTyp, antwortTypen } = getFA(0);
+    const erstesTeile = voks[0][antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
+    const ersterModusTyp0 = quizSpalteModus[antwortTypen[0]] || "tippen";
+    const erstesMC = ersterModusTyp0 === "mc"
+      ? generiereButtons(voks, voks[0], antwortTypen[0]) : null;
+
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    setQuiz({
+      sitzungsInfoTypen, modus: quizModus, spalteModus: quizSpalteModus,
+      liste: aktiveListe, vokabeln: voks, index: 0,
+      frageTyp, antwortTypen, antwortTypIndex: 0,
+      phase: "eingabe", eingabe: "", flash: false, infoSichtbar: false, infoSeite: 0,
+      antwortTeile: erstesTeile, weitereIndices: [], weiterePos: 0,
+      mcButtons: erstesMC?.buttons || [], mcRichtig: erstesMC?.richtig || [],
+      vorigeRichtig: [], sessionFalsch: {}, feedback: "", mcWechsel: false,
     });
     setAnsicht("quiz");
   }
@@ -390,19 +851,71 @@ export default function VokabelApp() {
     return quiz.liste.vokabeln.find(v => v.id === vokId) || quiz.vokabeln[quiz.index];
   }
 
+  // Berechnet den nächsten Vokabel-State als reines Objekt (kein setQuiz)
+  function naechsteVokabelState(prev) {
+    const naechsterIdx = prev.index + 1;
+    if (naechsterIdx >= prev.vokabeln.length) return {...prev, flash: false, phase: "fertig"};
+    function getFA(idx) {
+      if (prev.modus === "rotierend") {
+        const alle = [...prev.antwortTypen, prev.frageTyp];
+        const ft = alle[idx % alle.length];
+        return { frageTyp: ft, antwortTypen: alle.filter(t => t !== ft) };
+      }
+      return { frageTyp: prev.frageTyp, antwortTypen: prev.antwortTypen };
+    }
+    const { frageTyp, antwortTypen } = getFA(naechsterIdx);
+    const naechsteVok = prev.vokabeln[naechsterIdx];
+    const teile = naechsteVok[antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
+    const spalteModus = prev.mcWechsel
+      ? {...prev.spalteModus, [antwortTypen[0]]: "tippen"}
+      : prev.spalteModus;
+    const modusTyp0 = spalteModus[antwortTypen[0]] || "tippen";
+    const mc = modusTyp0 === "mc" ? generiereButtons(prev.vokabeln, naechsteVok, antwortTypen[0]) : null;
+    return {...prev, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
+      phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
+      mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
+      vorigeRichtig: [], infoSichtbar: false, infoSeite: 0, feedback: "",
+      spalteModus, mcWechsel: false};
+  }
+
+  // Setzt flash, wartet 500ms, führt dann advanceFn aus
+  function mitFlash(quizUpdates, advanceFn) {
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    setQuiz(prev => ({...prev, ...quizUpdates, flash: true, eingabe: ""}));
+    flashTimerRef.current = setTimeout(() => {
+      setQuiz(prev => { if (!prev.flash) return prev; return advanceFn(prev); });
+    }, 1000);
+  }
+
   function pruefeAntwort() {
     if (!quiz || !quiz.eingabe.trim()) return;
     const eingabe = quiz.eingabe.trim();
 
     if (quiz.phase === "weitere") {
-      const erwIdx = quiz.weitereIndices[quiz.weiterePos];
-      const erwartet = quiz.antwortTeile[erwIdx];
+      const erwartet = quiz.antwortTeile[quiz.weitereIndices[quiz.weiterePos]];
       if (istRichtigeAntwort(eingabe, erwartet)) {
         const naechstePos = quiz.weiterePos + 1;
         if (naechstePos >= quiz.weitereIndices.length) {
-          setQuiz(prev => ({...prev, eingabe: "", phase: "richtig", feedback: ""}));
+          // Alle "weitere" erledigt → nächste Spalte oder fertig
+          const snapshot = { antwortTypIndex: quiz.antwortTypIndex, antwortTypen: quiz.antwortTypen, antwortTeile: quiz.antwortTeile };
+          mitFlash({}, prev => {
+            const vorigeRichtig = [...prev.vorigeRichtig, {
+              typ: prev.antwortTypen[prev.antwortTypIndex],
+              wert: prev.antwortTeile.join(" / "),
+              label: prev.liste.spalten[prev.antwortTypen[prev.antwortTypIndex]]?.name || prev.antwortTypen[prev.antwortTypIndex],
+            }];
+            const naechsterIdx = prev.antwortTypIndex + 1;
+            if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, vorigeRichtig});
+            const nt = prev.antwortTypen[naechsterIdx];
+            const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
+            const ntModus = prev.mcWechsel ? "mc" : (prev.spalteModus?.[nt] || "tippen");
+            const mc = ntModus === "mc" ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt) : null;
+            return {...prev, flash: false, phase: "eingabe", antwortTypIndex: naechsterIdx,
+              antwortTeile: teile, weitereIndices: [], weiterePos: 0, vorigeRichtig, infoSichtbar: false,
+              mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig};
+          });
         } else {
-          setQuiz(prev => ({...prev, eingabe: "", weiterePos: naechstePos, feedback: ""}));
+          mitFlash({weiterePos: naechstePos, feedback: ""}, prev => ({...prev, flash: false, phase: "weitere"}));
         }
       } else {
         setQuiz(prev => ({...prev, eingabe: "", feedback: "Nicht ganz – versuch nochmal."}));
@@ -410,7 +923,6 @@ export default function VokabelApp() {
       return;
     }
 
-    // Scoring-Phase
     const aktVok = getAktVok();
     const matchIdx = quiz.antwortTeile.findIndex(t => istRichtigeAntwort(eingabe, t));
 
@@ -418,11 +930,32 @@ export default function VokabelApp() {
       const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, "richtig", 0, einstellungen.modus);
       const neueListe = speichereScore(quiz.liste, aktVok.id, neuFortschritt);
       const restIndices = quiz.antwortTeile.map((_, i) => i).filter(i => i !== matchIdx);
+
       if (restIndices.length > 0) {
-        setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", phase: "weitere",
-          weitereIndices: restIndices, weiterePos: 0, feedback: "Richtig!"}));
+        // Mehrere richtige Antworten (was/were): weitere abfragen ohne Scoring
+        mitFlash({liste: neueListe, phase: "weitere", weitereIndices: restIndices, weiterePos: 0}, prev => ({...prev, flash: false}));
       } else {
-        setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", phase: "richtig", feedback: "Richtig!"}));
+        // Diese Spalte fertig
+        mitFlash({liste: neueListe}, prev => {
+          const vorigeRichtig = [...prev.vorigeRichtig, {
+            typ: prev.antwortTypen[prev.antwortTypIndex],
+            wert: prev.antwortTeile.join(" / "),
+            label: prev.liste.spalten[prev.antwortTypen[prev.antwortTypIndex]]?.name || prev.antwortTypen[prev.antwortTypIndex],
+          }];
+          const naechsterIdx = prev.antwortTypIndex + 1;
+          if (naechsterIdx >= prev.antwortTypen.length) {
+            // Alle Spalten fertig → nächste Vokabel
+            return naechsteVokabelState({...prev, vorigeRichtig});
+          }
+          // Nächste Spalte
+          const nt = prev.antwortTypen[naechsterIdx];
+          const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
+          const ntModus = prev.mcWechsel ? "mc" : (prev.spalteModus?.[nt] || "tippen");
+          const mc = ntModus === "mc" ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt) : null;
+          return {...prev, flash: false, phase: "eingabe", antwortTypIndex: naechsterIdx,
+            antwortTeile: teile, weitereIndices: [], weiterePos: 0, vorigeRichtig, infoSichtbar: false,
+            mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig};
+        });
       }
     } else {
       const vokId = aktVok.id;
@@ -434,84 +967,627 @@ export default function VokabelApp() {
     }
   }
 
+  function klickeButton(idx) {
+    if (!quiz || quiz.flash) return;
+    const btn = quiz.mcButtons[idx];
+    if (!btn || btn.status === "richtig") return;
+
+    if (btn.korrekt) {
+      const neueButtons = quiz.mcButtons.map((b, i) => i === idx ? {...b, status: "richtig"} : b);
+      const alleGefunden = neueButtons.filter(b => b.korrekt).every(b => b.status === "richtig");
+
+      if (alleGefunden) {
+        const aktVok = getAktVok();
+        const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, "richtig", 0, einstellungen.modus);
+        const neueListe = speichereScore(quiz.liste, aktVok.id, neuFortschritt);
+        mitFlash({liste: neueListe, mcButtons: neueButtons}, prev => {
+          const vorigeRichtig = [...prev.vorigeRichtig, {
+            typ: prev.antwortTypen[prev.antwortTypIndex],
+            wert: prev.antwortTeile.join(" / "),
+            label: prev.liste.spalten[prev.antwortTypen[prev.antwortTypIndex]]?.name || prev.antwortTypen[prev.antwortTypIndex],
+          }];
+          const naechsterIdx = prev.antwortTypIndex + 1;
+          if (naechsterIdx >= prev.antwortTypen.length) {
+            return naechsteVokabelState({...prev, vorigeRichtig});
+          }
+          const nt = prev.antwortTypen[naechsterIdx];
+          const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
+          const ntModus = prev.mcWechsel ? "mc" : (prev.spalteModus?.[nt] || "tippen");
+          const mc = ntModus === "mc" ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt) : null;
+          return {...prev, flash: false, phase: "eingabe", antwortTypIndex: naechsterIdx,
+            antwortTeile: teile, mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
+            weitereIndices: [], weiterePos: 0, vorigeRichtig, infoSichtbar: false};
+        });
+      } else {
+        setQuiz(prev => ({...prev, mcButtons: neueButtons}));
+      }
+    } else {
+      setQuiz(prev => ({...prev, mcButtons: prev.mcButtons.map((b, i) => i === idx ? {...b, status: "falsch"} : b)}));
+      setTimeout(() => {
+        setQuiz(prev => ({...prev, mcButtons: prev.mcButtons.map((b, i) => i === idx ? {...b, status: "neutral"} : b)}));
+      }, 500);
+    }
+  }
+
   function zeigeLosung() {
     if (!quiz) return;
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     const aktVok = getAktVok();
     const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, "aufgedeckt", 0, einstellungen.modus);
     const neueListe = speichereScore(quiz.liste, aktVok.id, neuFortschritt);
-    setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", phase: "aufgedeckt", feedback: ""}));
+    const aktModus = quiz.spalteModus?.[quiz.antwortTypen?.[quiz.antwortTypIndex]] || "tippen";
+    const mcUpd = aktModus === "mc"
+      ? { mcButtons: quiz.mcButtons.map(b => b.korrekt ? {...b, status: "richtig"} : b) }
+      : {};
+    setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", flash: false, phase: "aufgedeckt", feedback: "", ...mcUpd}));
   }
 
   function ueberspringeWeitere() {
     const naechstePos = quiz.weiterePos + 1;
     if (naechstePos >= quiz.weitereIndices.length) {
-      setQuiz(prev => ({...prev, eingabe: "", phase: "richtig", feedback: ""}));
+      mitFlash({}, prev => {
+        const vorigeRichtig = [...prev.vorigeRichtig, {
+          typ: prev.antwortTypen[prev.antwortTypIndex],
+          wert: prev.antwortTeile.join(" / "),
+          label: prev.liste.spalten[prev.antwortTypen[prev.antwortTypIndex]]?.name || prev.antwortTypen[prev.antwortTypIndex],
+        }];
+        const naechsterIdx = prev.antwortTypIndex + 1;
+        if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, vorigeRichtig});
+        const nt = prev.antwortTypen[naechsterIdx];
+        const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
+        return {...prev, flash: false, phase: "eingabe", antwortTypIndex: naechsterIdx,
+          antwortTeile: teile, weitereIndices: [], weiterePos: 0, vorigeRichtig, infoSichtbar: false};
+      });
     } else {
       setQuiz(prev => ({...prev, eingabe: "", weiterePos: naechstePos, feedback: ""}));
     }
   }
 
+  function wechsleZuMC() {
+    const aktuellerModus = quiz?.spalteModus?.[quiz.antwortTypen?.[quiz.antwortTypIndex]] || "tippen";
+    if (!quiz || aktuellerModus !== "tippen") return;
+    const mc = generiereButtons(quiz.liste.vokabeln, quiz.vokabeln[quiz.index], quiz.antwortTypen[quiz.antwortTypIndex]);
+    setQuiz(prev => ({
+      ...prev, antwortModus: "mc", mcWechsel: true,
+      mcButtons: mc.buttons, mcRichtig: mc.richtig,
+      phase: "eingabe", eingabe: "", feedback: "",
+    }));
+  }
+
   function naechsteVokabel() {
     if (!quiz) return;
-    const naechsterIdx = quiz.index + 1;
-    if (naechsterIdx >= quiz.vokabeln.length) {
-      setQuiz(prev => ({...prev, phase: "fertig"}));
-      return;
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    setQuiz(prev => naechsteVokabelState(prev));
+  }
+
+  function pruefeDiktatAntwort() {
+    if (!quiz || !quiz.eingabe.trim()) return;
+    const aktVok = quiz.vokabeln[quiz.index];
+    const wort = aktVok[quiz.diktatSpalte]?.wert || "";
+    if (istRichtigeAntwort(quiz.eingabe.trim(), wort)) {
+      const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "richtig");
+      const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
+      const ergebnis = { vokId: aktVok.id, wort, uebersetzung: aktVok[quiz.diktatUeberspalte]?.wert, richtig: true };
+      mitFlash({ liste: neueListe, diktatErgebnisse: [...quiz.diktatErgebnisse, ergebnis] }, prev => {
+        const naechsterIdx = prev.index + 1;
+        if (naechsterIdx >= prev.vokabeln.length) return { ...prev, flash: false, phase: "fertig" };
+        return { ...prev, flash: false, index: naechsterIdx, eingabe: "", diktatAufgedeckt: 0, phase: "eingabe", feedback: "" };
+      });
+    } else {
+      setQuiz(prev => ({
+        ...prev, eingabe: "",
+        diktatAufgedeckt: Math.min((prev.diktatAufgedeckt || 0) + 1, wort.length),
+        feedback: "Nicht richtig – ein Buchstabe mehr aufgedeckt.",
+      }));
     }
-    const naechsteVok = quiz.vokabeln[naechsterIdx];
-    const teile = naechsteVok[quiz.antwortTyp].wert.split('/').map(s => s.trim());
-    setQuiz(prev => ({...prev, index: naechsterIdx, phase: "eingabe", eingabe: "",
-      antwortTeile: teile, weitereIndices: [], weiterePos: 0, feedback: ""}));
+  }
+
+  function zeigeDiktatLoesung() {
+    if (!quiz) return;
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    const aktVok = quiz.vokabeln[quiz.index];
+    const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "aufgedeckt");
+    const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
+    const wort = aktVok[quiz.diktatSpalte]?.wert || "";
+    const ergebnis = { vokId: aktVok.id, wort, uebersetzung: aktVok[quiz.diktatUeberspalte]?.wert, richtig: false };
+    setQuiz(prev => ({
+      ...prev, liste: neueListe, eingabe: "", phase: "aufgedeckt", flash: false,
+      diktatAufgedeckt: wort.length,
+      diktatErgebnisse: [...prev.diktatErgebnisse, ergebnis],
+      feedback: "",
+    }));
+  }
+
+  function naechsteDiktatVokabel() {
+    if (!quiz) return;
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    setQuiz(prev => {
+      const naechsterIdx = prev.index + 1;
+      if (naechsterIdx >= prev.vokabeln.length) return { ...prev, phase: "fertig" };
+      return { ...prev, index: naechsterIdx, eingabe: "", diktatAufgedeckt: 0, phase: "eingabe", feedback: "" };
+    });
+  }
+
+  function geheZurueck() {
+    if (!quiz || quiz.antwortTypIndex <= 0) return;
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    setQuiz(prev => {
+      const naechsterIdx = prev.antwortTypIndex - 1;
+      const nt = prev.antwortTypen[naechsterIdx];
+      const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
+      const mc = prev.antwortModus === "mc"
+        ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt) : null;
+      return {
+        ...prev, flash: false, phase: "eingabe", eingabe: "",
+        antwortTypIndex: naechsterIdx, antwortTeile: teile,
+        weitereIndices: [], weiterePos: 0,
+        vorigeRichtig: prev.vorigeRichtig.slice(0, -1),
+        mcButtons: mc?.buttons || prev.mcButtons,
+        mcRichtig: mc?.richtig || prev.mcRichtig,
+        feedback: "",
+      };
+    });
   }
 
   // ── Render: Quiz-Setup ────────────────────────────────────────────────────
   if (ansicht === "quiz-setup" && aktiveListe) {
     const abfragbar = TYPEN.filter(t => !t.startsWith('i') && aktiveListe.spalten[t].aktiv);
-    const verfuegbar = aktiveListe.vokabeln.filter(v => v[quizFrageTyp] && v[quizAntwortTyp]).length;
+    const infoSpalten = TYPEN.filter(t => t.startsWith('i') && aktiveListe.spalten[t].aktiv);
+    const relevanteTypen = quizModus === "sequenziell"
+      ? [quizFrageTyp, ...quizAntwortTypenGeordnet].filter(Boolean)
+      : quizAusgewaehlt;
+    const kannStarten = quizModus === "rotierend"
+      ? quizAusgewaehlt.length >= 2
+      : quizModus === "diktat"
+      ? !!aktiveListe.spalten[quizDiktatSpalte]?.aktiv
+      : quizFrageTyp && quizAntwortTypenGeordnet.length >= 1;
+    const basisVoks = quizModus === "diktat"
+      ? aktiveListe.vokabeln.filter(v => v[quizDiktatSpalte])
+      : relevanteTypen.length >= 2
+      ? aktiveListe.vokabeln.filter(v => relevanteTypen.every(t => v[t])) : [];
+    let gefilterteVoks = basisVoks;
+    if (quizBereichTyp === "bereich" || quizCheckboxAuswahl.size > 0) {
+      const von = Math.max(1, parseInt(quizBereichVon)||1);
+      const bis = parseInt(quizBereichBis)||basisVoks.length;
+      gefilterteVoks = basisVoks.filter((v, idx) => {
+        const inRange = quizBereichTyp === "bereich" && idx+1 >= von && idx+1 <= bis;
+        return inRange || quizCheckboxAuswahl.has(v.id);
+      });
+    }
+    const verfuegbar = quizReihenfolge === "schlechteste"
+      ? Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl)||1), gefilterteVoks.length)
+      : gefilterteVoks.length;
+
+    return (
+      <>
+        <style>{CSS}</style>
+        <div className="app" style={{paddingBottom: quizListeAufgeklappt ? 0 : undefined}}>
+          <div className="topbar">
+            <button className="topbar-back" onClick={() => setAnsicht("liste-detail")}>Zurück</button>
+            <span className="topbar-title">Quiz starten</span>
+          </div>
+          {quizListeAufgeklappt && (
+            <div className="quiz-liste-sticky">
+              <button className="btn btn-primary btn-sm"
+                onClick={() => { setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
+                Liste einklappen
+              </button>
+              <button className={`btn btn-sm ${quizVonBisModus ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => { setQuizVonBisModus(v => !v); setQuizVonBisErster(null); }}>
+                Von–Bis{quizVonBisModus ? " ✓" : ""}
+              </button>
+              <button className="btn btn-ghost btn-sm"
+                onClick={() => { setQuizCheckboxAuswahl(new Set()); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
+                Zurücksetzen
+              </button>
+            </div>
+          )}
+          <div className="sektion">
+            {sessionSlots.length > 0 && (
+              <>
+                <div className="sektion-label" style={{marginBottom:8}}>Gespeicherte Konfigurationen</div>
+                <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
+                  {sessionSlots.filter(s => s.slot <= 5).map(s => (
+                    <button key={s.slot}
+                      className={`slot-chip${s.konfiguration ? " belegt" : " leer"}`}
+                      onClick={() => s.konfiguration && ladeKonfigAusSlot(s)}>
+                      {s.konfiguration ? (s.name || `Slot ${s.slot}`) : `${s.slot} —`}
+                    </button>
+                  ))}
+                  {sessionSlots.find(s => s.slot === 6)?.konfiguration && (
+                    <button className="slot-chip zuletzt"
+                      onClick={() => ladeKonfigAusSlot(sessionSlots.find(s => s.slot === 6))}>
+                      Zuletzt
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+            {/* ABFRAGE-MODUS */}
+            <div className="sektion-label" style={{marginBottom:8}}>Abfrage-Modus</div>
+            <div className="karte" style={{marginBottom:16}}>
+              <div className="toggle-row">
+                <div className="toggle-btn">
+                  <button className={`toggle-opt${quizModus==="sequenziell"?" aktiv":""}`} onClick={() => setQuizModus("sequenziell")}>Sequenziell</button>
+                  <button className={`toggle-opt${quizModus==="rotierend"?" aktiv":""}`} onClick={() => setQuizModus("rotierend")}>Rotierend</button>
+                  <button className={`toggle-opt${quizModus==="diktat"?" aktiv":""}`} onClick={() => setQuizModus("diktat")}>Diktat</button>
+                </div>
+              </div>
+              <div style={{padding:"0 16px 14px", fontSize:"0.82rem", color:"#6b6560"}}>
+                {quizModus === "sequenziell"
+                  ? "Feste Frage-Spalte, Antwort-Spalten der Reihe nach. Modus pro Spalte wählbar."
+                  : quizModus === "rotierend"
+                  ? "Frage-Spalte wechselt mit jeder Vokabel. Modus pro Spalte wählbar."
+                  : "Wort wird vorgelesen – du tippst was du hörst. Falsch → ein Buchstabe mehr aufgedeckt."}
+              </div>
+            </div>
+
+            {/* DIKTAT-KONFIGURATION */}
+            {quizModus === "diktat" && (
+              <>
+                <div className="sektion-label" style={{marginBottom:8}}>Diktat-Konfiguration</div>
+                <div className="karte" style={{marginBottom:16}}>
+                  <div style={{padding:"12px 16px", borderBottom:"1px solid #e0dbd2"}}>
+                    <div className="inp-label">Diktat-Spalte (wird vorgelesen)</div>
+                    <div style={{display:"flex", gap:6, marginTop:8, flexWrap:"wrap"}}>
+                      {abfragbar.map(typ => (
+                        <button key={typ}
+                          className={`typ-btn${quizDiktatSpalte===typ?" aktiv":""}`}
+                          onClick={() => setQuizDiktatSpalte(typ)}>
+                          {aktiveListe.spalten[typ].name || typ}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{padding:"12px 16px"}}>
+                    <div className="inp-label">Übersetzungs-Spalte (als Hinweis, optional)</div>
+                    <div style={{display:"flex", gap:6, marginTop:8, flexWrap:"wrap"}}>
+                      <button className={`typ-btn${quizDiktatUebersetzung===""?" aktiv":""}`}
+                        onClick={() => setQuizDiktatUebersetzung("")}>Keine</button>
+                      {abfragbar.filter(t => t !== quizDiktatSpalte).map(typ => (
+                        <button key={typ}
+                          className={`typ-btn${quizDiktatUebersetzung===typ?" aktiv":""}`}
+                          onClick={() => setQuizDiktatUebersetzung(typ)}>
+                          {aktiveListe.spalten[typ].name || typ}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* SPALTEN */}
+            {quizModus !== "diktat" && (
+            <><div className="sektion-label" style={{marginBottom:8}}>Spalten auswählen</div>
+            <div className="karte" style={{marginBottom:16}}>
+              {abfragbar.map(typ => {
+                const checked = quizAusgewaehlt.includes(typ);
+                const isFrage = quizFrageTyp === typ;
+                const antwortNr = quizAntwortTypenGeordnet.indexOf(typ);
+                const isAntwort = antwortNr >= 0;
+                const isInfo = quizInfoTypenSession.includes(typ);
+                const hatFrage = quizFrageTyp !== "";
+                const anzGesamt = quizAusgewaehlt.length;
+                return (
+                  <div key={typ} style={{padding:"10px 16px", borderBottom:"1px solid #e0dbd2"}}>
+                    <div style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer"}}
+                      onClick={() => toggleQuizSpalte(typ)}>
+                      <div className={`checkbox${checked?" checked":""}`}>{checked?"✓":""}</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:600, fontSize:"0.9rem"}}>{aktiveListe.spalten[typ].name||typ}</div>
+                        <div style={{fontSize:"0.75rem", color:"#6b6560"}}>{typ}</div>
+                      </div>
+                    </div>
+                    {checked && quizModus === "sequenziell" && (
+                      <div style={{display:"flex", gap:5, marginTop:8, marginLeft:30, flexWrap:"wrap", alignItems:"center"}}>
+                        {(!hatFrage || isFrage) && (
+                          <button className={`spalten-rolle-btn${isFrage?" frage":""}`}
+                            onClick={() => toggleSpalteRolle(typ,"frage")}>Frage</button>
+                        )}
+                        {!isFrage && !isInfo && (
+                          <button className={`spalten-rolle-btn${isAntwort?" antwort":""}`}
+                            onClick={() => toggleSpalteRolle(typ,"antwort")}>
+                            {isAntwort ? `Antwort ${antwortNr+1}` : "Antwort"}
+                          </button>
+                        )}
+                        {!isFrage && !isAntwort && anzGesamt >= 3 && (
+                          <button className={`spalten-rolle-btn${isInfo?" info":""}`}
+                            onClick={() => toggleSpalteRolle(typ,"info")}>Info</button>
+                        )}
+                        {isAntwort && (
+                          <div style={{display:"flex", gap:4, marginLeft:4}}>
+                            <button className={`spalten-modus-btn${(quizSpalteModus[typ]||"tippen")==="tippen"?" aktiv":""}`}
+                              onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"tippen"}))}>Tastatur</button>
+                            <button className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
+                              onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"mc"}))}>MC</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {checked && quizModus === "rotierend" && (
+                      <div style={{display:"flex", gap:5, marginTop:8, marginLeft:30}}>
+                        <button className={`spalten-modus-btn${(quizSpalteModus[typ]||"tippen")==="tippen"?" aktiv":""}`}
+                          onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"tippen"}))}>Tastatur</button>
+                        <button className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
+                          onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"mc"}))}>MC</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* INFO-SPALTEN */}
+            {infoSpalten.length > 0 && (
+              <>
+                <div className="sektion-label" style={{marginBottom:8}}>Info-Spalten anzeigen</div>
+                <div className="karte" style={{marginBottom:16}}>
+                  {infoSpalten.map(typ => (
+                    <div key={typ} className="quiz-setup-check" style={{padding:"10px 16px"}}
+                      onClick={() => toggleInfoSpalte(typ)}>
+                      <div className={`checkbox${quizZeigeInfo[typ]?" checked":""}`}>{quizZeigeInfo[typ]?"✓":""}</div>
+                      <div>
+                        <div style={{fontWeight:600, fontSize:"0.9rem"}}>{aktiveListe.spalten[typ].name||typ}</div>
+                        <div style={{fontSize:"0.75rem", color:"#6b6560"}}>{typ} — immer nur angezeigt</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            </>)}
+
+            {/* VOKABELN */}
+            <div className="sektion-label" style={{marginBottom:8}}>Vokabeln</div>
+            <div className="karte" style={{marginBottom:8}}>
+              <div className="toggle-row">
+                <div className="toggle-btn">
+                  <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`} onClick={() => setQuizBereichTyp("alle")}>Alle</button>
+                  <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`} onClick={() => setQuizBereichTyp("bereich")}>Bereich</button>
+                </div>
+                {quizBereichTyp === "bereich" && (String(quizBereichVon) !== "1" || quizBereichBis !== "") && (
+                  <button className="btn btn-ghost btn-sm"
+                    onClick={() => { setQuizBereichTyp('alle'); setQuizBereichVon(1); setQuizBereichBis(''); }}>
+                    Bereich zurücksetzen
+                  </button>
+                )}
+              </div>
+              {quizBereichTyp === "bereich" && (
+                <div style={{padding:"0 16px 12px", display:"flex", gap:12, alignItems:"flex-end"}}>
+                  <div style={{flex:1}}>
+                    <label className="inp-label">Von Nr.</label>
+                    <input className="inp" type="number" min={1} value={quizBereichVon}
+                      onChange={e => setQuizBereichVon(e.target.value)}
+                      style={quizBereichBis === "" ? {color:"#c0bcb7"} : undefined} />
+                  </div>
+                  <div style={{flex:1}}>
+                    <label className="inp-label">Bis Nr.</label>
+                    <input className="inp" type="number" min={1} value={quizBereichBis}
+                      onChange={e => setQuizBereichBis(e.target.value)} placeholder={String(basisVoks.length)} />
+                  </div>
+                </div>
+              )}
+              <div style={{padding:"8px 16px 14px", display:"flex", alignItems:"center", gap:10, borderTop:"1px solid #e0dbd2"}}>
+                <button className="btn btn-ghost btn-sm"
+                  onClick={() => setQuizListeAufgeklappt(v=>!v)}>
+                  {quizListeAufgeklappt ? "Liste einklappen" : "Liste anzeigen"}
+                </button>
+                <span style={{fontSize:"0.82rem", color:"#6b6560"}}>
+                  <strong style={{color:"#2d6a4f"}}>{basisVoks.length}</strong> Vokabeln
+                  {(quizBereichTyp === "bereich" || quizCheckboxAuswahl.size > 0) && (
+                    <> · <strong style={{color:"#2d6a4f"}}>{gefilterteVoks.length}</strong> ausgewählt
+                    {quizCheckboxAuswahl.size > 0 && <span style={{color:"#b0aba5"}}> ({quizCheckboxAuswahl.size} markiert)</span>}
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* Aufgeklappte Liste */}
+            {quizListeAufgeklappt && (
+              <div className="karte" style={{marginBottom:8}}>
+                {basisVoks.length === 0
+                  ? <div style={{padding:"16px", color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
+                  : basisVoks.map((vok, idx) => {
+                    const von = Math.max(1, parseInt(quizBereichVon)||1);
+                    const bis = parseInt(quizBereichBis)||basisVoks.length;
+                    const inRange = quizBereichTyp==="bereich" && idx+1>=von && idx+1<=bis;
+                    const inChk = quizCheckboxAuswahl.has(vok.id);
+                    const hl = inRange || inChk;
+                    const e1 = vok['E1']?.wert || '';
+                    const d1 = vok['D1']?.wert || '';
+                    return (
+                      <div key={vok.id} className="vok-zeile"
+                        style={{background: hl ? "#f0f7f0" : "transparent"}}
+                        onClick={() => toggleVokCheckbox(vok.id, basisVoks)}>
+                        <div className={`checkbox${inChk?" checked":""}`} style={{flexShrink:0}}>{inChk?"✓":""}</div>
+                        <span className="vok-nr">{idx+1}</span>
+                        <span style={{fontSize:"0.88rem", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{e1}</span>
+                        <span style={{fontSize:"0.82rem", color:"#6b6560", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textAlign:"right"}}>{d1}</span>
+                      </div>
+                    );
+                  })
+                }
+              </div>
+            )}
+
+            {/* REIHENFOLGE */}
+            <div className="sektion-label" style={{marginBottom:8}}>Reihenfolge</div>
+            <div className="karte" style={{marginBottom:16}}>
+              <div className="toggle-row">
+                <div className="toggle-btn">
+                  <button className={`toggle-opt${quizReihenfolge==="zufall"?" aktiv":""}`} onClick={() => setQuizReihenfolge("zufall")}>Zufällig</button>
+                  <button className={`toggle-opt${quizReihenfolge==="schlechteste"?" aktiv":""}`} onClick={() => setQuizReihenfolge("schlechteste")}>Schlechteste</button>
+                  <button className={`toggle-opt${quizReihenfolge==="listennr"?" aktiv":""}`} onClick={() => setQuizReihenfolge("listennr")}>Listen-Nr.</button>
+                </div>
+              </div>
+              {quizReihenfolge === "schlechteste" && (
+                <div style={{padding:"0 16px 16px"}}>
+                  <label className="inp-label">Anzahl</label>
+                  <input className="inp" type="number" min={1} value={quizSchlechtesteAnzahl}
+                    onChange={e => setQuizSchlechtesteAnzahl(e.target.value)} />
+                  <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:6}}>
+                    Die {Math.min(parseInt(quizSchlechtesteAnzahl)||0, gefilterteVoks.length)} Vokabeln mit dem niedrigsten Score.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {kannStarten && (
+              <button className="btn btn-primary" style={{width:"100%", marginBottom:8}}
+                onClick={starteQuiz} disabled={verfuegbar===0}>
+                Quiz starten ({verfuegbar} Vokabeln)
+              </button>
+            )}
+            {kannStarten && (
+              <button className="btn btn-ghost" style={{width:"100%", marginBottom:16}}
+                onClick={() => oeffneModal("slot-speichern")}>
+                Konfiguration speichern …
+              </button>
+            )}
+          </div>
+        </div>
+        {modal === "slot-speichern" && (
+          <div className="overlay" onClick={() => setModal(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-titel">Konfiguration speichern</div>
+              <label className="inp-label">Name</label>
+              <input className="inp" value={modalInput} autoFocus
+                onChange={e => setModalInput(e.target.value)}
+                placeholder="z.B. Irregular Verbs" />
+              <div style={{marginTop:14}}>
+                <div className="inp-label">Slot wählen</div>
+                <div style={{display:"flex", gap:6, flexWrap:"wrap", marginTop:8}}>
+                  {[1,2,3,4,5].map(n => {
+                    const s = sessionSlots.find(sl => sl.slot === n);
+                    return (
+                      <button key={n}
+                        className={`slot-chip${s?.konfiguration ? " belegt" : ""}`}
+                        onClick={() => {
+                          speichereKonfigInSlot(n, modalInput.trim() || `Slot ${n}`);
+                          setModal(null); setModalInput("");
+                        }}>
+                        {s?.konfiguration ? (s.name || `Slot ${n}`) : `Slot ${n}`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button className="btn btn-ghost" onClick={() => { setModal(null); setModalInput(""); }}>Abbrechen</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // ── Render: Diktat ───────────────────────────────────────────────────────
+  if (ansicht === "quiz" && quiz && quiz.modus === "diktat") {
+    if (quiz.phase === "fertig") {
+      const richtig = quiz.diktatErgebnisse.filter(e => e.richtig).length;
+      return (
+        <>
+          <style>{CSS}</style>
+          <div className="app">
+            <div className="topbar">
+              <button className="topbar-back" onClick={() => { setQuiz(null); setAnsicht("liste-detail"); }}>Schließen</button>
+              <span className="topbar-title">Diktat abgeschlossen</span>
+              <span className="quiz-fortschritt">{richtig} / {quiz.diktatErgebnisse.length} ✓</span>
+            </div>
+            <div className="sektion">
+              <div className="karte" style={{marginBottom:16}}>
+                {quiz.diktatErgebnisse.map((e, i) => (
+                  <div key={i} className="diktat-summary-zeile" style={{padding:"10px 16px"}}>
+                    <span style={{fontSize:"1.1rem", fontWeight:700, color: e.richtig ? "#2d6a4f" : "#c0392b", minWidth:22}}>
+                      {e.richtig ? "✓" : "✗"}
+                    </span>
+                    <div>
+                      <div style={{fontWeight:600, fontSize:"0.95rem"}}>{e.wort}</div>
+                      {e.uebersetzung && <div style={{fontSize:"0.82rem", color:"#6b6560"}}>{e.uebersetzung}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button className="btn btn-primary" style={{width:"100%"}}
+                onClick={() => { setQuiz(null); setAnsicht("liste-detail"); }}>
+                Zurück zur Liste
+              </button>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    const aktVok = quiz.vokabeln[quiz.index];
+    const diktatWort = aktVok[quiz.diktatSpalte]?.wert || "";
+    const uebersetzung = quiz.diktatUeberspalte ? aktVok[quiz.diktatUeberspalte]?.wert : null;
+    const hint = diktatHint(diktatWort, quiz.diktatAufgedeckt);
+    const diktatScore = aktVok.diktatFortschritt?.score ?? 0;
+
+    let antwortBoxKlasse = "quiz-antwort-box";
+    if (quiz.flash) antwortBoxKlasse += " richtig";
+    else if (quiz.phase === "aufgedeckt") antwortBoxKlasse += " aufgedeckt";
+    else if (quiz.feedback) antwortBoxKlasse += " falsch";
+
     return (
       <>
         <style>{CSS}</style>
         <div className="app">
           <div className="topbar">
-            <button className="topbar-back" onClick={() => setAnsicht("liste-detail")}>Zurück</button>
-            <span className="topbar-title">Quiz starten</span>
+            <button className="topbar-back" onClick={() => { setQuiz(null); setAnsicht("liste-detail"); }}>Beenden</button>
+            <span className="topbar-title">{quiz.index + 1} / {quiz.vokabeln.length}</span>
+            <span className="quiz-fortschritt">Score: {diktatScore > 0 ? "+" : ""}{diktatScore}</span>
           </div>
           <div className="sektion">
-            <div className="sektion-label" style={{marginBottom:10}}>Abfragerichtung</div>
-            <div className="karte">
-              <div style={{padding:"16px 16px 8px"}}>
-                <label className="inp-label">Frage (wird gezeigt)</label>
-                <select className="inp" value={quizFrageTyp}
-                  onChange={e => { setQuizFrageTyp(e.target.value); setQuizAntwortTyp(""); }}>
-                  <option value="">– wählen –</option>
-                  {abfragbar.map(t => (
-                    <option key={t} value={t}>{aktiveListe.spalten[t].name || t} ({t})</option>
-                  ))}
-                </select>
-              </div>
-              <div style={{padding:"0 16px 16px"}}>
-                <label className="inp-label">Antwort (wird abgefragt)</label>
-                <select className="inp" value={quizAntwortTyp}
-                  onChange={e => setQuizAntwortTyp(e.target.value)}
-                  disabled={!quizFrageTyp}>
-                  <option value="">– wählen –</option>
-                  {abfragbar.filter(t => t !== quizFrageTyp).map(t => (
-                    <option key={t} value={t}>{aktiveListe.spalten[t].name || t} ({t})</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            {quizFrageTyp && quizAntwortTyp && (
-              <div style={{marginBottom:16}}>
-                <div style={{fontSize:"0.82rem", color:C.muted, marginBottom:12}}>
-                  {verfuegbar} Vokabeln verfügbar
+            <div className="quiz-frage-box" style={{textAlign:"center", marginBottom:14}}>
+              <div className="quiz-label">{quiz.liste.spalten[quiz.diktatSpalte]?.name || quiz.diktatSpalte} — hör genau hin!</div>
+              <button className="diktat-play-btn"
+                onClick={() => sprich(diktatWort, spalteLang(quiz.diktatSpalte))}>🔊</button>
+              {uebersetzung && (
+                <div className="diktat-uebersetzung">
+                  {quiz.liste.spalten[quiz.diktatUeberspalte]?.name || quiz.diktatUeberspalte}: {uebersetzung}
                 </div>
-                <button className="btn btn-primary" style={{width:"100%"}}
-                  onClick={starteQuiz} disabled={verfuegbar === 0}>
-                  Quiz starten
-                </button>
-              </div>
-            )}
+              )}
+            </div>
+
+            <div className={antwortBoxKlasse}>
+              <div className="quiz-label">Deine Eingabe</div>
+              {hint && <div className="diktat-hint">{hint}</div>}
+              {!quiz.flash && quiz.phase === "eingabe" && (
+                <input ref={eingabeRef} className="inp"
+                  value={quiz.eingabe}
+                  onChange={e => setQuiz(prev => ({...prev, eingabe: e.target.value}))}
+                  onKeyDown={e => e.key === "Enter" && pruefeDiktatAntwort()}
+                  placeholder="Was wurde vorgelesen?"
+                  style={{marginTop:hint ? 4 : 4}}
+                />
+              )}
+              {quiz.flash && (
+                <div className="quiz-loesung-text" style={{color:"#1b5e20"}}>{diktatWort} ✓</div>
+              )}
+              {!quiz.flash && quiz.phase === "aufgedeckt" && (
+                <div className="quiz-loesung-text">{diktatWort}</div>
+              )}
+              {quiz.feedback && !quiz.flash && (
+                <div className="quiz-feedback nein">{quiz.feedback}</div>
+              )}
+            </div>
+
+            <div className="quiz-aktionen">
+              {!quiz.flash && quiz.phase === "eingabe" && (
+                <>
+                  <button className="btn btn-primary" onClick={pruefeDiktatAntwort}>Prüfen</button>
+                  <button className="btn btn-ghost" onClick={() => sprich(diktatWort, spalteLang(quiz.diktatSpalte))}>🔊 Nochmal</button>
+                  <button className="btn btn-ghost" onClick={zeigeDiktatLoesung}>Lösung anzeigen</button>
+                </>
+              )}
+              {!quiz.flash && quiz.phase === "aufgedeckt" && (
+                <button className="btn btn-primary" onClick={naechsteDiktatVokabel}>Weiter →</button>
+              )}
+            </div>
           </div>
         </div>
       </>
@@ -532,9 +1608,7 @@ export default function VokabelApp() {
             <div className="sektion">
               <div className="leer">
                 <div style={{fontSize:"2.5rem"}}>✓</div>
-                <div className="leer-text">
-                  Alle {quiz.vokabeln.length} Vokabeln abgefragt!
-                </div>
+                <div className="leer-text">Alle {quiz.vokabeln.length} Vokabeln abgefragt!</div>
               </div>
               <button className="btn btn-primary" style={{width:"100%"}}
                 onClick={() => { setQuiz(null); setAnsicht("liste-detail"); }}>
@@ -549,18 +1623,19 @@ export default function VokabelApp() {
     const aktVokRaw = quiz.vokabeln[quiz.index];
     const aktVok = getAktVok();
     const frageLabel = quiz.liste.spalten[quiz.frageTyp]?.name || quiz.frageTyp;
-    const antwortLabel = quiz.liste.spalten[quiz.antwortTyp]?.name || quiz.antwortTyp;
-    const infoSpalten = TYPEN.filter(t => t.startsWith('i') && quiz.liste.spalten[t]?.aktiv && aktVokRaw[t]);
+    const aktAntwortTyp = quiz.antwortTypen[quiz.antwortTypIndex];
+    const antwortLabel = quiz.liste.spalten[aktAntwortTyp]?.name || aktAntwortTyp;
+    const aktSpaltModus = quiz.spalteModus?.[aktAntwortTyp] || "tippen";
+    const infoSpalten = (quiz.sitzungsInfoTypen || []).filter(t => aktVokRaw[t]?.wert);
     const score = aktVok?.fortschritt?.score ?? 0;
-
-    const istWeitere = quiz.phase === "weitere";
-    const weitereAntwort = istWeitere ? quiz.antwortTeile[quiz.weitereIndices[quiz.weiterePos]] : null;
+    const isWeitere = quiz.phase === "weitere";
+    const isSpalteOk = false; // phase wird nicht mehr verwendet, flash ersetzt es
 
     let antwortBoxKlasse = "quiz-antwort-box";
-    if (quiz.phase === "richtig") antwortBoxKlasse += " richtig";
+    if (quiz.flash) antwortBoxKlasse += " richtig";
     else if (quiz.phase === "falsch") antwortBoxKlasse += " falsch";
     else if (quiz.phase === "aufgedeckt") antwortBoxKlasse += " aufgedeckt";
-    else if (istWeitere) antwortBoxKlasse += " weitere";
+    else if (isWeitere) antwortBoxKlasse += " weitere";
 
     return (
       <>
@@ -571,70 +1646,184 @@ export default function VokabelApp() {
             <span className="topbar-title">{quiz.index + 1} / {quiz.vokabeln.length}</span>
             <span className="quiz-fortschritt">Score: {score > 0 ? "+" : ""}{score}</span>
           </div>
-
           <div className="sektion">
-            {/* Frage */}
-            <div className="quiz-frage-box">
-              <div className="quiz-label">{frageLabel}</div>
-              <div className="quiz-frage-text">{aktVokRaw[quiz.frageTyp]?.wert}</div>
-              {infoSpalten.map(t => (
-                <div key={t} className="quiz-info-text">
-                  <strong>{quiz.liste.spalten[t]?.name || t}:</strong> {aktVokRaw[t]?.wert}
-                </div>
-              ))}
-            </div>
 
-            {/* Antwort */}
-            <div className={antwortBoxKlasse}>
-              <div className="quiz-label">
-                {antwortLabel}
-                {istWeitere && <span style={{color:"#6a1b9a", marginLeft:8}}>— weitere Antwort</span>}
+            {/* Haupt-Layout: linke Spalte (Frage + Antwort) | rechte Spalte (Info) */}
+            {(() => {
+              // Info-Seiten berechnen
+              const alleInfoSeiten = infoSpalten.flatMap(typ => {
+                const text = aktVokRaw[typ]?.wert || "";
+                const name = quiz.liste.spalten[typ]?.name || typ;
+                const pages = splitInSeiten(text);
+                return pages.map((page, i) => ({
+                  name,
+                  text: (i > 0 ? "…" : "") + page + (i < pages.length - 1 ? "…" : ""),
+                  page: i, total: pages.length,
+                }));
+              });
+              const aktInfoSeite = alleInfoSeiten.length > 0
+                ? alleInfoSeiten[(quiz.infoSeite || 0) % alleInfoSeiten.length]
+                : null;
+              const infoSeitenAnzahl = alleInfoSeiten.length;
+
+              return (
+                <div style={{display:"flex", gap:10, alignItems:"stretch", marginBottom:14}}>
+                  {/* Linke Spalte */}
+                  <div style={{flex:1, display:"flex", flexDirection:"column", gap:10}}>
+                    <div className="quiz-frage-box" style={{marginBottom:0}}>
+                      <div className="quiz-label">{frageLabel}</div>
+                      <div style={{display:"flex", alignItems:"baseline", gap:8}}>
+                        <div className="quiz-frage-text">{aktVokRaw[quiz.frageTyp]?.wert}</div>
+                        <button className="btn-icon" style={{fontSize:"1.1rem", padding:"2px 4px"}}
+                          onClick={() => sprich(aktVokRaw[quiz.frageTyp]?.wert, spalteLang(quiz.frageTyp))}>🔊</button>
+                      </div>
+                    </div>
+
+                    {quiz.vorigeRichtig.map((v, i) => (
+                      <div key={i} className="quiz-vorig">
+                        <div className="quiz-vorig-label">✓ {v.label}</div>
+                        <div style={{display:"flex", alignItems:"baseline", gap:8}}>
+                          <div>{v.wert}</div>
+                          <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
+                            onClick={() => sprich(v.wert, spalteLang(v.typ))}>🔊</button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className={antwortBoxKlasse} style={{marginBottom:0}}>
+                      <div className="quiz-label">
+                        {antwortLabel}
+                        {isWeitere && <span style={{color:"#6a1b9a", marginLeft:8}}>— weitere Antwort</span>}
+                      </div>
+                      {aktSpaltModus === "mc" && !quiz.flash && (quiz.phase === "eingabe" || quiz.phase === "aufgedeckt") && (
+                        <div style={{display:"flex", flexWrap:"wrap", gap:8, marginTop:8}}>
+                          {(quiz.mcButtons || []).map((btn, idx) => (
+                            <button key={idx}
+                              onClick={() => quiz.phase === "eingabe" && klickeButton(idx)}
+                              style={{
+                                padding:"9px 16px", borderRadius:10, border:"none",
+                                fontFamily:"inherit", fontSize:"0.9rem", fontWeight:600,
+                                cursor: btn.status === "richtig" || quiz.phase === "aufgedeckt" ? "default" : "pointer",
+                                background:
+                                  btn.status === "richtig" ? "#2d6a4f" :
+                                  btn.status === "falsch"  ? "#c0392b" : "#e0dbd2",
+                                color: btn.status === "neutral" ? "#1a1a1a" : "#fff",
+                                transition: "background .15s",
+                              }}
+                            >{btn.text}</button>
+                          ))}
+                        </div>
+                      )}
+                      {aktSpaltModus === "tippen" && !quiz.flash && (quiz.phase === "eingabe" || quiz.phase === "falsch") && (
+                        <input ref={eingabeRef} className="inp"
+                          value={quiz.eingabe}
+                          onChange={e => setQuiz(prev => ({...prev, eingabe: e.target.value}))}
+                          onKeyDown={e => e.key === "Enter" && pruefeAntwort()}
+                          placeholder="Antwort eingeben…"
+                          style={{marginTop:4}}
+                        />
+                      )}
+                      {aktSpaltModus === "tippen" && !quiz.flash && isWeitere && (
+                        <input ref={eingabeRef} className="inp"
+                          value={quiz.eingabe}
+                          onChange={e => setQuiz(prev => ({...prev, eingabe: e.target.value}))}
+                          onKeyDown={e => e.key === "Enter" && pruefeAntwort()}
+                          placeholder={`"${quiz.antwortTeile[quiz.weitereIndices?.[quiz.weiterePos]]}" eingeben…`}
+                          style={{marginTop:4}}
+                        />
+                      )}
+                      {quiz.flash && (
+                        <div className="quiz-loesung-text" style={{color:"#1b5e20"}}>
+                          {quiz.antwortTeile.join(" / ")} ✓
+                        </div>
+                      )}
+                      {!quiz.flash && quiz.phase === "aufgedeckt" && (
+                        <div style={{display:"flex", alignItems:"baseline", gap:8}}>
+                          <div className="quiz-loesung-text">{quiz.antwortTeile.join(" / ")}</div>
+                          <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
+                            onClick={() => sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp))}>🔊</button>
+                        </div>
+                      )}
+                      {quiz.feedback && !quiz.flash && (
+                        <div className={`quiz-feedback ${quiz.phase === "falsch" || (isWeitere && quiz.feedback.startsWith("Nicht")) ? "nein" : "ok"}`}>
+                          {quiz.feedback}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Rechte Spalte: Info-Box */}
+                  {quiz.infoSichtbar && aktInfoSeite && (
+                    <div onClick={() => setQuiz(prev => ({...prev, infoSeite: ((prev.infoSeite || 0) + 1) % infoSeitenAnzahl}))}
+                      style={{
+                        width:150, flexShrink:0, background:"#fffde7",
+                        border:"1px solid #ffe082", borderRadius:12, padding:"12px",
+                        cursor: infoSeitenAnzahl > 1 ? "pointer" : "default",
+                        display:"flex", flexDirection:"column", gap:6,
+                      }}>
+                      <div style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase",
+                        letterSpacing:".05em", color:"#f57f17"}}>
+                        {aktInfoSeite.name}
+                      </div>
+                      <div style={{fontSize:"0.85rem", lineHeight:1.45, flex:1}}>
+                        {aktInfoSeite.text}
+                      </div>
+                      {infoSeitenAnzahl > 1 && (
+                        <div style={{fontSize:"0.7rem", color:"#f9a825", textAlign:"right", marginTop:"auto"}}>
+                          {(quiz.infoSeite || 0) % infoSeitenAnzahl + 1} / {infoSeitenAnzahl}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Noch kommende Spalten */}
+            {!quiz.flash && quiz.antwortTypen.length > 1 && (quiz.phase === "eingabe" || quiz.phase === "falsch" || isWeitere) && (
+              <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:10}}>
+                Noch: {quiz.antwortTypen.slice(quiz.antwortTypIndex + 1)
+                  .map(t => quiz.liste.spalten[t]?.name || t).join(" → ")}
               </div>
+            )}
 
-              {(quiz.phase === "eingabe" || quiz.phase === "falsch" || istWeitere) && (
-                <input
-                  ref={eingabeRef}
-                  className="inp"
-                  value={quiz.eingabe}
-                  onChange={e => setQuiz(prev => ({...prev, eingabe: e.target.value}))}
-                  onKeyDown={e => e.key === "Enter" && pruefeAntwort()}
-                  placeholder={istWeitere ? `"${weitereAntwort}" eingeben…` : "Antwort eingeben…"}
-                  style={{marginTop:4}}
-                />
-              )}
-
-              {(quiz.phase === "richtig" || quiz.phase === "aufgedeckt") && (
-                <div className="quiz-loesung-text">
-                  {quiz.antwortTeile.join(" / ")}
-                </div>
-              )}
-
-              {quiz.feedback && (
-                <div className={`quiz-feedback ${
-                  quiz.phase === "richtig" || istWeitere && quiz.feedback === "Richtig!" ? "ok" :
-                  quiz.phase === "falsch" ? "nein" : "info"
-                }`}>
-                  {quiz.feedback}
-                </div>
-              )}
-            </div>
-
-            {/* Aktionen */}
             <div className="quiz-aktionen">
-              {(quiz.phase === "eingabe" || quiz.phase === "falsch") && (
+              {!quiz.flash && (quiz.phase === "eingabe" || quiz.phase === "falsch") && (
                 <>
-                  <button className="btn btn-primary" onClick={pruefeAntwort}>Prüfen</button>
+                  {aktSpaltModus === "tippen" && (
+                    <button className="btn btn-primary" onClick={pruefeAntwort}>Prüfen</button>
+                  )}
                   <button className="btn btn-ghost" onClick={zeigeLosung}>Lösung anzeigen</button>
+                  {quiz.phase === "falsch" && aktSpaltModus === "tippen" && (
+                    <button className="btn btn-ghost" onClick={wechsleZuMC}>Multiple Choice</button>
+                  )}
+                  {infoSpalten.length > 0 && (
+                    <button className="btn btn-ghost"
+                      onClick={() => setQuiz(prev => ({...prev, infoSichtbar: !prev.infoSichtbar}))}>
+                      {quiz.infoSichtbar ? "Info ▲" : "Info"}
+                    </button>
+                  )}
                 </>
               )}
-              {istWeitere && (
+              {!quiz.flash && isWeitere && (
                 <>
                   <button className="btn btn-primary" onClick={pruefeAntwort}>Prüfen</button>
                   <button className="btn btn-ghost" onClick={ueberspringeWeitere}>Überspringen</button>
+                  {infoSpalten.length > 0 && (
+                    <button className="btn btn-ghost"
+                      onClick={() => setQuiz(prev => ({...prev, infoSichtbar: !prev.infoSichtbar}))}>
+                      {quiz.infoSichtbar ? "Info ▲" : "Info"}
+                    </button>
+                  )}
                 </>
               )}
-              {(quiz.phase === "richtig" || quiz.phase === "aufgedeckt") && (
-                <button className="btn btn-primary" onClick={naechsteVokabel}>Weiter →</button>
+              {!quiz.flash && quiz.phase === "aufgedeckt" && (
+                <>
+                  {quiz.antwortTypIndex > 0 && (
+                    <button className="btn btn-primary" onClick={geheZurueck}>← Zurück</button>
+                  )}
+                  <button className="btn btn-primary" onClick={naechsteVokabel}>Weiter →</button>
+                </>
               )}
             </div>
           </div>
@@ -645,6 +1834,11 @@ export default function VokabelApp() {
 
   // ── Render: Import ────────────────────────────────────────────────────────
   if (ansicht === "import") {
+    const bl = getBestehendeListe();
+    const zielOptionen = importZielTyp === "bestehend" && bl ? getBestehendZielOptionen(bl) : null;
+    const anzahlZugewiesen = Object.values(importMapping).filter(t => t !== null).length;
+    const anzahlGesamt = importParsed ? importParsed.header.length : 0;
+
     return (
       <>
         <style>{CSS}</style>
@@ -673,57 +1867,7 @@ export default function VokabelApp() {
               </>
             ) : (
               <>
-                <div className="sektion-header"><div className="sektion-label">Spalten zuweisen</div></div>
-                <div className="karte">
-                  {importParsed.header.map((h, i) => (
-                    <div key={i} className="spalten-zuweisung">
-                      <div style={{fontWeight:600, fontSize:"0.9rem"}}>{h.wert || `Spalte ${i+1}`}</div>
-                      <div className="typ-buttons">
-                        {TYPEN.map(typ => {
-                          const belegt = Object.entries(importMapping).some(([k, t]) => t === typ && Number(k) !== i);
-                          return (
-                            <button key={typ}
-                              className={`typ-btn${importMapping[i] === typ ? " aktiv" : ""}`}
-                              disabled={belegt}
-                              onClick={() => setzeMapping(i, typ)}
-                            >{typ}</button>
-                          );
-                        })}
-                        <button
-                          className={`typ-btn x${importMapping[i] === null ? " aktiv" : ""}`}
-                          onClick={() => setImportMapping(prev => ({...prev, [i]: null}))}
-                        >✕</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="sektion-header">
-                  <div className="sektion-label">Vorschau ({importParsed.daten.length} Vokabeln)</div>
-                </div>
-                <div className="karte">
-                  {importParsed.daten.slice(0, 3).map((zeile, zi) => (
-                    <div key={zi} className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
-                      {zeile.map((zelle, ki) => {
-                        const typ = importMapping[ki];
-                        if (!typ) return null;
-                        return (
-                          <div key={ki} style={{display:"flex", alignItems:"baseline", gap:6}}>
-                            <span className="spalten-badge aktiv">{typ}</span>
-                            <span className="vok-wert">{zelle.wert}</span>
-                            {zelle.falsch.length > 0 && <span className="vok-falsch">(+{zelle.falsch.length} falsch)</span>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))}
-                  {importParsed.daten.length > 3 && (
-                    <div className="karte-zeile" style={{color:C.muted, fontSize:"0.82rem"}}>
-                      … und {importParsed.daten.length - 3} weitere
-                    </div>
-                  )}
-                </div>
-
+                {/* Ziel zuerst wählen */}
                 <div className="sektion-header"><div className="sektion-label">Ziel</div></div>
                 <div className="karte">
                   <div className="toggle-row">
@@ -743,7 +1887,7 @@ export default function VokabelApp() {
                   {importZielTyp === "bestehend" && (
                     <div style={{padding:"0 16px 16px"}}>
                       {listenIndex.length === 0 ? (
-                        <div style={{color:C.muted, fontSize:"0.85rem"}}>Noch keine Listen vorhanden.</div>
+                        <div style={{color:"#6b6560", fontSize:"0.85rem"}}>Noch keine Listen vorhanden.</div>
                       ) : (
                         <select className="inp" value={importBestehendId}
                           onChange={e => { setImportBestehendId(e.target.value); setImportFehler(""); }}>
@@ -755,15 +1899,238 @@ export default function VokabelApp() {
                   )}
                 </div>
 
+                {/* Spalten zuweisen */}
+                <div className="sektion-header">
+                  <div className="sektion-label">Spalten zuweisen</div>
+                  <span className="import-zaehler"><strong>{anzahlZugewiesen}</strong> / {anzahlGesamt}</span>
+                </div>
+
+                {/* Info-Box: was wurde analysiert */}
+                <div style={{background:"#f7f5f0", border:"1px solid #e0dbd2", borderRadius:10, padding:"10px 14px", marginBottom:12, fontSize:"0.82rem", color:"#6b6560"}}>
+                  <strong>Analysiert:</strong> {importParsed.header.map(h => h.wert || "–").join(", ")}
+                </div>
+
+                <div className="karte">
+                  {importParsed.header.map((h, i) => {
+                    const zugewiesen = importMapping[i];
+                    const beispiel = importParsed.daten[0]?.[i]?.wert;
+
+                    if (zugewiesen) {
+                      // Kompakte Darstellung nach Zuweisung
+                      const label = zielOptionen
+                        ? (zielOptionen.find(o => o.typ === zugewiesen)?.label || zugewiesen)
+                        : zugewiesen;
+                      return (
+                        <div key={i} className="spalten-zuweisung">
+                          <div className="import-kompakt">
+                            <span className="spalten-badge aktiv" style={{padding:"3px 8px", fontSize:"0.78rem"}}>{label}</span>
+                            <span style={{fontSize:"0.85rem", color:"#6b6560"}}>← {h.wert || `Spalte ${i+1}`}</span>
+                            <button className="btn-icon" style={{marginLeft:"auto", color:"#c0392b", fontSize:"0.75rem"}}
+                              onClick={() => setImportMapping(prev => ({...prev, [i]: null}))}>✕</button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Volle Darstellung für nicht zugewiesene Spalten
+                    return (
+                      <div key={i} className="spalten-zuweisung">
+                        <div style={{fontWeight:600, fontSize:"0.9rem"}}>{h.wert || `Spalte ${i+1}`}</div>
+                        {beispiel && <div className="import-beispiel">z.B. „{beispiel}"</div>}
+                        <div className="typ-buttons">
+                          {zielOptionen ? (
+                            // Bestehende Liste: zeige deren Spalten nach Name
+                            zielOptionen.map(opt => {
+                              const belegt = Object.entries(importMapping).some(([k, t]) => t === opt.typ && Number(k) !== i);
+                              return (
+                                <button key={opt.typ}
+                                  className={`typ-btn${importMapping[i] === opt.typ ? " aktiv" : ""}`}
+                                  disabled={belegt}
+                                  onClick={() => setzeMapping(i, opt.typ)}
+                                  style={{fontSize:"0.75rem"}}>
+                                  {opt.neu ? `Neu: ${opt.typ}` : opt.label}
+                                </button>
+                              );
+                            })
+                          ) : (
+                            // Neue Liste: abstrakte Typ-Buttons
+                            TYPEN.map(typ => {
+                              const belegt = Object.entries(importMapping).some(([k, t]) => t === typ && Number(k) !== i);
+                              return (
+                                <button key={typ}
+                                  className={`typ-btn${importMapping[i] === typ ? " aktiv" : ""}`}
+                                  disabled={belegt}
+                                  onClick={() => setzeMapping(i, typ)}
+                                >{typ}</button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Vorschau */}
+                <div className="sektion-header">
+                  <div className="sektion-label">Vorschau ({importParsed.daten.length} Vokabeln)</div>
+                </div>
+                <div className="karte">
+                  {importParsed.daten.slice(0, 3).map((zeile, zi) => (
+                    <div key={zi} className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
+                      {zeile.map((zelle, ki) => {
+                        const typ = importMapping[ki];
+                        if (!typ) return null;
+                        const label = zielOptionen
+                          ? (zielOptionen.find(o => o.typ === typ)?.label || typ)
+                          : typ;
+                        return (
+                          <div key={ki} style={{display:"flex", alignItems:"baseline", gap:6}}>
+                            <span className="spalten-badge aktiv">{label}</span>
+                            <span style={{fontSize:"0.88rem"}}>{zelle.wert}</span>
+                            {zelle.falsch.length > 0 && <span style={{fontSize:"0.75rem", color:"#6b6560"}}>(+{zelle.falsch.length} falsch)</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                  {importParsed.daten.length > 3 && (
+                    <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.82rem"}}>… und {importParsed.daten.length - 3} weitere</div>
+                  )}
+                </div>
+
                 {importFehler && <div className="fehler">{importFehler}</div>}
                 <div style={{display:"flex", gap:10, marginBottom:24}}>
-                  <button className="btn btn-ghost" onClick={() => setImportParsed(null)}>Zurück</button>
+                  <button className="btn btn-primary" onClick={() => setImportParsed(null)}>Zurück</button>
                   <button className="btn btn-primary" onClick={fuehreImportDurch}>
                     Importieren ({importParsed.daten.length})
                   </button>
                 </div>
               </>
             )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ── Render: Statistik ────────────────────────────────────────────────────
+  if (ansicht === "statistik" && aktiveListe) {
+    const abgefragt = aktiveListe.vokabeln.filter(v => v.fortschritt);
+    const nieAnzahl = aktiveListe.vokabeln.length - abgefragt.length;
+    const positivAnzahl = abgefragt.filter(v => v.fortschritt.score > 0).length;
+    const negativAnzahl = abgefragt.filter(v => v.fortschritt.score < 0).length;
+    const nullAnzahl = abgefragt.filter(v => v.fortschritt.score === 0).length;
+    const scores = abgefragt.map(v => v.fortschritt.score);
+    const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+
+    let voks = [...aktiveListe.vokabeln];
+    if (statistikFilter === "nie") voks = voks.filter(v => !v.fortschritt);
+    else if (statistikFilter === "negativ") voks = voks.filter(v => (v.fortschritt?.score ?? 0) < 0);
+    else if (statistikFilter === "positiv") voks = voks.filter(v => (v.fortschritt?.score ?? 0) > 0);
+    else if (statistikFilter === "null") voks = voks.filter(v => v.fortschritt && v.fortschritt.score === 0);
+
+    if (statistikSort === "score-asc") voks.sort((a, b) => (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0));
+    else if (statistikSort === "score-desc") voks.sort((a, b) => (b.fortschritt?.score ?? 0) - (a.fortschritt?.score ?? 0));
+    else if (statistikSort === "streak") voks.sort((a, b) => (b.fortschritt?.streak ?? 0) - (a.fortschritt?.streak ?? 0));
+    else if (statistikSort === "datum") voks.sort((a, b) => {
+      const da = a.fortschritt?.letzteAbfrage ? new Date(a.fortschritt.letzteAbfrage) : new Date(0);
+      const db = b.fortschritt?.letzteAbfrage ? new Date(b.fortschritt.letzteAbfrage) : new Date(0);
+      return db - da;
+    });
+    else if (statistikSort === "alpha") {
+      const sp = TYPEN.find(t => aktiveListe.spalten[t].aktiv);
+      if (sp) voks.sort((a, b) => (a[sp]?.wert || '').localeCompare(b[sp]?.wert || ''));
+    }
+
+    const sp1 = TYPEN.find(t => aktiveListe.spalten[t].aktiv);
+    const sp2 = TYPEN.filter(t => aktiveListe.spalten[t].aktiv)[1];
+
+    return (
+      <>
+        <style>{CSS}</style>
+        <div className="app">
+          <div className="topbar">
+            <button className="topbar-back" onClick={() => setAnsicht("liste-detail")}>Zurück</button>
+            <span className="topbar-title">Statistik – {aktiveListe.name}</span>
+          </div>
+          <div className="sektion">
+            <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12}}>
+              {[
+                {label:"Gesamt", wert:aktiveListe.vokabeln.length, farbe:null},
+                {label:"Nie abgefragt", wert:nieAnzahl, farbe:nieAnzahl>0?"#6b6560":"#2d6a4f"},
+                {label:"Score positiv", wert:positivAnzahl, bg:"#e8f5e9", rand:"#c8e6c9", farbe:"#2d6a4f"},
+                {label:"Score negativ", wert:negativAnzahl, bg:"#ffebee", rand:"#ffcdd2", farbe:"#c0392b"},
+              ].map(k => (
+                <div key={k.label} style={{background:k.bg||"#fff", border:`1px solid ${k.rand||"#e0dbd2"}`, borderRadius:10, padding:"12px 14px"}}>
+                  <div style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:k.farbe||"#6b6560"}}>{k.label}</div>
+                  <div style={{fontSize:"1.6rem", fontWeight:700, marginTop:4, color:k.farbe||"#1a1a1a"}}>{k.wert}</div>
+                </div>
+              ))}
+            </div>
+            {avgScore !== null && (
+              <div style={{background:"#fff", border:"1px solid #e0dbd2", borderRadius:10, padding:"11px 14px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                <span style={{fontSize:"0.82rem", color:"#6b6560", fontWeight:600}}>Ø Score (abgefragte Vokabeln)</span>
+                <span style={{fontWeight:700, color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
+                  {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
+                </span>
+              </div>
+            )}
+
+            <div className="sektion-label" style={{marginBottom:8}}>Filter</div>
+            <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:12}}>
+              {[
+                {key:"alle", label:`Alle (${aktiveListe.vokabeln.length})`},
+                {key:"nie", label:`Nie (${nieAnzahl})`},
+                {key:"negativ", label:`Neg (${negativAnzahl})`},
+                {key:"null", label:`Null (${nullAnzahl})`},
+                {key:"positiv", label:`Pos (${positivAnzahl})`},
+              ].map(f => (
+                <button key={f.key} className={`typ-btn${statistikFilter===f.key?" aktiv":""}`}
+                  onClick={() => setStatistikFilter(f.key)}>{f.label}</button>
+              ))}
+            </div>
+
+            <div className="sektion-label" style={{marginBottom:8}}>Sortierung</div>
+            <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
+              {[
+                {key:"score-asc", label:"Score ↑"},
+                {key:"score-desc", label:"Score ↓"},
+                {key:"streak", label:"Streak"},
+                {key:"datum", label:"Datum"},
+                {key:"alpha", label:"A→Z"},
+              ].map(s => (
+                <button key={s.key} className={`typ-btn${statistikSort===s.key?" aktiv":""}`}
+                  onClick={() => setStatistikSort(s.key)}>{s.label}</button>
+              ))}
+            </div>
+
+            <div className="sektion-label" style={{marginBottom:8}}>{voks.length} Vokabel{voks.length!==1?"n":""}</div>
+            <div className="karte">
+              {voks.length === 0 ? (
+                <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln in diesem Filter.</div>
+              ) : voks.map(vok => {
+                const score = vok.fortschritt?.score ?? null;
+                const streak = vok.fortschritt?.streak ?? 0;
+                return (
+                  <div key={vok.id} className="karte-zeile">
+                    <div style={{flex:1, minWidth:0}}>
+                      {sp1 && vok[sp1] && <div style={{fontWeight:600, fontSize:"0.9rem", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp1].wert}</div>}
+                      {sp2 && vok[sp2] && <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp2].wert}</div>}
+                    </div>
+                    <div style={{display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3, flexShrink:0}}>
+                      <span className={`score-badge ${score !== null ? (score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null") : "score-null"}`}>
+                        {score !== null ? (score > 0 ? "+" : "") + score : "–"}
+                      </span>
+                      <div style={{fontSize:"0.68rem", color:"#6b6560", textAlign:"right"}}>
+                        {streak > 0 && <span style={{marginRight:4}}>🔥{streak}</span>}
+                        {formatDatum(vok.fortschritt?.letzteAbfrage)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </>
@@ -781,14 +2148,20 @@ export default function VokabelApp() {
           <div className="topbar">
             <button className="topbar-back" onClick={() => setAnsicht("uebersicht")}>Zurück</button>
             <span className="topbar-title">{aktiveListe.name}</span>
-            <button className="btn-icon" onClick={() => oeffneModal("umbenennen")}>Umbenn.</button>
-            <button className="btn-icon" onClick={() => oeffneModal("loeschen")}>Löschen</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => oeffneModal("umbenennen")}>Umbenennen</button>
+            <button className="btn btn-danger btn-sm" onClick={() => oeffneModal("loeschen")}>Löschen</button>
           </div>
           <div className="sektion">
             {abfragbareSpalten.length >= 2 && aktiveListe.vokabeln.length > 0 && (
-              <button className="btn btn-primary" style={{width:"100%", marginBottom:16}}
-                onClick={() => setAnsicht("quiz-setup")}>
+              <button className="btn btn-primary" style={{width:"100%", marginBottom:8}}
+                onClick={() => { initQuizDefaults(); setAnsicht("quiz-setup"); }}>
                 Quiz starten
+              </button>
+            )}
+            {aktiveListe.vokabeln.length > 0 && (
+              <button className="btn btn-ghost" style={{width:"100%", marginBottom:8}}
+                onClick={() => setAnsicht("statistik")}>
+                Statistik
               </button>
             )}
 
@@ -800,11 +2173,14 @@ export default function VokabelApp() {
                   <div key={typ} className="karte-zeile">
                     <span className={`spalten-badge${s.aktiv ? " aktiv" : ""}`}>{typ}</span>
                     <div className="karte-zeile-info">
-                      <div className="karte-zeile-name" style={{color: s.aktiv ? C.text : C.muted}}>
+                      <div className="karte-zeile-name" style={{color: s.aktiv ? "#1a1a1a" : "#6b6560"}}>
                         {s.aktiv ? (s.name || `Spalte ${typ}`) : "nicht belegt"}
                       </div>
                       {s.aktiv && <div className="karte-zeile-sub">{typ.startsWith("i") ? "Info (nicht abfragbar)" : "Abfragbar"}</div>}
                     </div>
+                    {s.aktiv && (
+                      <button className="btn-icon" onClick={() => oeffneModal("spalte-umbenennen", typ)}>✏️</button>
+                    )}
                   </div>
                 );
               })}
@@ -812,37 +2188,57 @@ export default function VokabelApp() {
 
             <div className="sektion-header">
               <div className="sektion-label">Vokabeln ({aktiveListe.vokabeln.length})</div>
-              <button className="btn btn-ghost btn-sm" onClick={() => {
-                resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
-              }}>+ Importieren</button>
+              <div style={{display:"flex", gap:6}}>
+                {listenIndex.filter(l => l.id !== aktiveListeId).length > 0 && (
+                  <button className="btn btn-ghost btn-sm"
+                    onClick={() => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); }}>
+                    Zusammenführen
+                  </button>
+                )}
+                <button className="btn btn-ghost btn-sm" onClick={() => {
+                  resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
+                }}>+ Importieren</button>
+              </div>
             </div>
 
             {aktiveListe.vokabeln.length === 0 ? (
-              <div className="leer">
-                <div className="leer-text">Noch keine Vokabeln.<br/>Klicke auf "+ Importieren".</div>
-              </div>
+              <div className="leer"><div className="leer-text">Noch keine Vokabeln.<br/>Klicke auf "+ Importieren".</div></div>
             ) : (
               <div className="karte">
                 {aktiveListe.vokabeln.map(vok => {
                   const score = vok.fortschritt?.score ?? null;
                   return (
                     <div key={vok.id} className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
-                      <div style={{display:"flex", width:"100%", justifyContent:"space-between", alignItems:"center"}}>
-                        <div style={{display:"flex", flexDirection:"column", gap:4, flex:1}}>
+                      <div style={{display:"flex", width:"100%", justifyContent:"space-between", alignItems:"flex-start"}}>
+                        <div style={{display:"flex", flexDirection:"column", gap:3, flex:1}}>
                           {aktiveSpalten.map(typ => vok[typ] ? (
                             <div key={typ} style={{display:"flex", alignItems:"baseline", gap:6}}>
                               <span className="spalten-badge aktiv">{aktiveListe.spalten[typ].name || typ}</span>
-                              <span className="vok-wert">{vok[typ].wert}</span>
-                              {vok[typ].falsch?.length > 0 &&
-                                <span className="vok-falsch">(+{vok[typ].falsch.length} falsch)</span>}
+                              <span style={{fontSize:"0.88rem"}}>{vok[typ].wert}</span>
+                              {vok[typ].falsch?.length > 0 && <span style={{fontSize:"0.75rem", color:"#6b6560"}}>(+{vok[typ].falsch.length})</span>}
                             </div>
                           ) : null)}
                         </div>
-                        {score !== null && (
-                          <span className={`score-badge ${score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null"}`}>
-                            {score > 0 ? "+" : ""}{score}
-                          </span>
-                        )}
+                        <div style={{display:"flex", alignItems:"center", gap:2, flexShrink:0, marginLeft:8}}>
+                          {score !== null && (
+                            <span className={`score-badge ${score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null"}`} style={{marginRight:4}}>
+                              {score > 0 ? "+" : ""}{score}
+                            </span>
+                          )}
+                          <button className="btn-icon" title="Vorlesen" onClick={() => {
+                            if (!window.speechSynthesis) return;
+                            window.speechSynthesis.cancel();
+                            aktiveSpalten.forEach(typ => {
+                              if (!vok[typ]?.wert) return;
+                              const u = new SpeechSynthesisUtterance(vok[typ].wert.split('/')[0].trim());
+                              u.lang = spalteLang(typ);
+                              window.speechSynthesis.speak(u);
+                            });
+                          }}>🔊</button>
+                          <button className="btn-icon" title="Bearbeiten" onClick={() => oeffneVokabelBearbeiten(vok)}>✏️</button>
+                          <button className="btn-icon" title="Löschen" style={{color:"#c0392b"}}
+                            onClick={() => { setBearbeiteVokabel(vok); setModal('vokabel-loeschen'); }}>✕</button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -868,11 +2264,94 @@ export default function VokabelApp() {
             </div>
           </div>
         )}
+        {modal === "spalte-umbenennen" && (
+          <div className="overlay" onClick={() => setModal(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-titel">Spalte umbenennen</div>
+              <div style={{fontSize:"0.82rem", color:"#6b6560", marginBottom:12}}>Typ: {editSpalteTyp}</div>
+              <label className="inp-label">Name</label>
+              <input className="inp" value={modalInput} autoFocus
+                onChange={e => setModalInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && speichereSpaltenname()} />
+              <div className="modal-actions">
+                <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+                <button className="btn btn-primary" onClick={speichereSpaltenname}>Speichern</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {modal === "vokabel-bearbeiten" && bearbeiteVokabel && (
+          <div className="overlay" onClick={() => setModal(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-titel">Vokabel bearbeiten</div>
+              {TYPEN.filter(t => aktiveListe.spalten[t].aktiv).map(typ => (
+                <div key={typ} style={{marginBottom:12}}>
+                  <label className="inp-label">
+                    {aktiveListe.spalten[typ].name || typ}
+                    {!typ.startsWith('i') && <span style={{fontWeight:400}}> (|| falsche Antworten)</span>}
+                  </label>
+                  <input className="inp" value={bearbeiteEingaben[typ] || ''}
+                    onChange={e => setBearbeiteEingaben(prev => ({...prev, [typ]: e.target.value}))}
+                    onKeyDown={e => e.key === 'Enter' && speichereVokabelBearbeitung()}
+                  />
+                </div>
+              ))}
+              <div className="modal-actions">
+                <button className="btn btn-ghost" onClick={() => { setModal(null); setBearbeiteVokabel(null); }}>Abbrechen</button>
+                <button className="btn btn-primary" onClick={speichereVokabelBearbeitung}>Speichern</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {modal === "vokabel-loeschen" && bearbeiteVokabel && (
+          <div className="overlay" onClick={() => setModal(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-titel">Vokabel löschen?</div>
+              <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
+                Diese Vokabel wird dauerhaft gelöscht. Der Lernfortschritt geht dabei verloren.
+              </p>
+              <div className="modal-actions">
+                <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+                <button className="btn btn-danger" onClick={() => loescheVokabel(bearbeiteVokabel.id)}>Löschen</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {modal === "liste-zusammenfuehren" && (() => {
+          const andereListn = listenIndex.filter(l => l.id !== aktiveListeId);
+          const mergeQuelle = mergeQuelleId ? lsGet(SK.liste(mergeQuelleId)) : null;
+          const neueSpalten = mergeQuelle ? TYPEN.filter(t => !aktiveListe.spalten[t].aktiv && mergeQuelle.spalten[t].aktiv) : [];
+          return (
+            <div className="overlay" onClick={() => setModal(null)}>
+              <div className="modal" onClick={e => e.stopPropagation()}>
+                <div className="modal-titel">Liste zusammenführen</div>
+                <label className="inp-label">Quelle (wird in „{aktiveListe.name}" eingefügt)</label>
+                <select className="inp" value={mergeQuelleId}
+                  onChange={e => setMergeQuelleId(e.target.value)}>
+                  <option value="">– Liste wählen –</option>
+                  {andereListn.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+                {mergeQuelle && (
+                  <div className="meldung-info" style={{marginTop:12}}>
+                    <strong>{mergeQuelle.vokabeln.length} Vokabeln</strong> werden hinzugefügt.
+                    {neueSpalten.length > 0 && (
+                      <> Neue Spalten: {neueSpalten.map(t => `${t} (${mergeQuelle.spalten[t].name || t})`).join(', ')}.</>
+                    )}
+                  </div>
+                )}
+                <div className="modal-actions">
+                  <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+                  <button className="btn btn-primary" onClick={fuehreListenZusammen} disabled={!mergeQuelleId}>Zusammenführen</button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
         {modal === "loeschen" && (
           <div className="overlay" onClick={() => setModal(null)}>
             <div className="modal" onClick={e => e.stopPropagation()}>
               <div className="modal-titel">Liste löschen?</div>
-              <p style={{fontSize:"0.9rem",color:C.muted,lineHeight:1.5}}>
+              <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
                 Diese Liste wird dauerhaft gelöscht. Das kann nicht rückgängig gemacht werden.
               </p>
               <div className="modal-actions">
@@ -894,21 +2373,17 @@ export default function VokabelApp() {
         <div className="topbar"><span className="topbar-title">Vokabel-Trainer</span></div>
         <div className="tabs">
           <button className={`tab${tab==="listen"?" aktiv":""}`} onClick={() => setTab("listen")}>Listen</button>
+          <button className={`tab${tab==="prompt"?" aktiv":""}`} onClick={() => setTab("prompt")}>KI-Prompt</button>
           <button className={`tab${tab==="einstellungen"?" aktiv":""}`} onClick={() => setTab("einstellungen")}>Einstellungen</button>
         </div>
-
         {tab === "listen" && (
           <div className="sektion">
             <div className="sektion-header">
               <div className="sektion-label">Meine Listen</div>
-              <button className="btn btn-ghost btn-sm" onClick={() => { resetImport(); setAnsicht("import"); }}>
-                Importieren
-              </button>
+              <button className="btn btn-ghost btn-sm" onClick={() => { resetImport(); setAnsicht("import"); }}>Importieren</button>
             </div>
             {listenIndex.length === 0 ? (
-              <div className="leer">
-                <div className="leer-text">Noch keine Listen vorhanden.<br/>Tippe auf <strong>+</strong> um eine neue Liste anzulegen.</div>
-              </div>
+              <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.<br/>Tippe auf <strong>+</strong> um eine neue Liste anzulegen.</div></div>
             ) : (
               <div className="karte">
                 {listenIndex.map(l => {
@@ -922,12 +2397,10 @@ export default function VokabelApp() {
                         <div className="karte-zeile-name">{l.name}</div>
                         <div className="karte-zeile-sub">
                           {anzahl} Vokabel{anzahl !== 1 ? "n" : ""}{" "}
-                          {aktSpalten.map(t => (
-                            <span key={t} className="spalten-badge aktiv">{liste.spalten[t].name || t}</span>
-                          ))}
+                          {aktSpalten.map(t => <span key={t} className="spalten-badge aktiv">{liste.spalten[t].name || t}</span>)}
                         </div>
                       </div>
-                      <span style={{color:C.muted}}>{">"}</span>
+                      <span style={{color:"#6b6560"}}>{">"}</span>
                     </div>
                   );
                 })}
@@ -935,9 +2408,122 @@ export default function VokabelApp() {
             )}
           </div>
         )}
+        {tab === "prompt" && (
+          <div className="sektion">
+            <div className="sektion-label" style={{marginBottom:8}}>Modus</div>
+            <div className="karte" style={{marginBottom:16}}>
+              <div className="toggle-row">
+                <div className="toggle-btn">
+                  <button className={`toggle-opt${promptModus==="generieren"?" aktiv":""}`} onClick={() => setPromptModus("generieren")}>Generieren</button>
+                  <button className={`toggle-opt${promptModus==="foto"?" aktiv":""}`} onClick={() => setPromptModus("foto")}>Foto umwandeln</button>
+                </div>
+              </div>
+              <div style={{padding:"0 16px 14px", fontSize:"0.82rem", color:"#6b6560"}}>
+                {promptModus === "generieren"
+                  ? "KI erstellt neue Vokabeln zum angegebenen Thema."
+                  : "KI liest Vokabeln aus einem beigefügten Foto und formatiert sie ins Import-Format."}
+              </div>
+            </div>
 
+            {promptModus === "generieren" && (
+              <>
+                <div className="sektion-label" style={{marginBottom:8}}>Thema</div>
+                <input className="inp" value={promptThema}
+                  onChange={e => setPromptThema(e.target.value)}
+                  placeholder="z.B. Irregular Verbs, Adjektive Unit 5" />
+                <div style={{display:"flex", gap:12, marginTop:12}}>
+                  <div style={{flex:1}}>
+                    <label className="inp-label">Anzahl Vokabeln</label>
+                    <input className="inp" type="number" min={1} max={200} value={promptAnzahl}
+                      onChange={e => setPromptAnzahl(e.target.value)} />
+                  </div>
+                  <div style={{flex:1}}>
+                    <label className="inp-label">Falsche Antworten (0–20)</label>
+                    <input className="inp" type="number" min={0} max={20} value={promptFalsch}
+                      onChange={e => setPromptFalsch(Math.min(20, Math.max(0, parseInt(e.target.value)||0)))} />
+                  </div>
+                </div>
+              </>
+            )}
+            {promptModus === "foto" && (
+              <div style={{marginBottom:4}}>
+                <label className="inp-label">Falsche Antworten (0–20)</label>
+                <input className="inp" type="number" min={0} max={20} value={promptFalsch}
+                  onChange={e => setPromptFalsch(Math.min(20, Math.max(0, parseInt(e.target.value)||0)))} />
+              </div>
+            )}
+
+            <div className="karte" style={{marginTop:16}}>
+              <div className="toggle-row">
+                <div>
+                  <div className="toggle-label">Beispielsätze</div>
+                  <div className="toggle-sub">Info-Spalte mit englischen Beispielsätzen</div>
+                </div>
+                <div className="toggle-btn">
+                  <button className={`toggle-opt${!promptBeispiele?" aktiv":""}`} onClick={() => setPromptBeispiele(false)}>Nein</button>
+                  <button className={`toggle-opt${promptBeispiele?" aktiv":""}`} onClick={() => setPromptBeispiele(true)}>Ja</button>
+                </div>
+              </div>
+              <div className="toggle-row" style={{borderTop:"1px solid #e0dbd2"}}>
+                <div>
+                  <div className="toggle-label">Synonyme</div>
+                  <div className="toggle-sub">Info-Spalte mit 2–4 englischen Synonymen</div>
+                </div>
+                <div className="toggle-btn">
+                  <button className={`toggle-opt${!promptSynonyme?" aktiv":""}`} onClick={() => setPromptSynonyme(false)}>Nein</button>
+                  <button className={`toggle-opt${promptSynonyme?" aktiv":""}`} onClick={() => setPromptSynonyme(true)}>Ja</button>
+                </div>
+              </div>
+            </div>
+
+            <div className="sektion-label" style={{marginBottom:8, marginTop:16}}>Generierter Prompt</div>
+            <textarea className="inp" rows={12} readOnly
+              value={generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus)}
+              style={{fontFamily:"monospace", fontSize:"0.78rem", lineHeight:1.6}} />
+
+            <button className="btn btn-primary" style={{width:"100%", marginTop:12}}
+              onClick={() => {
+                navigator.clipboard.writeText(generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus))
+                  .then(() => { setPromptKopiert(true); setTimeout(() => setPromptKopiert(false), 2000); });
+              }}>
+              {promptKopiert ? "✓ Kopiert!" : "In Zwischenablage kopieren"}
+            </button>
+          </div>
+        )}
         {tab === "einstellungen" && (
           <div className="sektion">
+            <div className="sektion-label" style={{marginBottom:10}}>Lautsprache</div>
+            <div className="karte">
+              <div className="toggle-row">
+                <div>
+                  <div className="toggle-label">Auto-Play</div>
+                  <div className="toggle-sub">Frage automatisch vorlesen wenn neue Vokabel erscheint</div>
+                </div>
+                <div className="toggle-btn">
+                  <button className={`toggle-opt${!einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:false})}>Aus</button>
+                  <button className={`toggle-opt${einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:true})}>An</button>
+                </div>
+              </div>
+              <div style={{padding:"12px 16px 16px", borderTop:"1px solid #e0dbd2"}}>
+                <div className="inp-label" style={{marginBottom:8}}>Spalten automatisch vorlesen</div>
+                <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                  {["E1","E2","D1","D2","i1","i2"].map(typ => {
+                    const vorlesen = einstellungen.vorlesen || ["E1"];
+                    const aktiv = vorlesen.includes(typ);
+                    return (
+                      <button key={typ} className={`typ-btn${aktiv?" aktiv":""}`}
+                        onClick={() => {
+                          const neu = aktiv ? vorlesen.filter(t => t !== typ) : [...vorlesen, typ];
+                          speichereEinst({...einstellungen, vorlesen: neu});
+                        }}>{typ}</button>
+                    );
+                  })}
+                </div>
+                <div style={{fontSize:"0.75rem", color:"#6b6560", marginTop:8}}>
+                  Nur wenn Frage-Spalte ausgewählt ist, wird Auto-Play ausgelöst
+                </div>
+              </div>
+            </div>
             <div className="sektion-label" style={{marginBottom:10}}>Schwierigkeits-Modus</div>
             <div className="karte">
               <div className="toggle-row">
@@ -951,6 +2537,19 @@ export default function VokabelApp() {
                 </div>
               </div>
             </div>
+            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>App</div>
+            <div className="karte">
+              <div className="karte-zeile">
+                <div className="karte-zeile-info">
+                  <div className="karte-zeile-name">App aktualisieren</div>
+                  <div className="karte-zeile-sub">Version {APP_VERSION} · Neueste Version laden</div>
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={() => {
+                  const url = window.location.href.split('?')[0] + '?t=' + Date.now();
+                  window.location.replace(url);
+                }}>Neu laden</button>
+              </div>
+            </div>
             <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Daten</div>
             <div className="karte">
               <div className="karte-zeile">
@@ -962,10 +2561,8 @@ export default function VokabelApp() {
             </div>
           </div>
         )}
-
-        {tab === "listen" && <button className="fab" onClick={() => oeffneModal("neue-liste")}>+</button>}
+        {tab === "listen" && <button className="fab" onClick={() => { setModal("neue-liste"); setModalInput(""); setModalFehler(""); }}>+</button>}
       </div>
-
       {modal === "neue-liste" && (
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
