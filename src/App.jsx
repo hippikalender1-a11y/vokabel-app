@@ -1810,6 +1810,27 @@ export default function VokabelApp() {
           <button className={`tab${tab==="einstellungen"?" aktiv":""}`} onClick={() => setTab("einstellungen")}>Einstellungen</button>
         </div>
 
+        {/* ── Listen-Header (persistent) ── */}
+        {tab === "listen" && ansicht !== "import" && ansicht !== "ki-prompt" && (
+          <div className="liste-detail-header">
+            {ansicht === "uebersicht" ? (
+              <>
+                <span className="liste-detail-header-name">Meine Listen</span>
+                <button className="btn btn-ghost btn-sm" onClick={() => { resetImport(); setAnsicht("import"); }}>Importieren</button>
+              </>
+            ) : ansicht === "liste-detail" && aktiveListe ? (
+              <>
+                <span className="liste-detail-header-name">{aktiveListe.name}</span>
+                <button className="btn btn-primary btn-sm" onClick={() => {
+                  resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
+                }}>+</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => oeffneModal("umbenennen")}>Umbenennen</button>
+                <button className="btn btn-danger btn-sm" onClick={() => oeffneModal("loeschen")}>Löschen</button>
+              </>
+            ) : null}
+          </div>
+        )}
+
         {/* ── Import Sub-Header ── */}
         {tab === "listen" && (ansicht === "import" || ansicht === "ki-prompt") && (
           <div className="liste-detail-header"
@@ -2466,10 +2487,6 @@ export default function VokabelApp() {
         {/* ── Listen-Übersicht ── */}
         {tab === "listen" && ansicht === "uebersicht" && (
           <div className="sektion">
-            <div className="sektion-header">
-              <div className="sektion-label">Meine Listen</div>
-              <button className="btn btn-ghost btn-sm" onClick={() => { resetImport(); setAnsicht("import"); }}>Importieren</button>
-            </div>
             {listenIndex.length === 0 ? (
               <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.<br/>Tippe auf <strong>+</strong> um eine neue Liste anzulegen.</div></div>
             ) : (
@@ -2503,15 +2520,6 @@ export default function VokabelApp() {
           const abfragbareSpalten = aktiveSpalten.filter(t => !t.startsWith('i'));
           return (
             <>
-              {/* Listenname-Header – nahtlose Erweiterung der Tabs */}
-              <div className="liste-detail-header">
-                <span className="liste-detail-header-name">{aktiveListe.name}</span>
-                <button className="btn btn-primary btn-sm" onClick={() => {
-                  resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
-                }}>+</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => oeffneModal("umbenennen")}>Umbenennen</button>
-                <button className="btn btn-danger btn-sm" onClick={() => oeffneModal("loeschen")}>Löschen</button>
-              </div>
             <div className="sektion">
 
               {abfragbareSpalten.length >= 2 && aktiveListe.vokabeln.length > 0 && (
