@@ -448,6 +448,7 @@ export default function VokabelApp() {
   const [vokabelAufgeklappt, setVokabelAufgeklappt] = useState(false);
   const [diktatManualPlays, setDiktatManualPlays] = useState(0);
   const [quizTabListen, setQuizTabListen] = useState([]);
+  const [listenAuswahlAufgeklappt, setListenAuswahlAufgeklappt] = useState(false);
   const eingabeRef = useRef(null);
   const flashTimerRef = useRef(null);
   const diktatPlayCountRef = useRef(0);
@@ -873,9 +874,10 @@ export default function VokabelApp() {
     let voks = kombiListe.vokabeln.filter(v => v[quizDiktatSpalte]);
     if (quizBereichTyp === "bereich" || quizCheckboxAuswahl.size > 0) {
       const von = Math.max(1, parseInt(quizBereichVon) || 1);
-      const bis = parseInt(quizBereichBis) || voks.length;
+      const hasBis = quizBereichBis !== "";
+      const bis = hasBis ? parseInt(quizBereichBis) : voks.length;
       voks = voks.filter((v, idx) => {
-        const inRange = quizBereichTyp === "bereich" && idx + 1 >= von && idx + 1 <= bis;
+        const inRange = hasBis && quizBereichTyp === "bereich" && idx + 1 >= von && idx + 1 <= bis;
         return inRange || quizCheckboxAuswahl.has(v.id);
       });
     }
@@ -918,9 +920,10 @@ export default function VokabelApp() {
     // Bereich + Checkbox mit OR
     if (quizBereichTyp === "bereich" || quizCheckboxAuswahl.size > 0) {
       const von = Math.max(1, parseInt(quizBereichVon) || 1);
-      const bis = parseInt(quizBereichBis) || voks.length;
+      const hasBis = quizBereichBis !== "";
+      const bis = hasBis ? parseInt(quizBereichBis) : voks.length;
       voks = voks.filter((v, idx) => {
-        const inRange = quizBereichTyp === "bereich" && idx + 1 >= von && idx + 1 <= bis;
+        const inRange = hasBis && quizBereichTyp === "bereich" && idx + 1 >= von && idx + 1 <= bis;
         const inCheckbox = quizCheckboxAuswahl.has(v.id);
         return inRange || inCheckbox;
       });
@@ -2122,9 +2125,10 @@ export default function VokabelApp() {
           let gefilterteVoks = basisVoks;
           if (quizBereichTyp === "bereich" || quizCheckboxAuswahl.size > 0) {
             const von = Math.max(1, parseInt(quizBereichVon)||1);
-            const bis = parseInt(quizBereichBis)||basisVoks.length;
+            const hasBis = quizBereichBis !== "";
+            const bis = hasBis ? parseInt(quizBereichBis) : basisVoks.length;
             gefilterteVoks = basisVoks.filter((v, idx) => {
-              const inRange = quizBereichTyp === "bereich" && idx+1 >= von && idx+1 <= bis;
+              const inRange = hasBis && quizBereichTyp === "bereich" && idx+1 >= von && idx+1 <= bis;
               return inRange || quizCheckboxAuswahl.has(v.id);
             });
           }
@@ -2152,33 +2156,45 @@ export default function VokabelApp() {
               )}
               <div className="sektion">
                 {/* LISTEN-AUSWAHL */}
-                <div className="sektion-label" style={{marginBottom:8}}>Listen auswählen</div>
-                {listenIndex.length === 0
-                  ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
-                  : <div className="karte" style={{marginBottom:16}}>
-                    {listenIndex.map(l => {
-                      const ll = lsGet(SK.liste(l.id));
-                      const lAbfragbar = ll ? TYPEN.filter(t => !t.startsWith('i') && ll.spalten[t].aktiv) : [];
-                      const lInfo = ll ? TYPEN.filter(t => t.startsWith('i') && ll.spalten[t].aktiv) : [];
-                      const anzahl = ll ? ll.vokabeln.length : 0;
-                      const gewaehlt = quizTabListen.includes(l.id);
-                      return (
-                        <div key={l.id} className="quiz-setup-check" style={{padding:"10px 16px"}}
-                          onClick={() => toggleQuizTabListe(l.id)}>
-                          <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
-                          <div style={{flex:1}}>
-                            <div style={{fontWeight:600, fontSize:"0.9rem"}}>{l.name}</div>
-                            <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:2}}>
-                              {anzahl} Vokabel{anzahl!==1?"n":""}
-                              {ll && lAbfragbar.map(t => <span key={t} className="spalten-badge aktiv" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
-                              {ll && lInfo.map(t => <span key={t} className="spalten-badge" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: listenAuswahlAufgeklappt ? 8 : 16, cursor:"pointer"}}
+                  onClick={() => setListenAuswahlAufgeklappt(v => !v)}>
+                  <div className="sektion-label" style={{marginBottom:0}}>Listen auswählen</div>
+                  <span style={{fontSize:"0.82rem", color:"#6b6560", display:"flex", alignItems:"center", gap:8}}>
+                    {!listenAuswahlAufgeklappt && (
+                      quizTabListen.length > 0
+                        ? <span>{kombiListe?.vokabeln.length ?? 0} Vokabeln aus {quizTabListen.length} ausgewählten Listen</span>
+                        : <span style={{fontStyle:"italic"}}>Keine Liste ausgewählt</span>
+                    )}
+                    <span>{listenAuswahlAufgeklappt ? "▲" : "▼"}</span>
+                  </span>
+                </div>
+                {listenAuswahlAufgeklappt && (
+                  listenIndex.length === 0
+                    ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
+                    : <div className="karte" style={{marginBottom:16}}>
+                      {listenIndex.map(l => {
+                        const ll = lsGet(SK.liste(l.id));
+                        const lAbfragbar = ll ? TYPEN.filter(t => !t.startsWith('i') && ll.spalten[t].aktiv) : [];
+                        const lInfo = ll ? TYPEN.filter(t => t.startsWith('i') && ll.spalten[t].aktiv) : [];
+                        const anzahl = ll ? ll.vokabeln.length : 0;
+                        const gewaehlt = quizTabListen.includes(l.id);
+                        return (
+                          <div key={l.id} className="quiz-setup-check" style={{padding:"10px 16px"}}
+                            onClick={() => toggleQuizTabListe(l.id)}>
+                            <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
+                            <div style={{flex:1}}>
+                              <div style={{fontWeight:600, fontSize:"0.9rem"}}>{l.name}</div>
+                              <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:2}}>
+                                {anzahl} Vokabel{anzahl!==1?"n":""}
+                                {ll && lAbfragbar.map(t => <span key={t} className="spalten-badge aktiv" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
+                                {ll && lInfo.map(t => <span key={t} className="spalten-badge" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                }
+                        );
+                      })}
+                    </div>
+                )}
 
                 {/* CONFIG (nur wenn Listen gewählt) */}
                 {kombiListe && (<>
@@ -2397,8 +2413,9 @@ export default function VokabelApp() {
                         ? <div style={{padding:"16px", color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
                         : basisVoks.map((vok, idx) => {
                           const von = Math.max(1, parseInt(quizBereichVon)||1);
-                          const bis = parseInt(quizBereichBis)||basisVoks.length;
-                          const inRange = quizBereichTyp==="bereich" && idx+1>=von && idx+1<=bis;
+                          const hasBis = quizBereichBis !== "";
+                          const bis = hasBis ? parseInt(quizBereichBis) : basisVoks.length;
+                          const inRange = hasBis && quizBereichTyp==="bereich" && idx+1>=von && idx+1<=bis;
                           const inChk = quizCheckboxAuswahl.has(vok.id);
                           const hl = inRange || inChk;
                           const sp1 = abfragbar[0]; const sp2 = abfragbar[1];
@@ -2452,24 +2469,26 @@ export default function VokabelApp() {
                         <button className={`toggle-opt${einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:true})}>An</button>
                       </div>
                     </div>
-                    <div style={{padding:"12px 16px 16px", borderTop:"1px solid #e0dbd2"}}>
-                      <div className="inp-label" style={{marginBottom:8}}>Spalten automatisch vorlesen</div>
-                      <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                        {["E1","E2","D1","D2","i1","i2"].map(typ => {
-                          const vorlesen = einstellungen.vorlesen || ["E1"];
-                          const aktiv = vorlesen.includes(typ);
-                          return (
-                            <button key={typ} className={`typ-btn${aktiv?" aktiv":""}`}
-                              onClick={() => speichereEinst({...einstellungen, vorlesen: aktiv ? vorlesen.filter(t=>t!==typ) : [...vorlesen,typ]})}>
-                              {typ}
-                            </button>
-                          );
-                        })}
+                    {einstellungen.autoplay && (
+                      <div style={{padding:"12px 16px 16px", borderTop:"1px solid #e0dbd2"}}>
+                        <div className="inp-label" style={{marginBottom:8}}>Spalten automatisch vorlesen</div>
+                        <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                          {["E1","E2","D1","D2","i1","i2"].map(typ => {
+                            const vorlesen = einstellungen.vorlesen || ["E1"];
+                            const aktiv = vorlesen.includes(typ);
+                            return (
+                              <button key={typ} className={`typ-btn${aktiv?" aktiv":""}`}
+                                onClick={() => speichereEinst({...einstellungen, vorlesen: aktiv ? vorlesen.filter(t=>t!==typ) : [...vorlesen,typ]})}>
+                                {typ}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div style={{fontSize:"0.75rem", color:"#6b6560", marginTop:8}}>
+                          Nur wenn Frage-Spalte ausgewählt ist, wird Auto-Play ausgelöst
+                        </div>
                       </div>
-                      <div style={{fontSize:"0.75rem", color:"#6b6560", marginTop:8}}>
-                        Nur wenn Frage-Spalte ausgewählt ist, wird Auto-Play ausgelöst
-                      </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* SCHWIERIGKEITS-MODUS */}
