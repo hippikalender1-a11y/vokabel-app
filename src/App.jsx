@@ -1870,14 +1870,6 @@ export default function VokabelApp() {
             </button>
           </div>
         )}
-        {tab === "listen" && ansicht === "ki-prompt" && (
-          <div style={{display:"flex", justifyContent:"center", gap:8, padding:"10px 16px", background:"#fff", borderBottom:"1px solid #e0dbd2"}}>
-            <button className={`typ-btn${promptModus==="generieren"?" aktiv":""}`}
-              onClick={() => setPromptModus("generieren")}>Generieren</button>
-            <button className={`typ-btn${promptModus==="foto"?" aktiv":""}`}
-              onClick={() => setPromptModus("foto")}>Foto umwandeln</button>
-          </div>
-        )}
 
         {/* ── Import Inhalt ── */}
         {tab === "listen" && ansicht === "import" && (() => {
@@ -2041,7 +2033,13 @@ export default function VokabelApp() {
         {/* ── KI-Prompt Inhalt ── */}
         {tab === "listen" && ansicht === "ki-prompt" && (
           <div className="sektion">
-            <div style={{fontSize:"0.82rem", color:"#6b6560", marginBottom:12}}>
+            <div style={{display:"flex", justifyContent:"center", gap:8, marginBottom:12}}>
+              <button className={`typ-btn${promptModus==="generieren"?" aktiv":""}`}
+                onClick={() => setPromptModus("generieren")}>Generieren</button>
+              <button className={`typ-btn${promptModus==="foto"?" aktiv":""}`}
+                onClick={() => setPromptModus("foto")}>Foto umwandeln</button>
+            </div>
+            <div style={{fontSize:"0.82rem", color:"#6b6560", marginBottom:12, textAlign:"center"}}>
               {promptModus === "generieren"
                 ? "KI erstellt neue Vokabeln zum angegebenen Thema."
                 : "KI liest Vokabeln aus einem beigefügten Foto und formatiert sie ins Import-Format."}
