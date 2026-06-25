@@ -2162,7 +2162,12 @@ export default function VokabelApp() {
                     <strong>Format:</strong> Spalten mit <code>//</code> trennen, falsche Antworten mit <code>||</code> einleiten und mit <code>|</code> trennen.<br/>
                     Erste Zeile = Spaltennamen.
                   </div>
-                  <label className="inp-label">Vokabeln einfügen</label>
+                  <div style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:6}}>
+                    <label className="inp-label" style={{marginBottom:0}}>Vokabeln einfügen</label>
+                    <button className="btn btn-ghost btn-sm" onClick={() =>
+                      navigator.clipboard.readText().then(t => { setImportText(t); setImportFehler(""); }).catch(() => {})
+                    }>Aus Zwischenablage</button>
+                  </div>
                   <textarea className="inp" rows={8}
                     placeholder={"Infinitiv // Simple Past // Deutsch\nbe || bee | bi // was/were || wos // sein || ist"}
                     value={importText}
@@ -2416,6 +2421,9 @@ export default function VokabelApp() {
               {/* Listenname-Header – nahtlose Erweiterung der Tabs */}
               <div className="liste-detail-header">
                 <span className="liste-detail-header-name">{aktiveListe.name}</span>
+                <button className="btn btn-primary btn-sm" onClick={() => {
+                  resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
+                }}>+</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => oeffneModal("umbenennen")}>Umbenennen</button>
                 <button className="btn btn-danger btn-sm" onClick={() => oeffneModal("loeschen")}>Löschen</button>
               </div>
