@@ -347,8 +347,6 @@ const CSS = `
   .quiz-setup-check:last-child{border-bottom:none;}
   .checkbox{width:20px;height:20px;border-radius:5px;border:2px solid #e0dbd2;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#f7f5f0;}
   .checkbox.checked{background:#2d6a4f;border-color:#2d6a4f;color:#fff;}
-  .liste-detail-header{background:#fff;border-bottom:1px solid #e0dbd2;padding:12px 16px;display:flex;align-items:center;gap:10px;}
-  .liste-detail-header-name{flex:1;font-size:1.05rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .diktat-hint{font-size:1.8rem;font-weight:700;letter-spacing:0.2em;color:#2d6a4f;margin:10px 0 6px;font-family:monospace;}
   .diktat-uebersetzung{font-size:0.85rem;color:#6b6560;margin-top:4px;}
   .diktat-play-btn{background:none;border:none;font-size:3rem;cursor:pointer;display:block;margin:8px auto;line-height:1;}
@@ -422,7 +420,6 @@ export default function VokabelApp() {
   const [quizSchlechtesteAnzahl, setQuizSchlechtesteAnzahl] = useState(20);
   const [quiz, setQuiz] = useState(null);
   const [diktatListeAufgeklappt, setDiktatListeAufgeklappt] = useState(false);
-  const [vokabelAufgeklappt, setVokabelAufgeklappt] = useState(false);
   const [diktatManualPlays, setDiktatManualPlays] = useState(0);
   const eingabeRef = useRef(null);
   const flashTimerRef = useRef(null);
@@ -1989,6 +1986,188 @@ export default function VokabelApp() {
     );
   }
 
+  // ── Render: Import ────────────────────────────────────────────────────────
+  if (ansicht === "import") {
+    const bl = getBestehendeListe();
+    const zielOptionen = importZielTyp === "bestehend" && bl ? getBestehendZielOptionen(bl) : null;
+    const anzahlZugewiesen = Object.values(importMapping).filter(t => t !== null).length;
+    const anzahlGesamt = importParsed ? importParsed.header.length : 0;
+
+    return (
+      <>
+        <style>{CSS}</style>
+        <div className="app">
+          <div className="topbar">
+            <button className="topbar-back" onClick={() => { resetImport(); setAnsicht("uebersicht"); }}>Zurück</button>
+            <span className="topbar-title">Importieren</span>
+          </div>
+          <div className="sektion">
+            {!importParsed ? (
+              <>
+                <div className="meldung-info">
+                  <strong>Format:</strong> Spalten mit <code>//</code> trennen, falsche Antworten mit <code>||</code> einleiten und mit <code>|</code> trennen.<br/>
+                  Erste Zeile = Spaltennamen.
+                </div>
+                <label className="inp-label">Vokabeln einfügen</label>
+                <textarea className="inp" rows={8}
+                  placeholder={"Infinitiv // Simple Past // Deutsch\nbe || bee | bi // was/were || wos // sein || ist"}
+                  value={importText}
+                  onChange={e => { setImportText(e.target.value); setImportFehler(""); }}
+                />
+                {importFehler && <div className="fehler">{importFehler}</div>}
+                <div style={{marginTop:12}}>
+                  <button className="btn btn-primary" onClick={analysiereImport}>Analysieren</button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Ziel zuerst wählen */}
+                <div className="sektion-header"><div className="sektion-label">Ziel</div></div>
+                <div className="karte">
+                  <div className="toggle-row">
+                    <div className="toggle-btn">
+                      <button className={`toggle-opt${importZielTyp==="neu"?" aktiv":""}`} onClick={() => setImportZielTyp("neu")}>Neue Liste</button>
+                      <button className={`toggle-opt${importZielTyp==="bestehend"?" aktiv":""}`} onClick={() => setImportZielTyp("bestehend")}>Bestehende</button>
+                    </div>
+                  </div>
+                  {importZielTyp === "neu" && (
+                    <div style={{padding:"0 16px 16px"}}>
+                      <label className="inp-label">Name der neuen Liste</label>
+                      <input className="inp" value={importNeuName}
+                        onChange={e => { setImportNeuName(e.target.value); setImportFehler(""); }}
+                        placeholder="z.B. Irregular Verbs" />
+                    </div>
+                  )}
+                  {importZielTyp === "bestehend" && (
+                    <div style={{padding:"0 16px 16px"}}>
+                      {listenIndex.length === 0 ? (
+                        <div style={{color:"#6b6560", fontSize:"0.85rem"}}>Noch keine Listen vorhanden.</div>
+                      ) : (
+                        <select className="inp" value={importBestehendId}
+                          onChange={e => { setImportBestehendId(e.target.value); setImportFehler(""); }}>
+                          <option value="">– Liste wählen –</option>
+                          {listenIndex.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                        </select>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Spalten zuweisen */}
+                <div className="sektion-header">
+                  <div className="sektion-label">Spalten zuweisen</div>
+                  <span className="import-zaehler"><strong>{anzahlZugewiesen}</strong> / {anzahlGesamt}</span>
+                </div>
+
+                {/* Info-Box: was wurde analysiert */}
+                <div style={{background:"#f7f5f0", border:"1px solid #e0dbd2", borderRadius:10, padding:"10px 14px", marginBottom:12, fontSize:"0.82rem", color:"#6b6560"}}>
+                  <strong>Analysiert:</strong> {importParsed.header.map(h => h.wert || "–").join(", ")}
+                </div>
+
+                <div className="karte">
+                  {importParsed.header.map((h, i) => {
+                    const zugewiesen = importMapping[i];
+                    const beispiel = importParsed.daten[0]?.[i]?.wert;
+
+                    if (zugewiesen) {
+                      // Kompakte Darstellung nach Zuweisung
+                      const label = zielOptionen
+                        ? (zielOptionen.find(o => o.typ === zugewiesen)?.label || zugewiesen)
+                        : zugewiesen;
+                      return (
+                        <div key={i} className="spalten-zuweisung">
+                          <div className="import-kompakt">
+                            <span className="spalten-badge aktiv" style={{padding:"3px 8px", fontSize:"0.78rem"}}>{label}</span>
+                            <span style={{fontSize:"0.85rem", color:"#6b6560"}}>← {h.wert || `Spalte ${i+1}`}</span>
+                            <button className="btn-icon" style={{marginLeft:"auto", color:"#c0392b", fontSize:"0.75rem"}}
+                              onClick={() => setImportMapping(prev => ({...prev, [i]: null}))}>✕</button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Volle Darstellung für nicht zugewiesene Spalten
+                    return (
+                      <div key={i} className="spalten-zuweisung">
+                        <div style={{fontWeight:600, fontSize:"0.9rem"}}>{h.wert || `Spalte ${i+1}`}</div>
+                        {beispiel && <div className="import-beispiel">z.B. „{beispiel}"</div>}
+                        <div className="typ-buttons">
+                          {zielOptionen ? (
+                            // Bestehende Liste: zeige deren Spalten nach Name
+                            zielOptionen.map(opt => {
+                              const belegt = Object.entries(importMapping).some(([k, t]) => t === opt.typ && Number(k) !== i);
+                              return (
+                                <button key={opt.typ}
+                                  className={`typ-btn${importMapping[i] === opt.typ ? " aktiv" : ""}`}
+                                  disabled={belegt}
+                                  onClick={() => setzeMapping(i, opt.typ)}
+                                  style={{fontSize:"0.75rem"}}>
+                                  {opt.neu ? `Neu: ${opt.typ}` : opt.label}
+                                </button>
+                              );
+                            })
+                          ) : (
+                            // Neue Liste: abstrakte Typ-Buttons
+                            TYPEN.map(typ => {
+                              const belegt = Object.entries(importMapping).some(([k, t]) => t === typ && Number(k) !== i);
+                              return (
+                                <button key={typ}
+                                  className={`typ-btn${importMapping[i] === typ ? " aktiv" : ""}`}
+                                  disabled={belegt}
+                                  onClick={() => setzeMapping(i, typ)}
+                                >{typ}</button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Vorschau */}
+                <div className="sektion-header">
+                  <div className="sektion-label">Vorschau ({importParsed.daten.length} Vokabeln)</div>
+                </div>
+                <div className="karte">
+                  {importParsed.daten.slice(0, 3).map((zeile, zi) => (
+                    <div key={zi} className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
+                      {zeile.map((zelle, ki) => {
+                        const typ = importMapping[ki];
+                        if (!typ) return null;
+                        const label = zielOptionen
+                          ? (zielOptionen.find(o => o.typ === typ)?.label || typ)
+                          : typ;
+                        return (
+                          <div key={ki} style={{display:"flex", alignItems:"baseline", gap:6}}>
+                            <span className="spalten-badge aktiv">{label}</span>
+                            <span style={{fontSize:"0.88rem"}}>{zelle.wert}</span>
+                            {zelle.falsch.length > 0 && <span style={{fontSize:"0.75rem", color:"#6b6560"}}>(+{zelle.falsch.length} falsch)</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                  {importParsed.daten.length > 3 && (
+                    <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.82rem"}}>… und {importParsed.daten.length - 3} weitere</div>
+                  )}
+                </div>
+
+                {importFehler && <div className="fehler">{importFehler}</div>}
+                <div style={{display:"flex", gap:10, marginBottom:24}}>
+                  <button className="btn btn-primary" onClick={() => setImportParsed(null)}>Zurück</button>
+                  <button className="btn btn-primary" onClick={fuehreImportDurch}>
+                    Importieren ({importParsed.daten.length})
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
   // ── Render: Statistik ────────────────────────────────────────────────────
   if (ansicht === "statistik" && aktiveListe) {
     const abgefragt = aktiveListe.vokabeln.filter(v => v.fortschritt);
@@ -2112,204 +2291,294 @@ export default function VokabelApp() {
     );
   }
 
-  // ── Render: Haupt (Tabs immer sichtbar) ──────────────────────────────────
+  // ── Render: Listen-Detail ─────────────────────────────────────────────────
+  if (ansicht === "liste-detail" && aktiveListe) {
+    const aktiveSpalten = TYPEN.filter(t => aktiveListe.spalten[t].aktiv);
+    const abfragbareSpalten = aktiveSpalten.filter(t => !t.startsWith('i'));
+    return (
+      <>
+        <style>{CSS}</style>
+        <div className="app">
+          <div className="topbar">
+            <button className="topbar-back" onClick={() => setAnsicht("uebersicht")}>Zurück</button>
+            <span className="topbar-title">{aktiveListe.name}</span>
+            <button className="btn btn-ghost btn-sm" onClick={() => oeffneModal("umbenennen")}>Umbenennen</button>
+            <button className="btn btn-danger btn-sm" onClick={() => oeffneModal("loeschen")}>Löschen</button>
+          </div>
+          <div className="sektion">
+            {abfragbareSpalten.length >= 2 && aktiveListe.vokabeln.length > 0 && (
+              <button className="btn btn-primary" style={{width:"100%", marginBottom:8}}
+                onClick={() => { initQuizDefaults(); setAnsicht("quiz-setup"); }}>
+                Quiz starten
+              </button>
+            )}
+            {aktiveListe.vokabeln.length > 0 && (
+              <button className="btn btn-ghost" style={{width:"100%", marginBottom:8}}
+                onClick={() => setAnsicht("statistik")}>
+                Statistik
+              </button>
+            )}
+
+            <div className="sektion-label" style={{marginBottom:10}}>Spalten</div>
+            <div className="karte">
+              {TYPEN.map(typ => {
+                const s = aktiveListe.spalten[typ];
+                return (
+                  <div key={typ} className="karte-zeile">
+                    <span className={`spalten-badge${s.aktiv ? " aktiv" : ""}`}>{typ}</span>
+                    <div className="karte-zeile-info">
+                      <div className="karte-zeile-name" style={{color: s.aktiv ? "#1a1a1a" : "#6b6560"}}>
+                        {s.aktiv ? (s.name || `Spalte ${typ}`) : "nicht belegt"}
+                      </div>
+                      {s.aktiv && <div className="karte-zeile-sub">{typ.startsWith("i") ? "Info (nicht abfragbar)" : "Abfragbar"}</div>}
+                    </div>
+                    {s.aktiv && (
+                      <button className="btn-icon" onClick={() => oeffneModal("spalte-umbenennen", typ)}>✏️</button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="sektion-header">
+              <div className="sektion-label">Vokabeln ({aktiveListe.vokabeln.length})</div>
+              <div style={{display:"flex", gap:6}}>
+                {listenIndex.filter(l => l.id !== aktiveListeId).length > 0 && (
+                  <button className="btn btn-ghost btn-sm"
+                    onClick={() => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); }}>
+                    Zusammenführen
+                  </button>
+                )}
+                <button className="btn btn-ghost btn-sm" onClick={() => {
+                  resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
+                }}>+ Importieren</button>
+              </div>
+            </div>
+
+            {aktiveListe.vokabeln.length === 0 ? (
+              <div className="leer"><div className="leer-text">Noch keine Vokabeln.<br/>Klicke auf "+ Importieren".</div></div>
+            ) : (
+              <div className="karte">
+                {aktiveListe.vokabeln.map(vok => {
+                  const score = vok.fortschritt?.score ?? null;
+                  return (
+                    <div key={vok.id} className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
+                      <div style={{display:"flex", width:"100%", justifyContent:"space-between", alignItems:"flex-start"}}>
+                        <div style={{display:"flex", flexDirection:"column", gap:3, flex:1}}>
+                          {aktiveSpalten.map(typ => vok[typ] ? (
+                            <div key={typ} style={{display:"flex", alignItems:"baseline", gap:6}}>
+                              <span className="spalten-badge aktiv">{aktiveListe.spalten[typ].name || typ}</span>
+                              <span style={{fontSize:"0.88rem"}}>{vok[typ].wert}</span>
+                              {vok[typ].falsch?.length > 0 && <span style={{fontSize:"0.75rem", color:"#6b6560"}}>(+{vok[typ].falsch.length})</span>}
+                            </div>
+                          ) : null)}
+                        </div>
+                        <div style={{display:"flex", alignItems:"center", gap:2, flexShrink:0, marginLeft:8}}>
+                          {score !== null && (
+                            <span className={`score-badge ${score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null"}`} style={{marginRight:4}}>
+                              {score > 0 ? "+" : ""}{score}
+                            </span>
+                          )}
+                          <button className="btn-icon" title="Vorlesen" onClick={() => {
+                            if (!window.speechSynthesis) return;
+                            window.speechSynthesis.cancel();
+                            aktiveSpalten.forEach(typ => {
+                              if (!vok[typ]?.wert) return;
+                              const u = new SpeechSynthesisUtterance(vok[typ].wert.split('/')[0].trim());
+                              u.lang = spalteLang(typ);
+                              window.speechSynthesis.speak(u);
+                            });
+                          }}>🔊</button>
+                          <button className="btn-icon" title="Bearbeiten" onClick={() => oeffneVokabelBearbeiten(vok)}>✏️</button>
+                          <button className="btn-icon" title="Löschen" style={{color:"#c0392b"}}
+                            onClick={() => { setBearbeiteVokabel(vok); setModal('vokabel-loeschen'); }}>✕</button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {modal === "umbenennen" && (
+          <div className="overlay" onClick={() => setModal(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-titel">Liste umbenennen</div>
+              <label className="inp-label">Neuer Name</label>
+              <input className="inp" value={modalInput} autoFocus
+                onChange={e => { setModalInput(e.target.value); setModalFehler(""); }}
+                onKeyDown={e => e.key === "Enter" && umbenennen()} />
+              {modalFehler && <div className="fehler">{modalFehler}</div>}
+              <div className="modal-actions">
+                <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+                <button className="btn btn-primary" onClick={umbenennen}>Speichern</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {modal === "spalte-umbenennen" && (
+          <div className="overlay" onClick={() => setModal(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-titel">Spalte umbenennen</div>
+              <div style={{fontSize:"0.82rem", color:"#6b6560", marginBottom:12}}>Typ: {editSpalteTyp}</div>
+              <label className="inp-label">Name</label>
+              <input className="inp" value={modalInput} autoFocus
+                onChange={e => setModalInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && speichereSpaltenname()} />
+              <div className="modal-actions">
+                <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+                <button className="btn btn-primary" onClick={speichereSpaltenname}>Speichern</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {modal === "vokabel-bearbeiten" && bearbeiteVokabel && (
+          <div className="overlay" onClick={() => setModal(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-titel">Vokabel bearbeiten</div>
+              {TYPEN.filter(t => aktiveListe.spalten[t].aktiv).map(typ => (
+                <div key={typ} style={{marginBottom:12}}>
+                  <label className="inp-label">
+                    {aktiveListe.spalten[typ].name || typ}
+                    {!typ.startsWith('i') && <span style={{fontWeight:400}}> (|| falsche Antworten)</span>}
+                  </label>
+                  <input className="inp" value={bearbeiteEingaben[typ] || ''}
+                    onChange={e => setBearbeiteEingaben(prev => ({...prev, [typ]: e.target.value}))}
+                    onKeyDown={e => e.key === 'Enter' && speichereVokabelBearbeitung()}
+                  />
+                </div>
+              ))}
+              <div className="modal-actions">
+                <button className="btn btn-ghost" onClick={() => { setModal(null); setBearbeiteVokabel(null); }}>Abbrechen</button>
+                <button className="btn btn-primary" onClick={speichereVokabelBearbeitung}>Speichern</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {modal === "vokabel-loeschen" && bearbeiteVokabel && (
+          <div className="overlay" onClick={() => setModal(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-titel">Vokabel löschen?</div>
+              <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
+                Diese Vokabel wird dauerhaft gelöscht. Der Lernfortschritt geht dabei verloren.
+              </p>
+              <div className="modal-actions">
+                <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+                <button className="btn btn-danger" onClick={() => loescheVokabel(bearbeiteVokabel.id)}>Löschen</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {modal === "liste-zusammenfuehren" && (() => {
+          const andereListn = listenIndex.filter(l => l.id !== aktiveListeId);
+          const mergeQuelle = mergeQuelleId ? lsGet(SK.liste(mergeQuelleId)) : null;
+          const neueSpalten = mergeQuelle ? TYPEN.filter(t => !aktiveListe.spalten[t].aktiv && mergeQuelle.spalten[t].aktiv) : [];
+          return (
+            <div className="overlay" onClick={() => setModal(null)}>
+              <div className="modal" onClick={e => e.stopPropagation()}>
+                <div className="modal-titel">Liste zusammenführen</div>
+                <label className="inp-label">Quelle (wird in „{aktiveListe.name}" eingefügt)</label>
+                <select className="inp" value={mergeQuelleId}
+                  onChange={e => setMergeQuelleId(e.target.value)}>
+                  <option value="">– Liste wählen –</option>
+                  {andereListn.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+                {mergeQuelle && (
+                  <div className="meldung-info" style={{marginTop:12}}>
+                    <strong>{mergeQuelle.vokabeln.length} Vokabeln</strong> werden hinzugefügt.
+                    {neueSpalten.length > 0 && (
+                      <> Neue Spalten: {neueSpalten.map(t => `${t} (${mergeQuelle.spalten[t].name || t})`).join(', ')}.</>
+                    )}
+                  </div>
+                )}
+                <div className="modal-actions">
+                  <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+                  <button className="btn btn-primary" onClick={fuehreListenZusammen} disabled={!mergeQuelleId}>Zusammenführen</button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+        {modal === "loeschen" && (
+          <div className="overlay" onClick={() => setModal(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-titel">Liste löschen?</div>
+              <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
+                Diese Liste wird dauerhaft gelöscht. Das kann nicht rückgängig gemacht werden.
+              </p>
+              <div className="modal-actions">
+                <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+                <button className="btn btn-danger" onClick={loeschen}>Löschen</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // ── Render: Übersicht ─────────────────────────────────────────────────────
   return (
     <>
       <style>{CSS}</style>
       <div className="app">
         <div className="topbar"><span className="topbar-title">Vokabel-Trainer</span></div>
         <div className="tabs">
-          <button className={`tab${tab==="listen"?" aktiv":""}`}
-            onClick={() => { setTab("listen"); setAnsicht("uebersicht"); }}>Listen</button>
+          <button className={`tab${tab==="listen"?" aktiv":""}`} onClick={() => setTab("listen")}>Listen</button>
+          <button className={`tab${tab==="prompt"?" aktiv":""}`} onClick={() => setTab("prompt")}>KI-Prompt</button>
           <button className={`tab${tab==="einstellungen"?" aktiv":""}`} onClick={() => setTab("einstellungen")}>Einstellungen</button>
         </div>
-
-        {/* ── Import Sub-Header ── */}
-        {tab === "listen" && (ansicht === "import" || ansicht === "ki-prompt") && (
-          <div className="liste-detail-header"
-            style={ansicht === "ki-prompt" ? {cursor:"pointer"} : undefined}
-            onClick={ansicht === "ki-prompt" ? () => setAnsicht("import") : undefined}>
-            <span className="liste-detail-header-name">Importieren</span>
-            {ansicht === "import" && !importParsed && (
-              <button className="btn btn-primary btn-sm" onClick={e => { e.stopPropagation(); analysiereImport(); }}>Analysieren</button>
-            )}
-            <button className="btn btn-ghost btn-sm" onClick={e => { e.stopPropagation(); setAnsicht("ki-prompt"); }}>Prompt generieren</button>
-          </div>
-        )}
-
-        {/* ── KI-Prompt Sub-Header ── */}
-        {tab === "listen" && ansicht === "ki-prompt" && (
-          <div className="liste-detail-header">
-            <span className="liste-detail-header-name">KI-Prompt generieren</span>
-            <button className={`btn btn-sm${promptModus==="generieren"?" btn-primary":" btn-ghost"}`}
-              onClick={() => setPromptModus("generieren")}>Generieren</button>
-            <button className={`btn btn-sm${promptModus==="foto"?" btn-primary":" btn-ghost"}`}
-              onClick={() => setPromptModus("foto")}>Foto umwandeln</button>
-          </div>
-        )}
-
-        {/* ── Import Inhalt ── */}
-        {tab === "listen" && ansicht === "import" && (() => {
-          const bl = getBestehendeListe();
-          const zielOptionen = importZielTyp === "bestehend" && bl ? getBestehendZielOptionen(bl) : null;
-          const anzahlZugewiesen = Object.values(importMapping).filter(t => t !== null).length;
-          const anzahlGesamt = importParsed ? importParsed.header.length : 0;
-          return (
-            <div className="sektion">
-              {!importParsed ? (
-                <>
-                  <div className="meldung-info">
-                    <strong>Format:</strong> Spalten mit <code>//</code> trennen, falsche Antworten mit <code>||</code> einleiten und mit <code>|</code> trennen.<br/>
-                    Erste Zeile = Spaltennamen.
-                  </div>
-                  <label className="inp-label">Vokabeln einfügen</label>
-                  <textarea className="inp" rows={8}
-                    placeholder={"Infinitiv // Simple Past // Deutsch\nbe || bee | bi // was/were || wos // sein || ist"}
-                    value={importText}
-                    onChange={e => { setImportText(e.target.value); setImportFehler(""); }}
-                  />
-                  {importFehler && <div className="fehler">{importFehler}</div>}
-                </>
-              ) : (
-                <>
-                  <div className="sektion-header"><div className="sektion-label">Ziel</div></div>
-                  <div className="karte">
-                    <div className="toggle-row">
-                      <div className="toggle-btn">
-                        <button className={`toggle-opt${importZielTyp==="neu"?" aktiv":""}`} onClick={() => setImportZielTyp("neu")}>Neue Liste</button>
-                        <button className={`toggle-opt${importZielTyp==="bestehend"?" aktiv":""}`} onClick={() => setImportZielTyp("bestehend")}>Bestehende</button>
-                      </div>
-                    </div>
-                    {importZielTyp === "neu" && (
-                      <div style={{padding:"0 16px 16px"}}>
-                        <label className="inp-label">Name der neuen Liste</label>
-                        <input className="inp" value={importNeuName}
-                          onChange={e => { setImportNeuName(e.target.value); setImportFehler(""); }}
-                          placeholder="z.B. Irregular Verbs" />
-                      </div>
-                    )}
-                    {importZielTyp === "bestehend" && (
-                      <div style={{padding:"0 16px 16px"}}>
-                        {listenIndex.length === 0 ? (
-                          <div style={{color:"#6b6560", fontSize:"0.85rem"}}>Noch keine Listen vorhanden.</div>
-                        ) : (
-                          <select className="inp" value={importBestehendId}
-                            onChange={e => { setImportBestehendId(e.target.value); setImportFehler(""); }}>
-                            <option value="">– Liste wählen –</option>
-                            {listenIndex.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                          </select>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="sektion-header">
-                    <div className="sektion-label">Spalten zuweisen</div>
-                    <span className="import-zaehler"><strong>{anzahlZugewiesen}</strong> / {anzahlGesamt}</span>
-                  </div>
-                  <div style={{background:"#f7f5f0", border:"1px solid #e0dbd2", borderRadius:10, padding:"10px 14px", marginBottom:12, fontSize:"0.82rem", color:"#6b6560"}}>
-                    <strong>Analysiert:</strong> {importParsed.header.map(h => h.wert || "–").join(", ")}
-                  </div>
-                  <div className="karte">
-                    {importParsed.header.map((h, i) => {
-                      const zugewiesen = importMapping[i];
-                      const beispiel = importParsed.daten[0]?.[i]?.wert;
-                      if (zugewiesen) {
-                        const label = zielOptionen
-                          ? (zielOptionen.find(o => o.typ === zugewiesen)?.label || zugewiesen)
-                          : zugewiesen;
-                        return (
-                          <div key={i} className="spalten-zuweisung">
-                            <div className="import-kompakt">
-                              <span className="spalten-badge aktiv" style={{padding:"3px 8px", fontSize:"0.78rem"}}>{label}</span>
-                              <span style={{fontSize:"0.85rem", color:"#6b6560"}}>← {h.wert || `Spalte ${i+1}`}</span>
-                              <button className="btn-icon" style={{marginLeft:"auto", color:"#c0392b", fontSize:"0.75rem"}}
-                                onClick={() => setImportMapping(prev => ({...prev, [i]: null}))}>✕</button>
-                            </div>
-                          </div>
-                        );
-                      }
-                      return (
-                        <div key={i} className="spalten-zuweisung">
-                          <div style={{fontWeight:600, fontSize:"0.9rem"}}>{h.wert || `Spalte ${i+1}`}</div>
-                          {beispiel && <div className="import-beispiel">z.B. „{beispiel}"</div>}
-                          <div className="typ-buttons">
-                            {zielOptionen ? (
-                              zielOptionen.map(opt => {
-                                const belegt = Object.entries(importMapping).some(([k, t]) => t === opt.typ && Number(k) !== i);
-                                return (
-                                  <button key={opt.typ}
-                                    className={`typ-btn${importMapping[i] === opt.typ ? " aktiv" : ""}`}
-                                    disabled={belegt}
-                                    onClick={() => setzeMapping(i, opt.typ)}
-                                    style={{fontSize:"0.75rem"}}>
-                                    {opt.neu ? `Neu: ${opt.typ}` : opt.label}
-                                  </button>
-                                );
-                              })
-                            ) : (
-                              TYPEN.map(typ => {
-                                const belegt = Object.entries(importMapping).some(([k, t]) => t === typ && Number(k) !== i);
-                                return (
-                                  <button key={typ}
-                                    className={`typ-btn${importMapping[i] === typ ? " aktiv" : ""}`}
-                                    disabled={belegt}
-                                    onClick={() => setzeMapping(i, typ)}
-                                  >{typ}</button>
-                                );
-                              })
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="sektion-header">
-                    <div className="sektion-label">Vorschau ({importParsed.daten.length} Vokabeln)</div>
-                  </div>
-                  <div className="karte">
-                    {importParsed.daten.slice(0, 3).map((zeile, zi) => (
-                      <div key={zi} className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
-                        {zeile.map((zelle, ki) => {
-                          const typ = importMapping[ki];
-                          if (!typ) return null;
-                          const label = zielOptionen
-                            ? (zielOptionen.find(o => o.typ === typ)?.label || typ)
-                            : typ;
-                          return (
-                            <div key={ki} style={{display:"flex", alignItems:"baseline", gap:6}}>
-                              <span className="spalten-badge aktiv">{label}</span>
-                              <span style={{fontSize:"0.88rem"}}>{zelle.wert}</span>
-                              {zelle.falsch.length > 0 && <span style={{fontSize:"0.75rem", color:"#6b6560"}}>(+{zelle.falsch.length} falsch)</span>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
-                    {importParsed.daten.length > 3 && (
-                      <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.82rem"}}>… und {importParsed.daten.length - 3} weitere</div>
-                    )}
-                  </div>
-                  {importFehler && <div className="fehler">{importFehler}</div>}
-                  <div style={{display:"flex", gap:10, marginBottom:24}}>
-                    <button className="btn btn-ghost" onClick={() => setImportParsed(null)}>Zurück</button>
-                    <button className="btn btn-primary" onClick={fuehreImportDurch}>
-                      Importieren ({importParsed.daten.length})
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* ── KI-Prompt Inhalt ── */}
-        {tab === "listen" && ansicht === "ki-prompt" && (
+        {tab === "listen" && (
           <div className="sektion">
-            <div style={{fontSize:"0.82rem", color:"#6b6560", marginBottom:12}}>
-              {promptModus === "generieren"
-                ? "KI erstellt neue Vokabeln zum angegebenen Thema."
-                : "KI liest Vokabeln aus einem beigefügten Foto und formatiert sie ins Import-Format."}
+            <div className="sektion-header">
+              <div className="sektion-label">Meine Listen</div>
+              <button className="btn btn-ghost btn-sm" onClick={() => { resetImport(); setAnsicht("import"); }}>Importieren</button>
             </div>
+            {listenIndex.length === 0 ? (
+              <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.<br/>Tippe auf <strong>+</strong> um eine neue Liste anzulegen.</div></div>
+            ) : (
+              <div className="karte">
+                {listenIndex.map(l => {
+                  const anzahl = vokabelAnzahl(l.id);
+                  const liste = lsGet(SK.liste(l.id));
+                  const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
+                  return (
+                    <div key={l.id} className="karte-zeile" style={{cursor:"pointer"}}
+                      onClick={() => { setAktiveListeId(l.id); setAnsicht("liste-detail"); }}>
+                      <div className="karte-zeile-info">
+                        <div className="karte-zeile-name">{l.name}</div>
+                        <div className="karte-zeile-sub">
+                          {anzahl} Vokabel{anzahl !== 1 ? "n" : ""}{" "}
+                          {aktSpalten.map(t => <span key={t} className="spalten-badge aktiv">{liste.spalten[t].name || t}</span>)}
+                        </div>
+                      </div>
+                      <span style={{color:"#6b6560"}}>{">"}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+        {tab === "prompt" && (
+          <div className="sektion">
+            <div className="sektion-label" style={{marginBottom:8}}>Modus</div>
+            <div className="karte" style={{marginBottom:16}}>
+              <div className="toggle-row">
+                <div className="toggle-btn">
+                  <button className={`toggle-opt${promptModus==="generieren"?" aktiv":""}`} onClick={() => setPromptModus("generieren")}>Generieren</button>
+                  <button className={`toggle-opt${promptModus==="foto"?" aktiv":""}`} onClick={() => setPromptModus("foto")}>Foto umwandeln</button>
+                </div>
+              </div>
+              <div style={{padding:"0 16px 14px", fontSize:"0.82rem", color:"#6b6560"}}>
+                {promptModus === "generieren"
+                  ? "KI erstellt neue Vokabeln zum angegebenen Thema."
+                  : "KI liest Vokabeln aus einem beigefügten Foto und formatiert sie ins Import-Format."}
+              </div>
+            </div>
+
             {promptModus === "generieren" && (
               <>
                 <div className="sektion-label" style={{marginBottom:8}}>Thema</div>
@@ -2337,6 +2606,7 @@ export default function VokabelApp() {
                   onChange={e => setPromptFalsch(Math.min(20, Math.max(0, parseInt(e.target.value)||0)))} />
               </div>
             )}
+
             <div className="karte" style={{marginTop:16}}>
               <div className="toggle-row">
                 <div>
@@ -2359,10 +2629,12 @@ export default function VokabelApp() {
                 </div>
               </div>
             </div>
+
             <div className="sektion-label" style={{marginBottom:8, marginTop:16}}>Generierter Prompt</div>
             <textarea className="inp" rows={12} readOnly
               value={generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus)}
               style={{fontFamily:"monospace", fontSize:"0.78rem", lineHeight:1.6}} />
+
             <button className="btn btn-primary" style={{width:"100%", marginTop:12}}
               onClick={() => {
                 navigator.clipboard.writeText(generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus))
@@ -2372,159 +2644,6 @@ export default function VokabelApp() {
             </button>
           </div>
         )}
-
-        {/* ── Listen-Übersicht ── */}
-        {tab === "listen" && ansicht === "uebersicht" && (
-          <div className="sektion">
-            <div className="sektion-header">
-              <div className="sektion-label">Meine Listen</div>
-              <button className="btn btn-ghost btn-sm" onClick={() => { resetImport(); setAnsicht("import"); }}>Importieren</button>
-            </div>
-            {listenIndex.length === 0 ? (
-              <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.<br/>Tippe auf <strong>+</strong> um eine neue Liste anzulegen.</div></div>
-            ) : (
-              <div className="karte">
-                {listenIndex.map(l => {
-                  const anzahl = vokabelAnzahl(l.id);
-                  const liste = lsGet(SK.liste(l.id));
-                  const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
-                  return (
-                    <div key={l.id} className="karte-zeile" style={{cursor:"pointer"}}
-                      onClick={() => { setAktiveListeId(l.id); setAnsicht("liste-detail"); setVokabelAufgeklappt(false); }}>
-                      <div className="karte-zeile-info">
-                        <div className="karte-zeile-name">{l.name}</div>
-                        <div className="karte-zeile-sub">
-                          {anzahl} Vokabel{anzahl !== 1 ? "n" : ""}{" "}
-                          {aktSpalten.map(t => <span key={t} className="spalten-badge aktiv">{liste.spalten[t].name || t}</span>)}
-                        </div>
-                      </div>
-                      <span style={{color:"#6b6560"}}>{">"}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Listen-Detail ── */}
-        {tab === "listen" && ansicht === "liste-detail" && aktiveListe && (() => {
-          const aktiveSpalten = TYPEN.filter(t => aktiveListe.spalten[t].aktiv);
-          const abfragbareSpalten = aktiveSpalten.filter(t => !t.startsWith('i'));
-          return (
-            <>
-              {/* Listenname-Header – nahtlose Erweiterung der Tabs */}
-              <div className="liste-detail-header">
-                <span className="liste-detail-header-name">{aktiveListe.name}</span>
-                <button className="btn btn-ghost btn-sm" onClick={() => oeffneModal("umbenennen")}>Umbenennen</button>
-                <button className="btn btn-danger btn-sm" onClick={() => oeffneModal("loeschen")}>Löschen</button>
-              </div>
-            <div className="sektion">
-
-              {abfragbareSpalten.length >= 2 && aktiveListe.vokabeln.length > 0 && (
-                <button className="btn btn-primary" style={{width:"100%", marginBottom:8}}
-                  onClick={() => { initQuizDefaults(); setAnsicht("quiz-setup"); }}>
-                  Quiz starten
-                </button>
-              )}
-              {aktiveListe.vokabeln.length > 0 && (
-                <button className="btn btn-ghost" style={{width:"100%", marginBottom:8}}
-                  onClick={() => setAnsicht("statistik")}>
-                  Statistik
-                </button>
-              )}
-
-              <div className="sektion-label" style={{marginBottom:10}}>Spalten</div>
-              <div className="karte">
-                {TYPEN.map(typ => {
-                  const s = aktiveListe.spalten[typ];
-                  return (
-                    <div key={typ} className="karte-zeile">
-                      <span className={`spalten-badge${s.aktiv ? " aktiv" : ""}`}>{typ}</span>
-                      <div className="karte-zeile-info">
-                        <div className="karte-zeile-name" style={{color: s.aktiv ? "#1a1a1a" : "#6b6560"}}>
-                          {s.aktiv ? (s.name || `Spalte ${typ}`) : "nicht belegt"}
-                        </div>
-                        {s.aktiv && <div className="karte-zeile-sub">{typ.startsWith("i") ? "Info (nicht abfragbar)" : "Abfragbar"}</div>}
-                      </div>
-                      {s.aktiv && (
-                        <button className="btn-icon" onClick={() => oeffneModal("spalte-umbenennen", typ)}>✏️</button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Vokabeln – ein-/ausklappbar */}
-              <div className="sektion-header" style={{marginTop:8}}>
-                <div style={{display:"flex", alignItems:"center", gap:8, cursor:"pointer"}}
-                  onClick={() => setVokabelAufgeklappt(v => !v)}>
-                  <div className="sektion-label">Vokabeln ({aktiveListe.vokabeln.length})</div>
-                  <span style={{color:"#6b6560", fontSize:"0.8rem"}}>{vokabelAufgeklappt ? "▲" : "▼"}</span>
-                </div>
-                <div style={{display:"flex", gap:6}}>
-                  {listenIndex.filter(l => l.id !== aktiveListeId).length > 0 && (
-                    <button className="btn btn-ghost btn-sm"
-                      onClick={() => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); }}>
-                      Zusammenführen
-                    </button>
-                  )}
-                  <button className="btn btn-ghost btn-sm" onClick={() => {
-                    resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
-                  }}>+ Importieren</button>
-                </div>
-              </div>
-
-              {vokabelAufgeklappt && (
-                aktiveListe.vokabeln.length === 0 ? (
-                  <div className="leer"><div className="leer-text">Noch keine Vokabeln.<br/>Klicke auf "+ Importieren".</div></div>
-                ) : (
-                  <div className="karte">
-                    {aktiveListe.vokabeln.map(vok => {
-                      const score = vok.fortschritt?.score ?? null;
-                      return (
-                        <div key={vok.id} className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
-                          <div style={{display:"flex", width:"100%", justifyContent:"space-between", alignItems:"flex-start"}}>
-                            <div style={{display:"flex", flexDirection:"column", gap:3, flex:1}}>
-                              {aktiveSpalten.map(typ => vok[typ] ? (
-                                <div key={typ} style={{display:"flex", alignItems:"baseline", gap:6}}>
-                                  <span className="spalten-badge aktiv">{aktiveListe.spalten[typ].name || typ}</span>
-                                  <span style={{fontSize:"0.88rem"}}>{vok[typ].wert}</span>
-                                  {vok[typ].falsch?.length > 0 && <span style={{fontSize:"0.75rem", color:"#6b6560"}}>(+{vok[typ].falsch.length})</span>}
-                                </div>
-                              ) : null)}
-                            </div>
-                            <div style={{display:"flex", alignItems:"center", gap:2, flexShrink:0, marginLeft:8}}>
-                              {score !== null && (
-                                <span className={`score-badge ${score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null"}`} style={{marginRight:4}}>
-                                  {score > 0 ? "+" : ""}{score}
-                                </span>
-                              )}
-                              <button className="btn-icon" title="Vorlesen" onClick={() => {
-                                if (!window.speechSynthesis) return;
-                                window.speechSynthesis.cancel();
-                                aktiveSpalten.forEach(typ => {
-                                  if (!vok[typ]?.wert) return;
-                                  const u = new SpeechSynthesisUtterance(vok[typ].wert.split('/')[0].trim());
-                                  u.lang = spalteLang(typ);
-                                  window.speechSynthesis.speak(u);
-                                });
-                              }}>🔊</button>
-                              <button className="btn-icon" title="Bearbeiten" onClick={() => oeffneVokabelBearbeiten(vok)}>✏️</button>
-                              <button className="btn-icon" title="Löschen" style={{color:"#c0392b"}}
-                                onClick={() => { setBearbeiteVokabel(vok); setModal('vokabel-loeschen'); }}>✕</button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )
-              )}
-            </div>
-            </>
-          );
-        })()}
         {tab === "einstellungen" && (
           <div className="sektion">
             <div className="sektion-label" style={{marginBottom:10}}>Lautsprache</div>
@@ -2596,12 +2715,8 @@ export default function VokabelApp() {
             </div>
           </div>
         )}
-        {tab === "listen" && ansicht === "uebersicht" && (
-          <button className="fab" onClick={() => { setModal("neue-liste"); setModalInput(""); setModalFehler(""); }}>+</button>
-        )}
+        {tab === "listen" && <button className="fab" onClick={() => { setModal("neue-liste"); setModalInput(""); setModalFehler(""); }}>+</button>}
       </div>
-
-      {/* ── Modals (global) ── */}
       {modal === "neue-liste" && (
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -2614,118 +2729,6 @@ export default function VokabelApp() {
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
               <button className="btn btn-primary" onClick={erstelleListe}>Erstellen</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {modal === "umbenennen" && aktiveListe && (
-        <div className="overlay" onClick={() => setModal(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-titel">Liste umbenennen</div>
-            <label className="inp-label">Neuer Name</label>
-            <input className="inp" value={modalInput} autoFocus
-              onChange={e => { setModalInput(e.target.value); setModalFehler(""); }}
-              onKeyDown={e => e.key === "Enter" && umbenennen()} />
-            {modalFehler && <div className="fehler">{modalFehler}</div>}
-            <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
-              <button className="btn btn-primary" onClick={umbenennen}>Speichern</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {modal === "spalte-umbenennen" && aktiveListe && (
-        <div className="overlay" onClick={() => setModal(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-titel">Spalte umbenennen</div>
-            <div style={{fontSize:"0.82rem", color:"#6b6560", marginBottom:12}}>Typ: {editSpalteTyp}</div>
-            <label className="inp-label">Name</label>
-            <input className="inp" value={modalInput} autoFocus
-              onChange={e => setModalInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && speichereSpaltenname()} />
-            <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
-              <button className="btn btn-primary" onClick={speichereSpaltenname}>Speichern</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {modal === "vokabel-bearbeiten" && bearbeiteVokabel && aktiveListe && (
-        <div className="overlay" onClick={() => setModal(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-titel">Vokabel bearbeiten</div>
-            {TYPEN.filter(t => aktiveListe.spalten[t].aktiv).map(typ => (
-              <div key={typ} style={{marginBottom:12}}>
-                <label className="inp-label">
-                  {aktiveListe.spalten[typ].name || typ}
-                  {!typ.startsWith('i') && <span style={{fontWeight:400}}> (|| falsche Antworten)</span>}
-                </label>
-                <input className="inp" value={bearbeiteEingaben[typ] || ''}
-                  onChange={e => setBearbeiteEingaben(prev => ({...prev, [typ]: e.target.value}))}
-                  onKeyDown={e => e.key === 'Enter' && speichereVokabelBearbeitung()}
-                />
-              </div>
-            ))}
-            <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => { setModal(null); setBearbeiteVokabel(null); }}>Abbrechen</button>
-              <button className="btn btn-primary" onClick={speichereVokabelBearbeitung}>Speichern</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {modal === "vokabel-loeschen" && bearbeiteVokabel && (
-        <div className="overlay" onClick={() => setModal(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-titel">Vokabel löschen?</div>
-            <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
-              Diese Vokabel wird dauerhaft gelöscht. Der Lernfortschritt geht dabei verloren.
-            </p>
-            <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
-              <button className="btn btn-danger" onClick={() => loescheVokabel(bearbeiteVokabel.id)}>Löschen</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {modal === "liste-zusammenfuehren" && aktiveListe && (() => {
-        const andereListn = listenIndex.filter(l => l.id !== aktiveListeId);
-        const mergeQuelle = mergeQuelleId ? lsGet(SK.liste(mergeQuelleId)) : null;
-        const neueSpalten = mergeQuelle ? TYPEN.filter(t => !aktiveListe.spalten[t].aktiv && mergeQuelle.spalten[t].aktiv) : [];
-        return (
-          <div className="overlay" onClick={() => setModal(null)}>
-            <div className="modal" onClick={e => e.stopPropagation()}>
-              <div className="modal-titel">Liste zusammenführen</div>
-              <label className="inp-label">Quelle (wird in „{aktiveListe.name}" eingefügt)</label>
-              <select className="inp" value={mergeQuelleId} onChange={e => setMergeQuelleId(e.target.value)}>
-                <option value="">– Liste wählen –</option>
-                {andereListn.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-              </select>
-              {mergeQuelle && (
-                <div className="meldung-info" style={{marginTop:12}}>
-                  <strong>{mergeQuelle.vokabeln.length} Vokabeln</strong> werden hinzugefügt.
-                  {neueSpalten.length > 0 && (
-                    <> Neue Spalten: {neueSpalten.map(t => `${t} (${mergeQuelle.spalten[t].name || t})`).join(', ')}.</>
-                  )}
-                </div>
-              )}
-              <div className="modal-actions">
-                <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
-                <button className="btn btn-primary" onClick={fuehreListenZusammen} disabled={!mergeQuelleId}>Zusammenführen</button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-      {modal === "loeschen" && (
-        <div className="overlay" onClick={() => setModal(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-titel">Liste löschen?</div>
-            <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
-              Diese Liste wird dauerhaft gelöscht. Das kann nicht rückgängig gemacht werden.
-            </p>
-            <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
-              <button className="btn btn-danger" onClick={loeschen}>Löschen</button>
             </div>
           </div>
         </div>
