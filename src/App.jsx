@@ -117,23 +117,30 @@ function generierePrompt(thema, anzahl, falsch, beispiele, synonyme, modus) {
   ].filter(Boolean).join("\n");
 
   const einleitung = modus === "foto"
-    ? `Erkenne und extrahiere alle Vokabeln aus dem beigefügten Bild.\n\nLautsprache, Aussprachehinweise und phonetische Umschriften (z.B. [ˈwɜːrd], /wɜːrd/, (wɜːrd)) sollen NICHT übernommen werden — nur das tatsächliche Wort bzw. den Satz eintragen.`
+    ? `Erstelle eine Vokabelliste aus dem beigefügten Bild.`
     : `Erstelle eine Vokabelliste zum Thema „${t}" mit genau ${n} Einträgen.`;
 
   if (modus === "foto") {
-    const fotoKopf = `Englisch // Deutsch // Beispielsatz${infoKopf.length ? " // " + infoKopf.join(" // ") : ""}`;
-    const fotoDaten = `I'm from Greenwich.${falschteilEn} // Ich bin aus Greenwich.${falschteilDe} // I'm from Germany.${infoDaten.length ? " // " + infoDaten.join(" // ") : ""}`;
+    const fotoKopf = `Spalte1 // Spalte2 // Spalte3${infoKopf.length ? " // " + infoKopf.join(" // ") : ""}`;
+    const fotoDaten = `Eintrag1${falschteilEn} // Übersetzung1${falschteilDe} // Zusatz1${infoDaten.length ? " // " + infoDaten.join(" // ") : ""}`;
     return `${einleitung}
 
-SPALTEN-ERKENNUNG — SEHR WICHTIG:
-Vokabelbücher haben oft 3 oder mehr Spalten. Erkenne ALLE sichtbaren Textspalten, auch wenn sie:
-- kursiv gedruckt sind
-- weiter rechts auf der Seite stehen
-- wie Randbemerkungen aussehen
-- Beispielsätze, Hinweise oder Notizen enthalten
-Wenn neben der Übersetzung noch weiterer Text steht (z.B. Beispielsätze auf Englisch), ist das eine eigene Spalte — übertrage sie vollständig.
+SCHRITT 1 — LAYOUT ANALYSIEREN:
+Zähle zunächst alle Textspalten im Bild. Spalten können erkennbar sein durch:
+- seitliche Abstände oder Einrückungen
+- unterschiedliche Schriftart (normal, kursiv, fett)
+- verschiedene Textfarben
+- Spalten am rechten Rand (häufig Beispielsätze oder Hinweise)
+Übertrage ALLE Spalten — auch wenn sie klein, kursiv oder randständig wirken.
 
-Format — erste Zeile = Spaltennamen (passend zum Bildinhalt), ab Zeile 2 je eine Vokabel. Spalten mit " // " trennen:
+SCHRITT 2 — PHONETIK ENTFERNEN:
+Phonetische Umschriften in eckigen Klammern [fəˈnɛtɪk], Schrägstrichen /fəˈnɛtɪk/ oder runden Klammern (fəˈnɛtɪk) werden vollständig entfernt. Nur das tatsächliche Wort oder den Satz übernehmen.
+
+SCHRITT 3 — AUSGABE:
+Erste Zeile: Spaltennamen, die den tatsächlichen Inhalt beschreiben (z.B. Englisch, Deutsch, Beispiel).
+Ab Zeile 2: je eine Vokabel oder Phrase pro Zeile, Spalten mit " // " getrennt.
+
+Beispielformat (Anzahl der Spalten an das Bild anpassen):
 ${fotoKopf}
 ${fotoDaten}
 
