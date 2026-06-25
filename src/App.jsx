@@ -117,17 +117,23 @@ function generierePrompt(thema, anzahl, falsch, beispiele, synonyme, modus) {
   ].filter(Boolean).join("\n");
 
   const einleitung = modus === "foto"
-    ? `Erkenne und extrahiere alle Vokabeln aus dem beigefügten Bild und formatiere sie exakt wie folgt. Lautsprache, Aussprachehinweise und phonetische Umschriften (z.B. [ˈwɜːrd], /wɜːrd/, (wɜːrd)) sollen NICHT übernommen werden — nur das tatsächliche Wort eintragen.`
+    ? `Erkenne und extrahiere alle Vokabeln aus dem beigefügten Bild.\n\nLautsprache, Aussprachehinweise und phonetische Umschriften (z.B. [ˈwɜːrd], /wɜːrd/, (wɜːrd)) sollen NICHT übernommen werden — nur das tatsächliche Wort bzw. den Satz eintragen.`
     : `Erstelle eine Vokabelliste zum Thema „${t}" mit genau ${n} Einträgen.`;
 
   if (modus === "foto") {
-    const fotoKopf = `Infinitiv // Simple Past // Deutsch${infoKopf.length ? " // " + infoKopf.join(" // ") : ""}`;
-    const fotoDaten = `go${falschteilEn} // went${falschteilEn} // gehen${falschteilDe}${infoDaten.length ? " // " + infoDaten.join(" // ") : ""}`;
+    const fotoKopf = `Englisch // Deutsch // Beispielsatz${infoKopf.length ? " // " + infoKopf.join(" // ") : ""}`;
+    const fotoDaten = `I'm from Greenwich.${falschteilEn} // Ich bin aus Greenwich.${falschteilDe} // I'm from Germany.${infoDaten.length ? " // " + infoDaten.join(" // ") : ""}`;
     return `${einleitung}
 
-WICHTIG: Erkenne ALLE Spalten, die im Bild vorhanden sind — es können 2, 3 oder mehr Spalten sein. Übertrage jede Spalte vollständig.
+SPALTEN-ERKENNUNG — SEHR WICHTIG:
+Vokabelbücher haben oft 3 oder mehr Spalten. Erkenne ALLE sichtbaren Textspalten, auch wenn sie:
+- kursiv gedruckt sind
+- weiter rechts auf der Seite stehen
+- wie Randbemerkungen aussehen
+- Beispielsätze, Hinweise oder Notizen enthalten
+Wenn neben der Übersetzung noch weiterer Text steht (z.B. Beispielsätze auf Englisch), ist das eine eigene Spalte — übertrage sie vollständig.
 
-Format — erste Zeile = Spaltennamen (so wie im Bild beschriftet), ab Zeile 2 je eine Vokabel. Spalten mit " // " trennen:
+Format — erste Zeile = Spaltennamen (passend zum Bildinhalt), ab Zeile 2 je eine Vokabel. Spalten mit " // " trennen:
 ${fotoKopf}
 ${fotoDaten}
 
