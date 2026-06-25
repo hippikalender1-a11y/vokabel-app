@@ -1861,9 +1861,20 @@ export default function VokabelApp() {
         {tab === "listen" && ansicht === "ki-prompt" && (
           <div className="liste-detail-header">
             <span className="liste-detail-header-name">KI-Prompt generieren</span>
-            <button className={`btn btn-sm${promptModus==="generieren"?" btn-primary":" btn-ghost"}`}
+            <button className="btn btn-primary btn-sm"
+              onClick={() => {
+                navigator.clipboard.writeText(generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus))
+                  .then(() => { setPromptKopiert(true); setTimeout(() => setPromptKopiert(false), 2000); });
+              }}>
+              {promptKopiert ? "✓ Kopiert!" : "Kopieren"}
+            </button>
+          </div>
+        )}
+        {tab === "listen" && ansicht === "ki-prompt" && (
+          <div style={{display:"flex", justifyContent:"center", gap:8, padding:"10px 16px", background:"#fff", borderBottom:"1px solid #e0dbd2"}}>
+            <button className={`typ-btn${promptModus==="generieren"?" aktiv":""}`}
               onClick={() => setPromptModus("generieren")}>Generieren</button>
-            <button className={`btn btn-sm${promptModus==="foto"?" btn-primary":" btn-ghost"}`}
+            <button className={`typ-btn${promptModus==="foto"?" aktiv":""}`}
               onClick={() => setPromptModus("foto")}>Foto umwandeln</button>
           </div>
         )}
@@ -2088,13 +2099,6 @@ export default function VokabelApp() {
             <textarea className="inp" rows={12} readOnly
               value={generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus)}
               style={{fontFamily:"monospace", fontSize:"0.78rem", lineHeight:1.6}} />
-            <button className="btn btn-primary" style={{width:"100%", marginTop:12}}
-              onClick={() => {
-                navigator.clipboard.writeText(generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus))
-                  .then(() => { setPromptKopiert(true); setTimeout(() => setPromptKopiert(false), 2000); });
-              }}>
-              {promptKopiert ? "✓ Kopiert!" : "In Zwischenablage kopieren"}
-            </button>
           </div>
         )}
 
