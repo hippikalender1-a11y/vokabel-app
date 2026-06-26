@@ -872,12 +872,12 @@ export default function VokabelApp() {
     if (!kombiListe) return;
     speichereKonfigInSlot(6, "Zuletzt verwendet");
     let voks = kombiListe.vokabeln.filter(v => v[quizDiktatSpalte]);
-    if (quizBereichTyp === "bereich" || quizCheckboxAuswahl.size > 0) {
+    const hasBisDiktat = quizBereichBis !== "";
+    if ((quizBereichTyp === "bereich" && hasBisDiktat) || quizCheckboxAuswahl.size > 0) {
       const von = Math.max(1, parseInt(quizBereichVon) || 1);
-      const hasBis = quizBereichBis !== "";
-      const bis = hasBis ? parseInt(quizBereichBis) : voks.length;
+      const bis = hasBisDiktat ? parseInt(quizBereichBis) : voks.length;
       voks = voks.filter((v, idx) => {
-        const inRange = hasBis && quizBereichTyp === "bereich" && idx + 1 >= von && idx + 1 <= bis;
+        const inRange = hasBisDiktat && quizBereichTyp === "bereich" && idx + 1 >= von && idx + 1 <= bis;
         return inRange || quizCheckboxAuswahl.has(v.id);
       });
     }
@@ -918,9 +918,9 @@ export default function VokabelApp() {
     let voks = kombiListe.vokabeln.filter(v => alleAbfragbar.every(t => v[t]));
 
     // Bereich + Checkbox mit OR
-    if (quizBereichTyp === "bereich" || quizCheckboxAuswahl.size > 0) {
+    const hasBis = quizBereichBis !== "";
+    if ((quizBereichTyp === "bereich" && hasBis) || quizCheckboxAuswahl.size > 0) {
       const von = Math.max(1, parseInt(quizBereichVon) || 1);
-      const hasBis = quizBereichBis !== "";
       const bis = hasBis ? parseInt(quizBereichBis) : voks.length;
       voks = voks.filter((v, idx) => {
         const inRange = hasBis && quizBereichTyp === "bereich" && idx + 1 >= von && idx + 1 <= bis;
@@ -2120,12 +2120,13 @@ export default function VokabelApp() {
             ? quizModus === "diktat"
               ? kombiListe.vokabeln.filter(v => v[quizDiktatSpalte])
               : relevanteTypen.length >= 2
-              ? kombiListe.vokabeln.filter(v => relevanteTypen.every(t => v[t])) : []
+              ? kombiListe.vokabeln.filter(v => relevanteTypen.every(t => v[t]))
+              : kombiListe.vokabeln
             : [];
           let gefilterteVoks = basisVoks;
-          if (quizBereichTyp === "bereich" || quizCheckboxAuswahl.size > 0) {
+          const hasBis = quizBereichBis !== "";
+          if ((quizBereichTyp === "bereich" && hasBis) || quizCheckboxAuswahl.size > 0) {
             const von = Math.max(1, parseInt(quizBereichVon)||1);
-            const hasBis = quizBereichBis !== "";
             const bis = hasBis ? parseInt(quizBereichBis) : basisVoks.length;
             gefilterteVoks = basisVoks.filter((v, idx) => {
               const inRange = hasBis && quizBereichTyp === "bereich" && idx+1 >= von && idx+1 <= bis;
