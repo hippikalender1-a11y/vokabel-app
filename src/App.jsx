@@ -667,16 +667,15 @@ export default function VokabelApp() {
     } catch {}
   }
 
-  async function teileAlsDatei(text, dateiname) {
-    const file = new File([text], dateiname, { type: 'text/plain' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: dateiname }); } catch {}
-    } else {
-      const url = URL.createObjectURL(file);
-      const a = document.createElement('a');
-      a.href = url; a.download = dateiname; a.click();
-      URL.revokeObjectURL(url);
-    }
+  function teileAlsDatei(text, dateiname) {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = dateiname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   async function teileListeAlsDateiHandler() {
     if (!aktiveListe) return;
