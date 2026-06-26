@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 
 // ── Storage ────────────────────────────────────────────────────────────────
 const SK = {
@@ -2092,7 +2092,7 @@ export default function VokabelApp() {
                     <div style={{fontSize:"0.82rem", color:"#4a7c59", marginBottom:6, display:"flex", alignItems:"center", gap:6}}>
                       <span>✓</span>
                       <span style={{fontWeight:600}}>{importDateiname}</span>
-                      <span style={{color:"#888"}}>— bereit zum Analysieren</span>
+                      <span style={{color:"#888"}}>— {importText.split('\n').filter(z => z.trim()).length} Zeilen erkannt</span>
                     </div>
                   )}
                   <textarea className="inp" rows={8}
