@@ -16,7 +16,7 @@ function lsSet(key, value) {
 }
 
 // ── Defaults ───────────────────────────────────────────────────────────────
-function defaultEinstellungen() { return { modus: "einfach", autoplay: false, vorlesen: ["E1"] }; }
+function defaultEinstellungen() { return { modus: "schwer", autoplay: false, vorlesen: ["E1"] }; }
 function defaultSessionSlots() {
   return [1,2,3,4,5].map(n => ({ slot: n, name: "", konfiguration: null }))
     .concat([{ slot: 6, name: "Zuletzt verwendet", konfiguration: null }]);
@@ -436,12 +436,12 @@ export default function VokabelApp() {
   const [importBestehendId, setImportBestehendId] = useState("");
   const [importFehler, setImportFehler] = useState("");
 
-  const [quizAusgewaehlt, setQuizAusgewaehlt] = useState([]);
-  const [quizFrageTyp, setQuizFrageTyp] = useState("");
-  const [quizAntwortTypenGeordnet, setQuizAntwortTypenGeordnet] = useState([]);
+  const [quizAusgewaehlt, setQuizAusgewaehlt] = useState(["D1", "E1"]);
+  const [quizFrageTyp, setQuizFrageTyp] = useState("D1");
+  const [quizAntwortTypenGeordnet, setQuizAntwortTypenGeordnet] = useState(["E1"]);
   const [quizInfoTypenSession, setQuizInfoTypenSession] = useState([]);
-  const [quizSpalteModus, setQuizSpalteModus] = useState({}); // {typ:"tippen"|"mc"}
-  const [quizZeigeInfo, setQuizZeigeInfo] = useState({});
+  const [quizSpalteModus, setQuizSpalteModus] = useState({ E1: "karte" });
+  const [quizZeigeInfo, setQuizZeigeInfo] = useState({ i1: true, i2: true });
   const [quizModus, setQuizModus] = useState("sequenziell");
   const [quizDiktatSpalte, setQuizDiktatSpalte] = useState("E1");
   const [quizDiktatUebersetzung, setQuizDiktatUebersetzung] = useState("D1");
@@ -1069,7 +1069,7 @@ export default function VokabelApp() {
     const frageTyp = ausgewaehlt.find(t => t.startsWith('D')) || ausgewaehlt[0] || '';
     const antwortTypen = ausgewaehlt.filter(t => t !== frageTyp);
     const spalteModus = {};
-    antwortTypen.forEach(t => { spalteModus[t] = 'tippen'; });
+    antwortTypen.forEach(t => { spalteModus[t] = 'karte'; });
     const zeigeInfo = {};
     infoVerfuegbar.forEach(t => { zeigeInfo[t] = true; });
     setQuizAusgewaehlt(ausgewaehlt);
@@ -2103,6 +2103,19 @@ export default function VokabelApp() {
             onClick={() => { setTab("statistik"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Statistik</button>
           <button className={`tab${tab==="einstellungen"?" aktiv":""}`} onClick={() => { setTab("einstellungen"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Einstellungen</button>
         </div>
+        {tab === "quiz" && (
+          <div className="liste-detail-header" style={{position:"relative"}}>
+            <span className="liste-detail-header-name" style={{color: quizTabListen.length === 0 ? "#aaa" : undefined}}>
+              {quizTabListen.length === 0
+                ? "Listen auswählen"
+                : `${getKombinierteListe(quizTabListen)?.vokabeln.length ?? 0} Vokabeln aus ${quizTabListen.length} ausgewählten ${quizTabListen.length === 1 ? "Liste" : "Listen"}`
+              }
+            </span>
+            <button className="btn btn-ghost btn-sm" onClick={() => setListenAuswahlAufgeklappt(v => !v)}>
+              {listenAuswahlAufgeklappt ? "Einklappen" : "Ausklappen"}
+            </button>
+          </div>
+        )}
         </div>{/* end sticky header wrapper */}
 
         {/* ── Listen-Header (persistent) ── */}
@@ -2181,21 +2194,6 @@ export default function VokabelApp() {
                   });
               }}>
               {promptKopiert ? "✓ Kopiert!" : "Kopieren"}
-            </button>
-          </div>
-        )}
-
-        {/* ── Quiz-Listen-Header ── */}
-        {tab === "quiz" && (
-          <div className="liste-detail-header" style={{top: headerH}}>
-            <span className="liste-detail-header-name" style={{color: quizTabListen.length === 0 ? "#aaa" : undefined}}>
-              {quizTabListen.length === 0
-                ? "Listen auswählen"
-                : `${getKombinierteListe(quizTabListen)?.vokabeln.length ?? 0} Vokabeln aus ${quizTabListen.length} ausgewählten ${quizTabListen.length === 1 ? "Liste" : "Listen"}`
-              }
-            </span>
-            <button className="btn btn-ghost btn-sm" onClick={() => setListenAuswahlAufgeklappt(v => !v)}>
-              {listenAuswahlAufgeklappt ? "Einklappen" : "Ausklappen"}
             </button>
           </div>
         )}
@@ -2555,7 +2553,7 @@ export default function VokabelApp() {
           return (
             <>
               {quizListeAufgeklappt && (
-                <div className="quiz-liste-sticky" style={{top: headerH + 44}}>
+                <div className="quiz-liste-sticky" style={{top: headerH}}>
                   <button className="btn btn-primary btn-sm"
                     onClick={() => { setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
                     Liste einklappen
