@@ -1010,12 +1010,7 @@ export default function VokabelApp() {
     const eingabe = quiz.eingabe.trim();
 
     function setzeRichtigAufgedeckt(updates) {
-      const typ = quiz.antwortTypen[quiz.antwortTypIndex];
-      const vorigeRichtig = [...quiz.vorigeRichtig, {
-        typ, wert: quiz.antwortTeile.join(" / "),
-        label: quiz.liste.spalten[typ]?.name || typ,
-      }];
-      setQuiz(prev => ({...prev, ...updates, eingabe: "", phase: "aufgedeckt", flash: false, vorigeRichtig, richtigAufgedeckt: true, feedback: ""}));
+      setQuiz(prev => ({...prev, ...updates, eingabe: "", phase: "aufgedeckt", flash: false, richtigAufgedeckt: true, feedback: ""}));
     }
 
     if (quiz.phase === "weitere") {
@@ -1073,14 +1068,9 @@ export default function VokabelApp() {
         const aktVok = getAktVok();
         const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, "richtig", 0, einstellungen.modus);
         const neueListe = speichereScore(quiz.liste, aktVok.id, neuFortschritt);
-        const vorigeRichtig = [...quiz.vorigeRichtig, {
-          typ: quiz.antwortTypen[quiz.antwortTypIndex],
-          wert: quiz.antwortTeile.join(" / "),
-          label: quiz.liste.spalten[quiz.antwortTypen[quiz.antwortTypIndex]]?.name || quiz.antwortTypen[quiz.antwortTypIndex],
-        }];
         setQuiz(prev => ({
           ...prev, liste: neueListe, mcButtons: neueButtons,
-          phase: "aufgedeckt", flash: false, vorigeRichtig, richtigAufgedeckt: true,
+          phase: "aufgedeckt", flash: false, richtigAufgedeckt: true,
         }));
       } else {
         setQuiz(prev => ({...prev, mcButtons: neueButtons}));
@@ -1147,13 +1137,19 @@ export default function VokabelApp() {
       setQuiz(prev => {
         const naechsterIdx = prev.antwortTypIndex + 1;
         if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, richtigAufgedeckt: false});
+        const currentTyp = prev.antwortTypen[prev.antwortTypIndex];
+        const currentVorig = {
+          typ: currentTyp, wert: prev.antwortTeile.join(" / "),
+          label: prev.liste.spalten[currentTyp]?.name || currentTyp,
+        };
         const nt = prev.antwortTypen[naechsterIdx];
         const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
         const ntModus = prev.mcWechsel ? "mc" : (prev.spalteModus?.[nt] || "tippen");
         const mc = ntModus === "mc" ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt) : null;
         return {...prev, flash: false, phase: "eingabe", antwortTypIndex: naechsterIdx,
           antwortTeile: teile, mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
-          weitereIndices: [], weiterePos: 0, infoSichtbar: false, richtigAufgedeckt: false};
+          weitereIndices: [], weiterePos: 0, infoSichtbar: false, richtigAufgedeckt: false,
+          vorigeRichtig: [...prev.vorigeRichtig, currentVorig]};
       });
     } else {
       setQuiz(prev => naechsteVokabelState(prev));

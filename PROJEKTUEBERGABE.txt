@@ -1,0 +1,157 @@
+================================================================
+VOKABEL-APP – PROJEKTÜBERGABE
+================================================================
+
+ZIELPLATTFORM
+-------------
+Die App ist für die Nutzung auf dem iPad optimiert (mobiles Layout,
+max-width 600px, Touch-freundliche Buttons und Abstände).
+Sie läuft als Progressive Web App im Browser und wird über
+GitHub Pages bereitgestellt.
+
+
+DATEIPFADE
+----------
+Projektordner:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\
+Quellcode:        C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\App.jsx
+                  (eine einzige React-Datei, ca. 2900 Zeilen)
+Einstiegspunkt:   C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\main.jsx
+Vite-Konfig:      C:\EIGENE DATEIEN\CLAUDE\vokabel-app\vite.config.js
+Deploy-Skript:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\deploy.ps1
+
+
+DEPLOYMENT
+----------
+Deploy per PowerShell-Skript im Projektordner:
+
+    .\deploy.ps1 "Commit-Message"
+
+Das Skript führt automatisch aus:
+  1. git add .
+  2. git commit -m "<message>"
+  3. git push
+  4. npm run deploy  →  GitHub Pages
+
+Versionsnummer wird automatisch aus dem Build-Zeitstempel erzeugt
+(__BUILD_TIME__ in vite.config.js → Datum + Uhrzeit).
+
+GitHub-Repository:  https://github.com/hippikalender1-a11y/vokabel-app
+Live-URL:           https://hippikalender1-a11y.github.io/vokabel-app/
+
+
+TECHNIK-STACK
+-------------
+- React (useState, useEffect, useRef)
+- Vite als Build-Tool
+- Kein CSS-Framework – alles inline-Styles + ein globaler CSS-String
+- localStorage für alle Datenpersistenz (keine Datenbank)
+- Web Speech API (SpeechSynthesis) für Text-to-Speech
+
+
+APP-STRUKTUR
+------------
+3 Tabs mit persistenter Tab-Leiste:
+
+  LISTEN-Tab
+    - Listenübersicht (alle Vokabellisten)
+    - Listen-Detail (Spalten, Vokabeln ein-/ausklappbar)
+    - Importieren (Text einfügen → analysieren → Spalten zuweisen → importieren)
+    - KI-Prompt generieren (Thema-basiert oder Foto-Umwandlung)
+
+  QUIZ-Tab
+    - Multi-Listen-Auswahl mit Checkboxen (einklappbar, zeigt Zusammenfassung)
+    - Gespeicherte Konfigurationen (5 Slots + "Zuletzt verwendet")
+    - Quiz-Modi: Sequenziell, Rotierend, Diktat
+    - Spalten-Konfiguration (Frage / Antwort / Info, je Modus: Tastatur / MC / Karte)
+    - Vokabel-Auswahl: Alle, Bereich (Von–Bis), manuelle Checkbox-Auswahl
+    - Reihenfolge: Zufällig, Schlechteste N, Listen-Nr.
+    - Lautsprache: Auto-Play (nur Englisch), Spalten-Auswahl
+    - Schwierigkeits-Modus: Einfach / Schwer
+
+  EINSTELLUNGEN-Tab
+    - App-Version und Neu laden
+    - Anzahl gespeicherter Listen
+
+
+DATENMODELL (localStorage)
+--------------------------
+  vokabel_listen_index          → Array [{id, name}]
+  vokabel_liste_<id>            → Listenobjekt:
+      { id, name, spalten, naechste_id, vokabeln }
+      spalten: { E1, E2, D1, D2, i1, i2 }
+                E1/E2 = Englisch (abfragbar)
+                D1/D2 = Deutsch  (abfragbar)
+                i1/i2 = Info     (nur angezeigt, nicht abgefragt)
+      vokabeln: [{ id, E1:{wert, falsch:[]}, D1:{wert,falsch:[]},
+                   fortschritt:{score,streak,...}, diktatFortschritt:{score,...} }]
+  vokabel_einstellungen         → { modus, autoplay, vorlesen:[] }
+  vokabel_session_slots         → Array[6] mit gespeicherten Quiz-Konfigurationen
+
+
+QUIZ-LOGIK
+----------
+Scoring (Tippen/MC/Karte):
+  Richtig:    +1 Score, Streak +1 (ab Streak 3: Score min. 2)
+  Falsch:     Streak Reset, Score -1/-2/-3 je nach Fehlerhäufigkeit
+  Aufdecken:  Streak Reset, aufgedecktStreak +1
+              (schwer-Modus: -1; nach 3x aufdecken: Score = -100)
+
+Diktat-Scoring:
+  Richtig:    +1
+  Aufdecken:  -1 (je falschem Versuch ein Buchstabe mehr aufgedeckt)
+
+Multi-Listen-Quiz:
+  Vokabeln erhalten kombinierte ID: "<listeId>__<vokId>"
+  Scores werden in die Originalliste zurückgeschrieben (_listeId, _origId)
+
+
+QUIZ-ANSICHTEN (Render-Reihenfolge)
+------------------------------------
+  1. Diktat – Fertig-Screen  (phase === "fertig", modus === "diktat")
+  2. Diktat – Aktiv          (modus === "diktat")
+  3. Quiz – Fertig-Screen    (phase === "fertig")
+  4. Quiz – Aktiv            (sequenziell / rotierend)
+  5. Statistik               (ansicht === "statistik")
+  6. Haupt-Layout            (Tabs, Listen, Import, KI-Prompt, Einstellungen)
+
+
+WICHTIGE VERHALTENSREGELN
+--------------------------
+- TTS (🔊) NUR für englische Spalten (E1, E2) – niemals Deutsch
+- "Bis Nr." im Bereich-Modus muss explizit eingegeben sein,
+  sonst ist der Range-Filter inaktiv (nur Checkbox-Auswahl gilt)
+- MC-Modus: Nach richtiger Antwort oder "Lösung anzeigen" werden
+  die MC-Buttons ausgeblendet; die Antwort erscheint als einzelnes
+  Wort in Fragetext-Formatierung (1.5rem, fett) in der Antwortbox
+- Tabs sind immer sichtbar (kein eigener Zurück-Button im Quiz)
+- Nach Quiz: immer zurück in den Quiz-Tab
+
+
+BEKANNTE BESONDERHEITEN
+------------------------
+- Der //-Trenner im Import trennt Spalten, ||  leitet falsche
+  MC-Antworten ein, | trennt einzelne falsche Antworten
+- Phonetische Umschriften [...] werden beim Import automatisch entfernt
+- Die Vokabelliste unter "Liste anzeigen" zeigt alle Vokabeln,
+  auch wenn noch keine Quiz-Spalten konfiguriert sind
+- Quiz-Konfigurationen (Slots) speichern KEIN Checkbox-Zustand
+
+
+================================================================
+PROMPT FÜR NEUEN CHAT
+================================================================
+
+Wir arbeiten an einer Vokabel-App (React, iPad-optimiert, eine Datei):
+
+Pfad:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\App.jsx
+GitHub:  https://github.com/hippikalender1-a11y/vokabel-app
+Deploy:  .\deploy.ps1 "commit message"  (im Projektordner ausführen)
+
+Die App hat 3 Tabs: Listen, Quiz, Einstellungen.
+Alle Quiz-Screens zeigen die Tabs persistent.
+Import und KI-Prompt sind gestapelte Sub-Header unter den Tabs im Listen-Tab.
+TTS nur für englische Spalten (E1, E2).
+
+Bitte lies zuerst App.jsx vollständig bevor du Änderungen machst.
+
+================================================================
