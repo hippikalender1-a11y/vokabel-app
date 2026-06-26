@@ -470,6 +470,8 @@ export default function VokabelApp() {
   const [quizBereichBis, setQuizBereichBis] = useState("");
   const [quizReihenfolge, setQuizReihenfolge] = useState("zufall");
   const [quizSchlechtesteAnzahl, setQuizSchlechtesteAnzahl] = useState(20);
+  const [quizSchlechtesteMaxScore, setQuizSchlechtesteMaxScore] = useState("");
+  const [quizUnbeantwortetZuerst, setQuizUnbeantwortetZuerst] = useState(true);
   const [quiz, setQuiz] = useState(null);
   const [diktatListeAufgeklappt, setDiktatListeAufgeklappt] = useState(false);
   const [vokabelAufgeklappt, setVokabelAufgeklappt] = useState(false);
@@ -1030,7 +1032,7 @@ export default function VokabelApp() {
       quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet,
       quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
       quizModus, quizBereichTyp, quizBereichVon, quizBereichBis,
-      quizReihenfolge, quizSchlechtesteAnzahl,
+      quizReihenfolge, quizSchlechtesteAnzahl, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst,
       quizDiktatSpalte, quizDiktatUebersetzung,
     };
     const aktuell = lsGet(SK.sessionSlots, defaultSessionSlots());
@@ -1054,6 +1056,8 @@ export default function VokabelApp() {
     setQuizBereichBis(k.quizBereichBis || "");
     setQuizReihenfolge(k.quizReihenfolge || "zufall");
     setQuizSchlechtesteAnzahl(k.quizSchlechtesteAnzahl || 20);
+    setQuizSchlechtesteMaxScore(k.quizSchlechtesteMaxScore ?? "");
+    setQuizUnbeantwortetZuerst(k.quizUnbeantwortetZuerst !== undefined ? k.quizUnbeantwortetZuerst : true);
     setQuizDiktatSpalte(k.quizDiktatSpalte || "E1");
     setQuizDiktatUebersetzung(k.quizDiktatUebersetzung !== undefined ? k.quizDiktatUebersetzung : "D1");
     setQuizCheckboxAuswahl(new Set());
@@ -1084,6 +1088,8 @@ export default function VokabelApp() {
     setQuizBereichBis('');
     setQuizReihenfolge('zufall');
     setQuizSchlechtesteAnzahl(20);
+    setQuizSchlechtesteMaxScore('');
+    setQuizUnbeantwortetZuerst(true);
     setQuizCheckboxAuswahl(new Set());
     setQuizListeAufgeklappt(false);
     setQuizVonBisModus(false);
@@ -1134,10 +1140,24 @@ export default function VokabelApp() {
       });
     }
     if (quizReihenfolge === "schlechteste") {
-      const n = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl) || 1), voks.length);
-      voks = [...voks].sort((a, b) => (a.diktatFortschritt?.score ?? 0) - (b.diktatFortschritt?.score ?? 0)).slice(0, n);
+      let schlecht = voks;
+      if (quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
+        const threshold = parseFloat(quizSchlechtesteMaxScore);
+        schlecht = voks.filter(v => (v.diktatFortschritt?.score ?? 0) < threshold);
+      }
+      const n = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl) || 1), schlecht.length);
+      voks = [...schlecht].sort((a, b) => (a.diktatFortschritt?.score ?? 0) - (b.diktatFortschritt?.score ?? 0)).slice(0, n);
+    } else if (quizUnbeantwortetZuerst) {
+      const unb = voks.filter(v => !v.diktatFortschritt);
+      const bea = voks.filter(v => v.diktatFortschritt);
+      if (quizReihenfolge === "listennr") {
+        voks = [...unb, ...bea];
+      } else {
+        voks = [...[...unb].sort(() => Math.random() - 0.5), ...[...bea].sort(() => Math.random() - 0.5)];
+      }
+    } else if (quizReihenfolge !== "listennr") {
+      voks = [...voks].sort(() => Math.random() - 0.5);
     }
-    if (quizReihenfolge !== "listennr") voks = [...voks].sort(() => Math.random() - 0.5);
     if (voks.length === 0) return;
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     setDiktatListeAufgeklappt(false);
@@ -1182,10 +1202,24 @@ export default function VokabelApp() {
     }
 
     if (quizReihenfolge === "schlechteste") {
-      const n = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl) || 1), voks.length);
-      voks = [...voks].sort((a, b) => (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0)).slice(0, n);
+      let schlecht = voks;
+      if (quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
+        const threshold = parseFloat(quizSchlechtesteMaxScore);
+        schlecht = voks.filter(v => (v.fortschritt?.score ?? 0) < threshold);
+      }
+      const n = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl) || 1), schlecht.length);
+      voks = [...schlecht].sort((a, b) => (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0)).slice(0, n);
+    } else if (quizUnbeantwortetZuerst) {
+      const unb = voks.filter(v => !v.fortschritt);
+      const bea = voks.filter(v => v.fortschritt);
+      if (quizReihenfolge === "listennr") {
+        voks = [...unb, ...bea];
+      } else {
+        voks = [...[...unb].sort(() => Math.random() - 0.5), ...[...bea].sort(() => Math.random() - 0.5)];
+      }
+    } else if (quizReihenfolge !== "listennr") {
+      voks = [...voks].sort(() => Math.random() - 0.5);
     }
-    if (quizReihenfolge !== "listennr") voks = [...voks].sort(() => Math.random() - 0.5);
     if (voks.length === 0) return;
 
     function getFA(idx) {
@@ -2104,34 +2138,60 @@ export default function VokabelApp() {
           <button className={`tab${tab==="einstellungen"?" aktiv":""}`} onClick={() => { setTab("einstellungen"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Einstellungen</button>
         </div>
         {tab === "quiz" && (() => {
-          let headerText;
-          if (quizTabListen.length === 0) {
-            headerText = null;
-          } else {
-            const kombiVoks = getKombinierteListe(quizTabListen)?.vokabeln ?? [];
-            const hasBis = quizBereichBis !== "";
-            let gefiltert = kombiVoks;
-            if ((quizBereichTyp === "bereich" && hasBis) || quizCheckboxAuswahl.size > 0) {
-              const von = Math.max(1, parseInt(quizBereichVon) || 1);
-              const bis = hasBis ? parseInt(quizBereichBis) : kombiVoks.length;
-              gefiltert = kombiVoks.filter((v, idx) => {
-                const inRange = hasBis && quizBereichTyp === "bereich" && idx+1 >= von && idx+1 <= bis;
-                return inRange || quizCheckboxAuswahl.has(v.id);
-              });
-            }
-            const anzahl = quizReihenfolge === "schlechteste"
-              ? Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl) || 1), gefiltert.length)
-              : gefiltert.length;
-            const n = quizTabListen.length;
-            headerText = `${anzahl} Vokabeln aus ${n} ausgewählten ${n === 1 ? "Liste" : "Listen"}`;
-          }
+          const totalVoks = quizTabListen.length > 0 ? (getKombinierteListe(quizTabListen)?.vokabeln.length ?? 0) : 0;
+          const n = quizTabListen.length;
           return (
             <div className="liste-detail-header" style={{position:"relative"}}>
-              <span className="liste-detail-header-name" style={{color: quizTabListen.length === 0 ? "#aaa" : undefined}}>
-                {quizTabListen.length === 0 ? "Listen auswählen" : headerText}
+              <span className="liste-detail-header-name" style={{color: n === 0 ? "#aaa" : undefined}}>
+                {n === 0 ? "Listen auswählen" : `${totalVoks} Vokabeln aus ${n} ausgewählten ${n === 1 ? "Liste" : "Listen"}`}
               </span>
               <button className="btn btn-ghost btn-sm" onClick={() => setListenAuswahlAufgeklappt(v => !v)}>
                 {listenAuswahlAufgeklappt ? "Einklappen" : "Ausklappen"}
+              </button>
+            </div>
+          );
+        })()}
+        {tab === "quiz" && quizTabListen.length > 0 && (() => {
+          const hKL = getKombinierteListe(quizTabListen);
+          if (!hKL) return null;
+          const hKannStarten = quizModus === "rotierend"
+            ? quizAusgewaehlt.length >= 2
+            : quizModus === "diktat"
+            ? !!hKL.spalten[quizDiktatSpalte]?.aktiv
+            : !!(quizFrageTyp && quizAntwortTypenGeordnet.length >= 1);
+          const hRel = quizModus === "sequenziell"
+            ? [quizFrageTyp, ...quizAntwortTypenGeordnet].filter(Boolean)
+            : quizAusgewaehlt;
+          let hBasis = quizModus === "diktat"
+            ? hKL.vokabeln.filter(v => v[quizDiktatSpalte])
+            : hRel.length >= 2
+            ? hKL.vokabeln.filter(v => hRel.every(t => v[t]))
+            : hKL.vokabeln;
+          const hasBisH = quizBereichBis !== "";
+          if ((quizBereichTyp === "bereich" && hasBisH) || quizCheckboxAuswahl.size > 0) {
+            const von = Math.max(1, parseInt(quizBereichVon)||1);
+            const bis = hasBisH ? parseInt(quizBereichBis) : hBasis.length;
+            hBasis = hBasis.filter((v, idx) => {
+              const inRange = hasBisH && quizBereichTyp === "bereich" && idx+1 >= von && idx+1 <= bis;
+              return inRange || quizCheckboxAuswahl.has(v.id);
+            });
+          }
+          let hVerfuegbar;
+          if (quizReihenfolge === "schlechteste") {
+            let sc = hBasis;
+            if (quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
+              const thr = parseFloat(quizSchlechtesteMaxScore);
+              sc = hBasis.filter(v => (v.fortschritt?.score ?? 0) < thr);
+            }
+            hVerfuegbar = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl)||1), sc.length);
+          } else {
+            hVerfuegbar = hBasis.length;
+          }
+          return (
+            <div style={{padding:"8px 16px", borderBottom:"1px solid #e0dbd2"}}>
+              <button className="btn btn-primary" style={{width:"100%"}}
+                onClick={starteQuiz} disabled={!hKannStarten || hVerfuegbar === 0}>
+                Quiz starten ({hVerfuegbar} Vokabeln)
               </button>
             </div>
           );
@@ -2566,9 +2626,17 @@ export default function VokabelApp() {
               return inRange || quizCheckboxAuswahl.has(v.id);
             });
           }
-          const verfuegbar = quizReihenfolge === "schlechteste"
-            ? Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl)||1), gefilterteVoks.length)
-            : gefilterteVoks.length;
+          let verfuegbar;
+          if (quizReihenfolge === "schlechteste") {
+            let scVoks = gefilterteVoks;
+            if (quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
+              const thr = parseFloat(quizSchlechtesteMaxScore);
+              scVoks = gefilterteVoks.filter(v => (v.fortschritt?.score ?? 0) < thr);
+            }
+            verfuegbar = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl)||1), scVoks.length);
+          } else {
+            verfuegbar = gefilterteVoks.length;
+          }
 
           return (
             <>
@@ -2641,13 +2709,6 @@ export default function VokabelApp() {
                       </div>
                     </>
                   )}
-                  {kannStarten && (
-                    <button className="btn btn-primary" style={{width:"100%", marginBottom:16}}
-                      onClick={starteQuiz} disabled={verfuegbar===0}>
-                      Quiz starten ({verfuegbar} Vokabeln)
-                    </button>
-                  )}
-
                   {/* ABFRAGE-MODUS */}
                   <div className="sektion-label" style={{marginBottom:8}}>Abfrage-Modus</div>
                   <div className="karte" style={{marginBottom:16}}>
@@ -2871,9 +2932,23 @@ export default function VokabelApp() {
                         <label className="inp-label">Anzahl</label>
                         <input className="inp" type="number" min={1} value={quizSchlechtesteAnzahl}
                           onChange={e => setQuizSchlechtesteAnzahl(e.target.value)} />
+                        <label className="inp-label" style={{marginTop:12}}>Score kleiner als (optional)</label>
+                        <input className="inp" type="number" value={quizSchlechtesteMaxScore}
+                          onChange={e => setQuizSchlechtesteMaxScore(e.target.value)}
+                          placeholder="z.B. -5" />
                         <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:6}}>
-                          Die {Math.min(parseInt(quizSchlechtesteAnzahl)||0, gefilterteVoks.length)} Vokabeln mit dem niedrigsten Score.
+                          {verfuegbar} Vokabeln mit dem niedrigsten Score werden abgefragt.
                         </div>
+                      </div>
+                    )}
+                    {quizReihenfolge !== "schlechteste" && (
+                      <div className="toggle-row" style={{cursor:"pointer", padding:"12px 16px", borderTop:"1px solid #e0dbd2"}}
+                        onClick={() => setQuizUnbeantwortetZuerst(v => !v)}>
+                        <div>
+                          <div className="toggle-label">Unbeantwortete zuerst</div>
+                          <div className="toggle-sub">Vokabeln ohne Score werden zuerst abgefragt</div>
+                        </div>
+                        <div className={`checkbox${quizUnbeantwortetZuerst?" checked":""}`}>{quizUnbeantwortetZuerst?"✓":""}</div>
                       </div>
                     )}
                   </div>
