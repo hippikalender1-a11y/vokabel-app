@@ -2103,19 +2103,39 @@ export default function VokabelApp() {
             onClick={() => { setTab("statistik"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Statistik</button>
           <button className={`tab${tab==="einstellungen"?" aktiv":""}`} onClick={() => { setTab("einstellungen"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Einstellungen</button>
         </div>
-        {tab === "quiz" && (
-          <div className="liste-detail-header" style={{position:"relative"}}>
-            <span className="liste-detail-header-name" style={{color: quizTabListen.length === 0 ? "#aaa" : undefined}}>
-              {quizTabListen.length === 0
-                ? "Listen auswählen"
-                : `${getKombinierteListe(quizTabListen)?.vokabeln.length ?? 0} Vokabeln aus ${quizTabListen.length} ausgewählten ${quizTabListen.length === 1 ? "Liste" : "Listen"}`
-              }
-            </span>
-            <button className="btn btn-ghost btn-sm" onClick={() => setListenAuswahlAufgeklappt(v => !v)}>
-              {listenAuswahlAufgeklappt ? "Einklappen" : "Ausklappen"}
-            </button>
-          </div>
-        )}
+        {tab === "quiz" && (() => {
+          let headerText;
+          if (quizTabListen.length === 0) {
+            headerText = null;
+          } else {
+            const kombiVoks = getKombinierteListe(quizTabListen)?.vokabeln ?? [];
+            const hasBis = quizBereichBis !== "";
+            let gefiltert = kombiVoks;
+            if ((quizBereichTyp === "bereich" && hasBis) || quizCheckboxAuswahl.size > 0) {
+              const von = Math.max(1, parseInt(quizBereichVon) || 1);
+              const bis = hasBis ? parseInt(quizBereichBis) : kombiVoks.length;
+              gefiltert = kombiVoks.filter((v, idx) => {
+                const inRange = hasBis && quizBereichTyp === "bereich" && idx+1 >= von && idx+1 <= bis;
+                return inRange || quizCheckboxAuswahl.has(v.id);
+              });
+            }
+            const anzahl = quizReihenfolge === "schlechteste"
+              ? Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl) || 1), gefiltert.length)
+              : gefiltert.length;
+            const n = quizTabListen.length;
+            headerText = `${anzahl} Vokabeln aus ${n} ausgewählten ${n === 1 ? "Liste" : "Listen"}`;
+          }
+          return (
+            <div className="liste-detail-header" style={{position:"relative"}}>
+              <span className="liste-detail-header-name" style={{color: quizTabListen.length === 0 ? "#aaa" : undefined}}>
+                {quizTabListen.length === 0 ? "Listen auswählen" : headerText}
+              </span>
+              <button className="btn btn-ghost btn-sm" onClick={() => setListenAuswahlAufgeklappt(v => !v)}>
+                {listenAuswahlAufgeklappt ? "Einklappen" : "Ausklappen"}
+              </button>
+            </div>
+          );
+        })()}
         </div>{/* end sticky header wrapper */}
 
         {/* ── Listen-Header (persistent) ── */}
