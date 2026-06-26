@@ -426,6 +426,8 @@ export default function VokabelApp() {
   const [importText, setImportText] = useState("");
   const [importDateiname, setImportDateiname] = useState("");
   const [importParsed, setImportParsed] = useState(null);
+  const [importMehrfachListen, setImportMehrfachListen] = useState(null);
+  const [importJsonData, setImportJsonData] = useState(null);
   const [importMapping, setImportMapping] = useState({});
   const [importZielTyp, setImportZielTyp] = useState("neu");
   const [importNeuName, setImportNeuName] = useState("");
@@ -708,14 +710,59 @@ export default function VokabelApp() {
 
   // ── Import-Aktionen ───────────────────────────────────────────────────────
   function resetImport() {
-    setImportText(""); setImportDateiname(""); setImportParsed(null); setImportMapping({});
+    setImportText(""); setImportDateiname(""); setImportParsed(null);
+    setImportMehrfachListen(null); setImportJsonData(null); setImportMapping({});
     setImportZielTyp("neu"); setImportNeuName(""); setImportBestehendId(""); setImportFehler("");
+  }
+
+  function autoMappeKolumnen(headerNamen) {
+    const eKeys = ['english', 'englisch'];
+    const dKeys = ['deutsch', 'german'];
+    const mapping = {};
+    let eCount = 0, dCount = 0, iCount = 0;
+    headerNamen.forEach((name, idx) => {
+      const low = name.toLowerCase().trim();
+      if (eKeys.some(k => low.includes(k)) && eCount < 2) mapping[idx] = ['E1','E2'][eCount++];
+      else if (dKeys.some(k => low.includes(k)) && dCount < 2) mapping[idx] = ['D1','D2'][dCount++];
+      else mapping[idx] = null;
+    });
+    if (eCount === 0 && dCount === 0) {
+      const pos = ['E1','D1','i1','E2','D2','i2'];
+      headerNamen.forEach((_, idx) => { mapping[idx] = pos[idx] ?? null; });
+      return mapping;
+    }
+    headerNamen.forEach((_, idx) => {
+      if (mapping[idx] === null && iCount < 2) mapping[idx] = ['i1','i2'][iCount++];
+    });
+    return mapping;
   }
 
   function analysiereImport() {
     const normiert = importText.replace(/^﻿/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const alleZeilen = normiert.trim().split('\n').filter(z => z.trim());
     if (alleZeilen.length < 2) { setImportFehler("Mindestens 2 Zeilen erforderlich."); return; }
+
+    const hashIdx = alleZeilen.reduce((acc, z, i) => z.startsWith('# ') ? [...acc, i] : acc, []);
+    if (hashIdx.length > 1) {
+      const sektionen = hashIdx.map((startIdx, si) => {
+        const endIdx = hashIdx[si + 1] ?? alleZeilen.length;
+        const sz = alleZeilen.slice(startIdx, endIdx);
+        const name = sz[0].slice(2).trim();
+        const rest = sz.slice(1);
+        if (rest.length < 2) return null;
+        const header = parseZeile(rest[0]);
+        const daten = rest.slice(1).map(parseZeile);
+        const mapping = autoMappeKolumnen(header.map(h => h.wert));
+        return { name, header, daten, mapping };
+      }).filter(Boolean);
+      if (!sektionen.length) { setImportFehler("Keine gültigen Listen gefunden."); return; }
+      setImportMehrfachListen(sektionen);
+      setImportParsed(null);
+      setImportFehler("");
+      return;
+    }
+
+    setImportMehrfachListen(null);
     let zeilen = alleZeilen;
     let erkannterName = '';
     if (zeilen[0].startsWith('# ')) {
@@ -731,6 +778,58 @@ export default function VokabelApp() {
     setImportMapping(mapping);
     if (erkannterName && !importNeuName) setImportNeuName(erkannterName);
     setImportFehler("");
+  }
+
+  function importiereAlleListen() {
+    if (!importMehrfachListen?.length) return;
+    const neuerIndex = [...listenIndex];
+    let n = 0;
+    for (const s of importMehrfachListen) {
+      const abfragbar = Object.values(s.mapping).filter(t => t && !t.startsWith('i'));
+      if (abfragbar.length < 2) continue;
+      const id = "liste_" + Date.now() + "_" + n;
+      const liste = neueListeObjekt(id, s.name || `Import ${n + 1}`);
+      s.header.forEach((h, i) => {
+        const typ = s.mapping[i];
+        if (typ) liste.spalten[typ] = { name: h.wert, aktiv: true };
+      });
+      s.daten.forEach(zeile => {
+        const vok = { id: liste.naechste_id++ };
+        Object.entries(s.mapping).forEach(([idx, typ]) => {
+          if (typ && zeile[Number(idx)]) vok[typ] = { wert: zeile[Number(idx)].wert, falsch: zeile[Number(idx)].falsch };
+        });
+        liste.vokabeln.push(vok);
+      });
+      lsSet(SK.liste(id), liste);
+      neuerIndex.push({ id, name: liste.name });
+      n++;
+    }
+    speichereIndex(neuerIndex);
+    resetImport();
+    setAnsicht("uebersicht");
+  }
+
+  function importiereAusJsonDaten() {
+    if (!importJsonData?.length) return;
+    const neuerIndex = [...listenIndex];
+    importJsonData.forEach((l, i) => {
+      const id = "liste_" + Date.now() + "_j" + i;
+      const liste = { ...l, id };
+      lsSet(SK.liste(id), liste);
+      neuerIndex.push({ id, name: liste.name });
+    });
+    speichereIndex(neuerIndex);
+    resetImport();
+    setAnsicht("uebersicht");
+  }
+
+  function exportiereAlsJson(ids) {
+    const listen = ids.map(id => lsGet(SK.liste(id))).filter(Boolean);
+    const text = JSON.stringify(listen, null, 2);
+    const name = ids.length === 1
+      ? (listen[0]?.name || 'Liste') + '.json'
+      : ids.length + '_Listen_Backup.json';
+    teileAlsDatei(text, name);
   }
 
   function setzeMapping(colIndex, typ) {
@@ -1993,6 +2092,7 @@ export default function VokabelApp() {
                   {exportKopiert ? "✓" : "📋"}
                 </button>
                 <button className="btn btn-ghost btn-sm" onClick={teileListeAlsDateiHandler}>📄</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])}>💾</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => oeffneModal("umbenennen")}>Umbenennen</button>
                 <button className="btn btn-danger btn-sm" onClick={() => oeffneModal("loeschen")}>Löschen</button>
               </>
@@ -2006,7 +2106,7 @@ export default function VokabelApp() {
             style={ansicht === "ki-prompt" ? {cursor:"pointer"} : undefined}
             onClick={ansicht === "ki-prompt" ? () => setAnsicht("import") : undefined}>
             <span className="liste-detail-header-name">Importieren</span>
-            {ansicht === "import" && !importParsed && (
+            {ansicht === "import" && !importParsed && !importMehrfachListen && !importJsonData && (
               <button className="btn btn-primary btn-sm" onClick={e => { e.stopPropagation(); analysiereImport(); }}>Analysieren</button>
             )}
             {ansicht === "import" && letzterPrompt && (
@@ -2047,13 +2147,55 @@ export default function VokabelApp() {
           const anzahlGesamt = importParsed ? importParsed.header.length : 0;
           return (
             <div className="sektion">
-              {!importParsed ? (
+              {importJsonData ? (
+                <>
+                  <div className="meldung-info" style={{background:"#e8f5e9", borderColor:"#a5d6a7"}}>
+                    <strong>JSON-Backup erkannt:</strong> {importJsonData.length} Liste{importJsonData.length !== 1 ? "n" : ""} gefunden.
+                  </div>
+                  <div className="karte">
+                    {importJsonData.map((l, i) => (
+                      <div key={i} className="karte-zeile">
+                        <span style={{fontWeight:600}}>{l.name}</span>
+                        <span style={{color:"#6b6560", fontSize:"0.85rem", marginLeft:"auto"}}>{l.vokabeln?.length || 0} Vokabeln</span>
+                      </div>
+                    ))}
+                  </div>
+                  {importFehler && <div className="fehler">{importFehler}</div>}
+                  <div style={{display:"flex", gap:10, marginBottom:24}}>
+                    <button className="btn btn-ghost" onClick={() => { setImportJsonData(null); setImportDateiname(""); }}>Zurück</button>
+                    <button className="btn btn-primary" onClick={importiereAusJsonDaten}>
+                      Alle importieren ({importJsonData.length})
+                    </button>
+                  </div>
+                </>
+              ) : importMehrfachListen ? (
+                <>
+                  <div className="meldung-info">
+                    <strong>{importMehrfachListen.length} Listen erkannt.</strong> Spalten werden automatisch zugewiesen.
+                  </div>
+                  <div className="karte">
+                    {importMehrfachListen.map((s, i) => (
+                      <div key={i} className="karte-zeile">
+                        <span style={{fontWeight:600}}>{s.name}</span>
+                        <span style={{color:"#6b6560", fontSize:"0.85rem", marginLeft:"auto"}}>{s.daten.length} Vokabeln</span>
+                      </div>
+                    ))}
+                  </div>
+                  {importFehler && <div className="fehler">{importFehler}</div>}
+                  <div style={{display:"flex", gap:10, marginBottom:24}}>
+                    <button className="btn btn-ghost" onClick={() => { setImportMehrfachListen(null); }}>Zurück</button>
+                    <button className="btn btn-primary" onClick={importiereAlleListen}>
+                      Alle importieren ({importMehrfachListen.length})
+                    </button>
+                  </div>
+                </>
+              ) : !importParsed ? (
                 <>
                   <div className="meldung-info">
                     <strong>Format:</strong> Spalten mit <code>//</code> trennen, falsche Antworten mit <code>||</code> einleiten und mit <code>|</code> trennen.<br/>
                     Erste Zeile = Spaltennamen.
                   </div>
-                  <input type="file" accept=".txt,.text" ref={fileInputRef} style={{display:"none"}}
+                  <input type="file" accept=".txt,.text,.json" ref={fileInputRef} style={{display:"none"}}
                     onChange={e => {
                       const file = e.target.files[0];
                       if (!file) return;
@@ -2062,8 +2204,20 @@ export default function VokabelApp() {
                       reader.onload = ev => {
                         const raw = ev.target.result || "";
                         const bereinigt = raw.replace(/^﻿/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-                        setImportText(bereinigt);
-                        setImportFehler("");
+                        const trimmed = bereinigt.trim();
+                        if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                          try {
+                            let parsed = JSON.parse(trimmed);
+                            if (!Array.isArray(parsed)) parsed = [parsed];
+                            const listen = parsed.filter(l => l && l.name && l.vokabeln);
+                            if (!listen.length) { setImportFehler("Keine gültigen Listen im JSON."); return; }
+                            setImportJsonData(listen);
+                            setImportText(""); setImportFehler("");
+                          } catch { setImportFehler("JSON konnte nicht gelesen werden."); }
+                        } else {
+                          setImportText(bereinigt);
+                          setImportFehler("");
+                        }
                       };
                       reader.readAsText(file, "UTF-8");
                       e.target.value = "";
@@ -3173,6 +3327,7 @@ export default function VokabelApp() {
               {exportKopiert ? "✓ Kopiert!" : "📋 Kopieren"}
             </button>
             <button className="btn btn-ghost" onClick={exportiereAusgewaehlteAlsDateiHandler}>📄 Datei</button>
+            <button className="btn btn-ghost" onClick={() => exportiereAlsJson([...exportAusgewaehlt])}>💾 JSON</button>
           </div>
         )}
       </div>
