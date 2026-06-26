@@ -1356,8 +1356,10 @@ export default function VokabelApp() {
             {/* Lautsprecher-Box – nicht Teil der Weiter-Zone */}
             <div className="quiz-frage-box" style={{textAlign:"center", marginBottom:14, flexShrink:0}}>
               <div className="quiz-label">{quiz.liste.spalten[quiz.diktatSpalte]?.name || quiz.diktatSpalte} — hör genau hin!</div>
-              <button className="diktat-play-btn"
-                onClick={() => { setDiktatManualPlays(p => p + 1); sprich(diktatWort, spalteLang(quiz.diktatSpalte)); }}>🔊</button>
+              {quiz.diktatSpalte.startsWith('E') && (
+                <button className="diktat-play-btn"
+                  onClick={() => { setDiktatManualPlays(p => p + 1); sprich(diktatWort, spalteLang(quiz.diktatSpalte)); }}>🔊</button>
+              )}
               {uebersetzung && diktatManualPlays >= 2 && (
                 <div className="diktat-uebersetzung">
                   {quiz.liste.spalten[quiz.diktatUeberspalte]?.name || quiz.diktatUeberspalte}: {uebersetzung}
@@ -1411,7 +1413,9 @@ export default function VokabelApp() {
                 {quiz.phase === "eingabe" && (
                   <>
                     <button className="btn btn-primary" onClick={pruefeDiktatAntwort}>Prüfen</button>
-                    <button className="btn btn-ghost" onClick={() => sprichDiktatNochmal(diktatWort, spalteLang(quiz.diktatSpalte))}>🔊 Nochmal</button>
+                    {quiz.diktatSpalte.startsWith('E') && (
+                      <button className="btn btn-ghost" onClick={() => sprichDiktatNochmal(diktatWort, spalteLang(quiz.diktatSpalte))}>🔊 Nochmal</button>
+                    )}
                     <button className="btn btn-ghost" onClick={zeigeDiktatLoesung}>Lösung anzeigen</button>
                   </>
                 )}
@@ -1512,8 +1516,10 @@ export default function VokabelApp() {
                       <div className="quiz-label">{frageLabel}</div>
                       <div style={{display:"flex", alignItems:"baseline", gap:8, justifyContent:"center"}}>
                         <div className="quiz-frage-text" style={{textAlign:"center"}}>{frageWert}</div>
-                        <button className="btn-icon" style={{fontSize:"1.1rem", padding:"2px 4px"}}
-                          onClick={e => { e.stopPropagation(); sprich(frageWert, spalteLang(quiz.frageTyp)); }}>🔊</button>
+                        {quiz.frageTyp.startsWith('E') && (
+                          <button className="btn-icon" style={{fontSize:"1.1rem", padding:"2px 4px"}}
+                            onClick={e => { e.stopPropagation(); sprich(frageWert, spalteLang(quiz.frageTyp)); }}>🔊</button>
+                        )}
                       </div>
                     </div>
 
@@ -1522,8 +1528,10 @@ export default function VokabelApp() {
                         <div className="quiz-vorig-label">✓ {v.label}</div>
                         <div style={{textAlign:"center", fontSize:"1rem", display:"flex", alignItems:"center", justifyContent:"center", gap:6}}>
                           <strong>{v.wert}</strong>
-                          <button className="btn-icon" style={{fontSize:"0.95rem", padding:"2px 4px"}}
-                            onClick={e => { e.stopPropagation(); sprich(v.wert, spalteLang(v.typ)); }}>🔊</button>
+                          {v.typ.startsWith('E') && (
+                            <button className="btn-icon" style={{fontSize:"0.95rem", padding:"2px 4px"}}
+                              onClick={e => { e.stopPropagation(); sprich(v.wert, spalteLang(v.typ)); }}>🔊</button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1538,7 +1546,7 @@ export default function VokabelApp() {
                         <div className="karte-aufdecken">Tippe zum Aufdecken</div>
                       )}
                       {/* MC */}
-                      {aktSpaltModus === "mc" && !quiz.flash && (quiz.phase === "eingabe" || (quiz.phase === "aufgedeckt" && !richtigAufgedeckt)) && (
+                      {aktSpaltModus === "mc" && !quiz.flash && quiz.phase === "eingabe" && (
                         <div style={{display:"flex", flexWrap:"wrap", gap:8, marginTop:8, justifyContent:"center"}}>
                           {(quiz.mcButtons || []).map((btn, idx) => (
                             <button key={idx}
@@ -1586,17 +1594,17 @@ export default function VokabelApp() {
                       )}
                       {/* Lösung: Aufgedeckt */}
                       {!quiz.flash && quiz.phase === "aufgedeckt" && (
-                        aktSpaltModus === "mc" && richtigAufgedeckt
-                          ? <div style={{display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6, marginTop:16}}>
-                              <div style={{fontSize:"1.45rem", fontWeight:700, textAlign:"center", lineHeight:1.3}}>
-                                {frageWert} – {quiz.antwortTeile.join(" / ")}
-                              </div>
-                              <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
-                                onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}>🔊</button>
+                        aktSpaltModus === "mc"
+                          ? <div style={{display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginTop:8, minHeight:60}}>
+                              <div className="quiz-frage-text" style={{textAlign:"center"}}>{quiz.antwortTeile.join(" / ")}</div>
+                              {aktAntwortTyp.startsWith('E') && (
+                                <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
+                                  onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}>🔊</button>
+                              )}
                             </div>
                           : <div style={{textAlign:"center", marginTop:8, fontSize:"1.15rem", display:"flex", alignItems:"center", justifyContent:"center", gap:6}}>
                               <strong>{quiz.antwortTeile.join(" / ")}</strong>
-                              {!isKarteAufgedeckt && (
+                              {!isKarteAufgedeckt && aktAntwortTyp.startsWith('E') && (
                                 <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
                                   onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}>🔊</button>
                               )}
@@ -2648,16 +2656,18 @@ export default function VokabelApp() {
                                   {score > 0 ? "+" : ""}{score}
                                 </span>
                               )}
-                              <button className="btn-icon" title="Vorlesen" onClick={() => {
-                                if (!window.speechSynthesis) return;
-                                window.speechSynthesis.cancel();
-                                aktiveSpalten.forEach(typ => {
-                                  if (!vok[typ]?.wert) return;
-                                  const u = new SpeechSynthesisUtterance(vok[typ].wert.split('/')[0].trim());
-                                  u.lang = spalteLang(typ);
-                                  window.speechSynthesis.speak(u);
-                                });
-                              }}>🔊</button>
+                              {aktiveSpalten.some(typ => typ.startsWith('E') && vok[typ]?.wert) && (
+                                <button className="btn-icon" title="Vorlesen" onClick={() => {
+                                  if (!window.speechSynthesis) return;
+                                  window.speechSynthesis.cancel();
+                                  aktiveSpalten.filter(typ => typ.startsWith('E')).forEach(typ => {
+                                    if (!vok[typ]?.wert) return;
+                                    const u = new SpeechSynthesisUtterance(vok[typ].wert.split('/')[0].trim());
+                                    u.lang = spalteLang(typ);
+                                    window.speechSynthesis.speak(u);
+                                  });
+                                }}>🔊</button>
+                              )}
                               <button className="btn-icon" title="Bearbeiten" onClick={() => oeffneVokabelBearbeiten(vok)}>✏️</button>
                               <button className="btn-icon" title="Löschen" style={{color:"#c0392b"}}
                                 onClick={() => { setBearbeiteVokabel(vok); setModal('vokabel-loeschen'); }}>✕</button>
