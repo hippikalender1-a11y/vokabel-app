@@ -1245,6 +1245,7 @@ export default function VokabelApp() {
       antwortTeile: erstesTeile, weitereIndices: [], weiterePos: 0,
       mcButtons: erstesMC?.buttons || [], mcRichtig: erstesMC?.richtig || [],
       vorigeRichtig: [], sessionFalsch: {}, feedback: "", mcWechsel: false,
+      aktuelleFehlversuche: 0, falschFlash: false,
     });
     setAnsicht("quiz");
   }
@@ -1279,7 +1280,7 @@ export default function VokabelApp() {
       phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
       mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
       vorigeRichtig: [], infoSichtbar: false, infoSeite: 0, feedback: "",
-      spalteModus, mcWechsel: false};
+      spalteModus, mcWechsel: false, aktuelleFehlversuche: 0, falschFlash: false};
   }
 
   // Setzt flash, wartet 500ms, führt dann advanceFn aus
@@ -1296,7 +1297,9 @@ export default function VokabelApp() {
     const eingabe = quiz.eingabe.trim();
 
     function setzeRichtigAufgedeckt(updates) {
-      setQuiz(prev => ({...prev, ...updates, eingabe: "", phase: "aufgedeckt", flash: false, richtigAufgedeckt: true, feedback: ""}));
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+      setQuiz(prev => ({...prev, ...updates, eingabe: "", phase: "aufgedeckt", flash: false,
+        richtigAufgedeckt: true, feedback: "", falschFlash: false, aktuelleFehlversuche: 0}));
     }
 
     if (quiz.phase === "weitere") {
@@ -1333,11 +1336,25 @@ export default function VokabelApp() {
       }
     } else {
       const vokId = aktVok.id;
-      const neuerCount = (quiz.sessionFalsch[vokId] || 0) + 1;
-      const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, "falsch", neuerCount, einstellungen.modus);
-      const neueListe = speichereScore(quiz.liste, vokId, neuFortschritt);
-      setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", phase: "falsch",
-        sessionFalsch: {...prev.sessionFalsch, [vokId]: neuerCount}, feedback: "Nicht richtig."}));
+      const neueFehlversuche = (quiz.aktuelleFehlversuche || 0) + 1;
+      if (neueFehlversuche >= 3) {
+        // 3. Fehlversuch: Score abziehen, Lösung automatisch anzeigen
+        const neuerCount = (quiz.sessionFalsch[vokId] || 0) + 1;
+        const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, "falsch", neuerCount, einstellungen.modus);
+        const neueListe = speichereScore(quiz.liste, vokId, neuFortschritt);
+        if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+        setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", phase: "aufgedeckt", flash: false,
+          feedback: "", falschFlash: false, aktuelleFehlversuche: 0,
+          sessionFalsch: {...prev.sessionFalsch, [vokId]: neuerCount}}));
+      } else {
+        // 1. oder 2. Fehlversuch: kurz rot aufleuchten, dann zurück
+        if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+        setQuiz(prev => ({...prev, eingabe: "", falschFlash: true,
+          feedback: "Nicht richtig.", aktuelleFehlversuche: neueFehlversuche}));
+        flashTimerRef.current = setTimeout(() => {
+          setQuiz(prev => ({...prev, falschFlash: false, feedback: ""}));
+        }, 1500);
+      }
     }
   }
 
@@ -1379,7 +1396,8 @@ export default function VokabelApp() {
     const mcUpd = aktModus === "mc"
       ? { mcButtons: quiz.mcButtons.map(b => b.korrekt ? {...b, status: "richtig"} : b) }
       : {};
-    setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", flash: false, phase: "aufgedeckt", feedback: "", ...mcUpd}));
+    setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", flash: false, phase: "aufgedeckt",
+      feedback: "", falschFlash: false, aktuelleFehlversuche: 0, ...mcUpd}));
   }
 
   function ueberspringeWeitere() {
@@ -1435,6 +1453,7 @@ export default function VokabelApp() {
         return {...prev, flash: false, phase: "eingabe", antwortTypIndex: naechsterIdx,
           antwortTeile: teile, mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
           weitereIndices: [], weiterePos: 0, infoSichtbar: false, richtigAufgedeckt: false,
+          aktuelleFehlversuche: 0, falschFlash: false,
           vorigeRichtig: [...prev.vorigeRichtig, currentVorig]};
       });
     } else {
@@ -1765,7 +1784,7 @@ export default function VokabelApp() {
     if (quiz.flash) antwortBoxKlasse += " richtig";
     else if (richtigAufgedeckt) antwortBoxKlasse += " richtig";
     else if (quiz.karteNeinFlash) antwortBoxKlasse += " falsch";
-    else if (quiz.phase === "falsch") antwortBoxKlasse += " falsch";
+    else if (quiz.falschFlash) antwortBoxKlasse += " falsch";
     else if (quiz.phase === "aufgedeckt") antwortBoxKlasse += " aufgedeckt";
     else if (isWeitere) antwortBoxKlasse += " weitere";
 
@@ -1862,7 +1881,7 @@ export default function VokabelApp() {
                         </div>
                       )}
                       {/* Tippen */}
-                      {aktSpaltModus === "tippen" && !quiz.flash && (quiz.phase === "eingabe" || quiz.phase === "falsch") && (
+                      {aktSpaltModus === "tippen" && !quiz.flash && quiz.phase === "eingabe" && (
                         <input ref={eingabeRef} className="inp"
                           value={quiz.eingabe}
                           onChange={e => setQuiz(prev => ({...prev, eingabe: e.target.value}))}
@@ -1884,8 +1903,8 @@ export default function VokabelApp() {
                       )}
                       {/* Lösung: Flash (richtig) */}
                       {quiz.flash && (
-                        <div style={{textAlign:"center", marginTop:8, fontSize:"1.15rem", color:"#1b5e20"}}>
-                          <strong>{quiz.antwortTeile.join(" / ")}</strong>{" ✓"}
+                        <div className="quiz-frage-text" style={{textAlign:"center", color:"#1b5e20", minHeight:"44px", display:"flex", alignItems:"center", justifyContent:"center"}}>
+                          {quiz.antwortTeile.join(" / ")}{" ✓"}
                         </div>
                       )}
                       {/* Lösung: Aufgedeckt */}
@@ -1898,8 +1917,8 @@ export default function VokabelApp() {
                                   onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}>🔊</button>
                               )}
                             </div>
-                          : <div style={{textAlign:"center", marginTop:8, fontSize:"1.15rem", display:"flex", alignItems:"center", justifyContent:"center", gap:6}}>
-                              <strong>{quiz.antwortTeile.join(" / ")}</strong>
+                          : <div className="quiz-frage-text" style={{textAlign:"center", display:"flex", alignItems:"center", justifyContent:"center", gap:6, minHeight:"44px"}}>
+                              {quiz.antwortTeile.join(" / ")}
                               {!isKarteAufgedeckt && aktAntwortTyp.startsWith('E') && (
                                 <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
                                   onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}>🔊</button>
@@ -1907,7 +1926,8 @@ export default function VokabelApp() {
                             </div>
                       )}
                       {quiz.feedback && !quiz.flash && (
-                        <div className={`quiz-feedback ${quiz.phase === "falsch" || (isWeitere && quiz.feedback.startsWith("Nicht")) ? "nein" : "ok"}`}>
+                        <div className={`quiz-feedback ${(quiz.falschFlash || (isWeitere && quiz.feedback.startsWith("Nicht"))) ? "nein" : "ok"}`}
+                          style={{textAlign:"center"}}>
                           {quiz.feedback}
                         </div>
                       )}
@@ -1950,15 +1970,12 @@ export default function VokabelApp() {
             )}
 
             <div className="quiz-aktionen" onClick={e => e.stopPropagation()}>
-              {!quiz.flash && (quiz.phase === "eingabe" || quiz.phase === "falsch") && !isKarteEingabe && (
+              {!quiz.flash && quiz.phase === "eingabe" && !isKarteEingabe && (
                 <>
                   {aktSpaltModus === "tippen" && (
                     <button className="btn btn-primary" onClick={pruefeAntwort}>Prüfen</button>
                   )}
                   <button className="btn btn-ghost" onClick={zeigeLosung}>Lösung anzeigen</button>
-                  {quiz.phase === "falsch" && aktSpaltModus === "tippen" && (
-                    <button className="btn btn-ghost" onClick={wechsleZuMC}>Multiple Choice</button>
-                  )}
                   {infoSpalten.length > 0 && (
                     <button className="btn btn-ghost"
                       onClick={() => setQuiz(prev => ({...prev, infoSichtbar: !prev.infoSichtbar}))}>
