@@ -1538,7 +1538,7 @@ export default function VokabelApp() {
                         <div className="karte-aufdecken">Tippe zum Aufdecken</div>
                       )}
                       {/* MC */}
-                      {aktSpaltModus === "mc" && !quiz.flash && (quiz.phase === "eingabe" || quiz.phase === "aufgedeckt") && (
+                      {aktSpaltModus === "mc" && !quiz.flash && (quiz.phase === "eingabe" || (quiz.phase === "aufgedeckt" && !richtigAufgedeckt)) && (
                         <div style={{display:"flex", flexWrap:"wrap", gap:8, marginTop:8, justifyContent:"center"}}>
                           {(quiz.mcButtons || []).map((btn, idx) => (
                             <button key={idx}
@@ -1586,13 +1586,21 @@ export default function VokabelApp() {
                       )}
                       {/* Lösung: Aufgedeckt */}
                       {!quiz.flash && quiz.phase === "aufgedeckt" && (
-                        <div style={{textAlign:"center", marginTop:8, fontSize:"1.15rem", display:"flex", alignItems:"center", justifyContent:"center", gap:6}}>
-                          <strong>{quiz.antwortTeile.join(" / ")}</strong>
-                          {!isKarteAufgedeckt && (
-                            <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
-                              onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}>🔊</button>
-                          )}
-                        </div>
+                        aktSpaltModus === "mc" && richtigAufgedeckt
+                          ? <div style={{display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6, marginTop:16}}>
+                              <div style={{fontSize:"1.45rem", fontWeight:700, textAlign:"center", lineHeight:1.3}}>
+                                {frageWert} – {quiz.antwortTeile.join(" / ")}
+                              </div>
+                              <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
+                                onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}>🔊</button>
+                            </div>
+                          : <div style={{textAlign:"center", marginTop:8, fontSize:"1.15rem", display:"flex", alignItems:"center", justifyContent:"center", gap:6}}>
+                              <strong>{quiz.antwortTeile.join(" / ")}</strong>
+                              {!isKarteAufgedeckt && (
+                                <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
+                                  onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}>🔊</button>
+                              )}
+                            </div>
                       )}
                       {quiz.feedback && !quiz.flash && (
                         <div className={`quiz-feedback ${quiz.phase === "falsch" || (isWeitere && quiz.feedback.startsWith("Nicht")) ? "nein" : "ok"}`}>
