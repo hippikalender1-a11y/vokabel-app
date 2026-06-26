@@ -158,6 +158,21 @@ Regeln:
 ${regeln}`;
 }
 
+// ── Export-Generator ──────────────────────────────────────────────────────
+function generiereExportText(liste) {
+  const aktiveSpalten = TYPEN.filter(t => liste.spalten[t].aktiv);
+  const namenszeile = `# ${liste.name}`;
+  const header = aktiveSpalten.map(t => liste.spalten[t].name || t).join(' // ');
+  const zeilen = liste.vokabeln.map(vok =>
+    aktiveSpalten.map(typ => {
+      if (!vok[typ]?.wert) return '';
+      const { wert, falsch } = vok[typ];
+      return falsch?.length > 0 ? `${wert} || ${falsch.join(' | ')}` : wert;
+    }).join(' // ')
+  );
+  return [namenszeile, header, ...zeilen].join('\n');
+}
+
 // ── Datum-Formatierung ─────────────────────────────────────────────────────
 function formatDatum(isoString) {
   if (!isoString) return "Nie";
@@ -274,7 +289,8 @@ const CSS = `
   .topbar-title{font-size:1.05rem;font-weight:700;flex:1;}
   .topbar-back{background:#2d6a4f;color:#fff;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;padding:8px 14px;border-radius:10px;font-family:inherit;transition:opacity .15s;flex-shrink:0;}
   .topbar-back:active{opacity:.8;}
-  .tabs{display:flex;background:#fff;border-bottom:1px solid #e0dbd2;}
+  .tabs{display:flex;background:#fff;border-bottom:1px solid #e0dbd2;position:sticky;top:57px;z-index:9;}
+  .statistik-listen-header{background:#fff;border-bottom:1px solid #e0dbd2;padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;top:104px;z-index:8;}
   .tab{flex:1;padding:12px 4px;font-size:0.82rem;font-weight:600;color:#6b6560;background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;}
   .tab.aktiv{color:#2d6a4f;border-bottom-color:#2d6a4f;}
   .sektion{padding:20px 16px 0;}
@@ -435,8 +451,13 @@ export default function VokabelApp() {
   const [promptModus, setPromptModus] = useState("generieren");
   const [promptSynonyme, setPromptSynonyme] = useState(false);
   const [promptKopiert, setPromptKopiert] = useState(false);
+  const [exportKopiert, setExportKopiert] = useState(false);
+  const [exportAuswahlModus, setExportAuswahlModus] = useState(false);
+  const [exportAusgewaehlt, setExportAusgewaehlt] = useState(new Set());
   const [statistikSort, setStatistikSort] = useState("score-asc");
   const [statistikFilter, setStatistikFilter] = useState("alle");
+  const [statistikListenIds, setStatistikListenIds] = useState(null); // null = alle
+  const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
   const [sessionSlots, setSessionSlots] = useState([]);
   const [quizBereichTyp, setQuizBereichTyp] = useState("alle");
   const [quizBereichVon, setQuizBereichVon] = useState(1);
@@ -606,6 +627,58 @@ export default function VokabelApp() {
     setModal(null); setMergeQuelleId('');
   }
 
+  // ── Export-Aktionen ───────────────────────────────────────────────────────
+  async function teileListeHandler() {
+    if (!aktiveListe || !navigator.share) return;
+    const text = generiereExportText(aktiveListe);
+    try { await navigator.share({ title: aktiveListe.name, text }); } catch {}
+  }
+  async function kopiereListeHandler() {
+    if (!aktiveListe) return;
+    const text = generiereExportText(aktiveListe);
+    try {
+      await navigator.clipboard.writeText(text);
+      setExportKopiert(true);
+      setTimeout(() => setExportKopiert(false), 2000);
+    } catch {}
+  }
+  function generiereKombiniertenExport(ids) {
+    return ids.map(id => { const l = lsGet(SK.liste(id)); return l ? generiereExportText(l) : null; })
+      .filter(Boolean).join('\n\n');
+  }
+  async function exportiereAusgewaehlteTeilenHandler() {
+    if (exportAusgewaehlt.size === 0 || !navigator.share) return;
+    const text = generiereKombiniertenExport([...exportAusgewaehlt]);
+    const title = exportAusgewaehlt.size === 1
+      ? listenIndex.find(l => l.id === [...exportAusgewaehlt][0])?.name || 'Vokabeln'
+      : `${exportAusgewaehlt.size} Vokabellisten`;
+    try { await navigator.share({ title, text }); } catch {}
+  }
+  async function exportiereAusgewaehlteKopierenHandler() {
+    if (exportAusgewaehlt.size === 0) return;
+    const text = generiereKombiniertenExport([...exportAusgewaehlt]);
+    try {
+      await navigator.clipboard.writeText(text);
+      setExportKopiert(true);
+      setTimeout(() => setExportKopiert(false), 2000);
+    } catch {}
+  }
+
+  function toggleStatistikListe(id) {
+    setStatistikListenIds(prev => {
+      const currentSet = prev === null
+        ? new Set(listenIndex.map(l => l.id))
+        : new Set(prev);
+      if (currentSet.has(id)) {
+        currentSet.delete(id);
+      } else {
+        currentSet.add(id);
+        if (currentSet.size === listenIndex.length) return null;
+      }
+      return currentSet;
+    });
+  }
+
   // ── Import-Aktionen ───────────────────────────────────────────────────────
   function resetImport() {
     setImportText(""); setImportParsed(null); setImportMapping({});
@@ -613,14 +686,22 @@ export default function VokabelApp() {
   }
 
   function analysiereImport() {
-    const zeilen = importText.trim().split('\n').filter(z => z.trim());
-    if (zeilen.length < 2) { setImportFehler("Mindestens 2 Zeilen erforderlich."); return; }
+    const alleZeilen = importText.trim().split('\n').filter(z => z.trim());
+    if (alleZeilen.length < 2) { setImportFehler("Mindestens 2 Zeilen erforderlich."); return; }
+    let zeilen = alleZeilen;
+    let erkannterName = '';
+    if (zeilen[0].startsWith('# ')) {
+      erkannterName = zeilen[0].slice(2).trim();
+      zeilen = zeilen.slice(1);
+      if (zeilen.length < 2) { setImportFehler("Mindestens 2 Zeilen erforderlich."); return; }
+    }
     const header = parseZeile(zeilen[0]);
     const daten = zeilen.slice(1).map(parseZeile);
     const mapping = {};
     header.forEach((_, i) => { mapping[i] = null; });
     setImportParsed({ header, daten });
     setImportMapping(mapping);
+    if (erkannterName && !importNeuName) setImportNeuName(erkannterName);
     setImportFehler("");
   }
 
@@ -1194,7 +1275,13 @@ export default function VokabelApp() {
         return naechsteSpalteOderVokabel(prev, vorigeRichtig);
       });
     } else {
-      setQuiz(prev => naechsteSpalteOderVokabel({...prev, liste: neueListe, sessionFalsch: sessionFalschNeu}, prev.vorigeRichtig));
+      setQuiz(prev => ({...prev, liste: neueListe, sessionFalsch: sessionFalschNeu, karteNeinFlash: true}));
+      flashTimerRef.current = setTimeout(() => {
+        setQuiz(prev => {
+          if (!prev.karteNeinFlash) return prev;
+          return naechsteSpalteOderVokabel({...prev, karteNeinFlash: false}, prev.vorigeRichtig);
+        });
+      }, 800);
     }
   }
 
@@ -1459,7 +1546,7 @@ export default function VokabelApp() {
     const antwortLabel = quiz.liste.spalten[aktAntwortTyp]?.name || aktAntwortTyp;
     const aktSpaltModus = quiz.spalteModus?.[aktAntwortTyp] || "tippen";
     const isKarteEingabe = aktSpaltModus === "karte" && quiz.phase === "eingabe";
-    const isKarteAufgedeckt = aktSpaltModus === "karte" && quiz.phase === "aufgedeckt";
+    const isKarteAufgedeckt = aktSpaltModus === "karte" && quiz.phase === "aufgedeckt" && !quiz.karteNeinFlash;
     const richtigAufgedeckt = !!quiz.richtigAufgedeckt && quiz.phase === "aufgedeckt";
     const infoSpalten = (quiz.sitzungsInfoTypen || []).filter(t => aktVokRaw[t]?.wert);
     const score = aktVok?.fortschritt?.score ?? 0;
@@ -1469,6 +1556,7 @@ export default function VokabelApp() {
     let antwortBoxKlasse = "quiz-antwort-box";
     if (quiz.flash) antwortBoxKlasse += " richtig";
     else if (richtigAufgedeckt) antwortBoxKlasse += " richtig";
+    else if (quiz.karteNeinFlash) antwortBoxKlasse += " falsch";
     else if (quiz.phase === "falsch") antwortBoxKlasse += " falsch";
     else if (quiz.phase === "aufgedeckt") antwortBoxKlasse += " aufgedeckt";
     else if (isWeitere) antwortBoxKlasse += " weitere";
@@ -1533,9 +1621,13 @@ export default function VokabelApp() {
                     ))}
 
                     <div className={antwortBoxKlasse} style={{marginBottom:0}}>
-                      <div className="quiz-label">
-                        {antwortLabel}
-                        {isWeitere && <span style={{color:"#6a1b9a", marginLeft:8}}>— weitere Antwort</span>}
+                      <div className="quiz-label" style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                        <span>{antwortLabel}{isWeitere && <span style={{color:"#6a1b9a", marginLeft:8}}>— weitere Antwort</span>}</span>
+                        {(isKarteEingabe || isKarteAufgedeckt || quiz.karteNeinFlash) && (
+                          <span className={`score-badge ${score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null"}`} style={{fontSize:"0.88rem", padding:"2px 9px"}}>
+                            {score > 0 ? "+" : ""}{score}
+                          </span>
+                        )}
                       </div>
                       {/* Karte-Modus: Aufdecken-Hinweis */}
                       {isKarteEingabe && (
@@ -1834,24 +1926,44 @@ export default function VokabelApp() {
           <button className={`tab${tab==="listen"?" aktiv":""}`}
             onClick={() => { setTab("listen"); setAnsicht("uebersicht"); }}>Listen</button>
           <button className={`tab${tab==="quiz"?" aktiv":""}`}
-            onClick={() => setTab("quiz")}>Quiz</button>
-          <button className={`tab${tab==="einstellungen"?" aktiv":""}`} onClick={() => setTab("einstellungen")}>Einstellungen</button>
+            onClick={() => { setTab("quiz"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Quiz</button>
+          <button className={`tab${tab==="statistik"?" aktiv":""}`}
+            onClick={() => { setTab("statistik"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Statistik</button>
+          <button className={`tab${tab==="einstellungen"?" aktiv":""}`} onClick={() => { setTab("einstellungen"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Einstellungen</button>
         </div>
 
         {/* ── Listen-Header (persistent) ── */}
         {tab === "listen" && ansicht !== "import" && ansicht !== "ki-prompt" && (
           <div className="liste-detail-header">
             {ansicht === "uebersicht" ? (
-              <>
-                <span className="liste-detail-header-name">Meine Listen</span>
-                <button className="btn btn-ghost btn-sm" onClick={() => { resetImport(); setAnsicht("import"); }}>Importieren</button>
-              </>
+              exportAuswahlModus ? (
+                <>
+                  <span className="liste-detail-header-name">
+                    {exportAusgewaehlt.size === 0 ? "Liste auswählen" : `${exportAusgewaehlt.size} ausgewählt`}
+                  </span>
+                  <button className="btn btn-ghost btn-sm" onClick={() => {
+                    setExportAuswahlModus(false); setExportAusgewaehlt(new Set());
+                  }}>Abbrechen</button>
+                </>
+              ) : (
+                <>
+                  <span className="liste-detail-header-name">Meine Listen</span>
+                  <button className="btn btn-ghost btn-sm" onClick={() => { resetImport(); setAnsicht("import"); }}>Importieren</button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setExportAuswahlModus(true)}>Exportieren</button>
+                </>
+              )
             ) : ansicht === "liste-detail" && aktiveListe ? (
               <>
                 <span className="liste-detail-header-name">{aktiveListe.name}</span>
                 <button className="btn btn-primary btn-sm" onClick={() => {
                   resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
                 }}>+</button>
+                {navigator.share && (
+                  <button className="btn btn-ghost btn-sm" onClick={teileListeHandler}>📤</button>
+                )}
+                <button className="btn btn-ghost btn-sm" onClick={kopiereListeHandler}>
+                  {exportKopiert ? "✓" : "📋"}
+                </button>
                 <button className="btn btn-ghost btn-sm" onClick={() => oeffneModal("umbenennen")}>Umbenennen</button>
                 <button className="btn btn-danger btn-sm" onClick={() => oeffneModal("loeschen")}>Löschen</button>
               </>
@@ -1868,6 +1980,13 @@ export default function VokabelApp() {
             {ansicht === "import" && !importParsed && (
               <button className="btn btn-primary btn-sm" onClick={e => { e.stopPropagation(); analysiereImport(); }}>Analysieren</button>
             )}
+            {ansicht === "import" && promptThema.trim() && (
+              <button className="btn btn-ghost btn-sm" onClick={e => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus))
+                  .then(() => { setPromptKopiert(true); setTimeout(() => setPromptKopiert(false), 2000); });
+              }}>{promptKopiert ? "✓" : "📋 Prompt"}</button>
+            )}
             <button className="btn btn-ghost btn-sm" onClick={e => { e.stopPropagation(); setAnsicht("ki-prompt"); }}>Prompt generieren</button>
           </div>
         )}
@@ -1879,7 +1998,10 @@ export default function VokabelApp() {
             <button className="btn btn-primary btn-sm"
               onClick={() => {
                 navigator.clipboard.writeText(generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus))
-                  .then(() => { setPromptKopiert(true); setTimeout(() => setPromptKopiert(false), 2000); });
+                  .then(() => {
+                    setPromptKopiert(true);
+                    setTimeout(() => { setPromptKopiert(false); setAnsicht("import"); }, 1500);
+                  });
               }}>
               {promptKopiert ? "✓ Kopiert!" : "Kopieren"}
             </button>
@@ -2544,7 +2666,22 @@ export default function VokabelApp() {
                   const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
                   return (
                     <div key={l.id} className="karte-zeile" style={{cursor:"pointer"}}
-                      onClick={() => { setAktiveListeId(l.id); setAnsicht("liste-detail"); setVokabelAufgeklappt(false); }}>
+                      onClick={() => {
+                        if (exportAuswahlModus) {
+                          setExportAusgewaehlt(prev => {
+                            const neu = new Set(prev);
+                            if (neu.has(l.id)) neu.delete(l.id); else neu.add(l.id);
+                            return neu;
+                          });
+                        } else {
+                          setAktiveListeId(l.id); setAnsicht("liste-detail"); setVokabelAufgeklappt(false);
+                        }
+                      }}>
+                      {exportAuswahlModus && (
+                        <div className={`checkbox${exportAusgewaehlt.has(l.id) ? " checked" : ""}`}>
+                          {exportAusgewaehlt.has(l.id) && "✓"}
+                        </div>
+                      )}
                       <div className="karte-zeile-info">
                         <div className="karte-zeile-name">{l.name}</div>
                         <div className="karte-zeile-sub">
@@ -2552,7 +2689,7 @@ export default function VokabelApp() {
                           {aktSpalten.map(t => <span key={t} className="spalten-badge aktiv">{liste.spalten[t].name || t}</span>)}
                         </div>
                       </div>
-                      <span style={{color:"#6b6560"}}>{">"}</span>
+                      {!exportAuswahlModus && <span style={{color:"#6b6560"}}>{">"}</span>}
                     </div>
                   );
                 })}
@@ -2581,7 +2718,11 @@ export default function VokabelApp() {
               )}
               {aktiveListe.vokabeln.length > 0 && (
                 <button className="btn btn-ghost" style={{width:"100%", marginBottom:8}}
-                  onClick={() => setAnsicht("statistik")}>
+                  onClick={() => {
+                    setStatistikListenIds(new Set([aktiveListeId]));
+                    setStatistikListenAufgeklappt(false);
+                    setTab("statistik");
+                  }}>
                   Statistik
                 </button>
               )}
@@ -2679,6 +2820,255 @@ export default function VokabelApp() {
             </>
           );
         })()}
+        {/* ── Statistik: Sticky Listen-Header ── */}
+        {tab === "statistik" && (() => {
+          const isGewaehlt = (id) => statistikListenIds === null || statistikListenIds.has(id);
+          const statistikListen = listenIndex.map(l => lsGet(SK.liste(l.id))).filter(Boolean);
+          const gewaehlteListenObjekte = statistikListenIds === null
+            ? statistikListen
+            : statistikListen.filter(l => statistikListenIds.has(l.id));
+          const gewaehlteAnzahl = gewaehlteListenObjekte.length;
+          const gesamtVoks = gewaehlteListenObjekte.reduce((s, l) => s + l.vokabeln.length, 0);
+          const keineGewaehlt = statistikListenIds !== null && statistikListenIds.size === 0;
+          return (<>
+            <div className="statistik-listen-header">
+              <div style={{flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:700, fontSize:"1rem"}}>
+                {keineGewaehlt
+                  ? <span style={{color:"#aaa", fontWeight:600}}>Listen auswählen</span>
+                  : statistikListenIds === null
+                    ? `Alle Listen · ${gesamtVoks} Vokabeln`
+                    : `${gewaehlteAnzahl} ${gewaehlteAnzahl===1?"Liste":"Listen"} · ${gesamtVoks} Vokabeln`
+                }
+              </div>
+              <div style={{display:"flex", gap:5, flexShrink:0}}>
+                <button className="btn btn-ghost btn-sm"
+                  onClick={() => setStatistikListenIds(new Set())}>Zurücksetzen</button>
+                <button className="btn btn-ghost btn-sm"
+                  onClick={() => setStatistikListenIds(null)}>Alle</button>
+                <button className="btn btn-ghost btn-sm"
+                  onClick={() => setStatistikListenAufgeklappt(v => !v)}>
+                  {statistikListenAufgeklappt ? "Einklappen" : "Ausklappen"}
+                </button>
+              </div>
+            </div>
+            {/* Listenliste (ausgeklappt) */}
+            {statistikListenAufgeklappt && (
+              <div style={{background:"#f7f5f0", borderBottom:"1px solid #e0dbd2", padding:"8px 16px"}}>
+                <div className="karte" style={{marginBottom:0}}>
+                  {listenIndex.length === 0
+                    ? <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.85rem"}}>Keine Listen vorhanden.</div>
+                    : listenIndex.map(l => {
+                        const ll = statistikListen.find(x => x.id === l.id);
+                        const anzahl = ll ? ll.vokabeln.length : 0;
+                        const gewaehlt = isGewaehlt(l.id);
+                        return (
+                          <div key={l.id} className="quiz-setup-check" style={{padding:"10px 16px"}}
+                            onClick={() => toggleStatistikListe(l.id)}>
+                            <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
+                            <div style={{flex:1}}>
+                              <div style={{fontWeight:600, fontSize:"0.9rem"}}>{l.name}</div>
+                              <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:2}}>{anzahl} Vokabel{anzahl!==1?"n":""}</div>
+                            </div>
+                          </div>
+                        );
+                      })
+                  }
+                </div>
+              </div>
+            )}
+          </>);
+        })()}
+
+        {/* ── Statistik: Inhalte ── */}
+        {tab === "statistik" && (() => {
+          const statistikListen = listenIndex.map(l => lsGet(SK.liste(l.id))).filter(Boolean);
+          const gewaehlteListenObjekte = statistikListenIds === null
+            ? statistikListen
+            : statistikListen.filter(l => statistikListenIds.has(l.id));
+
+          const alleVoks = gewaehlteListenObjekte.flatMap(l =>
+            l.vokabeln.map(v => ({...v, _listeName: l.name, _spalten: l.spalten}))
+          );
+
+          if (alleVoks.length === 0) return (
+            <div className="sektion">
+              <div className="leer"><div className="leer-text">
+                {(statistikListenIds !== null && statistikListenIds.size === 0)
+                  ? "Keine Liste ausgewählt."
+                  : "Keine Vokabeln vorhanden."}
+              </div></div>
+            </div>
+          );
+
+          const abgefragt = alleVoks.filter(v => v.fortschritt);
+          const nieAnzahl = alleVoks.length - abgefragt.length;
+          const positivAnzahl = abgefragt.filter(v => v.fortschritt.score > 0).length;
+          const negativAnzahl = abgefragt.filter(v => v.fortschritt.score < 0).length;
+          const nullAnzahl = abgefragt.filter(v => v.fortschritt.score === 0).length;
+          const avgScore = abgefragt.length > 0
+            ? abgefragt.reduce((s, v) => s + v.fortschritt.score, 0) / abgefragt.length
+            : null;
+
+          // Graph-Daten
+          const quizS = alleVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
+          const diktatS = alleVoks.map(v => v.diktatFortschritt?.score ?? 0).sort((a, b) => a - b);
+          const minS = Math.min(...quizS, ...diktatS, -1);
+          const maxS = Math.max(...quizS, ...diktatS, 1);
+          const range = maxS - minS;
+          const GW = 400, GH = 120, pX = 4, pY = 10;
+          const gW = GW - 2 * pX, gH = GH - 2 * pY;
+          const zeroY = pY + (maxS / range) * gH;
+          const n = alleVoks.length;
+          function toPath(scores) {
+            return scores.map((s, i) => {
+              const x = pX + (n > 1 ? i / (n - 1) : 0.5) * gW;
+              const y = pY + ((maxS - s) / range) * gH;
+              return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(' ');
+          }
+
+          // Vokabelliste (gefiltert + sortiert)
+          let voks = [...alleVoks];
+          if (statistikFilter === "nie") voks = voks.filter(v => !v.fortschritt);
+          else if (statistikFilter === "negativ") voks = voks.filter(v => (v.fortschritt?.score ?? 0) < 0);
+          else if (statistikFilter === "positiv") voks = voks.filter(v => (v.fortschritt?.score ?? 0) > 0);
+          else if (statistikFilter === "null") voks = voks.filter(v => v.fortschritt && v.fortschritt.score === 0);
+          if (statistikSort === "score-asc") voks.sort((a, b) => (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0));
+          else if (statistikSort === "score-desc") voks.sort((a, b) => (b.fortschritt?.score ?? 0) - (a.fortschritt?.score ?? 0));
+          else if (statistikSort === "streak") voks.sort((a, b) => (b.fortschritt?.streak ?? 0) - (a.fortschritt?.streak ?? 0));
+          else if (statistikSort === "datum") voks.sort((a, b) => {
+            const da = a.fortschritt?.letzteAbfrage ? new Date(a.fortschritt.letzteAbfrage) : new Date(0);
+            const db = b.fortschritt?.letzteAbfrage ? new Date(b.fortschritt.letzteAbfrage) : new Date(0);
+            return db - da;
+          });
+          else if (statistikSort === "alpha") {
+            voks.sort((a, b) => {
+              const spa = TYPEN.find(t => a._spalten[t]?.aktiv);
+              const spb = TYPEN.find(t => b._spalten[t]?.aktiv);
+              return (a[spa]?.wert || '').localeCompare(b[spb]?.wert || '');
+            });
+          }
+          const mehrereListenGewaehlt = gewaehlteListenObjekte.length > 1;
+
+          return (
+            <div className="sektion">
+              {/* Graph */}
+              <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid #e0dbd2"}}>
+                <svg viewBox={`0 0 ${GW} ${GH}`} preserveAspectRatio="none"
+                  style={{width:"100%", height:130, display:"block"}}>
+                  <rect width={GW} height={GH} fill="#fafaf8"/>
+                  {zeroY > pY && (
+                    <rect x={pX} y={pY} width={gW} height={Math.max(0, zeroY - pY)} fill="#e8f5e9" opacity="0.6"/>
+                  )}
+                  {zeroY < GH - pY && (
+                    <rect x={pX} y={zeroY} width={gW} height={Math.max(0, GH - pY - zeroY)} fill="#ffebee" opacity="0.6"/>
+                  )}
+                  <line x1={pX} y1={zeroY} x2={GW - pX} y2={zeroY} stroke="#ccc" strokeWidth="1"/>
+                  <path d={toPath(quizS)} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
+                  <path d={toPath(diktatS)} fill="none" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="6 4" vectorEffect="non-scaling-stroke"/>
+                </svg>
+                <div style={{display:"flex", gap:20, padding:"6px 14px", background:"#f7f5f0", borderTop:"1px solid #e0dbd2", fontSize:"0.72rem", fontWeight:600, color:"#6b6560"}}>
+                  <span style={{display:"flex", alignItems:"center", gap:6}}>
+                    <svg width="20" height="4" viewBox="0 0 20 4" style={{flexShrink:0}}>
+                      <line x1="0" y1="2" x2="20" y2="2" stroke="#2d6a4f" strokeWidth="2.5"/>
+                    </svg>
+                    Abfrage-Score
+                  </span>
+                  <span style={{display:"flex", alignItems:"center", gap:6}}>
+                    <svg width="20" height="4" viewBox="0 0 20 4" style={{flexShrink:0}}>
+                      <line x1="0" y1="2" x2="20" y2="2" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="5 3"/>
+                    </svg>
+                    Diktat-Score
+                  </span>
+                </div>
+              </div>
+
+              {/* 4 Kennzahlen-Boxen */}
+              <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12}}>
+                {[
+                  {label:"Gesamt", wert:alleVoks.length, farbe:null},
+                  {label:"Nie abgefragt", wert:nieAnzahl, farbe:nieAnzahl>0?"#6b6560":"#2d6a4f"},
+                  {label:"Score positiv", wert:positivAnzahl, bg:"#e8f5e9", rand:"#c8e6c9", farbe:"#2d6a4f"},
+                  {label:"Score negativ", wert:negativAnzahl, bg:"#ffebee", rand:"#ffcdd2", farbe:"#c0392b"},
+                ].map(k => (
+                  <div key={k.label} style={{background:k.bg||"#fff", border:`1px solid ${k.rand||"#e0dbd2"}`, borderRadius:10, padding:"12px 14px"}}>
+                    <div style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:k.farbe||"#6b6560"}}>{k.label}</div>
+                    <div style={{fontSize:"1.6rem", fontWeight:700, marginTop:4, color:k.farbe||"#1a1a1a"}}>{k.wert}</div>
+                  </div>
+                ))}
+              </div>
+              {avgScore !== null && (
+                <div style={{background:"#fff", border:"1px solid #e0dbd2", borderRadius:10, padding:"11px 14px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                  <span style={{fontSize:"0.82rem", color:"#6b6560", fontWeight:600}}>Ø Score (abgefragte Vokabeln)</span>
+                  <span style={{fontWeight:700, color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
+                    {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
+                  </span>
+                </div>
+              )}
+
+              {/* Filter */}
+              <div className="sektion-label" style={{marginBottom:8}}>Filter</div>
+              <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:12}}>
+                {[
+                  {key:"alle", label:`Alle (${alleVoks.length})`},
+                  {key:"nie", label:`Nie (${nieAnzahl})`},
+                  {key:"negativ", label:`Neg (${negativAnzahl})`},
+                  {key:"null", label:`Null (${nullAnzahl})`},
+                  {key:"positiv", label:`Pos (${positivAnzahl})`},
+                ].map(f => (
+                  <button key={f.key} className={`typ-btn${statistikFilter===f.key?" aktiv":""}`}
+                    onClick={() => setStatistikFilter(f.key)}>{f.label}</button>
+                ))}
+              </div>
+
+              {/* Sortierung */}
+              <div className="sektion-label" style={{marginBottom:8}}>Sortierung</div>
+              <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
+                {[
+                  {key:"score-asc", label:"Score ↑"},
+                  {key:"score-desc", label:"Score ↓"},
+                  {key:"streak", label:"Streak"},
+                  {key:"datum", label:"Datum"},
+                  {key:"alpha", label:"A→Z"},
+                ].map(s => (
+                  <button key={s.key} className={`typ-btn${statistikSort===s.key?" aktiv":""}`}
+                    onClick={() => setStatistikSort(s.key)}>{s.label}</button>
+                ))}
+              </div>
+
+              {/* Vokabelliste */}
+              <div className="sektion-label" style={{marginBottom:8}}>{voks.length} Vokabel{voks.length!==1?"n":""}</div>
+              <div className="karte">
+                {voks.length === 0 ? (
+                  <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln in diesem Filter.</div>
+                ) : voks.map((vok, idx) => {
+                  const score = vok.fortschritt?.score ?? null;
+                  const streak = vok.fortschritt?.streak ?? 0;
+                  const sp1 = TYPEN.find(t => vok._spalten[t]?.aktiv);
+                  const sp2 = TYPEN.filter(t => vok._spalten[t]?.aktiv)[1];
+                  return (
+                    <div key={`${vok._listeName}_${vok.id}_${idx}`} className="karte-zeile">
+                      <div style={{flex:1, minWidth:0}}>
+                        {sp1 && vok[sp1] && <div style={{fontWeight:600, fontSize:"0.9rem", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp1].wert}</div>}
+                        {sp2 && vok[sp2] && <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp2].wert}</div>}
+                        {mehrereListenGewaehlt && <div style={{fontSize:"0.68rem", color:"#aaa", marginTop:2}}>{vok._listeName}</div>}
+                      </div>
+                      <div style={{display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3, flexShrink:0}}>
+                        <span className={`score-badge ${score !== null ? (score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null") : "score-null"}`}>
+                          {score !== null ? (score > 0 ? "+" : "") + score : "–"}
+                        </span>
+                        <div style={{fontSize:"0.68rem", color:"#6b6560", textAlign:"right"}}>
+                          {streak > 0 && <span style={{marginRight:4}}>🔥{streak}</span>}
+                          {formatDatum(vok.fortschritt?.letzteAbfrage)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
         {tab === "einstellungen" && (
           <div className="sektion">
             <div className="sektion-label" style={{marginBottom:10}}>App</div>
@@ -2705,8 +3095,18 @@ export default function VokabelApp() {
             </div>
           </div>
         )}
-        {tab === "listen" && ansicht === "uebersicht" && (
+        {tab === "listen" && ansicht === "uebersicht" && !exportAuswahlModus && (
           <button className="fab" onClick={() => { setModal("neue-liste"); setModalInput(""); setModalFehler(""); }}>+</button>
+        )}
+        {tab === "listen" && ansicht === "uebersicht" && exportAuswahlModus && exportAusgewaehlt.size > 0 && (
+          <div className="quiz-action-bar">
+            {navigator.share && (
+              <button className="btn btn-primary" onClick={exportiereAusgewaehlteTeilenHandler}>📤 Teilen</button>
+            )}
+            <button className="btn btn-ghost" onClick={exportiereAusgewaehlteKopierenHandler}>
+              {exportKopiert ? "✓ Kopiert!" : "📋 Kopieren"}
+            </button>
+          </div>
         )}
       </div>
 
