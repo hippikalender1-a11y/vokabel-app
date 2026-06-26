@@ -285,12 +285,13 @@ const CSS = `
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   body{background:#f7f5f0;font-family:system-ui,sans-serif;color:#1a1a1a;}
   .app{max-width:600px;margin:0 auto;padding:0 0 80px;}
-  .topbar{background:#fff;border-bottom:1px solid #e0dbd2;padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;}
+  .topbar{background:#fff;border-bottom:1px solid #e0dbd2;padding:14px 16px;display:flex;align-items:center;gap:12px;}
   .topbar-title{font-size:1.05rem;font-weight:700;flex:1;}
   .topbar-back{background:#2d6a4f;color:#fff;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;padding:8px 14px;border-radius:10px;font-family:inherit;transition:opacity .15s;flex-shrink:0;}
   .topbar-back:active{opacity:.8;}
-  .tabs{display:flex;background:#fff;border-bottom:1px solid #e0dbd2;position:sticky;top:57px;z-index:9;}
-  .statistik-listen-header{background:#fff;border-bottom:1px solid #e0dbd2;padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;top:104px;z-index:8;}
+  .tabs{display:flex;background:#fff;border-bottom:1px solid #e0dbd2;}
+  .statistik-listen-header{background:#fff;border-bottom:1px solid #e0dbd2;padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;z-index:8;}
+  .liste-detail-header{background:#fff;border-bottom:1px solid #e0dbd2;padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;z-index:9;}
   .tab{flex:1;padding:12px 4px;font-size:0.82rem;font-weight:600;color:#6b6560;background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;}
   .tab.aktiv{color:#2d6a4f;border-bottom-color:#2d6a4f;}
   .sektion{padding:20px 16px 0;}
@@ -386,7 +387,6 @@ const CSS = `
   .quiz-setup-check:last-child{border-bottom:none;}
   .checkbox{width:20px;height:20px;border-radius:5px;border:2px solid #e0dbd2;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#f7f5f0;}
   .checkbox.checked{background:#2d6a4f;border-color:#2d6a4f;color:#fff;}
-  .liste-detail-header{background:#fff;border-bottom:1px solid #e0dbd2;padding:12px 16px;display:flex;align-items:center;gap:10px;}
   .liste-detail-header-name{flex:1;font-size:1.05rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .diktat-hint{font-size:1.8rem;font-weight:700;letter-spacing:0.2em;color:#2d6a4f;margin:10px 0 6px;font-family:monospace;}
   .diktat-uebersetzung{font-size:0.85rem;color:#6b6560;margin-top:4px;}
@@ -480,6 +480,18 @@ export default function VokabelApp() {
   const flashTimerRef = useRef(null);
   const diktatPlayCountRef = useRef(0);
   const fileInputRef = useRef(null);
+  const headerRef = useRef(null);
+  const [headerH, setHeaderH] = useState(104);
+
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const update = () => setHeaderH(el.offsetHeight);
+    update();
+    const obs = new ResizeObserver(update);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     setListenIndex(lsGet(SK.listenIndex, []));
@@ -2080,6 +2092,7 @@ export default function VokabelApp() {
     <>
       <style>{CSS}</style>
       <div className="app">
+        <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"#fff"}}>
         <div className="topbar"><span className="topbar-title">Vokabel-Trainer</span></div>
         <div className="tabs">
           <button className={`tab${tab==="listen"?" aktiv":""}`}
@@ -2090,10 +2103,11 @@ export default function VokabelApp() {
             onClick={() => { setTab("statistik"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Statistik</button>
           <button className={`tab${tab==="einstellungen"?" aktiv":""}`} onClick={() => { setTab("einstellungen"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Einstellungen</button>
         </div>
+        </div>{/* end sticky header wrapper */}
 
         {/* ── Listen-Header (persistent) ── */}
         {tab === "listen" && ansicht !== "import" && ansicht !== "ki-prompt" && (
-          <div className="liste-detail-header">
+          <div className="liste-detail-header" style={{top: headerH}}>
             {ansicht === "uebersicht" ? (
               exportAuswahlModus ? (
                 <>
@@ -2135,7 +2149,7 @@ export default function VokabelApp() {
         {/* ── Import Sub-Header ── */}
         {tab === "listen" && (ansicht === "import" || ansicht === "ki-prompt") && (
           <div className="liste-detail-header"
-            style={ansicht === "ki-prompt" ? {cursor:"pointer"} : undefined}
+            style={ansicht === "ki-prompt" ? {cursor:"pointer", top: headerH} : {top: headerH}}
             onClick={ansicht === "ki-prompt" ? () => setAnsicht("import") : undefined}>
             <span className="liste-detail-header-name">Importieren</span>
             {ansicht === "import" && !importParsed && !importMehrfachListen && !importJsonData && (
@@ -2154,7 +2168,7 @@ export default function VokabelApp() {
 
         {/* ── KI-Prompt Sub-Header ── */}
         {tab === "listen" && ansicht === "ki-prompt" && (
-          <div className="liste-detail-header">
+          <div className="liste-detail-header" style={{top: headerH}}>
             <span className="liste-detail-header-name">KI-Prompt generieren</span>
             <button className="btn btn-primary btn-sm"
               onClick={() => {
@@ -3083,7 +3097,7 @@ export default function VokabelApp() {
           const gesamtVoks = gewaehlteListenObjekte.reduce((s, l) => s + l.vokabeln.length, 0);
           const keineGewaehlt = statistikListenIds !== null && statistikListenIds.size === 0;
           return (<>
-            <div className="statistik-listen-header">
+            <div className="statistik-listen-header" style={{top: headerH}}>
               <div style={{flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:700, fontSize:"1rem"}}>
                 {keineGewaehlt
                   ? <span style={{color:"#aaa", fontWeight:600}}>Listen auswählen</span>
