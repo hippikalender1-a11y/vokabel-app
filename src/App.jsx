@@ -417,6 +417,8 @@ export default function VokabelApp() {
   const [modal, setModal] = useState(null);
   const [modalInput, setModalInput] = useState("");
   const [modalFehler, setModalFehler] = useState("");
+  const [jsonExportIds, setJsonExportIds] = useState(null);
+  const [jsonExportOptionen, setJsonExportOptionen] = useState({ fortschritt: true, diktatFortschritt: true, falsch: true });
   const [editSpalteTyp, setEditSpalteTyp] = useState(null);
 
   const [bearbeiteVokabel, setBearbeiteVokabel] = useState(null);
@@ -835,12 +837,31 @@ export default function VokabelApp() {
   }
 
   function exportiereAlsJson(ids) {
-    const listen = ids.map(id => lsGet(SK.liste(id))).filter(Boolean);
-    const text = JSON.stringify(listen, null, 2);
-    const name = ids.length === 1
-      ? (listen[0]?.name || 'Liste') + '.json'
-      : ids.length + '_Listen_Backup.json';
+    setJsonExportIds(ids);
+    setModal("json-export");
+  }
+
+  function exportiereAlsJsonBestaetigt() {
+    const listen = jsonExportIds.map(id => lsGet(SK.liste(id))).filter(Boolean);
+    const gefiltert = listen.map(liste => {
+      const l = { ...liste };
+      l.vokabeln = liste.vokabeln.map(vok => {
+        const v = { ...vok };
+        TYPEN.forEach(typ => {
+          if (v[typ]) v[typ] = { wert: v[typ].wert, falsch: jsonExportOptionen.falsch ? (v[typ].falsch || []) : [] };
+        });
+        if (!jsonExportOptionen.fortschritt) delete v.fortschritt;
+        if (!jsonExportOptionen.diktatFortschritt) delete v.diktatFortschritt;
+        return v;
+      });
+      return l;
+    });
+    const text = JSON.stringify(gefiltert, null, 2);
+    const name = jsonExportIds.length === 1
+      ? (gefiltert[0]?.name || 'Liste') + '.json'
+      : jsonExportIds.length + '_Listen_Backup.json';
     teileAlsDatei(text, name);
+    setModal(null); setJsonExportIds(null);
   }
 
   function setzeMapping(colIndex, typ) {
@@ -3497,6 +3518,34 @@ export default function VokabelApp() {
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
               <button className="btn btn-danger" onClick={loeschen}>Löschen</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {modal === "json-export" && jsonExportIds && (
+        <div className="overlay" onClick={() => setModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">JSON exportieren</div>
+            <p style={{fontSize:"0.85rem", color:"#6b6560", marginBottom:14}}>
+              {jsonExportIds.length === 1 ? "1 Liste" : `${jsonExportIds.length} Listen`} — was soll enthalten sein?
+            </p>
+            {[
+              { key: "vokabeln", label: "Vokabeln", pflicht: true },
+              { key: "falsch",   label: "Falsche Antworten (MC)" },
+              { key: "fortschritt", label: "Quiz-Fortschritt (Score, Streak)" },
+              { key: "diktatFortschritt", label: "Diktat-Fortschritt" },
+            ].map(({ key, label, pflicht }) => (
+              <label key={key} style={{display:"flex", alignItems:"center", gap:10, marginBottom:10, fontSize:"0.9rem", cursor: pflicht ? "default" : "pointer"}}>
+                <input type="checkbox" checked={pflicht || !!jsonExportOptionen[key]}
+                  disabled={pflicht}
+                  onChange={e => !pflicht && setJsonExportOptionen(prev => ({...prev, [key]: e.target.checked}))}
+                  style={{width:18, height:18}} />
+                {label}{pflicht && <span style={{fontSize:"0.75rem", color:"#aaa"}}> (immer)</span>}
+              </label>
+            ))}
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => { setModal(null); setJsonExportIds(null); }}>Abbrechen</button>
+              <button className="btn btn-primary" onClick={exportiereAlsJsonBestaetigt}>Exportieren</button>
             </div>
           </div>
         </div>
