@@ -1542,14 +1542,17 @@ export default function VokabelApp() {
   function sprichDiktatNochmal(text, lang) {
     if (!window.speechSynthesis) return;
     const langCode = lang.split('-')[0].toLowerCase();
-    const voices = window.speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().startsWith(langCode));
+    // Novelty/effects Stimmen aussortieren (iOS/macOS), Android-Stimmen bleiben alle drin
+    const NOVELTY = /bad news|boing|bubbles|cellos|good news|jester|organ|trinoids|whisper|zarvox|albert|deranged|fred|hysterical|junior|kathy|princess|ralph|wobble|superstar|bells/i;
+    const voices = window.speechSynthesis.getVoices()
+      .filter(v => v.lang.toLowerCase().startsWith(langCode) && !NOVELTY.test(v.name));
     diktatPlayCountRef.current += 1;
     setDiktatManualPlays(p => p + 1);
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text.split('/')[0].trim());
     u.lang = lang;
     if (voices.length > 1) {
-      // Stimme wechselt ab dem 2. Nochmal, dann alle 2 Plays: 0,0,1,1,2,2,...
+      // Stimme wechselt alle 2 Plays: 0,0,1,1,2,2,...
       const voiceIdx = Math.floor(diktatPlayCountRef.current / 2) % voices.length;
       u.voice = voices[voiceIdx];
     }
@@ -1648,8 +1651,8 @@ export default function VokabelApp() {
                 <button className="diktat-play-btn"
                   onClick={() => { setDiktatManualPlays(p => p + 1); sprich(diktatWort, spalteLang(quiz.diktatSpalte)); }}>🔊</button>
               )}
-              {uebersetzung && diktatManualPlays >= 2 && (
-                <div className="diktat-uebersetzung">
+              {uebersetzung && (
+                <div className="diktat-uebersetzung" style={{visibility: diktatManualPlays >= 2 ? "visible" : "hidden"}}>
                   {quiz.liste.spalten[quiz.diktatUeberspalte]?.name || quiz.diktatUeberspalte}: {uebersetzung}
                 </div>
               )}
@@ -1667,8 +1670,8 @@ export default function VokabelApp() {
                 gap: 10,
               }}>
               <div className={antwortBoxKlasse}>
-                <div className="quiz-label">Deine Eingabe</div>
-                {hint && <div className="diktat-hint">{hint}</div>}
+                {quiz.phase === "eingabe" && <div className="quiz-label">Deine Eingabe</div>}
+                {quiz.phase === "eingabe" && hint && <div className="diktat-hint">{hint}</div>}
                 {quiz.phase === "eingabe" && (
                   <input ref={eingabeRef} className="inp"
                     value={quiz.eingabe}
@@ -1680,14 +1683,14 @@ export default function VokabelApp() {
                   />
                 )}
                 {quiz.phase === "richtig" && (
-                  <div style={{textAlign:"center", marginTop:8, fontSize:"1.15rem"}}>
+                  <div style={{textAlign:"center", padding:"12px 0", fontSize:"1.15rem"}}>
                     <strong>{diktatWort}</strong>
                     {uebersetzung ? <span style={{color:"#1b5e20"}}> – {uebersetzung}</span> : null}
                     <span style={{color:"#1b5e20"}}> ✓</span>
                   </div>
                 )}
                 {quiz.phase === "aufgedeckt" && (
-                  <div style={{textAlign:"center", marginTop:8, fontSize:"1.15rem"}}>
+                  <div style={{textAlign:"center", padding:"12px 0", fontSize:"1.15rem"}}>
                     <strong>{diktatWort}</strong>
                     {uebersetzung ? <span style={{color:"#6b6560"}}> – {uebersetzung}</span> : null}
                   </div>
@@ -1702,7 +1705,7 @@ export default function VokabelApp() {
                   <>
                     <button className="btn btn-primary" onClick={pruefeDiktatAntwort}>Prüfen</button>
                     {quiz.diktatSpalte.startsWith('E') && (
-                      <button className="btn btn-ghost" onClick={() => sprichDiktatNochmal(diktatWort, spalteLang(quiz.diktatSpalte))}>🔊 Nochmal</button>
+                      <button className="btn btn-ghost" onClick={() => sprichDiktatNochmal(diktatWort, spalteLang(quiz.diktatSpalte))}>🔊 Andere Stimme</button>
                     )}
                     <button className="btn btn-ghost" onClick={zeigeDiktatLoesung}>Lösung anzeigen</button>
                   </>
