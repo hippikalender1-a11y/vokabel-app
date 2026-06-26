@@ -464,6 +464,7 @@ export default function VokabelApp() {
   const [statistikFilter, setStatistikFilter] = useState("alle");
   const [statistikListenIds, setStatistikListenIds] = useState(null); // null = alle
   const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
+  const [statistikGraphOhneUnbeantwortet, setStatistikGraphOhneUnbeantwortet] = useState(false);
   const [sessionSlots, setSessionSlots] = useState([]);
   const [quizBereichTyp, setQuizBereichTyp] = useState("alle");
   const [quizBereichVon, setQuizBereichVon] = useState(1);
@@ -3292,18 +3293,26 @@ export default function VokabelApp() {
             : null;
 
           // Graph-Daten
-          const quizS = alleVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
-          const diktatS = alleVoks.map(v => v.diktatFortschritt?.score ?? 0).sort((a, b) => a - b);
-          const minS = Math.min(...quizS, ...diktatS, -1);
-          const maxS = Math.max(...quizS, ...diktatS, 1);
+          const quizGraphVoks = statistikGraphOhneUnbeantwortet
+            ? alleVoks.filter(v => v.fortschritt)
+            : alleVoks;
+          const diktatGraphVoks = statistikGraphOhneUnbeantwortet
+            ? alleVoks.filter(v => v.diktatFortschritt)
+            : alleVoks;
+          const quizS = quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
+          const diktatS = diktatGraphVoks.map(v => v.diktatFortschritt?.score ?? 0).sort((a, b) => a - b);
+          const allScores = [...quizS, ...diktatS];
+          const minS = allScores.length > 0 ? Math.min(...allScores, -1) : -1;
+          const maxS = allScores.length > 0 ? Math.max(...allScores, 1) : 1;
           const range = maxS - minS;
           const GW = 400, GH = 120, pX = 4, pY = 10;
           const gW = GW - 2 * pX, gH = GH - 2 * pY;
           const zeroY = pY + (maxS / range) * gH;
-          const n = alleVoks.length;
           function toPath(scores) {
+            if (scores.length === 0) return '';
+            const m = scores.length;
             return scores.map((s, i) => {
-              const x = pX + (n > 1 ? i / (n - 1) : 0.5) * gW;
+              const x = pX + (m > 1 ? i / (m - 1) : 0.5) * gW;
               const y = pY + ((maxS - s) / range) * gH;
               return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
             }).join(' ');
@@ -3349,7 +3358,7 @@ export default function VokabelApp() {
                   <path d={toPath(quizS)} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
                   <path d={toPath(diktatS)} fill="none" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="6 4" vectorEffect="non-scaling-stroke"/>
                 </svg>
-                <div style={{display:"flex", gap:20, padding:"6px 14px", background:"#f7f5f0", borderTop:"1px solid #e0dbd2", fontSize:"0.72rem", fontWeight:600, color:"#6b6560"}}>
+                <div style={{display:"flex", alignItems:"center", gap:12, padding:"6px 14px", background:"#f7f5f0", borderTop:"1px solid #e0dbd2", fontSize:"0.72rem", fontWeight:600, color:"#6b6560", flexWrap:"wrap"}}>
                   <span style={{display:"flex", alignItems:"center", gap:6}}>
                     <svg width="20" height="4" viewBox="0 0 20 4" style={{flexShrink:0}}>
                       <line x1="0" y1="2" x2="20" y2="2" stroke="#2d6a4f" strokeWidth="2.5"/>
@@ -3361,6 +3370,14 @@ export default function VokabelApp() {
                       <line x1="0" y1="2" x2="20" y2="2" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="5 3"/>
                     </svg>
                     Diktat-Score
+                  </span>
+                  <span style={{marginLeft:"auto"}}>
+                    <button
+                      className={`typ-btn${statistikGraphOhneUnbeantwortet ? " aktiv" : ""}`}
+                      style={{fontSize:"0.68rem", padding:"3px 8px"}}
+                      onClick={() => setStatistikGraphOhneUnbeantwortet(v => !v)}>
+                      {statistikGraphOhneUnbeantwortet ? "Nur beantwortete" : "Inkl. unbeantwortete"}
+                    </button>
                   </span>
                 </div>
               </div>
