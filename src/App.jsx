@@ -451,6 +451,7 @@ export default function VokabelApp() {
   const [promptModus, setPromptModus] = useState("generieren");
   const [promptSynonyme, setPromptSynonyme] = useState(false);
   const [promptKopiert, setPromptKopiert] = useState(false);
+  const [letzterPrompt, setLetzterPrompt] = useState("");
   const [exportKopiert, setExportKopiert] = useState(false);
   const [exportAuswahlModus, setExportAuswahlModus] = useState(false);
   const [exportAusgewaehlt, setExportAusgewaehlt] = useState(new Set());
@@ -473,6 +474,7 @@ export default function VokabelApp() {
   const eingabeRef = useRef(null);
   const flashTimerRef = useRef(null);
   const diktatPlayCountRef = useRef(0);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     setListenIndex(lsGet(SK.listenIndex, []));
@@ -662,6 +664,31 @@ export default function VokabelApp() {
       setExportKopiert(true);
       setTimeout(() => setExportKopiert(false), 2000);
     } catch {}
+  }
+
+  async function teileAlsDatei(text, dateiname) {
+    const file = new File([text], dateiname, { type: 'text/plain' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: dateiname }); } catch {}
+    } else {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url; a.download = dateiname; a.click();
+      URL.revokeObjectURL(url);
+    }
+  }
+  async function teileListeAlsDateiHandler() {
+    if (!aktiveListe) return;
+    await teileAlsDatei(generiereExportText(aktiveListe), `${aktiveListe.name}.txt`);
+  }
+  async function exportiereAusgewaehlteAlsDateiHandler() {
+    if (exportAusgewaehlt.size === 0) return;
+    const ids = [...exportAusgewaehlt];
+    const text = generiereKombiniertenExport(ids);
+    const name = ids.length === 1
+      ? listenIndex.find(l => l.id === ids[0])?.name || 'Vokabeln'
+      : `${ids.length}_Listen`;
+    await teileAlsDatei(text, `${name}.txt`);
   }
 
   function toggleStatistikListe(id) {
@@ -1964,6 +1991,7 @@ export default function VokabelApp() {
                 <button className="btn btn-ghost btn-sm" onClick={kopiereListeHandler}>
                   {exportKopiert ? "✓" : "📋"}
                 </button>
+                <button className="btn btn-ghost btn-sm" onClick={teileListeAlsDateiHandler}>📄</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => oeffneModal("umbenennen")}>Umbenennen</button>
                 <button className="btn btn-danger btn-sm" onClick={() => oeffneModal("loeschen")}>Löschen</button>
               </>
@@ -1980,10 +2008,10 @@ export default function VokabelApp() {
             {ansicht === "import" && !importParsed && (
               <button className="btn btn-primary btn-sm" onClick={e => { e.stopPropagation(); analysiereImport(); }}>Analysieren</button>
             )}
-            {ansicht === "import" && promptThema.trim() && (
+            {ansicht === "import" && letzterPrompt && (
               <button className="btn btn-ghost btn-sm" onClick={e => {
                 e.stopPropagation();
-                navigator.clipboard.writeText(generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus))
+                navigator.clipboard.writeText(letzterPrompt)
                   .then(() => { setPromptKopiert(true); setTimeout(() => setPromptKopiert(false), 2000); });
               }}>{promptKopiert ? "✓" : "📋 Prompt"}</button>
             )}
@@ -1997,8 +2025,10 @@ export default function VokabelApp() {
             <span className="liste-detail-header-name">KI-Prompt generieren</span>
             <button className="btn btn-primary btn-sm"
               onClick={() => {
-                navigator.clipboard.writeText(generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus))
+                const text = generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus);
+                navigator.clipboard.writeText(text)
                   .then(() => {
+                    setLetzterPrompt(text);
                     setPromptKopiert(true);
                     setTimeout(() => { setPromptKopiert(false); setAnsicht("import"); }, 1500);
                   });
@@ -2022,11 +2052,30 @@ export default function VokabelApp() {
                     <strong>Format:</strong> Spalten mit <code>//</code> trennen, falsche Antworten mit <code>||</code> einleiten und mit <code>|</code> trennen.<br/>
                     Erste Zeile = Spaltennamen.
                   </div>
+                  <input type="file" accept=".txt,.text" ref={fileInputRef} style={{display:"none"}}
+                    onChange={e => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = ev => { setImportText(ev.target.result || ""); setImportFehler(""); };
+                      reader.readAsText(file, "UTF-8");
+                      e.target.value = "";
+                    }}
+                  />
                   <div style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:6}}>
-                    <label className="inp-label" style={{marginBottom:0}}>Vokabeln einfügen</label>
-                    <button className="btn btn-ghost btn-sm" onClick={() =>
-                      navigator.clipboard.readText().then(t => { setImportText(t); setImportFehler(""); }).catch(() => {})
-                    }>Aus Zwischenablage</button>
+                    <div style={{display:"flex", alignItems:"baseline", gap:8}}>
+                      <label className="inp-label" style={{marginBottom:0}}>Vokabeln einfügen</label>
+                      {importText && (
+                        <button className="btn-icon" style={{color:"#c0392b", fontSize:"0.82rem", fontWeight:700}}
+                          onClick={() => { setImportText(""); setImportFehler(""); }}>✕</button>
+                      )}
+                    </div>
+                    <div style={{display:"flex", gap:6}}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => fileInputRef.current?.click()}>📄 Datei</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() =>
+                        navigator.clipboard.readText().then(t => { setImportText(t); setImportFehler(""); }).catch(() => {})
+                      }>Aus Zwischenablage</button>
+                    </div>
                   </div>
                   <textarea className="inp" rows={8}
                     placeholder={"Infinitiv // Simple Past // Deutsch\nbe || bee | bi // was/were || wos // sein || ist"}
@@ -3106,6 +3155,7 @@ export default function VokabelApp() {
             <button className="btn btn-ghost" onClick={exportiereAusgewaehlteKopierenHandler}>
               {exportKopiert ? "✓ Kopiert!" : "📋 Kopieren"}
             </button>
+            <button className="btn btn-ghost" onClick={exportiereAusgewaehlteAlsDateiHandler}>📄 Datei</button>
           </div>
         )}
       </div>
