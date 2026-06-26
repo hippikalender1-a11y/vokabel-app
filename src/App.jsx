@@ -162,7 +162,7 @@ ${regeln}`;
 function generiereExportText(liste) {
   const aktiveSpalten = TYPEN.filter(t => liste.spalten[t].aktiv);
   const namenszeile = `# ${liste.name}`;
-  const header = aktiveSpalten.map(t => liste.spalten[t].name || t).join(' // ');
+  const header = aktiveSpalten.map(t => `${liste.spalten[t].name || t} [${t}]`).join(' // ');
   const zeilen = liste.vokabeln.map(vok =>
     aktiveSpalten.map(typ => {
       if (!vok[typ]?.wert) return '';
@@ -716,24 +716,35 @@ export default function VokabelApp() {
   }
 
   function autoMappeKolumnen(headerNamen) {
-    const eKeys = ['english', 'englisch'];
-    const dKeys = ['deutsch', 'german'];
+    const VALID = new Set(['E1','E2','D1','D2','i1','i2']);
     const mapping = {};
-    let eCount = 0, dCount = 0, iCount = 0;
+    const used = new Set();
+    // Pass 1: extract [TYPE] tags from header names (reliable, from our own export)
     headerNamen.forEach((name, idx) => {
-      const low = name.toLowerCase().trim();
-      if (eKeys.some(k => low.includes(k)) && eCount < 2) mapping[idx] = ['E1','E2'][eCount++];
-      else if (dKeys.some(k => low.includes(k)) && dCount < 2) mapping[idx] = ['D1','D2'][dCount++];
-      else mapping[idx] = null;
+      const m = name.match(/\[([EDi][12])\]\s*$/);
+      if (m && VALID.has(m[1]) && !used.has(m[1])) {
+        mapping[idx] = m[1];
+        used.add(m[1]);
+      } else {
+        mapping[idx] = null;
+      }
     });
-    if (eCount === 0 && dCount === 0) {
-      const pos = ['E1','D1','i1','E2','D2','i2'];
-      headerNamen.forEach((_, idx) => { mapping[idx] = pos[idx] ?? null; });
-      return mapping;
+    // Pass 2 (fallback for files without tags): keyword detection
+    if (used.size === 0) {
+      const eKeys = ['english', 'englisch'];
+      const dKeys = ['deutsch', 'german'];
+      let eCount = 0, dCount = 0, iCount = 0;
+      headerNamen.forEach((name, idx) => {
+        const low = name.toLowerCase().trim();
+        if (eKeys.some(k => low.includes(k)) && eCount < 2) mapping[idx] = ['E1','E2'][eCount++];
+        else if (dKeys.some(k => low.includes(k)) && dCount < 2) mapping[idx] = ['D1','D2'][dCount++];
+        else if (iCount < 2) mapping[idx] = ['i1','i2'][iCount++];
+      });
+      if (eCount === 0 && dCount === 0) {
+        const pos = ['E1','D1','i1','E2','D2','i2'];
+        headerNamen.forEach((_, idx) => { mapping[idx] = pos[idx] ?? null; });
+      }
     }
-    headerNamen.forEach((_, idx) => {
-      if (mapping[idx] === null && iCount < 2) mapping[idx] = ['i1','i2'][iCount++];
-    });
     return mapping;
   }
 
@@ -791,7 +802,7 @@ export default function VokabelApp() {
       const liste = neueListeObjekt(id, s.name || `Import ${n + 1}`);
       s.header.forEach((h, i) => {
         const typ = s.mapping[i];
-        if (typ) liste.spalten[typ] = { name: h.wert, aktiv: true };
+        if (typ) liste.spalten[typ] = { name: h.wert.replace(/\s*\[[EDi][12]\]\s*$/, '').trim(), aktiv: true };
       });
       s.daten.forEach(zeile => {
         const vok = { id: liste.naechste_id++ };
@@ -883,7 +894,7 @@ export default function VokabelApp() {
           if (!liste.spalten[typ].aktiv) liste.spalten[typ] = { name: bl.spalten[typ].name, aktiv: true };
         } else {
           // Neue Spalte: Import-Header-Name
-          liste.spalten[typ] = { name: importParsed.header[Number(idx)].wert, aktiv: true };
+          liste.spalten[typ] = { name: importParsed.header[Number(idx)].wert.replace(/\s*\[[EDi][12]\]\s*$/, '').trim(), aktiv: true };
         }
       });
     }
