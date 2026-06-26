@@ -424,6 +424,7 @@ export default function VokabelApp() {
   const [mergeQuelleId, setMergeQuelleId] = useState("");
 
   const [importText, setImportText] = useState("");
+  const [importDateiname, setImportDateiname] = useState("");
   const [importParsed, setImportParsed] = useState(null);
   const [importMapping, setImportMapping] = useState({});
   const [importZielTyp, setImportZielTyp] = useState("neu");
@@ -708,12 +709,13 @@ export default function VokabelApp() {
 
   // ── Import-Aktionen ───────────────────────────────────────────────────────
   function resetImport() {
-    setImportText(""); setImportParsed(null); setImportMapping({});
+    setImportText(""); setImportDateiname(""); setImportParsed(null); setImportMapping({});
     setImportZielTyp("neu"); setImportNeuName(""); setImportBestehendId(""); setImportFehler("");
   }
 
   function analysiereImport() {
-    const alleZeilen = importText.trim().split('\n').filter(z => z.trim());
+    const normiert = importText.replace(/^﻿/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const alleZeilen = normiert.trim().split('\n').filter(z => z.trim());
     if (alleZeilen.length < 2) { setImportFehler("Mindestens 2 Zeilen erforderlich."); return; }
     let zeilen = alleZeilen;
     let erkannterName = '';
@@ -2056,8 +2058,14 @@ export default function VokabelApp() {
                     onChange={e => {
                       const file = e.target.files[0];
                       if (!file) return;
+                      setImportDateiname(file.name);
                       const reader = new FileReader();
-                      reader.onload = ev => { setImportText(ev.target.result || ""); setImportFehler(""); };
+                      reader.onload = ev => {
+                        const raw = ev.target.result || "";
+                        const bereinigt = raw.replace(/^﻿/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                        setImportText(bereinigt);
+                        setImportFehler("");
+                      };
                       reader.readAsText(file, "UTF-8");
                       e.target.value = "";
                     }}
@@ -2067,16 +2075,26 @@ export default function VokabelApp() {
                       <label className="inp-label" style={{marginBottom:0}}>Vokabeln einfügen</label>
                       {importText && (
                         <button className="btn-icon" style={{color:"#c0392b", fontSize:"0.82rem", fontWeight:700}}
-                          onClick={() => { setImportText(""); setImportFehler(""); }}>✕</button>
+                          onClick={() => { setImportText(""); setImportDateiname(""); setImportFehler(""); }}>✕</button>
                       )}
                     </div>
                     <div style={{display:"flex", gap:6}}>
                       <button className="btn btn-ghost btn-sm" onClick={() => fileInputRef.current?.click()}>📄 Datei</button>
                       <button className="btn btn-ghost btn-sm" onClick={() =>
-                        navigator.clipboard.readText().then(t => { setImportText(t); setImportFehler(""); }).catch(() => {})
+                        navigator.clipboard.readText().then(t => { setImportText(t); setImportDateiname(""); setImportFehler(""); }).catch(() => {})
                       }>Aus Zwischenablage</button>
                     </div>
                   </div>
+                  {importDateiname && !importText && (
+                    <div style={{fontSize:"0.82rem", color:"#888", marginBottom:6}}>Lese Datei…</div>
+                  )}
+                  {importDateiname && importText && (
+                    <div style={{fontSize:"0.82rem", color:"#4a7c59", marginBottom:6, display:"flex", alignItems:"center", gap:6}}>
+                      <span>✓</span>
+                      <span style={{fontWeight:600}}>{importDateiname}</span>
+                      <span style={{color:"#888"}}>— bereit zum Analysieren</span>
+                    </div>
+                  )}
                   <textarea className="inp" rows={8}
                     placeholder={"Infinitiv // Simple Past // Deutsch\nbe || bee | bi // was/were || wos // sein || ist"}
                     value={importText}
