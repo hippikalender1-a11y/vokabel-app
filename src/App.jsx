@@ -286,7 +286,7 @@ const CSS = `
   body{background:#f7f5f0;font-family:system-ui,sans-serif;color:#1a1a1a;}
   .app{max-width:600px;margin:0 auto;padding:0 0 80px;}
   .topbar{background:#fff;border-bottom:1px solid #e0dbd2;padding:14px 16px;display:flex;align-items:center;gap:12px;}
-  .topbar-title{font-size:1.05rem;font-weight:700;flex:1;}
+  .topbar-title{font-size:1.05rem;font-weight:700;flex:1;text-align:center;}
   .topbar-back{background:#2d6a4f;color:#fff;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;padding:8px 14px;border-radius:10px;font-family:inherit;transition:opacity .15s;flex-shrink:0;}
   .topbar-back:active{opacity:.8;}
   .tabs{display:flex;background:#fff;border-bottom:1px solid #e0dbd2;}
@@ -2185,6 +2185,21 @@ export default function VokabelApp() {
           </div>
         )}
 
+        {/* ── Quiz-Listen-Header ── */}
+        {tab === "quiz" && (
+          <div className="liste-detail-header" style={{top: headerH}}>
+            <span className="liste-detail-header-name" style={{color: quizTabListen.length === 0 ? "#aaa" : undefined}}>
+              {quizTabListen.length === 0
+                ? "Listen auswählen"
+                : `${getKombinierteListe(quizTabListen)?.vokabeln.length ?? 0} Vokabeln aus ${quizTabListen.length} ausgewählten ${quizTabListen.length === 1 ? "Liste" : "Listen"}`
+              }
+            </span>
+            <button className="btn btn-ghost btn-sm" onClick={() => setListenAuswahlAufgeklappt(v => !v)}>
+              {listenAuswahlAufgeklappt ? "Einklappen" : "Ausklappen"}
+            </button>
+          </div>
+        )}
+
         {/* ── Import Inhalt ── */}
         {tab === "listen" && ansicht === "import" && (() => {
           const bl = getBestehendeListe();
@@ -2540,7 +2555,7 @@ export default function VokabelApp() {
           return (
             <>
               {quizListeAufgeklappt && (
-                <div className="quiz-liste-sticky" style={{top:57}}>
+                <div className="quiz-liste-sticky" style={{top: headerH + 44}}>
                   <button className="btn btn-primary btn-sm"
                     onClick={() => { setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
                     Liste einklappen
@@ -2557,18 +2572,6 @@ export default function VokabelApp() {
               )}
               <div className="sektion">
                 {/* LISTEN-AUSWAHL */}
-                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: listenAuswahlAufgeklappt ? 8 : 16, cursor:"pointer"}}
-                  onClick={() => setListenAuswahlAufgeklappt(v => !v)}>
-                  <div className="sektion-label" style={{marginBottom:0}}>Listen auswählen</div>
-                  <span style={{fontSize:"0.82rem", color:"#6b6560", display:"flex", alignItems:"center", gap:8}}>
-                    {!listenAuswahlAufgeklappt && (
-                      quizTabListen.length > 0
-                        ? <span>{kombiListe?.vokabeln.length ?? 0} Vokabeln aus {quizTabListen.length} ausgewählten Listen</span>
-                        : <span style={{fontStyle:"italic"}}>Keine Liste ausgewählt</span>
-                    )}
-                    <span>{listenAuswahlAufgeklappt ? "▲" : "▼"}</span>
-                  </span>
-                </div>
                 {listenAuswahlAufgeklappt && (
                   listenIndex.length === 0
                     ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
