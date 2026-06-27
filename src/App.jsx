@@ -501,7 +501,10 @@ export default function VokabelApp() {
   const listenContainerRef = useRef(null);
   const statistikListenHeaderRef = useRef(null);
   const quizSentinelRef = useRef(null);
+  const listenSentinelRef = useRef(null);
+  const alleBereichRef = useRef(null);
   const [headerH, setHeaderH] = useState(104);
+  const [alleBereichH, setAlleBereichH] = useState(0);
   const [statistikListenHeaderH, setStatistikListenHeaderH] = useState(0);
 
   useEffect(() => {
@@ -514,14 +517,31 @@ export default function VokabelApp() {
     return () => obs.disconnect();
   }, []);
 
+  // Sentinel vor Quiz-Button: wenn Quiz-Button an Alle/Bereich-Zeile anstößt → Einzelauswahl einklappen
   useEffect(() => {
     const el = quizSentinelRef.current;
+    if (!el) return;
+    const threshold = Math.round(headerH + alleBereichH);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting && entry.boundingClientRect.top < threshold) {
+          setQuizListeAufgeklappt(false);
+        }
+      },
+      { rootMargin: `-${threshold}px 0px 0px 0px` }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [headerH, alleBereichH]);
+
+  // Sentinel vor Alle/Bereich-Zeile: wenn Zeile an Haupt-Header anstößt → Listenauswahl einklappen
+  useEffect(() => {
+    const el = listenSentinelRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting && entry.boundingClientRect.top < headerH) {
           setListenAuswahlAufgeklappt(false);
-          setQuizListeAufgeklappt(false);
         }
       },
       { rootMargin: `-${Math.round(headerH)}px 0px 0px 0px` }
@@ -529,6 +549,16 @@ export default function VokabelApp() {
     observer.observe(el);
     return () => observer.disconnect();
   }, [headerH]);
+
+  // Alle/Bereich-Zeile Höhe messen
+  useEffect(() => {
+    const el = alleBereichRef.current;
+    if (!el) { setAlleBereichH(0); return; }
+    const obs = new ResizeObserver(() => setAlleBereichH(el.offsetHeight));
+    obs.observe(el);
+    setAlleBereichH(el.offsetHeight);
+    return () => obs.disconnect();
+  }, [quizTabListen.length]);
 
   useEffect(() => {
     const el = statistikListenHeaderRef.current;
@@ -2242,37 +2272,6 @@ export default function VokabelApp() {
           );
         })()}
 
-        {/* Quiz: Zeile 2 – Alle / Bereich */}
-        {tab === "quiz" && quizKombiListe && (
-          <div style={{background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
-            <div className="toggle-btn">
-              <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
-                onClick={() => { setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false); }}>
-                Alle
-              </button>
-              <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`}
-                onClick={() => setQuizBereichTyp("bereich")}>
-                Bereich
-              </button>
-            </div>
-            {quizBereichTyp === "bereich" && (
-              <>
-                {quizCheckboxAuswahl.size > 0 && (
-                  <button className="btn btn-ghost btn-sm"
-                    onClick={() => setQuizCheckboxAuswahl(new Set())}>
-                    Auswahl löschen ({quizCheckboxAuswahl.size})
-                  </button>
-                )}
-                <span style={{flex:1, textAlign:"right", fontSize:"0.8rem", color:"#aaa"}}>
-                  ({quizGefilterteVoks.length} V.)
-                </span>
-                <button className="btn-toggle-ghost" onClick={() => setQuizListeAufgeklappt(v => !v)}>
-                  {quizListeAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
-                </button>
-              </>
-            )}
-          </div>
-        )}
         </div>{/* end sticky header wrapper */}
 
         {/* ── Listen-Header (persistent) ── */}
@@ -2691,29 +2690,6 @@ export default function VokabelApp() {
           return (
             <>
               <div className="sektion">
-                {/* Einzelauswahl (Bereich-Modus) */}
-                {quizListeAufgeklappt && quizBereichTyp === "bereich" && kombiListe && (
-                  <div className="karte" style={{marginBottom:8}}>
-                    {basisVoks.length === 0
-                      ? <div style={{padding:"16px", color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
-                      : basisVoks.map((vok, idx) => {
-                        const inChk = quizCheckboxAuswahl.has(vok.id);
-                        const sp1 = abfragbar[0]; const sp2 = abfragbar[1];
-                        return (
-                          <div key={vok.id} className="vok-zeile"
-                            style={{background: inChk ? "#f0f7f0" : "transparent"}}
-                            onClick={() => toggleVokCheckbox(vok.id)}>
-                            <div className={`checkbox${inChk?" checked":""}`} style={{flexShrink:0}}>{inChk?"✓":""}</div>
-                            <span className="vok-nr">{idx+1}</span>
-                            <span style={{fontSize:"0.88rem", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{sp1?vok[sp1]?.wert||'':''}</span>
-                            <span style={{fontSize:"0.82rem", color:"#6b6560", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textAlign:"right"}}>{sp2?vok[sp2]?.wert||'':''}</span>
-                          </div>
-                        );
-                      })
-                    }
-                  </div>
-                )}
-
                 {/* LISTEN-AUSWAHL */}
                 <div ref={listenContainerRef}>
                   {listenAuswahlAufgeklappt && (
@@ -2752,12 +2728,70 @@ export default function VokabelApp() {
                   </div>
                 )}
 
-                {/* Sentinel: wenn Quiz-Button an Header anstößt → Listen einklappen */}
+                {/* Sentinel: wenn Alle/Bereich-Zeile an Haupt-Header anstößt → Listenauswahl einklappen */}
+                {kombiListe && <div ref={listenSentinelRef} style={{height:0}} />}
+
+                {/* Alle/Bereich – sticky direkt unter Haupt-Header */}
+                {kombiListe && (
+                  <div ref={alleBereichRef} style={{position:"sticky", top:headerH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                    <div className="toggle-btn">
+                      <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
+                        onClick={() => { setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false); }}>
+                        Alle
+                      </button>
+                      <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`}
+                        onClick={() => setQuizBereichTyp("bereich")}>
+                        Bereich
+                      </button>
+                    </div>
+                    {quizBereichTyp === "bereich" && (
+                      <>
+                        {quizCheckboxAuswahl.size > 0 && (
+                          <button className="btn btn-ghost btn-sm"
+                            onClick={() => setQuizCheckboxAuswahl(new Set())}>
+                            Auswahl löschen ({quizCheckboxAuswahl.size})
+                          </button>
+                        )}
+                        <span style={{flex:1, textAlign:"right", fontSize:"0.8rem", color:"#aaa"}}>
+                          ({quizGefilterteVoks.length} V.)
+                        </span>
+                        <button className="btn-toggle-ghost" onClick={() => setQuizListeAufgeklappt(v => !v)}>
+                          {quizListeAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Einzelauswahl (Bereich-Modus) */}
+                {quizListeAufgeklappt && quizBereichTyp === "bereich" && kombiListe && (
+                  <div className="karte" style={{marginBottom:8, marginTop:8}}>
+                    {basisVoks.length === 0
+                      ? <div style={{padding:"16px", color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
+                      : basisVoks.map((vok, idx) => {
+                        const inChk = quizCheckboxAuswahl.has(vok.id);
+                        const sp1 = abfragbar[0]; const sp2 = abfragbar[1];
+                        return (
+                          <div key={vok.id} className="vok-zeile"
+                            style={{background: inChk ? "#f0f7f0" : "transparent"}}
+                            onClick={() => toggleVokCheckbox(vok.id)}>
+                            <div className={`checkbox${inChk?" checked":""}`} style={{flexShrink:0}}>{inChk?"✓":""}</div>
+                            <span className="vok-nr">{idx+1}</span>
+                            <span style={{fontSize:"0.88rem", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{sp1?vok[sp1]?.wert||'':''}</span>
+                            <span style={{fontSize:"0.82rem", color:"#6b6560", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textAlign:"right"}}>{sp2?vok[sp2]?.wert||'':''}</span>
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                )}
+
+                {/* Sentinel: wenn Quiz-Button an Alle/Bereich anstößt → Einzelauswahl einklappen */}
                 <div ref={quizSentinelRef} style={{height:0}} />
 
-                {/* Quiz starten Button - sticky-on-scroll */}
+                {/* Quiz starten Button - sticky unter Alle/Bereich-Zeile */}
                 {kombiListe && (
-                  <div style={{position:"sticky", top:headerH, zIndex:8, background:"#fff", padding:"8px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid #e0dbd2"}}>
+                  <div style={{position:"sticky", top:headerH + alleBereichH, zIndex:7, background:"#fff", padding:"8px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid #e0dbd2"}}>
                     <button className="btn btn-primary" style={{width:"100%"}}
                       onClick={starteQuiz} disabled={!kannStarten || verfuegbar === 0}>
                       Quiz starten ({verfuegbar} Vokabeln)
