@@ -1,359 +1,265 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-27  (Session 7 abgeschlossen, Session 8 geplant)
-
-ZIELPLATTFORM
--------------
-Die App ist für die Nutzung auf dem iPad optimiert (mobiles Layout,
-max-width 600px, Touch-freundliche Buttons und Abstände).
-Sie läuft als Progressive Web App im Browser und wird über
-GitHub Pages bereitgestellt. Funktioniert auch auf Android.
-
+Stand: 2026-06-27  (Session 8 abgeschlossen, Session 9 geplant)
+Letzter Commit: 77b9c53
 
 DATEIPFADE
 ----------
 Projektordner:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\
 Quellcode:        C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\App.jsx
-                  (eine einzige React-Datei, ~3590 Zeilen)
-Einstiegspunkt:   C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\main.jsx
-Vite-Konfig:      C:\EIGENE DATEIEN\CLAUDE\vokabel-app\vite.config.js
+                  (eine einzige React-Datei, ~3700 Zeilen)
 Deploy-Skript:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\deploy.ps1
-
 
 DEPLOYMENT
 ----------
-Deploy per PowerShell-Skript im Projektordner:
-
     .\deploy.ps1 "Commit-Message"
-
-Das Skript führt automatisch aus:
-  1. git add .
-  2. git commit -m "<message>"
-  3. git push
-  4. npm run deploy  →  GitHub Pages
-
-Versionsnummer wird automatisch aus dem Build-Zeitstempel erzeugt
-(__BUILD_TIME__ in vite.config.js → Datum + Uhrzeit).
-
-GitHub-Repository:  https://github.com/hippikalender1-a11y/vokabel-app
-Live-URL:           https://hippikalender1-a11y.github.io/vokabel-app/
+GitHub:  https://github.com/hippikalender1-a11y/vokabel-app
+Live:    https://hippikalender1-a11y.github.io/vokabel-app/
 
 
 TECHNIK-STACK
 -------------
 - React (useState, useEffect, useRef, ResizeObserver)
-- Vite als Build-Tool
-- Kein CSS-Framework – alles inline-Styles + ein globaler CSS-String
-- localStorage für alle Datenpersistenz (keine Datenbank)
+- Vite, kein CSS-Framework, alles inline-Styles + globaler CSS-String
+- localStorage für alle Datenpersistenz
 - Web Speech API (SpeechSynthesis) für Text-to-Speech
 
 
-APP-STRUKTUR
-------------
-4 Tabs mit persistenter Tab-Leiste:
-
-  LISTEN-Tab
-    - Listenübersicht (alle Vokabellisten)
-    - Listen-Detail (Spalten, Vokabeln ein-/ausklappbar)
-    - Importieren (Text einfügen → analysieren → Spalten zuweisen → importieren)
-    - KI-Prompt generieren (Thema-basiert oder Foto-Umwandlung)
-
-  QUIZ-Tab
-    - Sticky Sub-Header mit Listenauswahl-Info + Ausklappen/Einklappen-Button
-    - [GEPLANT] Sticky "Quiz starten"-Button als zweite Header-Zeile
-    - Multi-Listen-Auswahl mit Checkboxen (einklappbar)
-    - Gespeicherte Konfigurationen (5 Slots + "Zuletzt verwendet")
-    - Quiz-Modi: Sequenziell, Rotierend, Diktat
-    - Spalten-Konfiguration (Frage / Antwort / Info, je Modus: Tastatur / MC / Karte)
-    - Vokabel-Auswahl: Alle, Bereich (Von–Bis), manuelle Checkbox-Auswahl
-    - Reihenfolge: Zufällig, Schlechteste N, Listen-Nr.
-    - Lautsprache: Auto-Play (nur Englisch), Spalten-Auswahl
-    - Schwierigkeits-Modus: Einfach / Schwer
-
-  STATISTIK-Tab
-    - Sticky Header mit Listenauswahl (ähnlich wie Quiz-Tab)
-    - Sortierung, Filterung, Score-Anzeige
-
-  EINSTELLUNGEN-Tab
-    - App-Version und Neu laden
-    - Anzahl gespeicherter Listen
-
-
-DATENMODELL (localStorage)
---------------------------
-  vokabel_listen_index          → Array [{id, name}]
-  vokabel_liste_<id>            → Listenobjekt:
-      { id, name, spalten, naechste_id, vokabeln }
-      spalten: { E1, E2, D1, D2, i1, i2 }
-                E1/E2 = Englisch (abfragbar)
-                D1/D2 = Deutsch  (abfragbar)
-                i1/i2 = Info     (nur angezeigt, nicht abgefragt)
-      vokabeln: [{ id, E1:{wert, falsch:[]}, D1:{wert,falsch:[]},
-                   fortschritt:{score,streak,...}, diktatFortschritt:{score,...} }]
-  vokabel_einstellungen         → { modus, autoplay, vorlesen:[] }
-  vokabel_session_slots         → Array[6] mit gespeicherten Quiz-Konfigurationen
-
-
+================================================================
 STICKY HEADER-ARCHITEKTUR
---------------------------
+================================================================
 Alle sticky Elemente sitzen im gleichen Scroll-Container (.app).
 
-  1. Haupt-Sticky-Wrapper (ref={headerRef}, position:sticky, top:0, z-index:10)
-       ├── .topbar  ("Vokabel-Trainer", text-align:center)
+  1. Haupt-Sticky-Wrapper (ref={headerRef}, position:sticky, top:0, zIndex:10)
+       ├── .topbar  ("Vokabel-Trainer", zentriert)
        ├── .tabs    (Listen / Quiz / Statistik / Einstellungen)
-       └── [nur Quiz-Tab] .liste-detail-header (position:relative)
-               → "Listen auswählen" (grau) ODER
-                 "X Vokabeln aus Y ausgewählten Listen"
-               → Button "Ausklappen / Einklappen"
+       ├── [nur Quiz-Tab] .liste-detail-header (position:relative)
+       │       → Zeigt Gesamt-Vokabel-Anzahl der ausgewählten Listen
+       │       → Button "Ausklappen / Einklappen"
+       └── [nur Quiz-Tab, Liste gewählt] "Quiz starten (X Vokabeln)"-Button
+               HINWEIS: dieser Button soll in Session 9 aus dem headerRef
+               heraus in den Content-Flow verschoben werden (siehe unten)
 
   2. headerH = Höhe des Haupt-Wrappers (per ResizeObserver gemessen)
-     → Ändert sich je nach Tab (Quiz-Tab hat zusätzliche Zeile)
+     → Ändert sich je nach Tab
 
   3. Sub-Header der anderen Tabs (position:sticky, top:headerH):
-       - Listen-Tab: .liste-detail-header (Meine Listen / Importieren / Exportieren)
+       - Listen-Tab: .liste-detail-header
        - Statistik-Tab: .statistik-listen-header
 
   4. quiz-liste-sticky (Vokabellisten-Range-Header, position:sticky, top:headerH)
-     → Erscheint nur wenn quizListeAufgeklappt=true (Vokabel-Checkboxen sichtbar)
+     → Erscheint nur wenn quizListeAufgeklappt=true
 
 
-QUIZ-TAB VOREINSTELLUNGEN (State-Defaults)
-------------------------------------------
+================================================================
+AKTUELLER FEATURE-STAND (nach Session 8)
+================================================================
+
+QUIZ-TAB
+--------
+- Sticky Sub-Header: Gesamt-Vokabel-Anzahl der gewählten Listen + Ausklappen/Einklappen
+- "Quiz starten (X Vokabeln)"-Button: aktuell im headerRef-Wrapper
+  (soll in Session 9 als sticky-on-scroll im Content landen)
+- Multi-Listen-Auswahl mit Checkboxen (einklappbar)
+- Gespeicherte Konfigurationen: 5 Slots + "Zuletzt verwendet"
+- Quiz-Modi: Sequenziell, Rotierend, Diktat
+- Reihenfolge: Zufällig, Schlechteste N (+ optionaler Max-Score-Filter), Listen-Nr.
+- Option "Unbeantwortete zuerst" (Default: an) — bei Zufällig + Listen-Nr.
+- Lautsprache, Schwierigkeits-Modus
+
+QUIZ-DEFAULTS (State-Initialwerte)
   quizModus              = "sequenziell"
   quizFrageTyp           = "D1"
   quizAntwortTypenGeordnet = ["E1"]
-  quizAusgewaehlt        = ["D1", "E1"]
   quizSpalteModus        = { E1: "karte" }
   quizZeigeInfo          = { i1: true, i2: true }
-  quizBereichTyp         = "alle"
   quizReihenfolge        = "zufall"
+  quizUnbeantwortetZuerst = true
   quizSchlechtesteAnzahl = 20
-  defaultEinstellungen() → modus: "schwer" (Neuzustand / gelöschter localStorage)
+  quizSchlechtesteMaxScore = ""
+  defaultEinstellungen() → modus: "schwer"
 
-  initQuizDefaults(kombiListe) wird aufgerufen wenn "Quiz starten" aus Liste-Detail
-  geklickt wird. Setzt Antwort-Modus automatisch auf "karte".
+TASTATUR-QUIZ (Tippen-Modus)
+-----------------------------
+- 3 Fehlversuche erlaubt bevor Score-Abzug + automatische Lösungsanzeige
+- 1. + 2. Fehlversuch: Box leuchtet 1,5s rot, "Nicht richtig" (zentriert) erscheint
+  und verschwindet mit der roten Box → kein Score-Abzug
+- 3. Fehlversuch: Score -1, Lösung wird automatisch gezeigt (phase: "aufgedeckt")
+- Lösungstext: quiz-frage-text Klasse (1.5rem, fett), minHeight:"44px" für stabile Box
+- "Multiple Choice"-Button (wechsleZuMC) ist weggefallen
+- State: quiz.aktuelleFehlversuche, quiz.falschFlash
+
+DIKTAT-QUIZ
+-----------
+- Lösung zeigt nur: **fettes Wort** – Übersetzung (kein "Deine Eingabe"-Label, kein Hint)
+- Fragebox: Übersetzungshinweis immer im DOM (visibility:hidden/visible) → keine Größensprünge
+- Stimmenfilter: Novelty/Effekt-Stimmen (Boing, Jester, Zarvox, Fred, etc.) ausgefiltert
+- Button "Andere Stimme" (früher "Nochmal") wechselt die Stimme alle 2 Plays
+
+STATISTIK-TAB
+-------------
+- Sticky Listen-Header (top:headerH): Listenauswahl, Zurücksetzen, Alle, Ausklappen
+- Graph: Quiz-Score (grün, durchgezogen) + Diktat-Score (orange, gestrichelt)
+- Graph-Toggle: "Inkl. unbeantwortete" / "Nur beantwortete" (State: statistikGraphOhneUnbeantwortet)
+  → Bei "Nur beantwortete": jede Linie plottet nur Vokabeln mit vorhandenem Fortschritt
+- Kennzahlen: Gesamt, Nie abgefragt, Score positiv, Score negativ, Ø Score
+- Filter: Alle, Nie, Neg, Null, Pos
+- Sortierung: Score ↑, Score ↓, Streak, Datum, A→Z
 
 
-QUIZ-LOGIK
-----------
-Scoring (Tippen/MC/Karte):
-  Richtig:    +1 Score, Streak +1 (ab Streak 3: Score min. 2)
-  Falsch:     Streak Reset, Score -1/-2/-3 je nach Fehlerhäufigkeit
-  Aufdecken:  Streak Reset, aufgedecktStreak +1
-              (schwer-Modus: -1; nach 3x aufdecken: Score = -100)
+================================================================
+SCORING-LOGIK
+================================================================
+Tastatur/MC/Karte:
+  Richtig:    +1, Streak +1 (ab Streak 3: Score min. 2)
+  Falsch:     Streak 0, Score -1/-2/-3 je sessionFalschAnzahl
+              NEU: erst beim 3. Fehlversuch wird Score abgezogen + Lösung gezeigt
+  Aufdecken:  Streak 0, aufgedecktStreak +1 (schwer: -1; nach 3x: Score=-100)
 
-Diktat-Scoring:
+Diktat:
   Richtig:    +1
-  Aufdecken:  -1 (je falschem Versuch ein Buchstabe mehr aufgedeckt)
+  Aufdecken:  -1
 
-Multi-Listen-Quiz:
-  Vokabeln erhalten kombinierte ID: "<listeId>__<vokId>"
-  Scores werden in die Originalliste zurückgeschrieben (_listeId, _origId)
-
-
-QUIZ-ANSICHTEN (Render-Reihenfolge)
-------------------------------------
-  1. Diktat – Fertig-Screen  (phase === "fertig", modus === "diktat")
-  2. Diktat – Aktiv          (modus === "diktat")
-  3. Quiz – Fertig-Screen    (phase === "fertig")
-  4. Quiz – Aktiv            (sequenziell / rotierend)
-  5. Statistik               (ansicht === "statistik")
-  6. Haupt-Layout            (Tabs, Listen, Import, KI-Prompt, Einstellungen, Quiz-Setup)
+State-Felder im quiz-Objekt:
+  sessionFalsch: {vokId: count}   — Fehlanzahl je Vokabel in dieser Session
+  aktuelleFehlversuche: 0-2       — Fehlversuche für die aktuelle Frage
+  falschFlash: bool               — true während des 1,5s-Rotblitzes
 
 
-WICHTIGE VERHALTENSREGELN
---------------------------
-- TTS (🔊) NUR für englische Spalten (E1, E2) – niemals Deutsch
-- "Bis Nr." im Bereich-Modus muss explizit eingegeben sein,
-  sonst ist der Range-Filter inaktiv (nur Checkbox-Auswahl gilt)
-- MC-Modus: Nach richtiger Antwort oder "Lösung anzeigen" werden
-  die MC-Buttons ausgeblendet; die Antwort erscheint als einzelnes
-  Wort in Fragetext-Formatierung (1.5rem, fett) in der Antwortbox
-- Tabs sind immer sichtbar (kein eigener Zurück-Button im Quiz)
-- Nach Quiz: immer zurück in den Quiz-Tab
+================================================================
+DATENMODELL (localStorage)
+================================================================
+  vokabel_listen_index     → Array [{id, name}]
+  vokabel_liste_<id>       → { id, name, spalten, naechste_id, vokabeln }
+      spalten: { E1, E2, D1, D2, i1, i2 }
+      vokabeln: [{ id, E1:{wert,falsch:[]}, D1:{wert,falsch:[]},
+                   fortschritt:{score,streak,aufgedecktStreak,letzteAbfrage},
+                   diktatFortschritt:{score,...} }]
+  vokabel_einstellungen    → { modus, autoplay, vorlesen:[] }
+  vokabel_session_slots    → Array[6] mit gespeicherten Quiz-Konfigurationen
+      Slot-Felder: quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet,
+                   quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
+                   quizModus, quizBereichTyp, quizBereichVon, quizBereichBis,
+                   quizReihenfolge, quizSchlechtesteAnzahl, quizSchlechtesteMaxScore,
+                   quizUnbeantwortetZuerst, quizDiktatSpalte, quizDiktatUebersetzung
 
 
+================================================================
 IMPORT / EXPORT
----------------
-TXT-Export/Import:
-  - Spaltentrennzeichen: //
-  - Falsche Antworten (MC): || gefolgt von | als Einzeltrenner
-  - Phonetische Umschriften [...] werden beim Import entfernt
-  - Header-Zeile mit Typ-Tags: "Englisch [E1] // Deutsch [D1]"
-    → Tags sind maßgeblich für Spaltenzuordnung (nicht Spaltenname)
-  - Mehrere Listen in einer Datei: # ListenName als Abschnittstrenner
-  - Einzelne Liste: einfach ohne # starten
-
-JSON-Export/Import (empfohlenes Backup-Format):
-  - Exportiert: Vokabeln (immer), Falsche Antworten, Quiz-Fortschritt,
-    Diktat-Fortschritt (jeweils optional per Checkbox)
-  - Import: erkennt automatisch wenn Datei mit [ oder { beginnt
-  - Dateiname: mehrere Listen → "vokabel-backup.json",
-               eine Liste → "<listenname>.json"
-  - Zuverlässiger als TXT für Gerät-zu-Gerät-Transfer
-
-Beide Formate werden direkt heruntergeladen (kein Share-API,
-da auf Android die Datei nur 2 Bytes ankam via Mail).
-
-
-BEKANNTE BESONDERHEITEN
-------------------------
-- Der //-Trenner im Import trennt Spalten
-- ||  leitet falsche MC-Antworten ein, | trennt Einzelantworten
-- Phonetische Umschriften [...] werden beim Import automatisch entfernt
-- Die Vokabelliste unter "Liste anzeigen" zeigt alle Vokabeln,
-  auch wenn noch keine Quiz-Spalten konfiguriert sind
-- Quiz-Konfigurationen (Slots) speichern KEIN Checkbox-Zustand
+================================================================
+TXT: Spalten // getrennt, Falsch-Antworten || gefolgt von |, Header mit [E1]-Tags
+JSON: Vokabeln + optional Fortschritt/Diktat/Falsch; zuverlässiger für Gerät-Transfer
+Multi-Listen-TXT: # ListenName als Abschnittstrennzeichen
 
 
 ================================================================
-GEPLANTE ÄNDERUNGEN FÜR SESSION 8
+GEPLANTE ÄNDERUNGEN FÜR SESSION 9
 ================================================================
 
-ÄNDERUNG 1 – Revert Quiz-Header Vokabel-Anzahl
------------------------------------------------
-Die letzte Änderung (Header zeigt gefilterte Anzahl) rückgängig machen.
-Im Header steht wieder die GESAMTANZAHL aller Vokabeln der ausgewählten Listen:
-    "79 Vokabeln aus 2 ausgewählten Listen"
-(Der aktuelle Code in App.jsx zeigt eine IIFE-Berechnung mit gefilterten Werten –
-das soll zurück zu: getKombinierteListe(quizTabListen)?.vokabeln.length)
+KONZEPT: STICKY-ON-SCROLL ELEMENTE
+------------------------------------
+Elemente die im normalen Content-Flow liegen, aber beim Scrollen am
+Header anstossen und dort kleben bleiben (standard CSS position:sticky
+mit top:headerH, AUSSERHALB des headerRef-Wrappers, direkt in .app).
+Beim Zurückscrollen lösen sie sich wieder ab.
 
-
-ÄNDERUNG 2 – "Quiz starten"-Button als permanente zweite Header-Zeile
------------------------------------------------------------------------
-Ziel: Der wichtigste Button bleibt immer sichtbar, egal wo man scrollt.
-
-Verhalten:
-  - Nur sichtbar wenn mindestens eine Liste ausgewählt ist (quizTabListen.length > 0)
-  - Position: direkt unter dem "Listenauswahl"-Header
-    → Bei eingeklappter Liste: gleich unter dem Header
-    → Bei ausgeklappter Liste: unter den sichtbaren List-Einträgen,
-      ABER wenn man runterscrollt und der Button aus dem Viewport geht,
-      klebt er als "zweite Header-Zeile" direkt unter dem Haupt-Header
-  - Das bedeutet: der Button IST IMMER IM HAUPT-STICKY-WRAPPER enthalten
-    (wie der Quiz-Listenauswahl-Header), damit er nie verschwindet
-  - Reihenfolge im sticky wrapper:
-      Topbar → Tabs → Quiz-Listenauswahl-Header → [Quiz-Starten-Button wenn Liste gewählt]
-
-  Implementierung:
-  - Button direkt im headerRef-Div als zusätzliche Zeile einfügen
-  - Conditional: {tab === "quiz" && quizTabListen.length > 0 && (...)}
-  - Button-Text: "Quiz starten (X Vokabeln)"  ← zeigt gefilterte Anzahl hier!
-  - Button klickt starteQuiz() auf
-  - disabled wenn !kannStarten (keine Frage/Antwort-Spalte konfiguriert)
-  - Unter dem Button im Scroll-Bereich: Gespeicherte Slots kommen zuerst,
-    dann die restlichen Optionen (Abfrage-Modus, Spalten etc.)
-
-  WICHTIG: Da headerH per ResizeObserver automatisch gemessen wird,
-  passt sich alles andere automatisch an die neue Höhe an.
-
-
-ÄNDERUNG 3 – Neue Quiz-Option: "Unbeantwortete Vokabeln zuerst"
+ÄNDERUNG 1 – "Quiz starten"-Button: sticky-on-scroll im Content
 ----------------------------------------------------------------
-Neuer State: quizUnbeantwortetZuerst (useState(true))
+Aktuell: Button ist im headerRef-Wrapper (immer sichtbar, aber kein Scroll-Verhalten)
+Neu: Button aus headerRef entfernen, stattdessen im Content-Flow platzieren:
+  - Position: nach der ausgeklappten Listenliste, vor den Slots
+  - style: position:"sticky", top:headerH, zIndex:8, background:"#fff"
+  - Padding + borderBottom damit er beim Kleben sauber aussieht
+  - Wenn Listen eingeklappt: Button ist erstes Content-Element → klebt sofort
+  - Wenn Listen ausgeklappt: Button scrollt mit hoch bis er am Header anstösst
+  - Button zeigt verfuegbar-Anzahl, disabled wenn !kannStarten || verfuegbar===0
+  - kannStarten + verfuegbar werden bereits im Quiz-IIFE berechnet → direkt verfügbar
+  - Gleichzeitig: IIFE im headerRef für den Button ENTFERNEN
 
-Verhalten:
-  Wenn aktiviert (Standard: an):
-  → Im Modus "Zufällig": Erst aus allen Vokabeln ohne Score-Eintrag
-    (fortschritt?.score === undefined oder null) zufällig auswählen,
-    bevor bereits beantwortete Vokabeln zufällig ausgewählt werden.
-  → Im Modus "Listen-Nr.": Vokabeln ohne Score-Eintrag zuerst (in
-    Listennummer-Reihenfolge), dann bereits beantwortete.
-  → Im Modus "Schlechteste": Keine Auswirkung (dort geht es ja
-    explizit um beantwortete Vokabeln mit schlechtem Score).
+ÄNDERUNG 2 – Statistik: Ø Score sticky-on-scroll
+-------------------------------------------------
+Die Ø-Score-Zeile (derzeit normaler Content) soll sticky werden:
+  style: position:"sticky", top:headerH, zIndex:8, background:"#fff"
+Damit klebt der Durchschnittsscore beim Scrollen am Header.
+Hinweis: headerH im Statistik-Tab = Höhe von Topbar + Tabs + statistik-listen-header
 
-  Umsetzung in starteQuiz()/starteDiktat():
-  - voks = gefilterteVoks.filter(v => !v.fortschritt?.score && score !== 0)
-    (oder: score === undefined/null = "nie beantwortet")
-  - Bei Sequenziell/Rotierend: fortschritt?.score prüfen
-  - Bei Diktat: diktatFortschritt?.score prüfen
+ÄNDERUNG 3 – Statistik: "Nach oben"-Button sticky am Ø-Score
+-------------------------------------------------------------
+Einen "↑ Nach oben"-Button zum Ø-Score-Element hinzufügen (rechts bündig).
+Klick: scrollt den .app-Container per scrollTo({top:0, behavior:"smooth"}) nach oben.
+Der Button klebt mit dem Ø-Score am Header → ist beim Scrollen immer sichtbar.
+Scroll-Container ermitteln: document.querySelector('.app') oder appRef falls vorhanden.
 
-  UI-Platzierung:
-  - Im Abschnitt "Reihenfolge", unterhalb der Zufällig/Schlechteste/Listen-Nr. Buttons
-  - Als Checkbox-Zeile: [✓] Unbeantwortete Vokabeln zuerst
+ÄNDERUNG 4 – Statistik: Sortierung mit Richtungs-Toggle
+--------------------------------------------------------
+Aktuell: 5 Buttons (Score↑, Score↓, Streak, Datum, A→Z) — Score doppelt
+Neu: 4 Buttons (Score, Streak, Datum, A→Z) — jeder Button togglet Richtung
+  State-Änderung:
+    statistikSort (string "score-asc") → statistikSortKey + statistikSortDir
+    ODER: statistikSort bleibt als kombinierter String: "score-asc" / "score-desc" etc.
+    Empfehlung: statistikSort als kombinierter String beibehalten, nur UI ändern
+  UI:
+    Aktiver Button zeigt Pfeil: "Score ↑" oder "Score ↓"
+    Klick auf aktiven Button: Richtung umkehren
+    Klick auf inaktiven Button: aktivieren (Default-Richtung: asc für Score, desc für Streak/Datum)
+  Alle Buttons: {key:"score", label:"Score"}, {key:"streak",...}, {key:"datum",...}, {key:"alpha",...}
+  Default-Richtungen beim ersten Klick:
+    score → asc (schlechteste zuerst), streak → desc (beste zuerst),
+    datum → desc (neueste zuerst), alpha → asc (A→Z)
 
+ÄNDERUNG 5 – Quiz-Listen-Toggle ohne Scroll-Sprung
+---------------------------------------------------
+Problem: Wenn der User weit unten im Quiz-Tab scrollt und dann
+"Ausklappen/Einklappen" klickt, springt der Viewport weil sich die
+Höhe des Listen-Bereichs ändert, der sich ÜBER dem Viewport befindet.
 
-ÄNDERUNG 4 – "Schlechteste"-Modus: Max-Score-Filter
------------------------------------------------------
-Neuer State: quizSchlechtesteMaxScore (useState(""))  ← leer = kein Filter
+Lösung: Scroll-Offset-Korrektur im Click-Handler:
+  1. Ref auf den Listen-Container (listenContainerRef)
+  2. Vor dem Toggle: aktuelle Scroll-Position + getBoundingClientRect() messen
+  3. Nach dem Toggle (useLayoutEffect oder requestAnimationFrame):
+     prüfen ob der Listen-Bereich über dem Viewport liegt
+  4. Wenn ja: Scroll-Offset um die Höhendifferenz korrigieren
 
-Verhalten:
-  Aktuell: "Schlechteste N" = die N Vokabeln mit dem niedrigsten Score
-  Neu: "Schlechteste N mit Score < X"
-  → Erst alle Vokabeln filtern, deren Score < X (quizSchlechtesteMaxScore)
-  → Von diesen dann die N schlechtesten nehmen
-  → Sind weniger als N verfügbar, werden alle gefilterten genommen
-  → Sind mehr als N verfügbar, werden die N schlechtesten genommen
+Alternativer Ansatz: CSS overflow-anchor
+  .app { overflow-anchor: auto; } (Browser-Standard-Scroll-Anchoring aktivieren)
+  Wenn .app der Scroll-Container ist: möglicherweise reicht das bereits.
+  Testen ob Browser-Standard-Anchoring greift; falls nicht → JS-Lösung.
 
-  Beispiel: 50 Vokabeln, MaxScore = -5, Anzahl = 20:
-    - Filter: alle mit score < -5 → z.B. 30 Vokabeln
-    - Davon die 20 schlechtesten → 20 Vokabeln für Quiz
-
-  Beispiel: 50 Vokabeln, MaxScore = -5, Anzahl = 40:
-    - Filter: score < -5 → z.B. 30 Vokabeln
-    - Davon die 40 schlechtesten → aber nur 30 verfügbar → 30 Vokabeln
-
-  UI-Platzierung:
-  - Im "Schlechteste"-Abschnitt unter dem Anzahl-Input
-  - Optional: Input "Max. Score (leer = kein Filter)" mit number-Input
-  - Label: "Score kleiner als:" [  -5  ]
-
-  Für den Quiz-Header (Vokabel-Anzahl):
-  - Bei Schlechteste + MaxScore-Filter: Anzahl der tatsächlich
-    gefilterten Vokabeln anzeigen (wie verfuegbar im IIFE berechnet)
-  - Die bisherige Gesamt-Anzeige bleibt für alle anderen Modi
-
-  State in speichereKonfigInSlot/ladeKonfigAusSlot:
-  - quizSchlechtesteMaxScore muss mit gespeichert/geladen werden
+Implementierungsreihenfolge:
+  Zuerst CSS-Ansatz testen, falls unzureichend: JS mit useLayoutEffect
 
 
 ================================================================
-PROMPT FÜR NEUEN CHAT (SESSION 8)
+PROMPT FÜR NEUEN CHAT (SESSION 9)
 ================================================================
 
 Wir arbeiten an einer Vokabel-App (React, iPad-optimiert, eine Datei):
 
 Pfad:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\App.jsx
 GitHub:  https://github.com/hippikalender1-a11y/vokabel-app
-Deploy:  .\deploy.ps1 "commit message"  (im Projektordner ausführen)
+Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 
-Bitte lies zuerst App.jsx vollständig bevor du Änderungen machst.
-Lies auch PROJEKTUEBERGABE.txt für vollständigen Kontext.
+Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
+(zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Aktueller Stand: ~3590 Zeilen. Letzter Commit: c8db0f7
+Letzter Commit: 77b9c53
 
-Offene Aufgaben für diese Session (in Reihenfolge umsetzen):
+Offene Aufgaben für diese Session (alle 5 umsetzen):
 
-1. REVERT: Quiz-Header Vokabel-Anzahl zurück auf Gesamt-Anzahl
-   (aktuell zeigt eine IIFE gefilterte Anzahl – zurück zu:
-   getKombinierteListe(quizTabListen)?.vokabeln.length)
-   Die IIFE im headerRef-Div durch einfachen Ausdruck ersetzen.
+1. "Quiz starten"-Button: aus headerRef-Wrapper entfernen,
+   als sticky-on-scroll im Content-Flow platzieren (nach Listenliste, vor Slots).
+   Details in PROJEKTUEBERGABE.txt unter ÄNDERUNG 1.
 
-2. "Quiz starten"-Button permanent im sticky Header-Wrapper:
-   - Nur wenn quizTabListen.length > 0 (Liste ausgewählt)
-   - Als zusätzliche Zeile im headerRef-Div, NACH dem Quiz-Listenauswahl-Header
-   - Button: "Quiz starten (X Vokabeln)" – X = verfügbare gefilterte Anzahl
-   - onClick: starteQuiz()
-   - disabled wenn !kannStarten  [kannStarten ist im IIFE berechnet –
-     muss für den Header-Button zugänglich sein, z.B. als State oder
-     durch Neuberechnung im Header-Kontext]
-   - ACHTUNG: kannStarten hängt von quizFrageTyp, quizAntwortTypenGeordnet,
-     quizModus, quizAusgewaehlt, quizDiktatSpalte ab – diese sind alle State,
-     also direkt verfügbar im Header-Kontext!
-   - Im Scroll-Content: Gespeicherte Slots direkt unter dem "Quiz starten"-
-     Bereich (also als erstes nach dem sticky Header), dann Abfrage-Modus etc.
+2. Statistik Ø-Score-Zeile: position:sticky, top:headerH hinzufügen.
 
-3. Neue Option "Unbeantwortete Vokabeln zuerst" (State: quizUnbeantwortetZuerst):
-   - Standard: true
-   - UI: Checkbox unter den Reihenfolge-Buttons
-   - Logik in starteQuiz()/starteDiktat(): unbeantwortete vor beantworteten
-   - In speichereKonfigInSlot/ladeKonfigAusSlot aufnehmen
+3. Statistik "↑ Nach oben"-Button: rechts in der Ø-Score-Zeile,
+   scrollt .app-Container nach oben.
 
-4. "Schlechteste"-Erweiterung mit Max-Score-Filter:
-   - Neuer State: quizSchlechtesteMaxScore (useState(""))
-   - UI: Input "Score kleiner als:" unter Anzahl-Input (nur bei quizReihenfolge==="schlechteste")
-   - Logik: erst nach MaxScore filtern, dann N schlechteste nehmen
-   - In speichereKonfigInSlot/ladeKonfigAusSlot aufnehmen
+4. Statistik Sortierung: 4 Buttons mit Richtungs-Toggle statt 5 Buttons.
+   Details in PROJEKTUEBERGABE.txt unter ÄNDERUNG 4.
+
+5. Quiz-Listen-Toggle ohne Scroll-Sprung: erst CSS-Ansatz testen,
+   dann JS-Lösung falls nötig. Details in PROJEKTUEBERGABE.txt unter ÄNDERUNG 5.
 
 ================================================================
