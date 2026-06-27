@@ -489,6 +489,7 @@ export default function VokabelApp() {
   const [quiz, setQuiz] = useState(null);
   const [diktatListeAufgeklappt, setDiktatListeAufgeklappt] = useState(false);
   const [vokabelAufgeklappt, setVokabelAufgeklappt] = useState(false);
+  const [aktionszeileAufgeklappt, setAktionszeileAufgeklappt] = useState(false);
   const [diktatManualPlays, setDiktatManualPlays] = useState(0);
   const [quizTabListen, setQuizTabListen] = useState([]);
   const [listenAuswahlAufgeklappt, setListenAuswahlAufgeklappt] = useState(true);
@@ -729,6 +730,20 @@ export default function VokabelApp() {
   async function teileListeAlsDateiHandler() {
     if (!aktiveListe) return;
     await teileAlsDatei(generiereExportText(aktiveListe), `${aktiveListe.name}.txt`);
+  }
+  async function teileListeAlsJsonHandler() {
+    if (!aktiveListe) return;
+    const liste = lsGet(SK.liste(aktiveListeId));
+    if (!liste) return;
+    const text = JSON.stringify([liste], null, 2);
+    const dateiname = `${aktiveListe.name}.json`;
+    if (navigator.canShare) {
+      const file = new File([text], dateiname, { type: 'application/json' });
+      if (navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: aktiveListe.name }); return; } catch {}
+      }
+    }
+    teileAlsDatei(text, dateiname);
   }
   async function exportiereAusgewaehlteAlsDateiHandler() {
     if (exportAusgewaehlt.size === 0) return;
@@ -2247,6 +2262,9 @@ export default function VokabelApp() {
             ) : ansicht === "liste-detail" && aktiveListe ? (
               <>
                 <span className="liste-detail-header-name">{aktiveListe.name}</span>
+                <button className="btn-toggle" style={{padding:"4px 8px"}} onClick={() => setAktionszeileAufgeklappt(v => !v)}>
+                  {aktionszeileAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
+                </button>
                 <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => oeffneModal("umbenennen")}><IcoPencil/></button>
               </>
             ) : null}
@@ -3062,7 +3080,7 @@ export default function VokabelApp() {
                             return neu;
                           });
                         } else {
-                          setAktiveListeId(l.id); setAnsicht("liste-detail"); setVokabelAufgeklappt(false);
+                          setAktiveListeId(l.id); setAnsicht("liste-detail"); setVokabelAufgeklappt(false); setAktionszeileAufgeklappt(false);
                         }
                       }}>
                       {exportAuswahlModus && (
@@ -3093,14 +3111,16 @@ export default function VokabelApp() {
           return (
             <>
             {/* Aktionszeile */}
-            <div style={{background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", gap:6, flexWrap:"wrap"}}>
-              <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import"); }}><IcoPlus/></button>
-              {navigator.share && <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={teileListeHandler}><IcoShare/></button>}
-              <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={kopiereListeHandler}>{exportKopiert ? "✓" : <IcoCopy/>}</button>
-              <button className="btn btn-ghost btn-sm" onClick={teileListeAlsDateiHandler}>TXT</button>
-              <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])}>JSON</button>
-              <button className="btn btn-danger btn-sm" style={{padding:"6px 10px", marginLeft:"auto"}} onClick={() => oeffneModal("loeschen")}><IcoX/></button>
-            </div>
+            {aktionszeileAufgeklappt && (
+              <div style={{background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", gap:6, flexWrap:"wrap"}}>
+                <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import"); }}><IcoPlus/></button>
+                <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={kopiereListeHandler}>{exportKopiert ? "✓" : <IcoCopy/>}</button>
+                <button className="btn btn-ghost btn-sm" onClick={teileListeAlsDateiHandler}>TXT</button>
+                <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={teileListeAlsJsonHandler}><IcoShare/></button>
+                <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])}>JSON</button>
+                <button className="btn btn-danger btn-sm" style={{padding:"6px 10px", marginLeft:"auto"}} onClick={() => oeffneModal("loeschen")}><IcoX/></button>
+              </div>
+            )}
             <div className="sektion">
 
               {abfragbareSpalten.length >= 2 && aktiveListe.vokabeln.length > 0 && (
@@ -3138,7 +3158,7 @@ export default function VokabelApp() {
                         {s.aktiv && <div className="karte-zeile-sub">{typ.startsWith("i") ? "Info (nicht abfragbar)" : "Abfragbar"}</div>}
                       </div>
                       {s.aktiv && (
-                        <button className="btn-icon" onClick={() => oeffneModal("spalte-umbenennen", typ)}><IcoPencil s={14}/></button>
+                        <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => oeffneModal("spalte-umbenennen", typ)}><IcoPencil s={14}/></button>
                       )}
                     </div>
                   );
