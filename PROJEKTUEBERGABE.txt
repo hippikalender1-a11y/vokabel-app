@@ -1,14 +1,14 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-27  (Session 9 abgeschlossen)
-Letzter Commit: 27c6731
+Stand: 2026-06-27  (Session 10 abgeschlossen)
+Letzter Commit: f6376ed
 
 DATEIPFADE
 ----------
 Projektordner:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\
 Quellcode:        C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\App.jsx
-                  (eine einzige React-Datei, ~3800 Zeilen)
+                  (eine einzige React-Datei, ~3900 Zeilen)
 Deploy-Skript:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\deploy.ps1
 
 DEPLOYMENT
@@ -34,14 +34,29 @@ Alle sticky Elemente sitzen im gleichen Scroll-Container (Window).
   1. Haupt-Sticky-Wrapper (ref={headerRef}, position:sticky, top:0, zIndex:10)
        ├── .topbar  ("Vokabel-Trainer", zentriert)
        ├── .tabs    (Listen / Quiz / Statistik / Einstellungen)
-       └── [nur Quiz-Tab] .liste-detail-header (position:relative)
-               → Listenname (1 Liste) / "X Listen ausgewählt" / "Listen auswählen"
-               → Toggle-Button (grünes Dreieck) für Listenauswahl
+       │
+       ├── [Quiz-Tab] Zeile 1: liste-detail-header (position:relative)
+       │        → Listenname / "X Listen ausgewählt" / "Listen auswählen"
+       │        → "(X V.)" Vokabelanzahl grau — nur wenn Liste(n) gewählt
+       │        → Toggle-Button (grüner Dreieck) für Listenauswahl
+       │
+       ├── [Quiz-Tab] Zeile 2: Alle / Bereich (nur wenn Liste gewählt)
+       │        → [Alle][Bereich] Toggle
+       │        → Bereich aktiv: "(X V.)" gefilterte Anzahl + Expand-Button
+       │
+       ├── [Quiz-Tab] Sub-Zeile 1: Von–Bis Eingabe
+       │        → nur bei Bereich + Expand offen
+       │        → leicht eingerückt: Label "Von–Bis" + zwei Zahlenfelder
+       │
+       └── [Quiz-Tab] Sub-Zeile 2: Liste anzeigen
+                → nur bei Bereich + Expand offen
+                → "Liste anzeigen / einklappen" + "Auswahl löschen (N)"
 
-  2. headerH = Höhe des Haupt-Wrappers (per ResizeObserver gemessen)
-     → Ändert sich je nach Tab
+  2. headerH = Höhe des gesamten Haupt-Wrappers (per ResizeObserver gemessen)
+     → Enthält ALLE Quiz-Zeilen; headerH wächst automatisch mit
+     → Quiz-starten-Button und alle anderen sticky Elemente nutzen top:headerH
 
-  3. Sub-Header der anderen Tabs (position:sticky, top:headerH):
+  3. Sub-Header anderer Tabs (position:sticky, top:headerH):
        - Listen-Tab: .liste-detail-header
        - Statistik-Tab: .statistik-listen-header (ref={statistikListenHeaderRef})
 
@@ -50,20 +65,33 @@ Alle sticky Elemente sitzen im gleichen Scroll-Container (Window).
      → Enthält "↑ Nach oben"-Button
 
   5. Quiz "Quiz starten"-Button (position:sticky, top:headerH, zIndex:8)
-     → Im Content-Flow nach der Listenauswahl, vor den Slots
-     → Scrollt mit hoch bis er am Header anstößt
+     → Im Content-Flow nach der Listenauswahl, vor der Config
+
+
+================================================================
+TRICHTER-LOGIK: VOKABEL-ANZAHL IM QUIZ-TAB
+================================================================
+Zeile 1  (X V.)  = quizBasisVoks.length   (alle Voks nach Spalten-Filter)
+Zeile 2  (X V.)  = quizGefilterteVoks.length  (nach Von-Bis / Checkbox)
+Quiz-Button      = verfuegbar  (nach Schlechteste / Unbeantwortet-Filter)
+→ Jede Stufe zeigt das Ergebnis der bisherigen Verfeinerung.
+
+Hoisted Berechnungen (vor return(), für Header UND Tab-Content):
+  quizKombiListe       = kombinierte Liste aus quizTabListen
+  quizBasisVoks        = Vokabeln nach Spalten- / Modus-Filter
+  quizGefilterteVoks   = nach Von-Bis / Checkbox gefiltert
+  (im Quiz-IIFE als Aliases: kombiListe, basisVoks, gefilterteVoks)
 
 
 ================================================================
 SVG ICON-BIBLIOTHEK
 ================================================================
-Alle Icons sind als Arrow-Functions vor der VokabelApp-Komponente definiert.
-Prop: s = Größe in px (Default unterschiedlich).
-Farbe: immer "currentColor" → per CSS oder Elternfarbe steuerbar.
+Alle Icons als Arrow-Functions vor VokabelApp. Prop: s = Größe px.
+Farbe: "currentColor" → per CSS oder Elternfarbe steuerbar.
 
   IcoUp     ({s=12})  Dreieck ▲ (zugeklappt)
   IcoDown   ({s=12})  Dreieck ▼ (aufgeklappt)
-  IcoBack   ({s=20})  Zurück-Pfeil (massiv, kurzer Stiel, dicke Spitze)
+  IcoBack   ({s=20})  Zurück-Pfeil (massiv)
   IcoX      ({s=14})  Schließen / Löschen (×)
   IcoPencil ({s=15})  Stift (Spitze unten-links, oben rechtwinklig)
   IcoSpk    ({s=18})  Lautsprecher ohne Schallwellen
@@ -72,93 +100,129 @@ Farbe: immer "currentColor" → per CSS oder Elternfarbe steuerbar.
   IcoShare  ({s=15})  Teilen (Pfeil nach oben)
   IcoCopy   ({s=15})  Kopieren (zwei überlagerte Rechtecke)
 
-VERWENDUNG:
-  Toggle-Buttons:  <button className="btn-toggle"><IcoDown/></button>
-  Ghost-Buttons:   <button className="btn btn-ghost btn-sm"><IcoPencil/></button>
-  Danger-Buttons:  <button className="btn btn-danger btn-sm"><IcoX/></button>
-  Topbar-Back:     <button className="topbar-back"><IcoBack/></button>
-  Diktat groß:     <IcoSpkOn s={52}/>
-  Diktat klein:    <IcoSpk s={16}/>
+PFEIL-KONVENTION (konsistent in der gesamten App):
+  ▲ (IcoUp)   = eingeklappt
+  ▼ (IcoDown) = ausgeklappt
 
 
 ================================================================
-CSS KLASSEN (wichtige neue Klassen)
+BUTTON-SYSTEM (CSS-Klassen)
 ================================================================
-  .btn-toggle   Grüner kompakter Toggle-Button (#2d6a4f, weiße Icons)
-                padding:6px 9px; border-radius:8px; display:inline-flex
-                Verwendung: Ausklappen/Einklappen überall in der App
+TIER    KLASSE                  VERWENDUNG
+──────────────────────────────────────────────────────────────
+XL      .btn                    Quiz starten, Haupt-CTAs
+        padding:10px 18px; font-size:0.88rem; border-radius:10px
+        (+ border:1.5px solid transparent für Höhenkonsistenz)
 
-  .topbar-back  Grüner Zurück-Button, jetzt display:inline-flex für Icon-Rendering
+MD      .btn.btn-sm             Aktionsbuttons in Gruppen
+        padding:6px 12px; font-size:0.8rem; min-height:30px
+        Varianten:
+          .btn-primary   solid grün
+          .btn-ghost     transparent, grüne Outline
+          .btn-ghost-filled  #f7f5f0 Hintergrund, grüne Outline
+                             → für Buttons AUF weißer Karte (z.B. Stift-Buttons)
+          .btn-danger    transparent, rote Outline
 
-  .liste-detail-header-name  font-size:0.82rem; font-weight:600
-                             (entspricht Tab-Schriftgröße)
+SM      .typ-btn / .toggle-opt  Auswahl-Chips, Filter-Buttons
+        padding:5-6px 10-14px; font-size:0.78-0.82rem
 
-  .statistik-listen-header   Schrift ebenfalls 0.82rem / 600
+FLAT    .btn-toggle             Standalone-Dreieck (bewusst flacher)
+        solid grün; padding:6px 9px; border-radius:8px
+
+FLAT    .btn-toggle-ghost       Info-Aufklapp-Dreieck (invertiert)
+        #f7f5f0 Hintergrund + grüne Outline; padding:5px 8px
+        → Für Buttons AUF weißer Karte (Abfrage-Modus, Bereich-Expand)
+
+HINTERGRUND-REGEL:
+  Button auf weißer Box  → .btn-ghost-filled (#f7f5f0, hebt sich ab)
+  Button auf beigem Bg   → style={{background:"#fff"}} (hebt sich ab)
 
 
 ================================================================
-AKTUELLER FEATURE-STAND (nach Session 9)
+AKTUELLER FEATURE-STAND (nach Session 10)
 ================================================================
 
 QUIZ-TAB
 --------
-- Sub-Header Text: "Listenname" (1 Liste) / "X Listen ausgewählt" (mehrere) /
-  "Listen auswählen" (keine) — kompakter als früher
-- Listenauswahl: standardmäßig aufgeklappt wenn keine Liste selektiert;
-  klappt automatisch auf wenn alle Listen abgewählt werden (useEffect)
-- Toggle-Button (grünes Dreieck ▲/▼) statt Text-Buttons
-- "Quiz starten (X Vokabeln)"-Button: sticky-on-scroll im Content-Flow
-  (nach Listenliste, vor Slots) – klebt bei top:headerH
+Sticky Header-Zeilen (alle innerhalb headerRef):
+
+Zeile 1: Listenname + "(X V.)" + Collapse-Button
+  - grauer V.-Zähler nur wenn Liste(n) ausgewählt
+
+"Bitte Liste auswählen": großer dezenter Platzhalter-Text
+  - erscheint wenn keine Liste gewählt UND Liste eingeklappt
+
+Zeile 2: Alle / Bereich (nur wenn Liste gewählt)
+  - Alle: nichts rechts (Anzahl steht in Zeile 1)
+  - Bereich: "(X V.)" gefiltert + Expand-Button (btn-toggle-ghost)
+  - Klick auf Alle: resettet Checkbox-Auswahl + schließt Liste
+
+Sub-Zeile 1 (nur Bereich + Expand offen): Von–Bis
+  - "Von–Bis" Label + Von-Input + "–" + Bis-Input inline
+  - leicht eingerückt (28px links)
+
+Sub-Zeile 2 (nur Bereich + Expand offen): Liste anzeigen
+  - "Liste anzeigen / einklappen" Button
+  - "Auswahl löschen (N)" nur wenn Checkboxen aktiv
+  - Einklappen des Expand-Buttons schließt auch die Liste
+
+Info-Toggle Abfrage-Modus: btn-toggle-ghost (▼ öffnet Info-Text)
+Quiz-starten-Button: sticky-on-scroll bei top:headerH
+
+States:
+  quizBereichEingabeAufgeklappt = Sub-Zeilen Toggle (Bereich-Expand)
+  quizTabListen, quizBereichTyp, quizBereichVon, quizBereichBis (wie zuvor)
+  quizListeAufgeklappt: für Einzelauswahl-Liste
+  quizModusInfoAufgeklappt: Info-Text unter Abfrage-Modus
 
 TASTATUR-QUIZ
 -------------
 - 3 Fehlversuche erlaubt bevor Score-Abzug + automatische Lösungsanzeige
-- 1.+2. Fehlversuch: Box leuchtet 1,5s rot, "Nicht richtig" zentriert
+- 1.+2. Fehlversuch: Box leuchtet 1,5s rot
 - 3. Fehlversuch: Score -1, Lösung automatisch angezeigt
-- State: quiz.aktuelleFehlversuche, quiz.falschFlash
 
 DIKTAT-QUIZ
 -----------
-- Lösung zeigt: **fettes Wort** – Übersetzung
-- Stimmenfilter: Novelty/Effekt-Stimmen ausgefiltert
-- Button "Andere Stimme" mit IcoSpkOn-Icon
 - Lautsprecher-Buttons: IcoSpkOn (groß, s=52) + IcoSpk (klein, s=16)
+- Stimmenfilter: Novelty/Effekt-Stimmen ausgefiltert
 - Ergebnisliste: Toggle-Button (Dreieck) statt Text
 
 STATISTIK-TAB
 -------------
-- Sticky Listen-Header (top:headerH): Listenauswahl mit Toggle-Button
-- statistikListenHeaderRef: misst Höhe des Listen-Headers per ResizeObserver
-- Ø Score: sticky-on-scroll bei top:headerH+statistikListenHeaderH
-  → klebt UNTER dem Listenauswahl-Header (eine Stufe tiefer)
-  → enthält rechts "↑ Nach oben"-Button (window.scrollTo top:0)
-- Graph: Quiz-Score (grün) + Diktat-Score (orange, gestrichelt)
-- Graph-Toggle: "Inkl. unbeantwortete" / "Nur beantwortete"
+- Sticky Listen-Header (top:headerH)
+- Ø Score sticky bei top:headerH+statistikListenHeaderH (eine Stufe tiefer)
+- "↑ Nach oben"-Button im Ø-Score-Header
 - Sortierung: 4 Buttons (Score, Streak, Datum, A→Z) mit Richtungs-Toggle
-  → Aktiver Button zeigt Pfeil ↑/↓
-  → Klick auf aktiven Button dreht Richtung um
-  → Default-Richtungen: Score→asc, Streak→desc, Datum→desc, Alpha→asc
   → State: statistikSort als kombinierter String "score-asc" etc.
-  → Gilt in beiden Statistik-Views (Tab + Einzelliste)
 
 LISTEN-TAB
 ----------
-- Header-Button "Neu" (+) öffnet Import für neue Liste (früher: "Importieren")
-- FAB-Button (kreisförmiges + unten rechts) entfernt
-- In einer Liste: Aktionszeile unter dem Header mit:
-    [+] [Teilen] [Kopieren] [TXT] [JSON]   [×]
-    Plus, Share, Copy per Icon; TXT/JSON als Text; Löschen als IcoX rechts
-- Header Zeile 1: Listenname + IcoPencil-Button (öffnet Umbenennen-Modal)
-- Header Zeile 2 (Aktionszeile im Content): Alle Aktionsbuttons
-- Vokabeln-Toggle: grüner Dreieck-Button statt ▲/▼-Text
-- Vokabeln-Import-Button: IcoPlus-Icon (neben "Zusammenführen")
-- ✏️-Emojis überall ersetzt durch IcoPencil SVG
+Header Zeile 1 (liste-detail-header):
+  - Listenname + Aktionszeile-Toggle (▲/▼) + Stift-Button (btn-ghost-filled)
+
+Aktionszeile (nur wenn aufgeklappt, da darunter):
+  Reihenfolge: [+] [Kopieren] [TXT] [Teilen/JSON] [JSON] ... [×]
+  - + öffnet Import in bestehende Liste
+  - Kopieren: Text in Clipboard
+  - TXT: Download als .txt
+  - Teilen (IcoShare): teilt JSON-Datei via navigator.share; Fallback Download
+  - JSON: öffnet JSON-Export-Modal (mit Optionen)
+  - × Löschen (rechts, btn-danger)
+
+Spalten-Stift-Buttons: btn-ghost-filled (heller Hintergrund #f7f5f0)
+Vokabeln-Sektion-Header:
+  - "Zusammenführen" + "+": background:#fff (auf beigem Hintergrund)
+  - Toggle-Button (flat, solid grün) zum Ein-/Ausklappen
+
+Header "Meine Listen":
+  - "Neu" Button (IcoPlus) öffnet Import für neue Liste
+  - "Exportieren" Button für Multi-Listen-Export
 
 SCROLL-VERHALTEN
 ----------------
 - Quiz-Listen-Toggle ohne Scroll-Sprung:
   listenContainerRef misst Container; toggleListenAuswahl() korrigiert
-  window.scrollY via scrollBy() wenn Container über Viewport
+  window.scrollY via scrollBy()
 - Statistik Nach-oben: window.scrollTo({top:0, behavior:'smooth'})
 
 
@@ -169,16 +233,11 @@ Tastatur/MC/Karte:
   Richtig:    +1, Streak +1 (ab Streak 3: Score min. 2)
   Falsch:     Streak 0, Score -1/-2/-3 je sessionFalschAnzahl
               Erst beim 3. Fehlversuch: Score -1 + Lösung anzeigen
-  Aufdecken:  Streak 0, aufgedecktStreak +1 (schwer: -1; nach 3x: Score=-100)
+  Aufdecken:  Streak 0, aufgedecktStreak +1
 
 Diktat:
   Richtig:    +1
   Aufdecken:  -1
-
-State-Felder im quiz-Objekt:
-  sessionFalsch: {vokId: count}   — Fehlanzahl je Vokabel in dieser Session
-  aktuelleFehlversuche: 0-2       — Fehlversuche für die aktuelle Frage
-  falschFlash: bool               — true während des 1,5s-Rotblitzes
 
 
 ================================================================
@@ -192,19 +251,6 @@ DATENMODELL (localStorage)
                    diktatFortschritt:{score,...} }]
   vokabel_einstellungen    → { modus, autoplay, vorlesen:[] }
   vokabel_session_slots    → Array[6] mit gespeicherten Quiz-Konfigurationen
-      Slot-Felder: quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet,
-                   quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
-                   quizModus, quizBereichTyp, quizBereichVon, quizBereichBis,
-                   quizReihenfolge, quizSchlechtesteAnzahl, quizSchlechtesteMaxScore,
-                   quizUnbeantwortetZuerst, quizDiktatSpalte, quizDiktatUebersetzung
-
-
-================================================================
-IMPORT / EXPORT
-================================================================
-TXT: Spalten // getrennt, Falsch-Antworten || gefolgt von |, Header mit [E1]-Tags
-JSON: Vokabeln + optional Fortschritt/Diktat/Falsch; zuverlässiger für Gerät-Transfer
-Multi-Listen-TXT: # ListenName als Abschnittstrennzeichen
 
 
 ================================================================
@@ -214,13 +260,15 @@ QUIZ-DEFAULTS (State-Initialwerte)
   quizFrageTyp             = "D1"
   quizAntwortTypenGeordnet = ["E1"]
   quizSpalteModus          = { E1: "karte" }
-  quizZeigeInfo            = { i1: true, i2: true }
   quizReihenfolge          = "zufall"
   quizUnbeantwortetZuerst  = true
   quizSchlechtesteAnzahl   = 20
   quizSchlechtesteMaxScore = ""
   statistikSort            = "score-asc"
-  listenAuswahlAufgeklappt = true (default aufgeklappt)
+  listenAuswahlAufgeklappt = true  (Quiz-Listenauswahl default offen)
+  quizBereichTyp           = "alle"
+  quizBereichEingabeAufgeklappt = false  (Bereich-Subzeilen default zu)
+  aktionszeileAufgeklappt  = false  (Listen-Detail-Aktionszeile default zu)
 
 
 ================================================================
@@ -236,6 +284,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 27c6731
+Letzter Commit: f6376ed
 
 ================================================================
