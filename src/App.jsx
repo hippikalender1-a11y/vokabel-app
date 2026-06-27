@@ -2702,7 +2702,7 @@ export default function VokabelApp() {
             <>
               <div className="sektion">
                 {/* LISTEN-AUSWAHL */}
-                <div ref={listenContainerRef}>
+                <div ref={listenContainerRef} style={{overflow:'hidden'}}>
                   {listenAuswahlAufgeklappt && (
                     listenIndex.length === 0
                       ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
