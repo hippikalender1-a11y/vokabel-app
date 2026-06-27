@@ -390,6 +390,8 @@ const CSS = `
   .liste-detail-header-name{flex:1;font-size:0.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .btn-toggle{background:#2d6a4f;color:#fff;border:none;cursor:pointer;padding:6px 9px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
   .btn-toggle:active{opacity:.8;}
+  .btn-toggle-ghost{background:#f7f5f0;color:#2d6a4f;border:1.5px solid #2d6a4f;cursor:pointer;padding:5px 8px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .btn-toggle-ghost:active{opacity:.8;}
   .diktat-hint{font-size:1.8rem;font-weight:700;letter-spacing:0.2em;color:#2d6a4f;margin:10px 0 6px;font-family:monospace;}
   .diktat-uebersetzung{font-size:0.85rem;color:#6b6560;margin-top:4px;}
   .diktat-play-btn{background:none;border:none;font-size:3rem;cursor:pointer;display:block;margin:8px auto;line-height:1;}
@@ -456,6 +458,7 @@ export default function VokabelApp() {
   const [quizSpalteModus, setQuizSpalteModus] = useState({ E1: "karte" });
   const [quizZeigeInfo, setQuizZeigeInfo] = useState({ i1: true, i2: true });
   const [quizModus, setQuizModus] = useState("sequenziell");
+  const [quizModusInfoAufgeklappt, setQuizModusInfoAufgeklappt] = useState(false);
   const [quizDiktatSpalte, setQuizDiktatSpalte] = useState("E1");
   const [quizDiktatUebersetzung, setQuizDiktatUebersetzung] = useState("D1");
   const [quizListeAufgeklappt, setQuizListeAufgeklappt] = useState(false);
@@ -2762,14 +2765,19 @@ export default function VokabelApp() {
                         <button className={`toggle-opt${quizModus==="rotierend"?" aktiv":""}`} onClick={() => setQuizModus("rotierend")}>Rotierend</button>
                         <button className={`toggle-opt${quizModus==="diktat"?" aktiv":""}`} onClick={() => setQuizModus("diktat")}>Diktat</button>
                       </div>
+                      <button className="btn-toggle-ghost" onClick={() => setQuizModusInfoAufgeklappt(v => !v)}>
+                        {quizModusInfoAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
+                      </button>
                     </div>
-                    <div style={{padding:"0 16px 14px", fontSize:"0.82rem", color:"#6b6560"}}>
-                      {quizModus === "sequenziell"
-                        ? "Feste Frage-Spalte, Antwort-Spalten der Reihe nach. Modus pro Spalte wählbar."
-                        : quizModus === "rotierend"
-                        ? "Frage-Spalte wechselt mit jeder Vokabel. Modus pro Spalte wählbar."
-                        : "Wort wird vorgelesen – du tippst was du hörst. Falsch → ein Buchstabe mehr aufgedeckt."}
-                    </div>
+                    {quizModusInfoAufgeklappt && (
+                      <div style={{padding:"0 16px 14px", fontSize:"0.82rem", color:"#6b6560"}}>
+                        {quizModus === "sequenziell"
+                          ? "Feste Frage-Spalte, Antwort-Spalten der Reihe nach. Modus pro Spalte wählbar."
+                          : quizModus === "rotierend"
+                          ? "Frage-Spalte wechselt mit jeder Vokabel. Modus pro Spalte wählbar."
+                          : "Wort wird vorgelesen – du tippst was du hörst. Falsch → ein Buchstabe mehr aufgedeckt."}
+                      </div>
+                    )}
                   </div>
 
                   {/* DIKTAT-KONFIGURATION */}
