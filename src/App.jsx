@@ -2754,17 +2754,17 @@ export default function VokabelApp() {
                   <div ref={alleBereichRef} style={{position:"sticky", top:headerH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <div className="toggle-btn">
                       <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
-                        onClick={() => { setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
+                        onClick={() => { setQuizBereichTyp("alle"); setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
                         Alle
                       </button>
                       <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`}
-                        onClick={() => { if (quizBereichTyp !== "bereich") { setQuizBereichTyp("bereich"); setQuizListeAufgeklappt(true); } }}>
+                        onClick={() => { if (quizBereichTyp !== "bereich") { setQuizBereichTyp("bereich"); if (quizCheckboxAuswahl.size === 0) setQuizListeAufgeklappt(true); } }}>
                         Bereich
                       </button>
                     </div>
                     {quizBereichTyp === "bereich" && (
                       <>
-                        {quizCheckboxAuswahl.size > 0 && (
+                        {quizListeAufgeklappt && quizCheckboxAuswahl.size > 0 && (
                           <button className="btn btn-ghost btn-sm"
                             style={{padding:"6px 8px"}}
                             onClick={() => { setQuizCheckboxAuswahl(new Set()); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
