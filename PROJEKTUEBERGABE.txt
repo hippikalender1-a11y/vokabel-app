@@ -1,14 +1,14 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-27  (Session 8 abgeschlossen, Session 9 geplant)
-Letzter Commit: 77b9c53
+Stand: 2026-06-27  (Session 9 abgeschlossen)
+Letzter Commit: 27c6731
 
 DATEIPFADE
 ----------
 Projektordner:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\
 Quellcode:        C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\App.jsx
-                  (eine einzige React-Datei, ~3700 Zeilen)
+                  (eine einzige React-Datei, ~3800 Zeilen)
 Deploy-Skript:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\deploy.ps1
 
 DEPLOYMENT
@@ -29,83 +29,137 @@ TECHNIK-STACK
 ================================================================
 STICKY HEADER-ARCHITEKTUR
 ================================================================
-Alle sticky Elemente sitzen im gleichen Scroll-Container (.app).
+Alle sticky Elemente sitzen im gleichen Scroll-Container (Window).
 
   1. Haupt-Sticky-Wrapper (ref={headerRef}, position:sticky, top:0, zIndex:10)
        ├── .topbar  ("Vokabel-Trainer", zentriert)
        ├── .tabs    (Listen / Quiz / Statistik / Einstellungen)
-       ├── [nur Quiz-Tab] .liste-detail-header (position:relative)
-       │       → Zeigt Gesamt-Vokabel-Anzahl der ausgewählten Listen
-       │       → Button "Ausklappen / Einklappen"
-       └── [nur Quiz-Tab, Liste gewählt] "Quiz starten (X Vokabeln)"-Button
-               HINWEIS: dieser Button soll in Session 9 aus dem headerRef
-               heraus in den Content-Flow verschoben werden (siehe unten)
+       └── [nur Quiz-Tab] .liste-detail-header (position:relative)
+               → Listenname (1 Liste) / "X Listen ausgewählt" / "Listen auswählen"
+               → Toggle-Button (grünes Dreieck) für Listenauswahl
 
   2. headerH = Höhe des Haupt-Wrappers (per ResizeObserver gemessen)
      → Ändert sich je nach Tab
 
   3. Sub-Header der anderen Tabs (position:sticky, top:headerH):
        - Listen-Tab: .liste-detail-header
-       - Statistik-Tab: .statistik-listen-header
+       - Statistik-Tab: .statistik-listen-header (ref={statistikListenHeaderRef})
 
-  4. quiz-liste-sticky (Vokabellisten-Range-Header, position:sticky, top:headerH)
-     → Erscheint nur wenn quizListeAufgeklappt=true
+  4. Statistik Ø Score (position:sticky, top: headerH + statistikListenHeaderH)
+     → Klebt eine Stufe tiefer als der Listen-Header
+     → Enthält "↑ Nach oben"-Button
+
+  5. Quiz "Quiz starten"-Button (position:sticky, top:headerH, zIndex:8)
+     → Im Content-Flow nach der Listenauswahl, vor den Slots
+     → Scrollt mit hoch bis er am Header anstößt
 
 
 ================================================================
-AKTUELLER FEATURE-STAND (nach Session 8)
+SVG ICON-BIBLIOTHEK
+================================================================
+Alle Icons sind als Arrow-Functions vor der VokabelApp-Komponente definiert.
+Prop: s = Größe in px (Default unterschiedlich).
+Farbe: immer "currentColor" → per CSS oder Elternfarbe steuerbar.
+
+  IcoUp     ({s=12})  Dreieck ▲ (zugeklappt)
+  IcoDown   ({s=12})  Dreieck ▼ (aufgeklappt)
+  IcoBack   ({s=20})  Zurück-Pfeil (massiv, kurzer Stiel, dicke Spitze)
+  IcoX      ({s=14})  Schließen / Löschen (×)
+  IcoPencil ({s=15})  Stift (Spitze unten-links, oben rechtwinklig)
+  IcoSpk    ({s=18})  Lautsprecher ohne Schallwellen
+  IcoSpkOn  ({s=20})  Lautsprecher mit Schallwellen
+  IcoPlus   ({s=15})  Plus-Zeichen (+)
+  IcoShare  ({s=15})  Teilen (Pfeil nach oben)
+  IcoCopy   ({s=15})  Kopieren (zwei überlagerte Rechtecke)
+
+VERWENDUNG:
+  Toggle-Buttons:  <button className="btn-toggle"><IcoDown/></button>
+  Ghost-Buttons:   <button className="btn btn-ghost btn-sm"><IcoPencil/></button>
+  Danger-Buttons:  <button className="btn btn-danger btn-sm"><IcoX/></button>
+  Topbar-Back:     <button className="topbar-back"><IcoBack/></button>
+  Diktat groß:     <IcoSpkOn s={52}/>
+  Diktat klein:    <IcoSpk s={16}/>
+
+
+================================================================
+CSS KLASSEN (wichtige neue Klassen)
+================================================================
+  .btn-toggle   Grüner kompakter Toggle-Button (#2d6a4f, weiße Icons)
+                padding:6px 9px; border-radius:8px; display:inline-flex
+                Verwendung: Ausklappen/Einklappen überall in der App
+
+  .topbar-back  Grüner Zurück-Button, jetzt display:inline-flex für Icon-Rendering
+
+  .liste-detail-header-name  font-size:0.82rem; font-weight:600
+                             (entspricht Tab-Schriftgröße)
+
+  .statistik-listen-header   Schrift ebenfalls 0.82rem / 600
+
+
+================================================================
+AKTUELLER FEATURE-STAND (nach Session 9)
 ================================================================
 
 QUIZ-TAB
 --------
-- Sticky Sub-Header: Gesamt-Vokabel-Anzahl der gewählten Listen + Ausklappen/Einklappen
-- "Quiz starten (X Vokabeln)"-Button: aktuell im headerRef-Wrapper
-  (soll in Session 9 als sticky-on-scroll im Content landen)
-- Multi-Listen-Auswahl mit Checkboxen (einklappbar)
-- Gespeicherte Konfigurationen: 5 Slots + "Zuletzt verwendet"
-- Quiz-Modi: Sequenziell, Rotierend, Diktat
-- Reihenfolge: Zufällig, Schlechteste N (+ optionaler Max-Score-Filter), Listen-Nr.
-- Option "Unbeantwortete zuerst" (Default: an) — bei Zufällig + Listen-Nr.
-- Lautsprache, Schwierigkeits-Modus
+- Sub-Header Text: "Listenname" (1 Liste) / "X Listen ausgewählt" (mehrere) /
+  "Listen auswählen" (keine) — kompakter als früher
+- Listenauswahl: standardmäßig aufgeklappt wenn keine Liste selektiert;
+  klappt automatisch auf wenn alle Listen abgewählt werden (useEffect)
+- Toggle-Button (grünes Dreieck ▲/▼) statt Text-Buttons
+- "Quiz starten (X Vokabeln)"-Button: sticky-on-scroll im Content-Flow
+  (nach Listenliste, vor Slots) – klebt bei top:headerH
 
-QUIZ-DEFAULTS (State-Initialwerte)
-  quizModus              = "sequenziell"
-  quizFrageTyp           = "D1"
-  quizAntwortTypenGeordnet = ["E1"]
-  quizSpalteModus        = { E1: "karte" }
-  quizZeigeInfo          = { i1: true, i2: true }
-  quizReihenfolge        = "zufall"
-  quizUnbeantwortetZuerst = true
-  quizSchlechtesteAnzahl = 20
-  quizSchlechtesteMaxScore = ""
-  defaultEinstellungen() → modus: "schwer"
-
-TASTATUR-QUIZ (Tippen-Modus)
------------------------------
+TASTATUR-QUIZ
+-------------
 - 3 Fehlversuche erlaubt bevor Score-Abzug + automatische Lösungsanzeige
-- 1. + 2. Fehlversuch: Box leuchtet 1,5s rot, "Nicht richtig" (zentriert) erscheint
-  und verschwindet mit der roten Box → kein Score-Abzug
-- 3. Fehlversuch: Score -1, Lösung wird automatisch gezeigt (phase: "aufgedeckt")
-- Lösungstext: quiz-frage-text Klasse (1.5rem, fett), minHeight:"44px" für stabile Box
-- "Multiple Choice"-Button (wechsleZuMC) ist weggefallen
+- 1.+2. Fehlversuch: Box leuchtet 1,5s rot, "Nicht richtig" zentriert
+- 3. Fehlversuch: Score -1, Lösung automatisch angezeigt
 - State: quiz.aktuelleFehlversuche, quiz.falschFlash
 
 DIKTAT-QUIZ
 -----------
-- Lösung zeigt nur: **fettes Wort** – Übersetzung (kein "Deine Eingabe"-Label, kein Hint)
-- Fragebox: Übersetzungshinweis immer im DOM (visibility:hidden/visible) → keine Größensprünge
-- Stimmenfilter: Novelty/Effekt-Stimmen (Boing, Jester, Zarvox, Fred, etc.) ausgefiltert
-- Button "Andere Stimme" (früher "Nochmal") wechselt die Stimme alle 2 Plays
+- Lösung zeigt: **fettes Wort** – Übersetzung
+- Stimmenfilter: Novelty/Effekt-Stimmen ausgefiltert
+- Button "Andere Stimme" mit IcoSpkOn-Icon
+- Lautsprecher-Buttons: IcoSpkOn (groß, s=52) + IcoSpk (klein, s=16)
+- Ergebnisliste: Toggle-Button (Dreieck) statt Text
 
 STATISTIK-TAB
 -------------
-- Sticky Listen-Header (top:headerH): Listenauswahl, Zurücksetzen, Alle, Ausklappen
-- Graph: Quiz-Score (grün, durchgezogen) + Diktat-Score (orange, gestrichelt)
-- Graph-Toggle: "Inkl. unbeantwortete" / "Nur beantwortete" (State: statistikGraphOhneUnbeantwortet)
-  → Bei "Nur beantwortete": jede Linie plottet nur Vokabeln mit vorhandenem Fortschritt
-- Kennzahlen: Gesamt, Nie abgefragt, Score positiv, Score negativ, Ø Score
-- Filter: Alle, Nie, Neg, Null, Pos
-- Sortierung: Score ↑, Score ↓, Streak, Datum, A→Z
+- Sticky Listen-Header (top:headerH): Listenauswahl mit Toggle-Button
+- statistikListenHeaderRef: misst Höhe des Listen-Headers per ResizeObserver
+- Ø Score: sticky-on-scroll bei top:headerH+statistikListenHeaderH
+  → klebt UNTER dem Listenauswahl-Header (eine Stufe tiefer)
+  → enthält rechts "↑ Nach oben"-Button (window.scrollTo top:0)
+- Graph: Quiz-Score (grün) + Diktat-Score (orange, gestrichelt)
+- Graph-Toggle: "Inkl. unbeantwortete" / "Nur beantwortete"
+- Sortierung: 4 Buttons (Score, Streak, Datum, A→Z) mit Richtungs-Toggle
+  → Aktiver Button zeigt Pfeil ↑/↓
+  → Klick auf aktiven Button dreht Richtung um
+  → Default-Richtungen: Score→asc, Streak→desc, Datum→desc, Alpha→asc
+  → State: statistikSort als kombinierter String "score-asc" etc.
+  → Gilt in beiden Statistik-Views (Tab + Einzelliste)
+
+LISTEN-TAB
+----------
+- Header-Button "Neu" (+) öffnet Import für neue Liste (früher: "Importieren")
+- FAB-Button (kreisförmiges + unten rechts) entfernt
+- In einer Liste: Aktionszeile unter dem Header mit:
+    [+] [Teilen] [Kopieren] [TXT] [JSON]   [×]
+    Plus, Share, Copy per Icon; TXT/JSON als Text; Löschen als IcoX rechts
+- Header Zeile 1: Listenname + IcoPencil-Button (öffnet Umbenennen-Modal)
+- Header Zeile 2 (Aktionszeile im Content): Alle Aktionsbuttons
+- Vokabeln-Toggle: grüner Dreieck-Button statt ▲/▼-Text
+- Vokabeln-Import-Button: IcoPlus-Icon (neben "Zusammenführen")
+- ✏️-Emojis überall ersetzt durch IcoPencil SVG
+
+SCROLL-VERHALTEN
+----------------
+- Quiz-Listen-Toggle ohne Scroll-Sprung:
+  listenContainerRef misst Container; toggleListenAuswahl() korrigiert
+  window.scrollY via scrollBy() wenn Container über Viewport
+- Statistik Nach-oben: window.scrollTo({top:0, behavior:'smooth'})
 
 
 ================================================================
@@ -114,7 +168,7 @@ SCORING-LOGIK
 Tastatur/MC/Karte:
   Richtig:    +1, Streak +1 (ab Streak 3: Score min. 2)
   Falsch:     Streak 0, Score -1/-2/-3 je sessionFalschAnzahl
-              NEU: erst beim 3. Fehlversuch wird Score abgezogen + Lösung gezeigt
+              Erst beim 3. Fehlversuch: Score -1 + Lösung anzeigen
   Aufdecken:  Streak 0, aufgedecktStreak +1 (schwer: -1; nach 3x: Score=-100)
 
 Diktat:
@@ -154,84 +208,23 @@ Multi-Listen-TXT: # ListenName als Abschnittstrennzeichen
 
 
 ================================================================
-GEPLANTE ÄNDERUNGEN FÜR SESSION 9
+QUIZ-DEFAULTS (State-Initialwerte)
 ================================================================
-
-KONZEPT: STICKY-ON-SCROLL ELEMENTE
-------------------------------------
-Elemente die im normalen Content-Flow liegen, aber beim Scrollen am
-Header anstossen und dort kleben bleiben (standard CSS position:sticky
-mit top:headerH, AUSSERHALB des headerRef-Wrappers, direkt in .app).
-Beim Zurückscrollen lösen sie sich wieder ab.
-
-ÄNDERUNG 1 – "Quiz starten"-Button: sticky-on-scroll im Content
-----------------------------------------------------------------
-Aktuell: Button ist im headerRef-Wrapper (immer sichtbar, aber kein Scroll-Verhalten)
-Neu: Button aus headerRef entfernen, stattdessen im Content-Flow platzieren:
-  - Position: nach der ausgeklappten Listenliste, vor den Slots
-  - style: position:"sticky", top:headerH, zIndex:8, background:"#fff"
-  - Padding + borderBottom damit er beim Kleben sauber aussieht
-  - Wenn Listen eingeklappt: Button ist erstes Content-Element → klebt sofort
-  - Wenn Listen ausgeklappt: Button scrollt mit hoch bis er am Header anstösst
-  - Button zeigt verfuegbar-Anzahl, disabled wenn !kannStarten || verfuegbar===0
-  - kannStarten + verfuegbar werden bereits im Quiz-IIFE berechnet → direkt verfügbar
-  - Gleichzeitig: IIFE im headerRef für den Button ENTFERNEN
-
-ÄNDERUNG 2 – Statistik: Ø Score sticky-on-scroll
--------------------------------------------------
-Die Ø-Score-Zeile (derzeit normaler Content) soll sticky werden:
-  style: position:"sticky", top:headerH, zIndex:8, background:"#fff"
-Damit klebt der Durchschnittsscore beim Scrollen am Header.
-Hinweis: headerH im Statistik-Tab = Höhe von Topbar + Tabs + statistik-listen-header
-
-ÄNDERUNG 3 – Statistik: "Nach oben"-Button sticky am Ø-Score
--------------------------------------------------------------
-Einen "↑ Nach oben"-Button zum Ø-Score-Element hinzufügen (rechts bündig).
-Klick: scrollt den .app-Container per scrollTo({top:0, behavior:"smooth"}) nach oben.
-Der Button klebt mit dem Ø-Score am Header → ist beim Scrollen immer sichtbar.
-Scroll-Container ermitteln: document.querySelector('.app') oder appRef falls vorhanden.
-
-ÄNDERUNG 4 – Statistik: Sortierung mit Richtungs-Toggle
---------------------------------------------------------
-Aktuell: 5 Buttons (Score↑, Score↓, Streak, Datum, A→Z) — Score doppelt
-Neu: 4 Buttons (Score, Streak, Datum, A→Z) — jeder Button togglet Richtung
-  State-Änderung:
-    statistikSort (string "score-asc") → statistikSortKey + statistikSortDir
-    ODER: statistikSort bleibt als kombinierter String: "score-asc" / "score-desc" etc.
-    Empfehlung: statistikSort als kombinierter String beibehalten, nur UI ändern
-  UI:
-    Aktiver Button zeigt Pfeil: "Score ↑" oder "Score ↓"
-    Klick auf aktiven Button: Richtung umkehren
-    Klick auf inaktiven Button: aktivieren (Default-Richtung: asc für Score, desc für Streak/Datum)
-  Alle Buttons: {key:"score", label:"Score"}, {key:"streak",...}, {key:"datum",...}, {key:"alpha",...}
-  Default-Richtungen beim ersten Klick:
-    score → asc (schlechteste zuerst), streak → desc (beste zuerst),
-    datum → desc (neueste zuerst), alpha → asc (A→Z)
-
-ÄNDERUNG 5 – Quiz-Listen-Toggle ohne Scroll-Sprung
----------------------------------------------------
-Problem: Wenn der User weit unten im Quiz-Tab scrollt und dann
-"Ausklappen/Einklappen" klickt, springt der Viewport weil sich die
-Höhe des Listen-Bereichs ändert, der sich ÜBER dem Viewport befindet.
-
-Lösung: Scroll-Offset-Korrektur im Click-Handler:
-  1. Ref auf den Listen-Container (listenContainerRef)
-  2. Vor dem Toggle: aktuelle Scroll-Position + getBoundingClientRect() messen
-  3. Nach dem Toggle (useLayoutEffect oder requestAnimationFrame):
-     prüfen ob der Listen-Bereich über dem Viewport liegt
-  4. Wenn ja: Scroll-Offset um die Höhendifferenz korrigieren
-
-Alternativer Ansatz: CSS overflow-anchor
-  .app { overflow-anchor: auto; } (Browser-Standard-Scroll-Anchoring aktivieren)
-  Wenn .app der Scroll-Container ist: möglicherweise reicht das bereits.
-  Testen ob Browser-Standard-Anchoring greift; falls nicht → JS-Lösung.
-
-Implementierungsreihenfolge:
-  Zuerst CSS-Ansatz testen, falls unzureichend: JS mit useLayoutEffect
+  quizModus                = "sequenziell"
+  quizFrageTyp             = "D1"
+  quizAntwortTypenGeordnet = ["E1"]
+  quizSpalteModus          = { E1: "karte" }
+  quizZeigeInfo            = { i1: true, i2: true }
+  quizReihenfolge          = "zufall"
+  quizUnbeantwortetZuerst  = true
+  quizSchlechtesteAnzahl   = 20
+  quizSchlechtesteMaxScore = ""
+  statistikSort            = "score-asc"
+  listenAuswahlAufgeklappt = true (default aufgeklappt)
 
 
 ================================================================
-PROMPT FÜR NEUEN CHAT (SESSION 9)
+PROMPT FÜR NEUEN CHAT
 ================================================================
 
 Wir arbeiten an einer Vokabel-App (React, iPad-optimiert, eine Datei):
@@ -243,23 +236,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 77b9c53
-
-Offene Aufgaben für diese Session (alle 5 umsetzen):
-
-1. "Quiz starten"-Button: aus headerRef-Wrapper entfernen,
-   als sticky-on-scroll im Content-Flow platzieren (nach Listenliste, vor Slots).
-   Details in PROJEKTUEBERGABE.txt unter ÄNDERUNG 1.
-
-2. Statistik Ø-Score-Zeile: position:sticky, top:headerH hinzufügen.
-
-3. Statistik "↑ Nach oben"-Button: rechts in der Ø-Score-Zeile,
-   scrollt .app-Container nach oben.
-
-4. Statistik Sortierung: 4 Buttons mit Richtungs-Toggle statt 5 Buttons.
-   Details in PROJEKTUEBERGABE.txt unter ÄNDERUNG 4.
-
-5. Quiz-Listen-Toggle ohne Scroll-Sprung: erst CSS-Ansatz testen,
-   dann JS-Lösung falls nötig. Details in PROJEKTUEBERGABE.txt unter ÄNDERUNG 5.
+Letzter Commit: 27c6731
 
 ================================================================
