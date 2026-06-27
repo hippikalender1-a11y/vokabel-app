@@ -500,8 +500,8 @@ export default function VokabelApp() {
   const headerRef = useRef(null);
   const listenContainerRef = useRef(null);
   const statistikListenHeaderRef = useRef(null);
-  const quizSentinelRef = useRef(null);
   const alleBereichRef = useRef(null);
+  const einzelauswahlRef = useRef(null);
   const [headerH, setHeaderH] = useState(104);
   const [alleBereichH, setAlleBereichH] = useState(0);
   const [statistikListenHeaderH, setStatistikListenHeaderH] = useState(0);
@@ -516,35 +516,31 @@ export default function VokabelApp() {
     return () => obs.disconnect();
   }, []);
 
-  // Sentinel vor Quiz-Button: wenn Quiz-Button an Alle/Bereich-Zeile anstößt → Einzelauswahl einklappen
-  useEffect(() => {
-    const el = quizSentinelRef.current;
-    if (!el) return;
-    const threshold = Math.round(headerH + alleBereichH);
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting && entry.boundingClientRect.top < threshold) {
-          setQuizListeAufgeklappt(false);
-        }
-      },
-      { rootMargin: `-${threshold}px 0px 0px 0px` }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [headerH, alleBereichH]);
-
-  // Scroll-Listener: wenn Alle/Bereich-Zeile am Haupt-Header anstößt → Listenauswahl einklappen
+  // Listenauswahl: schließt wenn Inhalt-Unterkante die Header-Unterkante passiert
   useEffect(() => {
     const onScroll = () => {
-      const el = alleBereichRef.current;
-      if (!el) return;
-      if (el.getBoundingClientRect().top <= headerH + 1) {
+      const el = listenContainerRef.current;
+      if (!el || el.offsetHeight === 0) return;
+      if (el.getBoundingClientRect().bottom <= headerH) {
         setListenAuswahlAufgeklappt(false);
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, quizTabListen.length]);
+  }, [headerH]);
+
+  // Einzelauswahl: schließt wenn Inhalt-Unterkante die Quiz-Button-Oberkante passiert
+  useEffect(() => {
+    const onScroll = () => {
+      const el = einzelauswahlRef.current;
+      if (!el || el.offsetHeight === 0) return;
+      if (el.getBoundingClientRect().bottom <= headerH + alleBereichH) {
+        setQuizListeAufgeklappt(false);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [headerH, alleBereichH]);
 
   // Alle/Bereich-Zeile Höhe messen
   useEffect(() => {
@@ -1191,15 +1187,32 @@ export default function VokabelApp() {
   }
 
   function toggleListenAuswahl() {
-    const el = listenContainerRef.current;
-    if (!el) { setListenAuswahlAufgeklappt(v => !v); return; }
-    const containerTop = el.getBoundingClientRect().top;
     const opening = !listenAuswahlAufgeklappt;
     setListenAuswahlAufgeklappt(v => !v);
-    if (opening && containerTop < headerH) {
-      // Liste öffnen während Viewport zu weit unten → nach oben scrollen, damit Liste sichtbar
+    if (opening) {
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        window.scrollTo({ top: Math.max(0, window.scrollY + containerTop - headerH), behavior: 'instant' });
+        const el = listenContainerRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.top < headerH) {
+          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH), behavior: 'instant' });
+        }
+      }));
+    }
+  }
+
+  function toggleEinzelauswahl() {
+    const opening = !quizListeAufgeklappt;
+    setQuizListeAufgeklappt(v => !v);
+    if (opening) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const el = einzelauswahlRef.current;
+        if (!el) return;
+        const target = headerH + alleBereichH;
+        const rect = el.getBoundingClientRect();
+        if (rect.top < target) {
+          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
+        }
       }));
     }
   }
@@ -2735,7 +2748,7 @@ export default function VokabelApp() {
                         Alle
                       </button>
                       <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`}
-                        onClick={() => setQuizBereichTyp("bereich")}>
+                        onClick={() => { if (quizBereichTyp !== "bereich") { setQuizBereichTyp("bereich"); setQuizListeAufgeklappt(true); } }}>
                         Bereich
                       </button>
                     </div>
@@ -2750,7 +2763,7 @@ export default function VokabelApp() {
                         <span style={{flex:1, textAlign:"right", fontSize:"0.8rem", color:"#aaa"}}>
                           ({quizGefilterteVoks.length} V.)
                         </span>
-                        <button className="btn-toggle-ghost" onClick={() => setQuizListeAufgeklappt(v => !v)}>
+                        <button className="btn-toggle-ghost" onClick={toggleEinzelauswahl}>
                           {quizListeAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
                         </button>
                       </>
@@ -2760,7 +2773,7 @@ export default function VokabelApp() {
 
                 {/* Einzelauswahl (Bereich-Modus) */}
                 {quizListeAufgeklappt && quizBereichTyp === "bereich" && kombiListe && (
-                  <div className="karte" style={{marginBottom:8, marginTop:8}}>
+                  <div ref={einzelauswahlRef} className="karte" style={{marginBottom:8, marginTop:8}}>
                     {basisVoks.length === 0
                       ? <div style={{padding:"16px", color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
                       : basisVoks.map((vok, idx) => {
@@ -2780,9 +2793,6 @@ export default function VokabelApp() {
                     }
                   </div>
                 )}
-
-                {/* Sentinel: wenn Quiz-Button an Alle/Bereich anstößt → Einzelauswahl einklappen */}
-                <div ref={quizSentinelRef} style={{height:0}} />
 
                 {/* Quiz starten Button - sticky unter Alle/Bereich-Zeile */}
                 {kombiListe && (
