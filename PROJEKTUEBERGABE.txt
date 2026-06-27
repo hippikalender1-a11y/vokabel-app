@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-28  (Session 13 abgeschlossen)
-Letzter Commit: 015b642  (Protokoll; Code-Änderungen noch nicht committed)
+Stand: 2026-06-28  (Session 14 abgeschlossen)
+Letzter Commit: 1d22be2  (Session 14: Abfrage-Modus "pro Spalte" → "Frage – Antwort")
 
 DATEIPFADE
 ----------
@@ -50,9 +50,7 @@ Alle sticky Elemente im gleichen Scroll-Container (Window).
 
   5. [Quiz-Tab] Abfrage-Modus-Zeile (ref={abfrageModusRef})
        position:sticky, top:headerH + alleBereichH, zIndex:7
-       "Abfrage-Modus" (links) | [Frage–Antwort / wechselnd / Diktat] (zentriert) | ▲/▼ (rechts)
-       HINWEIS: Chip zeigt aktuell noch "pro Spalte" — wird in Session 14
-                umbenannt in "Frage – Antwort"
+       "Abfrage-Modus" (links) | [Frage – Antwort / wechselnd / Diktat] (zentriert) | ▲/▼ (rechts)
 
   6. abfrageModusH = Höhe (ResizeObserver auf abfrageModusRef)
 
@@ -157,8 +155,8 @@ ABFRAGE-MODUS BEZEICHNUNGEN
 INTERNE STATE-WERTE (unveränderlich):
   quizModus = "sequenziell" | "rotierend" | "diktat"
 
-ANZEIGE-NAMEN (aktuell nach Session 13):
-  "sequenziell" → "pro Spalte"   ← Session 14: umbenennen in "Frage – Antwort"
+ANZEIGE-NAMEN (aktuell nach Session 14):
+  "sequenziell" → "Frage – Antwort"
   "rotierend"   → "wechselnd"
   "diktat"      → "Diktat"
 
@@ -285,8 +283,7 @@ VOKABEL-AUSWAHL-ZEILE:
   Bereich + Offen: Von-Bis, X-Button, (X V.) sichtbar
 
 ABFRAGE-MODUS-KONTEXT:
-  Modus-Toggle: "pro Spalte" / "wechselnd" / "Diktat"
-  (nächste Session: "pro Spalte" → "Frage – Antwort")
+  Modus-Toggle: "Frage – Antwort" / "wechselnd" / "Diktat"
   + Diktat-Konfig (conditional)
   + Spalten auswählen (conditional)
   + Info-Spalten anzeigen (conditional)
@@ -416,18 +413,9 @@ QUIZ-DEFAULTS (State-Initialwerte)
 
 
 ================================================================
-NÄCHSTE SESSION (Session 14)
+NÄCHSTE SESSION (Session 15)
 ================================================================
-Umbenennung: "pro Spalte" → "Frage – Antwort"
-  Betrifft:
-  - Chip-Text im abfrageModusRef sticky Header:
-      quizModus === "sequenziell" ? "pro Spalte" : ...
-      → ändern zu "Frage – Antwort"
-  - Button-Label im Modus-Toggle im Abfrage-Modus-Kontext:
-      <button ...>pro Spalte</button>
-      → ändern zu "Frage – Antwort"
-  Die internen State-Werte ("sequenziell", "rotierend", "diktat")
-  bleiben unverändert.
+Keine bekannten offenen Aufgaben. Neue Anforderungen abwarten.
 
 
 ================================================================
