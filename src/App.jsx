@@ -484,6 +484,7 @@ export default function VokabelApp() {
   const diktatPlayCountRef = useRef(0);
   const fileInputRef = useRef(null);
   const headerRef = useRef(null);
+  const listenContainerRef = useRef(null);
   const [headerH, setHeaderH] = useState(104);
 
   useEffect(() => {
@@ -1118,6 +1119,18 @@ export default function VokabelApp() {
 
   function toggleQuizTabListe(id) {
     setQuizTabListen(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
+  function toggleListenAuswahl() {
+    const el = listenContainerRef.current;
+    if (!el) { setListenAuswahlAufgeklappt(v => !v); return; }
+    const rectBottom = el.getBoundingClientRect().bottom;
+    const heightBefore = el.offsetHeight;
+    setListenAuswahlAufgeklappt(v => !v);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const delta = el.offsetHeight - heightBefore;
+      if (delta !== 0 && rectBottom <= headerH) window.scrollBy(0, delta);
+    }));
   }
 
   function beendeQuiz() {
@@ -2035,18 +2048,11 @@ export default function VokabelApp() {
     else if (statistikFilter === "positiv") voks = voks.filter(v => (v.fortschritt?.score ?? 0) > 0);
     else if (statistikFilter === "null") voks = voks.filter(v => v.fortschritt && v.fortschritt.score === 0);
 
-    if (statistikSort === "score-asc") voks.sort((a, b) => (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0));
-    else if (statistikSort === "score-desc") voks.sort((a, b) => (b.fortschritt?.score ?? 0) - (a.fortschritt?.score ?? 0));
-    else if (statistikSort === "streak") voks.sort((a, b) => (b.fortschritt?.streak ?? 0) - (a.fortschritt?.streak ?? 0));
-    else if (statistikSort === "datum") voks.sort((a, b) => {
-      const da = a.fortschritt?.letzteAbfrage ? new Date(a.fortschritt.letzteAbfrage) : new Date(0);
-      const db = b.fortschritt?.letzteAbfrage ? new Date(b.fortschritt.letzteAbfrage) : new Date(0);
-      return db - da;
-    });
-    else if (statistikSort === "alpha") {
-      const sp = TYPEN.find(t => aktiveListe.spalten[t].aktiv);
-      if (sp) voks.sort((a, b) => (a[sp]?.wert || '').localeCompare(b[sp]?.wert || ''));
-    }
+    const [sKey, sDir] = statistikSort.split("-");
+    if (sKey === "score") voks.sort((a, b) => { const d = (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0); return sDir === "asc" ? d : -d; });
+    else if (sKey === "streak") voks.sort((a, b) => { const d = (a.fortschritt?.streak ?? 0) - (b.fortschritt?.streak ?? 0); return sDir === "asc" ? d : -d; });
+    else if (sKey === "datum") voks.sort((a, b) => { const da = a.fortschritt?.letzteAbfrage ? new Date(a.fortschritt.letzteAbfrage) : new Date(0); const db = b.fortschritt?.letzteAbfrage ? new Date(b.fortschritt.letzteAbfrage) : new Date(0); return sDir === "asc" ? da - db : db - da; });
+    else if (sKey === "alpha") { const sp = TYPEN.find(t => aktiveListe.spalten[t].aktiv); if (sp) voks.sort((a, b) => { const r = (a[sp]?.wert || '').localeCompare(b[sp]?.wert || ''); return sDir === "asc" ? r : -r; }); }
 
     const sp1 = TYPEN.find(t => aktiveListe.spalten[t].aktiv);
     const sp2 = TYPEN.filter(t => aktiveListe.spalten[t].aktiv)[1];
@@ -2099,15 +2105,22 @@ export default function VokabelApp() {
             <div className="sektion-label" style={{marginBottom:8}}>Sortierung</div>
             <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
               {[
-                {key:"score-asc", label:"Score ↑"},
-                {key:"score-desc", label:"Score ↓"},
-                {key:"streak", label:"Streak"},
-                {key:"datum", label:"Datum"},
-                {key:"alpha", label:"A→Z"},
-              ].map(s => (
-                <button key={s.key} className={`typ-btn${statistikSort===s.key?" aktiv":""}`}
-                  onClick={() => setStatistikSort(s.key)}>{s.label}</button>
-              ))}
+                {key:"score", label:"Score", def:"asc"},
+                {key:"streak", label:"Streak", def:"desc"},
+                {key:"datum", label:"Datum", def:"desc"},
+                {key:"alpha", label:"A→Z", def:"asc"},
+              ].map(s => {
+                const [aKey, aDir] = statistikSort.split("-");
+                const isActive = aKey === s.key;
+                return (
+                  <button key={s.key} className={`typ-btn${isActive?" aktiv":""}`}
+                    onClick={() => isActive
+                      ? setStatistikSort(`${s.key}-${aDir === "asc" ? "desc" : "asc"}`)
+                      : setStatistikSort(`${s.key}-${s.def}`)}>
+                    {s.label}{isActive ? (aDir === "asc" ? " ↑" : " ↓") : ""}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="sektion-label" style={{marginBottom:8}}>{voks.length} Vokabel{voks.length!==1?"n":""}</div>
@@ -2166,53 +2179,8 @@ export default function VokabelApp() {
               <span className="liste-detail-header-name" style={{color: n === 0 ? "#aaa" : undefined}}>
                 {n === 0 ? "Listen auswählen" : `${totalVoks} Vokabeln aus ${n} ausgewählten ${n === 1 ? "Liste" : "Listen"}`}
               </span>
-              <button className="btn btn-ghost btn-sm" onClick={() => setListenAuswahlAufgeklappt(v => !v)}>
+              <button className="btn btn-ghost btn-sm" onClick={toggleListenAuswahl}>
                 {listenAuswahlAufgeklappt ? "Einklappen" : "Ausklappen"}
-              </button>
-            </div>
-          );
-        })()}
-        {tab === "quiz" && quizTabListen.length > 0 && (() => {
-          const hKL = getKombinierteListe(quizTabListen);
-          if (!hKL) return null;
-          const hKannStarten = quizModus === "rotierend"
-            ? quizAusgewaehlt.length >= 2
-            : quizModus === "diktat"
-            ? !!hKL.spalten[quizDiktatSpalte]?.aktiv
-            : !!(quizFrageTyp && quizAntwortTypenGeordnet.length >= 1);
-          const hRel = quizModus === "sequenziell"
-            ? [quizFrageTyp, ...quizAntwortTypenGeordnet].filter(Boolean)
-            : quizAusgewaehlt;
-          let hBasis = quizModus === "diktat"
-            ? hKL.vokabeln.filter(v => v[quizDiktatSpalte])
-            : hRel.length >= 2
-            ? hKL.vokabeln.filter(v => hRel.every(t => v[t]))
-            : hKL.vokabeln;
-          const hasBisH = quizBereichBis !== "";
-          if ((quizBereichTyp === "bereich" && hasBisH) || quizCheckboxAuswahl.size > 0) {
-            const von = Math.max(1, parseInt(quizBereichVon)||1);
-            const bis = hasBisH ? parseInt(quizBereichBis) : hBasis.length;
-            hBasis = hBasis.filter((v, idx) => {
-              const inRange = hasBisH && quizBereichTyp === "bereich" && idx+1 >= von && idx+1 <= bis;
-              return inRange || quizCheckboxAuswahl.has(v.id);
-            });
-          }
-          let hVerfuegbar;
-          if (quizReihenfolge === "schlechteste") {
-            let sc = hBasis;
-            if (quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
-              const thr = parseFloat(quizSchlechtesteMaxScore);
-              sc = hBasis.filter(v => (v.fortschritt?.score ?? 0) < thr);
-            }
-            hVerfuegbar = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl)||1), sc.length);
-          } else {
-            hVerfuegbar = hBasis.length;
-          }
-          return (
-            <div style={{padding:"8px 16px", borderBottom:"1px solid #e0dbd2"}}>
-              <button className="btn btn-primary" style={{width:"100%"}}
-                onClick={starteQuiz} disabled={!hKannStarten || hVerfuegbar === 0}>
-                Quiz starten ({hVerfuegbar} Vokabeln)
               </button>
             </div>
           );
@@ -2679,32 +2647,44 @@ export default function VokabelApp() {
               )}
               <div className="sektion">
                 {/* LISTEN-AUSWAHL */}
-                {listenAuswahlAufgeklappt && (
-                  listenIndex.length === 0
-                    ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
-                    : <div className="karte" style={{marginBottom:16}}>
-                      {listenIndex.map(l => {
-                        const ll = lsGet(SK.liste(l.id));
-                        const lAbfragbar = ll ? TYPEN.filter(t => !t.startsWith('i') && ll.spalten[t].aktiv) : [];
-                        const lInfo = ll ? TYPEN.filter(t => t.startsWith('i') && ll.spalten[t].aktiv) : [];
-                        const anzahl = ll ? ll.vokabeln.length : 0;
-                        const gewaehlt = quizTabListen.includes(l.id);
-                        return (
-                          <div key={l.id} className="quiz-setup-check" style={{padding:"10px 16px"}}
-                            onClick={() => toggleQuizTabListe(l.id)}>
-                            <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
-                            <div style={{flex:1}}>
-                              <div style={{fontWeight:600, fontSize:"0.9rem"}}>{l.name}</div>
-                              <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:2}}>
-                                {anzahl} Vokabel{anzahl!==1?"n":""}
-                                {ll && lAbfragbar.map(t => <span key={t} className="spalten-badge aktiv" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
-                                {ll && lInfo.map(t => <span key={t} className="spalten-badge" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
+                <div ref={listenContainerRef}>
+                  {listenAuswahlAufgeklappt && (
+                    listenIndex.length === 0
+                      ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
+                      : <div className="karte" style={{marginBottom:16}}>
+                        {listenIndex.map(l => {
+                          const ll = lsGet(SK.liste(l.id));
+                          const lAbfragbar = ll ? TYPEN.filter(t => !t.startsWith('i') && ll.spalten[t].aktiv) : [];
+                          const lInfo = ll ? TYPEN.filter(t => t.startsWith('i') && ll.spalten[t].aktiv) : [];
+                          const anzahl = ll ? ll.vokabeln.length : 0;
+                          const gewaehlt = quizTabListen.includes(l.id);
+                          return (
+                            <div key={l.id} className="quiz-setup-check" style={{padding:"10px 16px"}}
+                              onClick={() => toggleQuizTabListe(l.id)}>
+                              <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
+                              <div style={{flex:1}}>
+                                <div style={{fontWeight:600, fontSize:"0.9rem"}}>{l.name}</div>
+                                <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:2}}>
+                                  {anzahl} Vokabel{anzahl!==1?"n":""}
+                                  {ll && lAbfragbar.map(t => <span key={t} className="spalten-badge aktiv" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
+                                  {ll && lInfo.map(t => <span key={t} className="spalten-badge" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                  )}
+                </div>
+
+                {/* Quiz starten Button - sticky-on-scroll */}
+                {kombiListe && (
+                  <div style={{position:"sticky", top:headerH, zIndex:8, background:"#fff", padding:"8px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid #e0dbd2"}}>
+                    <button className="btn btn-primary" style={{width:"100%"}}
+                      onClick={starteQuiz} disabled={!kannStarten || verfuegbar === 0}>
+                      Quiz starten ({verfuegbar} Vokabeln)
+                    </button>
+                  </div>
                 )}
 
                 {/* CONFIG (nur wenn Listen gewählt) */}
@@ -3324,21 +3304,11 @@ export default function VokabelApp() {
           else if (statistikFilter === "negativ") voks = voks.filter(v => (v.fortschritt?.score ?? 0) < 0);
           else if (statistikFilter === "positiv") voks = voks.filter(v => (v.fortschritt?.score ?? 0) > 0);
           else if (statistikFilter === "null") voks = voks.filter(v => v.fortschritt && v.fortschritt.score === 0);
-          if (statistikSort === "score-asc") voks.sort((a, b) => (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0));
-          else if (statistikSort === "score-desc") voks.sort((a, b) => (b.fortschritt?.score ?? 0) - (a.fortschritt?.score ?? 0));
-          else if (statistikSort === "streak") voks.sort((a, b) => (b.fortschritt?.streak ?? 0) - (a.fortschritt?.streak ?? 0));
-          else if (statistikSort === "datum") voks.sort((a, b) => {
-            const da = a.fortschritt?.letzteAbfrage ? new Date(a.fortschritt.letzteAbfrage) : new Date(0);
-            const db = b.fortschritt?.letzteAbfrage ? new Date(b.fortschritt.letzteAbfrage) : new Date(0);
-            return db - da;
-          });
-          else if (statistikSort === "alpha") {
-            voks.sort((a, b) => {
-              const spa = TYPEN.find(t => a._spalten[t]?.aktiv);
-              const spb = TYPEN.find(t => b._spalten[t]?.aktiv);
-              return (a[spa]?.wert || '').localeCompare(b[spb]?.wert || '');
-            });
-          }
+          const [sKey, sDir] = statistikSort.split("-");
+          if (sKey === "score") voks.sort((a, b) => { const d = (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0); return sDir === "asc" ? d : -d; });
+          else if (sKey === "streak") voks.sort((a, b) => { const d = (a.fortschritt?.streak ?? 0) - (b.fortschritt?.streak ?? 0); return sDir === "asc" ? d : -d; });
+          else if (sKey === "datum") voks.sort((a, b) => { const da = a.fortschritt?.letzteAbfrage ? new Date(a.fortschritt.letzteAbfrage) : new Date(0); const db = b.fortschritt?.letzteAbfrage ? new Date(b.fortschritt.letzteAbfrage) : new Date(0); return sDir === "asc" ? da - db : db - da; });
+          else if (sKey === "alpha") { voks.sort((a, b) => { const spa = TYPEN.find(t => a._spalten[t]?.aktiv); const spb = TYPEN.find(t => b._spalten[t]?.aktiv); const r = (a[spa]?.wert || '').localeCompare(b[spb]?.wert || ''); return sDir === "asc" ? r : -r; }); }
           const mehrereListenGewaehlt = gewaehlteListenObjekte.length > 1;
 
           return (
@@ -3397,11 +3367,17 @@ export default function VokabelApp() {
                 ))}
               </div>
               {avgScore !== null && (
-                <div style={{background:"#fff", border:"1px solid #e0dbd2", borderRadius:10, padding:"11px 14px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                <div style={{position:"sticky", top:headerH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
                   <span style={{fontSize:"0.82rem", color:"#6b6560", fontWeight:600}}>Ø Score (abgefragte Vokabeln)</span>
-                  <span style={{fontWeight:700, color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
-                    {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
-                  </span>
+                  <div style={{display:"flex", alignItems:"center", gap:8}}>
+                    <span style={{fontWeight:700, color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
+                      {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
+                    </span>
+                    <button className="btn btn-ghost btn-sm"
+                      onClick={() => window.scrollTo({top:0, behavior:"smooth"})}>
+                      ↑ Nach oben
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -3424,15 +3400,22 @@ export default function VokabelApp() {
               <div className="sektion-label" style={{marginBottom:8}}>Sortierung</div>
               <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
                 {[
-                  {key:"score-asc", label:"Score ↑"},
-                  {key:"score-desc", label:"Score ↓"},
-                  {key:"streak", label:"Streak"},
-                  {key:"datum", label:"Datum"},
-                  {key:"alpha", label:"A→Z"},
-                ].map(s => (
-                  <button key={s.key} className={`typ-btn${statistikSort===s.key?" aktiv":""}`}
-                    onClick={() => setStatistikSort(s.key)}>{s.label}</button>
-                ))}
+                  {key:"score", label:"Score", def:"asc"},
+                  {key:"streak", label:"Streak", def:"desc"},
+                  {key:"datum", label:"Datum", def:"desc"},
+                  {key:"alpha", label:"A→Z", def:"asc"},
+                ].map(s => {
+                  const [aKey, aDir] = statistikSort.split("-");
+                  const isActive = aKey === s.key;
+                  return (
+                    <button key={s.key} className={`typ-btn${isActive?" aktiv":""}`}
+                      onClick={() => isActive
+                        ? setStatistikSort(`${s.key}-${aDir === "asc" ? "desc" : "asc"}`)
+                        : setStatistikSort(`${s.key}-${s.def}`)}>
+                      {s.label}{isActive ? (aDir === "asc" ? " ↑" : " ↓") : ""}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Vokabelliste */}
