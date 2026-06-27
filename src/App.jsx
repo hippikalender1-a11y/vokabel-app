@@ -485,6 +485,7 @@ export default function VokabelApp() {
   const [quizBereichTyp, setQuizBereichTyp] = useState("alle");
   const [quizBereichVon, setQuizBereichVon] = useState(1);
   const [quizBereichBis, setQuizBereichBis] = useState("");
+  const [quizBereichEingabeAufgeklappt, setQuizBereichEingabeAufgeklappt] = useState(false);
   const [quizReihenfolge, setQuizReihenfolge] = useState("zufall");
   const [quizSchlechtesteAnzahl, setQuizSchlechtesteAnzahl] = useState(20);
   const [quizSchlechtesteMaxScore, setQuizSchlechtesteMaxScore] = useState("");
@@ -1135,6 +1136,7 @@ export default function VokabelApp() {
     setQuizBereichTyp('alle');
     setQuizBereichVon(1);
     setQuizBereichBis('');
+    setQuizBereichEingabeAufgeklappt(false);
     setQuizReihenfolge('zufall');
     setQuizSchlechtesteAnzahl(20);
     setQuizSchlechtesteMaxScore('');
@@ -2903,17 +2905,26 @@ export default function VokabelApp() {
                   <div className="karte" style={{marginBottom:8}}>
                     <div className="toggle-row">
                       <div className="toggle-btn">
-                        <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`} onClick={() => setQuizBereichTyp("alle")}>Alle</button>
+                        <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
+                          onClick={() => { setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false); }}>Alle</button>
                         <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`} onClick={() => setQuizBereichTyp("bereich")}>Bereich</button>
                       </div>
-                      {quizBereichTyp === "bereich" && (String(quizBereichVon) !== "1" || quizBereichBis !== "") && (
-                        <button className="btn btn-ghost btn-sm"
-                          onClick={() => { setQuizBereichTyp('alle'); setQuizBereichVon(1); setQuizBereichBis(''); }}>
-                          Bereich zurücksetzen
-                        </button>
+                      {quizBereichTyp === "alle" ? (
+                        <span style={{fontSize:"0.82rem", color:"#6b6560", paddingRight:2}}>
+                          <strong style={{color:"#2d6a4f"}}>{basisVoks.length}</strong> Vokabeln
+                        </span>
+                      ) : (
+                        <div style={{display:"flex", gap:6, alignItems:"center"}}>
+                          <button className="btn btn-ghost btn-sm" onClick={() => setQuizBereichEingabeAufgeklappt(v => !v)}>
+                            Von–Bis{quizBereichEingabeAufgeklappt ? " ▲" : " ▼"}
+                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => setQuizListeAufgeklappt(v => !v)}>
+                            {quizListeAufgeklappt ? "Liste einklappen" : "Liste anzeigen"}
+                          </button>
+                        </div>
                       )}
                     </div>
-                    {quizBereichTyp === "bereich" && (
+                    {quizBereichTyp === "bereich" && quizBereichEingabeAufgeklappt && (
                       <div style={{padding:"0 16px 12px", display:"flex", gap:12, alignItems:"flex-end"}}>
                         <div style={{flex:1}}>
                           <label className="inp-label">Von Nr.</label>
@@ -2928,19 +2939,16 @@ export default function VokabelApp() {
                         </div>
                       </div>
                     )}
-                    <div style={{padding:"8px 16px 14px", display:"flex", alignItems:"center", gap:10, borderTop:"1px solid #e0dbd2"}}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setQuizListeAufgeklappt(v=>!v)}>
-                        {quizListeAufgeklappt ? "Liste einklappen" : "Liste anzeigen"}
-                      </button>
-                      <span style={{fontSize:"0.82rem", color:"#6b6560"}}>
+                    {quizBereichTyp === "bereich" && (
+                      <div style={{padding:"8px 16px 14px", borderTop:"1px solid #e0dbd2", fontSize:"0.82rem", color:"#6b6560"}}>
                         <strong style={{color:"#2d6a4f"}}>{basisVoks.length}</strong> Vokabeln
-                        {(quizBereichTyp === "bereich" || quizCheckboxAuswahl.size > 0) && (
+                        {(quizBereichBis !== "" || quizCheckboxAuswahl.size > 0) && (
                           <> · <strong style={{color:"#2d6a4f"}}>{gefilterteVoks.length}</strong> ausgewählt
                           {quizCheckboxAuswahl.size > 0 && <span style={{color:"#b0aba5"}}> ({quizCheckboxAuswahl.size} markiert)</span>}
                           </>
                         )}
-                      </span>
-                    </div>
+                      </div>
+                    )}
                   </div>
                   {quizListeAufgeklappt && (
                     <div className="karte" style={{marginBottom:8}}>
