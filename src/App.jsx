@@ -548,7 +548,7 @@ export default function VokabelApp() {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [headerH]);
+  }, [headerH, quizTabListen.length]);
 
   // Alle/Bereich-Zeile Höhe messen
   useEffect(() => {
