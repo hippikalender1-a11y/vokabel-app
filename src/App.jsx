@@ -464,8 +464,6 @@ export default function VokabelApp() {
   const [quizDiktatUebersetzung, setQuizDiktatUebersetzung] = useState("D1");
   const [quizListeAufgeklappt, setQuizListeAufgeklappt] = useState(false);
   const [quizCheckboxAuswahl, setQuizCheckboxAuswahl] = useState(new Set());
-  const [quizVonBisModus, setQuizVonBisModus] = useState(false);
-  const [quizVonBisErster, setQuizVonBisErster] = useState(null);
   const [promptThema, setPromptThema] = useState("");
   const [promptAnzahl, setPromptAnzahl] = useState(20);
   const [promptBeispiele, setPromptBeispiele] = useState(false);
@@ -484,9 +482,6 @@ export default function VokabelApp() {
   const [statistikGraphOhneUnbeantwortet, setStatistikGraphOhneUnbeantwortet] = useState(false);
   const [sessionSlots, setSessionSlots] = useState([]);
   const [quizBereichTyp, setQuizBereichTyp] = useState("alle");
-  const [quizBereichVon, setQuizBereichVon] = useState(1);
-  const [quizBereichBis, setQuizBereichBis] = useState("");
-  const [quizBereichEingabeAufgeklappt, setQuizBereichEingabeAufgeklappt] = useState(false);
   const [quizReihenfolge, setQuizReihenfolge] = useState("zufall");
   const [quizSchlechtesteAnzahl, setQuizSchlechtesteAnzahl] = useState(20);
   const [quizSchlechtesteMaxScore, setQuizSchlechtesteMaxScore] = useState("");
@@ -1053,36 +1048,19 @@ export default function VokabelApp() {
     setQuizZeigeInfo(prev => ({...prev, [typ]: !prev[typ]}));
   }
 
-  function toggleVokCheckbox(vokId, alleBasisvoks) {
-    if (quizVonBisModus && quizVonBisErster !== null) {
-      // Von-Bis: select range between first and this
-      const i1 = alleBasisvoks.findIndex(v => v.id === quizVonBisErster);
-      const i2 = alleBasisvoks.findIndex(v => v.id === vokId);
-      if (i1 >= 0 && i2 >= 0) {
-        const from = Math.min(i1, i2), to = Math.max(i1, i2);
-        setQuizCheckboxAuswahl(prev => {
-          const neu = new Set(prev);
-          for (let i = from; i <= to; i++) neu.add(alleBasisvoks[i].id);
-          return neu;
-        });
-      }
-      setQuizVonBisModus(false);
-      setQuizVonBisErster(null);
-    } else {
-      setQuizVonBisErster(vokId);
-      setQuizCheckboxAuswahl(prev => {
-        const neu = new Set(prev);
-        if (neu.has(vokId)) neu.delete(vokId); else neu.add(vokId);
-        return neu;
-      });
-    }
+  function toggleVokCheckbox(vokId) {
+    setQuizCheckboxAuswahl(prev => {
+      const neu = new Set(prev);
+      if (neu.has(vokId)) neu.delete(vokId); else neu.add(vokId);
+      return neu;
+    });
   }
 
   function speichereKonfigInSlot(nummer, name) {
     const konfiguration = {
       quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet,
       quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
-      quizModus, quizBereichTyp, quizBereichVon, quizBereichBis,
+      quizModus, quizBereichTyp,
       quizReihenfolge, quizSchlechtesteAnzahl, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst,
       quizDiktatSpalte, quizDiktatUebersetzung,
     };
@@ -1103,8 +1081,6 @@ export default function VokabelApp() {
     setQuizZeigeInfo(k.quizZeigeInfo || {});
     setQuizModus(k.quizModus || "sequenziell");
     setQuizBereichTyp(k.quizBereichTyp || "alle");
-    setQuizBereichVon(k.quizBereichVon || 1);
-    setQuizBereichBis(k.quizBereichBis || "");
     setQuizReihenfolge(k.quizReihenfolge || "zufall");
     setQuizSchlechtesteAnzahl(k.quizSchlechtesteAnzahl || 20);
     setQuizSchlechtesteMaxScore(k.quizSchlechtesteMaxScore ?? "");
@@ -1194,14 +1170,8 @@ export default function VokabelApp() {
     if (!kombiListe) return;
     speichereKonfigInSlot(6, "Zuletzt verwendet");
     let voks = kombiListe.vokabeln.filter(v => v[quizDiktatSpalte]);
-    const hasBisDiktat = quizBereichBis !== "";
-    if ((quizBereichTyp === "bereich" && hasBisDiktat) || quizCheckboxAuswahl.size > 0) {
-      const von = Math.max(1, parseInt(quizBereichVon) || 1);
-      const bis = hasBisDiktat ? parseInt(quizBereichBis) : voks.length;
-      voks = voks.filter((v, idx) => {
-        const inRange = hasBisDiktat && quizBereichTyp === "bereich" && idx + 1 >= von && idx + 1 <= bis;
-        return inRange || quizCheckboxAuswahl.has(v.id);
-      });
+    if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
+      voks = voks.filter(v => quizCheckboxAuswahl.has(v.id));
     }
     if (quizReihenfolge === "schlechteste") {
       let schlecht = voks;
@@ -1253,16 +1223,8 @@ export default function VokabelApp() {
 
     let voks = kombiListe.vokabeln.filter(v => alleAbfragbar.every(t => v[t]));
 
-    // Bereich + Checkbox mit OR
-    const hasBis = quizBereichBis !== "";
-    if ((quizBereichTyp === "bereich" && hasBis) || quizCheckboxAuswahl.size > 0) {
-      const von = Math.max(1, parseInt(quizBereichVon) || 1);
-      const bis = hasBis ? parseInt(quizBereichBis) : voks.length;
-      voks = voks.filter((v, idx) => {
-        const inRange = hasBis && quizBereichTyp === "bereich" && idx + 1 >= von && idx + 1 <= bis;
-        const inCheckbox = quizCheckboxAuswahl.has(v.id);
-        return inRange || inCheckbox;
-      });
+    if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
+      voks = voks.filter(v => quizCheckboxAuswahl.has(v.id));
     }
 
     if (quizReihenfolge === "schlechteste") {
@@ -2221,18 +2183,9 @@ export default function VokabelApp() {
       ? quizKombiListe.vokabeln.filter(v => quizRelevanteTypen.every(t => v[t]))
       : quizKombiListe.vokabeln
     : [];
-  const quizHasBis = quizBereichBis !== "";
-  const quizGefilterteVoks = (() => {
-    if ((quizBereichTyp === "bereich" && quizHasBis) || quizCheckboxAuswahl.size > 0) {
-      const von = Math.max(1, parseInt(quizBereichVon)||1);
-      const bis = quizHasBis ? parseInt(quizBereichBis) : quizBasisVoks.length;
-      return quizBasisVoks.filter((v, idx) => {
-        const inRange = quizHasBis && quizBereichTyp === "bereich" && idx+1 >= von && idx+1 <= bis;
-        return inRange || quizCheckboxAuswahl.has(v.id);
-      });
-    }
-    return quizBasisVoks;
-  })();
+  const quizGefilterteVoks = (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0)
+    ? quizBasisVoks.filter(v => quizCheckboxAuswahl.has(v.id))
+    : quizBasisVoks;
 
   // ── Render: Haupt (Tabs immer sichtbar) ──────────────────────────────────
   return (
@@ -2277,7 +2230,7 @@ export default function VokabelApp() {
           <div style={{background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
             <div className="toggle-btn">
               <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
-                onClick={() => { setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false); setQuizBereichEingabeAufgeklappt(false); }}>
+                onClick={() => { setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false); }}>
                 Alle
               </button>
               <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`}
@@ -2287,46 +2240,19 @@ export default function VokabelApp() {
             </div>
             {quizBereichTyp === "bereich" && (
               <>
+                {quizCheckboxAuswahl.size > 0 && (
+                  <button className="btn btn-ghost btn-sm"
+                    onClick={() => setQuizCheckboxAuswahl(new Set())}>
+                    Auswahl löschen ({quizCheckboxAuswahl.size})
+                  </button>
+                )}
                 <span style={{flex:1, textAlign:"right", fontSize:"0.8rem", color:"#aaa"}}>
                   ({quizGefilterteVoks.length} V.)
                 </span>
-                <button className="btn-toggle-ghost" onClick={() => {
-                  if (quizBereichEingabeAufgeklappt) setQuizListeAufgeklappt(false);
-                  setQuizBereichEingabeAufgeklappt(v => !v);
-                }}>
-                  {quizBereichEingabeAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
+                <button className="btn-toggle-ghost" onClick={() => setQuizListeAufgeklappt(v => !v)}>
+                  {quizListeAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
                 </button>
               </>
-            )}
-          </div>
-        )}
-
-        {/* Quiz: Sub-Zeile 1 – Von/Bis Eingabe */}
-        {tab === "quiz" && quizKombiListe && quizBereichTyp === "bereich" && quizBereichEingabeAufgeklappt && (
-          <div style={{background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px 8px 28px", display:"flex", alignItems:"center", gap:8}}>
-            <span style={{fontSize:"0.82rem", color:"#6b6560", fontWeight:600, flexShrink:0}}>Von–Bis</span>
-            <input className="inp" type="number" min={1} value={quizBereichVon}
-              onChange={e => setQuizBereichVon(e.target.value)}
-              style={{padding:"5px 8px", fontSize:"0.82rem", ...(quizBereichBis === "" ? {color:"#c0bcb7"} : {})}} />
-            <span style={{color:"#aaa", flexShrink:0}}>–</span>
-            <input className="inp" type="number" min={1} value={quizBereichBis}
-              onChange={e => setQuizBereichBis(e.target.value)}
-              placeholder={String(quizBasisVoks.length)}
-              style={{padding:"5px 8px", fontSize:"0.82rem"}} />
-          </div>
-        )}
-
-        {/* Quiz: Sub-Zeile 2 – Liste anzeigen */}
-        {tab === "quiz" && quizKombiListe && quizBereichTyp === "bereich" && quizBereichEingabeAufgeklappt && (
-          <div style={{background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", alignItems:"center", gap:8}}>
-            <button className="btn btn-ghost btn-sm" onClick={() => setQuizListeAufgeklappt(v => !v)}>
-              {quizListeAufgeklappt ? "Liste einklappen" : "Liste anzeigen"}
-            </button>
-            {quizCheckboxAuswahl.size > 0 && (
-              <button className="btn btn-ghost btn-sm"
-                onClick={() => { setQuizCheckboxAuswahl(new Set()); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
-                Auswahl löschen ({quizCheckboxAuswahl.size})
-              </button>
             )}
           </div>
         )}
@@ -2748,6 +2674,29 @@ export default function VokabelApp() {
           return (
             <>
               <div className="sektion">
+                {/* Einzelauswahl (Bereich-Modus) */}
+                {quizListeAufgeklappt && quizBereichTyp === "bereich" && kombiListe && (
+                  <div className="karte" style={{marginBottom:8}}>
+                    {basisVoks.length === 0
+                      ? <div style={{padding:"16px", color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
+                      : basisVoks.map((vok, idx) => {
+                        const inChk = quizCheckboxAuswahl.has(vok.id);
+                        const sp1 = abfragbar[0]; const sp2 = abfragbar[1];
+                        return (
+                          <div key={vok.id} className="vok-zeile"
+                            style={{background: inChk ? "#f0f7f0" : "transparent"}}
+                            onClick={() => toggleVokCheckbox(vok.id)}>
+                            <div className={`checkbox${inChk?" checked":""}`} style={{flexShrink:0}}>{inChk?"✓":""}</div>
+                            <span className="vok-nr">{idx+1}</span>
+                            <span style={{fontSize:"0.88rem", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{sp1?vok[sp1]?.wert||'':''}</span>
+                            <span style={{fontSize:"0.82rem", color:"#6b6560", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textAlign:"right"}}>{sp2?vok[sp2]?.wert||'':''}</span>
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                )}
+
                 {/* LISTEN-AUSWAHL */}
                 <div ref={listenContainerRef}>
                   {listenAuswahlAufgeklappt && (
@@ -2960,34 +2909,6 @@ export default function VokabelApp() {
                       </>
                     )}
                   </>)}
-
-                  {/* Einzelauswahl-Liste (via Sub-Zeile 2 im Header) */}
-                  {quizListeAufgeklappt && (
-                    <div className="karte" style={{marginBottom:8}}>
-                      {basisVoks.length === 0
-                        ? <div style={{padding:"16px", color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
-                        : basisVoks.map((vok, idx) => {
-                          const von = Math.max(1, parseInt(quizBereichVon)||1);
-                          const hasBis = quizBereichBis !== "";
-                          const bis = hasBis ? parseInt(quizBereichBis) : basisVoks.length;
-                          const inRange = hasBis && quizBereichTyp==="bereich" && idx+1>=von && idx+1<=bis;
-                          const inChk = quizCheckboxAuswahl.has(vok.id);
-                          const hl = inRange || inChk;
-                          const sp1 = abfragbar[0]; const sp2 = abfragbar[1];
-                          return (
-                            <div key={vok.id} className="vok-zeile"
-                              style={{background: hl ? "#f0f7f0" : "transparent"}}
-                              onClick={() => toggleVokCheckbox(vok.id, basisVoks)}>
-                              <div className={`checkbox${inChk?" checked":""}`} style={{flexShrink:0}}>{inChk?"✓":""}</div>
-                              <span className="vok-nr">{idx+1}</span>
-                              <span style={{fontSize:"0.88rem", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{sp1?vok[sp1]?.wert||'':''}</span>
-                              <span style={{fontSize:"0.82rem", color:"#6b6560", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textAlign:"right"}}>{sp2?vok[sp2]?.wert||'':''}</span>
-                            </div>
-                          );
-                        })
-                      }
-                    </div>
-                  )}
 
                   {/* REIHENFOLGE */}
                   <div className="sektion-label" style={{marginBottom:8}}>Reihenfolge</div>
