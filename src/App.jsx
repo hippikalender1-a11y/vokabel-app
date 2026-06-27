@@ -2209,6 +2209,31 @@ export default function VokabelApp() {
     );
   }
 
+  // ── Quiz: Berechnungen (auch im Header gebraucht) ────────────────────────
+  const quizKombiListe = quizTabListen.length > 0 ? getKombinierteListe(quizTabListen) : null;
+  const quizRelevanteTypen = quizModus === "sequenziell"
+    ? [quizFrageTyp, ...quizAntwortTypenGeordnet].filter(Boolean)
+    : quizAusgewaehlt;
+  const quizBasisVoks = quizKombiListe
+    ? quizModus === "diktat"
+      ? quizKombiListe.vokabeln.filter(v => v[quizDiktatSpalte])
+      : quizRelevanteTypen.length >= 2
+      ? quizKombiListe.vokabeln.filter(v => quizRelevanteTypen.every(t => v[t]))
+      : quizKombiListe.vokabeln
+    : [];
+  const quizHasBis = quizBereichBis !== "";
+  const quizGefilterteVoks = (() => {
+    if ((quizBereichTyp === "bereich" && quizHasBis) || quizCheckboxAuswahl.size > 0) {
+      const von = Math.max(1, parseInt(quizBereichVon)||1);
+      const bis = quizHasBis ? parseInt(quizBereichBis) : quizBasisVoks.length;
+      return quizBasisVoks.filter((v, idx) => {
+        const inRange = quizHasBis && quizBereichTyp === "bereich" && idx+1 >= von && idx+1 <= bis;
+        return inRange || quizCheckboxAuswahl.has(v.id);
+      });
+    }
+    return quizBasisVoks;
+  })();
+
   // ── Render: Haupt (Tabs immer sichtbar) ──────────────────────────────────
   return (
     <>
@@ -2237,12 +2262,74 @@ export default function VokabelApp() {
               <span className="liste-detail-header-name" style={{color: n === 0 ? "#aaa" : undefined}}>
                 {headerText}
               </span>
+              {n > 0 && (
+                <span style={{fontSize:"0.8rem", color:"#aaa", flexShrink:0}}>({quizBasisVoks.length} V.)</span>
+              )}
               <button className="btn-toggle" onClick={toggleListenAuswahl}>
                 {listenAuswahlAufgeklappt ? <IcoDown/> : <IcoUp/>}
               </button>
             </div>
           );
         })()}
+
+        {/* Quiz: Zeile 2 – Alle / Bereich */}
+        {tab === "quiz" && quizKombiListe && (
+          <div style={{background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
+            <div className="toggle-btn">
+              <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
+                onClick={() => { setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false); setQuizBereichEingabeAufgeklappt(false); }}>
+                Alle
+              </button>
+              <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`}
+                onClick={() => setQuizBereichTyp("bereich")}>
+                Bereich
+              </button>
+            </div>
+            {quizBereichTyp === "bereich" && (
+              <>
+                <span style={{flex:1, textAlign:"right", fontSize:"0.8rem", color:"#aaa"}}>
+                  ({quizGefilterteVoks.length} V.)
+                </span>
+                <button className="btn-toggle-ghost" onClick={() => {
+                  if (quizBereichEingabeAufgeklappt) setQuizListeAufgeklappt(false);
+                  setQuizBereichEingabeAufgeklappt(v => !v);
+                }}>
+                  {quizBereichEingabeAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Quiz: Sub-Zeile 1 – Von/Bis Eingabe */}
+        {tab === "quiz" && quizKombiListe && quizBereichTyp === "bereich" && quizBereichEingabeAufgeklappt && (
+          <div style={{background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px 8px 28px", display:"flex", alignItems:"center", gap:8}}>
+            <span style={{fontSize:"0.82rem", color:"#6b6560", fontWeight:600, flexShrink:0}}>Von–Bis</span>
+            <input className="inp" type="number" min={1} value={quizBereichVon}
+              onChange={e => setQuizBereichVon(e.target.value)}
+              style={{padding:"5px 8px", fontSize:"0.82rem", ...(quizBereichBis === "" ? {color:"#c0bcb7"} : {})}} />
+            <span style={{color:"#aaa", flexShrink:0}}>–</span>
+            <input className="inp" type="number" min={1} value={quizBereichBis}
+              onChange={e => setQuizBereichBis(e.target.value)}
+              placeholder={String(quizBasisVoks.length)}
+              style={{padding:"5px 8px", fontSize:"0.82rem"}} />
+          </div>
+        )}
+
+        {/* Quiz: Sub-Zeile 2 – Liste anzeigen */}
+        {tab === "quiz" && quizKombiListe && quizBereichTyp === "bereich" && quizBereichEingabeAufgeklappt && (
+          <div style={{background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", alignItems:"center", gap:8}}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setQuizListeAufgeklappt(v => !v)}>
+              {quizListeAufgeklappt ? "Liste einklappen" : "Liste anzeigen"}
+            </button>
+            {quizCheckboxAuswahl.size > 0 && (
+              <button className="btn btn-ghost btn-sm"
+                onClick={() => { setQuizCheckboxAuswahl(new Set()); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
+                Auswahl löschen ({quizCheckboxAuswahl.size})
+              </button>
+            )}
+          </div>
+        )}
         </div>{/* end sticky header wrapper */}
 
         {/* ── Listen-Header (persistent) ── */}
@@ -2636,34 +2723,16 @@ export default function VokabelApp() {
 
         {/* ── Quiz-Tab ── */}
         {tab === "quiz" && (() => {
-          const kombiListe = quizTabListen.length > 0 ? getKombinierteListe(quizTabListen) : null;
+          const kombiListe = quizKombiListe;
+          const basisVoks = quizBasisVoks;
+          const gefilterteVoks = quizGefilterteVoks;
           const abfragbar = kombiListe ? TYPEN.filter(t => !t.startsWith('i') && kombiListe.spalten[t].aktiv) : [];
           const infoSpalten = kombiListe ? TYPEN.filter(t => t.startsWith('i') && kombiListe.spalten[t].aktiv) : [];
-          const relevanteTypen = quizModus === "sequenziell"
-            ? [quizFrageTyp, ...quizAntwortTypenGeordnet].filter(Boolean)
-            : quizAusgewaehlt;
           const kannStarten = kombiListe && (quizModus === "rotierend"
             ? quizAusgewaehlt.length >= 2
             : quizModus === "diktat"
             ? !!kombiListe.spalten[quizDiktatSpalte]?.aktiv
             : quizFrageTyp && quizAntwortTypenGeordnet.length >= 1);
-          const basisVoks = kombiListe
-            ? quizModus === "diktat"
-              ? kombiListe.vokabeln.filter(v => v[quizDiktatSpalte])
-              : relevanteTypen.length >= 2
-              ? kombiListe.vokabeln.filter(v => relevanteTypen.every(t => v[t]))
-              : kombiListe.vokabeln
-            : [];
-          let gefilterteVoks = basisVoks;
-          const hasBis = quizBereichBis !== "";
-          if ((quizBereichTyp === "bereich" && hasBis) || quizCheckboxAuswahl.size > 0) {
-            const von = Math.max(1, parseInt(quizBereichVon)||1);
-            const bis = hasBis ? parseInt(quizBereichBis) : basisVoks.length;
-            gefilterteVoks = basisVoks.filter((v, idx) => {
-              const inRange = hasBis && quizBereichTyp === "bereich" && idx+1 >= von && idx+1 <= bis;
-              return inRange || quizCheckboxAuswahl.has(v.id);
-            });
-          }
           let verfuegbar;
           if (quizReihenfolge === "schlechteste") {
             let scVoks = gefilterteVoks;
@@ -2678,22 +2747,6 @@ export default function VokabelApp() {
 
           return (
             <>
-              {quizListeAufgeklappt && (
-                <div className="quiz-liste-sticky" style={{top: headerH}}>
-                  <button className="btn btn-primary btn-sm"
-                    onClick={() => { setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
-                    Liste einklappen
-                  </button>
-                  <button className={`btn btn-sm ${quizVonBisModus ? "btn-primary" : "btn-ghost"}`}
-                    onClick={() => { setQuizVonBisModus(v => !v); setQuizVonBisErster(null); }}>
-                    Von–Bis{quizVonBisModus ? " ✓" : ""}
-                  </button>
-                  <button className="btn btn-ghost btn-sm"
-                    onClick={() => { setQuizCheckboxAuswahl(new Set()); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
-                    Zurücksetzen
-                  </button>
-                </div>
-              )}
               <div className="sektion">
                 {/* LISTEN-AUSWAHL */}
                 <div ref={listenContainerRef}>
@@ -2725,6 +2778,13 @@ export default function VokabelApp() {
                       </div>
                   )}
                 </div>
+
+                {/* Platzhalter wenn keine Liste gewählt und Liste eingeklappt */}
+                {!listenAuswahlAufgeklappt && quizTabListen.length === 0 && (
+                  <div style={{padding:"48px 16px", textAlign:"center"}}>
+                    <span style={{fontSize:"1.3rem", color:"#c0bcb7", fontWeight:600}}>Bitte Liste auswählen</span>
+                  </div>
+                )}
 
                 {/* Quiz starten Button - sticky-on-scroll */}
                 {kombiListe && (
@@ -2901,56 +2961,7 @@ export default function VokabelApp() {
                     )}
                   </>)}
 
-                  {/* VOKABELN */}
-                  <div className="sektion-label" style={{marginBottom:8}}>Vokabeln</div>
-                  <div className="karte" style={{marginBottom:8}}>
-                    <div className="toggle-row">
-                      <div className="toggle-btn">
-                        <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
-                          onClick={() => { setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false); }}>Alle</button>
-                        <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`} onClick={() => setQuizBereichTyp("bereich")}>Bereich</button>
-                      </div>
-                      {quizBereichTyp === "alle" ? (
-                        <span style={{fontSize:"0.82rem", color:"#6b6560", paddingRight:2}}>
-                          <strong style={{color:"#2d6a4f"}}>{basisVoks.length}</strong> Vokabeln
-                        </span>
-                      ) : (
-                        <div style={{display:"flex", gap:6, alignItems:"center"}}>
-                          <button className="btn btn-ghost btn-sm" onClick={() => setQuizBereichEingabeAufgeklappt(v => !v)}>
-                            Von–Bis{quizBereichEingabeAufgeklappt ? " ▼" : " ▲"}
-                          </button>
-                          <button className="btn btn-ghost btn-sm" onClick={() => setQuizListeAufgeklappt(v => !v)}>
-                            {quizListeAufgeklappt ? "Liste einklappen" : "Liste anzeigen"}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    {quizBereichTyp === "bereich" && quizBereichEingabeAufgeklappt && (
-                      <div style={{padding:"0 16px 12px", display:"flex", gap:12, alignItems:"flex-end"}}>
-                        <div style={{flex:1}}>
-                          <label className="inp-label">Von Nr.</label>
-                          <input className="inp" type="number" min={1} value={quizBereichVon}
-                            onChange={e => setQuizBereichVon(e.target.value)}
-                            style={quizBereichBis === "" ? {color:"#c0bcb7"} : undefined} />
-                        </div>
-                        <div style={{flex:1}}>
-                          <label className="inp-label">Bis Nr.</label>
-                          <input className="inp" type="number" min={1} value={quizBereichBis}
-                            onChange={e => setQuizBereichBis(e.target.value)} placeholder={String(basisVoks.length)} />
-                        </div>
-                      </div>
-                    )}
-                    {quizBereichTyp === "bereich" && (
-                      <div style={{padding:"8px 16px 14px", borderTop:"1px solid #e0dbd2", fontSize:"0.82rem", color:"#6b6560"}}>
-                        <strong style={{color:"#2d6a4f"}}>{basisVoks.length}</strong> Vokabeln
-                        {(quizBereichBis !== "" || quizCheckboxAuswahl.size > 0) && (
-                          <> · <strong style={{color:"#2d6a4f"}}>{gefilterteVoks.length}</strong> ausgewählt
-                          {quizCheckboxAuswahl.size > 0 && <span style={{color:"#b0aba5"}}> ({quizCheckboxAuswahl.size} markiert)</span>}
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  {/* Einzelauswahl-Liste (via Sub-Zeile 2 im Header) */}
                   {quizListeAufgeklappt && (
                     <div className="karte" style={{marginBottom:8}}>
                       {basisVoks.length === 0
