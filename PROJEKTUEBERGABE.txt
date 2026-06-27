@@ -1,14 +1,14 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-27  (Session 10 abgeschlossen)
-Letzter Commit: f6376ed
+Stand: 2026-06-27  (Session 11 abgeschlossen)
+Letzter Commit: 87da4ef
 
 DATEIPFADE
 ----------
 Projektordner:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\
 Quellcode:        C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\App.jsx
-                  (eine einzige React-Datei, ~3900 Zeilen)
+                  (eine einzige React-Datei, ~3850 Zeilen)
 Deploy-Skript:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\deploy.ps1
 
 DEPLOYMENT
@@ -27,60 +27,85 @@ TECHNIK-STACK
 
 
 ================================================================
-STICKY HEADER-ARCHITEKTUR
+STICKY HEADER-ARCHITEKTUR (Quiz-Tab)
 ================================================================
-Alle sticky Elemente sitzen im gleichen Scroll-Container (Window).
+Alle sticky Elemente im gleichen Scroll-Container (Window).
 
   1. Haupt-Sticky-Wrapper (ref={headerRef}, position:sticky, top:0, zIndex:10)
        ├── .topbar  ("Vokabel-Trainer", zentriert)
        ├── .tabs    (Listen / Quiz / Statistik / Einstellungen)
-       │
-       ├── [Quiz-Tab] Zeile 1: liste-detail-header (position:relative)
-       │        → Listenname / "X Listen ausgewählt" / "Listen auswählen"
-       │        → "(X V.)" Vokabelanzahl grau — nur wenn Liste(n) gewählt
-       │        → Toggle-Button (grüner Dreieck) für Listenauswahl
-       │
-       ├── [Quiz-Tab] Zeile 2: Alle / Bereich (nur wenn Liste gewählt)
-       │        → [Alle][Bereich] Toggle
-       │        → Bereich aktiv: "(X V.)" gefilterte Anzahl + Expand-Button
-       │
-       ├── [Quiz-Tab] Sub-Zeile 1: Von–Bis Eingabe
-       │        → nur bei Bereich + Expand offen
-       │        → leicht eingerückt: Label "Von–Bis" + zwei Zahlenfelder
-       │
-       └── [Quiz-Tab] Sub-Zeile 2: Liste anzeigen
-                → nur bei Bereich + Expand offen
-                → "Liste anzeigen / einklappen" + "Auswahl löschen (N)"
+       └── [Quiz-Tab] Zeile 1: liste-detail-header
+                → Listenname / "X Listen ausgewählt" / "Listen auswählen"
+                → "(X V.)" Vokabelanzahl grau — nur wenn Liste(n) gewählt
+                → Toggle-Button (▲/▼) für Listenauswahl
 
-  2. headerH = Höhe des gesamten Haupt-Wrappers (per ResizeObserver gemessen)
-     → Enthält ALLE Quiz-Zeilen; headerH wächst automatisch mit
-     → Quiz-starten-Button und alle anderen sticky Elemente nutzen top:headerH
+  2. headerH = Höhe des Haupt-Wrappers (ResizeObserver auf headerRef)
 
-  3. Sub-Header anderer Tabs (position:sticky, top:headerH):
+  3. [Quiz-Tab] Alle/Bereich-Zeile (ref={alleBereichRef})
+       position:sticky, top:headerH, zIndex:8
+       → Eigenständiges sticky Element IM Scroll-Content (nicht in headerRef)
+       → [Alle][Bereich] Toggle-Buttons
+       → Bei Bereich: "(X V.)" Checkbox-Auswahl + Expand-Button (▲/▼)
+       → Erscheint direkt nach der Listenauswahl (wenn Liste gewählt)
+
+  4. alleBereichH = Höhe der Alle/Bereich-Zeile (ResizeObserver auf alleBereichRef)
+       → Dependency: quizTabListen.length
+
+  5. [Quiz-Tab] Quiz-starten-Button
+       position:sticky, top:headerH + alleBereichH, zIndex:7
+       → Klebt direkt unter Alle/Bereich-Zeile
+
+  6. Sub-Header anderer Tabs (position:sticky, top:headerH):
        - Listen-Tab: .liste-detail-header
        - Statistik-Tab: .statistik-listen-header (ref={statistikListenHeaderRef})
 
-  4. Statistik Ø Score (position:sticky, top: headerH + statistikListenHeaderH)
-     → Klebt eine Stufe tiefer als der Listen-Header
-     → Enthält "↑ Nach oben"-Button
-
-  5. Quiz "Quiz starten"-Button (position:sticky, top:headerH, zIndex:8)
-     → Im Content-Flow nach der Listenauswahl, vor der Config
+  7. Statistik Ø Score (position:sticky, top: headerH + statistikListenHeaderH)
 
 
 ================================================================
-TRICHTER-LOGIK: VOKABEL-ANZAHL IM QUIZ-TAB
+KONTEXT-AUFKLAPP-SYSTEM (Quiz-Tab)
 ================================================================
-Zeile 1  (X V.)  = quizBasisVoks.length   (alle Voks nach Spalten-Filter)
-Zeile 2  (X V.)  = quizGefilterteVoks.length  (nach Von-Bis / Checkbox)
-Quiz-Button      = verfuegbar  (nach Schlechteste / Unbeantwortet-Filter)
-→ Jede Stufe zeigt das Ergebnis der bisherigen Verfeinerung.
+Beide Bereiche folgen dem gleichen Prinzip:
+  - Aufklappen: nur per Button-Klick
+  - Zuklappen: per Button ODER automatisch durch Scrollen
+  - Auto-Close: wenn die Unterkante des Inhalts die Oberkante
+    des nächsten sticky Elements passiert (Scroll-Listener)
+  - Wiederöffnen: scrollt automatisch zum Anfang des Kontexts
 
-Hoisted Berechnungen (vor return(), für Header UND Tab-Content):
-  quizKombiListe       = kombinierte Liste aus quizTabListen
-  quizBasisVoks        = Vokabeln nach Spalten- / Modus-Filter
-  quizGefilterteVoks   = nach Von-Bis / Checkbox gefiltert
+LISTENAUSWAHL (quizTabListen auswählen):
+  Header:     Zeile 1 (immer sichtbar, in headerRef)
+  Inhalt:     ref={listenContainerRef} — Liste verfügbarer Vokabel-Listen
+  Auto-Close: listenContainerRef.bottom <= headerH
+  Toggle-Fn:  toggleListenAuswahl()
+              → beim Öffnen: scrollTo(listenContainerRef.top = headerH)
+  Default:    offen wenn keine Liste gewählt (useEffect auf quizTabListen.length)
+
+EINZELAUSWAHL / CHECKBOX-LISTE (Bereich-Modus):
+  Header:     Alle/Bereich-Zeile (sticky bei top:headerH)
+  Inhalt:     ref={einzelauswahlRef} — Checkbox-Liste der Vokabeln
+  Auto-Close: einzelauswahlRef.bottom <= headerH + alleBereichH
+  Toggle-Fn:  toggleEinzelauswahl()
+              → beim Öffnen: scrollTo(einzelauswahlRef.top = headerH + alleBereichH)
+  Default:    wird beim ersten Klick auf "Bereich" automatisch geöffnet
+
+VOKABELANZAHL-TRICHTER:
+  Zeile 1  (X V.)  = quizBasisVoks.length   (nach Spalten-/Modus-Filter)
+  Alle/Bereich     = quizGefilterteVoks.length  (nach Checkbox-Auswahl)
+  Quiz-Button      = verfuegbar  (nach Schlechteste/Unbeantwortet-Filter)
+
+Hoisted Berechnungen (vor return(), außerhalb IIFE):
+  quizKombiListe     = kombinierte Liste aus quizTabListen
+  quizBasisVoks      = Vokabeln nach Spalten-/Modus-Filter
+  quizGefilterteVoks = quizBasisVoks, gefiltert nach quizCheckboxAuswahl
+                       (nur wenn quizBereichTyp="bereich" && Auswahl vorhanden)
   (im Quiz-IIFE als Aliases: kombiListe, basisVoks, gefilterteVoks)
+
+REFS FÜR SCROLL-LOGIK:
+  headerRef          → ResizeObserver → headerH
+  alleBereichRef     → ResizeObserver → alleBereichH
+  listenContainerRef → Scroll-Listener (auto-close Listenauswahl)
+  einzelauswahlRef   → Scroll-Listener (auto-close Einzelauswahl)
+  statistikListenHeaderRef → ResizeObserver → statistikListenHeaderH
 
 
 ================================================================
@@ -139,41 +164,47 @@ HINTERGRUND-REGEL:
 
 
 ================================================================
-AKTUELLER FEATURE-STAND (nach Session 10)
+AKTUELLER FEATURE-STAND (nach Session 11)
 ================================================================
 
 QUIZ-TAB
 --------
-Sticky Header-Zeilen (alle innerhalb headerRef):
+Zeile 1 (in headerRef, immer sticky):
+  Listenname + "(X V.)" + ▲/▼-Toggle für Listenauswahl
 
-Zeile 1: Listenname + "(X V.)" + Collapse-Button
-  - grauer V.-Zähler nur wenn Liste(n) ausgewählt
+Listenauswahl (Scroll-Content, ref=listenContainerRef):
+  - Checkbox-Liste aller verfügbaren Vokabel-Listen
+  - Schließt automatisch wenn Inhalt oben rausscrollt (→ headerH)
+  - "Bitte Liste auswählen" Platzhalter wenn keine Liste + eingeklappt
 
-"Bitte Liste auswählen": großer dezenter Platzhalter-Text
-  - erscheint wenn keine Liste gewählt UND Liste eingeklappt
+Alle/Bereich-Zeile (sticky bei top:headerH, ref=alleBereichRef):
+  - [Alle][Bereich] Toggle
+  - Alle: nur Vokabelanzahl in Zeile 1 sichtbar
+  - Bereich: "(X V.)" Checkbox-Anzahl + ▲/▼-Expand-Button
+  - Klick auf Alle: Checkbox-Auswahl löschen + Einzelauswahl schließen
+  - Klick auf Bereich (erstmalig): öffnet Einzelauswahl automatisch
 
-Zeile 2: Alle / Bereich (nur wenn Liste gewählt)
-  - Alle: nichts rechts (Anzahl steht in Zeile 1)
-  - Bereich: "(X V.)" gefiltert + Expand-Button (btn-toggle-ghost)
-  - Klick auf Alle: resettet Checkbox-Auswahl + schließt Liste
+Einzelauswahl (Scroll-Content, ref=einzelauswahlRef):
+  - Checkbox-Liste der Vokabeln (nur bei Bereich + aufgeklappt)
+  - Schließt automatisch wenn Inhalt oben rausscrollt (→ headerH + alleBereichH)
+  - "Auswahl löschen (N)" Button in Alle/Bereich-Zeile wenn Auswahl aktiv
 
-Sub-Zeile 1 (nur Bereich + Expand offen): Von–Bis
-  - "Von–Bis" Label + Von-Input + "–" + Bis-Input inline
-  - leicht eingerückt (28px links)
+Quiz-starten-Button (sticky bei top:headerH + alleBereichH):
+  - Zeigt verfügbare Vokabelanzahl
+  - Disabled wenn Konfiguration unvollständig
 
-Sub-Zeile 2 (nur Bereich + Expand offen): Liste anzeigen
-  - "Liste anzeigen / einklappen" Button
-  - "Auswahl löschen (N)" nur wenn Checkboxen aktiv
-  - Einklappen des Expand-Buttons schließt auch die Liste
+Von-Bis-Bereichsauswahl: ENTFERNT (Session 11)
+  → Gefiltert wird nur noch per Checkbox-Einzelauswahl
 
 Info-Toggle Abfrage-Modus: btn-toggle-ghost (▼ öffnet Info-Text)
-Quiz-starten-Button: sticky-on-scroll bei top:headerH
 
 States:
-  quizBereichEingabeAufgeklappt = Sub-Zeilen Toggle (Bereich-Expand)
-  quizTabListen, quizBereichTyp, quizBereichVon, quizBereichBis (wie zuvor)
-  quizListeAufgeklappt: für Einzelauswahl-Liste
-  quizModusInfoAufgeklappt: Info-Text unter Abfrage-Modus
+  quizTabListen              = gewählte Listen-IDs
+  quizBereichTyp             = "alle" | "bereich"
+  quizCheckboxAuswahl        = Set der ausgewählten Vokabel-IDs
+  quizListeAufgeklappt       = Einzelauswahl sichtbar
+  listenAuswahlAufgeklappt   = Listenauswahl sichtbar
+  quizModusInfoAufgeklappt   = Info-Text unter Abfrage-Modus
 
 TASTATUR-QUIZ
 -------------
@@ -200,7 +231,7 @@ LISTEN-TAB
 Header Zeile 1 (liste-detail-header):
   - Listenname + Aktionszeile-Toggle (▲/▼) + Stift-Button (btn-ghost-filled)
 
-Aktionszeile (nur wenn aufgeklappt, da darunter):
+Aktionszeile (nur wenn aufgeklappt):
   Reihenfolge: [+] [Kopieren] [TXT] [Teilen/JSON] [JSON] ... [×]
   - + öffnet Import in bestehende Liste
   - Kopieren: Text in Clipboard
@@ -217,13 +248,6 @@ Vokabeln-Sektion-Header:
 Header "Meine Listen":
   - "Neu" Button (IcoPlus) öffnet Import für neue Liste
   - "Exportieren" Button für Multi-Listen-Export
-
-SCROLL-VERHALTEN
-----------------
-- Quiz-Listen-Toggle ohne Scroll-Sprung:
-  listenContainerRef misst Container; toggleListenAuswahl() korrigiert
-  window.scrollY via scrollBy()
-- Statistik Nach-oben: window.scrollTo({top:0, behavior:'smooth'})
 
 
 ================================================================
@@ -265,9 +289,9 @@ QUIZ-DEFAULTS (State-Initialwerte)
   quizSchlechtesteAnzahl   = 20
   quizSchlechtesteMaxScore = ""
   statistikSort            = "score-asc"
-  listenAuswahlAufgeklappt = true  (Quiz-Listenauswahl default offen)
+  listenAuswahlAufgeklappt = true   (Quiz-Listenauswahl default offen)
   quizBereichTyp           = "alle"
-  quizBereichEingabeAufgeklappt = false  (Bereich-Subzeilen default zu)
+  quizListeAufgeklappt     = false  (Einzelauswahl default zu)
   aktionszeileAufgeklappt  = false  (Listen-Detail-Aktionszeile default zu)
 
 
@@ -284,6 +308,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: f6376ed
+Letzter Commit: 87da4ef
 
 ================================================================
