@@ -3010,7 +3010,7 @@ export default function VokabelApp() {
                   <div ref={abfrageModusRef} style={{position:"sticky", top:headerH + alleBereichH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Abfrage-Modus</span>
                     <span className={`toggle-opt aktiv`} style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"default", pointerEvents:"none"}}>
-                      {quizModus === "sequenziell" ? "pro Spalte" : quizModus === "rotierend" ? "wechselnd" : "Diktat"}
+                      {quizModus === "sequenziell" ? "Frage – Antwort" : quizModus === "rotierend" ? "wechselnd" : "Diktat"}
                     </span>
                     <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                       <button className="btn-toggle-ghost" onClick={toggleAbfrageModus}>
@@ -3028,7 +3028,7 @@ export default function VokabelApp() {
                       <div className="karte" style={{marginBottom:16}}>
                         <div className="toggle-row">
                           <div className="toggle-btn">
-                            <button className={`toggle-opt${quizModus==="sequenziell"?" aktiv":""}`} onClick={() => setQuizModus("sequenziell")}>pro Spalte</button>
+                            <button className={`toggle-opt${quizModus==="sequenziell"?" aktiv":""}`} onClick={() => setQuizModus("sequenziell")}>Frage – Antwort</button>
                             <button className={`toggle-opt${quizModus==="rotierend"?" aktiv":""}`} onClick={() => setQuizModus("rotierend")}>wechselnd</button>
                             <button className={`toggle-opt${quizModus==="diktat"?" aktiv":""}`} onClick={() => setQuizModus("diktat")}>Diktat</button>
                           </div>
