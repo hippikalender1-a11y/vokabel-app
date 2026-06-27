@@ -460,6 +460,9 @@ export default function VokabelApp() {
   const [quizZeigeInfo, setQuizZeigeInfo] = useState({ i1: true, i2: true });
   const [quizModus, setQuizModus] = useState("sequenziell");
   const [quizModusInfoAufgeklappt, setQuizModusInfoAufgeklappt] = useState(false);
+  const [quizAbfrageModusAufgeklappt, setQuizAbfrageModusAufgeklappt] = useState(false);
+  const [quizReihenfolgeAufgeklappt, setQuizReihenfolgeAufgeklappt] = useState(false);
+  const [quizEinstellungenAufgeklappt, setQuizEinstellungenAufgeklappt] = useState(false);
   const [quizDiktatSpalte, setQuizDiktatSpalte] = useState("E1");
   const [quizDiktatUebersetzung, setQuizDiktatUebersetzung] = useState("D1");
   const [quizListeAufgeklappt, setQuizListeAufgeklappt] = useState(false);
@@ -504,8 +507,17 @@ export default function VokabelApp() {
   const statistikListenHeaderRef = useRef(null);
   const alleBereichRef = useRef(null);
   const einzelauswahlRef = useRef(null);
+  const abfrageModusRef = useRef(null);
+  const abfrageModusContainerRef = useRef(null);
+  const einstellungenRef = useRef(null);
+  const einstellungenContainerRef = useRef(null);
+  const reihenfolgeRef = useRef(null);
+  const reihenfolgeContainerRef = useRef(null);
   const [headerH, setHeaderH] = useState(104);
   const [alleBereichH, setAlleBereichH] = useState(0);
+  const [abfrageModusH, setAbfrageModusH] = useState(0);
+  const [reihenfolgeH, setReihenfolgeH] = useState(0);
+  const [einstellungenH, setEinstellungenH] = useState(0);
   const [statistikListenHeaderH, setStatistikListenHeaderH] = useState(0);
 
   useEffect(() => {
@@ -544,6 +556,45 @@ export default function VokabelApp() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [headerH, alleBereichH]);
 
+  // Abfrage-Modus: schließt wenn Inhalt-Unterkante die Abfrage-Modus-Zeile-Unterkante passiert
+  useEffect(() => {
+    const onScroll = () => {
+      const el = abfrageModusContainerRef.current;
+      if (!el || el.offsetHeight === 0) return;
+      if (el.getBoundingClientRect().bottom <= headerH + alleBereichH + abfrageModusH) {
+        setQuizAbfrageModusAufgeklappt(false);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [headerH, alleBereichH, abfrageModusH]);
+
+  // Reihenfolge: schließt wenn Inhalt-Unterkante die Reihenfolge-Zeile-Unterkante passiert
+  useEffect(() => {
+    const onScroll = () => {
+      const el = reihenfolgeContainerRef.current;
+      if (!el || el.offsetHeight === 0) return;
+      if (el.getBoundingClientRect().bottom <= headerH + alleBereichH + abfrageModusH + reihenfolgeH) {
+        setQuizReihenfolgeAufgeklappt(false);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [headerH, alleBereichH, abfrageModusH, reihenfolgeH]);
+
+  // Einstellungen: schließt wenn Inhalt-Unterkante die Einstellungen-Zeile-Unterkante passiert
+  useEffect(() => {
+    const onScroll = () => {
+      const el = einstellungenContainerRef.current;
+      if (!el || el.offsetHeight === 0) return;
+      if (el.getBoundingClientRect().bottom <= headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH) {
+        setQuizEinstellungenAufgeklappt(false);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [headerH, alleBereichH, abfrageModusH, reihenfolgeH, einstellungenH]);
+
   // Alle/Bereich-Zeile Höhe messen
   useEffect(() => {
     const el = alleBereichRef.current;
@@ -551,6 +602,36 @@ export default function VokabelApp() {
     const obs = new ResizeObserver(() => setAlleBereichH(el.offsetHeight));
     obs.observe(el);
     setAlleBereichH(el.offsetHeight);
+    return () => obs.disconnect();
+  }, [quizTabListen.length]);
+
+  // Abfrage-Modus-Zeile Höhe messen
+  useEffect(() => {
+    const el = abfrageModusRef.current;
+    if (!el) { setAbfrageModusH(0); return; }
+    const obs = new ResizeObserver(() => setAbfrageModusH(el.offsetHeight));
+    obs.observe(el);
+    setAbfrageModusH(el.offsetHeight);
+    return () => obs.disconnect();
+  }, [quizTabListen.length]);
+
+  // Reihenfolge-Zeile Höhe messen
+  useEffect(() => {
+    const el = reihenfolgeRef.current;
+    if (!el) { setReihenfolgeH(0); return; }
+    const obs = new ResizeObserver(() => setReihenfolgeH(el.offsetHeight));
+    obs.observe(el);
+    setReihenfolgeH(el.offsetHeight);
+    return () => obs.disconnect();
+  }, [quizTabListen.length]);
+
+  // Einstellungen-Zeile Höhe messen
+  useEffect(() => {
+    const el = einstellungenRef.current;
+    if (!el) { setEinstellungenH(0); return; }
+    const obs = new ResizeObserver(() => setEinstellungenH(el.offsetHeight));
+    obs.observe(el);
+    setEinstellungenH(el.offsetHeight);
     return () => obs.disconnect();
   }, [quizTabListen.length]);
 
@@ -589,7 +670,12 @@ export default function VokabelApp() {
   }, [ansicht, quiz?.index, quiz?.phase, quiz?.antwortTypIndex]);
 
   useEffect(() => {
-    if (quizTabListen.length === 0) setListenAuswahlAufgeklappt(true);
+    if (quizTabListen.length === 0) {
+      setListenAuswahlAufgeklappt(true);
+      setQuizAbfrageModusAufgeklappt(false);
+      setQuizReihenfolgeAufgeklappt(false);
+      setQuizEinstellungenAufgeklappt(false);
+    }
   }, [quizTabListen.length]);
 
   useEffect(() => {
@@ -1137,6 +1223,11 @@ export default function VokabelApp() {
     setQuizDiktatSpalte(k.quizDiktatSpalte || "E1");
     setQuizDiktatUebersetzung(k.quizDiktatUebersetzung !== undefined ? k.quizDiktatUebersetzung : "D1");
     setQuizCheckboxAuswahl(new Set());
+    setListenAuswahlAufgeklappt(false);
+    setQuizListeAufgeklappt(false);
+    setQuizAbfrageModusAufgeklappt(false);
+    setQuizReihenfolgeAufgeklappt(false);
+    setQuizEinstellungenAufgeklappt(false);
   }
 
   function initQuizDefaults(kombiListe) {
@@ -1206,6 +1297,54 @@ export default function VokabelApp() {
         const rect = el.getBoundingClientRect();
         if (rect.top < headerH) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH), behavior: 'instant' });
+        }
+      }));
+    }
+  }
+
+  function toggleReihenfolge() {
+    const opening = !quizReihenfolgeAufgeklappt;
+    setQuizReihenfolgeAufgeklappt(v => !v);
+    if (opening) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const el = reihenfolgeContainerRef.current;
+        if (!el) return;
+        const target = headerH + alleBereichH + abfrageModusH + reihenfolgeH;
+        const rect = el.getBoundingClientRect();
+        if (rect.top < target) {
+          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
+        }
+      }));
+    }
+  }
+
+  function toggleEinstellungen() {
+    const opening = !quizEinstellungenAufgeklappt;
+    setQuizEinstellungenAufgeklappt(v => !v);
+    if (opening) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const el = einstellungenContainerRef.current;
+        if (!el) return;
+        const target = headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH;
+        const rect = el.getBoundingClientRect();
+        if (rect.top < target) {
+          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
+        }
+      }));
+    }
+  }
+
+  function toggleAbfrageModus() {
+    const opening = !quizAbfrageModusAufgeklappt;
+    setQuizAbfrageModusAufgeklappt(v => !v);
+    if (opening) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const el = abfrageModusContainerRef.current;
+        if (!el) return;
+        const target = headerH + alleBereichH + abfrageModusH;
+        const rect = el.getBoundingClientRect();
+        if (rect.top < target) {
+          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
         }
       }));
     }
@@ -2710,11 +2849,31 @@ export default function VokabelApp() {
 
           return (
             <>
-              <div className="sektion" style={{paddingTop:0}}>
+              <div className="sektion" style={{paddingTop:0, paddingBottom: (listenAuswahlAufgeklappt || quizListeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt || quizEinstellungenAufgeklappt) ? '100dvh' : 0}}>
                 {/* LISTEN-AUSWAHL */}
                 <div ref={listenContainerRef} style={{overflow:'hidden', paddingTop: listenAuswahlAufgeklappt ? 16 : 0}}>
-                  {listenAuswahlAufgeklappt && (
-                    listenIndex.length === 0
+                  {listenAuswahlAufgeklappt && (<>
+                    {sessionSlots.length > 0 && (
+                      <>
+                        <div className="sektion-label" style={{marginBottom:8}}>Gespeicherte Konfigurationen</div>
+                        <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
+                          {sessionSlots.filter(s => s.slot <= 5).map(s => (
+                            <button key={s.slot}
+                              className={`slot-chip${s.konfiguration ? " belegt" : " leer"}`}
+                              onClick={() => s.konfiguration && ladeKonfigAusSlot(s)}>
+                              {s.konfiguration ? (s.name || `Slot ${s.slot}`) : `${s.slot} —`}
+                            </button>
+                          ))}
+                          {sessionSlots.find(s => s.slot === 6)?.konfiguration && (
+                            <button className="slot-chip zuletzt"
+                              onClick={() => ladeKonfigAusSlot(sessionSlots.find(s => s.slot === 6))}>
+                              Zuletzt
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    {listenIndex.length === 0
                       ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
                       : <div className="karte" style={{marginBottom:16}}>
                         {listenIndex.map(l => {
@@ -2739,7 +2898,8 @@ export default function VokabelApp() {
                           );
                         })}
                       </div>
-                  )}
+                    }
+                  </>)}
                 </div>
 
                 {/* Platzhalter wenn keine Liste gewählt und Liste eingeklappt */}
@@ -2752,6 +2912,9 @@ export default function VokabelApp() {
                 {/* Alle/Bereich – sticky direkt unter Haupt-Header */}
                 {kombiListe && (
                   <div ref={alleBereichRef} style={{position:"sticky", top:headerH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                    {!quizListeAufgeklappt && (
+                      <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Vokabel-Auswahl</span>
+                    )}
                     <div className="toggle-btn">
                       <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
                         onClick={() => { setQuizBereichTyp("alle"); setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
@@ -2762,32 +2925,43 @@ export default function VokabelApp() {
                         Bereich
                       </button>
                     </div>
-                    {quizBereichTyp === "bereich" && (
-                      <>
-                        {quizListeAufgeklappt && quizCheckboxAuswahl.size > 0 && (
-                          <button className="btn btn-ghost btn-sm"
-                            style={{padding:"6px 8px"}}
-                            onClick={() => { setQuizCheckboxAuswahl(new Set()); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
-                            <IcoX s={12}/>
+                    {quizBereichTyp === "bereich" && quizListeAufgeklappt && quizCheckboxAuswahl.size > 0 && (
+                      <button className="btn btn-ghost btn-sm"
+                        style={{padding:"6px 8px"}}
+                        onClick={() => { setQuizCheckboxAuswahl(new Set()); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
+                        <IcoX s={12}/>
+                      </button>
+                    )}
+                    {quizBereichTyp === "bereich" && quizListeAufgeklappt && (
+                      <button
+                        className={`btn btn-sm${quizVonBisModus ? " btn-primary" : " btn-ghost"}`}
+                        onClick={() => {
+                          if (quizVonBisModus) { setQuizVonBisModus(false); setQuizVonBisErster(null); }
+                          else { setQuizVonBisModus(true); }
+                        }}>
+                        {!quizVonBisModus ? "Von–Bis" : quizVonBisErster === null ? "Von…" : "…Bis"}
+                      </button>
+                    )}
+                    {quizBereichTyp === "bereich" ? (
+                      quizListeAufgeklappt ? (
+                        <>
+                          <span style={{flex:1, textAlign:"right", fontSize:"0.8rem", color:"#aaa"}}>
+                            ({quizGefilterteVoks.length} V.)
+                          </span>
+                          <button className="btn-toggle-ghost" onClick={toggleEinzelauswahl}>
+                            <IcoDown s={10}/>
                           </button>
-                        )}
-                        {quizListeAufgeklappt && (
-                          <button
-                            className={`btn btn-sm${quizVonBisModus ? " btn-primary" : " btn-ghost"}`}
-                            onClick={() => {
-                              if (quizVonBisModus) { setQuizVonBisModus(false); setQuizVonBisErster(null); }
-                              else { setQuizVonBisModus(true); }
-                            }}>
-                            {!quizVonBisModus ? "Von–Bis" : quizVonBisErster === null ? "Von…" : "…Bis"}
+                        </>
+                      ) : (
+                        <span style={{flex:1, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:8}}>
+                          <span style={{fontSize:"0.8rem", color:"#aaa"}}>({quizGefilterteVoks.length} V.)</span>
+                          <button className="btn-toggle-ghost" onClick={toggleEinzelauswahl}>
+                            <IcoUp s={10}/>
                           </button>
-                        )}
-                        <span style={{flex:1, textAlign:"right", fontSize:"0.8rem", color:"#aaa"}}>
-                          ({quizGefilterteVoks.length} V.)
                         </span>
-                        <button className="btn-toggle-ghost" onClick={toggleEinzelauswahl}>
-                          {quizListeAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
-                        </button>
-                      </>
+                      )
+                    ) : (
+                      <span style={{flex:1}}/>
                     )}
                   </div>
                 )}
@@ -2831,137 +3005,134 @@ export default function VokabelApp() {
                   </div>
                 )}
 
-                {/* Quiz starten Button - sticky unter Alle/Bereich-Zeile */}
+                {/* Abfrage-Modus – sticky unter Alle/Bereich-Zeile */}
                 {kombiListe && (
-                  <div style={{position:"sticky", top:headerH + alleBereichH, zIndex:7, background:"#fff", padding:"8px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid #e0dbd2"}}>
-                    <button className="btn btn-primary" style={{width:"100%"}}
-                      onClick={starteQuiz} disabled={!kannStarten || verfuegbar === 0}>
-                      Quiz starten ({verfuegbar} Vokabeln)
-                    </button>
+                  <div ref={abfrageModusRef} style={{position:"sticky", top:headerH + alleBereichH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Abfrage-Modus</span>
+                    <span className={`toggle-opt aktiv`} style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"default", pointerEvents:"none"}}>
+                      {quizModus === "sequenziell" ? "pro Spalte" : quizModus === "rotierend" ? "wechselnd" : "Diktat"}
+                    </span>
+                    <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
+                      <button className="btn-toggle-ghost" onClick={toggleAbfrageModus}>
+                        {quizAbfrageModusAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
+                      </button>
+                    </span>
                   </div>
                 )}
 
-                {/* CONFIG (nur wenn Listen gewählt) */}
-                {kombiListe && (<>
-                  {/* GESPEICHERTE KONFIGURATIONEN */}
-                  {sessionSlots.length > 0 && (
-                    <>
-                      <div className="sektion-label" style={{marginBottom:8}}>Gespeicherte Konfigurationen</div>
-                      <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
-                        {sessionSlots.filter(s => s.slot <= 5).map(s => (
-                          <button key={s.slot}
-                            className={`slot-chip${s.konfiguration ? " belegt" : " leer"}`}
-                            onClick={() => s.konfiguration && ladeKonfigAusSlot(s)}>
-                            {s.konfiguration ? (s.name || `Slot ${s.slot}`) : `${s.slot} —`}
+                {/* Abfrage-Modus Inhalt */}
+                {kombiListe && (
+                  <div ref={abfrageModusContainerRef} style={{overflow:'hidden', paddingTop: quizAbfrageModusAufgeklappt ? 16 : 0}}>
+                    {quizAbfrageModusAufgeklappt && (<>
+                      {/* ABFRAGE-MODUS */}
+                      <div className="karte" style={{marginBottom:16}}>
+                        <div className="toggle-row">
+                          <div className="toggle-btn">
+                            <button className={`toggle-opt${quizModus==="sequenziell"?" aktiv":""}`} onClick={() => setQuizModus("sequenziell")}>pro Spalte</button>
+                            <button className={`toggle-opt${quizModus==="rotierend"?" aktiv":""}`} onClick={() => setQuizModus("rotierend")}>wechselnd</button>
+                            <button className={`toggle-opt${quizModus==="diktat"?" aktiv":""}`} onClick={() => setQuizModus("diktat")}>Diktat</button>
+                          </div>
+                          <button className="btn-toggle-ghost" onClick={() => setQuizModusInfoAufgeklappt(v => !v)}>
+                            {quizModusInfoAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
                           </button>
-                        ))}
-                        {sessionSlots.find(s => s.slot === 6)?.konfiguration && (
-                          <button className="slot-chip zuletzt"
-                            onClick={() => ladeKonfigAusSlot(sessionSlots.find(s => s.slot === 6))}>
-                            Zuletzt
-                          </button>
+                        </div>
+                        {quizModusInfoAufgeklappt && (
+                          <div style={{padding:"0 16px 14px", fontSize:"0.82rem", color:"#6b6560"}}>
+                            {quizModus === "sequenziell"
+                              ? "Feste Frage-Spalte, Antwort-Spalten der Reihe nach. Kartenmodus pro Spalte wählbar."
+                              : quizModus === "rotierend"
+                              ? "Frage-Spalte wechselt mit jeder Vokabel. Kartenmodus pro Spalte wählbar."
+                              : "Wort wird vorgelesen – du tippst was du hörst. Falsch → ein Buchstabe mehr aufgedeckt."}
+                          </div>
                         )}
                       </div>
-                    </>
-                  )}
-                  {/* ABFRAGE-MODUS */}
-                  <div className="sektion-label" style={{marginBottom:8}}>Abfrage-Modus</div>
-                  <div className="karte" style={{marginBottom:16}}>
-                    <div className="toggle-row">
-                      <div className="toggle-btn">
-                        <button className={`toggle-opt${quizModus==="sequenziell"?" aktiv":""}`} onClick={() => setQuizModus("sequenziell")}>Sequenziell</button>
-                        <button className={`toggle-opt${quizModus==="rotierend"?" aktiv":""}`} onClick={() => setQuizModus("rotierend")}>Rotierend</button>
-                        <button className={`toggle-opt${quizModus==="diktat"?" aktiv":""}`} onClick={() => setQuizModus("diktat")}>Diktat</button>
-                      </div>
-                      <button className="btn-toggle-ghost" onClick={() => setQuizModusInfoAufgeklappt(v => !v)}>
-                        {quizModusInfoAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
-                      </button>
-                    </div>
-                    {quizModusInfoAufgeklappt && (
-                      <div style={{padding:"0 16px 14px", fontSize:"0.82rem", color:"#6b6560"}}>
-                        {quizModus === "sequenziell"
-                          ? "Feste Frage-Spalte, Antwort-Spalten der Reihe nach. Modus pro Spalte wählbar."
-                          : quizModus === "rotierend"
-                          ? "Frage-Spalte wechselt mit jeder Vokabel. Modus pro Spalte wählbar."
-                          : "Wort wird vorgelesen – du tippst was du hörst. Falsch → ein Buchstabe mehr aufgedeckt."}
-                      </div>
-                    )}
-                  </div>
 
-                  {/* DIKTAT-KONFIGURATION */}
-                  {quizModus === "diktat" && (
-                    <>
-                      <div className="sektion-label" style={{marginBottom:8}}>Diktat-Konfiguration</div>
-                      <div className="karte" style={{marginBottom:16}}>
-                        <div style={{padding:"12px 16px", borderBottom:"1px solid #e0dbd2"}}>
-                          <div className="inp-label">Diktat-Spalte (wird vorgelesen)</div>
-                          <div style={{display:"flex", gap:6, marginTop:8, flexWrap:"wrap"}}>
-                            {abfragbar.map(typ => (
-                              <button key={typ} className={`typ-btn${quizDiktatSpalte===typ?" aktiv":""}`}
-                                onClick={() => setQuizDiktatSpalte(typ)}>
-                                {kombiListe.spalten[typ].name || typ}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div style={{padding:"12px 16px"}}>
-                          <div className="inp-label">Übersetzungs-Spalte (als Hinweis, optional)</div>
-                          <div style={{display:"flex", gap:6, marginTop:8, flexWrap:"wrap"}}>
-                            <button className={`typ-btn${quizDiktatUebersetzung===""?" aktiv":""}`}
-                              onClick={() => setQuizDiktatUebersetzung("")}>Keine</button>
-                            {abfragbar.filter(t => t !== quizDiktatSpalte).map(typ => (
-                              <button key={typ} className="typ-btn"
-                                style={quizDiktatUebersetzung===typ ? {background:"#f9a825",color:"#fff",borderColor:"#f9a825"} : undefined}
-                                onClick={() => setQuizDiktatUebersetzung(typ)}>
-                                {kombiListe.spalten[typ].name || typ}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* SPALTEN */}
-                  {quizModus !== "diktat" && (<>
-                    <div className="sektion-label" style={{marginBottom:8}}>Spalten auswählen</div>
-                    <div className="karte" style={{marginBottom:16}}>
-                      {abfragbar.map(typ => {
-                        const checked = quizAusgewaehlt.includes(typ);
-                        const isFrage = quizFrageTyp === typ;
-                        const antwortNr = quizAntwortTypenGeordnet.indexOf(typ);
-                        const isAntwort = antwortNr >= 0;
-                        const isInfo = quizInfoTypenSession.includes(typ);
-                        const hatFrage = quizFrageTyp !== "";
-                        const anzGesamt = quizAusgewaehlt.length;
-                        return (
-                          <div key={typ} style={{padding:"10px 16px", borderBottom:"1px solid #e0dbd2"}}>
-                            <div style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer"}}
-                              onClick={() => toggleQuizSpalte(typ)}>
-                              <div className={`checkbox${checked?" checked":""}`}>{checked?"✓":""}</div>
-                              <div style={{flex:1}}>
-                                <div style={{fontWeight:600, fontSize:"0.9rem"}}>{kombiListe.spalten[typ].name||typ}</div>
-                                <div style={{fontSize:"0.75rem", color:"#6b6560"}}>{typ}</div>
+                      {/* DIKTAT-KONFIGURATION */}
+                      {quizModus === "diktat" && (
+                        <>
+                          <div className="sektion-label" style={{marginBottom:8}}>Diktat-Konfiguration</div>
+                          <div className="karte" style={{marginBottom:16}}>
+                            <div style={{padding:"12px 16px", borderBottom:"1px solid #e0dbd2"}}>
+                              <div className="inp-label">Diktat-Spalte (wird vorgelesen)</div>
+                              <div style={{display:"flex", gap:6, marginTop:8, flexWrap:"wrap"}}>
+                                {abfragbar.map(typ => (
+                                  <button key={typ} className={`typ-btn${quizDiktatSpalte===typ?" aktiv":""}`}
+                                    onClick={() => setQuizDiktatSpalte(typ)}>
+                                    {kombiListe.spalten[typ].name || typ}
+                                  </button>
+                                ))}
                               </div>
                             </div>
-                            {checked && quizModus === "sequenziell" && (
-                              <div style={{display:"flex", gap:5, marginTop:8, marginLeft:30, flexWrap:"wrap", alignItems:"center"}}>
-                                {(!hatFrage || isFrage) && (
-                                  <button className={`spalten-rolle-btn${isFrage?" frage":""}`}
-                                    onClick={() => toggleSpalteRolle(typ,"frage")}>Frage</button>
-                                )}
-                                {!isFrage && !isInfo && (
-                                  <button className={`spalten-rolle-btn${isAntwort?" antwort":""}`}
-                                    onClick={() => toggleSpalteRolle(typ,"antwort")}>
-                                    {isAntwort ? `Antwort ${antwortNr+1}` : "Antwort"}
+                            <div style={{padding:"12px 16px"}}>
+                              <div className="inp-label">Übersetzungs-Spalte (als Hinweis, optional)</div>
+                              <div style={{display:"flex", gap:6, marginTop:8, flexWrap:"wrap"}}>
+                                <button className={`typ-btn${quizDiktatUebersetzung===""?" aktiv":""}`}
+                                  onClick={() => setQuizDiktatUebersetzung("")}>Keine</button>
+                                {abfragbar.filter(t => t !== quizDiktatSpalte).map(typ => (
+                                  <button key={typ} className="typ-btn"
+                                    style={quizDiktatUebersetzung===typ ? {background:"#f9a825",color:"#fff",borderColor:"#f9a825"} : undefined}
+                                    onClick={() => setQuizDiktatUebersetzung(typ)}>
+                                    {kombiListe.spalten[typ].name || typ}
                                   </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* SPALTEN + INFO-SPALTEN */}
+                      {quizModus !== "diktat" && (<>
+                        <div className="sektion-label" style={{marginBottom:8}}>Spalten auswählen</div>
+                        <div className="karte" style={{marginBottom:16}}>
+                          {abfragbar.map(typ => {
+                            const checked = quizAusgewaehlt.includes(typ);
+                            const isFrage = quizFrageTyp === typ;
+                            const antwortNr = quizAntwortTypenGeordnet.indexOf(typ);
+                            const isAntwort = antwortNr >= 0;
+                            const isInfo = quizInfoTypenSession.includes(typ);
+                            const hatFrage = quizFrageTyp !== "";
+                            const anzGesamt = quizAusgewaehlt.length;
+                            return (
+                              <div key={typ} style={{padding:"10px 16px", borderBottom:"1px solid #e0dbd2"}}>
+                                <div style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer"}}
+                                  onClick={() => toggleQuizSpalte(typ)}>
+                                  <div className={`checkbox${checked?" checked":""}`}>{checked?"✓":""}</div>
+                                  <div style={{flex:1}}>
+                                    <div style={{fontWeight:600, fontSize:"0.9rem"}}>{kombiListe.spalten[typ].name||typ}</div>
+                                    <div style={{fontSize:"0.75rem", color:"#6b6560"}}>{typ}</div>
+                                  </div>
+                                </div>
+                                {checked && quizModus === "sequenziell" && (
+                                  <div style={{display:"flex", gap:5, marginTop:8, marginLeft:30, flexWrap:"wrap", alignItems:"center"}}>
+                                    {(!hatFrage || isFrage) && (
+                                      <button className={`spalten-rolle-btn${isFrage?" frage":""}`}
+                                        onClick={() => toggleSpalteRolle(typ,"frage")}>Frage</button>
+                                    )}
+                                    {!isFrage && !isInfo && (
+                                      <button className={`spalten-rolle-btn${isAntwort?" antwort":""}`}
+                                        onClick={() => toggleSpalteRolle(typ,"antwort")}>
+                                        {isAntwort ? `Antwort ${antwortNr+1}` : "Antwort"}
+                                      </button>
+                                    )}
+                                    {!isFrage && !isAntwort && anzGesamt >= 3 && (
+                                      <button className={`spalten-rolle-btn${isInfo?" info":""}`}
+                                        onClick={() => toggleSpalteRolle(typ,"info")}>Info</button>
+                                    )}
+                                    {isAntwort && (
+                                      <div style={{display:"flex", gap:4, marginLeft:4}}>
+                                        <button className={`spalten-modus-btn${(quizSpalteModus[typ]||"tippen")==="tippen"?" aktiv":""}`}
+                                          onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"tippen"}))}>Tastatur</button>
+                                        <button className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
+                                          onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"mc"}))}>MC</button>
+                                        <button className={`spalten-modus-btn${quizSpalteModus[typ]==="karte"?" aktiv":""}`}
+                                          onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"karte"}))}>Karte</button>
+                                      </div>
+                                    )}
+                                  </div>
                                 )}
-                                {!isFrage && !isAntwort && anzGesamt >= 3 && (
-                                  <button className={`spalten-rolle-btn${isInfo?" info":""}`}
-                                    onClick={() => toggleSpalteRolle(typ,"info")}>Info</button>
-                                )}
-                                {isAntwort && (
-                                  <div style={{display:"flex", gap:4, marginLeft:4}}>
+                                {checked && quizModus === "rotierend" && (
+                                  <div style={{display:"flex", gap:5, marginTop:8, marginLeft:30}}>
                                     <button className={`spalten-modus-btn${(quizSpalteModus[typ]||"tippen")==="tippen"?" aktiv":""}`}
                                       onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"tippen"}))}>Tastatur</button>
                                     <button className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
@@ -2971,134 +3142,177 @@ export default function VokabelApp() {
                                   </div>
                                 )}
                               </div>
-                            )}
-                            {checked && quizModus === "rotierend" && (
-                              <div style={{display:"flex", gap:5, marginTop:8, marginLeft:30}}>
-                                <button className={`spalten-modus-btn${(quizSpalteModus[typ]||"tippen")==="tippen"?" aktiv":""}`}
-                                  onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"tippen"}))}>Tastatur</button>
-                                <button className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
-                                  onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"mc"}))}>MC</button>
-                                <button className={`spalten-modus-btn${quizSpalteModus[typ]==="karte"?" aktiv":""}`}
-                                  onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"karte"}))}>Karte</button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {/* INFO-SPALTEN */}
-                    {infoSpalten.length > 0 && (
-                      <>
-                        <div className="sektion-label" style={{marginBottom:8}}>Info-Spalten anzeigen</div>
-                        <div className="karte" style={{marginBottom:16}}>
-                          {infoSpalten.map(typ => (
-                            <div key={typ} className="quiz-setup-check" style={{padding:"10px 16px"}}
-                              onClick={() => toggleInfoSpalte(typ)}>
-                              <div className={`checkbox${quizZeigeInfo[typ]?" checked":""}`}>{quizZeigeInfo[typ]?"✓":""}</div>
-                              <div>
-                                <div style={{fontWeight:600, fontSize:"0.9rem"}}>{kombiListe.spalten[typ].name||typ}</div>
-                                <div style={{fontSize:"0.75rem", color:"#6b6560"}}>{typ} — immer nur angezeigt</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </>)}
-
-                  {/* REIHENFOLGE */}
-                  <div className="sektion-label" style={{marginBottom:8}}>Reihenfolge</div>
-                  <div className="karte" style={{marginBottom:16}}>
-                    <div className="toggle-row">
-                      <div className="toggle-btn">
-                        <button className={`toggle-opt${quizReihenfolge==="zufall"?" aktiv":""}`} onClick={() => setQuizReihenfolge("zufall")}>Zufällig</button>
-                        <button className={`toggle-opt${quizReihenfolge==="schlechteste"?" aktiv":""}`} onClick={() => setQuizReihenfolge("schlechteste")}>Schlechteste</button>
-                        <button className={`toggle-opt${quizReihenfolge==="listennr"?" aktiv":""}`} onClick={() => setQuizReihenfolge("listennr")}>Listen-Nr.</button>
-                      </div>
-                    </div>
-                    {quizReihenfolge === "schlechteste" && (
-                      <div style={{padding:"0 16px 16px"}}>
-                        <label className="inp-label">Anzahl</label>
-                        <input className="inp" type="number" min={1} value={quizSchlechtesteAnzahl}
-                          onChange={e => setQuizSchlechtesteAnzahl(e.target.value)} />
-                        <label className="inp-label" style={{marginTop:12}}>Score kleiner als (optional)</label>
-                        <input className="inp" type="number" value={quizSchlechtesteMaxScore}
-                          onChange={e => setQuizSchlechtesteMaxScore(e.target.value)}
-                          placeholder="z.B. -5" />
-                        <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:6}}>
-                          {verfuegbar} Vokabeln mit dem niedrigsten Score werden abgefragt.
-                        </div>
-                      </div>
-                    )}
-                    {quizReihenfolge !== "schlechteste" && (
-                      <div className="toggle-row" style={{cursor:"pointer", padding:"12px 16px", borderTop:"1px solid #e0dbd2"}}
-                        onClick={() => setQuizUnbeantwortetZuerst(v => !v)}>
-                        <div>
-                          <div className="toggle-label">Unbeantwortete zuerst</div>
-                          <div className="toggle-sub">Vokabeln ohne Score werden zuerst abgefragt</div>
-                        </div>
-                        <div className={`checkbox${quizUnbeantwortetZuerst?" checked":""}`}>{quizUnbeantwortetZuerst?"✓":""}</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* LAUTSPRACHE */}
-                  <div className="sektion-label" style={{marginBottom:8}}>Lautsprache</div>
-                  <div className="karte" style={{marginBottom:16}}>
-                    <div className="toggle-row">
-                      <div>
-                        <div className="toggle-label">Auto-Play</div>
-                        <div className="toggle-sub">Frage automatisch vorlesen wenn neue Vokabel erscheint</div>
-                      </div>
-                      <div className="toggle-btn">
-                        <button className={`toggle-opt${!einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:false})}>Aus</button>
-                        <button className={`toggle-opt${einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:true})}>An</button>
-                      </div>
-                    </div>
-                    {einstellungen.autoplay && (
-                      <div style={{padding:"12px 16px 16px", borderTop:"1px solid #e0dbd2"}}>
-                        <div className="inp-label" style={{marginBottom:8}}>Spalten automatisch vorlesen</div>
-                        <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                          {["E1","E2","D1","D2","i1","i2"].map(typ => {
-                            const vorlesen = einstellungen.vorlesen || ["E1"];
-                            const aktiv = vorlesen.includes(typ);
-                            return (
-                              <button key={typ} className={`typ-btn${aktiv?" aktiv":""}`}
-                                onClick={() => speichereEinst({...einstellungen, vorlesen: aktiv ? vorlesen.filter(t=>t!==typ) : [...vorlesen,typ]})}>
-                                {typ}
-                              </button>
                             );
                           })}
                         </div>
-                        <div style={{fontSize:"0.75rem", color:"#6b6560", marginTop:8}}>
-                          Nur wenn Frage-Spalte ausgewählt ist, wird Auto-Play ausgelöst
+                        {infoSpalten.length > 0 && (
+                          <>
+                            <div className="sektion-label" style={{marginBottom:8}}>Info-Spalten anzeigen</div>
+                            <div className="karte" style={{marginBottom:16}}>
+                              {infoSpalten.map(typ => (
+                                <div key={typ} className="quiz-setup-check" style={{padding:"10px 16px"}}
+                                  onClick={() => toggleInfoSpalte(typ)}>
+                                  <div className={`checkbox${quizZeigeInfo[typ]?" checked":""}`}>{quizZeigeInfo[typ]?"✓":""}</div>
+                                  <div>
+                                    <div style={{fontWeight:600, fontSize:"0.9rem"}}>{kombiListe.spalten[typ].name||typ}</div>
+                                    <div style={{fontSize:"0.75rem", color:"#6b6560"}}>{typ} — immer nur angezeigt</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </>)}
+
+                    </>)}
+                  </div>
+                )}
+
+                {/* Reihenfolge – sticky unter Abfrage-Modus-Zeile */}
+                {kombiListe && (
+                  <div ref={reihenfolgeRef} style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Reihenfolge</span>
+                    <span className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"default", pointerEvents:"none"}}>
+                      {quizReihenfolge === "zufall" ? "Zufällig" : quizReihenfolge === "schlechteste" ? "Schlechteste" : "Listen-Nr."}
+                    </span>
+                    <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
+                      <button className="btn-toggle-ghost" onClick={toggleReihenfolge}>
+                        {quizReihenfolgeAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
+                      </button>
+                    </span>
+                  </div>
+                )}
+
+                {/* Reihenfolge Inhalt */}
+                {kombiListe && (
+                  <div ref={reihenfolgeContainerRef} style={{overflow:'hidden', paddingTop: quizReihenfolgeAufgeklappt ? 16 : 0}}>
+                    {quizReihenfolgeAufgeklappt && (
+                      <div className="karte" style={{marginBottom:16}}>
+                        <div className="toggle-row">
+                          <div className="toggle-btn">
+                            <button className={`toggle-opt${quizReihenfolge==="zufall"?" aktiv":""}`} onClick={() => setQuizReihenfolge("zufall")}>Zufällig</button>
+                            <button className={`toggle-opt${quizReihenfolge==="schlechteste"?" aktiv":""}`} onClick={() => setQuizReihenfolge("schlechteste")}>Schlechteste</button>
+                            <button className={`toggle-opt${quizReihenfolge==="listennr"?" aktiv":""}`} onClick={() => setQuizReihenfolge("listennr")}>Listen-Nr.</button>
+                          </div>
                         </div>
+                        {quizReihenfolge === "schlechteste" && (
+                          <div style={{padding:"0 16px 16px"}}>
+                            <label className="inp-label">Anzahl</label>
+                            <input className="inp" type="number" min={1} value={quizSchlechtesteAnzahl}
+                              onChange={e => setQuizSchlechtesteAnzahl(e.target.value)} />
+                            <label className="inp-label" style={{marginTop:12}}>Score kleiner als (optional)</label>
+                            <input className="inp" type="number" value={quizSchlechtesteMaxScore}
+                              onChange={e => setQuizSchlechtesteMaxScore(e.target.value)}
+                              placeholder="z.B. -5" />
+                            <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:6}}>
+                              {verfuegbar} Vokabeln mit dem niedrigsten Score werden abgefragt.
+                            </div>
+                          </div>
+                        )}
+                        {quizReihenfolge !== "schlechteste" && (
+                          <div className="toggle-row" style={{cursor:"pointer", padding:"12px 16px", borderTop:"1px solid #e0dbd2"}}
+                            onClick={() => setQuizUnbeantwortetZuerst(v => !v)}>
+                            <div>
+                              <div className="toggle-label">Unbeantwortete zuerst</div>
+                              <div className="toggle-sub">Vokabeln ohne Score werden zuerst abgefragt</div>
+                            </div>
+                            <div className={`checkbox${quizUnbeantwortetZuerst?" checked":""}`}>{quizUnbeantwortetZuerst?"✓":""}</div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
+                )}
 
-                  {/* SCHWIERIGKEITS-MODUS */}
-                  <div className="sektion-label" style={{marginBottom:8}}>Schwierigkeits-Modus</div>
-                  <div className="karte" style={{marginBottom:16}}>
-                    <div className="toggle-row">
-                      <div>
-                        <div className="toggle-label">Modus</div>
-                        <div className="toggle-sub">{einstellungen.modus === "einfach" ? "Lösung anzeigen ohne Score-Einfluss." : "Lösung anzeigen zieht 1 Punkt ab."}</div>
-                      </div>
-                      <div className="toggle-btn">
-                        <button className={`toggle-opt${einstellungen.modus==="einfach"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"einfach"})}>Einfach</button>
-                        <button className={`toggle-opt${einstellungen.modus==="schwer"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"schwer"})}>Schwer</button>
-                      </div>
-                    </div>
+                {/* Einstellungen – sticky unter Reihenfolge-Zeile */}
+                {kombiListe && (
+                  <div ref={einstellungenRef} style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH + reihenfolgeH, zIndex:5, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Einstellungen</span>
+                    <span className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"default", pointerEvents:"none"}}>
+                      {einstellungen.modus === "einfach" ? "Einfach" : "Schwer"}
+                    </span>
+                    <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
+                      <button className="btn-toggle-ghost" onClick={toggleEinstellungen}>
+                        {quizEinstellungenAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
+                      </button>
+                    </span>
                   </div>
+                )}
 
-                  {kannStarten && (
-                    <button className="btn btn-ghost" style={{width:"100%", marginBottom:16}}
-                      onClick={() => oeffneModal("slot-speichern")}>
-                      Konfiguration speichern …
+                {/* Einstellungen Inhalt */}
+                {kombiListe && (
+                  <div ref={einstellungenContainerRef} style={{overflow:'hidden', paddingTop: quizEinstellungenAufgeklappt ? 16 : 0}}>
+                    {quizEinstellungenAufgeklappt && (<>
+                      {/* LAUTSPRACHE */}
+                      <div className="sektion-label" style={{marginBottom:8}}>Lautsprache</div>
+                      <div className="karte" style={{marginBottom:16}}>
+                        <div className="toggle-row">
+                          <div>
+                            <div className="toggle-label">Auto-Play</div>
+                            <div className="toggle-sub">Frage automatisch vorlesen wenn neue Vokabel erscheint</div>
+                          </div>
+                          <div className="toggle-btn">
+                            <button className={`toggle-opt${!einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:false})}>Aus</button>
+                            <button className={`toggle-opt${einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:true})}>An</button>
+                          </div>
+                        </div>
+                        {einstellungen.autoplay && (
+                          <div style={{padding:"12px 16px 16px", borderTop:"1px solid #e0dbd2"}}>
+                            <div className="inp-label" style={{marginBottom:8}}>Spalten automatisch vorlesen</div>
+                            <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                              {["E1","E2","D1","D2","i1","i2"].map(typ => {
+                                const vorlesen = einstellungen.vorlesen || ["E1"];
+                                const aktiv = vorlesen.includes(typ);
+                                return (
+                                  <button key={typ} className={`typ-btn${aktiv?" aktiv":""}`}
+                                    onClick={() => speichereEinst({...einstellungen, vorlesen: aktiv ? vorlesen.filter(t=>t!==typ) : [...vorlesen,typ]})}>
+                                    {typ}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <div style={{fontSize:"0.75rem", color:"#6b6560", marginTop:8}}>
+                              Nur wenn Frage-Spalte ausgewählt ist, wird Auto-Play ausgelöst
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* SCHWIERIGKEITSGRAD */}
+                      <div className="sektion-label" style={{marginBottom:8}}>Schwierigkeitsgrad</div>
+                      <div className="karte" style={{marginBottom:16}}>
+                        <div className="toggle-row">
+                          <div>
+                            <div className="toggle-label">Modus</div>
+                            <div className="toggle-sub">{einstellungen.modus === "einfach" ? "Lösung anzeigen ohne Score-Einfluss." : "Lösung anzeigen zieht 1 Punkt ab."}</div>
+                          </div>
+                          <div className="toggle-btn">
+                            <button className={`toggle-opt${einstellungen.modus==="einfach"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"einfach"})}>Einfach</button>
+                            <button className={`toggle-opt${einstellungen.modus==="schwer"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"schwer"})}>Schwer</button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {kannStarten && (
+                        <button className="btn btn-ghost" style={{width:"100%", marginBottom:16}}
+                          onClick={() => oeffneModal("slot-speichern")}>
+                          Konfiguration speichern …
+                        </button>
+                      )}
+                    </>)}
+                  </div>
+                )}
+
+                {/* Quiz starten Button - sticky unter Einstellungen-Zeile */}
+                {kombiListe && (
+                  <div style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, zIndex:4, background:"#fff", padding:"8px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid #e0dbd2"}}>
+                    <button className="btn btn-primary" style={{width:"100%"}}
+                      onClick={starteQuiz} disabled={!kannStarten || verfuegbar === 0}>
+                      Quiz starten ({verfuegbar} Vokabeln)
                     </button>
-                  )}
-                </>)}
+                  </div>
+                )}
+
               </div>
             </>
           );

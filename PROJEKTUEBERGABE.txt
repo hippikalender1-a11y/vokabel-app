@@ -1,14 +1,14 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-27  (Session 12 abgeschlossen)
-Letzter Commit: 9dabffe
+Stand: 2026-06-28  (Session 13 abgeschlossen)
+Letzter Commit: 015b642  (Protokoll; Code-Änderungen noch nicht committed)
 
 DATEIPFADE
 ----------
 Projektordner:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\
 Quellcode:        C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\App.jsx
-                  (eine einzige React-Datei, ~3900 Zeilen)
+                  (eine einzige React-Datei, ~4200 Zeilen)
 Deploy-Skript:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\deploy.ps1
 
 DEPLOYMENT
@@ -41,80 +41,130 @@ Alle sticky Elemente im gleichen Scroll-Container (Window).
 
   2. headerH = Höhe des Haupt-Wrappers (ResizeObserver auf headerRef)
 
-  3. [Quiz-Tab] Alle/Bereich-Zeile (ref={alleBereichRef})
+  3. [Quiz-Tab] Vokabel-Auswahl-Zeile (ref={alleBereichRef})
        position:sticky, top:headerH, zIndex:8
-       → Eigenständiges sticky Element IM Scroll-Content (nicht in headerRef)
-       → [Alle][Bereich] Toggle-Buttons
-       → Bei Bereich + Liste offen: [X] Auswahl löschen, [Von–Bis], "(X V.)", [▲/▼]
-       → Bei Bereich + Liste zu:    nur "(X V.)" + [▲/▼]
-       → Erscheint direkt nach der Listenauswahl (wenn Liste gewählt)
+       GESCHLOSSEN: "Vokabel-Auswahl" (links) | [Alle][Bereich] (zentriert) | (X V.) + ▲ (rechts)
+       OFFEN (nur Bereich):  [Alle][Bereich] | [X] | [Von–Bis] | (X V.) | ▼
 
-  4. alleBereichH = Höhe der Alle/Bereich-Zeile (ResizeObserver auf alleBereichRef)
-       → Dependency: quizTabListen.length
+  4. alleBereichH = Höhe (ResizeObserver auf alleBereichRef)
 
-  5. [Quiz-Tab] Quiz-starten-Button
+  5. [Quiz-Tab] Abfrage-Modus-Zeile (ref={abfrageModusRef})
        position:sticky, top:headerH + alleBereichH, zIndex:7
-       → Klebt direkt unter Alle/Bereich-Zeile
+       "Abfrage-Modus" (links) | [Frage–Antwort / wechselnd / Diktat] (zentriert) | ▲/▼ (rechts)
+       HINWEIS: Chip zeigt aktuell noch "pro Spalte" — wird in Session 14
+                umbenannt in "Frage – Antwort"
 
-  6. Sub-Header anderer Tabs (position:sticky, top:headerH):
+  6. abfrageModusH = Höhe (ResizeObserver auf abfrageModusRef)
+
+  7. [Quiz-Tab] Reihenfolge-Zeile (ref={reihenfolgeRef})
+       position:sticky, top:headerH + alleBereichH + abfrageModusH, zIndex:6
+       "Reihenfolge" (links) | [Zufällig / Schlechteste / Listen-Nr.] (zentriert) | ▲/▼ (rechts)
+
+  8. reihenfolgeH = Höhe (ResizeObserver auf reihenfolgeRef)
+
+  9. [Quiz-Tab] Einstellungen-Zeile (ref={einstellungenRef})
+       position:sticky, top:headerH + alleBereichH + abfrageModusH + reihenfolgeH, zIndex:5
+       "Einstellungen" (links) | [Einfach / Schwer] (zentriert) | ▲/▼ (rechts)
+
+  10. einstellungenH = Höhe (ResizeObserver auf einstellungenRef)
+
+  11. [Quiz-Tab] Quiz-starten-Button
+       position:sticky, top:headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH
+       zIndex:4
+
+  12. Sub-Header anderer Tabs (position:sticky, top:headerH):
        - Listen-Tab: .liste-detail-header
        - Statistik-Tab: .statistik-listen-header (ref={statistikListenHeaderRef})
 
-  7. Statistik Ø Score (position:sticky, top: headerH + statistikListenHeaderH)
+  13. Statistik Ø Score (position:sticky, top: headerH + statistikListenHeaderH)
 
 
 ================================================================
 KONTEXT-AUFKLAPP-SYSTEM (Quiz-Tab)
 ================================================================
-Beide Bereiche folgen dem gleichen Prinzip:
+Alle fünf Kontexte folgen dem gleichen Prinzip:
   - Aufklappen: nur per Button-Klick
   - Zuklappen: per Button ODER automatisch durch Scrollen
-  - Auto-Close: wenn die Unterkante des Inhalts die Oberkante
-    des nächsten sticky Elements passiert (Scroll-Listener)
+  - Auto-Close: wenn die Unterkante des Inhalts die Unterkante
+    des zugehörigen sticky Headers passiert (Scroll-Listener)
   - Wiederöffnen: scrollt automatisch zum Anfang des Kontexts
+  - paddingBottom '100dvh' auf der Sektion wenn mind. ein Kontext
+    offen → garantiert immer ausreichend Scrolltiefe für Auto-Close
 
 LISTENAUSWAHL (quizTabListen auswählen):
   Header:     Zeile 1 (immer sichtbar, in headerRef)
-  Inhalt:     ref={listenContainerRef} — Liste verfügbarer Vokabel-Listen
+  Inhalt:     ref={listenContainerRef}
+              → OBEN: Gespeicherte Konfigurationen (Slots)
+              → UNTEN: Checkbox-Liste verfügbarer Vokabel-Listen
   Auto-Close: listenContainerRef.bottom <= headerH
   Toggle-Fn:  toggleListenAuswahl()
-              → beim Öffnen: scrollTo(listenContainerRef.top = headerH)
-  Default:    offen wenn keine Liste gewählt (useEffect auf quizTabListen.length)
-  CSS-Fix:    overflow:'hidden' + paddingTop:16 (wenn offen) verhindert
-              margin-collapse und eliminiert Lücke zum Header
+  Default:    offen wenn keine Liste gewählt
 
-EINZELAUSWAHL / CHECKBOX-LISTE (Bereich-Modus):
-  Header:     Alle/Bereich-Zeile (sticky bei top:headerH)
+VOKABEL-AUSWAHL / EINZELAUSWAHL (Bereich-Modus):
+  Header:     Vokabel-Auswahl-Zeile (ref={alleBereichRef}, sticky top:headerH)
   Inhalt:     ref={einzelauswahlRef} — Checkbox-Liste der Vokabeln
   Auto-Close: einzelauswahlRef.bottom <= headerH + alleBereichH
   Toggle-Fn:  toggleEinzelauswahl()
-              → beim Öffnen: scrollTo(einzelauswahlRef.top = headerH + alleBereichH)
   Default:    öffnet automatisch wenn "Bereich" erstmals gewählt
-              UND noch keine Auswahl vorhanden (quizCheckboxAuswahl.size === 0)
+              UND noch keine Auswahl vorhanden
+
+ABFRAGE-MODUS:
+  Header:     Abfrage-Modus-Zeile (ref={abfrageModusRef})
+  Inhalt:     ref={abfrageModusContainerRef}
+              → Modus-Toggle (Frage–Antwort / wechselnd / Diktat)
+              → Info-Text (aufklappbar via btn-toggle-ghost)
+              → Diktat-Konfig (conditional, nur wenn Diktat)
+              → Spalten auswählen (conditional, nicht bei Diktat)
+              → Info-Spalten anzeigen (conditional)
+  Auto-Close: abfrageModusContainerRef.bottom <= headerH + alleBereichH + abfrageModusH
+  Toggle-Fn:  toggleAbfrageModus()
+
+REIHENFOLGE:
+  Header:     Reihenfolge-Zeile (ref={reihenfolgeRef})
+  Inhalt:     ref={reihenfolgeContainerRef}
+              → Toggle (Zufällig / Schlechteste / Listen-Nr.)
+              → Schlechteste-Optionen (Anzahl, Max-Score) wenn Schlechteste
+              → Unbeantwortete zuerst (wenn nicht Schlechteste)
+  Auto-Close: reihenfolgeContainerRef.bottom <= headerH + alleBereichH + abfrageModusH + reihenfolgeH
+  Toggle-Fn:  toggleReihenfolge()
+
+EINSTELLUNGEN:
+  Header:     Einstellungen-Zeile (ref={einstellungenRef})
+  Inhalt:     ref={einstellungenContainerRef}
+              → Lautsprache (Auto-Play, Spalten-Vorlesen)
+              → Schwierigkeitsgrad (Einfach / Schwer)
+              → "Konfiguration speichern" Button (wenn kannStarten)
+  Auto-Close: einstellungenContainerRef.bottom <= headerH + alleBereichH
+                + abfrageModusH + reihenfolgeH + einstellungenH
+  Toggle-Fn:  toggleEinstellungen()
+
+GESPEICHERTE KONFIGURATIONEN:
+  Position:   Oben im Listenauswahl-Kontext (sichtbar beim Öffnen der Liste)
+  Slots:      1–5 benannt + Slot 6 "Zuletzt verwendet"
+  Klick:      ladeKonfigAusSlot() → schließt ALLE Kontexte
+              (listenAuswahl, einzelauswahl, abfrageModus, reihenfolge,
+               einstellungen) + lädt Konfiguration
 
 QUIZ-SEKTION LAYOUT:
-  <div className="sektion" style={{paddingTop:0}}>
-  → kein Top-Padding damit Alle/Bereich-Zeile direkt am Header klebt
-  → Abstand über Listenauswahl via paddingTop auf listenContainerRef
+  <div className="sektion" style={{paddingTop:0, paddingBottom: (offen?) '100dvh' : 0}}>
+  → paddingTop:0: kein Top-Padding damit Vokabel-Auswahl-Zeile direkt am Header klebt
+  → paddingBottom 100dvh: wenn mind. ein Kontext offen (Scroll-Raum für Auto-Close)
 
-VOKABELANZAHL-TRICHTER:
-  Zeile 1  (X V.)  = quizBasisVoks.length   (nach Spalten-/Modus-Filter)
-  Alle/Bereich     = quizGefilterteVoks.length  (nach Checkbox-Auswahl)
-  Quiz-Button      = verfuegbar  (nach Schlechteste/Unbeantwortet-Filter)
 
-Hoisted Berechnungen (vor return(), außerhalb IIFE):
-  quizKombiListe     = kombinierte Liste aus quizTabListen
-  quizBasisVoks      = Vokabeln nach Spalten-/Modus-Filter
-  quizGefilterteVoks = quizBasisVoks, gefiltert nach quizCheckboxAuswahl
-                       (nur wenn quizBereichTyp="bereich" && Auswahl vorhanden)
-  (im Quiz-IIFE als Aliases: kombiListe, basisVoks, gefilterteVoks)
+================================================================
+ABFRAGE-MODUS BEZEICHNUNGEN
+================================================================
+INTERNE STATE-WERTE (unveränderlich):
+  quizModus = "sequenziell" | "rotierend" | "diktat"
 
-REFS FÜR SCROLL-LOGIK:
-  headerRef          → ResizeObserver → headerH
-  alleBereichRef     → ResizeObserver → alleBereichH
-  listenContainerRef → Scroll-Listener (auto-close Listenauswahl)
-  einzelauswahlRef   → Scroll-Listener (auto-close Einzelauswahl)
-  statistikListenHeaderRef → ResizeObserver → statistikListenHeaderH
+ANZEIGE-NAMEN (aktuell nach Session 13):
+  "sequenziell" → "pro Spalte"   ← Session 14: umbenennen in "Frage – Antwort"
+  "rotierend"   → "wechselnd"
+  "diktat"      → "Diktat"
+
+Vorkommen der Anzeige-Namen:
+  - Chip im abfrageModusRef sticky Header
+  - Button-Label im Modus-Toggle (im aufgeklappten Abfrage-Modus-Kontext)
 
 
 ================================================================
@@ -137,18 +187,14 @@ ABLAUF:
   2. Vokabel klicken  → Von gesetzt ("…Bis"), Zeile gelb + "→" markiert
   3. Vokabel klicken  → Bereich selektiert, Modus beendet ("Von–Bis")
 
-VISUELLE RÜCKMELDUNG:
-  "Von"-Zeile: background:#fff3cd, Checkbox orange mit "→"
-
 AUTO-RESET:
   useEffect: wenn quizListeAufgeklappt=false → Von-Bis komplett zurücksetzen
 
 X-BUTTON (Auswahl löschen):
   Sichtbar nur wenn: quizListeAufgeklappt && quizCheckboxAuswahl.size > 0
-  → setzt quizCheckboxAuswahl, quizVonBisModus, quizVonBisErster zurück
 
 BEREICH-STATE PERSISTENZ:
-  "Alle" klicken: quizCheckboxAuswahl wird NICHT gelöscht (bleibt gespeichert)
+  "Alle" klicken: quizCheckboxAuswahl wird NICHT gelöscht
   "Bereich" klicken: öffnet Liste nur automatisch wenn quizCheckboxAuswahl.size === 0
 
 
@@ -208,58 +254,55 @@ HINTERGRUND-REGEL:
 
 
 ================================================================
-AKTUELLER FEATURE-STAND (nach Session 12)
+STICKY HEADER ZENTRIERUNGS-SCHEMA
+================================================================
+Alle Kontextzeilen (außer Listenauswahl in headerRef) nutzen:
+  flex:1 (links, Label) | Chip/Toggle (zentriert) | flex:1 justify-end (rechts, Button)
+
+Besonderheit Vokabel-Auswahl-Zeile (alleBereichRef):
+  GESCHLOSSEN: "Vokabel-Auswahl" (flex:1) | [Alle][Bereich] | rechts (flex:1)
+  OFFEN (Bereich): [Alle][Bereich] | [X]? | [Von–Bis] | (X V., flex:1) | ▼
+
+
+================================================================
+AKTUELLER FEATURE-STAND (nach Session 13)
 ================================================================
 
 QUIZ-TAB
 --------
-Zeile 1 (in headerRef, immer sticky):
-  Listenname + "(X V.)" + ▲/▼-Toggle für Listenauswahl
+Sticky Hierarchie (von oben nach unten):
+  1. Hauptheader (Topbar + Tabs + Zeile 1 mit Listenname)
+  2. Vokabel-Auswahl (Alle/Bereich-Toggle)
+  3. Abfrage-Modus (Modus-Chip)
+  4. Reihenfolge (Reihenfolge-Chip)
+  5. Einstellungen (Schwierigkeitsgrad-Chip)
+  6. Quiz-Button
 
-Listenauswahl (Scroll-Content, ref=listenContainerRef):
-  - Checkbox-Liste aller verfügbaren Vokabel-Listen
-  - Schließt automatisch wenn Inhalt oben rausscrollt (→ headerH)
-  - "Bitte Liste auswählen" Platzhalter wenn keine Liste + eingeklappt
+Alle Kontexte öffnen/schließen per Button oder automatisch per Scroll.
 
-Alle/Bereich-Zeile (sticky bei top:headerH, ref=alleBereichRef):
-  - [Alle][Bereich] Toggle
-  - Alle: Vokabelanzahl in Zeile 1 sichtbar; Bereich-Checkbox-Auswahl bleibt gespeichert
-  - Bereich + Liste ZU:    "(X V.)" + [▲/▼]
-  - Bereich + Liste OFFEN: [X] (wenn Auswahl) + [Von–Bis] + "(X V.)" + [▲/▼]
-  - "Bereich" öffnet Liste nur wenn noch keine Auswahl vorhanden
+VOKABEL-AUSWAHL-ZEILE:
+  Geschlossen: "Vokabel-Auswahl" links, [Alle][Bereich] zentriert
+  Bereich + Offen: Von-Bis, X-Button, (X V.) sichtbar
 
-Einzelauswahl (Scroll-Content, ref=einzelauswahlRef):
-  - Checkbox-Liste der Vokabeln (nur bei Bereich + aufgeklappt)
-  - Schließt automatisch wenn Inhalt oben rausscrollt (→ headerH + alleBereichH)
-  - Von-Bis-Bereichsauswahl: 2-Klick-Selektion eines Bereichs
+ABFRAGE-MODUS-KONTEXT:
+  Modus-Toggle: "pro Spalte" / "wechselnd" / "Diktat"
+  (nächste Session: "pro Spalte" → "Frage – Antwort")
+  + Diktat-Konfig (conditional)
+  + Spalten auswählen (conditional)
+  + Info-Spalten anzeigen (conditional)
 
-Quiz-starten-Button (sticky bei top:headerH + alleBereichH):
-  - Zeigt verfügbare Vokabelanzahl
-  - Disabled wenn Konfiguration unvollständig
+REIHENFOLGE-KONTEXT:
+  Zufällig / Schlechteste / Listen-Nr.
+  + Schlechteste-Optionen (Anzahl, Max-Score)
+  + Unbeantwortete zuerst
 
-Von-Bis-Bereichsauswahl: siehe eigenen Abschnitt oben
+EINSTELLUNGEN-KONTEXT:
+  Lautsprache (Auto-Play + Spalten-Vorlesen)
+  Schwierigkeitsgrad (Einfach / Schwer)
+  Konfiguration speichern (Button)
 
-NÄCHSTE GEPLANTE SESSION (Session 13):
-  Abfrage-Modus-Umbau: "Abfrage-Modus" + Unteroptionen
-  ("Spalten-Auswahl", "Infospalten anzeigen", Diktat-Konfig)
-  über den Quiz-Button bringen, mit gleichem Aufklapp-System
-  wie die Listenauswahl (sticky Header-Zeile + Scroll-Kontext).
-
-Von-Bis-Bereichsauswahl: WIEDER EINGEBAUT (Session 12)
-  → 2 neue States: quizVonBisModus, quizVonBisErster
-  → Button in Alle/Bereich-Zeile (nur sichtbar wenn Liste offen)
-
-Info-Toggle Abfrage-Modus: btn-toggle-ghost (▼ öffnet Info-Text)
-
-States:
-  quizTabListen              = gewählte Listen-IDs
-  quizBereichTyp             = "alle" | "bereich"
-  quizCheckboxAuswahl        = Set der ausgewählten Vokabel-IDs
-  quizVonBisModus            = bool (Von-Bis-Auswahl aktiv)
-  quizVonBisErster           = null | vokabel-id (erste gewählte Vokabel)
-  quizListeAufgeklappt       = Einzelauswahl sichtbar
-  listenAuswahlAufgeklappt   = Listenauswahl sichtbar
-  quizModusInfoAufgeklappt   = Info-Text unter Abfrage-Modus
+GESPEICHERTE KONFIGURATIONEN:
+  Im Listenauswahl-Kontext ganz oben; Klick schließt alle Kontexte
 
 TASTATUR-QUIZ
 -------------
@@ -276,10 +319,9 @@ DIKTAT-QUIZ
 STATISTIK-TAB
 -------------
 - Sticky Listen-Header (top:headerH)
-- Ø Score sticky bei top:headerH+statistikListenHeaderH (eine Stufe tiefer)
+- Ø Score sticky bei top:headerH+statistikListenHeaderH
 - "↑ Nach oben"-Button im Ø-Score-Header
 - Sortierung: 4 Buttons (Score, Streak, Datum, A→Z) mit Richtungs-Toggle
-  → State: statistikSort als kombinierter String "score-asc" etc.
 
 LISTEN-TAB
 ----------
@@ -288,21 +330,46 @@ Header Zeile 1 (liste-detail-header):
 
 Aktionszeile (nur wenn aufgeklappt):
   Reihenfolge: [+] [Kopieren] [TXT] [Teilen/JSON] [JSON] ... [×]
-  - + öffnet Import in bestehende Liste
-  - Kopieren: Text in Clipboard
-  - TXT: Download als .txt
-  - Teilen (IcoShare): teilt JSON-Datei via navigator.share; Fallback Download
-  - JSON: öffnet JSON-Export-Modal (mit Optionen)
-  - × Löschen (rechts, btn-danger)
 
-Spalten-Stift-Buttons: btn-ghost-filled (heller Hintergrund #f7f5f0)
 Vokabeln-Sektion-Header:
   - "Zusammenführen" + "+": background:#fff (auf beigem Hintergrund)
-  - Toggle-Button (flat, solid grün) zum Ein-/Ausklappen
 
-Header "Meine Listen":
-  - "Neu" Button (IcoPlus) öffnet Import für neue Liste
-  - "Exportieren" Button für Multi-Listen-Export
+
+================================================================
+REFS & STATES (Quiz-Tab vollständig)
+================================================================
+REFS:
+  headerRef              → ResizeObserver → headerH
+  alleBereichRef         → ResizeObserver → alleBereichH (dep: quizTabListen.length)
+  einzelauswahlRef       → Scroll-Listener auto-close Einzelauswahl
+  listenContainerRef     → Scroll-Listener auto-close Listenauswahl
+  abfrageModusRef        → ResizeObserver → abfrageModusH (dep: quizTabListen.length)
+  abfrageModusContainerRef → Scroll-Listener auto-close Abfrage-Modus
+  reihenfolgeRef         → ResizeObserver → reihenfolgeH (dep: quizTabListen.length)
+  reihenfolgeContainerRef  → Scroll-Listener auto-close Reihenfolge
+  einstellungenRef       → ResizeObserver → einstellungenH (dep: quizTabListen.length)
+  einstellungenContainerRef → Scroll-Listener auto-close Einstellungen
+  statistikListenHeaderRef → ResizeObserver → statistikListenHeaderH
+
+STATES (aufklapp):
+  listenAuswahlAufgeklappt     — Listenauswahl
+  quizListeAufgeklappt         — Einzelauswahl (Bereich-Modus)
+  quizAbfrageModusAufgeklappt  — Abfrage-Modus-Kontext
+  quizReihenfolgeAufgeklappt   — Reihenfolge-Kontext
+  quizEinstellungenAufgeklappt — Einstellungen-Kontext
+
+STATES (quiz-config):
+  quizTabListen              = gewählte Listen-IDs
+  quizBereichTyp             = "alle" | "bereich"
+  quizCheckboxAuswahl        = Set der ausgewählten Vokabel-IDs
+  quizVonBisModus            = bool (Von-Bis-Auswahl aktiv)
+  quizVonBisErster           = null | vokabel-id
+  quizModus                  = "sequenziell" | "rotierend" | "diktat"
+  quizReihenfolge            = "zufall" | "schlechteste" | "listennr"
+  quizSchlechtesteAnzahl     = number
+  quizSchlechtesteMaxScore   = string (leer = kein Filter)
+  quizUnbeantwortetZuerst    = bool
+  quizModusInfoAufgeklappt   = bool (Info-Text im Abfrage-Modus)
 
 
 ================================================================
@@ -343,13 +410,24 @@ QUIZ-DEFAULTS (State-Initialwerte)
   quizUnbeantwortetZuerst  = true
   quizSchlechtesteAnzahl   = 20
   quizSchlechtesteMaxScore = ""
-  statistikSort            = "score-asc"
-  listenAuswahlAufgeklappt = true   (Quiz-Listenauswahl default offen)
+  listenAuswahlAufgeklappt = true   (default offen)
   quizBereichTyp           = "alle"
-  quizListeAufgeklappt     = false  (Einzelauswahl default zu)
-  quizVonBisModus          = false
-  quizVonBisErster         = null
-  aktionszeileAufgeklappt  = false  (Listen-Detail-Aktionszeile default zu)
+  quizListeAufgeklappt     = false
+
+
+================================================================
+NÄCHSTE SESSION (Session 14)
+================================================================
+Umbenennung: "pro Spalte" → "Frage – Antwort"
+  Betrifft:
+  - Chip-Text im abfrageModusRef sticky Header:
+      quizModus === "sequenziell" ? "pro Spalte" : ...
+      → ändern zu "Frage – Antwort"
+  - Button-Label im Modus-Toggle im Abfrage-Modus-Kontext:
+      <button ...>pro Spalte</button>
+      → ändern zu "Frage – Antwort"
+  Die internen State-Werte ("sequenziell", "rotierend", "diktat")
+  bleiben unverändert.
 
 
 ================================================================
@@ -365,6 +443,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 9dabffe
+Letzter Commit: 015b642  (alle Session-13-Änderungen noch lokal, nicht committed)
 
 ================================================================
