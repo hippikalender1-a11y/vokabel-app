@@ -500,6 +500,7 @@ export default function VokabelApp() {
   const headerRef = useRef(null);
   const listenContainerRef = useRef(null);
   const statistikListenHeaderRef = useRef(null);
+  const quizSentinelRef = useRef(null);
   const [headerH, setHeaderH] = useState(104);
   const [statistikListenHeaderH, setStatistikListenHeaderH] = useState(0);
 
@@ -512,6 +513,22 @@ export default function VokabelApp() {
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+
+  useEffect(() => {
+    const el = quizSentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting && entry.boundingClientRect.top < headerH) {
+          setListenAuswahlAufgeklappt(false);
+          setQuizListeAufgeklappt(false);
+        }
+      },
+      { rootMargin: `-${Math.round(headerH)}px 0px 0px 0px` }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [headerH]);
 
   useEffect(() => {
     const el = statistikListenHeaderRef.current;
@@ -2734,6 +2751,9 @@ export default function VokabelApp() {
                     <span style={{fontSize:"1.3rem", color:"#c0bcb7", fontWeight:600}}>Bitte Liste auswählen</span>
                   </div>
                 )}
+
+                {/* Sentinel: wenn Quiz-Button an Header anstößt → Listen einklappen */}
+                <div ref={quizSentinelRef} style={{height:0}} />
 
                 {/* Quiz starten Button - sticky-on-scroll */}
                 {kombiListe && (
