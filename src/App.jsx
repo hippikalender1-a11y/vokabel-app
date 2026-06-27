@@ -485,7 +485,9 @@ export default function VokabelApp() {
   const fileInputRef = useRef(null);
   const headerRef = useRef(null);
   const listenContainerRef = useRef(null);
+  const statistikListenHeaderRef = useRef(null);
   const [headerH, setHeaderH] = useState(104);
+  const [statistikListenHeaderH, setStatistikListenHeaderH] = useState(0);
 
   useEffect(() => {
     const el = headerRef.current;
@@ -496,6 +498,16 @@ export default function VokabelApp() {
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+
+  useEffect(() => {
+    const el = statistikListenHeaderRef.current;
+    if (!el) return;
+    const update = () => setStatistikListenHeaderH(el.offsetHeight);
+    update();
+    const obs = new ResizeObserver(update);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [tab]);
 
   useEffect(() => {
     setListenIndex(lsGet(SK.listenIndex, []));
@@ -3194,7 +3206,7 @@ export default function VokabelApp() {
           const gesamtVoks = gewaehlteListenObjekte.reduce((s, l) => s + l.vokabeln.length, 0);
           const keineGewaehlt = statistikListenIds !== null && statistikListenIds.size === 0;
           return (<>
-            <div className="statistik-listen-header" style={{top: headerH}}>
+            <div ref={statistikListenHeaderRef} className="statistik-listen-header" style={{top: headerH}}>
               <div style={{flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:700, fontSize:"1rem"}}>
                 {keineGewaehlt
                   ? <span style={{color:"#aaa", fontWeight:600}}>Listen auswählen</span>
@@ -3367,7 +3379,7 @@ export default function VokabelApp() {
                 ))}
               </div>
               {avgScore !== null && (
-                <div style={{position:"sticky", top:headerH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                <div style={{position:"sticky", top:headerH + statistikListenHeaderH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
                   <span style={{fontSize:"0.82rem", color:"#6b6560", fontWeight:600}}>Ø Score (abgefragte Vokabeln)</span>
                   <div style={{display:"flex", alignItems:"center", gap:8}}>
                     <span style={{fontWeight:700, color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
