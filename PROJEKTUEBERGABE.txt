@@ -1,14 +1,14 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-27  (Session 11 abgeschlossen)
-Letzter Commit: 87da4ef
+Stand: 2026-06-27  (Session 12 abgeschlossen)
+Letzter Commit: 9dabffe
 
 DATEIPFADE
 ----------
 Projektordner:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\
 Quellcode:        C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\App.jsx
-                  (eine einzige React-Datei, ~3850 Zeilen)
+                  (eine einzige React-Datei, ~3900 Zeilen)
 Deploy-Skript:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\deploy.ps1
 
 DEPLOYMENT
@@ -45,7 +45,8 @@ Alle sticky Elemente im gleichen Scroll-Container (Window).
        position:sticky, top:headerH, zIndex:8
        → Eigenständiges sticky Element IM Scroll-Content (nicht in headerRef)
        → [Alle][Bereich] Toggle-Buttons
-       → Bei Bereich: "(X V.)" Checkbox-Auswahl + Expand-Button (▲/▼)
+       → Bei Bereich + Liste offen: [X] Auswahl löschen, [Von–Bis], "(X V.)", [▲/▼]
+       → Bei Bereich + Liste zu:    nur "(X V.)" + [▲/▼]
        → Erscheint direkt nach der Listenauswahl (wenn Liste gewählt)
 
   4. alleBereichH = Höhe der Alle/Bereich-Zeile (ResizeObserver auf alleBereichRef)
@@ -79,6 +80,8 @@ LISTENAUSWAHL (quizTabListen auswählen):
   Toggle-Fn:  toggleListenAuswahl()
               → beim Öffnen: scrollTo(listenContainerRef.top = headerH)
   Default:    offen wenn keine Liste gewählt (useEffect auf quizTabListen.length)
+  CSS-Fix:    overflow:'hidden' + paddingTop:16 (wenn offen) verhindert
+              margin-collapse und eliminiert Lücke zum Header
 
 EINZELAUSWAHL / CHECKBOX-LISTE (Bereich-Modus):
   Header:     Alle/Bereich-Zeile (sticky bei top:headerH)
@@ -86,7 +89,13 @@ EINZELAUSWAHL / CHECKBOX-LISTE (Bereich-Modus):
   Auto-Close: einzelauswahlRef.bottom <= headerH + alleBereichH
   Toggle-Fn:  toggleEinzelauswahl()
               → beim Öffnen: scrollTo(einzelauswahlRef.top = headerH + alleBereichH)
-  Default:    wird beim ersten Klick auf "Bereich" automatisch geöffnet
+  Default:    öffnet automatisch wenn "Bereich" erstmals gewählt
+              UND noch keine Auswahl vorhanden (quizCheckboxAuswahl.size === 0)
+
+QUIZ-SEKTION LAYOUT:
+  <div className="sektion" style={{paddingTop:0}}>
+  → kein Top-Padding damit Alle/Bereich-Zeile direkt am Header klebt
+  → Abstand über Listenauswahl via paddingTop auf listenContainerRef
 
 VOKABELANZAHL-TRICHTER:
   Zeile 1  (X V.)  = quizBasisVoks.length   (nach Spalten-/Modus-Filter)
@@ -106,6 +115,41 @@ REFS FÜR SCROLL-LOGIK:
   listenContainerRef → Scroll-Listener (auto-close Listenauswahl)
   einzelauswahlRef   → Scroll-Listener (auto-close Einzelauswahl)
   statistikListenHeaderRef → ResizeObserver → statistikListenHeaderH
+
+
+================================================================
+VON-BIS BEREICHSAUSWAHL (Einzelauswahl / Bereich-Modus)
+================================================================
+Ermöglicht Auswahl eines zusammenhängenden Vokabel-Bereichs per 2 Klicks.
+
+STATES:
+  quizVonBisModus   (bool)      — Modus aktiv
+  quizVonBisErster  (null|id)   — erste gewählte Vokabel (Von)
+
+BUTTON-ZUSTÄNDE (sichtbar nur wenn Einzelauswahl aufgeklappt):
+  "Von–Bis"  → Modus inaktiv (Default)
+  "Von…"     → Modus aktiv, warte auf ersten Klick
+  "…Bis"     → Von gesetzt, warte auf zweiten Klick
+  Klick auf "Von…" oder "…Bis" bricht Modus ab
+
+ABLAUF:
+  1. "Von–Bis"-Button → Modus aktiv ("Von…")
+  2. Vokabel klicken  → Von gesetzt ("…Bis"), Zeile gelb + "→" markiert
+  3. Vokabel klicken  → Bereich selektiert, Modus beendet ("Von–Bis")
+
+VISUELLE RÜCKMELDUNG:
+  "Von"-Zeile: background:#fff3cd, Checkbox orange mit "→"
+
+AUTO-RESET:
+  useEffect: wenn quizListeAufgeklappt=false → Von-Bis komplett zurücksetzen
+
+X-BUTTON (Auswahl löschen):
+  Sichtbar nur wenn: quizListeAufgeklappt && quizCheckboxAuswahl.size > 0
+  → setzt quizCheckboxAuswahl, quizVonBisModus, quizVonBisErster zurück
+
+BEREICH-STATE PERSISTENZ:
+  "Alle" klicken: quizCheckboxAuswahl wird NICHT gelöscht (bleibt gespeichert)
+  "Bereich" klicken: öffnet Liste nur automatisch wenn quizCheckboxAuswahl.size === 0
 
 
 ================================================================
@@ -164,7 +208,7 @@ HINTERGRUND-REGEL:
 
 
 ================================================================
-AKTUELLER FEATURE-STAND (nach Session 11)
+AKTUELLER FEATURE-STAND (nach Session 12)
 ================================================================
 
 QUIZ-TAB
@@ -179,22 +223,31 @@ Listenauswahl (Scroll-Content, ref=listenContainerRef):
 
 Alle/Bereich-Zeile (sticky bei top:headerH, ref=alleBereichRef):
   - [Alle][Bereich] Toggle
-  - Alle: nur Vokabelanzahl in Zeile 1 sichtbar
-  - Bereich: "(X V.)" Checkbox-Anzahl + ▲/▼-Expand-Button
-  - Klick auf Alle: Checkbox-Auswahl löschen + Einzelauswahl schließen
-  - Klick auf Bereich (erstmalig): öffnet Einzelauswahl automatisch
+  - Alle: Vokabelanzahl in Zeile 1 sichtbar; Bereich-Checkbox-Auswahl bleibt gespeichert
+  - Bereich + Liste ZU:    "(X V.)" + [▲/▼]
+  - Bereich + Liste OFFEN: [X] (wenn Auswahl) + [Von–Bis] + "(X V.)" + [▲/▼]
+  - "Bereich" öffnet Liste nur wenn noch keine Auswahl vorhanden
 
 Einzelauswahl (Scroll-Content, ref=einzelauswahlRef):
   - Checkbox-Liste der Vokabeln (nur bei Bereich + aufgeklappt)
   - Schließt automatisch wenn Inhalt oben rausscrollt (→ headerH + alleBereichH)
-  - "Auswahl löschen (N)" Button in Alle/Bereich-Zeile wenn Auswahl aktiv
+  - Von-Bis-Bereichsauswahl: 2-Klick-Selektion eines Bereichs
 
 Quiz-starten-Button (sticky bei top:headerH + alleBereichH):
   - Zeigt verfügbare Vokabelanzahl
   - Disabled wenn Konfiguration unvollständig
 
-Von-Bis-Bereichsauswahl: ENTFERNT (Session 11)
-  → Gefiltert wird nur noch per Checkbox-Einzelauswahl
+Von-Bis-Bereichsauswahl: siehe eigenen Abschnitt oben
+
+NÄCHSTE GEPLANTE SESSION (Session 13):
+  Abfrage-Modus-Umbau: "Abfrage-Modus" + Unteroptionen
+  ("Spalten-Auswahl", "Infospalten anzeigen", Diktat-Konfig)
+  über den Quiz-Button bringen, mit gleichem Aufklapp-System
+  wie die Listenauswahl (sticky Header-Zeile + Scroll-Kontext).
+
+Von-Bis-Bereichsauswahl: WIEDER EINGEBAUT (Session 12)
+  → 2 neue States: quizVonBisModus, quizVonBisErster
+  → Button in Alle/Bereich-Zeile (nur sichtbar wenn Liste offen)
 
 Info-Toggle Abfrage-Modus: btn-toggle-ghost (▼ öffnet Info-Text)
 
@@ -202,6 +255,8 @@ States:
   quizTabListen              = gewählte Listen-IDs
   quizBereichTyp             = "alle" | "bereich"
   quizCheckboxAuswahl        = Set der ausgewählten Vokabel-IDs
+  quizVonBisModus            = bool (Von-Bis-Auswahl aktiv)
+  quizVonBisErster           = null | vokabel-id (erste gewählte Vokabel)
   quizListeAufgeklappt       = Einzelauswahl sichtbar
   listenAuswahlAufgeklappt   = Listenauswahl sichtbar
   quizModusInfoAufgeklappt   = Info-Text unter Abfrage-Modus
@@ -292,6 +347,8 @@ QUIZ-DEFAULTS (State-Initialwerte)
   listenAuswahlAufgeklappt = true   (Quiz-Listenauswahl default offen)
   quizBereichTyp           = "alle"
   quizListeAufgeklappt     = false  (Einzelauswahl default zu)
+  quizVonBisModus          = false
+  quizVonBisErster         = null
   aktionszeileAufgeklappt  = false  (Listen-Detail-Aktionszeile default zu)
 
 
@@ -308,6 +365,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 87da4ef
+Letzter Commit: 9dabffe
 
 ================================================================
