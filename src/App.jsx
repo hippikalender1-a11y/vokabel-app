@@ -287,7 +287,7 @@ const CSS = `
   .app{max-width:600px;margin:0 auto;padding:0 0 80px;}
   .topbar{background:#fff;border-bottom:1px solid #e0dbd2;padding:14px 16px;display:flex;align-items:center;gap:12px;}
   .topbar-title{font-size:1.05rem;font-weight:700;flex:1;text-align:center;}
-  .topbar-back{background:#2d6a4f;color:#fff;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;padding:8px 14px;border-radius:10px;font-family:inherit;transition:opacity .15s;flex-shrink:0;}
+  .topbar-back{background:#2d6a4f;color:#fff;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;padding:8px 12px;border-radius:10px;font-family:inherit;transition:opacity .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;}
   .topbar-back:active{opacity:.8;}
   .tabs{display:flex;background:#fff;border-bottom:1px solid #e0dbd2;}
   .statistik-listen-header{background:#fff;border-bottom:1px solid #e0dbd2;padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;z-index:8;}
@@ -387,7 +387,9 @@ const CSS = `
   .quiz-setup-check:last-child{border-bottom:none;}
   .checkbox{width:20px;height:20px;border-radius:5px;border:2px solid #e0dbd2;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#f7f5f0;}
   .checkbox.checked{background:#2d6a4f;border-color:#2d6a4f;color:#fff;}
-  .liste-detail-header-name{flex:1;font-size:1.05rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .liste-detail-header-name{flex:1;font-size:0.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .btn-toggle{background:#2d6a4f;color:#fff;border:none;cursor:pointer;padding:6px 9px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .btn-toggle:active{opacity:.8;}
   .diktat-hint{font-size:1.8rem;font-weight:700;letter-spacing:0.2em;color:#2d6a4f;margin:10px 0 6px;font-family:monospace;}
   .diktat-uebersetzung{font-size:0.85rem;color:#6b6560;margin-top:4px;}
   .diktat-play-btn{background:none;border:none;font-size:3rem;cursor:pointer;display:block;margin:8px auto;line-height:1;}
@@ -406,6 +408,17 @@ const APP_VERSION = (() => {
   return d.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
     + ' ' + d.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'});
 })();
+
+const IcoUp    = ({s=12}) => <svg viewBox="0 0 12 8" width={s} height={s*.67} style={{display:"block"}}><polygon points="6,0 12,8 0,8" fill="currentColor"/></svg>;
+const IcoDown  = ({s=12}) => <svg viewBox="0 0 12 8" width={s} height={s*.67} style={{display:"block"}}><polygon points="0,0 12,0 6,8" fill="currentColor"/></svg>;
+const IcoBack  = ({s=20}) => <svg viewBox="0 0 20 20" width={s} height={s} style={{display:"block"}}><path d="M13,2 L3,10 L13,18 L13,13 L17,13 L17,7 L13,7 Z" fill="currentColor"/></svg>;
+const IcoX     = ({s=14}) => <svg viewBox="0 0 14 14" width={s} height={s} style={{display:"block"}}><line x1="1" y1="1" x2="13" y2="13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="13" y1="1" x2="1" y2="13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>;
+const IcoPencil= ({s=15}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><polygon points="11,1 15,5 5,15 1,15 1,11" fill="currentColor"/><polygon points="11,1 15,1 15,5" fill="currentColor" opacity="0.55"/></svg>;
+const IcoSpk   = ({s=18}) => <svg viewBox="0 0 20 20" width={s} height={s} style={{display:"block"}}><polygon points="2,7 2,13 6,13 12,18 12,2 6,7" fill="currentColor"/></svg>;
+const IcoSpkOn = ({s=20}) => <svg viewBox="0 0 26 20" width={s} height={s*.77} style={{display:"block"}}><polygon points="2,7 2,13 6,13 12,18 12,2 6,7" fill="currentColor"/><path d="M15,7 Q17,10 15,13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M18,4 Q22,10 18,16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
+const IcoPlus  = ({s=15}) => <svg viewBox="0 0 14 14" width={s} height={s} style={{display:"block"}}><line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>;
+const IcoShare = ({s=15}) => <svg viewBox="0 0 16 18" width={s} height={s*1.1} style={{display:"block"}}><path d="M8,1 L8,12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><path d="M4,5 L8,1 L12,5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M3,9 L3,16 L13,16 L13,9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoCopy  = ({s=15}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><rect x="5" y="1" width="10" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="2"/><rect x="1" y="4" width="10" height="11" rx="2" fill="#fff" stroke="currentColor" strokeWidth="2"/></svg>;
 
 export default function VokabelApp() {
   const [tab, setTab] = useState("listen");
@@ -478,7 +491,7 @@ export default function VokabelApp() {
   const [vokabelAufgeklappt, setVokabelAufgeklappt] = useState(false);
   const [diktatManualPlays, setDiktatManualPlays] = useState(0);
   const [quizTabListen, setQuizTabListen] = useState([]);
-  const [listenAuswahlAufgeklappt, setListenAuswahlAufgeklappt] = useState(false);
+  const [listenAuswahlAufgeklappt, setListenAuswahlAufgeklappt] = useState(true);
   const eingabeRef = useRef(null);
   const flashTimerRef = useRef(null);
   const diktatPlayCountRef = useRef(0);
@@ -524,6 +537,10 @@ export default function VokabelApp() {
   useEffect(() => {
     if (ansicht === "quiz" && eingabeRef.current) eingabeRef.current.focus();
   }, [ansicht, quiz?.index, quiz?.phase, quiz?.antwortTypIndex]);
+
+  useEffect(() => {
+    if (quizTabListen.length === 0) setListenAuswahlAufgeklappt(true);
+  }, [quizTabListen.length]);
 
   useEffect(() => {
     if (ansicht !== "quiz" || !quiz || quiz.phase !== "eingabe" || quiz.flash) return;
@@ -1647,7 +1664,9 @@ export default function VokabelApp() {
                 <div style={{padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer"}}
                   onClick={() => setDiktatListeAufgeklappt(v => !v)}>
                   <span style={{fontWeight:600}}>{richtig} / {quiz.diktatErgebnisse.length} richtig</span>
-                  <span style={{color:"#6b6560", fontSize:"0.85rem"}}>{diktatListeAufgeklappt ? "▲ einklappen" : "▼ Details"}</span>
+                  <button className="btn-toggle" style={{padding:"3px 6px"}} onClick={e => { e.stopPropagation(); setDiktatListeAufgeklappt(v => !v); }}>
+                    {diktatListeAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
+                  </button>
                 </div>
                 {diktatListeAufgeklappt && quiz.diktatErgebnisse.map((e, i) => (
                   <div key={i} className="diktat-summary-zeile" style={{padding:"10px 16px"}}>
@@ -1694,7 +1713,9 @@ export default function VokabelApp() {
               <div className="quiz-label">{quiz.liste.spalten[quiz.diktatSpalte]?.name || quiz.diktatSpalte} — hör genau hin!</div>
               {quiz.diktatSpalte.startsWith('E') && (
                 <button className="diktat-play-btn"
-                  onClick={() => { setDiktatManualPlays(p => p + 1); sprich(diktatWort, spalteLang(quiz.diktatSpalte)); }}>🔊</button>
+                  onClick={() => { setDiktatManualPlays(p => p + 1); sprich(diktatWort, spalteLang(quiz.diktatSpalte)); }}>
+                  <IcoSpkOn s={52}/>
+                </button>
               )}
               {uebersetzung && (
                 <div className="diktat-uebersetzung" style={{visibility: diktatManualPlays >= 2 ? "visible" : "hidden"}}>
@@ -1750,7 +1771,7 @@ export default function VokabelApp() {
                   <>
                     <button className="btn btn-primary" onClick={pruefeDiktatAntwort}>Prüfen</button>
                     {quiz.diktatSpalte.startsWith('E') && (
-                      <button className="btn btn-ghost" onClick={() => sprichDiktatNochmal(diktatWort, spalteLang(quiz.diktatSpalte))}>🔊 Andere Stimme</button>
+                      <button className="btn btn-ghost" onClick={() => sprichDiktatNochmal(diktatWort, spalteLang(quiz.diktatSpalte))}><IcoSpkOn s={18}/> Andere Stimme</button>
                     )}
                     <button className="btn btn-ghost" onClick={zeigeDiktatLoesung}>Lösung anzeigen</button>
                   </>
@@ -1855,7 +1876,7 @@ export default function VokabelApp() {
                         <div className="quiz-frage-text" style={{textAlign:"center"}}>{frageWert}</div>
                         {quiz.frageTyp.startsWith('E') && (
                           <button className="btn-icon" style={{fontSize:"1.1rem", padding:"2px 4px"}}
-                            onClick={e => { e.stopPropagation(); sprich(frageWert, spalteLang(quiz.frageTyp)); }}>🔊</button>
+                            onClick={e => { e.stopPropagation(); sprich(frageWert, spalteLang(quiz.frageTyp)); }}><IcoSpk s={16}/></button>
                         )}
                       </div>
                     </div>
@@ -1867,7 +1888,7 @@ export default function VokabelApp() {
                           <strong>{v.wert}</strong>
                           {v.typ.startsWith('E') && (
                             <button className="btn-icon" style={{fontSize:"0.95rem", padding:"2px 4px"}}
-                              onClick={e => { e.stopPropagation(); sprich(v.wert, spalteLang(v.typ)); }}>🔊</button>
+                              onClick={e => { e.stopPropagation(); sprich(v.wert, spalteLang(v.typ)); }}><IcoSpk s={16}/></button>
                           )}
                         </div>
                       </div>
@@ -1940,14 +1961,14 @@ export default function VokabelApp() {
                               <div className="quiz-frage-text" style={{textAlign:"center"}}>{quiz.antwortTeile.join(" / ")}</div>
                               {aktAntwortTyp.startsWith('E') && (
                                 <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
-                                  onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}>🔊</button>
+                                  onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}><IcoSpk s={16}/></button>
                               )}
                             </div>
                           : <div className="quiz-frage-text" style={{textAlign:"center", display:"flex", alignItems:"center", justifyContent:"center", gap:6, minHeight:"44px"}}>
                               {quiz.antwortTeile.join(" / ")}
                               {!isKarteAufgedeckt && aktAntwortTyp.startsWith('E') && (
                                 <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
-                                  onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}>🔊</button>
+                                  onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}><IcoSpk s={16}/></button>
                               )}
                             </div>
                       )}
@@ -2074,7 +2095,7 @@ export default function VokabelApp() {
         <style>{CSS}</style>
         <div className="app">
           <div className="topbar">
-            <button className="topbar-back" onClick={() => setAnsicht("liste-detail")}>Zurück</button>
+            <button className="topbar-back" onClick={() => setAnsicht("liste-detail")}><IcoBack/></button>
             <span className="topbar-title">Statistik – {aktiveListe.name}</span>
           </div>
           <div className="sektion">
@@ -2184,15 +2205,19 @@ export default function VokabelApp() {
           <button className={`tab${tab==="einstellungen"?" aktiv":""}`} onClick={() => { setTab("einstellungen"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Einstellungen</button>
         </div>
         {tab === "quiz" && (() => {
-          const totalVoks = quizTabListen.length > 0 ? (getKombinierteListe(quizTabListen)?.vokabeln.length ?? 0) : 0;
           const n = quizTabListen.length;
+          const headerText = n === 0
+            ? "Listen auswählen"
+            : n === 1
+            ? (listenIndex.find(l => l.id === quizTabListen[0])?.name || "Liste")
+            : `${n} Listen ausgewählt`;
           return (
             <div className="liste-detail-header" style={{position:"relative"}}>
               <span className="liste-detail-header-name" style={{color: n === 0 ? "#aaa" : undefined}}>
-                {n === 0 ? "Listen auswählen" : `${totalVoks} Vokabeln aus ${n} ausgewählten ${n === 1 ? "Liste" : "Listen"}`}
+                {headerText}
               </span>
-              <button className="btn btn-ghost btn-sm" onClick={toggleListenAuswahl}>
-                {listenAuswahlAufgeklappt ? "Einklappen" : "Ausklappen"}
+              <button className="btn-toggle" onClick={toggleListenAuswahl}>
+                {listenAuswahlAufgeklappt ? <IcoDown/> : <IcoUp/>}
               </button>
             </div>
           );
@@ -2222,19 +2247,7 @@ export default function VokabelApp() {
             ) : ansicht === "liste-detail" && aktiveListe ? (
               <>
                 <span className="liste-detail-header-name">{aktiveListe.name}</span>
-                <button className="btn btn-primary btn-sm" onClick={() => {
-                  resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
-                }}>+</button>
-                {navigator.share && (
-                  <button className="btn btn-ghost btn-sm" onClick={teileListeHandler}>📤</button>
-                )}
-                <button className="btn btn-ghost btn-sm" onClick={kopiereListeHandler}>
-                  {exportKopiert ? "✓" : "📋"}
-                </button>
-                <button className="btn btn-ghost btn-sm" onClick={teileListeAlsDateiHandler}>📄</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])}>💾</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => oeffneModal("umbenennen")}>Umbenennen</button>
-                <button className="btn btn-danger btn-sm" onClick={() => oeffneModal("loeschen")}>Löschen</button>
+                <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => oeffneModal("umbenennen")}><IcoPencil/></button>
               </>
             ) : null}
           </div>
@@ -3079,6 +3092,15 @@ export default function VokabelApp() {
           const abfragbareSpalten = aktiveSpalten.filter(t => !t.startsWith('i'));
           return (
             <>
+            {/* Aktionszeile */}
+            <div style={{background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", gap:6, flexWrap:"wrap"}}>
+              <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import"); }}><IcoPlus/></button>
+              {navigator.share && <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={teileListeHandler}><IcoShare/></button>}
+              <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={kopiereListeHandler}>{exportKopiert ? "✓" : <IcoCopy/>}</button>
+              <button className="btn btn-ghost btn-sm" onClick={teileListeAlsDateiHandler}>TXT</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])}>JSON</button>
+              <button className="btn btn-danger btn-sm" style={{padding:"6px 10px", marginLeft:"auto"}} onClick={() => oeffneModal("loeschen")}><IcoX/></button>
+            </div>
             <div className="sektion">
 
               {abfragbareSpalten.length >= 2 && aktiveListe.vokabeln.length > 0 && (
@@ -3128,7 +3150,9 @@ export default function VokabelApp() {
                 <div style={{display:"flex", alignItems:"center", gap:8, cursor:"pointer"}}
                   onClick={() => setVokabelAufgeklappt(v => !v)}>
                   <div className="sektion-label">Vokabeln ({aktiveListe.vokabeln.length})</div>
-                  <span style={{color:"#6b6560", fontSize:"0.8rem"}}>{vokabelAufgeklappt ? "▲" : "▼"}</span>
+                  <button className="btn-toggle" style={{padding:"3px 6px"}} onClick={e => { e.stopPropagation(); setVokabelAufgeklappt(v => !v); }}>
+                    {vokabelAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
+                  </button>
                 </div>
                 <div style={{display:"flex", gap:6}}>
                   {listenIndex.filter(l => l.id !== aktiveListeId).length > 0 && (
@@ -3178,7 +3202,7 @@ export default function VokabelApp() {
                                     u.lang = spalteLang(typ);
                                     window.speechSynthesis.speak(u);
                                   });
-                                }}>🔊</button>
+                                }}><IcoSpk s={16}/></button>
                               )}
                               <button className="btn-icon" title="Bearbeiten" onClick={() => oeffneVokabelBearbeiten(vok)}>✏️</button>
                               <button className="btn-icon" title="Löschen" style={{color:"#c0392b"}}
@@ -3207,7 +3231,7 @@ export default function VokabelApp() {
           const keineGewaehlt = statistikListenIds !== null && statistikListenIds.size === 0;
           return (<>
             <div ref={statistikListenHeaderRef} className="statistik-listen-header" style={{top: headerH}}>
-              <div style={{flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:700, fontSize:"1rem"}}>
+              <div style={{flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600, fontSize:"0.82rem"}}>
                 {keineGewaehlt
                   ? <span style={{color:"#aaa", fontWeight:600}}>Listen auswählen</span>
                   : statistikListenIds === null
@@ -3220,9 +3244,9 @@ export default function VokabelApp() {
                   onClick={() => setStatistikListenIds(new Set())}>Zurücksetzen</button>
                 <button className="btn btn-ghost btn-sm"
                   onClick={() => setStatistikListenIds(null)}>Alle</button>
-                <button className="btn btn-ghost btn-sm"
+                <button className="btn-toggle"
                   onClick={() => setStatistikListenAufgeklappt(v => !v)}>
-                  {statistikListenAufgeklappt ? "Einklappen" : "Ausklappen"}
+                  {statistikListenAufgeklappt ? <IcoDown/> : <IcoUp/>}
                 </button>
               </div>
             </div>
