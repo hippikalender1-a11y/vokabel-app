@@ -413,7 +413,7 @@ const IcoUp    = ({s=12}) => <svg viewBox="0 0 12 8" width={s} height={s*.67} st
 const IcoDown  = ({s=12}) => <svg viewBox="0 0 12 8" width={s} height={s*.67} style={{display:"block"}}><polygon points="0,0 12,0 6,8" fill="currentColor"/></svg>;
 const IcoBack  = ({s=20}) => <svg viewBox="0 0 20 20" width={s} height={s} style={{display:"block"}}><path d="M13,2 L3,10 L13,18 L13,13 L17,13 L17,7 L13,7 Z" fill="currentColor"/></svg>;
 const IcoX     = ({s=14}) => <svg viewBox="0 0 14 14" width={s} height={s} style={{display:"block"}}><line x1="1" y1="1" x2="13" y2="13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="13" y1="1" x2="1" y2="13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>;
-const IcoPencil= ({s=15}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><polygon points="11,1 15,5 5,15 1,15 1,11" fill="currentColor"/><polygon points="11,1 15,1 15,5" fill="currentColor" opacity="0.55"/></svg>;
+const IcoPencil= ({s=15}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><polygon points="13,0 16,3 5,14 2,11" fill="currentColor"/><polygon points="2,11 5,14 0,16" fill="currentColor"/></svg>;
 const IcoSpk   = ({s=18}) => <svg viewBox="0 0 20 20" width={s} height={s} style={{display:"block"}}><polygon points="2,7 2,13 6,13 12,18 12,2 6,7" fill="currentColor"/></svg>;
 const IcoSpkOn = ({s=20}) => <svg viewBox="0 0 26 20" width={s} height={s*.77} style={{display:"block"}}><polygon points="2,7 2,13 6,13 12,18 12,2 6,7" fill="currentColor"/><path d="M15,7 Q17,10 15,13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M18,4 Q22,10 18,16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
 const IcoPlus  = ({s=15}) => <svg viewBox="0 0 14 14" width={s} height={s} style={{display:"block"}}><line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>;
@@ -2240,7 +2240,7 @@ export default function VokabelApp() {
               ) : (
                 <>
                   <span className="liste-detail-header-name">Meine Listen</span>
-                  <button className="btn btn-ghost btn-sm" onClick={() => { resetImport(); setAnsicht("import"); }}>Importieren</button>
+                  <button className="btn btn-ghost btn-sm" style={{display:"inline-flex",alignItems:"center",gap:5}} onClick={() => { resetImport(); setAnsicht("import"); }}><IcoPlus s={13}/>Neu</button>
                   <button className="btn btn-ghost btn-sm" onClick={() => setExportAuswahlModus(true)}>Exportieren</button>
                 </>
               )
@@ -3138,7 +3138,7 @@ export default function VokabelApp() {
                         {s.aktiv && <div className="karte-zeile-sub">{typ.startsWith("i") ? "Info (nicht abfragbar)" : "Abfragbar"}</div>}
                       </div>
                       {s.aktiv && (
-                        <button className="btn-icon" onClick={() => oeffneModal("spalte-umbenennen", typ)}>✏️</button>
+                        <button className="btn-icon" onClick={() => oeffneModal("spalte-umbenennen", typ)}><IcoPencil s={14}/></button>
                       )}
                     </div>
                   );
@@ -3161,15 +3161,15 @@ export default function VokabelApp() {
                       Zusammenführen
                     </button>
                   )}
-                  <button className="btn btn-ghost btn-sm" onClick={() => {
+                  <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => {
                     resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
-                  }}>+ Importieren</button>
+                  }}><IcoPlus s={13}/></button>
                 </div>
               </div>
 
               {vokabelAufgeklappt && (
                 aktiveListe.vokabeln.length === 0 ? (
-                  <div className="leer"><div className="leer-text">Noch keine Vokabeln.<br/>Klicke auf "+ Importieren".</div></div>
+                  <div className="leer"><div className="leer-text">Noch keine Vokabeln.<br/>Klicke auf + um zu importieren.</div></div>
                 ) : (
                   <div className="karte">
                     {aktiveListe.vokabeln.map(vok => {
@@ -3204,7 +3204,7 @@ export default function VokabelApp() {
                                   });
                                 }}><IcoSpk s={16}/></button>
                               )}
-                              <button className="btn-icon" title="Bearbeiten" onClick={() => oeffneVokabelBearbeiten(vok)}>✏️</button>
+                              <button className="btn-icon" title="Bearbeiten" onClick={() => oeffneVokabelBearbeiten(vok)}><IcoPencil s={14}/></button>
                               <button className="btn-icon" title="Löschen" style={{color:"#c0392b"}}
                                 onClick={() => { setBearbeiteVokabel(vok); setModal('vokabel-loeschen'); }}>✕</button>
                             </div>
@@ -3512,9 +3512,6 @@ export default function VokabelApp() {
               </div>
             </div>
           </div>
-        )}
-        {tab === "listen" && ansicht === "uebersicht" && !exportAuswahlModus && (
-          <button className="fab" onClick={() => { setModal("neue-liste"); setModalInput(""); setModalFehler(""); }}>+</button>
         )}
         {tab === "listen" && ansicht === "uebersicht" && exportAuswahlModus && exportAusgewaehlt.size > 0 && (
           <div className="quiz-action-bar">
