@@ -305,9 +305,10 @@ const CSS = `
   .karte-zeile-sub{font-size:0.78rem;color:#6b6560;margin-top:2px;}
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:10px;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s;}
   .btn:active{opacity:.8;}
-  .btn-primary{background:#2d6a4f;color:#fff;}
+  .btn-primary{background:#2d6a4f;color:#fff;border:1.5px solid transparent;}
   .btn-ghost{background:transparent;color:#2d6a4f;border:1.5px solid #2d6a4f;}
-  .btn-sm{padding:6px 12px;font-size:0.8rem;}
+  .btn-ghost-filled{background:#f7f5f0;color:#2d6a4f;border:1.5px solid #2d6a4f;}
+  .btn-sm{padding:6px 12px;font-size:0.8rem;min-height:30px;}
   .btn-danger{background:transparent;color:#c0392b;border:1.5px solid #c0392b;}
   .btn-icon{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;color:#6b6560;font-size:0.82rem;font-weight:600;}
   .btn-icon:hover{background:#f0ede8;}
@@ -2270,7 +2271,7 @@ export default function VokabelApp() {
                 <button className="btn-toggle" style={{padding:"4px 8px"}} onClick={() => setAktionszeileAufgeklappt(v => !v)}>
                   {aktionszeileAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
                 </button>
-                <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => oeffneModal("umbenennen")}><IcoPencil/></button>
+                <button className="btn btn-ghost-filled btn-sm" style={{padding:"6px 10px"}} onClick={() => oeffneModal("umbenennen")}><IcoPencil/></button>
               </>
             ) : null}
           </div>
@@ -2916,7 +2917,7 @@ export default function VokabelApp() {
                       ) : (
                         <div style={{display:"flex", gap:6, alignItems:"center"}}>
                           <button className="btn btn-ghost btn-sm" onClick={() => setQuizBereichEingabeAufgeklappt(v => !v)}>
-                            Von–Bis{quizBereichEingabeAufgeklappt ? " ▲" : " ▼"}
+                            Von–Bis{quizBereichEingabeAufgeklappt ? " ▼" : " ▲"}
                           </button>
                           <button className="btn btn-ghost btn-sm" onClick={() => setQuizListeAufgeklappt(v => !v)}>
                             {quizListeAufgeklappt ? "Liste einklappen" : "Liste anzeigen"}
@@ -3174,7 +3175,7 @@ export default function VokabelApp() {
                         {s.aktiv && <div className="karte-zeile-sub">{typ.startsWith("i") ? "Info (nicht abfragbar)" : "Abfragbar"}</div>}
                       </div>
                       {s.aktiv && (
-                        <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => oeffneModal("spalte-umbenennen", typ)}><IcoPencil s={14}/></button>
+                        <button className="btn btn-ghost-filled btn-sm" style={{padding:"6px 10px"}} onClick={() => oeffneModal("spalte-umbenennen", typ)}><IcoPencil s={14}/></button>
                       )}
                     </div>
                   );
@@ -3192,12 +3193,12 @@ export default function VokabelApp() {
                 </div>
                 <div style={{display:"flex", gap:6}}>
                   {listenIndex.filter(l => l.id !== aktiveListeId).length > 0 && (
-                    <button className="btn btn-ghost btn-sm"
+                    <button className="btn btn-ghost btn-sm" style={{background:"#fff"}}
                       onClick={() => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); }}>
                       Zusammenführen
                     </button>
                   )}
-                  <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => {
+                  <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px", background:"#fff"}} onClick={() => {
                     resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
                   }}><IcoPlus s={13}/></button>
                 </div>
