@@ -2766,18 +2766,21 @@ export default function VokabelApp() {
                       <>
                         {quizCheckboxAuswahl.size > 0 && (
                           <button className="btn btn-ghost btn-sm"
-                            onClick={() => setQuizCheckboxAuswahl(new Set())}>
-                            Auswahl löschen ({quizCheckboxAuswahl.size})
+                            style={{padding:"6px 8px"}}
+                            onClick={() => { setQuizCheckboxAuswahl(new Set()); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
+                            <IcoX s={12}/>
                           </button>
                         )}
-                        <button
-                          className={`btn btn-sm${quizVonBisModus ? " btn-primary" : " btn-ghost"}`}
-                          onClick={() => {
-                            if (quizVonBisModus) { setQuizVonBisModus(false); setQuizVonBisErster(null); }
-                            else { setQuizVonBisModus(true); if (!quizListeAufgeklappt) setQuizListeAufgeklappt(true); }
-                          }}>
-                          {quizVonBisModus && quizVonBisErster !== null ? "→ Bis?" : "Von–Bis"}
-                        </button>
+                        {quizListeAufgeklappt && (
+                          <button
+                            className={`btn btn-sm${quizVonBisModus ? " btn-primary" : " btn-ghost"}`}
+                            onClick={() => {
+                              if (quizVonBisModus) { setQuizVonBisModus(false); setQuizVonBisErster(null); }
+                              else { setQuizVonBisModus(true); }
+                            }}>
+                            {!quizVonBisModus ? "Von–Bis" : quizVonBisErster === null ? "Von…" : "…Bis"}
+                          </button>
+                        )}
                         <span style={{flex:1, textAlign:"right", fontSize:"0.8rem", color:"#aaa"}}>
                           ({quizGefilterteVoks.length} V.)
                         </span>
