@@ -464,6 +464,8 @@ export default function VokabelApp() {
   const [quizDiktatUebersetzung, setQuizDiktatUebersetzung] = useState("D1");
   const [quizListeAufgeklappt, setQuizListeAufgeklappt] = useState(false);
   const [quizCheckboxAuswahl, setQuizCheckboxAuswahl] = useState(new Set());
+  const [quizVonBisModus, setQuizVonBisModus] = useState(false);
+  const [quizVonBisErster, setQuizVonBisErster] = useState(null);
   const [promptThema, setPromptThema] = useState("");
   const [promptAnzahl, setPromptAnzahl] = useState(20);
   const [promptBeispiele, setPromptBeispiele] = useState(false);
@@ -551,6 +553,14 @@ export default function VokabelApp() {
     setAlleBereichH(el.offsetHeight);
     return () => obs.disconnect();
   }, [quizTabListen.length]);
+
+  // Von-Bis-Modus beenden wenn Einzelauswahl schließt (manuell oder auto)
+  useEffect(() => {
+    if (!quizListeAufgeklappt) {
+      setQuizVonBisModus(false);
+      setQuizVonBisErster(null);
+    }
+  }, [quizListeAufgeklappt]);
 
   useEffect(() => {
     const el = statistikListenHeaderRef.current;
@@ -2744,7 +2754,7 @@ export default function VokabelApp() {
                   <div ref={alleBereichRef} style={{position:"sticky", top:headerH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <div className="toggle-btn">
                       <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
-                        onClick={() => { setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false); }}>
+                        onClick={() => { setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
                         Alle
                       </button>
                       <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`}
@@ -2760,6 +2770,14 @@ export default function VokabelApp() {
                             Auswahl löschen ({quizCheckboxAuswahl.size})
                           </button>
                         )}
+                        <button
+                          className={`btn btn-sm${quizVonBisModus ? " btn-primary" : " btn-ghost"}`}
+                          onClick={() => {
+                            if (quizVonBisModus) { setQuizVonBisModus(false); setQuizVonBisErster(null); }
+                            else { setQuizVonBisModus(true); if (!quizListeAufgeklappt) setQuizListeAufgeklappt(true); }
+                          }}>
+                          {quizVonBisModus && quizVonBisErster !== null ? "→ Bis?" : "Von–Bis"}
+                        </button>
                         <span style={{flex:1, textAlign:"right", fontSize:"0.8rem", color:"#aaa"}}>
                           ({quizGefilterteVoks.length} V.)
                         </span>
@@ -2778,12 +2796,28 @@ export default function VokabelApp() {
                       ? <div style={{padding:"16px", color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
                       : basisVoks.map((vok, idx) => {
                         const inChk = quizCheckboxAuswahl.has(vok.id);
+                        const isVon = quizVonBisModus && vok.id === quizVonBisErster;
                         const sp1 = abfragbar[0]; const sp2 = abfragbar[1];
                         return (
                           <div key={vok.id} className="vok-zeile"
-                            style={{background: inChk ? "#f0f7f0" : "transparent"}}
-                            onClick={() => toggleVokCheckbox(vok.id)}>
-                            <div className={`checkbox${inChk?" checked":""}`} style={{flexShrink:0}}>{inChk?"✓":""}</div>
+                            style={{background: isVon ? "#fff3cd" : inChk ? "#f0f7f0" : "transparent"}}
+                            onClick={() => {
+                              if (!quizVonBisModus) { toggleVokCheckbox(vok.id); return; }
+                              if (quizVonBisErster === null) {
+                                setQuizVonBisErster(vok.id);
+                              } else {
+                                const vonIdx = basisVoks.findIndex(v => v.id === quizVonBisErster);
+                                const [lo, hi] = vonIdx <= idx ? [vonIdx, idx] : [idx, vonIdx];
+                                setQuizCheckboxAuswahl(prev => {
+                                  const neu = new Set(prev);
+                                  basisVoks.slice(lo, hi + 1).forEach(v => neu.add(v.id));
+                                  return neu;
+                                });
+                                setQuizVonBisModus(false);
+                                setQuizVonBisErster(null);
+                              }
+                            }}>
+                            <div className={`checkbox${isVon ? " checked" : inChk?" checked":""}`} style={{flexShrink:0, ...(isVon ? {background:"#f0a500", borderColor:"#f0a500"} : {})}}>{isVon?"→":inChk?"✓":""}</div>
                             <span className="vok-nr">{idx+1}</span>
                             <span style={{fontSize:"0.88rem", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{sp1?vok[sp1]?.wert||'':''}</span>
                             <span style={{fontSize:"0.82rem", color:"#6b6560", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textAlign:"right"}}>{sp2?vok[sp2]?.wert||'':''}</span>
