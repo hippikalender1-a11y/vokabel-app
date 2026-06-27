@@ -501,7 +501,6 @@ export default function VokabelApp() {
   const listenContainerRef = useRef(null);
   const statistikListenHeaderRef = useRef(null);
   const quizSentinelRef = useRef(null);
-  const listenSentinelRef = useRef(null);
   const alleBereichRef = useRef(null);
   const [headerH, setHeaderH] = useState(104);
   const [alleBereichH, setAlleBereichH] = useState(0);
@@ -534,20 +533,17 @@ export default function VokabelApp() {
     return () => observer.disconnect();
   }, [headerH, alleBereichH]);
 
-  // Sentinel vor Alle/Bereich-Zeile: wenn Zeile an Haupt-Header anstößt → Listenauswahl einklappen
+  // Scroll-Listener: wenn Alle/Bereich-Zeile am Haupt-Header anstößt → Listenauswahl einklappen
   useEffect(() => {
-    const el = listenSentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting && entry.boundingClientRect.top < headerH) {
-          setListenAuswahlAufgeklappt(false);
-        }
-      },
-      { rootMargin: `-${Math.round(headerH)}px 0px 0px 0px` }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+    const onScroll = () => {
+      const el = alleBereichRef.current;
+      if (!el) return;
+      if (el.getBoundingClientRect().top <= headerH + 1) {
+        setListenAuswahlAufgeklappt(false);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, [headerH, quizTabListen.length]);
 
   // Alle/Bereich-Zeile Höhe messen
@@ -1197,13 +1193,15 @@ export default function VokabelApp() {
   function toggleListenAuswahl() {
     const el = listenContainerRef.current;
     if (!el) { setListenAuswahlAufgeklappt(v => !v); return; }
-    const rectBottom = el.getBoundingClientRect().bottom;
-    const heightBefore = el.offsetHeight;
+    const containerTop = el.getBoundingClientRect().top;
+    const opening = !listenAuswahlAufgeklappt;
     setListenAuswahlAufgeklappt(v => !v);
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const delta = el.offsetHeight - heightBefore;
-      if (delta !== 0 && rectBottom <= headerH) window.scrollBy(0, delta);
-    }));
+    if (opening && containerTop < headerH) {
+      // Liste öffnen während Viewport zu weit unten → nach oben scrollen, damit Liste sichtbar
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        window.scrollTo({ top: Math.max(0, window.scrollY + containerTop - headerH), behavior: 'instant' });
+      }));
+    }
   }
 
   function beendeQuiz() {
@@ -2727,9 +2725,6 @@ export default function VokabelApp() {
                     <span style={{fontSize:"1.3rem", color:"#c0bcb7", fontWeight:600}}>Bitte Liste auswählen</span>
                   </div>
                 )}
-
-                {/* Sentinel: wenn Alle/Bereich-Zeile an Haupt-Header anstößt → Listenauswahl einklappen */}
-                {kombiListe && <div ref={listenSentinelRef} style={{height:0}} />}
 
                 {/* Alle/Bereich – sticky direkt unter Haupt-Header */}
                 {kombiListe && (
