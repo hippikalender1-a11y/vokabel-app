@@ -406,6 +406,11 @@ const CSS = `
   .karte-btn-ja{background:#2d6a4f;color:#fff;}
   .karte-btn-nein{background:#c0392b;color:#fff;}
   .karte-aufdecken{text-align:center;padding:20px 0;color:#b0aba5;font-size:0.9rem;font-style:italic;}
+  .score-slider{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;outline:none;cursor:pointer;}
+  .score-slider::-webkit-slider-runnable-track{height:4px;background:#e0dbd2;border-radius:2px;}
+  .score-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;background:#2d6a4f;border-radius:6px;cursor:pointer;margin-top:-12px;}
+  .score-slider::-moz-range-track{height:4px;background:#e0dbd2;border-radius:2px;}
+  .score-slider::-moz-range-thumb{width:28px;height:28px;background:#2d6a4f;border-radius:6px;cursor:pointer;border:none;}
 `;
 
 const TYPEN = ["E1","E2","D1","D2","i1","i2"];
@@ -2882,6 +2887,9 @@ export default function VokabelApp() {
           } else {
             verfuegbar = gefilterteVoks.length;
           }
+          const sliderActive = quizSchlechtesteMaxScore !== "";
+          const sliderVal = sliderActive ? parseInt(quizSchlechtesteMaxScore) : 0;
+          const sliderPct = (sliderVal + 10) / 20;
 
           return (
             <>
@@ -2969,7 +2977,7 @@ export default function VokabelApp() {
                     </span>
                     {/* MITTE */}
                     {quizBereichTyp === "bereich" && (
-                      <span style={{fontSize:"0.8rem", color:"#aaa"}}>({quizGefilterteVoks.length} V.)</span>
+                      <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none"}}>({quizGefilterteVoks.length} V.)</span>
                     )}
                     {/* RECHTS */}
                     <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
@@ -3191,10 +3199,8 @@ export default function VokabelApp() {
                 {kombiListe && (
                   <div ref={reihenfolgeRef} style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Reihenfolge</span>
-                    {quizReihenfolge === "schlechteste" && quizSchlechtesteMaxScore !== "" ? (
-                      <span style={{flex:1, textAlign:"center", fontSize:"0.8rem", color:"#aaa"}}>({verfuegbar} V.)</span>
-                    ) : (
-                      <span style={{flex:1}}/>
+                    {quizReihenfolge === "schlechteste" && quizSchlechtesteMaxScore !== "" && (
+                      <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none"}}>({verfuegbar} V.)</span>
                     )}
                     <span style={{display:"flex", justifyContent:"flex-end"}}>
                       <button className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleReihenfolge}>
@@ -3218,19 +3224,45 @@ export default function VokabelApp() {
                         </div>
                         {quizReihenfolge === "schlechteste" && (
                           <div style={{padding:"0 16px 16px"}}>
-                            <div className="inp-label" style={{marginBottom:8}}>Score-Filter (optional)</div>
-                            <div style={{display:"flex", gap:6}}>
-                              {["-10", "-5", "0", "5", "10"].map(v => (
-                                <button key={v} className={`toggle-opt${quizSchlechtesteMaxScore === v ? " aktiv" : ""}`}
-                                  style={{flex:1}}
-                                  onClick={() => setQuizSchlechtesteMaxScore(prev => prev === v ? "" : v)}>
-                                  {v}
+                            <div className="inp-label" style={{marginBottom:10}}>Score-Filter (optional)</div>
+                            {sliderActive ? (
+                              <>
+                                <div style={{position:"relative", paddingTop:28}}>
+                                  <div style={{
+                                    position:"absolute", top:0,
+                                    left:`calc(${sliderPct} * (100% - 28px) + 14px)`,
+                                    transform:"translateX(-50%)",
+                                    background:"#2d6a4f", color:"#fff",
+                                    borderRadius:6, padding:"3px 9px",
+                                    fontSize:"0.82rem", fontWeight:600,
+                                    pointerEvents:"none",
+                                  }}>{sliderVal}</div>
+                                  <input
+                                    type="range" min={-10} max={10} step={1}
+                                    value={sliderVal}
+                                    onChange={e => setQuizSchlechtesteMaxScore(String(e.target.value))}
+                                    className="score-slider"
+                                    style={{width:"100%", display:"block"}}
+                                  />
+                                </div>
+                                <button
+                                  className="toggle-opt"
+                                  style={{width:"100%", marginTop:8, padding:"5px 0", borderRadius:8, fontSize:"0.78rem"}}
+                                  onClick={() => setQuizSchlechtesteMaxScore("")}>
+                                  × Filter entfernen
                                 </button>
-                              ))}
-                            </div>
-                            <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:8}}>
-                              {quizSchlechtesteMaxScore !== ""
-                                ? `Nur Vokabeln mit Score ≤ ${quizSchlechtesteMaxScore} (${verfuegbar} V.)`
+                              </>
+                            ) : (
+                              <button
+                                className="toggle-opt"
+                                style={{width:"100%", padding:"7px 0", borderRadius:8}}
+                                onClick={() => setQuizSchlechtesteMaxScore("0")}>
+                                Filter aktivieren
+                              </button>
+                            )}
+                            <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:8, textAlign:"center"}}>
+                              {sliderActive
+                                ? `Nur Vokabeln mit Score ≤ ${sliderVal} (${verfuegbar} V.)`
                                 : "Vokabeln mit dem niedrigsten Score werden abgefragt."}
                             </div>
                           </div>
