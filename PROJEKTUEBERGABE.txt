@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-28  (Session 16 abgeschlossen — Punkt 5 deployed; Session-Steuerung-Umbau GEPLANT aber nicht implementiert)
-Letzter Commit: 1131ce9
+Stand: 2026-06-28  (Session 17 abgeschlossen — Session-Steuerung Umbau vollständig implementiert & deployed)
+Letzter Commit: 93e841b
 
 DATEIPFADE
 ----------
@@ -515,10 +515,10 @@ DIKTAT: gleiche Logik wie reguläres Quiz (starteDiktat mit Session-Filterung)
 
 
 ================================================================
-NÄCHSTE AUFGABE — SESSION-STEUERUNG UMBAU
+SESSION-STEUERUNG UMBAU — ✓ FERTIG (Session 17)
 ================================================================
-WICHTIG: App.jsx ist SAUBER (letzter Build ok, kein halbfertiger Code).
-Der folgende Umbau muss in der nächsten Session vollständig implementiert werden.
+Implementiert und deployed in Commit 93e841b.
+Alle untenstehenden Punkte wurden vollständig umgesetzt.
 
 KONZEPT (vom User bestätigt):
   - Session-Modus ist DIREKT konfigurierbar (nicht über Slots)

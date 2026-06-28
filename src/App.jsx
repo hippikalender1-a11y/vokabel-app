@@ -507,9 +507,8 @@ export default function VokabelApp() {
   const [loescheSlotNr, setLoescheSlotNr] = useState(null);
   const [quizBereichTyp, setQuizBereichTyp] = useState("alle");
   const [quizReihenfolge, setQuizReihenfolge] = useState("zufall");
-  const [quizSchlechtesteAnzahl, setQuizSchlechtesteAnzahl] = useState(20);
   const [quizSchlechtesteMaxScore, setQuizSchlechtesteMaxScore] = useState("");
-  const [quizUnbeantwortetZuerst, setQuizUnbeantwortetZuerst] = useState(true);
+  const [quizUnbeantwortetZuerst, setQuizUnbeantwortetZuerst] = useState({ zufall: true, schlechteste: false, listennr: true });
   const [quiz, setQuiz] = useState(null);
   const [diktatListeAufgeklappt, setDiktatListeAufgeklappt] = useState(false);
   const [vokabelAufgeklappt, setVokabelAufgeklappt] = useState(false);
@@ -1271,7 +1270,7 @@ export default function VokabelApp() {
         quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet,
         quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
         quizModus, quizBereichTyp,
-        quizReihenfolge, quizSchlechtesteAnzahl, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst,
+        quizReihenfolge, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst,
         quizDiktatSpalte, quizDiktatUebersetzung,
       },
     };
@@ -1307,9 +1306,9 @@ export default function VokabelApp() {
     setQuizModus(k.quizModus || "sequenziell");
     setQuizBereichTyp(k.quizBereichTyp || "alle");
     setQuizReihenfolge(k.quizReihenfolge || "zufall");
-    setQuizSchlechtesteAnzahl(k.quizSchlechtesteAnzahl || 20);
     setQuizSchlechtesteMaxScore(k.quizSchlechtesteMaxScore ?? "");
-    setQuizUnbeantwortetZuerst(k.quizUnbeantwortetZuerst !== undefined ? k.quizUnbeantwortetZuerst : true);
+    const ubz = k.quizUnbeantwortetZuerst;
+    setQuizUnbeantwortetZuerst(ubz != null && typeof ubz === "object" ? ubz : { zufall: !!ubz, schlechteste: false, listennr: !!ubz });
     setQuizDiktatSpalte(k.quizDiktatSpalte || "E1");
     setQuizDiktatUebersetzung(k.quizDiktatUebersetzung !== undefined ? k.quizDiktatUebersetzung : "D1");
     if (slot.listenIds) setQuizTabListen(slot.listenIds);
@@ -1335,7 +1334,7 @@ export default function VokabelApp() {
       quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet,
       quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
       quizModus, quizBereichTyp,
-      quizReihenfolge, quizSchlechtesteAnzahl, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst,
+      quizReihenfolge, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst,
       quizDiktatSpalte, quizDiktatUebersetzung,
       ...(mitVokabeln ? {
         listenIds: [...quizTabListen],
@@ -1368,9 +1367,9 @@ export default function VokabelApp() {
       setQuizModus(k.quizModus || "sequenziell");
       setQuizBereichTyp(k.quizBereichTyp || "alle");
       setQuizReihenfolge(k.quizReihenfolge || "zufall");
-      setQuizSchlechtesteAnzahl(k.quizSchlechtesteAnzahl || 20);
       setQuizSchlechtesteMaxScore(k.quizSchlechtesteMaxScore ?? "");
-      setQuizUnbeantwortetZuerst(k.quizUnbeantwortetZuerst !== undefined ? k.quizUnbeantwortetZuerst : true);
+      const ubz2 = k.quizUnbeantwortetZuerst;
+      setQuizUnbeantwortetZuerst(ubz2 != null && typeof ubz2 === "object" ? ubz2 : { zufall: !!ubz2, schlechteste: false, listennr: !!ubz2 });
       setQuizDiktatSpalte(k.quizDiktatSpalte || "E1");
       setQuizDiktatUebersetzung(k.quizDiktatUebersetzung !== undefined ? k.quizDiktatUebersetzung : "D1");
     }
@@ -1432,9 +1431,8 @@ export default function VokabelApp() {
     setQuizBereichBis('');
     setQuizBereichEingabeAufgeklappt(false);
     setQuizReihenfolge('zufall');
-    setQuizSchlechtesteAnzahl(20);
     setQuizSchlechtesteMaxScore('');
-    setQuizUnbeantwortetZuerst(true);
+    setQuizUnbeantwortetZuerst({ zufall: true, schlechteste: false, listennr: true });
     setQuizCheckboxAuswahl(new Set());
     setQuizListeAufgeklappt(false);
     setQuizVonBisModus(false);
@@ -1577,12 +1575,14 @@ export default function VokabelApp() {
         const threshold = parseFloat(quizSchlechtesteMaxScore);
         voks = voks.filter(v => (v.diktatFortschritt?.score ?? 0) < threshold);
       }
-      voks = [...voks].sort((a, b) => (a.diktatFortschritt?.score ?? 0) - (b.diktatFortschritt?.score ?? 0));
-      if (!isPakete) {
-        const n = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl) || 1), voks.length);
-        voks = voks.slice(0, n);
+      if (quizUnbeantwortetZuerst.schlechteste) {
+        const unb = voks.filter(v => !v.diktatFortschritt);
+        const bea = [...voks.filter(v => v.diktatFortschritt)].sort((a, b) => (a.diktatFortschritt.score ?? 0) - (b.diktatFortschritt.score ?? 0));
+        voks = [...unb, ...bea];
+      } else {
+        voks = [...voks].sort((a, b) => (a.diktatFortschritt?.score ?? 0) - (b.diktatFortschritt?.score ?? 0));
       }
-    } else if (quizUnbeantwortetZuerst) {
+    } else if (quizUnbeantwortetZuerst[quizReihenfolge]) {
       const unb = voks.filter(v => !v.diktatFortschritt);
       const bea = voks.filter(v => v.diktatFortschritt);
       if (quizReihenfolge === "listennr") {
@@ -1654,12 +1654,14 @@ export default function VokabelApp() {
         const threshold = parseFloat(quizSchlechtesteMaxScore);
         voks = voks.filter(v => (v.fortschritt?.score ?? 0) < threshold);
       }
-      voks = [...voks].sort((a, b) => (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0));
-      if (!isPakete) {
-        const n = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl) || 1), voks.length);
-        voks = voks.slice(0, n);
+      if (quizUnbeantwortetZuerst.schlechteste) {
+        const unb = voks.filter(v => !v.fortschritt);
+        const bea = [...voks.filter(v => v.fortschritt)].sort((a, b) => (a.fortschritt.score ?? 0) - (b.fortschritt.score ?? 0));
+        voks = [...unb, ...bea];
+      } else {
+        voks = [...voks].sort((a, b) => (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0));
       }
-    } else if (quizUnbeantwortetZuerst) {
+    } else if (quizUnbeantwortetZuerst[quizReihenfolge]) {
       const unb = voks.filter(v => !v.fortschritt);
       const bea = voks.filter(v => v.fortschritt);
       if (quizReihenfolge === "listennr") {
@@ -3169,7 +3171,7 @@ export default function VokabelApp() {
               const thr = parseFloat(quizSchlechtesteMaxScore);
               scVoks = gefilterteVoks.filter(v => (v.fortschritt?.score ?? 0) < thr);
             }
-            verfuegbar = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl)||1), scVoks.length);
+            verfuegbar = scVoks.length;
           } else {
             verfuegbar = gefilterteVoks.length;
           }
@@ -3581,16 +3583,14 @@ export default function VokabelApp() {
                             )}
                           </div>
                         )}
-                        {quizReihenfolge !== "schlechteste" && (
-                          <div className="toggle-row" style={{cursor:"pointer", padding:"12px 16px", borderTop:"1px solid #e0dbd2"}}
-                            onClick={() => setQuizUnbeantwortetZuerst(v => !v)}>
-                            <div>
-                              <div className="toggle-label">Unbeantwortete zuerst</div>
-                              <div className="toggle-sub">Vokabeln ohne Score werden zuerst abgefragt</div>
-                            </div>
-                            <div className={`checkbox${quizUnbeantwortetZuerst?" checked":""}`}>{quizUnbeantwortetZuerst?"✓":""}</div>
+                        <div className="toggle-row" style={{cursor:"pointer", padding:"12px 16px", borderTop:"1px solid #e0dbd2"}}
+                          onClick={() => setQuizUnbeantwortetZuerst(prev => ({...prev, [quizReihenfolge]: !prev[quizReihenfolge]}))}>
+                          <div>
+                            <div className="toggle-label">Unbeantwortete zuerst</div>
+                            <div className="toggle-sub">Vokabeln ohne Score werden zuerst abgefragt</div>
                           </div>
-                        )}
+                          <div className={`checkbox${quizUnbeantwortetZuerst[quizReihenfolge]?" checked":""}`}>{quizUnbeantwortetZuerst[quizReihenfolge]?"✓":""}</div>
+                        </div>
                       </div>
                     )}
                   </div>
