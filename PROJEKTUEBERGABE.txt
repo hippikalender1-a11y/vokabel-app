@@ -413,31 +413,42 @@ QUIZ-DEFAULTS (State-Initialwerte)
 
 
 ================================================================
-SESSION 15 — UMGESETZTE ÄNDERUNGEN (Punkte 1–4 deployed: 62f8522)
+SESSION 15 — UMGESETZTE ÄNDERUNGEN (letzter Commit: 9c1bed8)
 ================================================================
 
 PUNKT 1 — Sticky Header: neues Layout ✓ FERTIG
 --------------------------------------
 - Grüne Elemente (Chip/Toggle) → RECHTS, ersetzen Pfeil-Button
   Klick auf grünes Element = öffnen/schließen (wie bisheriger Pfeil)
-- Vokabelanzahl (X V.) → ZENTRIERT in der Header-Zeile
+- Vokabelanzahl (X V.) → position:absolute left:50% = echte Bildschirm-Mitte
 - Alle/Bereich Sonderfall:
     GESCHLOSSEN, Alle aktiv:   Label links | Mitte leer     | [Alle][Bereich] rechts
     GESCHLOSSEN, Bereich aktiv: Label links | (X V.) zentriert | [Alle][Bereich] rechts
     OFFEN, Bereich aktiv:      [Von–Bis] links | (X V.) zentriert | [Alle][Bereich] rechts
       → Klick [Bereich] = schließt Einzelauswahl (wie bisheriger Pfeil)
       → Klick [Alle]    = wechselt zu Alle-Modus + schließt Einzelauswahl automatisch
-- Abfrage-Modus-Zeile:  "Abfrage-Modus" links | zentriert leer | [Frage–Antwort / wechselnd / Diktat] rechts
-- Reihenfolge-Zeile:    "Reihenfolge" links | zentriert leer/Anzahl | [Zufällig / Schlechteste / Listen-Nr.] rechts
-- Einstellungen-Zeile:  "Einstellungen" links | zentriert leer | [Einfach / Schwer] rechts
+- Abfrage-Modus-Zeile:  "Abfrage-Modus" links | leer | [Frage–Antwort / wechselnd / Diktat] rechts
+- Reihenfolge-Zeile:    "Reihenfolge" links | (X V.) absolut zentriert | [Zufällig / Schlechteste / Listen-Nr.] rechts
+- Einstellungen-Zeile:  "Einstellungen" links | leer | [Einfach / Schwer] rechts
+- Listen-Auswahl-Zeile (im headerRef):
+    "Listen-Auswahl" links | (X V.) absolut zentriert (nur wenn gewählt) | Chip rechts
+    Chip: grün + Listenname (1 Liste) / "N Listen" (mehrere) / neutral "auswählen" (keine)
+    Klick auf Chip = öffnet/schließt Listenauswahl
+
+ZENTRIERUNGS-TECHNIK:
+  (X V.) Spans nutzen position:absolute; left:50%; transform:translateX(-50%)
+  Container (position:sticky oder position:relative) = Containing Block
+  → echte Bildschirm-Mitte, unabhängig von Label- oder Button-Breite
 
 PUNKT 2 — Reihenfolge > Schlechteste ✓ FERTIG
 --------------------------------------
-- "Anzahl"-Eingabe komplett entfernen
-- Max-Score-Filter: statt Texteingabe 5 Preset-Buttons: −10 / −5 / 0 / 5 / 10
-  (aktuell gewählter Wert = aktiv/hervorgehoben, kein Wert = kein Filter)
-- Wenn der Score-Filter die Vokabelzahl gegenüber der Gesamt-Auswahl verändert:
-  Anzahl der verfügbaren Vokabeln zentriert in Reihenfolge-Header-Zeile anzeigen
+- "Anzahl"-Eingabe komplett entfernt
+- Max-Score-Filter: Slider −10 bis +10 (step 1)
+    Inaktiv: Infotext + "Filter aktivieren (optional)" (Vollbreite)
+    Aktiv:   Infotext + grünes Badge über Thumb + Slider + "× Filter entfernen"
+    Badge-Position: calc(${sliderPct} * (100% - 28px) + 14px), transform:translateX(-50%)
+    CSS: .score-slider + ::-webkit-slider-thumb + ::-moz-range-thumb
+- Wenn Score-Filter aktiv: (verfuegbar V.) absolut zentriert in Reihenfolge-Header-Zeile
 
 PUNKT 3 — Konfiguration speichern: Vokabelauswahl ✓ FERTIG
 ---------------------------------------------------
