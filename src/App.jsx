@@ -5,6 +5,7 @@ const SK = {
   einstellungen: "vokabel_einstellungen",
   listenIndex:   "vokabel_listen_index",
   sessionSlots:  "vokabel_session_slots",
+  sessionAktiv:  "vokabel_session_aktiv",
   liste: (id)  => `vokabel_liste_${id}`,
 };
 function lsGet(key, fallback = null) {
@@ -14,12 +15,14 @@ function lsGet(key, fallback = null) {
 function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 }
+function lsDel(key) {
+  try { localStorage.removeItem(key); } catch {}
+}
 
 // ── Defaults ───────────────────────────────────────────────────────────────
 function defaultEinstellungen() { return { modus: "schwer", autoplay: false, vorlesen: ["E1"] }; }
 function defaultSessionSlots() {
-  return [1,2,3,4,5].map(n => ({ slot: n, name: "", konfiguration: null, fortschritt: null }))
-    .concat([{ slot: 6, name: "Zuletzt verwendet", konfiguration: null, fortschritt: null }]);
+  return [{ slot: 6, name: "Zuletzt verwendet", konfiguration: null, fortschritt: null }];
 }
 function neueListeObjekt(id, name) {
   return {
@@ -441,7 +444,6 @@ export default function VokabelApp() {
   const [modal, setModal] = useState(null);
   const [modalInput, setModalInput] = useState("");
   const [modalMitVokabeln, setModalMitVokabeln] = useState(false);
-  const [modalSessionGroesse, setModalSessionGroesse] = useState("");
   const [modalFehler, setModalFehler] = useState("");
   const [jsonExportIds, setJsonExportIds] = useState(null);
   const [jsonExportOptionen, setJsonExportOptionen] = useState({ fortschritt: true, diktatFortschritt: true, falsch: true });
@@ -496,9 +498,13 @@ export default function VokabelApp() {
   const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
   const [statistikGraphOhneUnbeantwortet, setStatistikGraphOhneUnbeantwortet] = useState(false);
   const [sessionSlots, setSessionSlots] = useState([]);
-  const [aktiverSlotNr, setAktiverSlotNr] = useState(null);
-  const [quizSessionGroesse, setQuizSessionGroesse] = useState(0);
-  const [sessionResetConfirm, setSessionResetConfirm] = useState(false);
+  const [quizSessionModus, setQuizSessionModus] = useState("alle");
+  const [quizPaketGroesse, setQuizPaketGroesse] = useState(20);
+  const [quizSessionAufgeklappt, setQuizSessionAufgeklappt] = useState(false);
+  const [sessionSlotAktiv, setSessionSlotAktiv] = useState(null);
+  const [sessionH, setSessionH] = useState(0);
+  const [sessionUeberschreibenModal, setSessionUeberschreibenModal] = useState(false);
+  const [loescheSlotNr, setLoescheSlotNr] = useState(null);
   const [quizBereichTyp, setQuizBereichTyp] = useState("alle");
   const [quizReihenfolge, setQuizReihenfolge] = useState("zufall");
   const [quizSchlechtesteAnzahl, setQuizSchlechtesteAnzahl] = useState(20);
@@ -526,6 +532,8 @@ export default function VokabelApp() {
   const einstellungenContainerRef = useRef(null);
   const reihenfolgeRef = useRef(null);
   const reihenfolgeContainerRef = useRef(null);
+  const sessionRef = useRef(null);
+  const sessionContainerRef = useRef(null);
   const [headerH, setHeaderH] = useState(104);
   const [alleBereichH, setAlleBereichH] = useState(0);
   const [abfrageModusH, setAbfrageModusH] = useState(0);
@@ -648,6 +656,31 @@ export default function VokabelApp() {
     return () => obs.disconnect();
   }, [quizTabListen.length]);
 
+  // Session-Zeile Höhe messen
+  useEffect(() => {
+    const el = sessionRef.current;
+    if (!el) { setSessionH(0); return; }
+    const obs = new ResizeObserver(() => setSessionH(el.offsetHeight));
+    obs.observe(el);
+    setSessionH(el.offsetHeight);
+    return () => obs.disconnect();
+  }, [quizTabListen.length]);
+
+  // Session-Kontext auto-close beim Scrollen
+  useEffect(() => {
+    const onScroll = () => {
+      if (!quizSessionAufgeklappt) return;
+      const el = sessionContainerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.bottom <= headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH) {
+        setQuizSessionAufgeklappt(false);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [quizSessionAufgeklappt, headerH, alleBereichH, abfrageModusH, reihenfolgeH, einstellungenH, sessionH]);
+
   // Von-Bis-Modus beenden wenn Einzelauswahl schließt (manuell oder auto)
   useEffect(() => {
     if (!quizListeAufgeklappt) {
@@ -672,6 +705,8 @@ export default function VokabelApp() {
     let slots = lsGet(SK.sessionSlots);
     if (!slots) { slots = defaultSessionSlots(); lsSet(SK.sessionSlots, slots); }
     setSessionSlots(slots);
+    const sSlot = lsGet(SK.sessionAktiv);
+    if (sSlot) { setSessionSlotAktiv(sSlot); setQuizSessionModus("pakete"); }
   }, []);
 
   useEffect(() => {
@@ -1204,53 +1239,117 @@ export default function VokabelApp() {
     });
   }
 
-  function getSlotFortschritt(slotNr) {
-    const slots = lsGet(SK.sessionSlots, defaultSessionSlots());
-    const slot = slots.find(s => s.slot === slotNr);
-    return slot?.fortschritt || { abgefragt: [], durchlaeufe: 0 };
-  }
-
-  function updateSlotFortschritt(slotNr, neueVokIds, istDurchlaufEnde) {
-    const slots = lsGet(SK.sessionSlots, defaultSessionSlots());
-    const updated = slots.map(s => {
-      if (s.slot !== slotNr) return s;
-      const fp = s.fortschritt || { abgefragt: [], durchlaeufe: 0 };
-      if (istDurchlaufEnde) {
-        return { ...s, fortschritt: { abgefragt: [], durchlaeufe: (fp.durchlaeufe || 0) + 1 } };
-      }
-      const neuAbgefragt = [...new Set([...(fp.abgefragt || []), ...neueVokIds])];
-      return { ...s, fortschritt: { abgefragt: neuAbgefragt, durchlaeufe: fp.durchlaeufe || 0 } };
-    });
+  function loescheNormalSlot(nr) {
+    const aktuell = lsGet(SK.sessionSlots, defaultSessionSlots());
+    const updated = aktuell.filter(s => s.slot !== nr);
     lsSet(SK.sessionSlots, updated);
     setSessionSlots(updated);
+    setLoescheSlotNr(null);
   }
 
-  function resetSlotFortschritt(slotNr) {
-    const slots = lsGet(SK.sessionSlots, defaultSessionSlots());
-    const updated = slots.map(s => {
-      if (s.slot !== slotNr) return s;
-      return { ...s, fortschritt: { abgefragt: [], durchlaeufe: 0 } };
-    });
-    lsSet(SK.sessionSlots, updated);
-    setSessionSlots(updated);
-    setSessionResetConfirm(false);
+  function sessionSlotKonflikt() {
+    const slot = lsGet(SK.sessionAktiv);
+    if (!slot) return false;
+    const slotListenIds = slot.listenIds || [];
+    const slotVokAuswahl = new Set(slot.vokabelAuswahl || []);
+    if (slotListenIds.length !== quizTabListen.length) return true;
+    if (!slotListenIds.every(id => quizTabListen.includes(id))) return true;
+    if (slotVokAuswahl.size !== quizCheckboxAuswahl.size) return true;
+    for (const id of slotVokAuswahl) { if (!quizCheckboxAuswahl.has(id)) return true; }
+    return false;
   }
 
-  function speichereKonfigInSlot(nummer, name, mitVokabeln, extra = {}) {
+  function speichereSessionSlotNeu(paketGroesse, gesamtVoks) {
+    const slot = {
+      listenIds: [...quizTabListen],
+      vokabelAuswahl: Array.from(quizCheckboxAuswahl),
+      bereichTyp: quizBereichTyp,
+      abgefragt: [],
+      gesamt: gesamtVoks,
+      paketGroesse,
+      konfiguration: {
+        quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet,
+        quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
+        quizModus, quizBereichTyp,
+        quizReihenfolge, quizSchlechtesteAnzahl, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst,
+        quizDiktatSpalte, quizDiktatUebersetzung,
+      },
+    };
+    lsSet(SK.sessionAktiv, slot);
+    setSessionSlotAktiv(slot);
+    return slot;
+  }
+
+  function updateSessionSlotFortschritt(neueIds, isDurchlaufEnde) {
+    const slot = lsGet(SK.sessionAktiv);
+    if (!slot) return;
+    let updated;
+    if (isDurchlaufEnde) {
+      updated = { ...slot, abgefragt: [] };
+    } else {
+      const neuAbgefragt = [...new Set([...(slot.abgefragt || []), ...neueIds])];
+      updated = { ...slot, abgefragt: neuAbgefragt };
+    }
+    lsSet(SK.sessionAktiv, updated);
+    setSessionSlotAktiv(updated);
+  }
+
+  function ladeSessionSlotKonfig() {
+    const slot = lsGet(SK.sessionAktiv);
+    if (!slot || !slot.konfiguration) return;
+    const k = slot.konfiguration;
+    setQuizAusgewaehlt(k.quizAusgewaehlt || []);
+    setQuizFrageTyp(k.quizFrageTyp || "");
+    setQuizAntwortTypenGeordnet(k.quizAntwortTypenGeordnet || []);
+    setQuizInfoTypenSession(k.quizInfoTypenSession || []);
+    setQuizSpalteModus(k.quizSpalteModus || {});
+    setQuizZeigeInfo(k.quizZeigeInfo || {});
+    setQuizModus(k.quizModus || "sequenziell");
+    setQuizBereichTyp(k.quizBereichTyp || "alle");
+    setQuizReihenfolge(k.quizReihenfolge || "zufall");
+    setQuizSchlechtesteAnzahl(k.quizSchlechtesteAnzahl || 20);
+    setQuizSchlechtesteMaxScore(k.quizSchlechtesteMaxScore ?? "");
+    setQuizUnbeantwortetZuerst(k.quizUnbeantwortetZuerst !== undefined ? k.quizUnbeantwortetZuerst : true);
+    setQuizDiktatSpalte(k.quizDiktatSpalte || "E1");
+    setQuizDiktatUebersetzung(k.quizDiktatUebersetzung !== undefined ? k.quizDiktatUebersetzung : "D1");
+    if (slot.listenIds) setQuizTabListen(slot.listenIds);
+    if (slot.vokabelAuswahl) setQuizCheckboxAuswahl(new Set(slot.vokabelAuswahl));
+    setSessionSlotAktiv(slot);
+    setQuizSessionModus("pakete");
+    setQuizPaketGroesse(slot.paketGroesse || 20);
+    setListenAuswahlAufgeklappt(false);
+    setQuizListeAufgeklappt(false);
+    setQuizAbfrageModusAufgeklappt(false);
+    setQuizReihenfolgeAufgeklappt(false);
+    setQuizEinstellungenAufgeklappt(false);
+    setQuizSessionAufgeklappt(false);
+  }
+
+  function loescheSessionSlot() {
+    lsDel(SK.sessionAktiv);
+    setSessionSlotAktiv(null);
+  }
+
+  function speichereKonfigInSlot(nummer, name, mitVokabeln) {
     const konfiguration = {
       quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet,
       quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
       quizModus, quizBereichTyp,
       quizReihenfolge, quizSchlechtesteAnzahl, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst,
       quizDiktatSpalte, quizDiktatUebersetzung,
-      sessionGroesse: extra.sessionGroesse !== undefined ? extra.sessionGroesse : quizSessionGroesse,
       ...(mitVokabeln ? {
         listenIds: [...quizTabListen],
         vokabelAuswahl: Array.from(quizCheckboxAuswahl),
       } : {}),
     };
     const aktuell = lsGet(SK.sessionSlots, defaultSessionSlots());
-    const updated = aktuell.map(s => s.slot === nummer ? {...s, name, konfiguration} : s);
+    const idx = aktuell.findIndex(s => s.slot === nummer);
+    let updated;
+    if (idx >= 0) {
+      updated = aktuell.map(s => s.slot === nummer ? { ...s, name, konfiguration } : s);
+    } else {
+      updated = [...aktuell, { slot: nummer, name, konfiguration, fortschritt: null }];
+    }
     lsSet(SK.sessionSlots, updated);
     setSessionSlots(updated);
   }
@@ -1274,10 +1373,6 @@ export default function VokabelApp() {
       setQuizUnbeantwortetZuerst(k.quizUnbeantwortetZuerst !== undefined ? k.quizUnbeantwortetZuerst : true);
       setQuizDiktatSpalte(k.quizDiktatSpalte || "E1");
       setQuizDiktatUebersetzung(k.quizDiktatUebersetzung !== undefined ? k.quizDiktatUebersetzung : "D1");
-      const sg = k.sessionGroesse || 0;
-      setQuizSessionGroesse(sg);
-      setAktiverSlotNr(sg > 0 ? slot.slot : null);
-      setSessionResetConfirm(false);
     }
     function closeContexts() {
       setListenAuswahlAufgeklappt(false);
@@ -1454,20 +1549,28 @@ export default function VokabelApp() {
     setAnsicht("uebersicht");
   }
 
-  function starteDiktat() {
+  function starteDiktat(force = false) {
     const kombiListe = quizTabListen.length > 0 ? getKombinierteListe(quizTabListen) : aktiveListe;
     if (!kombiListe) return;
+    const isPakete = quizSessionModus === "pakete";
+    if (!force && isPakete && sessionSlotAktiv && sessionSlotKonflikt()) {
+      setSessionUeberschreibenModal(true); return;
+    }
     speichereKonfigInSlot(6, "Zuletzt verwendet");
     let voks = kombiListe.vokabeln.filter(v => v[quizDiktatSpalte]);
     if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
       voks = voks.filter(v => quizCheckboxAuswahl.has(v.id));
     }
-    const isSessionModusDiktat = aktiverSlotNr != null && quizSessionGroesse > 0;
-    const sessionGesamtDiktat = isSessionModusDiktat ? voks.length : 0;
-    if (isSessionModusDiktat) {
-      const fp = getSlotFortschritt(aktiverSlotNr);
-      const bereitsAbgefragt = new Set(fp.abgefragt || []);
-      voks = voks.filter(v => !bereitsAbgefragt.has(v.id));
+    const sessionGesamt = isPakete ? voks.length : 0;
+    if (isPakete) {
+      const existingSlot = lsGet(SK.sessionAktiv);
+      const konflikt = existingSlot && sessionSlotKonflikt();
+      if (!existingSlot || konflikt) {
+        speichereSessionSlotNeu(quizPaketGroesse, voks.length);
+      } else {
+        voks = voks.filter(v => !new Set(existingSlot.abgefragt || []).has(v.id));
+        setSessionSlotAktiv(existingSlot);
+      }
     }
     if (quizReihenfolge === "schlechteste") {
       if (quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
@@ -1475,7 +1578,7 @@ export default function VokabelApp() {
         voks = voks.filter(v => (v.diktatFortschritt?.score ?? 0) < threshold);
       }
       voks = [...voks].sort((a, b) => (a.diktatFortschritt?.score ?? 0) - (b.diktatFortschritt?.score ?? 0));
-      if (!isSessionModusDiktat) {
+      if (!isPakete) {
         const n = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl) || 1), voks.length);
         voks = voks.slice(0, n);
       }
@@ -1490,7 +1593,7 @@ export default function VokabelApp() {
     } else if (quizReihenfolge !== "listennr") {
       voks = [...voks].sort(() => Math.random() - 0.5);
     }
-    if (isSessionModusDiktat) voks = voks.slice(0, quizSessionGroesse);
+    if (isPakete) voks = voks.slice(0, quizPaketGroesse);
     if (voks.length === 0) return;
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     setDiktatListeAufgeklappt(false);
@@ -1503,17 +1606,21 @@ export default function VokabelApp() {
       liste: kombiListe, vokabeln: voks, index: 0,
       phase: "eingabe", eingabe: "", flash: false,
       diktatAufgedeckt: 0, diktatErgebnisse: [], feedback: "",
-      sessionVokIds: isSessionModusDiktat ? voks.map(v => v.id) : null,
-      sessionAktiverSlotNr: isSessionModusDiktat ? aktiverSlotNr : null,
-      sessionGesamt: sessionGesamtDiktat,
+      sessionVokIds: isPakete ? voks.map(v => v.id) : null,
+      istSessionModus: isPakete,
+      sessionGesamt,
     });
     setAnsicht("quiz");
   }
 
-  function starteQuiz() {
-    if (quizModus === "diktat") { starteDiktat(); return; }
+  function starteQuiz(force = false) {
+    if (quizModus === "diktat") { starteDiktat(force); return; }
     const kombiListe = quizTabListen.length > 0 ? getKombinierteListe(quizTabListen) : aktiveListe;
     if (!kombiListe) return;
+    const isPakete = quizSessionModus === "pakete";
+    if (!force && isPakete && sessionSlotAktiv && sessionSlotKonflikt()) {
+      setSessionUeberschreibenModal(true); return;
+    }
     speichereKonfigInSlot(6, "Zuletzt verwendet");
     const alleAbfragbar = quizModus === "rotierend"
       ? quizAusgewaehlt
@@ -1529,13 +1636,17 @@ export default function VokabelApp() {
       voks = voks.filter(v => quizCheckboxAuswahl.has(v.id));
     }
 
-    const isSessionModus = aktiverSlotNr != null && quizSessionGroesse > 0;
-    const sessionGesamt = isSessionModus ? voks.length : 0;
+    const sessionGesamt = isPakete ? voks.length : 0;
 
-    if (isSessionModus) {
-      const fp = getSlotFortschritt(aktiverSlotNr);
-      const bereitsAbgefragt = new Set(fp.abgefragt || []);
-      voks = voks.filter(v => !bereitsAbgefragt.has(v.id));
+    if (isPakete) {
+      const existingSlot = lsGet(SK.sessionAktiv);
+      const konflikt = existingSlot && sessionSlotKonflikt();
+      if (!existingSlot || konflikt) {
+        speichereSessionSlotNeu(quizPaketGroesse, voks.length);
+      } else {
+        voks = voks.filter(v => !new Set(existingSlot.abgefragt || []).has(v.id));
+        setSessionSlotAktiv(existingSlot);
+      }
     }
 
     if (quizReihenfolge === "schlechteste") {
@@ -1544,7 +1655,7 @@ export default function VokabelApp() {
         voks = voks.filter(v => (v.fortschritt?.score ?? 0) < threshold);
       }
       voks = [...voks].sort((a, b) => (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0));
-      if (!isSessionModus) {
+      if (!isPakete) {
         const n = Math.min(Math.max(1, parseInt(quizSchlechtesteAnzahl) || 1), voks.length);
         voks = voks.slice(0, n);
       }
@@ -1560,7 +1671,7 @@ export default function VokabelApp() {
       voks = [...voks].sort(() => Math.random() - 0.5);
     }
 
-    if (isSessionModus) voks = voks.slice(0, quizSessionGroesse);
+    if (isPakete) voks = voks.slice(0, quizPaketGroesse);
     if (voks.length === 0) return;
 
     function getFA(idx) {
@@ -1587,8 +1698,8 @@ export default function VokabelApp() {
       mcButtons: erstesMC?.buttons || [], mcRichtig: erstesMC?.richtig || [],
       vorigeRichtig: [], sessionFalsch: {}, feedback: "", mcWechsel: false,
       aktuelleFehlversuche: 0, falschFlash: false,
-      sessionVokIds: isSessionModus ? voks.map(v => v.id) : null,
-      sessionAktiverSlotNr: isSessionModus ? aktiverSlotNr : null,
+      sessionVokIds: isPakete ? voks.map(v => v.id) : null,
+      istSessionModus: isPakete,
       sessionGesamt,
     });
     setAnsicht("quiz");
@@ -1947,37 +2058,44 @@ export default function VokabelApp() {
   if (ansicht === "quiz" && quiz && quiz.modus === "diktat") {
     if (quiz.phase === "fertig") {
       const richtig = quiz.diktatErgebnisse.filter(e => e.richtig).length;
-      if (quiz.sessionAktiverSlotNr) {
-        const fp = getSlotFortschritt(quiz.sessionAktiverSlotNr);
-        const schonAbgefragt = new Set([...(fp.abgefragt || []), ...(quiz.sessionVokIds || [])]);
-        const istLetzteBatch = schonAbgefragt.size >= quiz.sessionGesamt;
-        const aktSlot = sessionSlots.find(s => s.slot === quiz.sessionAktiverSlotNr);
-        const slotName = aktSlot?.name || `Slot ${quiz.sessionAktiverSlotNr}`;
-        const doBeende = (letzteRunde) => { updateSlotFortschritt(quiz.sessionAktiverSlotNr, quiz.sessionVokIds || [], letzteRunde); beendeQuiz(); };
-        const doWeiter = () => { updateSlotFortschritt(quiz.sessionAktiverSlotNr, quiz.sessionVokIds || [], false); starteDiktat(); };
+      if (quiz.istSessionModus) {
+        const aktSlot = lsGet(SK.sessionAktiv);
+        const schonAbgefragt = new Set([...((aktSlot?.abgefragt) || []), ...(quiz.sessionVokIds || [])]);
+        const istLetzteBatch = schonAbgefragt.size >= (quiz.sessionGesamt || 0);
+        const doBeende = (letzteRunde) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], letzteRunde); beendeQuiz(); };
+        const doWeiter = (n) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], false); setQuizPaketGroesse(n); starteDiktat(); };
         return (
           <>
             <style>{CSS}</style>
             <div className="app">
               <div className="topbar">
                 <button className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
-                <span className="topbar-title">{istLetzteBatch ? "Durchlauf abgeschlossen" : "Mini-Session"}</span>
+                <span className="topbar-title">{istLetzteBatch ? "Durchlauf abgeschlossen" : "Paket fertig"}</span>
                 <span className="quiz-fortschritt">{richtig}/{quiz.diktatErgebnisse.length} ✓</span>
               </div>
               <div className="sektion">
                 <div className="leer">
                   <div style={{fontSize:"2.5rem"}}>{istLetzteBatch ? "🎉" : "✓"}</div>
-                  <div className="leer-text">{istLetzteBatch ? `Alle ${quiz.sessionGesamt} Vokabeln abgefragt!` : "Mini-Session abgeschlossen!"}</div>
+                  <div className="leer-text">{istLetzteBatch ? `Alle ${quiz.sessionGesamt} Vokabeln abgefragt!` : "Paket abgeschlossen!"}</div>
                   <div style={{fontSize:"0.85rem", color:"#6b6560", marginTop:4}}>
-                    „{slotName}" · {schonAbgefragt.size} / {quiz.sessionGesamt} ({Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100)}%)
+                    {schonAbgefragt.size} / {quiz.sessionGesamt} ({Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100)}%)
                   </div>
                 </div>
                 {istLetzteBatch ? (
                   <button className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
                 ) : (
                   <>
-                    <button className="btn btn-primary" style={{width:"100%", marginBottom:8}} onClick={doWeiter}>
-                      Nächste {quizSessionGroesse} Vokabeln
+                    <div style={{marginBottom:10}}>
+                      <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:6}}>Nächstes Paket:</div>
+                      <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                        {[5,10,15,20,25,30,40,50].map(n => (
+                          <button key={n} className={`typ-btn${quizPaketGroesse===n?" aktiv":""}`}
+                            onClick={() => setQuizPaketGroesse(n)}>{n}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <button className="btn btn-primary" style={{width:"100%", marginBottom:8}} onClick={() => doWeiter(quizPaketGroesse)}>
+                      Nächste {quizPaketGroesse} Vokabeln
                     </button>
                     <button className="btn btn-ghost" style={{width:"100%"}} onClick={() => doBeende(false)}>Pause</button>
                   </>
@@ -2131,37 +2249,44 @@ export default function VokabelApp() {
   // ── Render: Quiz-Aktiv ────────────────────────────────────────────────────
   if (ansicht === "quiz" && quiz) {
     if (quiz.phase === "fertig") {
-      if (quiz.sessionAktiverSlotNr) {
-        const fp = getSlotFortschritt(quiz.sessionAktiverSlotNr);
-        const schonAbgefragt = new Set([...(fp.abgefragt || []), ...(quiz.sessionVokIds || [])]);
-        const istLetzteBatch = schonAbgefragt.size >= quiz.sessionGesamt;
-        const aktSlot = sessionSlots.find(s => s.slot === quiz.sessionAktiverSlotNr);
-        const slotName = aktSlot?.name || `Slot ${quiz.sessionAktiverSlotNr}`;
-        const doBeende = (letzteRunde) => { updateSlotFortschritt(quiz.sessionAktiverSlotNr, quiz.sessionVokIds || [], letzteRunde); beendeQuiz(); };
-        const doWeiter = () => { updateSlotFortschritt(quiz.sessionAktiverSlotNr, quiz.sessionVokIds || [], false); starteQuiz(); };
+      if (quiz.istSessionModus) {
+        const aktSlot = lsGet(SK.sessionAktiv);
+        const schonAbgefragt = new Set([...((aktSlot?.abgefragt) || []), ...(quiz.sessionVokIds || [])]);
+        const istLetzteBatch = schonAbgefragt.size >= (quiz.sessionGesamt || 0);
+        const doBeende = (letzteRunde) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], letzteRunde); beendeQuiz(); };
+        const doWeiter = (n) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], false); setQuizPaketGroesse(n); starteQuiz(); };
         return (
           <>
             <style>{CSS}</style>
             <div className="app">
               <div className="topbar">
                 <button className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
-                <span className="topbar-title">{istLetzteBatch ? "Durchlauf abgeschlossen" : "Mini-Session"}</span>
+                <span className="topbar-title">{istLetzteBatch ? "Durchlauf abgeschlossen" : "Paket fertig"}</span>
                 <span className="quiz-fortschritt">{schonAbgefragt.size}/{quiz.sessionGesamt}</span>
               </div>
               <div className="sektion">
                 <div className="leer">
                   <div style={{fontSize:"2.5rem"}}>{istLetzteBatch ? "🎉" : "✓"}</div>
-                  <div className="leer-text">{istLetzteBatch ? `Alle ${quiz.sessionGesamt} Vokabeln abgefragt!` : "Mini-Session abgeschlossen!"}</div>
+                  <div className="leer-text">{istLetzteBatch ? `Alle ${quiz.sessionGesamt} Vokabeln abgefragt!` : "Paket abgeschlossen!"}</div>
                   <div style={{fontSize:"0.85rem", color:"#6b6560", marginTop:4}}>
-                    „{slotName}" · {schonAbgefragt.size} / {quiz.sessionGesamt} ({Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100)}%)
+                    {schonAbgefragt.size} / {quiz.sessionGesamt} ({Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100)}%)
                   </div>
                 </div>
                 {istLetzteBatch ? (
                   <button className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
                 ) : (
                   <>
-                    <button className="btn btn-primary" style={{width:"100%", marginBottom:8}} onClick={doWeiter}>
-                      Nächste {quizSessionGroesse} Vokabeln
+                    <div style={{marginBottom:10}}>
+                      <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:6}}>Nächstes Paket:</div>
+                      <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                        {[5,10,15,20,25,30,40,50].map(n => (
+                          <button key={n} className={`typ-btn${quizPaketGroesse===n?" aktiv":""}`}
+                            onClick={() => setQuizPaketGroesse(n)}>{n}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <button className="btn btn-primary" style={{width:"100%", marginBottom:8}} onClick={() => doWeiter(quizPaketGroesse)}>
+                      Nächste {quizPaketGroesse} Vokabeln
                     </button>
                     <button className="btn btn-ghost" style={{width:"100%"}} onClick={() => doBeende(false)}>Pause</button>
                   </>
@@ -3029,25 +3154,15 @@ export default function VokabelApp() {
             : quizModus === "diktat"
             ? !!kombiListe.spalten[quizDiktatSpalte]?.aktiv
             : quizFrageTyp && quizAntwortTypenGeordnet.length >= 1);
-          const isSessionModus = aktiverSlotNr != null && quizSessionGroesse > 0;
+          const isPakete = quizSessionModus === "pakete";
+          const sessionHatFortschritt = isPakete && sessionSlotAktiv && !sessionSlotKonflikt();
           let verfuegbar;
-          let sessionInfo = null;
-          if (isSessionModus) {
-            const slotState = sessionSlots.find(s => s.slot === aktiverSlotNr);
-            const fp = slotState?.fortschritt || { abgefragt: [], durchlaeufe: 0 };
-            const bereitsAbgefragt = new Set(fp.abgefragt || []);
+          if (sessionHatFortschritt) {
+            const bereitsAbgefragt = new Set(sessionSlotAktiv.abgefragt || []);
             let restVoks = gefilterteVoks.filter(v => !bereitsAbgefragt.has(v.id));
-            if (quizReihenfolge === "schlechteste" && quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
-              const thr = parseFloat(quizSchlechtesteMaxScore);
-              restVoks = restVoks.filter(v => (v.fortschritt?.score ?? 0) < thr);
-            }
-            sessionInfo = {
-              abgefragt: bereitsAbgefragt.size,
-              gesamt: gefilterteVoks.length,
-              alleAbgefragt: bereitsAbgefragt.size >= gefilterteVoks.length,
-              durchlaeufe: fp.durchlaeufe || 0,
-            };
-            verfuegbar = Math.min(quizSessionGroesse, restVoks.length);
+            verfuegbar = Math.min(quizPaketGroesse, restVoks.length);
+          } else if (isPakete) {
+            verfuegbar = Math.min(quizPaketGroesse, gefilterteVoks.length);
           } else if (quizReihenfolge === "schlechteste") {
             let scVoks = gefilterteVoks;
             if (quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
@@ -3058,34 +3173,59 @@ export default function VokabelApp() {
           } else {
             verfuegbar = gefilterteVoks.length;
           }
-          const aktSlot = isSessionModus ? sessionSlots.find(s => s.slot === aktiverSlotNr) : null;
+          const alleAbgefragt = sessionHatFortschritt && (sessionSlotAktiv.abgefragt || []).length >= (sessionSlotAktiv.gesamt || 0);
           const sliderActive = quizSchlechtesteMaxScore !== "";
           const sliderVal = sliderActive ? parseInt(quizSchlechtesteMaxScore) : 0;
           const sliderPct = (sliderVal + 10) / 20;
 
           return (
             <>
-              <div className="sektion" style={{paddingTop:0, paddingBottom: (listenAuswahlAufgeklappt || quizListeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt || quizEinstellungenAufgeklappt) ? '100dvh' : 0}}>
+              <div className="sektion" style={{paddingTop:0, paddingBottom: (listenAuswahlAufgeklappt || quizListeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt || quizEinstellungenAufgeklappt || quizSessionAufgeklappt) ? '100dvh' : 0}}>
                 {/* LISTEN-AUSWAHL */}
                 <div ref={listenContainerRef} style={{overflow:'hidden', paddingTop: listenAuswahlAufgeklappt ? 16 : 0}}>
                   {listenAuswahlAufgeklappt && (<>
-                    {sessionSlots.length > 0 && (
+                    {(sessionSlotAktiv || sessionSlots.some(s => s.konfiguration)) && (
                       <>
                         <div className="sektion-label" style={{marginBottom:8}}>Gespeicherte Konfigurationen</div>
                         <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
-                          {sessionSlots.filter(s => s.slot <= 5).map(s => (
-                            <button key={s.slot}
-                              className={`slot-chip${s.konfiguration ? " belegt" : " leer"}`}
-                              onClick={() => s.konfiguration && ladeKonfigAusSlot(s)}>
-                              {s.konfiguration ? (s.name || `Slot ${s.slot}`) : `${s.slot} —`}
-                            </button>
-                          ))}
-                          {sessionSlots.find(s => s.slot === 6)?.konfiguration && (
-                            <button className="slot-chip zuletzt"
-                              onClick={() => ladeKonfigAusSlot(sessionSlots.find(s => s.slot === 6))}>
-                              Zuletzt
-                            </button>
+                          {sessionSlotAktiv && (
+                            <div style={{display:"flex", alignItems:"center", gap:2}}>
+                              <button className="slot-chip belegt"
+                                style={{background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}}
+                                onClick={ladeSessionSlotKonfig}>
+                                ▶ Session · {(sessionSlotAktiv.abgefragt||[]).length}/{sessionSlotAktiv.gesamt||0}
+                              </button>
+                              <button style={{fontSize:"0.75rem", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:"0 4px"}}
+                                onClick={loescheSessionSlot} title="Session löschen">
+                                <IcoX s={11}/>
+                              </button>
+                            </div>
                           )}
+                          {sessionSlots.filter(s => s.konfiguration).map(s => (
+                            <div key={s.slot} style={{display:"flex", alignItems:"center", gap:2}}>
+                              <button className="slot-chip belegt"
+                                onClick={() => ladeKonfigAusSlot(s)}>
+                                {s.slot === 6 ? "Zuletzt" : (s.name || `Slot ${s.slot}`)}
+                              </button>
+                              <button style={{fontSize:"0.75rem", color:"#aaa", background:"none", border:"none", cursor:"pointer", padding:"0 4px"}}
+                                onClick={() => setLoescheSlotNr(s.slot)} title="Slot löschen">
+                                <IcoX s={11}/>
+                              </button>
+                            </div>
+                          ))}
+                          {(() => {
+                            const normaleSlots = sessionSlots.filter(s => s.slot !== 6);
+                            if (normaleSlots.length >= 20) {
+                              return <span style={{fontSize:"0.78rem", color:"#aaa", alignSelf:"center"}}>Max. 20 Slots</span>;
+                            }
+                            return (
+                              <button className="slot-chip leer"
+                                style={{display:"flex", alignItems:"center", gap:4}}
+                                onClick={() => { setModalInput(""); setModalMitVokabeln(false); oeffneModal("slot-speichern"); }}>
+                                <IcoPlus s={11}/> Neu
+                              </button>
+                            );
+                          })()}
                         </div>
                       </>
                     )}
@@ -3522,7 +3662,7 @@ export default function VokabelApp() {
 
                       {kannStarten && (
                         <button className="btn btn-ghost" style={{width:"100%", marginBottom:16}}
-                          onClick={() => { setModalSessionGroesse(quizSessionGroesse > 0 ? String(quizSessionGroesse) : ""); oeffneModal("slot-speichern"); }}>
+                          onClick={() => { setModalInput(""); setModalMitVokabeln(false); oeffneModal("slot-speichern"); }}>
                           Konfiguration speichern …
                         </button>
                       )}
@@ -3530,54 +3670,87 @@ export default function VokabelApp() {
                   </div>
                 )}
 
-                {/* Quiz starten Button - sticky unter Einstellungen-Zeile */}
+                {/* Session-Zeile – sticky unter Einstellungen */}
                 {kombiListe && (
-                  <div style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, zIndex:4, background:"#fff", padding:"8px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid #e0dbd2"}}>
-                    {isSessionModus && sessionInfo && (
+                  <div ref={sessionRef} style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, zIndex:4, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px", position:"relative"}}>
+                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Session</span>
+                    {isPakete && sessionHatFortschritt && (
+                      <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#6b6560", pointerEvents:"none", whiteSpace:"nowrap"}}>
+                        noch {(sessionSlotAktiv.gesamt || 0) - (sessionSlotAktiv.abgefragt || []).length} V.
+                      </span>
+                    )}
+                    <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
+                      <div className="toggle-btn">
+                        <button className={`toggle-opt${quizSessionModus==="alle"?" aktiv":""}`}
+                          onClick={() => { setQuizSessionModus("alle"); setQuizSessionAufgeklappt(false); }}>
+                          Alle
+                        </button>
+                        <button className={`toggle-opt${quizSessionModus==="pakete"?" aktiv":""}`}
+                          onClick={() => { setQuizSessionModus("pakete"); setQuizSessionAufgeklappt(v => !v); }}>
+                          {quizPaketGroesse} V.
+                        </button>
+                      </div>
+                    </span>
+                  </div>
+                )}
+
+                {/* Session-Kontext */}
+                {quizSessionAufgeklappt && quizSessionModus === "pakete" && kombiListe && (
+                  <div ref={sessionContainerRef} className="karte" style={{marginBottom:8, marginTop:8}}>
+                    <div style={{padding:"12px 16px 8px", fontWeight:600, fontSize:"0.82rem", color:"#6b6560"}}>Vokabeln pro Paket</div>
+                    <div style={{display:"flex", gap:6, flexWrap:"wrap", padding:"0 16px 12px"}}>
+                      {[5,10,15,20,25,30,40,50].map(n => (
+                        <button key={n}
+                          className={`typ-btn${quizPaketGroesse === n ? " aktiv" : ""}`}
+                          onClick={() => setQuizPaketGroesse(n)}>
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                    {sessionHatFortschritt && (
+                      <div style={{padding:"0 16px 12px", display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid #e0dbd2", paddingTop:10, marginTop:2}}>
+                        <span style={{fontSize:"0.78rem", color:"#6b6560"}}>
+                          {(sessionSlotAktiv.abgefragt || []).length} / {sessionSlotAktiv.gesamt || 0} abgefragt
+                        </span>
+                        <button style={{fontSize:"0.75rem", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:0}}
+                          onClick={loescheSessionSlot}>
+                          Session löschen
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Quiz starten Button - sticky unter Session-Zeile */}
+                {kombiListe && (
+                  <div style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH, zIndex:3, background:"#fff", padding:"8px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid #e0dbd2"}}>
+                    {isPakete && sessionHatFortschritt && (
                       <div style={{marginBottom:8}}>
                         <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5, fontSize:"0.78rem"}}>
-                          <span style={{color:"#6b6560"}}>Session · {aktSlot?.name || `Slot ${aktiverSlotNr}`}</span>
+                          <span style={{color:"#6b6560"}}>Fortschritt</span>
                           <span style={{color:"#3b3832", fontWeight:600}}>
-                            {sessionInfo.abgefragt} / {sessionInfo.gesamt}
-                            {sessionInfo.gesamt > 0 && ` — ${Math.round(sessionInfo.abgefragt / sessionInfo.gesamt * 100)}%`}
+                            {(sessionSlotAktiv.abgefragt || []).length} / {sessionSlotAktiv.gesamt || 0}
+                            {(sessionSlotAktiv.gesamt || 0) > 0 && ` — ${Math.round((sessionSlotAktiv.abgefragt || []).length / sessionSlotAktiv.gesamt * 100)}%`}
                           </span>
                         </div>
                         <div style={{height:5, background:"#e0dbd2", borderRadius:3}}>
                           <div style={{
-                            width:`${sessionInfo.gesamt > 0 ? Math.round(sessionInfo.abgefragt / sessionInfo.gesamt * 100) : 0}%`,
+                            width:`${(sessionSlotAktiv.gesamt || 0) > 0 ? Math.round((sessionSlotAktiv.abgefragt || []).length / sessionSlotAktiv.gesamt * 100) : 0}%`,
                             height:"100%", background:"#2d6a4f", borderRadius:3, transition:"width 0.3s"
                           }}/>
                         </div>
                       </div>
                     )}
-                    {isSessionModus && sessionInfo?.alleAbgefragt ? (
+                    {alleAbgefragt ? (
                       <button className="btn btn-primary" style={{width:"100%"}}
-                        onClick={() => { resetSlotFortschritt(aktiverSlotNr); }}>
-                        Neuer Durchlauf (alle {sessionInfo.gesamt} abgefragt)
+                        onClick={() => { loescheSessionSlot(); }}>
+                        Neuer Durchlauf (alle {sessionSlotAktiv?.gesamt || 0} abgefragt)
                       </button>
                     ) : (
                       <button className="btn btn-primary" style={{width:"100%"}}
-                        onClick={starteQuiz} disabled={!kannStarten || verfuegbar === 0}>
+                        onClick={() => starteQuiz()} disabled={!kannStarten || verfuegbar === 0}>
                         Quiz starten ({verfuegbar} Vokabeln)
                       </button>
-                    )}
-                    {isSessionModus && (
-                      <div style={{display:"flex", justifyContent:"space-between", marginTop:6}}>
-                        {sessionResetConfirm ? (
-                          <>
-                            <span style={{fontSize:"0.75rem", color:"#6b6560"}}>Fortschritt wirklich zurücksetzen?</span>
-                            <span style={{display:"flex", gap:8}}>
-                              <button style={{fontSize:"0.75rem", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:0}} onClick={() => resetSlotFortschritt(aktiverSlotNr)}>Ja, zurücksetzen</button>
-                              <button style={{fontSize:"0.75rem", color:"#aaa", background:"none", border:"none", cursor:"pointer", padding:0}} onClick={() => setSessionResetConfirm(false)}>Abbrechen</button>
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <button style={{fontSize:"0.75rem", color:"#aaa", background:"none", border:"none", cursor:"pointer", padding:0}} onClick={() => setSessionResetConfirm(true)}>↺ Reset</button>
-                            <button style={{fontSize:"0.75rem", color:"#aaa", background:"none", border:"none", cursor:"pointer", padding:0}} onClick={() => { setAktiverSlotNr(null); setQuizSessionGroesse(0); setSessionResetConfirm(false); }}>Session beenden</button>
-                          </>
-                        )}
-                      </div>
                     )}
                   </div>
                 )}
@@ -4190,50 +4363,88 @@ export default function VokabelApp() {
           </div>
         );
       })()}
-      {modal === "slot-speichern" && (
-        <div className="overlay" onClick={() => setModal(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-titel">Konfiguration speichern</div>
-            <label className="inp-label">Name</label>
-            <input className="inp" value={modalInput} autoFocus
-              onChange={e => setModalInput(e.target.value)}
-              placeholder="z.B. Irregular Verbs" />
-            <div className="toggle-row" style={{cursor:"pointer", marginTop:14, padding:"10px 0"}}
-              onClick={() => setModalMitVokabeln(v => !v)}>
-              <div>
-                <div className="toggle-label">inkl. Vokabel-Auswahl speichern</div>
-                <div className="toggle-sub">Listen-Auswahl und Bereich werden mitgespeichert</div>
+      {modal === "slot-speichern" && (() => {
+        const normaleSlots = sessionSlots.filter(s => s.slot !== 6);
+        const maxErreicht = normaleSlots.length >= 20;
+        const doSpeichern = (nr) => {
+          speichereKonfigInSlot(nr, modalInput.trim() || `Slot ${nr}`, modalMitVokabeln);
+          setModal(null); setModalInput(""); setModalMitVokabeln(false);
+        };
+        const doNeuSlot = () => {
+          const belegte = new Set(normaleSlots.map(s => s.slot));
+          let nr = 1;
+          while (belegte.has(nr) && nr <= 20) nr++;
+          if (nr > 20) return;
+          doSpeichern(nr);
+        };
+        return (
+          <div className="overlay" onClick={() => setModal(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-titel">Konfiguration speichern</div>
+              <label className="inp-label">Name</label>
+              <input className="inp" value={modalInput} autoFocus
+                onChange={e => setModalInput(e.target.value)}
+                placeholder="z.B. Irregular Verbs" />
+              <div className="toggle-row" style={{cursor:"pointer", marginTop:14, padding:"10px 0"}}
+                onClick={() => setModalMitVokabeln(v => !v)}>
+                <div>
+                  <div className="toggle-label">inkl. Vokabel-Auswahl speichern</div>
+                  <div className="toggle-sub">Listen-Auswahl und Bereich werden mitgespeichert</div>
+                </div>
+                <div className={`checkbox${modalMitVokabeln ? " checked" : ""}`}>{modalMitVokabeln ? "✓" : ""}</div>
               </div>
-              <div className={`checkbox${modalMitVokabeln ? " checked" : ""}`}>{modalMitVokabeln ? "✓" : ""}</div>
-            </div>
-            <div style={{marginTop:14}}>
-              <label className="inp-label">Session-Größe (Vokabeln pro Mini-Session)</label>
-              <input className="inp" type="number" min="0" max="999" value={modalSessionGroesse}
-                onChange={e => setModalSessionGroesse(e.target.value)}
-                placeholder="0 = kein Session-Modus" style={{marginTop:6}} />
-              <div style={{fontSize:"0.75rem", color:"#aaa", marginTop:4}}>0 oder leer = normaler Modus ohne Session-Tracking</div>
-            </div>
-            <div style={{marginTop:14}}>
-              <div className="inp-label">Slot wählen</div>
-              <div style={{display:"flex", gap:6, flexWrap:"wrap", marginTop:8}}>
-                {[1,2,3,4,5].map(n => {
-                  const s = sessionSlots.find(sl => sl.slot === n);
-                  return (
-                    <button key={n}
-                      className={`slot-chip${s?.konfiguration ? " belegt" : ""}`}
-                      onClick={() => {
-                        const sg = parseInt(modalSessionGroesse) || 0;
-                        speichereKonfigInSlot(n, modalInput.trim() || `Slot ${n}`, modalMitVokabeln, { sessionGroesse: sg });
-                        setModal(null); setModalInput(""); setModalMitVokabeln(false); setModalSessionGroesse("");
-                      }}>
-                      {s?.konfiguration ? (s.name || `Slot ${n}`) : `Slot ${n}`}
+              {normaleSlots.length > 0 && (
+                <div style={{marginTop:14}}>
+                  <div className="inp-label">Vorhandene Slots überschreiben</div>
+                  <div style={{display:"flex", gap:6, flexWrap:"wrap", marginTop:8}}>
+                    {normaleSlots.map(s => (
+                      <button key={s.slot} className="slot-chip belegt"
+                        onClick={() => doSpeichern(s.slot)}>
+                        {s.name || `Slot ${s.slot}`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div style={{marginTop:14}}>
+                {maxErreicht
+                  ? <div style={{fontSize:"0.78rem", color:"#aaa"}}>Max. 20 Slots erreicht — bitte einen Slot überschreiben.</div>
+                  : <button className="btn btn-ghost" style={{width:"100%"}} onClick={doNeuSlot}>
+                      <span style={{display:"flex", alignItems:"center", justifyContent:"center", gap:6}}><IcoPlus s={13}/> Als neuen Slot speichern</span>
                     </button>
-                  );
-                })}
+                }
+              </div>
+              <div className="modal-actions">
+                <button className="btn btn-ghost" onClick={() => { setModal(null); setModalInput(""); setModalMitVokabeln(false); }}>Abbrechen</button>
               </div>
             </div>
+          </div>
+        );
+      })()}
+      {loescheSlotNr !== null && (
+        <div className="overlay" onClick={() => setLoescheSlotNr(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">Slot löschen?</div>
+            <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
+              {loescheSlotNr === 6 ? "\"Zuletzt verwendet\"" : `Slot ${loescheSlotNr}`} wird gelöscht.
+            </p>
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => { setModal(null); setModalInput(""); setModalMitVokabeln(false); setModalSessionGroesse(""); }}>Abbrechen</button>
+              <button className="btn btn-ghost" onClick={() => setLoescheSlotNr(null)}>Abbrechen</button>
+              <button className="btn btn-danger" onClick={() => loescheNormalSlot(loescheSlotNr)}>Löschen</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {sessionUeberschreibenModal && (
+        <div className="overlay" onClick={() => setSessionUeberschreibenModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">Session überschreiben?</div>
+            <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
+              Es gibt bereits eine aktive Session mit einer anderen Konfiguration. Soll diese überschrieben werden?
+            </p>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setSessionUeberschreibenModal(false)}>Abbrechen</button>
+              <button className="btn btn-primary" onClick={() => { setSessionUeberschreibenModal(false); starteQuiz(true); }}>Neu starten</button>
             </div>
           </div>
         </div>
