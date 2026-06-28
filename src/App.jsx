@@ -2453,21 +2453,24 @@ export default function VokabelApp() {
         </div>
         {tab === "quiz" && (() => {
           const n = quizTabListen.length;
-          const headerText = n === 0
-            ? "Listen auswählen"
+          const chipText = n === 0
+            ? "auswählen"
             : n === 1
             ? (listenIndex.find(l => l.id === quizTabListen[0])?.name || "Liste")
-            : `${n} Listen ausgewählt`;
+            : `${n} Listen`;
           return (
             <div className="liste-detail-header" style={{position:"relative"}}>
-              <span className="liste-detail-header-name" style={{color: n === 0 ? "#aaa" : undefined}}>
-                {headerText}
-              </span>
+              <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Listen-Auswahl</span>
               {n > 0 && (
-                <span style={{fontSize:"0.8rem", color:"#aaa", flexShrink:0}}>({quizBasisVoks.length} V.)</span>
+                <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none"}}>
+                  ({quizBasisVoks.length} V.)
+                </span>
               )}
-              <button className="btn-toggle" onClick={toggleListenAuswahl}>
-                {listenAuswahlAufgeklappt ? <IcoDown/> : <IcoUp/>}
+              <button
+                className={`toggle-opt${n > 0 ? " aktiv" : ""}`}
+                style={{marginLeft:"auto", padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"45%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}
+                onClick={toggleListenAuswahl}>
+                {chipText}
               </button>
             </div>
           );
@@ -3224,9 +3227,11 @@ export default function VokabelApp() {
                         </div>
                         {quizReihenfolge === "schlechteste" && (
                           <div style={{padding:"0 16px 16px"}}>
-                            <div className="inp-label" style={{marginBottom:10}}>Score-Filter (optional)</div>
                             {sliderActive ? (
                               <>
+                                <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:8, textAlign:"center"}}>
+                                  {`Nur Vokabeln mit Score ≤ ${sliderVal} (${verfuegbar} V.)`}
+                                </div>
                                 <div style={{position:"relative", paddingTop:28}}>
                                   <div style={{
                                     position:"absolute", top:0,
@@ -3253,18 +3258,18 @@ export default function VokabelApp() {
                                 </button>
                               </>
                             ) : (
-                              <button
-                                className="toggle-opt"
-                                style={{width:"100%", padding:"7px 0", borderRadius:8}}
-                                onClick={() => setQuizSchlechtesteMaxScore("0")}>
-                                Filter aktivieren
-                              </button>
+                              <>
+                                <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:8, textAlign:"center"}}>
+                                  Vokabeln mit dem niedrigsten Score werden abgefragt.
+                                </div>
+                                <button
+                                  className="toggle-opt"
+                                  style={{width:"100%", padding:"7px 0", borderRadius:8}}
+                                  onClick={() => setQuizSchlechtesteMaxScore("0")}>
+                                  Filter aktivieren (optional)
+                                </button>
+                              </>
                             )}
-                            <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:8, textAlign:"center"}}>
-                              {sliderActive
-                                ? `Nur Vokabeln mit Score ≤ ${sliderVal} (${verfuegbar} V.)`
-                                : "Vokabeln mit dem niedrigsten Score werden abgefragt."}
-                            </div>
                           </div>
                         )}
                         {quizReihenfolge !== "schlechteste" && (
