@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-28  (Session 15 läuft — Punkte 1–4 deployed, Punkt 5 offen)
-Letzter Commit: 62f8522
+Stand: 2026-06-28  (Session 16 — Punkt 5 deployed, alle Punkte fertig)
+Letzter Commit: 1131ce9
 
 DATEIPFADE
 ----------
@@ -467,43 +467,51 @@ PUNKT 4 — Score-Clamp global (−10 bis +10) ✓ FERTIG
 - Intern kann Score weiter frei laufen (rückwärtskompatibel)
 - Clamping nur für Darstellung und Logikentscheidungen
 
-PUNKT 5 — Slot-Session-Modus (großes Feature) ← NÄCHSTE SESSION
+PUNKT 5 — Slot-Session-Modus ✓ FERTIG
 ----------------------------------------------
-KONZEPT:
-  Slot speichert feste Vokabelauswahl (z.B. 120 Vokabeln vom Lehrer).
-  Kind lernt in konfigurierbaren Mini-Sessions (z.B. 20er-Blöcken).
-  Jede Vokabel kommt pro Durchlauf genau einmal vor.
-  Fortschritt wird tagesübergreifend gespeichert bis manuell resettet.
-
 SESSION-GRÖSSE:
-  - Konfigurierbar im Slot (z.B. 20)
-  - Gespeichert in der Slot-Konfiguration
+  - Im Modal "Konfiguration speichern" einstellbar (Eingabefeld "Session-Größe")
+  - Gespeichert in konfiguration.sessionGroesse (0 = kein Session-Modus)
+  - Beim Laden eines Slots: wenn sessionGroesse > 0 → Session-Modus aktiv
 
-AUSWAHL DER 20 AUS 120 PRO MINI-SESSION:
-  - Nach den aktiven Reihenfolge-Einstellungen (Zufällig, Schlechteste, Unbeantwortete zuerst, Score-Filter)
-  - Bereits in diesem Durchlauf abgefragte Vokabeln werden ausgeschlossen
-  - "Unbeantwortete zuerst" etc. gilt bezogen auf die noch nicht abgefragten Vokabeln
+STATES:
+  aktiverSlotNr       (null | slot-nr)  — welcher Slot gerade aktiv ist
+  quizSessionGroesse  (number, 0=off)   — Vokabeln pro Mini-Session
+  sessionResetConfirm (bool)            — Bestätigungs-Toggle für Reset
 
-FORTSCHRITT (im Slot gespeichert, tagesübergreifend):
-  - Set der bereits abgefragten Vokabel-IDs im aktuellen Durchlauf
-  - Durchlauf-Zähler (wie oft alle Vokabeln komplett durchlaufen)
-  - Manuell resetttbar
+SLOT-FORTSCHRITT (im Slot-Objekt, nicht in konfiguration):
+  { abgefragt: [vokabel-id, ...], durchlaeufe: number }
+  abgefragt  = IDs der in diesem Durchlauf schon abgefragten Vokabeln
+  durchlaeufe = wie oft alle Vokabeln komplett durchlaufen (inkrementiert bei Reset nach Abschluss)
+  Reset via resetSlotFortschritt() → setzt abgefragt=[], durchlaeufe=0 (komplett)
 
-QUIZ-BUTTON im Session-Modus:
-  - Zeigt Session-Fortschritt: z.B. "60 / 120 — 50%"
-  - 2-zeilig oder Fortschrittsbalken
+QUIZ-START (starteQuiz + starteDiktat, Session-Modus):
+  1. Basis-Voks aus kombiListe (alle + Bereich-Filter)
+  2. sessionGesamt = voks.length (vor Session-Filter)
+  3. Filter: abgefragte IDs aus getSlotFortschritt() (liest direkt aus LS → immer aktuell)
+  4. Reihenfolge anwenden (schlechteste/zufall/listennr) → kein Slice auf quizSchlechtesteAnzahl
+  5. Slice auf quizSessionGroesse
+  6. Quiz-State enthält: sessionVokIds, sessionAktiverSlotNr, sessionGesamt
 
-MINI-SESSION-ENDE (20 durch):
-  - Kurze Übersicht (wie bisheriges Quiz-Ende)
-  - Nächster Slot-Start: automatisch nächste 20
+GETSLOTFORTSCHRITT (liest aus localStorage, nicht React-State):
+  → löst das async-State-Problem: nach updateSlotFortschritt() liest starteQuiz() frische Daten
 
-GESAMT-DURCHLAUF-ENDE (alle 120 durch):
-  - Größere Zusammenfassung oder Statistik-Ansicht für diesen Slot
+QUIZ-BUTTON-BEREICH (session-modus aktiv):
+  Zeile: "Session · <Slot-Name>" + "X / Y — Z%"
+  Fortschrittsbalken (grün, animiert)
+  Button: "Quiz starten (N Vokabeln)" oder "Neuer Durchlauf (alle Y abgefragt)"
+  Darunter: [↺ Reset] [Session beenden] — mit Bestätigungsschritt für Reset
 
-SLOT-STATISTIK:
-  - Eigene Ansicht: Durchschnitt, Score-Verteilung, nach Score filterbar
-  - Nutzt globale Score-Daten (Score wird global verrechnet)
-  - Session-Fortschritt (0–100%) = Anteil der in diesem Durchlauf bereits abgefragten Vokabeln
+MINI-SESSION-ENDE (N durch, noch nicht alle):
+  Fertig-Screen: "Mini-Session abgeschlossen!" + "X / Y (Z%)"
+  Button "Nächste N Vokabeln" → updateSlotFortschritt + starteQuiz
+  Button "Pause" → updateSlotFortschritt + beendeQuiz
+
+DURCHLAUF-ENDE (alle Y abgefragt):
+  Fertig-Screen: "Alle Y Vokabeln abgefragt!" + Slot-Name + aktueller Durchlauf
+  Button "Zur Übersicht" → updateSlotFortschritt (istDurchlaufEnde=true → abgefragt=[]) + beendeQuiz
+
+DIKTAT: gleiche Logik wie reguläres Quiz (starteDiktat mit Session-Filterung)
 
 
 ================================================================
@@ -519,6 +527,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 62f8522
+Letzter Commit: 1131ce9
 
 ================================================================
