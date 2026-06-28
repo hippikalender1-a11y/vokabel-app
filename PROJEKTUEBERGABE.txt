@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-28  (Session 18 abgeschlossen — diverse Verbesserungen nach Session-Umbau)
-Letzter Commit: 9bcb492
+Stand: 2026-06-28  (Session 19 abgeschlossen — Statistik-Redesign + Quiz/Listen-Navigation)
+Letzter Commit: 5f76d89
 
 DATEIPFADE
 ----------
@@ -627,6 +627,83 @@ BEREICH-MODUS LISTENWECHSEL:
 
 
 ================================================================
+SESSION 19 — UMGESETZTE ÄNDERUNGEN (Commit: 5f76d89)
+================================================================
+
+LISTEN-TAB → QUIZ-TAB NAVIGATION (Fix):
+  - "Quiz starten"-Button in Liste-Detail rief setListenAuswahlAufgeklappt(false) nicht auf
+  - Fix: setListenAuswahlAufgeklappt(false) hinzugefügt → Quiz-Tab öffnet sich mit
+    geschlossenem Listen-Dropdown und vorselektierter Liste
+
+QUIZ → STATISTIK SELEKTION-SYNC:
+  - Beim Klick auf Statistik-Tab werden Quiz-Selektion einmalig kopiert:
+      setStatistikListenIds(quizTabListen.length > 0 ? new Set(quizTabListen) : null)
+      setStatistikBereichTyp(quizBereichTyp)
+      setStatistikCheckboxAuswahl(new Set(quizCheckboxAuswahl))
+  - Quiz-Tab-States bleiben unverändert (keine Rück-Synchronisierung)
+  - "Statistik"-Button aus Liste-Detail setzt Statistik-States zurück auf Einzel-Liste + Alle
+
+STATISTIK-TAB: NEUE STATES & REFS:
+  States:
+    statistikBereichTyp = "alle" | "bereich"
+    statistikCheckboxAuswahl = Set (Vokabel-IDs im Format "${listeId}__${vokId}")
+    statistikEinzelauswahlAufgeklappt = bool
+    statistikVokauswahlH = 0
+  Refs:
+    statistikVokauswahlRef → ResizeObserver → statistikVokauswahlH
+    statistikListenContainerRef → auto-close scroll-listener (schließt bei headerH)
+    statistikEinzelauswahlRef → auto-close scroll-listener (schließt bei headerH+statistikListenHeaderH)
+
+STATISTIK-TAB: BERECHNUNGEN (top-level, außerhalb IIFEs):
+  statistikAlleListenObjekte = listenIndex.map(l => lsGet(SK.liste(l.id))).filter(Boolean)
+  statistikGewaehlteListenObjekte = nach statistikListenIds gefiltert (null = alle)
+  statistikBasisVoks = flatMap mit ID-Präfix "${listeId}__${vokId}" + _origId, _listeId, _listeName, _spalten
+  statistikGefilterteVoks = statistikBasisVoks gefiltert nach statistikCheckboxAuswahl (wenn bereich)
+
+STATISTIK-TAB: STICKY-HIERARCHIE:
+  1. headerRef (zIndex:10, top:0) — geteilt mit anderen Tabs
+  2. statistikListenHeaderRef (zIndex:8, top:headerH) — Listen-Auswahl sticky row
+  3. statistikVokauswahlRef (zIndex:7, top:headerH+statistikListenHeaderH) — Vokabel-Auswahl sticky row
+  4. Ø-Score div (zIndex:6, top:headerH+statistikListenHeaderH+statistikVokauswahlH) — inline sticky
+  5. sektion (scrollbarer Inhalt): Graph, Filterboxen, Sortierung, Vokabelliste
+
+STATISTIK-TAB: LISTEN-AUSWAHL HEADER (redesign):
+  Klasse: statistik-listen-header (CSS unverändert, nur Inhalt neu)
+  Design wie Quiz-Tab: "Listen-Auswahl" links | (X V.) absolut zentriert | Chip rechts
+  Chip: "Alle" | "auswählen" | "Listenname" | "N Listen"
+  Dropdown (statistikListenContainerRef): Checkbox-Liste mit auto-close
+
+STATISTIK-TAB: VOKABEL-AUSWAHL HEADER (neu, statistikVokauswahlRef):
+  Geschlossen (Alle): "Vokabel-Auswahl" links | [Alle][Bereich] rechts
+  Geschlossen (Bereich+Auswahl): "Vokabel-Auswahl" links | (X V.) zentriert | [Alle][Bereich] rechts
+  Offen (Bereich): [X] links | [Alle][Bereich] rechts + Checkbox-Liste darunter (statistikEinzelauswahlRef)
+  [Alle] klicken: setzt BereichTyp→"alle", Auswahl leer, schließt Einzelauswahl
+  [Bereich] klicken: öffnet/schließt Einzelauswahl; beim ersten Öffnen wird BereichTyp gesetzt
+
+STATISTIK-TAB: FILTER-UX (redesign):
+  - Alle Filter-Buttons entfernt
+  - 4 Kennzahlen-Boxen (Gesamt / Nie abgefragt / Score positiv / Score negativ) sind klickbar
+  - Klick auf Box aktiviert/deaktiviert den Filter (aktive Box: 2px farbiger Rand)
+  - Erneut klicken → zurück zu "alle"
+  - Kein "null"-Filter mehr
+  - "negativ" = v.fortschritt && score <= 0 (score=0 + abgefragt zählt als negativ)
+  - "nie abgefragt" = !v.fortschritt (echte Null-Erfahrung)
+
+STATISTIK-TAB: Ø-SCORE (redesign):
+  - War: inline sticky in sektion mit negativen Margins
+  - Jetzt: eigener sticky div außerhalb sektion, immer sichtbar (zeigt "–" wenn keine Daten)
+  - Enthält: "Ø Score" links | Score-Wert + "↑ Nach oben" rechts
+
+STATISTIK-TAB: toggleStatistikListe (update):
+  - Beim Abwählen einer Liste: Vokabelauswahl wird bereinigt (wie toggleQuizTabListe)
+  - IDs mit Präfix "${listeId}__" werden entfernt; wenn leer → BereichTyp → "alle"
+
+TOTES CODE ENTFERNT:
+  - "ansicht === 'statistik'" Early-Return (alter Statistik-View) vollständig entfernt
+    War nie erreichbar (kein setAnsicht("statistik")-Aufruf existierte mehr)
+
+
+================================================================
 PROMPT FÜR NEUEN CHAT
 ================================================================
 
@@ -639,6 +716,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 9bcb492
+Letzter Commit: 5f76d89
 
 ================================================================
