@@ -3672,7 +3672,7 @@ export default function VokabelApp() {
 
                 {/* Session-Zeile – sticky unter Einstellungen */}
                 {kombiListe && (
-                  <div ref={sessionRef} style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, zIndex:4, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px", position:"relative"}}>
+                  <div ref={sessionRef} style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, zIndex:4, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Session</span>
                     {isPakete && sessionHatFortschritt && (
                       <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#6b6560", pointerEvents:"none", whiteSpace:"nowrap"}}>
