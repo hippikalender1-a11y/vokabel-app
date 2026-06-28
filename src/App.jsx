@@ -499,7 +499,7 @@ export default function VokabelApp() {
   const [statistikGraphOhneUnbeantwortet, setStatistikGraphOhneUnbeantwortet] = useState(false);
   const [sessionSlots, setSessionSlots] = useState([]);
   const [quizSessionModus, setQuizSessionModus] = useState("alle");
-  const [quizPaketGroesse, setQuizPaketGroesse] = useState(20);
+  const [quizPaketGroesse, setQuizPaketGroesse] = useState(null);
   const [quizSessionAufgeklappt, setQuizSessionAufgeklappt] = useState(false);
   const [sessionSlotAktiv, setSessionSlotAktiv] = useState(null);
   const [sessionH, setSessionH] = useState(0);
@@ -707,7 +707,7 @@ export default function VokabelApp() {
     if (!slots) { slots = defaultSessionSlots(); lsSet(SK.sessionSlots, slots); }
     setSessionSlots(slots);
     const sSlot = lsGet(SK.sessionAktiv);
-    if (sSlot) { setSessionSlotAktiv(sSlot); setQuizSessionModus("pakete"); }
+    if (sSlot) { setSessionSlotAktiv(sSlot); setQuizSessionModus("pakete"); setQuizPaketGroesse(sSlot.paketGroesse || 20); }
   }, []);
 
   useEffect(() => {
@@ -1567,6 +1567,7 @@ export default function VokabelApp() {
     const kombiListe = quizTabListen.length > 0 ? getKombinierteListe(quizTabListen) : aktiveListe;
     if (!kombiListe) return;
     const isPakete = quizSessionModus === "pakete";
+    if (isPakete && quizPaketGroesse == null) return;
     if (!force && isPakete && sessionSlotAktiv && sessionSlotKonflikt()) {
       setSessionUeberschreibenModal(true); return;
     }
@@ -1634,6 +1635,7 @@ export default function VokabelApp() {
     const kombiListe = quizTabListen.length > 0 ? getKombinierteListe(quizTabListen) : aktiveListe;
     if (!kombiListe) return;
     const isPakete = quizSessionModus === "pakete";
+    if (isPakete && quizPaketGroesse == null) return;
     if (!force && isPakete && sessionSlotAktiv && sessionSlotKonflikt()) {
       setSessionUeberschreibenModal(true); return;
     }
@@ -3178,9 +3180,9 @@ export default function VokabelApp() {
           if (sessionHatFortschritt) {
             const bereitsAbgefragt = new Set(sessionSlotAktiv.abgefragt || []);
             let restVoks = gefilterteVoks.filter(v => !bereitsAbgefragt.has(v.id));
-            verfuegbar = Math.min(quizPaketGroesse, restVoks.length);
+            verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, restVoks.length) : 0;
           } else if (isPakete) {
-            verfuegbar = Math.min(quizPaketGroesse, gefilterteVoks.length);
+            verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, gefilterteVoks.length) : 0;
           } else if (quizReihenfolge === "schlechteste") {
             let scVoks = gefilterteVoks;
             if (quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
@@ -3725,7 +3727,7 @@ export default function VokabelApp() {
                         </button>
                         <button className={`toggle-opt${quizSessionModus==="pakete"?" aktiv":""}`}
                           onClick={() => { setQuizSessionModus("pakete"); setQuizSessionAufgeklappt(v => !v); }}>
-                          {quizPaketGroesse} V.
+                          {quizPaketGroesse != null ? `${quizPaketGroesse} V.` : "Pakete"}
                         </button>
                       </div>
                     </span>
