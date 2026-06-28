@@ -432,6 +432,7 @@ export default function VokabelApp() {
   const [aktiveListe, setAktiveListe] = useState(null);
   const [modal, setModal] = useState(null);
   const [modalInput, setModalInput] = useState("");
+  const [modalMitVokabeln, setModalMitVokabeln] = useState(false);
   const [modalFehler, setModalFehler] = useState("");
   const [jsonExportIds, setJsonExportIds] = useState(null);
   const [jsonExportOptionen, setJsonExportOptionen] = useState({ fortschritt: true, diktatFortschritt: true, falsch: true });
@@ -1191,13 +1192,17 @@ export default function VokabelApp() {
     });
   }
 
-  function speichereKonfigInSlot(nummer, name) {
+  function speichereKonfigInSlot(nummer, name, mitVokabeln) {
     const konfiguration = {
       quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet,
       quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
       quizModus, quizBereichTyp,
       quizReihenfolge, quizSchlechtesteAnzahl, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst,
       quizDiktatSpalte, quizDiktatUebersetzung,
+      ...(mitVokabeln ? {
+        listenIds: [...quizTabListen],
+        vokabelAuswahl: Array.from(quizCheckboxAuswahl),
+      } : {}),
     };
     const aktuell = lsGet(SK.sessionSlots, defaultSessionSlots());
     const updated = aktuell.map(s => s.slot === nummer ? {...s, name, konfiguration} : s);
@@ -1208,26 +1213,54 @@ export default function VokabelApp() {
   function ladeKonfigAusSlot(slot) {
     const k = slot.konfiguration;
     if (!k) return;
-    setQuizAusgewaehlt(k.quizAusgewaehlt || []);
-    setQuizFrageTyp(k.quizFrageTyp || "");
-    setQuizAntwortTypenGeordnet(k.quizAntwortTypenGeordnet || []);
-    setQuizInfoTypenSession(k.quizInfoTypenSession || []);
-    setQuizSpalteModus(k.quizSpalteModus || {});
-    setQuizZeigeInfo(k.quizZeigeInfo || {});
-    setQuizModus(k.quizModus || "sequenziell");
-    setQuizBereichTyp(k.quizBereichTyp || "alle");
-    setQuizReihenfolge(k.quizReihenfolge || "zufall");
-    setQuizSchlechtesteAnzahl(k.quizSchlechtesteAnzahl || 20);
-    setQuizSchlechtesteMaxScore(k.quizSchlechtesteMaxScore ?? "");
-    setQuizUnbeantwortetZuerst(k.quizUnbeantwortetZuerst !== undefined ? k.quizUnbeantwortetZuerst : true);
-    setQuizDiktatSpalte(k.quizDiktatSpalte || "E1");
-    setQuizDiktatUebersetzung(k.quizDiktatUebersetzung !== undefined ? k.quizDiktatUebersetzung : "D1");
-    setQuizCheckboxAuswahl(new Set());
-    setListenAuswahlAufgeklappt(false);
-    setQuizListeAufgeklappt(false);
-    setQuizAbfrageModusAufgeklappt(false);
-    setQuizReihenfolgeAufgeklappt(false);
-    setQuizEinstellungenAufgeklappt(false);
+
+    function applySettings() {
+      setQuizAusgewaehlt(k.quizAusgewaehlt || []);
+      setQuizFrageTyp(k.quizFrageTyp || "");
+      setQuizAntwortTypenGeordnet(k.quizAntwortTypenGeordnet || []);
+      setQuizInfoTypenSession(k.quizInfoTypenSession || []);
+      setQuizSpalteModus(k.quizSpalteModus || {});
+      setQuizZeigeInfo(k.quizZeigeInfo || {});
+      setQuizModus(k.quizModus || "sequenziell");
+      setQuizBereichTyp(k.quizBereichTyp || "alle");
+      setQuizReihenfolge(k.quizReihenfolge || "zufall");
+      setQuizSchlechtesteAnzahl(k.quizSchlechtesteAnzahl || 20);
+      setQuizSchlechtesteMaxScore(k.quizSchlechtesteMaxScore ?? "");
+      setQuizUnbeantwortetZuerst(k.quizUnbeantwortetZuerst !== undefined ? k.quizUnbeantwortetZuerst : true);
+      setQuizDiktatSpalte(k.quizDiktatSpalte || "E1");
+      setQuizDiktatUebersetzung(k.quizDiktatUebersetzung !== undefined ? k.quizDiktatUebersetzung : "D1");
+    }
+    function closeContexts() {
+      setListenAuswahlAufgeklappt(false);
+      setQuizListeAufgeklappt(false);
+      setQuizAbfrageModusAufgeklappt(false);
+      setQuizReihenfolgeAufgeklappt(false);
+      setQuizEinstellungenAufgeklappt(false);
+    }
+
+    if (k.listenIds && k.listenIds.length > 0) {
+      const alleVorhanden = k.listenIds.every(id => listenIndex.some(l => l.id === id));
+      if (alleVorhanden) {
+        // Alle gespeicherten Listen noch vorhanden → vollständig laden
+        setQuizTabListen(k.listenIds);
+        setQuizCheckboxAuswahl(k.vokabelAuswahl && k.vokabelAuswahl.length > 0 ? new Set(k.vokabelAuswahl) : new Set());
+        applySettings();
+      } else if (quizTabListen.length === 0) {
+        // Listen weg, keine aktive Liste → schließen (zeigt "bitte Liste auswählen")
+        closeContexts();
+        return;
+      } else {
+        // Listen weg aber andere Liste aktiv → Einstellungen übertragen, Vokabelauswahl auf Alle
+        applySettings();
+        setQuizBereichTyp("alle");
+        setQuizCheckboxAuswahl(new Set());
+      }
+    } else {
+      // Slot ohne Listeninfo → nur Einstellungen übertragen
+      applySettings();
+      setQuizCheckboxAuswahl(new Set());
+    }
+    closeContexts();
   }
 
   function initQuizDefaults(kombiListe) {
@@ -2912,57 +2945,45 @@ export default function VokabelApp() {
                 {/* Alle/Bereich – sticky direkt unter Haupt-Header */}
                 {kombiListe && (
                   <div ref={alleBereichRef} style={{position:"sticky", top:headerH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
-                    {!quizListeAufgeklappt && (
-                      <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Vokabel-Auswahl</span>
-                    )}
-                    <div className="toggle-btn">
-                      <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
-                        onClick={() => { setQuizBereichTyp("alle"); setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
-                        Alle
-                      </button>
-                      <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`}
-                        onClick={() => { if (quizBereichTyp !== "bereich") { setQuizBereichTyp("bereich"); if (quizCheckboxAuswahl.size === 0) setQuizListeAufgeklappt(true); } }}>
-                        Bereich
-                      </button>
-                    </div>
-                    {quizBereichTyp === "bereich" && quizListeAufgeklappt && quizCheckboxAuswahl.size > 0 && (
-                      <button className="btn btn-ghost btn-sm"
-                        style={{padding:"6px 8px"}}
-                        onClick={() => { setQuizCheckboxAuswahl(new Set()); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
-                        <IcoX s={12}/>
-                      </button>
-                    )}
-                    {quizBereichTyp === "bereich" && quizListeAufgeklappt && (
-                      <button
-                        className={`btn btn-sm${quizVonBisModus ? " btn-primary" : " btn-ghost"}`}
-                        onClick={() => {
-                          if (quizVonBisModus) { setQuizVonBisModus(false); setQuizVonBisErster(null); }
-                          else { setQuizVonBisModus(true); }
-                        }}>
-                        {!quizVonBisModus ? "Von–Bis" : quizVonBisErster === null ? "Von…" : "…Bis"}
-                      </button>
-                    )}
-                    {quizBereichTyp === "bereich" ? (
-                      quizListeAufgeklappt ? (
+                    {/* LINKS */}
+                    <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
+                      {quizBereichTyp === "bereich" && quizListeAufgeklappt ? (
                         <>
-                          <span style={{flex:1, textAlign:"right", fontSize:"0.8rem", color:"#aaa"}}>
-                            ({quizGefilterteVoks.length} V.)
-                          </span>
-                          <button className="btn-toggle-ghost" onClick={toggleEinzelauswahl}>
-                            <IcoDown s={10}/>
+                          <button className={`btn btn-sm${quizVonBisModus ? " btn-primary" : " btn-ghost"}`}
+                            onClick={() => { if (quizVonBisModus) { setQuizVonBisModus(false); setQuizVonBisErster(null); } else { setQuizVonBisModus(true); } }}>
+                            {!quizVonBisModus ? "Von–Bis" : quizVonBisErster === null ? "Von…" : "…Bis"}
                           </button>
+                          {quizCheckboxAuswahl.size > 0 && (
+                            <button className="btn btn-ghost btn-sm" style={{padding:"6px 8px"}}
+                              onClick={() => { setQuizCheckboxAuswahl(new Set()); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
+                              <IcoX s={12}/>
+                            </button>
+                          )}
                         </>
                       ) : (
-                        <span style={{flex:1, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:8}}>
-                          <span style={{fontSize:"0.8rem", color:"#aaa"}}>({quizGefilterteVoks.length} V.)</span>
-                          <button className="btn-toggle-ghost" onClick={toggleEinzelauswahl}>
-                            <IcoUp s={10}/>
-                          </button>
-                        </span>
-                      )
-                    ) : (
-                      <span style={{flex:1}}/>
+                        <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Vokabel-Auswahl</span>
+                      )}
+                    </span>
+                    {/* MITTE */}
+                    {quizBereichTyp === "bereich" && (
+                      <span style={{fontSize:"0.8rem", color:"#aaa"}}>({quizGefilterteVoks.length} V.)</span>
                     )}
+                    {/* RECHTS */}
+                    <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
+                      <div className="toggle-btn">
+                        <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
+                          onClick={() => { setQuizBereichTyp("alle"); setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}>
+                          Alle
+                        </button>
+                        <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`}
+                          onClick={() => {
+                            if (quizBereichTyp !== "bereich") { setQuizBereichTyp("bereich"); if (quizCheckboxAuswahl.size === 0) setQuizListeAufgeklappt(true); }
+                            else { toggleEinzelauswahl(); }
+                          }}>
+                          Bereich
+                        </button>
+                      </div>
+                    </span>
                   </div>
                 )}
 
@@ -3009,14 +3030,9 @@ export default function VokabelApp() {
                 {kombiListe && (
                   <div ref={abfrageModusRef} style={{position:"sticky", top:headerH + alleBereichH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Abfrage-Modus</span>
-                    <span className={`toggle-opt aktiv`} style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"default", pointerEvents:"none"}}>
+                    <button className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleAbfrageModus}>
                       {quizModus === "sequenziell" ? "Frage – Antwort" : quizModus === "rotierend" ? "wechselnd" : "Diktat"}
-                    </span>
-                    <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
-                      <button className="btn-toggle-ghost" onClick={toggleAbfrageModus}>
-                        {quizAbfrageModusAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
-                      </button>
-                    </span>
+                    </button>
                   </div>
                 )}
 
@@ -3172,12 +3188,14 @@ export default function VokabelApp() {
                 {kombiListe && (
                   <div ref={reihenfolgeRef} style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Reihenfolge</span>
-                    <span className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"default", pointerEvents:"none"}}>
-                      {quizReihenfolge === "zufall" ? "Zufällig" : quizReihenfolge === "schlechteste" ? "Schlechteste" : "Listen-Nr."}
-                    </span>
-                    <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
-                      <button className="btn-toggle-ghost" onClick={toggleReihenfolge}>
-                        {quizReihenfolgeAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
+                    {quizReihenfolge === "schlechteste" && quizSchlechtesteMaxScore !== "" ? (
+                      <span style={{flex:1, textAlign:"center", fontSize:"0.8rem", color:"#aaa"}}>({verfuegbar} V.)</span>
+                    ) : (
+                      <span style={{flex:1}}/>
+                    )}
+                    <span style={{display:"flex", justifyContent:"flex-end"}}>
+                      <button className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleReihenfolge}>
+                        {quizReihenfolge === "zufall" ? "Zufällig" : quizReihenfolge === "schlechteste" ? "Schlechteste" : "Listen-Nr."}
                       </button>
                     </span>
                   </div>
@@ -3197,15 +3215,20 @@ export default function VokabelApp() {
                         </div>
                         {quizReihenfolge === "schlechteste" && (
                           <div style={{padding:"0 16px 16px"}}>
-                            <label className="inp-label">Anzahl</label>
-                            <input className="inp" type="number" min={1} value={quizSchlechtesteAnzahl}
-                              onChange={e => setQuizSchlechtesteAnzahl(e.target.value)} />
-                            <label className="inp-label" style={{marginTop:12}}>Score kleiner als (optional)</label>
-                            <input className="inp" type="number" value={quizSchlechtesteMaxScore}
-                              onChange={e => setQuizSchlechtesteMaxScore(e.target.value)}
-                              placeholder="z.B. -5" />
-                            <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:6}}>
-                              {verfuegbar} Vokabeln mit dem niedrigsten Score werden abgefragt.
+                            <div className="inp-label" style={{marginBottom:8}}>Score-Filter (optional)</div>
+                            <div style={{display:"flex", gap:6}}>
+                              {["-10", "-5", "0", "5", "10"].map(v => (
+                                <button key={v} className={`toggle-opt${quizSchlechtesteMaxScore === v ? " aktiv" : ""}`}
+                                  style={{flex:1}}
+                                  onClick={() => setQuizSchlechtesteMaxScore(prev => prev === v ? "" : v)}>
+                                  {v}
+                                </button>
+                              ))}
+                            </div>
+                            <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:8}}>
+                              {quizSchlechtesteMaxScore !== ""
+                                ? `Nur Vokabeln mit Score ≤ ${quizSchlechtesteMaxScore} (${verfuegbar} V.)`
+                                : "Vokabeln mit dem niedrigsten Score werden abgefragt."}
                             </div>
                           </div>
                         )}
@@ -3228,14 +3251,9 @@ export default function VokabelApp() {
                 {kombiListe && (
                   <div ref={einstellungenRef} style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH + reihenfolgeH, zIndex:5, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Einstellungen</span>
-                    <span className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"default", pointerEvents:"none"}}>
+                    <button className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleEinstellungen}>
                       {einstellungen.modus === "einfach" ? "Einfach" : "Schwer"}
-                    </span>
-                    <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
-                      <button className="btn-toggle-ghost" onClick={toggleEinstellungen}>
-                        {quizEinstellungenAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
-                      </button>
-                    </span>
+                    </button>
                   </div>
                 )}
 
@@ -3929,7 +3947,15 @@ export default function VokabelApp() {
             <input className="inp" value={modalInput} autoFocus
               onChange={e => setModalInput(e.target.value)}
               placeholder="z.B. Irregular Verbs" />
-            <div style={{marginTop:14}}>
+            <div className="toggle-row" style={{cursor:"pointer", marginTop:14, padding:"10px 0"}}
+              onClick={() => setModalMitVokabeln(v => !v)}>
+              <div>
+                <div className="toggle-label">inkl. Vokabel-Auswahl speichern</div>
+                <div className="toggle-sub">Listen-Auswahl und Bereich werden mitgespeichert</div>
+              </div>
+              <div className={`checkbox${modalMitVokabeln ? " checked" : ""}`}>{modalMitVokabeln ? "✓" : ""}</div>
+            </div>
+            <div style={{marginTop:8}}>
               <div className="inp-label">Slot wählen</div>
               <div style={{display:"flex", gap:6, flexWrap:"wrap", marginTop:8}}>
                 {[1,2,3,4,5].map(n => {
@@ -3937,7 +3963,7 @@ export default function VokabelApp() {
                   return (
                     <button key={n}
                       className={`slot-chip${s?.konfiguration ? " belegt" : ""}`}
-                      onClick={() => { speichereKonfigInSlot(n, modalInput.trim() || `Slot ${n}`); setModal(null); setModalInput(""); }}>
+                      onClick={() => { speichereKonfigInSlot(n, modalInput.trim() || `Slot ${n}`, modalMitVokabeln); setModal(null); setModalInput(""); setModalMitVokabeln(false); }}>
                       {s?.konfiguration ? (s.name || `Slot ${n}`) : `Slot ${n}`}
                     </button>
                   );
@@ -3945,7 +3971,7 @@ export default function VokabelApp() {
               </div>
             </div>
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => { setModal(null); setModalInput(""); }}>Abbrechen</button>
+              <button className="btn btn-ghost" onClick={() => { setModal(null); setModalInput(""); setModalMitVokabeln(false); }}>Abbrechen</button>
             </div>
           </div>
         </div>
