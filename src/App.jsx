@@ -2766,18 +2766,42 @@ export default function VokabelApp() {
             : `${n} Listen`;
           return (
             <div className="liste-detail-header" style={{position:"relative"}}>
-              <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Listen-Auswahl</span>
+              {/* LINKS */}
+              <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
+                {listenAuswahlAufgeklappt ? (
+                  <>
+                    {n < listenIndex.length && (
+                      <button className="btn btn-ghost btn-sm"
+                        onClick={() => setQuizTabListen(listenIndex.map(l => l.id))}>
+                        Alle
+                      </button>
+                    )}
+                    {n > 0 && (
+                      <button className="btn btn-ghost btn-sm" style={{padding:"6px 8px"}}
+                        onClick={() => { setQuizTabListen([]); if (quizBereichTyp === "bereich") { setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); } }}>
+                        <IcoX s={12}/>
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Listen-Auswahl</span>
+                )}
+              </span>
+              {/* MITTE */}
               {n > 0 && (
                 <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none"}}>
                   ({quizBasisVoks.length} V.)
                 </span>
               )}
-              <button
-                className={`toggle-opt${n > 0 ? " aktiv" : ""}`}
-                style={{marginLeft:"auto", padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"45%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}
-                onClick={toggleListenAuswahl}>
-                {chipText}
-              </button>
+              {/* RECHTS */}
+              <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
+                <button
+                  className={`toggle-opt${n > 0 ? " aktiv" : ""}`}
+                  style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"55%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}
+                  onClick={toggleListenAuswahl}>
+                  {chipText}
+                </button>
+              </span>
             </div>
           );
         })()}
@@ -3881,6 +3905,8 @@ export default function VokabelApp() {
               {abfragbareSpalten.length >= 2 && aktiveListe.vokabeln.length > 0 && (
                 <button className="btn btn-primary" style={{width:"100%", marginBottom:8}}
                   onClick={() => {
+                    setQuiz(null);
+                    setAnsicht("uebersicht");
                     setQuizTabListen([aktiveListeId]);
                     initQuizDefaults(lsGet(SK.liste(aktiveListeId)));
                     setListenAuswahlAufgeklappt(false);
@@ -4021,7 +4047,7 @@ export default function VokabelApp() {
                         Alle
                       </button>
                     )}
-                    {statistikListenIds !== null && statistikListenIds.size > 0 && (
+                    {(statistikListenIds === null || statistikListenIds.size > 0) && (
                       <button className="btn btn-ghost btn-sm" style={{padding:"6px 8px"}}
                         onClick={() => setStatistikListenIds(new Set())}>
                         <IcoX s={12}/>

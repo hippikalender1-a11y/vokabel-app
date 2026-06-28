@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-28  (Session 19 abgeschlossen — Statistik-Redesign + Quiz/Listen-Navigation)
-Letzter Commit: 5f76d89
+Stand: 2026-06-28  (Session 20 abgeschlossen — Statistik-Verbesserungen, Dropdown-Fix, Alle/X-Buttons)
+Letzter Commit: (siehe SESSION 20)
 
 DATEIPFADE
 ----------
@@ -704,6 +704,71 @@ TOTES CODE ENTFERNT:
 
 
 ================================================================
+SESSION 20 — UMGESETZTE ÄNDERUNGEN (Commits: e21e40f, 24e2f7b, aktuell)
+================================================================
+
+STATISTIK VOKABEL-AUSWAHL HEADER (redesign — wie Quiz-Tab):
+  Offen + Bereich:
+    Links: [Von–Bis Button] + [X wenn Auswahl > 0]
+    Mitte: (X V.) absolut zentriert
+    Rechts: [Alle][Bereich] Toggle
+  Geschlossen: "Vokabel-Auswahl" links | (X V.) zentriert | [Alle][Bereich] rechts
+  Von-Bis-Logik: statistikVonBisModus + statistikVonBisErster (States)
+  useEffect: reset Von-Bis wenn statistikEinzelauswahlAufgeklappt → false
+
+STATISTIK LISTEN-AUSWAHL HEADER (redesign):
+  Offen:
+    Links: [Alle wenn nicht alle gewählt] + [X wenn null(alle) ODER size>0]
+    Mitte: (X V.) absolut zentriert
+    Rechts: Chip-Button (öffnet/schließt Dropdown)
+  Geschlossen: "Listen-Auswahl" links | (X V.) zentriert | Chip rechts
+  X → setStatistikListenIds(new Set())   (leert Auswahl)
+  Alle → setStatistikListenIds(null)     (alle Listen)
+  X-Button erscheint AUCH wenn statistikListenIds === null (alle gewählt)
+
+QUIZ-TAB LISTEN-AUSWAHL HEADER (redesign, gleich wie Statistik):
+  Offen:
+    Links: [Alle wenn n < listenIndex.length] + [X wenn n > 0]
+    Mitte: (X V.) absolut zentriert
+    Rechts: Chip-Button
+  X → setQuizTabListen([]) + wenn Bereich: setQuizBereichTyp("alle") + clear Auswahl
+  Alle → setQuizTabListen(listenIndex.map(l => l.id))
+
+DROPDOWN AUTO-CLOSE FIX (dropdownImmuneRef):
+  dropdownImmuneRef = useRef(false)
+  Alle 7 Toggle-Funktionen setzen beim Öffnen:
+    dropdownImmuneRef.current = true
+    → nach rAF²+scroll: setTimeout(() => immune=false, 150)
+  Alle 7 auto-close scroll-handler prüfen: if (dropdownImmuneRef.current) return;
+  Verhindert sofortiges Re-Schließen nach Öffnen wenn User gescrollt ist.
+
+STATISTIK Ø-SCORE (redesign):
+  Zeigt Quiz-Score und Diktat-Score separat (mit Liniensymbol-Icons)
+  "Nur beantwortete" (statistikGraphOhneUnbeantwortet) filtert AUCH die Durchschnitte:
+    avgBasis = statistikGraphOhneUnbeantwortet ? abgefragt : alleVoks
+    avgScore / avgDiktatScore = Durchschnitt nur über Basis mit vorhandenem Fortschritt
+
+STATISTIK GRAPH:
+  Neue States: statistikGraphQuizZeigen (bool, default true), statistikGraphDiktatZeigen (bool, default true)
+  Legende-Buttons sind klickbar: Toggle-Buttons für Abfrage-Linie + Diktat-Linie
+  Inaktive Linie: quizS = [] bzw. diktatS = []
+
+QUIZ START AUS LISTE-DETAIL (Fix):
+  Handler ruft nun zuerst setQuiz(null) + setAnsicht("uebersicht") auf
+  → laufendes Quiz wird sicher beendet bevor in Quiz-Tab gewechselt wird
+  → verhindert dass Statistik-Screen des laufenden Quiz angezeigt wird
+
+NEUE STATES (Session 20):
+  statistikVonBisModus     = bool
+  statistikVonBisErster    = null | id
+  statistikGraphQuizZeigen = bool (default true)
+  statistikGraphDiktatZeigen = bool (default true)
+
+NEUER REF:
+  dropdownImmuneRef = useRef(false) — shared across all toggle functions
+
+
+================================================================
 PROMPT FÜR NEUEN CHAT
 ================================================================
 
@@ -716,6 +781,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 5f76d89
+Letzter Commit: siehe SESSION 20
 
 ================================================================
