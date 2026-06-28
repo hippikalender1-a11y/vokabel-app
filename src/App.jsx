@@ -509,6 +509,8 @@ export default function VokabelApp() {
   const [quizPaketGroesse, setQuizPaketGroesse] = useState(null);
   const [quizSessionAufgeklappt, setQuizSessionAufgeklappt] = useState(false);
   const [sessionSlotAktiv, setSessionSlotAktiv] = useState(null);
+  const [aktiverNormalSlotNr, setAktiverNormalSlotNr] = useState(null);
+  const [statistikScoreModus, setStatistikScoreModus] = useState("global");
   const [sessionH, setSessionH] = useState(0);
   const [sessionUeberschreibenModal, setSessionUeberschreibenModal] = useState(false);
   const [loescheSlotNr, setLoescheSlotNr] = useState(null);
@@ -762,7 +764,12 @@ export default function VokabelApp() {
     if (!slots) { slots = defaultSessionSlots(); lsSet(SK.sessionSlots, slots); }
     setSessionSlots(slots);
     const sSlot = lsGet(SK.sessionAktiv);
-    if (sSlot) { setSessionSlotAktiv(sSlot); setQuizSessionModus("pakete"); setQuizPaketGroesse(sSlot.paketGroesse || 20); }
+    if (sSlot) {
+      setSessionSlotAktiv(sSlot);
+      setQuizSessionModus("pakete");
+      setQuizPaketGroesse(sSlot.paketGroesse || 20);
+      if (sSlot.slotNr != null) setAktiverNormalSlotNr(sSlot.slotNr);
+    }
   }, []);
 
   useEffect(() => {
@@ -1328,14 +1335,17 @@ export default function VokabelApp() {
     return false;
   }
 
-  function speichereSessionSlotNeu(paketGroesse, gesamtVoks) {
+  function speichereSessionSlotNeu(paketGroesse, gesamtVoks, startScores = {}) {
+    const slotNr = aktiverNormalSlotNr;
     const slot = {
+      slotNr,
       listenIds: [...quizTabListen],
       vokabelAuswahl: Array.from(quizCheckboxAuswahl),
       bereichTyp: quizBereichTyp,
       abgefragt: [],
       gesamt: gesamtVoks,
       paketGroesse,
+      startScores,
       konfiguration: {
         quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet,
         quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
@@ -1346,6 +1356,15 @@ export default function VokabelApp() {
     };
     lsSet(SK.sessionAktiv, slot);
     setSessionSlotAktiv(slot);
+    if (slotNr != null) {
+      const slots = lsGet(SK.sessionSlots, defaultSessionSlots());
+      const updatedSlots = slots.map(s => s.slot === slotNr
+        ? { ...s, sessionFortschritt: { abgefragt: [], gesamt: gesamtVoks, paketGroesse, startScores } }
+        : s
+      );
+      lsSet(SK.sessionSlots, updatedSlots);
+      setSessionSlots(updatedSlots);
+    }
     return slot;
   }
 
@@ -1361,6 +1380,18 @@ export default function VokabelApp() {
     }
     lsSet(SK.sessionAktiv, updated);
     setSessionSlotAktiv(updated);
+    const slotNr = slot.slotNr;
+    if (slotNr != null) {
+      const slots = lsGet(SK.sessionSlots, defaultSessionSlots());
+      const updatedSlots = slots.map(s => {
+        if (s.slot !== slotNr) return s;
+        const sf = s.sessionFortschritt || {};
+        const neuAb = isDurchlaufEnde ? [] : [...new Set([...(sf.abgefragt || []), ...neueIds])];
+        return { ...s, sessionFortschritt: { ...sf, abgefragt: neuAb } };
+      });
+      lsSet(SK.sessionSlots, updatedSlots);
+      setSessionSlots(updatedSlots);
+    }
   }
 
   function ladeSessionSlotKonfig() {
@@ -1395,8 +1426,17 @@ export default function VokabelApp() {
   }
 
   function loescheSessionSlot() {
+    const sSlot = lsGet(SK.sessionAktiv);
+    const slotNr = sSlot?.slotNr;
     lsDel(SK.sessionAktiv);
     setSessionSlotAktiv(null);
+    setAktiverNormalSlotNr(null);
+    if (slotNr != null) {
+      const slots = lsGet(SK.sessionSlots, defaultSessionSlots());
+      const updatedSlots = slots.map(s => s.slot === slotNr ? { ...s, sessionFortschritt: null } : s);
+      lsSet(SK.sessionSlots, updatedSlots);
+      setSessionSlots(updatedSlots);
+    }
   }
 
   function speichereKonfigInSlot(nummer, name, mitVokabeln) {
@@ -1474,6 +1514,20 @@ export default function VokabelApp() {
       setQuizCheckboxAuswahl(new Set());
     }
     closeContexts();
+    // Session-Kontext setzen
+    if (slot.slot !== 6) {
+      setAktiverNormalSlotNr(slot.slot);
+      if (slot.sessionFortschritt) {
+        const sf = slot.sessionFortschritt;
+        const sessionObj = { slotNr: slot.slot, listenIds: sf.listenIds || (k.listenIds || []), vokabelAuswahl: sf.vokabelAuswahl || [], bereichTyp: sf.bereichTyp || "alle", abgefragt: sf.abgefragt || [], gesamt: sf.gesamt || 0, paketGroesse: sf.paketGroesse || 20, startScores: sf.startScores || {}, konfiguration: slot.konfiguration };
+        lsSet(SK.sessionAktiv, sessionObj);
+        setSessionSlotAktiv(sessionObj);
+        setQuizSessionModus("pakete");
+        setQuizPaketGroesse(sf.paketGroesse || 20);
+      }
+    } else {
+      setAktiverNormalSlotNr(null);
+    }
   }
 
   function initQuizDefaults(kombiListe) {
@@ -1694,7 +1748,9 @@ export default function VokabelApp() {
       const existingSlot = lsGet(SK.sessionAktiv);
       const konflikt = existingSlot && sessionSlotKonflikt();
       if (!existingSlot || konflikt) {
-        speichereSessionSlotNeu(quizPaketGroesse, voks.length);
+        const startScores = {};
+        voks.forEach(v => { startScores[v.id] = v.diktatFortschritt?.score ?? null; });
+        speichereSessionSlotNeu(quizPaketGroesse, voks.length, startScores);
       } else {
         voks = voks.filter(v => !new Set(existingSlot.abgefragt || []).has(v.id));
         setSessionSlotAktiv(existingSlot);
@@ -1773,7 +1829,9 @@ export default function VokabelApp() {
       const existingSlot = lsGet(SK.sessionAktiv);
       const konflikt = existingSlot && sessionSlotKonflikt();
       if (!existingSlot || konflikt) {
-        speichereSessionSlotNeu(quizPaketGroesse, voks.length);
+        const startScores = {};
+        voks.forEach(v => { startScores[v.id] = v.fortschritt?.score ?? null; });
+        speichereSessionSlotNeu(quizPaketGroesse, voks.length, startScores);
       } else {
         voks = voks.filter(v => !new Set(existingSlot.abgefragt || []).has(v.id));
         setSessionSlotAktiv(existingSlot);
@@ -3242,7 +3300,8 @@ export default function VokabelApp() {
                     {(sessionSlotAktiv || sessionSlots.some(s => s.konfiguration)) && (() => {
                       const spezialSlots = sessionSlots.filter(s => s.slot === 6 && s.konfiguration);
                       const normaleSlots = sessionSlots.filter(s => s.slot !== 6 && s.konfiguration);
-                      const hatSpezial = sessionSlotAktiv || spezialSlots.length > 0;
+                      const unnamedSession = sessionSlotAktiv && sessionSlotAktiv.slotNr == null;
+                      const hatSpezial = unnamedSession || spezialSlots.length > 0;
                       const hatNormal = normaleSlots.length > 0;
                       const loeschStil = { background:"#fff0f0", borderColor:"#e74c3c", color:"#c0392b" };
                       const renderChip = (key, label, onClick, extraStil = {}) => (
@@ -3255,20 +3314,22 @@ export default function VokabelApp() {
                       return (
                         <>
                           <div style={{display:"flex", alignItems:"center", marginBottom: slotSektionAufgeklappt ? 8 : 12}}>
-                            <span className="sektion-label" style={{flex:1, marginBottom:0}}>Gespeicherte Konfigurationen</span>
-                            {slotSektionAufgeklappt && (
-                              <button
-                                onClick={() => setSlotLoeschModus(v => !v)}
-                                style={{
-                                  background: slotLoeschModus ? "#2d6a4f" : "none",
-                                  border:`1.5px solid ${slotLoeschModus ? "#2d6a4f" : "#c0bcb7"}`,
-                                  color: slotLoeschModus ? "#fff" : "#6b6560",
-                                  borderRadius:6, cursor:"pointer", padding:"3px 7px",
-                                  display:"flex", alignItems:"center", marginRight:6,
-                                }}>
-                                <IcoX s={11}/>
-                              </button>
-                            )}
+                            <span className="sektion-label" style={{flex:1, marginBottom:0, display:"flex", alignItems:"center", gap:8}}>
+                              Gespeicherte Konfigurationen
+                              {slotSektionAufgeklappt && (
+                                <button
+                                  onClick={() => setSlotLoeschModus(v => !v)}
+                                  style={{
+                                    background: slotLoeschModus ? "#2d6a4f" : "none",
+                                    border:`1.5px solid ${slotLoeschModus ? "#2d6a4f" : "#c0bcb7"}`,
+                                    color: slotLoeschModus ? "#fff" : "#6b6560",
+                                    borderRadius:6, cursor:"pointer", padding:"3px 7px",
+                                    display:"inline-flex", alignItems:"center",
+                                  }}>
+                                  <IcoX s={11}/>
+                                </button>
+                              )}
+                            </span>
                             <button
                               onClick={() => { setSlotSektionAufgeklappt(v => !v); setSlotLoeschModus(false); }}
                               style={{background:"none", border:"none", cursor:"pointer", color:"#6b6560", padding:"3px 4px", display:"flex", alignItems:"center"}}>
@@ -3279,7 +3340,7 @@ export default function VokabelApp() {
                             <>
                               {hatSpezial && (
                                 <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom: hatNormal ? 6 : 16}}>
-                                  {sessionSlotAktiv && renderChip(
+                                  {unnamedSession && renderChip(
                                     "session",
                                     `▶ Session · ${(sessionSlotAktiv.abgefragt||[]).length}/${sessionSlotAktiv.gesamt||0}`,
                                     () => slotLoeschModus ? setLoescheSlotNr("session") : ladeSessionSlotKonfig(),
@@ -3294,11 +3355,24 @@ export default function VokabelApp() {
                               )}
                               {hatNormal && (
                                 <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
-                                  {normaleSlots.map(s => renderChip(
-                                    s.slot,
-                                    s.name || `Slot ${s.slot}`,
-                                    () => slotLoeschModus ? setLoescheSlotNr(s.slot) : ladeKonfigAusSlot(s)
-                                  ))}
+                                  {normaleSlots.map(s => {
+                                    const sf = s.sessionFortschritt;
+                                    const istAktiv = aktiverNormalSlotNr === s.slot && sessionSlotAktiv?.slotNr === s.slot;
+                                    const hatSession = !!sf;
+                                    const label = hatSession
+                                      ? `▶ ${s.name || `Slot ${s.slot}`} · ${(sf.abgefragt||[]).length}/${sf.gesamt||0}`
+                                      : (s.name || `Slot ${s.slot}`);
+                                    const stil = istAktiv
+                                      ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
+                                      : hatSession
+                                        ? {background:"#f0f9f4", borderColor:"#a8d5be", color:"#2d6a4f"}
+                                        : {};
+                                    return renderChip(
+                                      s.slot, label,
+                                      () => slotLoeschModus ? setLoescheSlotNr(s.slot) : ladeKonfigAusSlot(s),
+                                      stil
+                                    );
+                                  })}
                                 </div>
                               )}
                             </>
@@ -4223,6 +4297,22 @@ export default function VokabelApp() {
             ? diktatAbgefragt.reduce((s, v) => s + v.diktatFortschritt.score, 0) / avgDiktatDenom
             : null;
 
+          // Session-Delta-Score
+          const sessionStartScores = sessionSlotAktiv?.startScores || {};
+          const hatSessionDaten = Object.keys(sessionStartScores).length > 0;
+          const istSessionModus = statistikScoreModus === "session" && hatSessionDaten;
+          const getSessionDelta = (vok) => {
+            const start = sessionStartScores[vok.id];
+            if (start === undefined) return null;
+            const cur = vok.fortschritt?.score ?? null;
+            return cur !== null ? cur - (start ?? 0) : null;
+          };
+          const sessionVoksAbgefragt = abgefragt.filter(v => sessionStartScores[v.id] !== undefined);
+          const avgSessionDenom = statistikGraphOhneUnbeantwortet ? sessionVoksAbgefragt.length : alleVoks.length;
+          const avgSessionScore = sessionVoksAbgefragt.length > 0
+            ? sessionVoksAbgefragt.reduce((s, v) => s + (getSessionDelta(v) ?? 0), 0) / avgSessionDenom
+            : null;
+
           // Graph-Daten
           const quizGraphVoks = statistikGraphOhneUnbeantwortet ? abgefragt : alleVoks;
           const diktatGraphVoks = statistikGraphOhneUnbeantwortet ? diktatAbgefragt : alleVoks;
@@ -4285,15 +4375,35 @@ export default function VokabelApp() {
           return (<>
             {/* Ø-Score sticky Header */}
             <div style={{position:"sticky", top:headerH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
-              <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832", flexShrink:0}}>Ø Score</span>
+              <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2, flexShrink:0}}>
+                <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Ø Score</span>
+                {hatSessionDaten && (
+                  <div style={{display:"flex", gap:4}}>
+                    <button className={`typ-btn${!istSessionModus?" aktiv":""}`}
+                      style={{fontSize:"0.6rem", padding:"1px 6px"}}
+                      onClick={() => setStatistikScoreModus("global")}>Global</button>
+                    <button className={`typ-btn${istSessionModus?" aktiv":""}`}
+                      style={{fontSize:"0.6rem", padding:"1px 6px"}}
+                      onClick={() => setStatistikScoreModus("session")}>Session</button>
+                  </div>
+                )}
+              </div>
               <div style={{display:"flex", alignItems:"center", gap:12, flex:1, justifyContent:"center"}}>
                 <div style={{display:"flex", alignItems:"center", gap:4}}>
                   <svg width="14" height="3" viewBox="0 0 14 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
-                  {avgScore !== null ? (
-                    <span style={{fontWeight:700, fontSize:"0.88rem", color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
-                      {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
-                    </span>
-                  ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>}
+                  {istSessionModus ? (
+                    avgSessionScore !== null ? (
+                      <span style={{fontWeight:700, fontSize:"0.88rem", color: avgSessionScore > 0 ? "#2d6a4f" : avgSessionScore < 0 ? "#c0392b" : "#6b6560"}}>
+                        {avgSessionScore > 0 ? "+" : ""}{avgSessionScore.toFixed(1)}
+                      </span>
+                    ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>
+                  ) : (
+                    avgScore !== null ? (
+                      <span style={{fontWeight:700, fontSize:"0.88rem", color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
+                        {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
+                      </span>
+                    ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>
+                  )}
                 </div>
                 {statistikGraphDiktatZeigen && (
                   <div style={{display:"flex", alignItems:"center", gap:4}}>

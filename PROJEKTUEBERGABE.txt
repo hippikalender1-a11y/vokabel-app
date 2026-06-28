@@ -1,7 +1,7 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-28  (Session 20 abgeschlossen — Statistik-Verbesserungen, Dropdown-Fix, Alle/X-Buttons)
+Stand: 2026-06-28  (Session 21 abgeschlossen — Graph-2-Farben, Avg-Score-Fix, Diktat-Toggle, Filter-Outline)
 Letzter Commit: (siehe SESSION 20)
 
 DATEIPFADE
@@ -761,11 +761,76 @@ QUIZ START AUS LISTE-DETAIL (Fix):
 NEUE STATES (Session 20):
   statistikVonBisModus     = bool
   statistikVonBisErster    = null | id
-  statistikGraphQuizZeigen = bool (default true)
-  statistikGraphDiktatZeigen = bool (default true)
+  statistikGraphQuizZeigen = bool (default true)  [ENTFERNT in Session 21]
+  statistikGraphDiktatZeigen = bool (default true) [geändert auf false in Session 21]
 
 NEUER REF:
   dropdownImmuneRef = useRef(false) — shared across all toggle functions
+
+
+================================================================
+SESSION 21 — UMGESETZTE ÄNDERUNGEN (Commit: 2328d80)
+================================================================
+
+STATISTIK Ø-SCORE (Fix):
+  Avg-Score Berechnung berücksichtigt nun "Inkl./Nur beantwortete":
+    Zähler: immer nur beantwortete Vokabeln (abgefragt / diktatAbgefragt)
+    Nenner: statistikGraphOhneUnbeantwortet=true  → nur Anzahl beantworteter
+            statistikGraphOhneUnbeantwortet=false → Gesamtzahl alleVoks
+  → Bei "Inkl. unbeantwortete": niedrigerer Schnitt (unbeantwortete zählen als 0)
+  → Bei "Nur beantwortete": reiner Schnitt der bereits abgefragten
+
+STATISTIK DIKTAT-SCORE:
+  statistikGraphDiktatZeigen = false (Default — Diktat standardmäßig ausgeblendet)
+  Diktat-Avg im Ø-Score-Header: nur sichtbar wenn statistikGraphDiktatZeigen=true
+  Abfrage-Linie: kein Toggle mehr (immer sichtbar), statische Legende
+  statistikGraphQuizZeigen-State entfernt
+
+STATISTIK GRAPH (zwei Farben):
+  Wenn "Inkl. unbeantwortete" und nieAnzahl > 0: quizTwoColor = true
+    → Unbeantwortete (links, alle score=0): grauer Pfad (#b0bec5)
+    → Beantwortete (rechts, sorted): grüner Pfad (#2d6a4f)
+    → Legende zeigt zweigeteilte Linie (grau|grün)
+  sectionPath(count, startIdx, scores) — Pfad für x-Abschnitt der Kurve
+  x-Koordinate: pX + (globalIndex / (total-1)) * gW
+
+STATISTIK FILTER-BOXEN:
+  Aktive Box immer mit border: "2px solid #2d6a4f" (grüne Outline)
+  Zuvor: "positiv" + "negativ" Boxen behielten k.rand auch im aktiven Zustand
+  → war für aktive "positiv"-Box: #c8e6c9 (kaum sichtbar)
+  → war für aktive "negativ"-Box: #ffcdd2 (kaum sichtbar)
+
+PFEIL-BUTTON:
+  "↑" → "nach oben" (Text-Button statt Pfeil-Zeichen)
+
+
+================================================================
+SESSION 22 — IN ARBEIT
+================================================================
+
+SCHRITT 1 — X-Button in "Gespeicherte Konfigurationen" (einfach):
+  Alt: Label links | [×] Lösch-Toggle | [▲/▼] Pfeil-Button rechts
+  Neu: [×] Lösch-Toggle direkt hinter Label-Text | [▲/▼] Pfeil-Button rechts
+  → X und Pfeil visuell voneinander getrennt
+
+SCHRITT 2 — Mehrfach-Sessions / Session-Architektur (komplex):
+  Aktuell: genau ein aktiver Slot (SK.sessionAktiv)
+  Neu: jeder benannte Slot (1–20) trägt seinen eigenen Fortschritt
+    Slot-Objekt erweitert um: { abgefragt:[], gesamt:N, paketGroesse:N, sessionScore:{[vokId]: startScore} }
+    "Aktiv" = zuletzt geladener Slot (sessionSlotAktiv zeigt auf diesen Slot)
+    SK.sessionAktiv bleibt als Zeiger auf den aktiven Slot (slot-nr)
+
+SCHRITT 3 — Lokaler Session-Score:
+  Beim Session-Start: aktuellen score jeder Vokabel als Baseline speichern
+    sessionScore: { "${listeId}__${vokId}": score_at_start }
+  Delta = aktuell − Baseline
+  Anzeige: lokaler Ø-Score in Statistik umschaltbar [Global][Session]
+
+SCHRITT 4 — Score-Umschalter in Statistik:
+  Button [Global][Session] in Ø-Score-Header oder eigener Toggle-Chip
+  Session-Modus: zeigt delta-Score statt absoluten Score
+  Symbol: ▶ NICHT verwenden (bereits für "Session laden" belegt)
+  → einfacher Text-Toggle als typ-btn Chip
 
 
 ================================================================
@@ -781,6 +846,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: siehe SESSION 20
+Letzter Commit: 2328d80 (Session 21)
 
 ================================================================
