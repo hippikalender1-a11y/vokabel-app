@@ -3176,22 +3176,23 @@ export default function VokabelApp() {
             : quizFrageTyp && quizAntwortTypenGeordnet.length >= 1);
           const isPakete = quizSessionModus === "pakete";
           const sessionHatFortschritt = isPakete && sessionSlotAktiv && !sessionSlotKonflikt();
+          // Score-Filter (nur schlechteste-Modus) → Basis für Reihenfolge-Header
+          let reihenfolgeVoks = gefilterteVoks;
+          if (quizReihenfolge === "schlechteste" && quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
+            const thr = parseFloat(quizSchlechtesteMaxScore);
+            reihenfolgeVoks = gefilterteVoks.filter(v => (v.fortschritt?.score ?? 0) < thr);
+          }
+          const verfuegbarReihenfolge = reihenfolgeVoks.length;
+          // Pakete/Session-Filter → nur für Quiz-Button
           let verfuegbar;
           if (sessionHatFortschritt) {
             const bereitsAbgefragt = new Set(sessionSlotAktiv.abgefragt || []);
-            let restVoks = gefilterteVoks.filter(v => !bereitsAbgefragt.has(v.id));
+            const restVoks = reihenfolgeVoks.filter(v => !bereitsAbgefragt.has(v.id));
             verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, restVoks.length) : 0;
           } else if (isPakete) {
-            verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, gefilterteVoks.length) : 0;
-          } else if (quizReihenfolge === "schlechteste") {
-            let scVoks = gefilterteVoks;
-            if (quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
-              const thr = parseFloat(quizSchlechtesteMaxScore);
-              scVoks = gefilterteVoks.filter(v => (v.fortschritt?.score ?? 0) < thr);
-            }
-            verfuegbar = scVoks.length;
+            verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, verfuegbarReihenfolge) : 0;
           } else {
-            verfuegbar = gefilterteVoks.length;
+            verfuegbar = verfuegbarReihenfolge;
           }
           const alleAbgefragt = sessionHatFortschritt && (sessionSlotAktiv.abgefragt || []).length >= (sessionSlotAktiv.gesamt || 0);
           const sliderActive = quizSchlechtesteMaxScore !== "";
@@ -3553,8 +3554,10 @@ export default function VokabelApp() {
                 {kombiListe && (
                   <div ref={reihenfolgeRef} style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Reihenfolge</span>
-                    {quizReihenfolge === "schlechteste" && quizSchlechtesteMaxScore !== "" && (
-                      <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none"}}>({verfuegbar} V.)</span>
+                    {quizReihenfolge === "schlechteste" && (
+                      <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none", whiteSpace:"nowrap"}}>
+                        {sliderActive ? `Score ≤ ${sliderVal} · ${verfuegbarReihenfolge} V.` : `${verfuegbarReihenfolge} V.`}
+                      </span>
                     )}
                     <span style={{display:"flex", justifyContent:"flex-end"}}>
                       <button className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleReihenfolge}>
@@ -3581,7 +3584,7 @@ export default function VokabelApp() {
                             {sliderActive ? (
                               <>
                                 <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:8, textAlign:"center"}}>
-                                  {`Nur Vokabeln mit Score ≤ ${sliderVal} (${verfuegbar} V.)`}
+                                  {`Nur Vokabeln mit Score ≤ ${sliderVal} (${verfuegbarReihenfolge} V.)`}
                                 </div>
                                 <div style={{position:"relative", paddingTop:28}}>
                                   <div style={{
