@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-28  (Session 14 abgeschlossen)
-Letzter Commit: 1d22be2  (Session 14: Abfrage-Modus "pro Spalte" → "Frage – Antwort")
+Stand: 2026-06-28  (Session 15 läuft)
+Letzter Commit: 9a450c1  (Protokoll Session 14)
 
 DATEIPFADE
 ----------
@@ -413,9 +413,86 @@ QUIZ-DEFAULTS (State-Initialwerte)
 
 
 ================================================================
-NÄCHSTE SESSION (Session 15)
+SESSION 15 — OFFENE AUFGABEN
 ================================================================
-Keine bekannten offenen Aufgaben. Neue Anforderungen abwarten.
+
+PUNKT 1 — Sticky Header: neues Layout
+--------------------------------------
+- Grüne Elemente (Chip/Toggle) → RECHTS, ersetzen Pfeil-Button
+  Klick auf grünes Element = öffnen/schließen (wie bisheriger Pfeil)
+- Vokabelanzahl (X V.) → ZENTRIERT in der Header-Zeile
+- Alle/Bereich Sonderfall:
+    GESCHLOSSEN, Alle aktiv:   Label links | Mitte leer     | [Alle][Bereich] rechts
+    GESCHLOSSEN, Bereich aktiv: Label links | (X V.) zentriert | [Alle][Bereich] rechts
+    OFFEN, Bereich aktiv:      [Von–Bis] links | (X V.) zentriert | [Alle][Bereich] rechts
+      → Klick [Bereich] = schließt Einzelauswahl (wie bisheriger Pfeil)
+      → Klick [Alle]    = wechselt zu Alle-Modus + schließt Einzelauswahl automatisch
+- Abfrage-Modus-Zeile:  "Abfrage-Modus" links | zentriert leer | [Frage–Antwort / wechselnd / Diktat] rechts
+- Reihenfolge-Zeile:    "Reihenfolge" links | zentriert leer/Anzahl | [Zufällig / Schlechteste / Listen-Nr.] rechts
+- Einstellungen-Zeile:  "Einstellungen" links | zentriert leer | [Einfach / Schwer] rechts
+
+PUNKT 2 — Reihenfolge > Schlechteste
+--------------------------------------
+- "Anzahl"-Eingabe komplett entfernen
+- Max-Score-Filter: statt Texteingabe 5 Preset-Buttons: −10 / −5 / 0 / 5 / 10
+  (aktuell gewählter Wert = aktiv/hervorgehoben, kein Wert = kein Filter)
+- Wenn der Score-Filter die Vokabelzahl gegenüber der Gesamt-Auswahl verändert:
+  Anzahl der verfügbaren Vokabeln zentriert in Reihenfolge-Header-Zeile anzeigen
+
+PUNKT 3 — Konfiguration speichern: Vokabelauswahl
+---------------------------------------------------
+- Beim Speichern: Checkbox „inkl. Vokabel-Auswahl speichern"
+  (speichert quizTabListen + quizBereichTyp + quizCheckboxAuswahl)
+- Lade-Logik:
+    Slot hat Listendaten + Listen existieren noch   → alles laden (Listen + Vokabelauswahl + Einstellungen)
+    Slot hat Listendaten + Listen weg + keine aktiv → schließen, "bitte Liste auswählen" (wie bisher)
+    Slot hat Listendaten + aktuell andere Liste      → Einstellungen übertragen, Vokabelauswahl → Alle
+    Slot hat keine Listendaten                       → nur Einstellungen auf aktuelle Auswahl anwenden
+
+PUNKT 4 — Score-Clamp global (−10 bis +10)
+-------------------------------------------
+- Anzeige und Lernentscheidungen: Score wird auf −10…+10 geclampt
+  −10 = ungenügend, +10 = sehr gut
+- Intern kann Score weiter frei laufen (rückwärtskompatibel)
+- Clamping nur für Darstellung und Logikentscheidungen
+
+PUNKT 5 — Slot-Session-Modus (großes Feature)
+----------------------------------------------
+KONZEPT:
+  Slot speichert feste Vokabelauswahl (z.B. 120 Vokabeln vom Lehrer).
+  Kind lernt in konfigurierbaren Mini-Sessions (z.B. 20er-Blöcken).
+  Jede Vokabel kommt pro Durchlauf genau einmal vor.
+  Fortschritt wird tagesübergreifend gespeichert bis manuell resettet.
+
+SESSION-GRÖSSE:
+  - Konfigurierbar im Slot (z.B. 20)
+  - Gespeichert in der Slot-Konfiguration
+
+AUSWAHL DER 20 AUS 120 PRO MINI-SESSION:
+  - Nach den aktiven Reihenfolge-Einstellungen (Zufällig, Schlechteste, Unbeantwortete zuerst, Score-Filter)
+  - Bereits in diesem Durchlauf abgefragte Vokabeln werden ausgeschlossen
+  - "Unbeantwortete zuerst" etc. gilt bezogen auf die noch nicht abgefragten Vokabeln
+
+FORTSCHRITT (im Slot gespeichert, tagesübergreifend):
+  - Set der bereits abgefragten Vokabel-IDs im aktuellen Durchlauf
+  - Durchlauf-Zähler (wie oft alle Vokabeln komplett durchlaufen)
+  - Manuell resetttbar
+
+QUIZ-BUTTON im Session-Modus:
+  - Zeigt Session-Fortschritt: z.B. "60 / 120 — 50%"
+  - 2-zeilig oder Fortschrittsbalken
+
+MINI-SESSION-ENDE (20 durch):
+  - Kurze Übersicht (wie bisheriges Quiz-Ende)
+  - Nächster Slot-Start: automatisch nächste 20
+
+GESAMT-DURCHLAUF-ENDE (alle 120 durch):
+  - Größere Zusammenfassung oder Statistik-Ansicht für diesen Slot
+
+SLOT-STATISTIK:
+  - Eigene Ansicht: Durchschnitt, Score-Verteilung, nach Score filterbar
+  - Nutzt globale Score-Daten (Score wird global verrechnet)
+  - Session-Fortschritt (0–100%) = Anteil der in diesem Durchlauf bereits abgefragten Vokabeln
 
 
 ================================================================
@@ -431,6 +508,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 015b642  (alle Session-13-Änderungen noch lokal, nicht committed)
+Letzter Commit: 9a450c1
 
 ================================================================
