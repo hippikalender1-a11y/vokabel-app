@@ -497,8 +497,7 @@ export default function VokabelApp() {
   const [statistikListenIds, setStatistikListenIds] = useState(null); // null = alle
   const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
   const [statistikGraphOhneUnbeantwortet, setStatistikGraphOhneUnbeantwortet] = useState(false);
-  const [statistikGraphQuizZeigen, setStatistikGraphQuizZeigen] = useState(true);
-  const [statistikGraphDiktatZeigen, setStatistikGraphDiktatZeigen] = useState(true);
+  const [statistikGraphDiktatZeigen, setStatistikGraphDiktatZeigen] = useState(false);
   const [statistikBereichTyp, setStatistikBereichTyp] = useState("alle");
   const [statistikCheckboxAuswahl, setStatistikCheckboxAuswahl] = useState(new Set());
   const [statistikEinzelauswahlAufgeklappt, setStatistikEinzelauswahlAufgeklappt] = useState(false);
@@ -4215,21 +4214,19 @@ export default function VokabelApp() {
           const nieAnzahl = alleVoks.filter(v => !v.fortschritt).length;
           const positivAnzahl = abgefragt.filter(v => v.fortschritt.score > 0).length;
           const negativAnzahl = abgefragt.filter(v => v.fortschritt.score <= 0).length;
-          const avgBasis = statistikGraphOhneUnbeantwortet ? abgefragt : alleVoks;
-          const avgQuizVoks = avgBasis.filter(v => v.fortschritt);
-          const avgScore = avgQuizVoks.length > 0
-            ? avgQuizVoks.reduce((s, v) => s + v.fortschritt.score, 0) / avgQuizVoks.length
+          const avgDenom = statistikGraphOhneUnbeantwortet ? abgefragt.length : alleVoks.length;
+          const avgScore = abgefragt.length > 0
+            ? abgefragt.reduce((s, v) => s + v.fortschritt.score, 0) / avgDenom
             : null;
-          const avgDiktatBasis = statistikGraphOhneUnbeantwortet ? diktatAbgefragt : alleVoks;
-          const avgDiktatVoks = avgDiktatBasis.filter(v => v.diktatFortschritt);
-          const avgDiktatScore = avgDiktatVoks.length > 0
-            ? avgDiktatVoks.reduce((s, v) => s + v.diktatFortschritt.score, 0) / avgDiktatVoks.length
+          const avgDiktatDenom = statistikGraphOhneUnbeantwortet ? diktatAbgefragt.length : alleVoks.length;
+          const avgDiktatScore = diktatAbgefragt.length > 0
+            ? diktatAbgefragt.reduce((s, v) => s + v.diktatFortschritt.score, 0) / avgDiktatDenom
             : null;
 
           // Graph-Daten
-          const quizGraphVoks = statistikGraphOhneUnbeantwortet ? alleVoks.filter(v => v.fortschritt) : alleVoks;
-          const diktatGraphVoks = statistikGraphOhneUnbeantwortet ? alleVoks.filter(v => v.diktatFortschritt) : alleVoks;
-          const quizS = statistikGraphQuizZeigen ? quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b) : [];
+          const quizGraphVoks = statistikGraphOhneUnbeantwortet ? abgefragt : alleVoks;
+          const diktatGraphVoks = statistikGraphOhneUnbeantwortet ? diktatAbgefragt : alleVoks;
+          const quizS = quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
           const diktatS = statistikGraphDiktatZeigen ? diktatGraphVoks.map(v => v.diktatFortschritt?.score ?? 0).sort((a, b) => a - b) : [];
           const allScores = [...quizS, ...diktatS];
           const minS = allScores.length > 0 ? Math.min(...allScores, -1) : -1;
@@ -4246,6 +4243,23 @@ export default function VokabelApp() {
               const y = pY + ((maxS - s) / range) * gH;
               return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
             }).join(' ');
+          }
+          // Zwei-Farben-Kurve: unbeantwortete grau links, beantwortete grün rechts
+          const quizTwoColor = !statistikGraphOhneUnbeantwortet && nieAnzahl > 0;
+          let quizGreenPath = toPath(quizS), quizGrayPath = '';
+          if (quizTwoColor) {
+            const total = alleVoks.length;
+            const answeredScores = abgefragt.map(v => v.fortschritt.score).sort((a, b) => a - b);
+            function sectionPath(count, startIdx, scores) {
+              if (count === 0) return '';
+              return Array.from({length: count}, (_, k) => {
+                const x = pX + (total > 1 ? (startIdx + k) / (total - 1) : 0.5) * gW;
+                const y = pY + ((maxS - (scores ? scores[k] : 0)) / range) * gH;
+                return `${k === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+              }).join(' ');
+            }
+            quizGrayPath = sectionPath(nieAnzahl, 0, null);
+            quizGreenPath = sectionPath(abgefragt.length, nieAnzahl, answeredScores);
           }
 
           // Vokabelliste (gefiltert + sortiert)
@@ -4281,16 +4295,18 @@ export default function VokabelApp() {
                     </span>
                   ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>}
                 </div>
-                <div style={{display:"flex", alignItems:"center", gap:4}}>
-                  <svg width="14" height="3" viewBox="0 0 14 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="4 2"/></svg>
-                  {avgDiktatScore !== null ? (
-                    <span style={{fontWeight:700, fontSize:"0.88rem", color: avgDiktatScore > 0 ? "#2d6a4f" : avgDiktatScore < 0 ? "#c0392b" : "#6b6560"}}>
-                      {avgDiktatScore > 0 ? "+" : ""}{avgDiktatScore.toFixed(1)}
-                    </span>
-                  ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>}
-                </div>
+                {statistikGraphDiktatZeigen && (
+                  <div style={{display:"flex", alignItems:"center", gap:4}}>
+                    <svg width="14" height="3" viewBox="0 0 14 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="4 2"/></svg>
+                    {avgDiktatScore !== null ? (
+                      <span style={{fontWeight:700, fontSize:"0.88rem", color: avgDiktatScore > 0 ? "#2d6a4f" : avgDiktatScore < 0 ? "#c0392b" : "#6b6560"}}>
+                        {avgDiktatScore > 0 ? "+" : ""}{avgDiktatScore.toFixed(1)}
+                      </span>
+                    ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>}
+                  </div>
+                )}
               </div>
-              <button className="btn btn-ghost btn-sm" style={{flexShrink:0}} onClick={() => window.scrollTo({top:0, behavior:"smooth"})}>↑</button>
+              <button className="btn btn-ghost btn-sm" style={{flexShrink:0}} onClick={() => window.scrollTo({top:0, behavior:"smooth"})}>nach oben</button>
             </div>
             <div className="sektion" style={{paddingTop:12, paddingBottom:(statistikListenAufgeklappt||statistikEinzelauswahlAufgeklappt)?'100dvh':0}}>
               {/* Graph */}
@@ -4301,16 +4317,26 @@ export default function VokabelApp() {
                   {zeroY > pY && <rect x={pX} y={pY} width={gW} height={Math.max(0, zeroY - pY)} fill="#e8f5e9" opacity="0.6"/>}
                   {zeroY < GH - pY && <rect x={pX} y={zeroY} width={gW} height={Math.max(0, GH - pY - zeroY)} fill="#ffebee" opacity="0.6"/>}
                   <line x1={pX} y1={zeroY} x2={GW - pX} y2={zeroY} stroke="#ccc" strokeWidth="1"/>
-                  <path d={toPath(quizS)} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
+                  {quizTwoColor ? (<>
+                    <path d={quizGrayPath} fill="none" stroke="#b0bec5" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
+                    <path d={quizGreenPath} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
+                  </>) : (
+                    <path d={quizGreenPath} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
+                  )}
                   <path d={toPath(diktatS)} fill="none" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="6 4" vectorEffect="non-scaling-stroke"/>
                 </svg>
                 <div style={{display:"flex", alignItems:"center", gap:8, padding:"6px 14px", background:"#f7f5f0", borderTop:"1px solid #e0dbd2", fontSize:"0.72rem", fontWeight:600, color:"#6b6560", flexWrap:"wrap"}}>
-                  <button className={`typ-btn${statistikGraphQuizZeigen?" aktiv":""}`}
-                    style={{display:"flex", alignItems:"center", gap:5, fontSize:"0.68rem", padding:"3px 8px", opacity:statistikGraphQuizZeigen?1:0.5}}
-                    onClick={() => setStatistikGraphQuizZeigen(v => !v)}>
-                    <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
+                  <span style={{display:"flex", alignItems:"center", gap:5, fontSize:"0.68rem", padding:"3px 8px"}}>
+                    {quizTwoColor ? (<>
+                      <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}>
+                        <line x1="0" y1="1.5" x2="8" y2="1.5" stroke="#b0bec5" strokeWidth="2.5"/>
+                        <line x1="8" y1="1.5" x2="16" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/>
+                      </svg>
+                    </>) : (
+                      <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
+                    )}
                     Abfrage
-                  </button>
+                  </span>
                   <button className={`typ-btn${statistikGraphDiktatZeigen?" aktiv":""}`}
                     style={{display:"flex", alignItems:"center", gap:5, fontSize:"0.68rem", padding:"3px 8px", opacity:statistikGraphDiktatZeigen?1:0.5}}
                     onClick={() => setStatistikGraphDiktatZeigen(v => !v)}>
@@ -4333,7 +4359,7 @@ export default function VokabelApp() {
                   const aktiv = statistikFilter === k.key;
                   return (
                     <div key={k.key} onClick={() => setStatistikFilter(aktiv ? "alle" : k.key)}
-                      style={{background:aktiv?(k.bg||"#f0f9f4"):(k.bg||"#fff"), border:`2px solid ${aktiv?(k.rand||"#2d6a4f"):(k.rand||"#e0dbd2")}`, borderRadius:10, padding:"12px 14px", cursor:"pointer", userSelect:"none", transition:"border-color 0.15s"}}>
+                      style={{background:aktiv?(k.bg||"#f0f9f4"):(k.bg||"#fff"), border:`2px solid ${aktiv?"#2d6a4f":(k.rand||"#e0dbd2")}`, borderRadius:10, padding:"12px 14px", cursor:"pointer", userSelect:"none", transition:"border-color 0.15s"}}>
                       <div style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:k.farbe||(aktiv?"#2d6a4f":"#6b6560")}}>{k.label}</div>
                       <div style={{fontSize:"1.6rem", fontWeight:700, marginTop:4, color:k.farbe||(aktiv?"#2d6a4f":"#1a1a1a")}}>{k.wert}</div>
                     </div>
