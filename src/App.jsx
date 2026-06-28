@@ -500,6 +500,8 @@ export default function VokabelApp() {
   const [statistikBereichTyp, setStatistikBereichTyp] = useState("alle");
   const [statistikCheckboxAuswahl, setStatistikCheckboxAuswahl] = useState(new Set());
   const [statistikEinzelauswahlAufgeklappt, setStatistikEinzelauswahlAufgeklappt] = useState(false);
+  const [statistikVonBisModus, setStatistikVonBisModus] = useState(false);
+  const [statistikVonBisErster, setStatistikVonBisErster] = useState(null);
   const [statistikVokauswahlH, setStatistikVokauswahlH] = useState(0);
   const [sessionSlots, setSessionSlots] = useState([]);
   const [quizSessionModus, setQuizSessionModus] = useState("alle");
@@ -696,6 +698,13 @@ export default function VokabelApp() {
       setQuizVonBisErster(null);
     }
   }, [quizListeAufgeklappt]);
+
+  useEffect(() => {
+    if (!statistikEinzelauswahlAufgeklappt) {
+      setStatistikVonBisModus(false);
+      setStatistikVonBisErster(null);
+    }
+  }, [statistikEinzelauswahlAufgeklappt]);
 
   useEffect(() => {
     const el = statistikListenHeaderRef.current;
@@ -1598,6 +1607,37 @@ export default function VokabelApp() {
         const el = einzelauswahlRef.current;
         if (!el) return;
         const target = headerH + alleBereichH;
+        const rect = el.getBoundingClientRect();
+        if (rect.top < target) {
+          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
+        }
+      }));
+    }
+  }
+
+  function toggleStatistikListenAuswahl() {
+    const opening = !statistikListenAufgeklappt;
+    setStatistikListenAufgeklappt(v => !v);
+    if (opening) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const el = statistikListenContainerRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.top < headerH) {
+          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH), behavior: 'instant' });
+        }
+      }));
+    }
+  }
+
+  function toggleStatistikEinzelauswahl() {
+    const opening = !statistikEinzelauswahlAufgeklappt;
+    setStatistikEinzelauswahlAufgeklappt(v => !v);
+    if (opening) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const el = statistikEinzelauswahlRef.current;
+        if (!el) return;
+        const target = headerH + statistikListenHeaderH + statistikVokauswahlH;
         const rect = el.getBoundingClientRect();
         if (rect.top < target) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
@@ -3955,7 +3995,7 @@ export default function VokabelApp() {
               <button
                 className={`toggle-opt${chipAktiv ? " aktiv" : ""}`}
                 style={{marginLeft:"auto", padding:"3px 8px", fontSize:"0.75rem", maxWidth:"45%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}
-                onClick={() => setStatistikListenAufgeklappt(v => !v)}>
+                onClick={toggleStatistikListenAuswahl}>
                 {chipText}
               </button>
             </div>
@@ -3993,59 +4033,78 @@ export default function VokabelApp() {
           const auswahlAnzahl = statistikGefilterteVoks.length;
           return (<>
             <div ref={statistikVokauswahlRef} style={{position:"sticky", top:headerH+statistikListenHeaderH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
-              {!statistikEinzelauswahlAufgeklappt && (
-                <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832", flex:1}}>Vokabel-Auswahl</span>
+              {/* LINKS */}
+              <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
+                {istBereich && statistikEinzelauswahlAufgeklappt ? (
+                  <>
+                    <button className={`btn btn-sm${statistikVonBisModus ? " btn-primary" : " btn-ghost"}`}
+                      onClick={() => { if (statistikVonBisModus) { setStatistikVonBisModus(false); setStatistikVonBisErster(null); } else { setStatistikVonBisModus(true); } }}>
+                      {!statistikVonBisModus ? "Von–Bis" : statistikVonBisErster === null ? "Von…" : "…Bis"}
+                    </button>
+                    {statistikCheckboxAuswahl.size > 0 && (
+                      <button className="btn btn-ghost btn-sm" style={{padding:"6px 8px"}}
+                        onClick={() => { setStatistikCheckboxAuswahl(new Set()); setStatistikVonBisModus(false); setStatistikVonBisErster(null); }}>
+                        <IcoX s={12}/>
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Vokabel-Auswahl</span>
+                )}
+              </span>
+              {/* MITTE */}
+              {istBereich && (
+                <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none", whiteSpace:"nowrap"}}>({auswahlAnzahl} V.)</span>
               )}
-              {istBereich && statistikCheckboxAuswahl.size > 0 && (
-                <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none", whiteSpace:"nowrap"}}>
-                  ({auswahlAnzahl} V.)
-                </span>
-              )}
-              {statistikEinzelauswahlAufgeklappt && istBereich && (
-                <button className="btn-toggle-ghost" style={{padding:"3px 8px", fontSize:"0.75rem"}}
-                  onClick={() => {
-                    setStatistikBereichTyp("alle");
-                    setStatistikCheckboxAuswahl(new Set());
-                    setStatistikEinzelauswahlAufgeklappt(false);
-                  }}>
-                  <IcoX s={11}/>
-                </button>
-              )}
-              <div className="toggle-btn" style={{marginLeft:statistikEinzelauswahlAufgeklappt?"0":"auto"}}>
-                <button
-                  className={`toggle-opt${!istBereich?" aktiv":""}`}
-                  onClick={() => { setStatistikBereichTyp("alle"); setStatistikEinzelauswahlAufgeklappt(false); }}>
-                  Alle
-                </button>
-                <button
-                  className={`toggle-opt${istBereich?" aktiv":""}`}
-                  onClick={() => {
-                    if (istBereich) {
-                      setStatistikEinzelauswahlAufgeklappt(v => !v);
-                    } else {
-                      setStatistikBereichTyp("bereich");
-                      if (hatVoks) setStatistikEinzelauswahlAufgeklappt(true);
-                    }
-                  }}>
-                  Bereich
-                </button>
-              </div>
+              {/* RECHTS */}
+              <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
+                <div className="toggle-btn">
+                  <button className={`toggle-opt${!istBereich?" aktiv":""}`}
+                    onClick={() => { setStatistikBereichTyp("alle"); setStatistikEinzelauswahlAufgeklappt(false); setStatistikVonBisModus(false); setStatistikVonBisErster(null); }}>
+                    Alle
+                  </button>
+                  <button className={`toggle-opt${istBereich?" aktiv":""}`}
+                    onClick={() => {
+                      if (!istBereich) {
+                        setStatistikBereichTyp("bereich");
+                        if (statistikCheckboxAuswahl.size === 0 && hatVoks) toggleStatistikEinzelauswahl();
+                      } else {
+                        toggleStatistikEinzelauswahl();
+                      }
+                    }}>
+                    Bereich
+                  </button>
+                </div>
+              </span>
             </div>
             {statistikEinzelauswahlAufgeklappt && istBereich && (
               <div ref={statistikEinzelauswahlRef} style={{background:"#f7f5f0", borderBottom:"1px solid #e0dbd2", paddingBottom:8}}>
                 <div className="karte" style={{margin:"8px 16px 0 16px"}}>
-                  {statistikBasisVoks.map(vok => {
+                  {statistikBasisVoks.map((vok, idx) => {
                     const gewaehlt = statistikCheckboxAuswahl.has(vok.id);
+                    const isVon = statistikVonBisModus && vok.id === statistikVonBisErster;
                     const sp1 = TYPEN.find(t => vok._spalten[t]?.aktiv);
                     const sp2 = TYPEN.filter(t => vok._spalten[t]?.aktiv)[1];
                     return (
-                      <div key={vok.id} className="quiz-setup-check" style={{padding:"8px 16px"}}
-                        onClick={() => setStatistikCheckboxAuswahl(prev => {
-                          const n = new Set(prev);
-                          if (n.has(vok.id)) n.delete(vok.id); else n.add(vok.id);
-                          return n;
-                        })}>
-                        <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
+                      <div key={vok.id} className="vok-zeile"
+                        style={{background: isVon ? "#fff3cd" : gewaehlt ? "#f0f7f0" : "transparent"}}
+                        onClick={() => {
+                          if (!statistikVonBisModus) {
+                            setStatistikCheckboxAuswahl(prev => { const n = new Set(prev); if (n.has(vok.id)) n.delete(vok.id); else n.add(vok.id); return n; });
+                            return;
+                          }
+                          if (statistikVonBisErster === null) {
+                            setStatistikVonBisErster(vok.id);
+                          } else {
+                            const vonIdx = statistikBasisVoks.findIndex(v => v.id === statistikVonBisErster);
+                            const [lo, hi] = vonIdx <= idx ? [vonIdx, idx] : [idx, vonIdx];
+                            setStatistikCheckboxAuswahl(prev => { const neu = new Set(prev); statistikBasisVoks.slice(lo, hi + 1).forEach(v => neu.add(v.id)); return neu; });
+                            setStatistikVonBisModus(false);
+                            setStatistikVonBisErster(null);
+                          }
+                        }}>
+                        <div className={`checkbox${isVon ? " checked" : gewaehlt ? " checked" : ""}`} style={{flexShrink:0, ...(isVon ? {background:"#f0a500", borderColor:"#f0a500"} : {})}}>{isVon ? "→" : gewaehlt ? "✓" : ""}</div>
+                        <span className="vok-nr">{idx+1}</span>
                         <div style={{flex:1, minWidth:0}}>
                           {sp1 && vok[sp1] && <div style={{fontWeight:600, fontSize:"0.88rem", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp1].wert}</div>}
                           {sp2 && vok[sp2] && <div style={{fontSize:"0.75rem", color:"#6b6560", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp2].wert}</div>}
@@ -4141,7 +4200,7 @@ export default function VokabelApp() {
                 <button className="btn btn-ghost btn-sm" onClick={() => window.scrollTo({top:0, behavior:"smooth"})}>↑ Nach oben</button>
               </div>
             </div>
-            <div className="sektion" style={{paddingTop:12}}>
+            <div className="sektion" style={{paddingTop:12, paddingBottom:(statistikListenAufgeklappt||statistikEinzelauswahlAufgeklappt)?'100dvh':0}}>
               {/* Graph */}
               <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid #e0dbd2"}}>
                 <svg viewBox={`0 0 ${GW} ${GH}`} preserveAspectRatio="none"
