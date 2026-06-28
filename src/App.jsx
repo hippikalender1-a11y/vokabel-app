@@ -3188,61 +3188,73 @@ export default function VokabelApp() {
                 {/* LISTEN-AUSWAHL */}
                 <div ref={listenContainerRef} style={{overflow:'hidden', paddingTop: listenAuswahlAufgeklappt ? 16 : 0}}>
                   {listenAuswahlAufgeklappt && (<>
-                    {(sessionSlotAktiv || sessionSlots.some(s => s.konfiguration)) && (
-                      <>
-                        <div style={{display:"flex", alignItems:"center", marginBottom: slotSektionAufgeklappt ? 8 : 12}}>
-                          <span className="sektion-label" style={{flex:1, marginBottom:0}}>Gespeicherte Konfigurationen</span>
-                          <button
-                            onClick={() => { setSlotLoeschModus(v => !v); }}
-                            style={{
-                              background: slotLoeschModus ? "#2d6a4f" : "none",
-                              border: `1.5px solid ${slotLoeschModus ? "#2d6a4f" : "#c0bcb7"}`,
-                              color: slotLoeschModus ? "#fff" : "#6b6560",
-                              borderRadius:6, cursor:"pointer", padding:"3px 7px",
-                              display:"flex", alignItems:"center", marginRight:6,
-                            }}
-                            title={slotLoeschModus ? "Lösch-Modus beenden" : "Slots löschen"}>
-                            <IcoX s={11}/>
-                          </button>
-                          <button
-                            onClick={() => setSlotSektionAufgeklappt(v => !v)}
-                            style={{background:"none", border:"none", cursor:"pointer", color:"#6b6560", padding:"3px 4px", display:"flex", alignItems:"center"}}>
-                            {slotSektionAufgeklappt ? <IcoUp s={11}/> : <IcoDown s={11}/>}
-                          </button>
-                        </div>
-                        {slotSektionAufgeklappt && (
-                          <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
-                            {sessionSlotAktiv && (
-                              <button className="slot-chip belegt"
-                                style={{background: slotLoeschModus ? "#fff0f0" : "#e8f5ee", borderColor: slotLoeschModus ? "#e74c3c" : "#2d6a4f", color: slotLoeschModus ? "#c0392b" : "#2d6a4f"}}
-                                onClick={() => slotLoeschModus ? setLoescheSlotNr("session") : ladeSessionSlotKonfig()}>
-                                {slotLoeschModus ? <IcoX s={11}/> : "▶"} Session · {(sessionSlotAktiv.abgefragt||[]).length}/{sessionSlotAktiv.gesamt||0}
+                    {(sessionSlotAktiv || sessionSlots.some(s => s.konfiguration)) && (() => {
+                      const spezialSlots = sessionSlots.filter(s => s.slot === 6 && s.konfiguration);
+                      const normaleSlots = sessionSlots.filter(s => s.slot !== 6 && s.konfiguration);
+                      const hatSpezial = sessionSlotAktiv || spezialSlots.length > 0;
+                      const hatNormal = normaleSlots.length > 0;
+                      const loeschStil = { background:"#fff0f0", borderColor:"#e74c3c", color:"#c0392b" };
+                      const renderChip = (key, label, onClick, extraStil = {}) => (
+                        <button key={key} className="slot-chip belegt"
+                          style={slotLoeschModus ? loeschStil : extraStil}
+                          onClick={onClick}>
+                          {slotLoeschModus && <><IcoX s={10}/>{" "}</>}{label}
+                        </button>
+                      );
+                      return (
+                        <>
+                          <div style={{display:"flex", alignItems:"center", marginBottom: slotSektionAufgeklappt ? 8 : 12}}>
+                            <span className="sektion-label" style={{flex:1, marginBottom:0}}>Gespeicherte Konfigurationen</span>
+                            {slotSektionAufgeklappt && (
+                              <button
+                                onClick={() => setSlotLoeschModus(v => !v)}
+                                style={{
+                                  background: slotLoeschModus ? "#2d6a4f" : "none",
+                                  border:`1.5px solid ${slotLoeschModus ? "#2d6a4f" : "#c0bcb7"}`,
+                                  color: slotLoeschModus ? "#fff" : "#6b6560",
+                                  borderRadius:6, cursor:"pointer", padding:"3px 7px",
+                                  display:"flex", alignItems:"center", marginRight:6,
+                                }}>
+                                <IcoX s={11}/>
                               </button>
                             )}
-                            {sessionSlots.filter(s => s.konfiguration).map(s => (
-                              <button key={s.slot} className="slot-chip belegt"
-                                style={slotLoeschModus ? {background:"#fff0f0", borderColor:"#e74c3c", color:"#c0392b"} : {}}
-                                onClick={() => slotLoeschModus ? setLoescheSlotNr(s.slot) : ladeKonfigAusSlot(s)}>
-                                {slotLoeschModus && <IcoX s={11}/>} {s.slot === 6 ? "Zuletzt" : (s.name || `Slot ${s.slot}`)}
-                              </button>
-                            ))}
-                            {!slotLoeschModus && (() => {
-                              const normaleSlots = sessionSlots.filter(s => s.slot !== 6);
-                              if (normaleSlots.length >= 20) {
-                                return <span style={{fontSize:"0.78rem", color:"#aaa", alignSelf:"center"}}>Max. 20 Slots</span>;
-                              }
-                              return (
-                                <button className="slot-chip leer"
-                                  style={{display:"flex", alignItems:"center", gap:4}}
-                                  onClick={() => { setModalInput(""); setModalMitVokabeln(false); oeffneModal("slot-speichern"); }}>
-                                  <IcoPlus s={11}/> Neu
-                                </button>
-                              );
-                            })()}
+                            <button
+                              onClick={() => { setSlotSektionAufgeklappt(v => !v); setSlotLoeschModus(false); }}
+                              style={{background:"none", border:"none", cursor:"pointer", color:"#6b6560", padding:"3px 4px", display:"flex", alignItems:"center"}}>
+                              {slotSektionAufgeklappt ? <IcoUp s={11}/> : <IcoDown s={11}/>}
+                            </button>
                           </div>
-                        )}
-                      </>
-                    )}
+                          {slotSektionAufgeklappt && (
+                            <>
+                              {hatSpezial && (
+                                <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom: hatNormal ? 6 : 16}}>
+                                  {sessionSlotAktiv && renderChip(
+                                    "session",
+                                    `▶ Session · ${(sessionSlotAktiv.abgefragt||[]).length}/${sessionSlotAktiv.gesamt||0}`,
+                                    () => slotLoeschModus ? setLoescheSlotNr("session") : ladeSessionSlotKonfig(),
+                                    {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
+                                  )}
+                                  {spezialSlots.map(s => renderChip(
+                                    s.slot,
+                                    "Zuletzt",
+                                    () => slotLoeschModus ? setLoescheSlotNr(s.slot) : ladeKonfigAusSlot(s)
+                                  ))}
+                                </div>
+                              )}
+                              {hatNormal && (
+                                <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
+                                  {normaleSlots.map(s => renderChip(
+                                    s.slot,
+                                    s.name || `Slot ${s.slot}`,
+                                    () => slotLoeschModus ? setLoescheSlotNr(s.slot) : ladeKonfigAusSlot(s)
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </>
+                      );
+                    })()}
                     {listenIndex.length === 0
                       ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
                       : <div className="karte" style={{marginBottom:16}}>
