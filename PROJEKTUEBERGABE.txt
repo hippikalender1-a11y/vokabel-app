@@ -1,7 +1,7 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-28  (Session 16 — Punkt 5 deployed, alle Punkte fertig)
+Stand: 2026-06-28  (Session 16 abgeschlossen — Punkt 5 deployed; Session-Steuerung-Umbau GEPLANT aber nicht implementiert)
 Letzter Commit: 1131ce9
 
 DATEIPFADE
@@ -512,6 +512,109 @@ DURCHLAUF-ENDE (alle Y abgefragt):
   Button "Zur Übersicht" → updateSlotFortschritt (istDurchlaufEnde=true → abgefragt=[]) + beendeQuiz
 
 DIKTAT: gleiche Logik wie reguläres Quiz (starteDiktat mit Session-Filterung)
+
+
+================================================================
+NÄCHSTE AUFGABE — SESSION-STEUERUNG UMBAU
+================================================================
+WICHTIG: App.jsx ist SAUBER (letzter Build ok, kein halbfertiger Code).
+Der folgende Umbau muss in der nächsten Session vollständig implementiert werden.
+
+KONZEPT (vom User bestätigt):
+  - Session-Modus ist DIREKT konfigurierbar (nicht über Slots)
+  - Neue sticky Zeile "Session" zwischen Einstellungen und Quiz-Button
+    Links: "Session" | Mitte: "noch N V." (absolut) | Rechts: [Alle][20 V.] Toggle
+  - [Alle] = normaler Modus | [N V.] = Pakete-Modus (Klick öffnet Kontext)
+  - Kontext: Preset-Buttons 5/10/15/20/25/30/40/50 + ggf. Reset-Button
+  - Quiz-Button zeigt Fortschrittsbalken + Text wenn Session aktiv
+  - Fertig-Screen (Mini-Session): Preset-Buttons für nächste Paketgröße
+    "Nächste N Vokabeln" + "Pause"
+  - Fertig-Screen (Durchlauf-Ende): "Alle N abgefragt!" + "Zur Übersicht"
+  - Normale Slots: nur belegte anzeigen, dynamisch (max 20), + Neuer-Slot-Button
+  - Alle Slots löschbar (× Button, mit Bestätigungs-Modal)
+  - Session-Slot: eigener localStorage-Key, getrennt von normalen Slots
+    Sichtbar in Listenauswahl nur wenn befüllt, mit ▶ und Fortschritt (X/Y)
+  - Übernahme-Nachfrage: wenn Session-Slot existiert und andere Listen gewählt
+
+ENTFERNT WERDEN:
+  - aktiverSlotNr, quizSessionGroesse, sessionResetConfirm, modalSessionGroesse States
+  - getSlotFortschritt, updateSlotFortschritt, resetSlotFortschritt Funktionen
+  - speichereKonfigInSlot: extra-Parameter + sessionGroesse Feld
+  - ladeKonfigAusSlot: session-Zeilen
+  - Alte isSessionModus/sessionInfo/aktSlot Blöcke in Quiz-Tab
+  - Alte quiz.sessionAktiverSlotNr Blöcke in Fertig-Screens
+  - modalSessionGroesse-Input im slot-speichern Modal
+  - Statische Slots 1–5 in Listenauswahl
+  - defaultSessionSlots: Slots 1–5 entfernen (nur Slot 6 behalten)
+
+NEUE STORAGE-KEYS:
+  SK.sessionAktiv = "vokabel_session_aktiv"
+  Session-Slot Struktur: { listenIds, vokabelAuswahl, bereichTyp, abgefragt:[],
+    gesamt:N, paketGroesse:N, konfiguration:{alle quiz-settings} }
+
+NEUE STATES:
+  quizSessionModus = "alle" | "pakete"
+  quizPaketGroesse = 20
+  quizSessionAufgeklappt = false
+  sessionSlotAktiv = null  (geladener Session-Slot)
+  sessionH = 0
+  sessionUeberschreibenModal = false
+  loescheSlotNr = null
+  sessionRef, sessionContainerRef (Refs)
+
+NEUE FUNKTIONEN:
+  lsDel(key)
+  loescheNormalSlot(nr)
+  sessionSlotKonflikt() → bool
+  speichereSessionSlotNeu(paketGroesse, gesamtVoks) → slot
+  updateSessionSlotFortschritt(neueIds, isDurchlaufEnde)
+  ladeSessionSlotKonfig()
+  loescheSessionSlot()
+
+QUIZ-START LOGIK (starteQuiz/starteDiktat, beide mit force=false Param):
+  const isPakete = quizSessionModus === "pakete";
+  if (!force && isPakete && sessionSlotAktiv && sessionSlotKonflikt()) {
+    setSessionUeberschreibenModal(true); return;
+  }
+  const sessionGesamt = isPakete ? voks.length : 0;
+  if (isPakete) {
+    const existingSlot = lsGet(SK.sessionAktiv);
+    const konflikt = existingSlot && sessionSlotKonflikt();
+    if (!existingSlot || konflikt) {
+      speichereSessionSlotNeu(quizPaketGroesse, voks.length);
+    } else {
+      voks = voks.filter(v => !new Set(existingSlot.abgefragt||[]).has(v.id));
+    }
+  }
+  // schlechteste: kein slice auf quizSchlechtesteAnzahl wenn isPakete
+  if (isPakete) voks = voks.slice(0, quizPaketGroesse);
+  setQuiz({..., sessionVokIds: isPakete ? voks.map(v=>v.id) : null,
+    sessionGesamt, istSessionModus: isPakete});
+
+VERFUEGBAR-BERECHNUNG (Quiz-Tab IIFE, alten Block ersetzen):
+  const isPakete = quizSessionModus === "pakete";
+  const sessionHatFortschritt = isPakete && sessionSlotAktiv && !sessionSlotKonflikt();
+  // wenn sessionHatFortschritt: filter abgefragt, min(paketGroesse, rest)
+  // wenn isPakete (kein Fortschritt): min(paketGroesse, alle)
+  // sonst: bisherige Logik (schlechteste / alle)
+
+STICKY-REIHENFOLGE NACH UMBAU:
+  1. headerRef (zIndex:10)
+  2. alleBereichRef (top:headerH, zIndex:8)
+  3. abfrageModusRef (zIndex:7)
+  4. reihenfolgeRef (zIndex:6)
+  5. einstellungenRef (zIndex:5)
+  6. NEU sessionRef (top:+einstellungenH, zIndex:4)
+  7. Quiz-Button (top:+sessionH, zIndex:3)  ← war zIndex:4
+
+NEUE MODALS:
+  - loescheSlotNr: "Slot löschen?" mit Ja/Abbrechen
+  - sessionUeberschreibenModal: "Session überschreiben?" mit Neu starten/Abbrechen
+
+SLOT-SPEICHERN MODAL (neu):
+  - Nur belegte normale Slots (1-20) anzeigen + "Neuer Slot +" Button
+  - Bei 20 Slots: "Max. 20 Slots — bitte überschreiben" statt + Button
+  - Kein sessionGroesse-Input mehr
 
 
 ================================================================
