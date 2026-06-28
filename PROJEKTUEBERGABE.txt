@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-28  (Session 15 läuft)
-Letzter Commit: 9a450c1  (Protokoll Session 14)
+Stand: 2026-06-28  (Session 15 läuft — Punkte 1–4 deployed, Punkt 5 offen)
+Letzter Commit: 62f8522
 
 DATEIPFADE
 ----------
@@ -413,10 +413,10 @@ QUIZ-DEFAULTS (State-Initialwerte)
 
 
 ================================================================
-SESSION 15 — OFFENE AUFGABEN
+SESSION 15 — UMGESETZTE ÄNDERUNGEN (Punkte 1–4 deployed: 62f8522)
 ================================================================
 
-PUNKT 1 — Sticky Header: neues Layout
+PUNKT 1 — Sticky Header: neues Layout ✓ FERTIG
 --------------------------------------
 - Grüne Elemente (Chip/Toggle) → RECHTS, ersetzen Pfeil-Button
   Klick auf grünes Element = öffnen/schließen (wie bisheriger Pfeil)
@@ -431,7 +431,7 @@ PUNKT 1 — Sticky Header: neues Layout
 - Reihenfolge-Zeile:    "Reihenfolge" links | zentriert leer/Anzahl | [Zufällig / Schlechteste / Listen-Nr.] rechts
 - Einstellungen-Zeile:  "Einstellungen" links | zentriert leer | [Einfach / Schwer] rechts
 
-PUNKT 2 — Reihenfolge > Schlechteste
+PUNKT 2 — Reihenfolge > Schlechteste ✓ FERTIG
 --------------------------------------
 - "Anzahl"-Eingabe komplett entfernen
 - Max-Score-Filter: statt Texteingabe 5 Preset-Buttons: −10 / −5 / 0 / 5 / 10
@@ -439,7 +439,7 @@ PUNKT 2 — Reihenfolge > Schlechteste
 - Wenn der Score-Filter die Vokabelzahl gegenüber der Gesamt-Auswahl verändert:
   Anzahl der verfügbaren Vokabeln zentriert in Reihenfolge-Header-Zeile anzeigen
 
-PUNKT 3 — Konfiguration speichern: Vokabelauswahl
+PUNKT 3 — Konfiguration speichern: Vokabelauswahl ✓ FERTIG
 ---------------------------------------------------
 - Beim Speichern: Checkbox „inkl. Vokabel-Auswahl speichern"
   (speichert quizTabListen + quizBereichTyp + quizCheckboxAuswahl)
@@ -449,14 +449,14 @@ PUNKT 3 — Konfiguration speichern: Vokabelauswahl
     Slot hat Listendaten + aktuell andere Liste      → Einstellungen übertragen, Vokabelauswahl → Alle
     Slot hat keine Listendaten                       → nur Einstellungen auf aktuelle Auswahl anwenden
 
-PUNKT 4 — Score-Clamp global (−10 bis +10)
+PUNKT 4 — Score-Clamp global (−10 bis +10) ✓ FERTIG
 -------------------------------------------
 - Anzeige und Lernentscheidungen: Score wird auf −10…+10 geclampt
   −10 = ungenügend, +10 = sehr gut
 - Intern kann Score weiter frei laufen (rückwärtskompatibel)
 - Clamping nur für Darstellung und Logikentscheidungen
 
-PUNKT 5 — Slot-Session-Modus (großes Feature)
+PUNKT 5 — Slot-Session-Modus (großes Feature) ← NÄCHSTE SESSION
 ----------------------------------------------
 KONZEPT:
   Slot speichert feste Vokabelauswahl (z.B. 120 Vokabeln vom Lehrer).
@@ -508,6 +508,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 9a450c1
+Letzter Commit: 62f8522
 
 ================================================================
