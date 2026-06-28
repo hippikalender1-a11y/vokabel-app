@@ -1524,6 +1524,9 @@ export default function VokabelApp() {
         setSessionSlotAktiv(sessionObj);
         setQuizSessionModus("pakete");
         setQuizPaketGroesse(sf.paketGroesse || 20);
+      } else {
+        lsDel(SK.sessionAktiv);
+        setSessionSlotAktiv(null);
       }
     } else {
       setAktiverNormalSlotNr(null);
@@ -1735,7 +1738,8 @@ export default function VokabelApp() {
     if (!kombiListe) return;
     const isPakete = quizSessionModus === "pakete";
     if (isPakete && quizPaketGroesse == null) return;
-    if (!force && isPakete && sessionSlotAktiv && sessionSlotKonflikt()) {
+    const isSameSlotD = sessionSlotAktiv?.slotNr === aktiverNormalSlotNr;
+    if (!force && isPakete && sessionSlotAktiv && isSameSlotD && sessionSlotKonflikt()) {
       setSessionUeberschreibenModal(true); return;
     }
     speichereKonfigInSlot(6, "Zuletzt verwendet");
@@ -1805,7 +1809,8 @@ export default function VokabelApp() {
     if (!kombiListe) return;
     const isPakete = quizSessionModus === "pakete";
     if (isPakete && quizPaketGroesse == null) return;
-    if (!force && isPakete && sessionSlotAktiv && sessionSlotKonflikt()) {
+    const isSameSlotQ = sessionSlotAktiv?.slotNr === aktiverNormalSlotNr;
+    if (!force && isPakete && sessionSlotAktiv && isSameSlotQ && sessionSlotKonflikt()) {
       setSessionUeberschreibenModal(true); return;
     }
     speichereKonfigInSlot(6, "Zuletzt verwendet");

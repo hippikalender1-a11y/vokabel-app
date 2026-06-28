@@ -1,7 +1,7 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-28  (Session 21 abgeschlossen — Graph-2-Farben, Avg-Score-Fix, Diktat-Toggle, Filter-Outline)
+Stand: 2026-06-28  (Session 22 abgeschlossen — Mehrfach-Sessions, X-Button, Delta-Score, Session-Toggle)
 Letzter Commit: (siehe SESSION 20)
 
 DATEIPFADE
@@ -805,32 +805,54 @@ PFEIL-BUTTON:
 
 
 ================================================================
-SESSION 22 — IN ARBEIT
+SESSION 22 — UMGESETZTE ÄNDERUNGEN (Commit: a3e219b)
 ================================================================
 
-SCHRITT 1 — X-Button in "Gespeicherte Konfigurationen" (einfach):
-  Alt: Label links | [×] Lösch-Toggle | [▲/▼] Pfeil-Button rechts
-  Neu: [×] Lösch-Toggle direkt hinter Label-Text | [▲/▼] Pfeil-Button rechts
-  → X und Pfeil visuell voneinander getrennt
+X-BUTTON "GESPEICHERTE KONFIGURATIONEN":
+  Alt: Label | [×] | [▲/▼] — X direkt neben Pfeil
+  Neu: Label + [×] (inline im Label-Span) | [▲/▼] — X rechts vom Text, Pfeil ganz rechts
+  Implementierung: <span style={{flex:1, display:"flex", alignItems:"center", gap:8}}>
 
-SCHRITT 2 — Mehrfach-Sessions / Session-Architektur (komplex):
-  Aktuell: genau ein aktiver Slot (SK.sessionAktiv)
-  Neu: jeder benannte Slot (1–20) trägt seinen eigenen Fortschritt
-    Slot-Objekt erweitert um: { abgefragt:[], gesamt:N, paketGroesse:N, sessionScore:{[vokId]: startScore} }
-    "Aktiv" = zuletzt geladener Slot (sessionSlotAktiv zeigt auf diesen Slot)
-    SK.sessionAktiv bleibt als Zeiger auf den aktiven Slot (slot-nr)
+MEHRFACH-SESSIONS (Architektur-Umbau):
+  Neu: jeder benannte Slot (1–20) hat optionales sessionFortschritt-Feld:
+    { abgefragt:[vokId,...], gesamt:N, paketGroesse:N, startScores:{vokId:score,...} }
+  SK.sessionAktiv erhält neues Feld: slotNr (null = unbenannte/alte Session)
+  aktiverNormalSlotNr (State) = welcher Slot gerade als Session-Kontext aktiv ist
 
-SCHRITT 3 — Lokaler Session-Score:
-  Beim Session-Start: aktuellen score jeder Vokabel als Baseline speichern
-    sessionScore: { "${listeId}__${vokId}": score_at_start }
-  Delta = aktuell − Baseline
-  Anzeige: lokaler Ø-Score in Statistik umschaltbar [Global][Session]
+GEÄNDERTE FUNKTIONEN:
+  speichereSessionSlotNeu(paketGroesse, gesamtVoks, startScores={}):
+    → speichert slotNr + startScores in SK.sessionAktiv
+    → schreibt sessionFortschritt in den benannten Slot (SK.sessionSlots)
+  updateSessionSlotFortschritt(neueIds, isDurchlaufEnde):
+    → synct abgefragt auch in slot.sessionFortschritt (SK.sessionSlots)
+  loescheSessionSlot():
+    → löscht SK.sessionAktiv + setzt slot.sessionFortschritt=null + aktiverNormalSlotNr=null
+  ladeKonfigAusSlot(slot):
+    → setzt aktiverNormalSlotNr = slot.slot (außer Slot 6)
+    → lädt slot.sessionFortschritt als aktive Session wenn vorhanden
+  starteQuiz / starteDiktat:
+    → berechnen startScores (vokId → score) vor Aufruf von speichereSessionSlotNeu
 
-SCHRITT 4 — Score-Umschalter in Statistik:
-  Button [Global][Session] in Ø-Score-Header oder eigener Toggle-Chip
-  Session-Modus: zeigt delta-Score statt absoluten Score
-  Symbol: ▶ NICHT verwenden (bereits für "Session laden" belegt)
-  → einfacher Text-Toggle als typ-btn Chip
+CHIP-ANZEIGE (Listenauswahl-Kontext):
+  Unbenannte Session (slotNr==null): bleibt als "▶ Session · N/M" in Spezial-Zeile
+  Benannte Slots mit sessionFortschritt:
+    Aktiv (aktiverNormalSlotNr===s.slot): "▶ Name · N/M", grüner Stil (#e8f5ee)
+    Inaktiv mit Session: "▶ Name · N/M", helles Grün (#f0f9f4 / #a8d5be)
+    Ohne Session: nur "Name" (bisheriges Verhalten)
+
+SESSION-DELTA-SCORE (Statistik):
+  getSessionDelta(vok): current - startScores[vok.id] (null wenn nicht in Session)
+  sessionVoksAbgefragt: nur Voks mit Eintrag in startScores UND fortschritt
+  avgSessionScore: Avg-Delta über sessionVoksAbgefragt (Nenner wie avgDenom)
+
+STATISTIK Ø-SCORE-HEADER:
+  Neu: [Global][Session] Toggle-Buttons (nur sichtbar wenn hatSessionDaten)
+  Session-Modus: zeigt avgSessionScore statt avgScore
+  statistikScoreModus State: "global" | "session" (default "global")
+
+NEUE STATES (Session 22):
+  aktiverNormalSlotNr  = null | number  — aktiver benannter Slot
+  statistikScoreModus  = "global" | "session"
 
 
 ================================================================
@@ -846,6 +868,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 2328d80 (Session 21)
+Letzter Commit: a3e219b (Session 22)
 
 ================================================================
