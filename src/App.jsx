@@ -497,6 +497,8 @@ export default function VokabelApp() {
   const [statistikListenIds, setStatistikListenIds] = useState(null); // null = alle
   const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
   const [statistikGraphOhneUnbeantwortet, setStatistikGraphOhneUnbeantwortet] = useState(false);
+  const [statistikGraphQuizZeigen, setStatistikGraphQuizZeigen] = useState(true);
+  const [statistikGraphDiktatZeigen, setStatistikGraphDiktatZeigen] = useState(true);
   const [statistikBereichTyp, setStatistikBereichTyp] = useState("alle");
   const [statistikCheckboxAuswahl, setStatistikCheckboxAuswahl] = useState(new Set());
   const [statistikEinzelauswahlAufgeklappt, setStatistikEinzelauswahlAufgeklappt] = useState(false);
@@ -530,6 +532,7 @@ export default function VokabelApp() {
   const fileInputRef = useRef(null);
   const headerRef = useRef(null);
   const listenContainerRef = useRef(null);
+  const dropdownImmuneRef = useRef(false);
   const statistikListenHeaderRef = useRef(null);
   const statistikVokauswahlRef = useRef(null);
   const statistikListenContainerRef = useRef(null);
@@ -564,6 +567,7 @@ export default function VokabelApp() {
   // Listenauswahl: schließt wenn Inhalt-Unterkante die Header-Unterkante passiert
   useEffect(() => {
     const onScroll = () => {
+      if (dropdownImmuneRef.current) return;
       const el = listenContainerRef.current;
       if (!el || el.offsetHeight === 0) return;
       if (el.getBoundingClientRect().bottom <= headerH) {
@@ -577,6 +581,7 @@ export default function VokabelApp() {
   // Einzelauswahl: schließt wenn Inhalt-Unterkante die Quiz-Button-Oberkante passiert
   useEffect(() => {
     const onScroll = () => {
+      if (dropdownImmuneRef.current) return;
       const el = einzelauswahlRef.current;
       if (!el || el.offsetHeight === 0) return;
       if (el.getBoundingClientRect().bottom <= headerH + alleBereichH) {
@@ -590,6 +595,7 @@ export default function VokabelApp() {
   // Abfrage-Modus: schließt wenn Inhalt-Unterkante die Abfrage-Modus-Zeile-Unterkante passiert
   useEffect(() => {
     const onScroll = () => {
+      if (dropdownImmuneRef.current) return;
       const el = abfrageModusContainerRef.current;
       if (!el || el.offsetHeight === 0) return;
       if (el.getBoundingClientRect().bottom <= headerH + alleBereichH + abfrageModusH) {
@@ -603,6 +609,7 @@ export default function VokabelApp() {
   // Reihenfolge: schließt wenn Inhalt-Unterkante die Reihenfolge-Zeile-Unterkante passiert
   useEffect(() => {
     const onScroll = () => {
+      if (dropdownImmuneRef.current) return;
       const el = reihenfolgeContainerRef.current;
       if (!el || el.offsetHeight === 0) return;
       if (el.getBoundingClientRect().bottom <= headerH + alleBereichH + abfrageModusH + reihenfolgeH) {
@@ -616,6 +623,7 @@ export default function VokabelApp() {
   // Einstellungen: schließt wenn Inhalt-Unterkante die Einstellungen-Zeile-Unterkante passiert
   useEffect(() => {
     const onScroll = () => {
+      if (dropdownImmuneRef.current) return;
       const el = einstellungenContainerRef.current;
       if (!el || el.offsetHeight === 0) return;
       if (el.getBoundingClientRect().bottom <= headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH) {
@@ -679,6 +687,7 @@ export default function VokabelApp() {
   // Session-Kontext auto-close beim Scrollen
   useEffect(() => {
     const onScroll = () => {
+      if (dropdownImmuneRef.current) return;
       if (!quizSessionAufgeklappt) return;
       const el = sessionContainerRef.current;
       if (!el) return;
@@ -727,6 +736,7 @@ export default function VokabelApp() {
 
   useEffect(() => {
     const onScroll = () => {
+      if (dropdownImmuneRef.current) return;
       const el = statistikListenContainerRef.current;
       if (!el || el.offsetHeight === 0) return;
       if (el.getBoundingClientRect().bottom <= headerH) setStatistikListenAufgeklappt(false);
@@ -737,6 +747,7 @@ export default function VokabelApp() {
 
   useEffect(() => {
     const onScroll = () => {
+      if (dropdownImmuneRef.current) return;
       const el = statistikEinzelauswahlRef.current;
       if (!el || el.offsetHeight === 0) return;
       if (el.getBoundingClientRect().bottom <= headerH + statistikListenHeaderH) setStatistikEinzelauswahlAufgeklappt(false);
@@ -1540,6 +1551,7 @@ export default function VokabelApp() {
     const opening = !listenAuswahlAufgeklappt;
     setListenAuswahlAufgeklappt(v => !v);
     if (opening) {
+      dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = listenContainerRef.current;
         if (!el) return;
@@ -1547,6 +1559,7 @@ export default function VokabelApp() {
         if (rect.top < headerH) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH), behavior: 'instant' });
         }
+        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
       }));
     }
   }
@@ -1555,6 +1568,7 @@ export default function VokabelApp() {
     const opening = !quizReihenfolgeAufgeklappt;
     setQuizReihenfolgeAufgeklappt(v => !v);
     if (opening) {
+      dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = reihenfolgeContainerRef.current;
         if (!el) return;
@@ -1563,6 +1577,7 @@ export default function VokabelApp() {
         if (rect.top < target) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
         }
+        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
       }));
     }
   }
@@ -1571,6 +1586,7 @@ export default function VokabelApp() {
     const opening = !quizEinstellungenAufgeklappt;
     setQuizEinstellungenAufgeklappt(v => !v);
     if (opening) {
+      dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = einstellungenContainerRef.current;
         if (!el) return;
@@ -1579,6 +1595,7 @@ export default function VokabelApp() {
         if (rect.top < target) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
         }
+        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
       }));
     }
   }
@@ -1587,6 +1604,7 @@ export default function VokabelApp() {
     const opening = !quizAbfrageModusAufgeklappt;
     setQuizAbfrageModusAufgeklappt(v => !v);
     if (opening) {
+      dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = abfrageModusContainerRef.current;
         if (!el) return;
@@ -1595,6 +1613,7 @@ export default function VokabelApp() {
         if (rect.top < target) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
         }
+        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
       }));
     }
   }
@@ -1603,6 +1622,7 @@ export default function VokabelApp() {
     const opening = !quizListeAufgeklappt;
     setQuizListeAufgeklappt(v => !v);
     if (opening) {
+      dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = einzelauswahlRef.current;
         if (!el) return;
@@ -1611,6 +1631,7 @@ export default function VokabelApp() {
         if (rect.top < target) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
         }
+        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
       }));
     }
   }
@@ -1619,6 +1640,7 @@ export default function VokabelApp() {
     const opening = !statistikListenAufgeklappt;
     setStatistikListenAufgeklappt(v => !v);
     if (opening) {
+      dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = statistikListenContainerRef.current;
         if (!el) return;
@@ -1626,6 +1648,7 @@ export default function VokabelApp() {
         if (rect.top < headerH) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH), behavior: 'instant' });
         }
+        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
       }));
     }
   }
@@ -1634,6 +1657,7 @@ export default function VokabelApp() {
     const opening = !statistikEinzelauswahlAufgeklappt;
     setStatistikEinzelauswahlAufgeklappt(v => !v);
     if (opening) {
+      dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = statistikEinzelauswahlRef.current;
         if (!el) return;
@@ -1642,6 +1666,7 @@ export default function VokabelApp() {
         if (rect.top < target) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
         }
+        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
       }));
     }
   }
@@ -3986,18 +4011,42 @@ export default function VokabelApp() {
             : `${statistikListenIds.size} Listen`;
           return (<>
             <div ref={statistikListenHeaderRef} className="statistik-listen-header" style={{top:headerH, zIndex:8, position:"sticky"}}>
-              <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Listen-Auswahl</span>
-              {chipAktiv && statistikBasisVoks.length > 0 && (
+              {/* LINKS */}
+              <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
+                {statistikListenAufgeklappt ? (
+                  <>
+                    {statistikListenIds !== null && (
+                      <button className="btn btn-ghost btn-sm"
+                        onClick={() => setStatistikListenIds(null)}>
+                        Alle
+                      </button>
+                    )}
+                    {statistikListenIds !== null && statistikListenIds.size > 0 && (
+                      <button className="btn btn-ghost btn-sm" style={{padding:"6px 8px"}}
+                        onClick={() => setStatistikListenIds(new Set())}>
+                        <IcoX s={12}/>
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Listen-Auswahl</span>
+                )}
+              </span>
+              {/* MITTE */}
+              {statistikBasisVoks.length > 0 && (
                 <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none", whiteSpace:"nowrap"}}>
                   ({statistikBasisVoks.length} V.)
                 </span>
               )}
-              <button
-                className={`toggle-opt${chipAktiv ? " aktiv" : ""}`}
-                style={{marginLeft:"auto", padding:"3px 8px", fontSize:"0.75rem", maxWidth:"45%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}
-                onClick={toggleStatistikListenAuswahl}>
-                {chipText}
-              </button>
+              {/* RECHTS */}
+              <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
+                <button
+                  className={`toggle-opt${chipAktiv ? " aktiv" : ""}`}
+                  style={{padding:"3px 8px", fontSize:"0.75rem", maxWidth:"55%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}
+                  onClick={toggleStatistikListenAuswahl}>
+                  {chipText}
+                </button>
+              </span>
             </div>
             {statistikListenAufgeklappt && (
               <div ref={statistikListenContainerRef} style={{background:"#f7f5f0", borderBottom:"1px solid #e0dbd2", padding:"8px 16px"}}>
@@ -4136,18 +4185,26 @@ export default function VokabelApp() {
           );
 
           const abgefragt = alleVoks.filter(v => v.fortschritt);
+          const diktatAbgefragt = alleVoks.filter(v => v.diktatFortschritt);
           const nieAnzahl = alleVoks.filter(v => !v.fortschritt).length;
           const positivAnzahl = abgefragt.filter(v => v.fortschritt.score > 0).length;
           const negativAnzahl = abgefragt.filter(v => v.fortschritt.score <= 0).length;
-          const avgScore = abgefragt.length > 0
-            ? abgefragt.reduce((s, v) => s + v.fortschritt.score, 0) / abgefragt.length
+          const avgBasis = statistikGraphOhneUnbeantwortet ? abgefragt : alleVoks;
+          const avgQuizVoks = avgBasis.filter(v => v.fortschritt);
+          const avgScore = avgQuizVoks.length > 0
+            ? avgQuizVoks.reduce((s, v) => s + v.fortschritt.score, 0) / avgQuizVoks.length
+            : null;
+          const avgDiktatBasis = statistikGraphOhneUnbeantwortet ? diktatAbgefragt : alleVoks;
+          const avgDiktatVoks = avgDiktatBasis.filter(v => v.diktatFortschritt);
+          const avgDiktatScore = avgDiktatVoks.length > 0
+            ? avgDiktatVoks.reduce((s, v) => s + v.diktatFortschritt.score, 0) / avgDiktatVoks.length
             : null;
 
           // Graph-Daten
           const quizGraphVoks = statistikGraphOhneUnbeantwortet ? alleVoks.filter(v => v.fortschritt) : alleVoks;
           const diktatGraphVoks = statistikGraphOhneUnbeantwortet ? alleVoks.filter(v => v.diktatFortschritt) : alleVoks;
-          const quizS = quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
-          const diktatS = diktatGraphVoks.map(v => v.diktatFortschritt?.score ?? 0).sort((a, b) => a - b);
+          const quizS = statistikGraphQuizZeigen ? quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b) : [];
+          const diktatS = statistikGraphDiktatZeigen ? diktatGraphVoks.map(v => v.diktatFortschritt?.score ?? 0).sort((a, b) => a - b) : [];
           const allScores = [...quizS, ...diktatS];
           const minS = allScores.length > 0 ? Math.min(...allScores, -1) : -1;
           const maxS = allScores.length > 0 ? Math.max(...allScores, 1) : 1;
@@ -4187,18 +4244,27 @@ export default function VokabelApp() {
 
           return (<>
             {/* Ø-Score sticky Header */}
-            <div style={{position:"sticky", top:headerH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-              <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Ø Score</span>
-              <div style={{display:"flex", alignItems:"center", gap:8}}>
-                {avgScore !== null ? (
-                  <span style={{fontWeight:700, color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
-                    {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
-                  </span>
-                ) : (
-                  <span style={{color:"#aaa", fontSize:"0.82rem"}}>–</span>
-                )}
-                <button className="btn btn-ghost btn-sm" onClick={() => window.scrollTo({top:0, behavior:"smooth"})}>↑ Nach oben</button>
+            <div style={{position:"sticky", top:headerH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
+              <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832", flexShrink:0}}>Ø Score</span>
+              <div style={{display:"flex", alignItems:"center", gap:12, flex:1, justifyContent:"center"}}>
+                <div style={{display:"flex", alignItems:"center", gap:4}}>
+                  <svg width="14" height="3" viewBox="0 0 14 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
+                  {avgScore !== null ? (
+                    <span style={{fontWeight:700, fontSize:"0.88rem", color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
+                      {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
+                    </span>
+                  ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>}
+                </div>
+                <div style={{display:"flex", alignItems:"center", gap:4}}>
+                  <svg width="14" height="3" viewBox="0 0 14 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="4 2"/></svg>
+                  {avgDiktatScore !== null ? (
+                    <span style={{fontWeight:700, fontSize:"0.88rem", color: avgDiktatScore > 0 ? "#2d6a4f" : avgDiktatScore < 0 ? "#c0392b" : "#6b6560"}}>
+                      {avgDiktatScore > 0 ? "+" : ""}{avgDiktatScore.toFixed(1)}
+                    </span>
+                  ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>}
+                </div>
               </div>
+              <button className="btn btn-ghost btn-sm" style={{flexShrink:0}} onClick={() => window.scrollTo({top:0, behavior:"smooth"})}>↑</button>
             </div>
             <div className="sektion" style={{paddingTop:12, paddingBottom:(statistikListenAufgeklappt||statistikEinzelauswahlAufgeklappt)?'100dvh':0}}>
               {/* Graph */}
@@ -4212,15 +4278,19 @@ export default function VokabelApp() {
                   <path d={toPath(quizS)} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
                   <path d={toPath(diktatS)} fill="none" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="6 4" vectorEffect="non-scaling-stroke"/>
                 </svg>
-                <div style={{display:"flex", alignItems:"center", gap:12, padding:"6px 14px", background:"#f7f5f0", borderTop:"1px solid #e0dbd2", fontSize:"0.72rem", fontWeight:600, color:"#6b6560", flexWrap:"wrap"}}>
-                  <span style={{display:"flex", alignItems:"center", gap:6}}>
-                    <svg width="20" height="4" viewBox="0 0 20 4" style={{flexShrink:0}}><line x1="0" y1="2" x2="20" y2="2" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
-                    Abfrage-Score
-                  </span>
-                  <span style={{display:"flex", alignItems:"center", gap:6}}>
-                    <svg width="20" height="4" viewBox="0 0 20 4" style={{flexShrink:0}}><line x1="0" y1="2" x2="20" y2="2" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="5 3"/></svg>
-                    Diktat-Score
-                  </span>
+                <div style={{display:"flex", alignItems:"center", gap:8, padding:"6px 14px", background:"#f7f5f0", borderTop:"1px solid #e0dbd2", fontSize:"0.72rem", fontWeight:600, color:"#6b6560", flexWrap:"wrap"}}>
+                  <button className={`typ-btn${statistikGraphQuizZeigen?" aktiv":""}`}
+                    style={{display:"flex", alignItems:"center", gap:5, fontSize:"0.68rem", padding:"3px 8px", opacity:statistikGraphQuizZeigen?1:0.5}}
+                    onClick={() => setStatistikGraphQuizZeigen(v => !v)}>
+                    <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
+                    Abfrage
+                  </button>
+                  <button className={`typ-btn${statistikGraphDiktatZeigen?" aktiv":""}`}
+                    style={{display:"flex", alignItems:"center", gap:5, fontSize:"0.68rem", padding:"3px 8px", opacity:statistikGraphDiktatZeigen?1:0.5}}
+                    onClick={() => setStatistikGraphDiktatZeigen(v => !v)}>
+                    <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="4 2"/></svg>
+                    Diktat
+                  </button>
                   <span style={{marginLeft:"auto"}}>
                     <button className={`typ-btn${statistikGraphOhneUnbeantwortet?" aktiv":""}`}
                       style={{fontSize:"0.68rem", padding:"3px 8px"}}
