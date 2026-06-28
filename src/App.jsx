@@ -505,6 +505,8 @@ export default function VokabelApp() {
   const [sessionH, setSessionH] = useState(0);
   const [sessionUeberschreibenModal, setSessionUeberschreibenModal] = useState(false);
   const [loescheSlotNr, setLoescheSlotNr] = useState(null);
+  const [slotSektionAufgeklappt, setSlotSektionAufgeklappt] = useState(true);
+  const [slotLoeschModus, setSlotLoeschModus] = useState(false);
   const [quizBereichTyp, setQuizBereichTyp] = useState("alle");
   const [quizReihenfolge, setQuizReihenfolge] = useState("zufall");
   const [quizSchlechtesteMaxScore, setQuizSchlechtesteMaxScore] = useState("");
@@ -3188,47 +3190,57 @@ export default function VokabelApp() {
                   {listenAuswahlAufgeklappt && (<>
                     {(sessionSlotAktiv || sessionSlots.some(s => s.konfiguration)) && (
                       <>
-                        <div className="sektion-label" style={{marginBottom:8}}>Gespeicherte Konfigurationen</div>
-                        <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
-                          {sessionSlotAktiv && (
-                            <div style={{display:"flex", alignItems:"center", gap:2}}>
-                              <button className="slot-chip belegt"
-                                style={{background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}}
-                                onClick={ladeSessionSlotKonfig}>
-                                ▶ Session · {(sessionSlotAktiv.abgefragt||[]).length}/{sessionSlotAktiv.gesamt||0}
-                              </button>
-                              <button style={{fontSize:"0.75rem", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:"0 4px"}}
-                                onClick={loescheSessionSlot} title="Session löschen">
-                                <IcoX s={11}/>
-                              </button>
-                            </div>
-                          )}
-                          {sessionSlots.filter(s => s.konfiguration).map(s => (
-                            <div key={s.slot} style={{display:"flex", alignItems:"center", gap:2}}>
-                              <button className="slot-chip belegt"
-                                onClick={() => ladeKonfigAusSlot(s)}>
-                                {s.slot === 6 ? "Zuletzt" : (s.name || `Slot ${s.slot}`)}
-                              </button>
-                              <button style={{fontSize:"0.75rem", color:"#aaa", background:"none", border:"none", cursor:"pointer", padding:"0 4px"}}
-                                onClick={() => setLoescheSlotNr(s.slot)} title="Slot löschen">
-                                <IcoX s={11}/>
-                              </button>
-                            </div>
-                          ))}
-                          {(() => {
-                            const normaleSlots = sessionSlots.filter(s => s.slot !== 6);
-                            if (normaleSlots.length >= 20) {
-                              return <span style={{fontSize:"0.78rem", color:"#aaa", alignSelf:"center"}}>Max. 20 Slots</span>;
-                            }
-                            return (
-                              <button className="slot-chip leer"
-                                style={{display:"flex", alignItems:"center", gap:4}}
-                                onClick={() => { setModalInput(""); setModalMitVokabeln(false); oeffneModal("slot-speichern"); }}>
-                                <IcoPlus s={11}/> Neu
-                              </button>
-                            );
-                          })()}
+                        <div style={{display:"flex", alignItems:"center", marginBottom: slotSektionAufgeklappt ? 8 : 12}}>
+                          <span className="sektion-label" style={{flex:1, marginBottom:0}}>Gespeicherte Konfigurationen</span>
+                          <button
+                            onClick={() => { setSlotLoeschModus(v => !v); }}
+                            style={{
+                              background: slotLoeschModus ? "#2d6a4f" : "none",
+                              border: `1.5px solid ${slotLoeschModus ? "#2d6a4f" : "#c0bcb7"}`,
+                              color: slotLoeschModus ? "#fff" : "#6b6560",
+                              borderRadius:6, cursor:"pointer", padding:"3px 7px",
+                              display:"flex", alignItems:"center", marginRight:6,
+                            }}
+                            title={slotLoeschModus ? "Lösch-Modus beenden" : "Slots löschen"}>
+                            <IcoX s={11}/>
+                          </button>
+                          <button
+                            onClick={() => setSlotSektionAufgeklappt(v => !v)}
+                            style={{background:"none", border:"none", cursor:"pointer", color:"#6b6560", padding:"3px 4px", display:"flex", alignItems:"center"}}>
+                            {slotSektionAufgeklappt ? <IcoUp s={11}/> : <IcoDown s={11}/>}
+                          </button>
                         </div>
+                        {slotSektionAufgeklappt && (
+                          <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
+                            {sessionSlotAktiv && (
+                              <button className="slot-chip belegt"
+                                style={{background: slotLoeschModus ? "#fff0f0" : "#e8f5ee", borderColor: slotLoeschModus ? "#e74c3c" : "#2d6a4f", color: slotLoeschModus ? "#c0392b" : "#2d6a4f"}}
+                                onClick={() => slotLoeschModus ? setLoescheSlotNr("session") : ladeSessionSlotKonfig()}>
+                                {slotLoeschModus ? <IcoX s={11}/> : "▶"} Session · {(sessionSlotAktiv.abgefragt||[]).length}/{sessionSlotAktiv.gesamt||0}
+                              </button>
+                            )}
+                            {sessionSlots.filter(s => s.konfiguration).map(s => (
+                              <button key={s.slot} className="slot-chip belegt"
+                                style={slotLoeschModus ? {background:"#fff0f0", borderColor:"#e74c3c", color:"#c0392b"} : {}}
+                                onClick={() => slotLoeschModus ? setLoescheSlotNr(s.slot) : ladeKonfigAusSlot(s)}>
+                                {slotLoeschModus && <IcoX s={11}/>} {s.slot === 6 ? "Zuletzt" : (s.name || `Slot ${s.slot}`)}
+                              </button>
+                            ))}
+                            {!slotLoeschModus && (() => {
+                              const normaleSlots = sessionSlots.filter(s => s.slot !== 6);
+                              if (normaleSlots.length >= 20) {
+                                return <span style={{fontSize:"0.78rem", color:"#aaa", alignSelf:"center"}}>Max. 20 Slots</span>;
+                              }
+                              return (
+                                <button className="slot-chip leer"
+                                  style={{display:"flex", alignItems:"center", gap:4}}
+                                  onClick={() => { setModalInput(""); setModalMitVokabeln(false); oeffneModal("slot-speichern"); }}>
+                                  <IcoPlus s={11}/> Neu
+                                </button>
+                              );
+                            })()}
+                          </div>
+                        )}
                       </>
                     )}
                     {listenIndex.length === 0
@@ -4424,13 +4436,20 @@ export default function VokabelApp() {
       {loescheSlotNr !== null && (
         <div className="overlay" onClick={() => setLoescheSlotNr(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-titel">Slot löschen?</div>
+            <div className="modal-titel">{loescheSlotNr === "session" ? "Session löschen?" : "Slot löschen?"}</div>
             <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
-              {loescheSlotNr === 6 ? "\"Zuletzt verwendet\"" : `Slot ${loescheSlotNr}`} wird gelöscht.
+              {loescheSlotNr === "session"
+                ? "Die aktive Session wird gelöscht. Der Fortschritt geht verloren."
+                : loescheSlotNr === 6
+                  ? "\"Zuletzt verwendet\" wird gelöscht."
+                  : `"${sessionSlots.find(s => s.slot === loescheSlotNr)?.name || `Slot ${loescheSlotNr}`}" wird gelöscht.`}
             </p>
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setLoescheSlotNr(null)}>Abbrechen</button>
-              <button className="btn btn-danger" onClick={() => loescheNormalSlot(loescheSlotNr)}>Löschen</button>
+              <button className="btn btn-danger" onClick={() => {
+                if (loescheSlotNr === "session") { loescheSessionSlot(); setLoescheSlotNr(null); }
+                else { loescheNormalSlot(loescheSlotNr); }
+              }}>Löschen</button>
             </div>
           </div>
         </div>
