@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-28  (Session 17 abgeschlossen — Session-Steuerung Umbau vollständig implementiert & deployed)
-Letzter Commit: 93e841b
+Stand: 2026-06-28  (Session 18 abgeschlossen — diverse Verbesserungen nach Session-Umbau)
+Letzter Commit: 9bcb492
 
 DATEIPFADE
 ----------
@@ -517,104 +517,113 @@ DIKTAT: gleiche Logik wie reguläres Quiz (starteDiktat mit Session-Filterung)
 ================================================================
 SESSION-STEUERUNG UMBAU — ✓ FERTIG (Session 17)
 ================================================================
-Implementiert und deployed in Commit 93e841b.
-Alle untenstehenden Punkte wurden vollständig umgesetzt.
+Implementiert in Commit 93e841b. Aktueller Stand nach Session 18 (Commit 9bcb492).
 
-KONZEPT (vom User bestätigt):
-  - Session-Modus ist DIREKT konfigurierbar (nicht über Slots)
-  - Neue sticky Zeile "Session" zwischen Einstellungen und Quiz-Button
-    Links: "Session" | Mitte: "noch N V." (absolut) | Rechts: [Alle][20 V.] Toggle
-  - [Alle] = normaler Modus | [N V.] = Pakete-Modus (Klick öffnet Kontext)
-  - Kontext: Preset-Buttons 5/10/15/20/25/30/40/50 + ggf. Reset-Button
-  - Quiz-Button zeigt Fortschrittsbalken + Text wenn Session aktiv
-  - Fertig-Screen (Mini-Session): Preset-Buttons für nächste Paketgröße
-    "Nächste N Vokabeln" + "Pause"
-  - Fertig-Screen (Durchlauf-Ende): "Alle N abgefragt!" + "Zur Übersicht"
-  - Normale Slots: nur belegte anzeigen, dynamisch (max 20), + Neuer-Slot-Button
-  - Alle Slots löschbar (× Button, mit Bestätigungs-Modal)
-  - Session-Slot: eigener localStorage-Key, getrennt von normalen Slots
-    Sichtbar in Listenauswahl nur wenn befüllt, mit ▶ und Fortschritt (X/Y)
-  - Übernahme-Nachfrage: wenn Session-Slot existiert und andere Listen gewählt
-
-ENTFERNT WERDEN:
-  - aktiverSlotNr, quizSessionGroesse, sessionResetConfirm, modalSessionGroesse States
-  - getSlotFortschritt, updateSlotFortschritt, resetSlotFortschritt Funktionen
-  - speichereKonfigInSlot: extra-Parameter + sessionGroesse Feld
-  - ladeKonfigAusSlot: session-Zeilen
-  - Alte isSessionModus/sessionInfo/aktSlot Blöcke in Quiz-Tab
-  - Alte quiz.sessionAktiverSlotNr Blöcke in Fertig-Screens
-  - modalSessionGroesse-Input im slot-speichern Modal
-  - Statische Slots 1–5 in Listenauswahl
-  - defaultSessionSlots: Slots 1–5 entfernen (nur Slot 6 behalten)
-
-NEUE STORAGE-KEYS:
+STORAGE-KEYS:
   SK.sessionAktiv = "vokabel_session_aktiv"
   Session-Slot Struktur: { listenIds, vokabelAuswahl, bereichTyp, abgefragt:[],
     gesamt:N, paketGroesse:N, konfiguration:{alle quiz-settings} }
+  Normale Slots: SK.sessionSlots → dynamisch (max 20 + Slot 6 "Zuletzt verwendet")
+  defaultSessionSlots() gibt nur [{slot:6, name:"Zuletzt verwendet", ...}] zurück
 
-NEUE STATES:
+STATES (Session-bezogen):
   quizSessionModus = "alle" | "pakete"
-  quizPaketGroesse = 20
+  quizPaketGroesse = null  (! null = kein Preset gewählt; wird beim Session-Laden gesetzt)
   quizSessionAufgeklappt = false
-  sessionSlotAktiv = null  (geladener Session-Slot)
-  sessionH = 0
+  sessionSlotAktiv = null  (Inhalt des SK.sessionAktiv localStorage-Keys als React-State)
+  sessionH = 0  (ResizeObserver auf sessionRef)
   sessionUeberschreibenModal = false
-  loescheSlotNr = null
-  sessionRef, sessionContainerRef (Refs)
+  loescheSlotNr = null | number | "session"
+  slotSektionAufgeklappt = true
+  slotLoeschModus = false
 
-NEUE FUNKTIONEN:
+REFS (Session):
+  sessionRef → ResizeObserver → sessionH
+  sessionContainerRef → auto-close Scroll-Listener
+
+FUNKTIONEN:
   lsDel(key)
-  loescheNormalSlot(nr)
-  sessionSlotKonflikt() → bool
-  speichereSessionSlotNeu(paketGroesse, gesamtVoks) → slot
-  updateSessionSlotFortschritt(neueIds, isDurchlaufEnde)
-  ladeSessionSlotKonfig()
-  loescheSessionSlot()
+  loescheNormalSlot(nr) — löscht Slot nr aus SK.sessionSlots
+  sessionSlotKonflikt() → bool — vergleicht SK.sessionAktiv mit aktuellem quizTabListen/quizCheckboxAuswahl
+  speichereSessionSlotNeu(paketGroesse, gesamtVoks) → slot — schreibt SK.sessionAktiv
+  updateSessionSlotFortschritt(neueIds, isDurchlaufEnde) — aktualisiert SK.sessionAktiv
+  ladeSessionSlotKonfig() — lädt SK.sessionAktiv und setzt alle States
+  loescheSessionSlot() — lsDel(SK.sessionAktiv), setzt sessionSlotAktiv=null
 
-QUIZ-START LOGIK (starteQuiz/starteDiktat, beide mit force=false Param):
-  const isPakete = quizSessionModus === "pakete";
-  if (!force && isPakete && sessionSlotAktiv && sessionSlotKonflikt()) {
-    setSessionUeberschreibenModal(true); return;
-  }
-  const sessionGesamt = isPakete ? voks.length : 0;
-  if (isPakete) {
-    const existingSlot = lsGet(SK.sessionAktiv);
-    const konflikt = existingSlot && sessionSlotKonflikt();
-    if (!existingSlot || konflikt) {
-      speichereSessionSlotNeu(quizPaketGroesse, voks.length);
-    } else {
-      voks = voks.filter(v => !new Set(existingSlot.abgefragt||[]).has(v.id));
-    }
-  }
-  // schlechteste: kein slice auf quizSchlechtesteAnzahl wenn isPakete
-  if (isPakete) voks = voks.slice(0, quizPaketGroesse);
-  setQuiz({..., sessionVokIds: isPakete ? voks.map(v=>v.id) : null,
-    sessionGesamt, istSessionModus: isPakete});
+QUIZ-START LOGIK (starteQuiz/starteDiktat, force=false):
+  - Guard: if (isPakete && quizPaketGroesse == null) return;
+  - Konflikt-Check: if (!force && isPakete && sessionSlotAktiv && sessionSlotKonflikt())
+      → setSessionUeberschreibenModal(true); return;
+  - Session-Slot anlegen oder weiterführen (lsGet → filter abgefragt)
+  - Reihenfolge anwenden, dann: if (isPakete) voks = voks.slice(0, quizPaketGroesse)
+  - quiz-State: { sessionVokIds, istSessionModus, sessionGesamt }
 
-VERFUEGBAR-BERECHNUNG (Quiz-Tab IIFE, alten Block ersetzen):
-  const isPakete = quizSessionModus === "pakete";
-  const sessionHatFortschritt = isPakete && sessionSlotAktiv && !sessionSlotKonflikt();
-  // wenn sessionHatFortschritt: filter abgefragt, min(paketGroesse, rest)
-  // wenn isPakete (kein Fortschritt): min(paketGroesse, alle)
-  // sonst: bisherige Logik (schlechteste / alle)
+VERFUEGBAR-BERECHNUNG (zwei getrennte Werte):
+  verfuegbarReihenfolge = nach Score-Filter (Schlechteste-Modus), OHNE Pakete-Slice
+    → Wird im Reihenfolge-Header angezeigt: "Score ≤ N · X V." oder "X V."
+  verfuegbar = für Quiz-Button: min(paketGroesse, restVoks) oder verfuegbarReihenfolge
 
-STICKY-REIHENFOLGE NACH UMBAU:
-  1. headerRef (zIndex:10)
-  2. alleBereichRef (top:headerH, zIndex:8)
-  3. abfrageModusRef (zIndex:7)
-  4. reihenfolgeRef (zIndex:6)
-  5. einstellungenRef (zIndex:5)
-  6. NEU sessionRef (top:+einstellungenH, zIndex:4)
-  7. Quiz-Button (top:+sessionH, zIndex:3)  ← war zIndex:4
+STICKY-HIERARCHIE (Quiz-Tab):
+  1. headerRef   top:0          zIndex:10
+  2. alleBereichRef top:headerH zIndex:8
+  3. abfrageModusRef             zIndex:7
+  4. reihenfolgeRef              zIndex:6
+  5. einstellungenRef            zIndex:5
+  6. sessionRef  top:+einstellungenH  zIndex:4
+  7. Quiz-Button top:+sessionH   zIndex:3
 
-NEUE MODALS:
-  - loescheSlotNr: "Slot löschen?" mit Ja/Abbrechen
-  - sessionUeberschreibenModal: "Session überschreiben?" mit Neu starten/Abbrechen
+SESSION-ZEILE (sticky, ref={sessionRef}):
+  Links: "Session" | Mitte: "noch N V." (abs, nur wenn sessionHatFortschritt) | Rechts: [Alle][N V./Pakete]
+  Toggle [Pakete] zeigt Zahl nur wenn quizPaketGroesse != null
+  Aufklappbarer Kontext (sessionContainerRef): Preset-Buttons 5/10/15/20/25/30/40/50
+  + Info-Zeile wenn sessionHatFortschritt (abgefragt/gesamt + "Session löschen")
 
-SLOT-SPEICHERN MODAL (neu):
-  - Nur belegte normale Slots (1-20) anzeigen + "Neuer Slot +" Button
-  - Bei 20 Slots: "Max. 20 Slots — bitte überschreiben" statt + Button
-  - Kein sessionGroesse-Input mehr
+QUIZ-BUTTON-BEREICH:
+  Fortschrittsbalken + "abgefragt / gesamt" wenn sessionHatFortschritt
+  "Neuer Durchlauf (alle N abgefragt)" wenn alleAbgefragt
+  Sonst: "Quiz starten (X Vokabeln)", disabled wenn !kannStarten || verfuegbar===0
+
+FERTIG-SCREENS (wenn quiz.istSessionModus):
+  Paket fertig: Preset-Buttons für nächste Größe + "Nächste N Vokabeln" + "Pause"
+  Durchlauf fertig: "Alle N abgefragt!" + "Zur Übersicht"
+
+MODALS:
+  loescheSlotNr (null|nr|"session"): zeigt Slot-Namen, ruft loescheNormalSlot() oder loescheSessionSlot()
+  sessionUeberschreibenModal: "Neu starten" → starteQuiz(true), "Abbrechen"
+
+SLOT-SPEICHERN MODAL:
+  Normale Slots (slot !== 6): überschreiben oder neu anlegen (nächste freie Nummer 1-20)
+  Kein "+ Neu"-Button in der Listenauswahl mehr (nur über Einstellungen → "Konfiguration speichern")
+
+GESPEICHERTE KONFIGURATIONEN (Listenauswahl):
+  Header: Label | [×] (Lösch-Modus, nur sichtbar wenn aufgeklappt) | [▲/▼]
+  Schließen → Lösch-Modus wird automatisch beendet
+  Zeile 1 (spezial): Session-Chip (grün, ▶) + "Zuletzt"-Chip
+  Zeile 2 (normal): Benannte Slots
+  Lösch-Modus: Chips wechseln auf roten Stil + ×, Klick → Bestätigungs-Modal
+
+
+================================================================
+REIHENFOLGE-ÄNDERUNGEN (Session 18)
+================================================================
+
+quizSchlechtesteAnzahl ENTFERNT:
+  - War: Anzahl-Limit auf N beste schlechteste Vokabeln
+  - Jetzt: alle Score-gefilterten Vokabeln werden verwendet (kein Slice mehr)
+  - State, initQuizDefaults, speichern/laden, starteQuiz/starteDiktat bereinigt
+
+quizUnbeantwortetZuerst PRO MODUS:
+  - War: einzelner boolean (true/false)
+  - Jetzt: { zufall: true, schlechteste: false, listennr: true }
+  - Toggle sichtbar in ALLEN drei Modi (nicht nur außerhalb Schlechteste)
+  - Backward-compat beim Laden: typeof boolean → konvertieren zu Objekt
+  - Im Schlechteste-Modus mit unbeantwortete=true: unb vor score-sortierten bea
+
+BEREICH-MODUS LISTENWECHSEL:
+  toggleQuizTabListe() bereinigt quizCheckboxAuswahl:
+  - Beim Abwählen einer Liste: IDs mit Präfix "${listeId}__" entfernen
+  - Bleibt Schnittmenge leer → setQuizBereichTyp("alle") + leere Auswahl
+  - Neue Liste hinzufügen: Selektion bleibt unverändert
 
 
 ================================================================
@@ -630,6 +639,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 1131ce9
+Letzter Commit: 9bcb492
 
 ================================================================

@@ -497,6 +497,10 @@ export default function VokabelApp() {
   const [statistikListenIds, setStatistikListenIds] = useState(null); // null = alle
   const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
   const [statistikGraphOhneUnbeantwortet, setStatistikGraphOhneUnbeantwortet] = useState(false);
+  const [statistikBereichTyp, setStatistikBereichTyp] = useState("alle");
+  const [statistikCheckboxAuswahl, setStatistikCheckboxAuswahl] = useState(new Set());
+  const [statistikEinzelauswahlAufgeklappt, setStatistikEinzelauswahlAufgeklappt] = useState(false);
+  const [statistikVokauswahlH, setStatistikVokauswahlH] = useState(0);
   const [sessionSlots, setSessionSlots] = useState([]);
   const [quizSessionModus, setQuizSessionModus] = useState("alle");
   const [quizPaketGroesse, setQuizPaketGroesse] = useState(null);
@@ -525,6 +529,9 @@ export default function VokabelApp() {
   const headerRef = useRef(null);
   const listenContainerRef = useRef(null);
   const statistikListenHeaderRef = useRef(null);
+  const statistikVokauswahlRef = useRef(null);
+  const statistikListenContainerRef = useRef(null);
+  const statistikEinzelauswahlRef = useRef(null);
   const alleBereichRef = useRef(null);
   const einzelauswahlRef = useRef(null);
   const abfrageModusRef = useRef(null);
@@ -699,6 +706,35 @@ export default function VokabelApp() {
     obs.observe(el);
     return () => obs.disconnect();
   }, [tab]);
+
+  useEffect(() => {
+    const el = statistikVokauswahlRef.current;
+    if (!el) { setStatistikVokauswahlH(0); return; }
+    const obs = new ResizeObserver(() => setStatistikVokauswahlH(el.offsetHeight));
+    obs.observe(el);
+    setStatistikVokauswahlH(el.offsetHeight);
+    return () => obs.disconnect();
+  }, [tab]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const el = statistikListenContainerRef.current;
+      if (!el || el.offsetHeight === 0) return;
+      if (el.getBoundingClientRect().bottom <= headerH) setStatistikListenAufgeklappt(false);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [headerH]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const el = statistikEinzelauswahlRef.current;
+      if (!el || el.offsetHeight === 0) return;
+      if (el.getBoundingClientRect().bottom <= headerH + statistikListenHeaderH) setStatistikEinzelauswahlAufgeklappt(false);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [headerH, statistikListenHeaderH]);
 
   useEffect(() => {
     setListenIndex(lsGet(SK.listenIndex, []));
@@ -946,6 +982,19 @@ export default function VokabelApp() {
         : new Set(prev);
       if (currentSet.has(id)) {
         currentSet.delete(id);
+        // Bereinige Vokabelauswahl wenn Liste abgewählt
+        if (statistikBereichTyp === "bereich" && statistikCheckboxAuswahl.size > 0) {
+          const neueListen = [...currentSet];
+          const bereinigte = new Set([...statistikCheckboxAuswahl].filter(vokId =>
+            neueListen.some(lId => vokId.startsWith(`${lId}__`))
+          ));
+          if (bereinigte.size === 0) {
+            setStatistikBereichTyp("alle");
+            setStatistikCheckboxAuswahl(new Set());
+          } else {
+            setStatistikCheckboxAuswahl(bereinigte);
+          }
+        }
       } else {
         currentSet.add(id);
         if (currentSet.size === listenIndex.length) return null;
@@ -2591,128 +2640,18 @@ export default function VokabelApp() {
     );
   }
 
-  // ── Render: Statistik ────────────────────────────────────────────────────
-  if (ansicht === "statistik" && aktiveListe) {
-    const abgefragt = aktiveListe.vokabeln.filter(v => v.fortschritt);
-    const nieAnzahl = aktiveListe.vokabeln.length - abgefragt.length;
-    const positivAnzahl = abgefragt.filter(v => clampScore(v.fortschritt.score) > 0).length;
-    const negativAnzahl = abgefragt.filter(v => clampScore(v.fortschritt.score) < 0).length;
-    const nullAnzahl = abgefragt.filter(v => clampScore(v.fortschritt.score) === 0).length;
-    const scores = abgefragt.map(v => clampScore(v.fortschritt.score));
-    const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
 
-    let voks = [...aktiveListe.vokabeln];
-    if (statistikFilter === "nie") voks = voks.filter(v => !v.fortschritt);
-    else if (statistikFilter === "negativ") voks = voks.filter(v => (v.fortschritt?.score ?? 0) < 0);
-    else if (statistikFilter === "positiv") voks = voks.filter(v => (v.fortschritt?.score ?? 0) > 0);
-    else if (statistikFilter === "null") voks = voks.filter(v => v.fortschritt && v.fortschritt.score === 0);
-
-    const [sKey, sDir] = statistikSort.split("-");
-    if (sKey === "score") voks.sort((a, b) => { const d = (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0); return sDir === "asc" ? d : -d; });
-    else if (sKey === "streak") voks.sort((a, b) => { const d = (a.fortschritt?.streak ?? 0) - (b.fortschritt?.streak ?? 0); return sDir === "asc" ? d : -d; });
-    else if (sKey === "datum") voks.sort((a, b) => { const da = a.fortschritt?.letzteAbfrage ? new Date(a.fortschritt.letzteAbfrage) : new Date(0); const db = b.fortschritt?.letzteAbfrage ? new Date(b.fortschritt.letzteAbfrage) : new Date(0); return sDir === "asc" ? da - db : db - da; });
-    else if (sKey === "alpha") { const sp = TYPEN.find(t => aktiveListe.spalten[t].aktiv); if (sp) voks.sort((a, b) => { const r = (a[sp]?.wert || '').localeCompare(b[sp]?.wert || ''); return sDir === "asc" ? r : -r; }); }
-
-    const sp1 = TYPEN.find(t => aktiveListe.spalten[t].aktiv);
-    const sp2 = TYPEN.filter(t => aktiveListe.spalten[t].aktiv)[1];
-
-    return (
-      <>
-        <style>{CSS}</style>
-        <div className="app">
-          <div className="topbar">
-            <button className="topbar-back" onClick={() => setAnsicht("liste-detail")}><IcoBack/></button>
-            <span className="topbar-title">Statistik – {aktiveListe.name}</span>
-          </div>
-          <div className="sektion">
-            <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12}}>
-              {[
-                {label:"Gesamt", wert:aktiveListe.vokabeln.length, farbe:null},
-                {label:"Nie abgefragt", wert:nieAnzahl, farbe:nieAnzahl>0?"#6b6560":"#2d6a4f"},
-                {label:"Score positiv", wert:positivAnzahl, bg:"#e8f5e9", rand:"#c8e6c9", farbe:"#2d6a4f"},
-                {label:"Score negativ", wert:negativAnzahl, bg:"#ffebee", rand:"#ffcdd2", farbe:"#c0392b"},
-              ].map(k => (
-                <div key={k.label} style={{background:k.bg||"#fff", border:`1px solid ${k.rand||"#e0dbd2"}`, borderRadius:10, padding:"12px 14px"}}>
-                  <div style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:k.farbe||"#6b6560"}}>{k.label}</div>
-                  <div style={{fontSize:"1.6rem", fontWeight:700, marginTop:4, color:k.farbe||"#1a1a1a"}}>{k.wert}</div>
-                </div>
-              ))}
-            </div>
-            {avgScore !== null && (
-              <div style={{background:"#fff", border:"1px solid #e0dbd2", borderRadius:10, padding:"11px 14px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-                <span style={{fontSize:"0.82rem", color:"#6b6560", fontWeight:600}}>Ø Score (abgefragte Vokabeln)</span>
-                <span style={{fontWeight:700, color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
-                  {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
-                </span>
-              </div>
-            )}
-
-            <div className="sektion-label" style={{marginBottom:8}}>Filter</div>
-            <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:12}}>
-              {[
-                {key:"alle", label:`Alle (${aktiveListe.vokabeln.length})`},
-                {key:"nie", label:`Nie (${nieAnzahl})`},
-                {key:"negativ", label:`Neg (${negativAnzahl})`},
-                {key:"null", label:`Null (${nullAnzahl})`},
-                {key:"positiv", label:`Pos (${positivAnzahl})`},
-              ].map(f => (
-                <button key={f.key} className={`typ-btn${statistikFilter===f.key?" aktiv":""}`}
-                  onClick={() => setStatistikFilter(f.key)}>{f.label}</button>
-              ))}
-            </div>
-
-            <div className="sektion-label" style={{marginBottom:8}}>Sortierung</div>
-            <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
-              {[
-                {key:"score", label:"Score", def:"asc"},
-                {key:"streak", label:"Streak", def:"desc"},
-                {key:"datum", label:"Datum", def:"desc"},
-                {key:"alpha", label:"A→Z", def:"asc"},
-              ].map(s => {
-                const [aKey, aDir] = statistikSort.split("-");
-                const isActive = aKey === s.key;
-                return (
-                  <button key={s.key} className={`typ-btn${isActive?" aktiv":""}`}
-                    onClick={() => isActive
-                      ? setStatistikSort(`${s.key}-${aDir === "asc" ? "desc" : "asc"}`)
-                      : setStatistikSort(`${s.key}-${s.def}`)}>
-                    {s.label}{isActive ? (aDir === "asc" ? " ↑" : " ↓") : ""}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="sektion-label" style={{marginBottom:8}}>{voks.length} Vokabel{voks.length!==1?"n":""}</div>
-            <div className="karte">
-              {voks.length === 0 ? (
-                <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln in diesem Filter.</div>
-              ) : voks.map(vok => {
-                const score = vok.fortschritt != null ? clampScore(vok.fortschritt.score) : null;
-                const streak = vok.fortschritt?.streak ?? 0;
-                return (
-                  <div key={vok.id} className="karte-zeile">
-                    <div style={{flex:1, minWidth:0}}>
-                      {sp1 && vok[sp1] && <div style={{fontWeight:600, fontSize:"0.9rem", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp1].wert}</div>}
-                      {sp2 && vok[sp2] && <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp2].wert}</div>}
-                    </div>
-                    <div style={{display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3, flexShrink:0}}>
-                      <span className={`score-badge ${score !== null ? (score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null") : "score-null"}`}>
-                        {score !== null ? (score > 0 ? "+" : "") + score : "–"}
-                      </span>
-                      <div style={{fontSize:"0.68rem", color:"#6b6560", textAlign:"right"}}>
-                        {streak > 0 && <span style={{marginRight:4}}>🔥{streak}</span>}
-                        {formatDatum(vok.fortschritt?.letzteAbfrage)}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
+  // ── Statistik: Berechnungen ───────────────────────────────────────────────
+  const statistikAlleListenObjekte = listenIndex.map(l => lsGet(SK.liste(l.id))).filter(Boolean);
+  const statistikGewaehlteListenObjekte = statistikListenIds === null
+    ? statistikAlleListenObjekte
+    : statistikAlleListenObjekte.filter(l => statistikListenIds.has(l.id));
+  const statistikBasisVoks = statistikGewaehlteListenObjekte.flatMap(l =>
+    l.vokabeln.map(v => ({...v, id: `${l.id}__${v.id}`, _origId: v.id, _listeId: l.id, _listeName: l.name, _spalten: l.spalten}))
+  );
+  const statistikGefilterteVoks = statistikBereichTyp === "bereich" && statistikCheckboxAuswahl.size > 0
+    ? statistikBasisVoks.filter(v => statistikCheckboxAuswahl.has(v.id))
+    : statistikBasisVoks;
 
   // ── Quiz: Berechnungen (auch im Header gebraucht) ────────────────────────
   const quizKombiListe = quizTabListen.length > 0 ? getKombinierteListe(quizTabListen) : null;
@@ -2743,7 +2682,14 @@ export default function VokabelApp() {
           <button className={`tab${tab==="quiz"?" aktiv":""}`}
             onClick={() => { setTab("quiz"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Quiz</button>
           <button className={`tab${tab==="statistik"?" aktiv":""}`}
-            onClick={() => { setTab("statistik"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Statistik</button>
+            onClick={() => {
+              setStatistikListenIds(quizTabListen.length > 0 ? new Set(quizTabListen) : null);
+              setStatistikBereichTyp(quizBereichTyp);
+              setStatistikCheckboxAuswahl(new Set(quizCheckboxAuswahl));
+              setStatistikListenAufgeklappt(false);
+              setStatistikEinzelauswahlAufgeklappt(false);
+              setTab("statistik"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set());
+            }}>Statistik</button>
           <button className={`tab${tab==="einstellungen"?" aktiv":""}`} onClick={() => { setTab("einstellungen"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Einstellungen</button>
         </div>
         {tab === "quiz" && (() => {
@@ -3872,6 +3818,7 @@ export default function VokabelApp() {
                   onClick={() => {
                     setQuizTabListen([aktiveListeId]);
                     initQuizDefaults(lsGet(SK.liste(aktiveListeId)));
+                    setListenAuswahlAufgeklappt(false);
                     setTab("quiz");
                   }}>
                   Quiz starten
@@ -3881,7 +3828,10 @@ export default function VokabelApp() {
                 <button className="btn btn-ghost" style={{width:"100%", marginBottom:8}}
                   onClick={() => {
                     setStatistikListenIds(new Set([aktiveListeId]));
+                    setStatistikBereichTyp("alle");
+                    setStatistikCheckboxAuswahl(new Set());
                     setStatistikListenAufgeklappt(false);
+                    setStatistikEinzelauswahlAufgeklappt(false);
                     setTab("statistik");
                   }}>
                   Statistik
@@ -3983,47 +3933,41 @@ export default function VokabelApp() {
             </>
           );
         })()}
-        {/* ── Statistik: Sticky Listen-Header ── */}
+        {/* ── Statistik: Listen-Auswahl Header ── */}
         {tab === "statistik" && (() => {
-          const isGewaehlt = (id) => statistikListenIds === null || statistikListenIds.has(id);
-          const statistikListen = listenIndex.map(l => lsGet(SK.liste(l.id))).filter(Boolean);
-          const gewaehlteListenObjekte = statistikListenIds === null
-            ? statistikListen
-            : statistikListen.filter(l => statistikListenIds.has(l.id));
-          const gewaehlteAnzahl = gewaehlteListenObjekte.length;
-          const gesamtVoks = gewaehlteListenObjekte.reduce((s, l) => s + l.vokabeln.length, 0);
-          const keineGewaehlt = statistikListenIds !== null && statistikListenIds.size === 0;
+          const n = statistikGewaehlteListenObjekte.length;
+          const chipAktiv = statistikListenIds !== null;
+          const chipText = statistikListenIds === null
+            ? "Alle"
+            : statistikListenIds.size === 0
+            ? "auswählen"
+            : statistikListenIds.size === 1
+            ? (listenIndex.find(l => statistikListenIds.has(l.id))?.name || "Liste")
+            : `${statistikListenIds.size} Listen`;
           return (<>
-            <div ref={statistikListenHeaderRef} className="statistik-listen-header" style={{top: headerH}}>
-              <div style={{flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600, fontSize:"0.82rem"}}>
-                {keineGewaehlt
-                  ? <span style={{color:"#aaa", fontWeight:600}}>Listen auswählen</span>
-                  : statistikListenIds === null
-                    ? `Alle Listen · ${gesamtVoks} Vokabeln`
-                    : `${gewaehlteAnzahl} ${gewaehlteAnzahl===1?"Liste":"Listen"} · ${gesamtVoks} Vokabeln`
-                }
-              </div>
-              <div style={{display:"flex", gap:5, flexShrink:0}}>
-                <button className="btn btn-ghost btn-sm"
-                  onClick={() => setStatistikListenIds(new Set())}>Zurücksetzen</button>
-                <button className="btn btn-ghost btn-sm"
-                  onClick={() => setStatistikListenIds(null)}>Alle</button>
-                <button className="btn-toggle"
-                  onClick={() => setStatistikListenAufgeklappt(v => !v)}>
-                  {statistikListenAufgeklappt ? <IcoDown/> : <IcoUp/>}
-                </button>
-              </div>
+            <div ref={statistikListenHeaderRef} className="statistik-listen-header" style={{top:headerH, zIndex:8, position:"sticky"}}>
+              <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Listen-Auswahl</span>
+              {chipAktiv && statistikBasisVoks.length > 0 && (
+                <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none", whiteSpace:"nowrap"}}>
+                  ({statistikBasisVoks.length} V.)
+                </span>
+              )}
+              <button
+                className={`toggle-opt${chipAktiv ? " aktiv" : ""}`}
+                style={{marginLeft:"auto", padding:"3px 8px", fontSize:"0.75rem", maxWidth:"45%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}
+                onClick={() => setStatistikListenAufgeklappt(v => !v)}>
+                {chipText}
+              </button>
             </div>
-            {/* Listenliste (ausgeklappt) */}
             {statistikListenAufgeklappt && (
-              <div style={{background:"#f7f5f0", borderBottom:"1px solid #e0dbd2", padding:"8px 16px"}}>
+              <div ref={statistikListenContainerRef} style={{background:"#f7f5f0", borderBottom:"1px solid #e0dbd2", padding:"8px 16px"}}>
                 <div className="karte" style={{marginBottom:0}}>
                   {listenIndex.length === 0
                     ? <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.85rem"}}>Keine Listen vorhanden.</div>
                     : listenIndex.map(l => {
-                        const ll = statistikListen.find(x => x.id === l.id);
+                        const ll = statistikAlleListenObjekte.find(x => x.id === l.id);
                         const anzahl = ll ? ll.vokabeln.length : 0;
-                        const gewaehlt = isGewaehlt(l.id);
+                        const gewaehlt = statistikListenIds === null || statistikListenIds.has(l.id);
                         return (
                           <div key={l.id} className="quiz-setup-check" style={{padding:"10px 16px"}}
                             onClick={() => toggleStatistikListe(l.id)}>
@@ -4042,43 +3986,107 @@ export default function VokabelApp() {
           </>);
         })()}
 
+        {/* ── Statistik: Vokabel-Auswahl Header ── */}
+        {tab === "statistik" && (() => {
+          const hatVoks = statistikBasisVoks.length > 0;
+          const istBereich = statistikBereichTyp === "bereich";
+          const auswahlAnzahl = statistikGefilterteVoks.length;
+          return (<>
+            <div ref={statistikVokauswahlRef} style={{position:"sticky", top:headerH+statistikListenHeaderH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
+              {!statistikEinzelauswahlAufgeklappt && (
+                <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832", flex:1}}>Vokabel-Auswahl</span>
+              )}
+              {istBereich && statistikCheckboxAuswahl.size > 0 && (
+                <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none", whiteSpace:"nowrap"}}>
+                  ({auswahlAnzahl} V.)
+                </span>
+              )}
+              {statistikEinzelauswahlAufgeklappt && istBereich && (
+                <button className="btn-toggle-ghost" style={{padding:"3px 8px", fontSize:"0.75rem"}}
+                  onClick={() => {
+                    setStatistikBereichTyp("alle");
+                    setStatistikCheckboxAuswahl(new Set());
+                    setStatistikEinzelauswahlAufgeklappt(false);
+                  }}>
+                  <IcoX s={11}/>
+                </button>
+              )}
+              <div className="toggle-btn" style={{marginLeft:statistikEinzelauswahlAufgeklappt?"0":"auto"}}>
+                <button
+                  className={`toggle-opt${!istBereich?" aktiv":""}`}
+                  onClick={() => { setStatistikBereichTyp("alle"); setStatistikEinzelauswahlAufgeklappt(false); }}>
+                  Alle
+                </button>
+                <button
+                  className={`toggle-opt${istBereich?" aktiv":""}`}
+                  onClick={() => {
+                    if (istBereich) {
+                      setStatistikEinzelauswahlAufgeklappt(v => !v);
+                    } else {
+                      setStatistikBereichTyp("bereich");
+                      if (hatVoks) setStatistikEinzelauswahlAufgeklappt(true);
+                    }
+                  }}>
+                  Bereich
+                </button>
+              </div>
+            </div>
+            {statistikEinzelauswahlAufgeklappt && istBereich && (
+              <div ref={statistikEinzelauswahlRef} style={{background:"#f7f5f0", borderBottom:"1px solid #e0dbd2", paddingBottom:8}}>
+                <div className="karte" style={{margin:"8px 16px 0 16px"}}>
+                  {statistikBasisVoks.map(vok => {
+                    const gewaehlt = statistikCheckboxAuswahl.has(vok.id);
+                    const sp1 = TYPEN.find(t => vok._spalten[t]?.aktiv);
+                    const sp2 = TYPEN.filter(t => vok._spalten[t]?.aktiv)[1];
+                    return (
+                      <div key={vok.id} className="quiz-setup-check" style={{padding:"8px 16px"}}
+                        onClick={() => setStatistikCheckboxAuswahl(prev => {
+                          const n = new Set(prev);
+                          if (n.has(vok.id)) n.delete(vok.id); else n.add(vok.id);
+                          return n;
+                        })}>
+                        <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
+                        <div style={{flex:1, minWidth:0}}>
+                          {sp1 && vok[sp1] && <div style={{fontWeight:600, fontSize:"0.88rem", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp1].wert}</div>}
+                          {sp2 && vok[sp2] && <div style={{fontSize:"0.75rem", color:"#6b6560", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp2].wert}</div>}
+                        </div>
+                        {statistikGewaehlteListenObjekte.length > 1 && <div style={{fontSize:"0.68rem", color:"#aaa", flexShrink:0}}>{vok._listeName}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>);
+        })()}
+
         {/* ── Statistik: Inhalte ── */}
         {tab === "statistik" && (() => {
-          const statistikListen = listenIndex.map(l => lsGet(SK.liste(l.id))).filter(Boolean);
-          const gewaehlteListenObjekte = statistikListenIds === null
-            ? statistikListen
-            : statistikListen.filter(l => statistikListenIds.has(l.id));
-
-          const alleVoks = gewaehlteListenObjekte.flatMap(l =>
-            l.vokabeln.map(v => ({...v, _listeName: l.name, _spalten: l.spalten}))
-          );
+          const alleVoks = statistikGefilterteVoks;
 
           if (alleVoks.length === 0) return (
             <div className="sektion">
               <div className="leer"><div className="leer-text">
                 {(statistikListenIds !== null && statistikListenIds.size === 0)
                   ? "Keine Liste ausgewählt."
+                  : statistikBereichTyp === "bereich" && statistikCheckboxAuswahl.size === 0
+                  ? "Keine Vokabeln ausgewählt."
                   : "Keine Vokabeln vorhanden."}
               </div></div>
             </div>
           );
 
           const abgefragt = alleVoks.filter(v => v.fortschritt);
-          const nieAnzahl = alleVoks.length - abgefragt.length;
+          const nieAnzahl = alleVoks.filter(v => !v.fortschritt).length;
           const positivAnzahl = abgefragt.filter(v => v.fortschritt.score > 0).length;
-          const negativAnzahl = abgefragt.filter(v => v.fortschritt.score < 0).length;
-          const nullAnzahl = abgefragt.filter(v => v.fortschritt.score === 0).length;
+          const negativAnzahl = abgefragt.filter(v => v.fortschritt.score <= 0).length;
           const avgScore = abgefragt.length > 0
             ? abgefragt.reduce((s, v) => s + v.fortschritt.score, 0) / abgefragt.length
             : null;
 
           // Graph-Daten
-          const quizGraphVoks = statistikGraphOhneUnbeantwortet
-            ? alleVoks.filter(v => v.fortschritt)
-            : alleVoks;
-          const diktatGraphVoks = statistikGraphOhneUnbeantwortet
-            ? alleVoks.filter(v => v.diktatFortschritt)
-            : alleVoks;
+          const quizGraphVoks = statistikGraphOhneUnbeantwortet ? alleVoks.filter(v => v.fortschritt) : alleVoks;
+          const diktatGraphVoks = statistikGraphOhneUnbeantwortet ? alleVoks.filter(v => v.diktatFortschritt) : alleVoks;
           const quizS = quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
           const diktatS = diktatGraphVoks.map(v => v.diktatFortschritt?.score ?? 0).sort((a, b) => a - b);
           const allScores = [...quizS, ...diktatS];
@@ -4101,49 +4109,61 @@ export default function VokabelApp() {
           // Vokabelliste (gefiltert + sortiert)
           let voks = [...alleVoks];
           if (statistikFilter === "nie") voks = voks.filter(v => !v.fortschritt);
-          else if (statistikFilter === "negativ") voks = voks.filter(v => (v.fortschritt?.score ?? 0) < 0);
-          else if (statistikFilter === "positiv") voks = voks.filter(v => (v.fortschritt?.score ?? 0) > 0);
-          else if (statistikFilter === "null") voks = voks.filter(v => v.fortschritt && v.fortschritt.score === 0);
+          else if (statistikFilter === "negativ") voks = voks.filter(v => v.fortschritt && v.fortschritt.score <= 0);
+          else if (statistikFilter === "positiv") voks = voks.filter(v => v.fortschritt && v.fortschritt.score > 0);
           const [sKey, sDir] = statistikSort.split("-");
           if (sKey === "score") voks.sort((a, b) => { const d = (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0); return sDir === "asc" ? d : -d; });
           else if (sKey === "streak") voks.sort((a, b) => { const d = (a.fortschritt?.streak ?? 0) - (b.fortschritt?.streak ?? 0); return sDir === "asc" ? d : -d; });
           else if (sKey === "datum") voks.sort((a, b) => { const da = a.fortschritt?.letzteAbfrage ? new Date(a.fortschritt.letzteAbfrage) : new Date(0); const db = b.fortschritt?.letzteAbfrage ? new Date(b.fortschritt.letzteAbfrage) : new Date(0); return sDir === "asc" ? da - db : db - da; });
           else if (sKey === "alpha") { voks.sort((a, b) => { const spa = TYPEN.find(t => a._spalten[t]?.aktiv); const spb = TYPEN.find(t => b._spalten[t]?.aktiv); const r = (a[spa]?.wert || '').localeCompare(b[spb]?.wert || ''); return sDir === "asc" ? r : -r; }); }
-          const mehrereListenGewaehlt = gewaehlteListenObjekte.length > 1;
+          const mehrereListenGewaehlt = statistikGewaehlteListenObjekte.length > 1;
 
-          return (
-            <div className="sektion">
+          // Filter-Boxen (klickbar, ersetzen Filter-Buttons)
+          const filterBoxen = [
+            {key:"alle", label:"Gesamt", wert:alleVoks.length, bg:null, rand:null, farbe:null},
+            {key:"nie", label:"Nie abgefragt", wert:nieAnzahl, bg:null, rand:null, farbe:nieAnzahl>0?"#6b6560":"#2d6a4f"},
+            {key:"positiv", label:"Score positiv", wert:positivAnzahl, bg:"#e8f5e9", rand:"#c8e6c9", farbe:"#2d6a4f"},
+            {key:"negativ", label:"Score negativ", wert:negativAnzahl, bg:"#ffebee", rand:"#ffcdd2", farbe:"#c0392b"},
+          ];
+
+          return (<>
+            {/* Ø-Score sticky Header */}
+            <div style={{position:"sticky", top:headerH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+              <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Ø Score</span>
+              <div style={{display:"flex", alignItems:"center", gap:8}}>
+                {avgScore !== null ? (
+                  <span style={{fontWeight:700, color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
+                    {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
+                  </span>
+                ) : (
+                  <span style={{color:"#aaa", fontSize:"0.82rem"}}>–</span>
+                )}
+                <button className="btn btn-ghost btn-sm" onClick={() => window.scrollTo({top:0, behavior:"smooth"})}>↑ Nach oben</button>
+              </div>
+            </div>
+            <div className="sektion" style={{paddingTop:12}}>
               {/* Graph */}
               <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid #e0dbd2"}}>
                 <svg viewBox={`0 0 ${GW} ${GH}`} preserveAspectRatio="none"
                   style={{width:"100%", height:130, display:"block"}}>
                   <rect width={GW} height={GH} fill="#fafaf8"/>
-                  {zeroY > pY && (
-                    <rect x={pX} y={pY} width={gW} height={Math.max(0, zeroY - pY)} fill="#e8f5e9" opacity="0.6"/>
-                  )}
-                  {zeroY < GH - pY && (
-                    <rect x={pX} y={zeroY} width={gW} height={Math.max(0, GH - pY - zeroY)} fill="#ffebee" opacity="0.6"/>
-                  )}
+                  {zeroY > pY && <rect x={pX} y={pY} width={gW} height={Math.max(0, zeroY - pY)} fill="#e8f5e9" opacity="0.6"/>}
+                  {zeroY < GH - pY && <rect x={pX} y={zeroY} width={gW} height={Math.max(0, GH - pY - zeroY)} fill="#ffebee" opacity="0.6"/>}
                   <line x1={pX} y1={zeroY} x2={GW - pX} y2={zeroY} stroke="#ccc" strokeWidth="1"/>
                   <path d={toPath(quizS)} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
                   <path d={toPath(diktatS)} fill="none" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="6 4" vectorEffect="non-scaling-stroke"/>
                 </svg>
                 <div style={{display:"flex", alignItems:"center", gap:12, padding:"6px 14px", background:"#f7f5f0", borderTop:"1px solid #e0dbd2", fontSize:"0.72rem", fontWeight:600, color:"#6b6560", flexWrap:"wrap"}}>
                   <span style={{display:"flex", alignItems:"center", gap:6}}>
-                    <svg width="20" height="4" viewBox="0 0 20 4" style={{flexShrink:0}}>
-                      <line x1="0" y1="2" x2="20" y2="2" stroke="#2d6a4f" strokeWidth="2.5"/>
-                    </svg>
+                    <svg width="20" height="4" viewBox="0 0 20 4" style={{flexShrink:0}}><line x1="0" y1="2" x2="20" y2="2" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
                     Abfrage-Score
                   </span>
                   <span style={{display:"flex", alignItems:"center", gap:6}}>
-                    <svg width="20" height="4" viewBox="0 0 20 4" style={{flexShrink:0}}>
-                      <line x1="0" y1="2" x2="20" y2="2" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="5 3"/>
-                    </svg>
+                    <svg width="20" height="4" viewBox="0 0 20 4" style={{flexShrink:0}}><line x1="0" y1="2" x2="20" y2="2" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="5 3"/></svg>
                     Diktat-Score
                   </span>
                   <span style={{marginLeft:"auto"}}>
-                    <button
-                      className={`typ-btn${statistikGraphOhneUnbeantwortet ? " aktiv" : ""}`}
+                    <button className={`typ-btn${statistikGraphOhneUnbeantwortet?" aktiv":""}`}
                       style={{fontSize:"0.68rem", padding:"3px 8px"}}
                       onClick={() => setStatistikGraphOhneUnbeantwortet(v => !v)}>
                       {statistikGraphOhneUnbeantwortet ? "Nur beantwortete" : "Inkl. unbeantwortete"}
@@ -4152,48 +4172,18 @@ export default function VokabelApp() {
                 </div>
               </div>
 
-              {/* 4 Kennzahlen-Boxen */}
-              <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12}}>
-                {[
-                  {label:"Gesamt", wert:alleVoks.length, farbe:null},
-                  {label:"Nie abgefragt", wert:nieAnzahl, farbe:nieAnzahl>0?"#6b6560":"#2d6a4f"},
-                  {label:"Score positiv", wert:positivAnzahl, bg:"#e8f5e9", rand:"#c8e6c9", farbe:"#2d6a4f"},
-                  {label:"Score negativ", wert:negativAnzahl, bg:"#ffebee", rand:"#ffcdd2", farbe:"#c0392b"},
-                ].map(k => (
-                  <div key={k.label} style={{background:k.bg||"#fff", border:`1px solid ${k.rand||"#e0dbd2"}`, borderRadius:10, padding:"12px 14px"}}>
-                    <div style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:k.farbe||"#6b6560"}}>{k.label}</div>
-                    <div style={{fontSize:"1.6rem", fontWeight:700, marginTop:4, color:k.farbe||"#1a1a1a"}}>{k.wert}</div>
-                  </div>
-                ))}
-              </div>
-              {avgScore !== null && (
-                <div style={{position:"sticky", top:headerH + statistikListenHeaderH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-                  <span style={{fontSize:"0.82rem", color:"#6b6560", fontWeight:600}}>Ø Score (abgefragte Vokabeln)</span>
-                  <div style={{display:"flex", alignItems:"center", gap:8}}>
-                    <span style={{fontWeight:700, color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
-                      {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
-                    </span>
-                    <button className="btn btn-ghost btn-sm"
-                      onClick={() => window.scrollTo({top:0, behavior:"smooth"})}>
-                      ↑ Nach oben
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Filter */}
-              <div className="sektion-label" style={{marginBottom:8}}>Filter</div>
-              <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:12}}>
-                {[
-                  {key:"alle", label:`Alle (${alleVoks.length})`},
-                  {key:"nie", label:`Nie (${nieAnzahl})`},
-                  {key:"negativ", label:`Neg (${negativAnzahl})`},
-                  {key:"null", label:`Null (${nullAnzahl})`},
-                  {key:"positiv", label:`Pos (${positivAnzahl})`},
-                ].map(f => (
-                  <button key={f.key} className={`typ-btn${statistikFilter===f.key?" aktiv":""}`}
-                    onClick={() => setStatistikFilter(f.key)}>{f.label}</button>
-                ))}
+              {/* Kennzahlen-Boxen als Filter */}
+              <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16}}>
+                {filterBoxen.map(k => {
+                  const aktiv = statistikFilter === k.key;
+                  return (
+                    <div key={k.key} onClick={() => setStatistikFilter(aktiv ? "alle" : k.key)}
+                      style={{background:aktiv?(k.bg||"#f0f9f4"):(k.bg||"#fff"), border:`2px solid ${aktiv?(k.rand||"#2d6a4f"):(k.rand||"#e0dbd2")}`, borderRadius:10, padding:"12px 14px", cursor:"pointer", userSelect:"none", transition:"border-color 0.15s"}}>
+                      <div style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:k.farbe||(aktiv?"#2d6a4f":"#6b6560")}}>{k.label}</div>
+                      <div style={{fontSize:"1.6rem", fontWeight:700, marginTop:4, color:k.farbe||(aktiv?"#2d6a4f":"#1a1a1a")}}>{k.wert}</div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Sortierung */}
@@ -4249,7 +4239,7 @@ export default function VokabelApp() {
                 })}
               </div>
             </div>
-          );
+          </>);
         })()}
         {tab === "einstellungen" && (
           <div className="sektion">
