@@ -1461,7 +1461,21 @@ export default function VokabelApp() {
   }
 
   function toggleQuizTabListe(id) {
-    setQuizTabListen(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    setQuizTabListen(prev => {
+      const neueListen = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
+        const bereinigte = new Set([...quizCheckboxAuswahl].filter(vokId =>
+          neueListen.some(lId => vokId.startsWith(`${lId}__`))
+        ));
+        if (bereinigte.size === 0) {
+          setQuizBereichTyp("alle");
+          setQuizCheckboxAuswahl(new Set());
+        } else {
+          setQuizCheckboxAuswahl(bereinigte);
+        }
+      }
+      return neueListen;
+    });
   }
 
   function toggleListenAuswahl() {
