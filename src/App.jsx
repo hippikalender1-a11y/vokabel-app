@@ -221,6 +221,9 @@ function istRichtigeAntwort(eingabe, wert) {
   return generiereVarianten(wert).includes(eingabe.toLowerCase().trim());
 }
 
+// ── Score-Clamp (Anzeige: −10 bis +10) ────────────────────────────────────
+function clampScore(s) { return Math.max(-10, Math.min(10, s ?? 0)); }
+
 // ── Scoring ────────────────────────────────────────────────────────────────
 function berechneNeuenScore(fortschritt, ereignis, sessionFalschAnzahl, modus) {
   const f = fortschritt || { score:0, streak:0, aufgedecktStreak:0, letzteAbfrage:null };
@@ -2046,7 +2049,7 @@ export default function VokabelApp() {
     const isKarteAufgedeckt = aktSpaltModus === "karte" && quiz.phase === "aufgedeckt" && !quiz.karteNeinFlash;
     const richtigAufgedeckt = !!quiz.richtigAufgedeckt && quiz.phase === "aufgedeckt";
     const infoSpalten = (quiz.sitzungsInfoTypen || []).filter(t => aktVokRaw[t]?.wert);
-    const score = aktVok?.fortschritt?.score ?? 0;
+    const score = clampScore(aktVok?.fortschritt?.score);
     const isWeitere = quiz.phase === "weitere";
     const frageWert = aktVokRaw[quiz.frageTyp]?.wert || "";
 
@@ -2292,10 +2295,10 @@ export default function VokabelApp() {
   if (ansicht === "statistik" && aktiveListe) {
     const abgefragt = aktiveListe.vokabeln.filter(v => v.fortschritt);
     const nieAnzahl = aktiveListe.vokabeln.length - abgefragt.length;
-    const positivAnzahl = abgefragt.filter(v => v.fortschritt.score > 0).length;
-    const negativAnzahl = abgefragt.filter(v => v.fortschritt.score < 0).length;
-    const nullAnzahl = abgefragt.filter(v => v.fortschritt.score === 0).length;
-    const scores = abgefragt.map(v => v.fortschritt.score);
+    const positivAnzahl = abgefragt.filter(v => clampScore(v.fortschritt.score) > 0).length;
+    const negativAnzahl = abgefragt.filter(v => clampScore(v.fortschritt.score) < 0).length;
+    const nullAnzahl = abgefragt.filter(v => clampScore(v.fortschritt.score) === 0).length;
+    const scores = abgefragt.map(v => clampScore(v.fortschritt.score));
     const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
 
     let voks = [...aktiveListe.vokabeln];
@@ -2384,7 +2387,7 @@ export default function VokabelApp() {
               {voks.length === 0 ? (
                 <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln in diesem Filter.</div>
               ) : voks.map(vok => {
-                const score = vok.fortschritt?.score ?? null;
+                const score = vok.fortschritt != null ? clampScore(vok.fortschritt.score) : null;
                 const streak = vok.fortschritt?.streak ?? 0;
                 return (
                   <div key={vok.id} className="karte-zeile">
@@ -3470,7 +3473,7 @@ export default function VokabelApp() {
                 ) : (
                   <div className="karte">
                     {aktiveListe.vokabeln.map(vok => {
-                      const score = vok.fortschritt?.score ?? null;
+                      const score = vok.fortschritt != null ? clampScore(vok.fortschritt.score) : null;
                       return (
                         <div key={vok.id} className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
                           <div style={{display:"flex", width:"100%", justifyContent:"space-between", alignItems:"flex-start"}}>
