@@ -3356,7 +3356,7 @@ export default function VokabelApp() {
                     ? (listenIndex.find(l => l.id === quizTabListen[0])?.name || "Liste")
                     : `${n} Listen`;
                   return (
-                    <div ref={listenauswahlHeaderRef} className="liste-detail-header" style={{position:"sticky", top:headerH + slotH, zIndex:8}}>
+                    <div ref={listenauswahlHeaderRef} className="liste-detail-header" style={{position:"sticky", top:headerH + slotH, zIndex:8, marginLeft:"-16px", marginRight:"-16px"}}>
                       {/* LINKS */}
                       <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
                         {listenAuswahlAufgeklappt ? (
