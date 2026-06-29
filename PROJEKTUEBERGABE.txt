@@ -1,7 +1,7 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-30  (Session 28 — Verlauf-Header Fix, Abfrage-Ziel)
+Stand: 2026-06-30  (Session 29 — Slider-Fix, Listen-Nr.-Sort, Vokabelliste-Redesign, Vollbild-Modus, Balkendiagramm)
 Letzter Commit: 8cd4861
 
 DATEIPFADE
@@ -1149,7 +1149,7 @@ NOCH OFFEN / FOLGE-SESSION:
 
 
 ================================================================
-SESSION 29 — GEPLANTE ÄNDERUNGEN
+SESSION 29 — UMGESETZTE ÄNDERUNGEN (Commit: e2f2ebe)
 ================================================================
 
 1. SLIDER-TAB-KOLLISION FIX (Quiz-Tab)
@@ -1248,8 +1248,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 13322fd (Session 28 — Verlauf-Header Fix, Abfrage-Ziel)
-Nächste Session: 29 — Slider-Fix, Listen-Nr.-Sort, Vokabelliste-Redesign,
-                       Vollbild-Modus, Balkendiagramm
+Letzter Commit: e2f2ebe (Session 29 — Slider-Fix, Listen-Nr.-Sort, Vokabelliste-Redesign, Vollbild-Modus, Balkendiagramm)
 
 ================================================================

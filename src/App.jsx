@@ -576,7 +576,6 @@ export default function VokabelApp() {
   const slotSektionRef = useRef(null);
   const slotContainerRef = useRef(null);
   const listenauswahlHeaderRef = useRef(null);
-  const touchStartRef = useRef(null);
   const [headerH, setHeaderH] = useState(104);
   const [alleBereichH, setAlleBereichH] = useState(0);
   const [abfrageModusH, setAbfrageModusH] = useState(0);
@@ -722,7 +721,7 @@ export default function VokabelApp() {
     obs.observe(el);
     setSlotH(el.offsetHeight);
     return () => obs.disconnect();
-  }, [slots.verlauf.length, slots.gespeichert.length, tab]);
+  }, [slots.verlauf.length, slots.gespeichert.length, tab, statistikVollbild]);
 
   // Listenauswahl-Header Höhe messen
   useEffect(() => {
@@ -781,13 +780,13 @@ export default function VokabelApp() {
 
   useEffect(() => {
     const el = statistikListenHeaderRef.current;
-    if (!el) return;
+    if (!el) { setStatistikListenHeaderH(0); return; }
     const update = () => setStatistikListenHeaderH(el.offsetHeight);
     update();
     const obs = new ResizeObserver(update);
     obs.observe(el);
     return () => obs.disconnect();
-  }, [tab]);
+  }, [tab, statistikVollbild]);
 
   useEffect(() => {
     const el = statistikVokauswahlRef.current;
@@ -796,7 +795,7 @@ export default function VokabelApp() {
     obs.observe(el);
     setStatistikVokauswahlH(el.offsetHeight);
     return () => obs.disconnect();
-  }, [tab]);
+  }, [tab, statistikVollbild]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -3023,32 +3022,16 @@ export default function VokabelApp() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="app"
-        onTouchStart={(e) => {
-          const t = e.target;
-          if (t instanceof HTMLInputElement && t.type === "range") return;
-          touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        }}
-        onTouchEnd={(e) => {
-          if (!touchStartRef.current) return;
-          const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
-          const dy = Math.abs(e.changedTouches[0].clientY - touchStartRef.current.y);
-          touchStartRef.current = null;
-          if (Math.abs(dx) > 60 && dy < 80) {
-            const idx = tabReihenfolge.indexOf(tab);
-            const neuerIdx = idx + (dx < 0 ? 1 : -1);
-            if (neuerIdx >= 0 && neuerIdx < tabReihenfolge.length) handleTabWechsel(tabReihenfolge[neuerIdx]);
-          }
-        }}>
+      <div className="app">
         <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"#fff"}}>
         <div className="topbar">
           <span className="topbar-title">Vokabel-Trainer</span>
           {statistikVollbild && (
             <button onClick={() => setStatistikVollbild(false)}
               style={{position:"absolute", right:14, top:"50%", transform:"translateY(-50%)",
-                display:"flex", alignItems:"center", gap:6, background:"none", border:"none",
-                cursor:"pointer", color:"#2d6a4f", fontWeight:600, fontSize:"0.82rem", padding:"6px 8px"}}>
-              <IcoCollapse s={16}/>Vollbild verlassen
+                display:"flex", alignItems:"center", background:"none", border:"none",
+                cursor:"pointer", color:"#2d6a4f", padding:"6px 8px"}}>
+              <IcoCollapse s={18}/>
             </button>
           )}
         </div>
@@ -4828,8 +4811,9 @@ export default function VokabelApp() {
                       Tippen zum Wechseln
                     </div>
                     {istBalken ? (
-                      <div style={{overflowX:"auto"}}>
-                        <svg width={barSvgW} height={SVG_H} style={{display:"block"}}>
+                      <>
+                        <svg viewBox={`0 0 ${barSvgW} ${SVG_H}`} preserveAspectRatio="none"
+                          style={{width:"100%", height:SVG_H, display:"block"}}>
                           <rect width={barSvgW} height={SVG_H} fill="#fafaf8"/>
                           <rect x={bpX} y={bpY} width={barSvgW - 2*bpX} height={maxBarH} fill="#e8f5e9" opacity="0.6"/>
                           <rect x={bpX} y={zeroBarY} width={barSvgW - 2*bpX} height={maxBarH} fill="#ffebee" opacity="0.6"/>
@@ -4844,7 +4828,7 @@ export default function VokabelApp() {
                             );
                           })}
                         </svg>
-                      </div>
+                      </>
                     ) : (
                       <svg viewBox={`0 0 ${GW} ${GH}`} preserveAspectRatio="none"
                         style={{width:"100%", height:130, display:"block"}}>
@@ -4932,10 +4916,12 @@ export default function VokabelApp() {
                     </button>
                   );
                 })}
-                <button onClick={() => setStatistikVollbild(true)}
-                  style={{marginLeft:"auto", background:"none", border:"none", padding:"4px 6px", cursor:"pointer", color:"#6b6560", display:"flex", alignItems:"center"}}>
-                  <IcoExpand s={18}/>
-                </button>
+                {!statistikVollbild && (
+                  <button onClick={() => setStatistikVollbild(true)}
+                    style={{marginLeft:"auto", background:"none", border:"none", padding:"4px 6px", cursor:"pointer", color:"#6b6560", display:"flex", alignItems:"center"}}>
+                    <IcoExpand s={18}/>
+                  </button>
+                )}
               </div>
 
               {/* Vokabelliste */}
