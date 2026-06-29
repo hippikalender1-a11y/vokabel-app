@@ -4845,6 +4845,7 @@ export default function VokabelApp() {
                   setGruppenAenderungsDialog(false);
                   starteQuiz(true, {typ:'verlauf', id:newId});
                 }}>Fortfahren ohne Speichern</button>
+                <button className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#9b9590"}} onClick={() => setGruppenAenderungsDialog(false)}>Abbrechen</button>
               </div>
             </div>
           </div>
