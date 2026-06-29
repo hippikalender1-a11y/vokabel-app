@@ -4128,7 +4128,14 @@ export default function VokabelApp() {
                     setQuizTabListen([aktiveListeId]);
                     initQuizDefaults(lsGet(SK.liste(aktiveListeId)));
                     setListenAuswahlAufgeklappt(false);
-                    setTab("quiz");
+                    setAktiverSlot(null);
+                    setSlotGeaendert(false);
+                    setGespeicherteVokabelgruppe(null);
+                    lsDel(SK.sessionAktiv);
+                    setSessionSlotAktiv(null);
+                    setQuizSessionModus("alle");
+                    setQuizPaketGroesse(null);
+                    handleTabWechsel("quiz");
                   }}>
                   Quiz starten
                 </button>
