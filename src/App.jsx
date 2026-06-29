@@ -3375,7 +3375,7 @@ export default function VokabelApp() {
                                   style={!aktiverSlot
                                     ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
                                     : {color:"#9b9590"}}
-                                  onClick={() => { setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); }}>
+                                  onClick={() => { setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus("alle"); setQuizPaketGroesse(null); }}>
                                   Neu
                                 </button>
                               )}
