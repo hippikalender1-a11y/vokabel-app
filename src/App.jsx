@@ -2823,6 +2823,27 @@ export default function VokabelApp() {
   }
 
 
+  // ── Slot-Chip Hilfsfunktionen (Quiz-Tab + Statistik-Tab) ─────────────────
+  const slotLoeschStil = { background:"#fff0f0", borderColor:"#e74c3c", color:"#c0392b" };
+  const renderSlotChip = (id, label, onClick, extraStil = {}) => (
+    <button key={id} className="slot-chip belegt"
+      style={slotLoeschModus ? slotLoeschStil : extraStil}
+      onClick={onClick}>
+      {slotLoeschModus ? <><IcoX s={10}/>{" "}</> : null}{label}
+    </button>
+  );
+  const chipStil = (typ, id) => {
+    const istAktiv = aktiverSlot?.typ === typ && aktiverSlot?.id === id;
+    const sf = getSlotEintrag(typ, id)?.sessionFortschritt;
+    return istAktiv
+      ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
+      : sf ? {background:"#f0f9f4", borderColor:"#a8d5be", color:"#2d6a4f"} : {};
+  };
+  const slotChipLabel = (eintrag) => {
+    const sf = eintrag.sessionFortschritt;
+    return sf ? `▶ ${eintrag.name} · ${(sf.abgefragt||[]).length}/${sf.gesamt||0}` : eintrag.name;
+  };
+
   // ── Statistik: Berechnungen ───────────────────────────────────────────────
   const statistikAlleListenObjekte = listenIndex.map(l => lsGet(SK.liste(l.id))).filter(Boolean);
   const statistikGewaehlteListenObjekte = statistikListenIds === null
@@ -3321,25 +3342,6 @@ export default function VokabelApp() {
                 {(() => {
                   const hatSlots = slots.verlauf.length > 0 || slots.gespeichert.length > 0;
                   if (!hatSlots) return null;
-                  const loeschStil = { background:"#fff0f0", borderColor:"#e74c3c", color:"#c0392b" };
-                  const renderSlotChip = (id, label, onClick, extraStil = {}) => (
-                    <button key={id} className="slot-chip belegt"
-                      style={slotLoeschModus ? loeschStil : extraStil}
-                      onClick={onClick}>
-                      {slotLoeschModus ? <><IcoX s={10}/>{" "}</> : null}{label}
-                    </button>
-                  );
-                  const chipStil = (typ, id) => {
-                    const istAktiv = aktiverSlot?.typ === typ && aktiverSlot?.id === id;
-                    const sf = getSlotEintrag(typ, id)?.sessionFortschritt;
-                    return istAktiv
-                      ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
-                      : sf ? {background:"#f0f9f4", borderColor:"#a8d5be", color:"#2d6a4f"} : {};
-                  };
-                  const chipLabel = (eintrag) => {
-                    const sf = eintrag.sessionFortschritt;
-                    return sf ? `▶ ${eintrag.name} · ${(sf.abgefragt||[]).length}/${sf.gesamt||0}` : eintrag.name;
-                  };
                   return (
                     <>
                       {/* Sticky Header-Zeile */}
@@ -3382,7 +3384,7 @@ export default function VokabelApp() {
                                 </button>
                               )}
                               {slots.gespeichert.map(s => renderSlotChip(
-                                s.id, chipLabel(s),
+                                s.id, slotChipLabel(s),
                                 () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:s.id}) : ladeSlot('gespeichert', s.id),
                                 chipStil('gespeichert', s.id)
                               ))}
@@ -3393,7 +3395,7 @@ export default function VokabelApp() {
                               <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Verlauf</div>
                               <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
                                 {slots.verlauf.map(s => renderSlotChip(
-                                  s.id, chipLabel(s),
+                                  s.id, slotChipLabel(s),
                                   () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:s.id}) : ladeSlot('verlauf', s.id),
                                   chipStil('verlauf', s.id)
                                 ))}
@@ -4179,10 +4181,6 @@ export default function VokabelApp() {
         })()}
         {/* ── Statistik: Verlauf & Gespeichert Header ── */}
         {tab === "statistik" && (() => {
-          const chipLabel = (eintrag) => {
-            const sf = eintrag.sessionFortschritt;
-            return sf ? `▶ ${eintrag.name} · ${(sf.abgefragt||[]).length}/${sf.gesamt||0}` : eintrag.name;
-          };
           return (
             <>
               <div ref={slotSektionRef} style={{position:"sticky", top:headerH, zIndex:9, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
@@ -4223,7 +4221,7 @@ export default function VokabelApp() {
                         </button>
                       )}
                       {slots.gespeichert.map(s => renderSlotChip(
-                        s.id, chipLabel(s),
+                        s.id, slotChipLabel(s),
                         () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:s.id}) : ladeSlot('gespeichert', s.id),
                         chipStil('gespeichert', s.id)
                       ))}
@@ -4234,7 +4232,7 @@ export default function VokabelApp() {
                       <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Verlauf</div>
                       <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
                         {slots.verlauf.map(s => renderSlotChip(
-                          s.id, chipLabel(s),
+                          s.id, slotChipLabel(s),
                           () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:s.id}) : ladeSlot('verlauf', s.id),
                           chipStil('verlauf', s.id)
                         ))}
