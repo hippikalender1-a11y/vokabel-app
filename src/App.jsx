@@ -3358,7 +3358,8 @@ export default function VokabelApp() {
                         <button
                           onClick={() => { setSlotSektionAufgeklappt(v => !v); setSlotLoeschModus(false); }}
                           className={`toggle-opt${aktiverSlot?.typ === 'gespeichert' ? " aktiv" : ""}`}
-                          style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
+                          style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                            ...(vokabelgruppeGeaendert ? {background:"#c0392b", color:"#fff"} : {})}}>
                           {aktiverSlot?.typ === 'gespeichert'
                             ? (getSlotEintrag('gespeichert', aktiverSlot.id)?.name || aktiverSlot.id)
                             : "Neu"}
