@@ -709,7 +709,7 @@ export default function VokabelApp() {
     obs.observe(el);
     setSlotH(el.offsetHeight);
     return () => obs.disconnect();
-  }, [slots.verlauf.length, slots.gespeichert.length]);
+  }, [slots.verlauf.length, slots.gespeichert.length, tab]);
 
   // Listenauswahl-Header Höhe messen
   useEffect(() => {
@@ -790,22 +790,22 @@ export default function VokabelApp() {
       if (dropdownImmuneRef.current) return;
       const el = statistikListenContainerRef.current;
       if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH) setStatistikListenAufgeklappt(false);
+      if (el.getBoundingClientRect().bottom <= headerH + slotH) setStatistikListenAufgeklappt(false);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH]);
+  }, [headerH, slotH]);
 
   useEffect(() => {
     const onScroll = () => {
       if (dropdownImmuneRef.current) return;
       const el = statistikEinzelauswahlRef.current;
       if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + statistikListenHeaderH) setStatistikEinzelauswahlAufgeklappt(false);
+      if (el.getBoundingClientRect().bottom <= headerH + slotH + statistikListenHeaderH) setStatistikEinzelauswahlAufgeklappt(false);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, statistikListenHeaderH]);
+  }, [headerH, slotH, statistikListenHeaderH]);
 
   useEffect(() => {
     setListenIndex(lsGet(SK.listenIndex, []));
@@ -1454,6 +1454,7 @@ export default function VokabelApp() {
     setQuizSessionAufgeklappt(false);
     setAktiverSlot({ typ, id });
     setSlotGeaendert(false);
+    setStatistikScoreModus(eintrag.sessionFortschritt ? "session" : "global");
     if (eintrag.sessionFortschritt) {
       const sf = eintrag.sessionFortschritt;
       const sessionObj = { slotTyp: typ, slotId: id, listenIds: eintrag.konfiguration.listenIds || [], vokabelAuswahl: eintrag.konfiguration.vokabelAuswahl || [], bereichTyp: eintrag.konfiguration.bereichTyp || "alle", abgefragt: sf.abgefragt || [], gesamt: sf.gesamt || 0, paketGroesse: sf.paketGroesse || 20, startScores: sf.startScores || {} };
@@ -1731,8 +1732,8 @@ export default function VokabelApp() {
         const el = statistikListenContainerRef.current;
         if (!el) return;
         const rect = el.getBoundingClientRect();
-        if (rect.top < headerH) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH), behavior: 'instant' });
+        if (rect.top < headerH + slotH) {
+          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH - slotH), behavior: 'instant' });
         }
         setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
       }));
@@ -1747,7 +1748,7 @@ export default function VokabelApp() {
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = statistikEinzelauswahlRef.current;
         if (!el) return;
-        const target = headerH + statistikListenHeaderH + statistikVokauswahlH;
+        const target = headerH + slotH + statistikListenHeaderH + statistikVokauswahlH;
         const rect = el.getBoundingClientRect();
         if (rect.top < target) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
@@ -4176,6 +4177,76 @@ export default function VokabelApp() {
             </>
           );
         })()}
+        {/* ── Statistik: Verlauf & Gespeichert Header ── */}
+        {tab === "statistik" && (() => {
+          const chipLabel = (eintrag) => {
+            const sf = eintrag.sessionFortschritt;
+            return sf ? `▶ ${eintrag.name} · ${(sf.abgefragt||[]).length}/${sf.gesamt||0}` : eintrag.name;
+          };
+          return (
+            <>
+              <div ref={slotSektionRef} style={{position:"sticky", top:headerH, zIndex:9, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
+                <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832", display:"flex", alignItems:"center", gap:8}}>
+                  Verlauf &amp; Gespeichert
+                  {slotSektionAufgeklappt && (
+                    <button onClick={() => setSlotLoeschModus(v => !v)} style={{
+                      background: slotLoeschModus ? "#2d6a4f" : "none",
+                      border:`1.5px solid ${slotLoeschModus ? "#2d6a4f" : "#c0bcb7"}`,
+                      color: slotLoeschModus ? "#fff" : "#6b6560",
+                      borderRadius:6, cursor:"pointer", padding:"3px 7px",
+                      display:"inline-flex", alignItems:"center",
+                    }}><IcoX s={11}/></button>
+                  )}
+                </span>
+                <button
+                  onClick={() => { setSlotSektionAufgeklappt(v => !v); setSlotLoeschModus(false); }}
+                  className={`toggle-opt${aktiverSlot?.typ === 'gespeichert' ? " aktiv" : ""}`}
+                  style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                    ...(vokabelgruppeGeaendert ? {background:"#c0392b", color:"#fff"} : {})}}>
+                  {aktiverSlot?.typ === 'gespeichert'
+                    ? (getSlotEintrag('gespeichert', aktiverSlot.id)?.name || aktiverSlot.id)
+                    : "Neu"}
+                </button>
+              </div>
+              <div ref={slotContainerRef} style={{overflow:'hidden', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 4 : 0}}>
+                {slotSektionAufgeklappt && (<>
+                  <div style={{marginBottom:10, padding:"0 16px"}}>
+                    <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Gespeichert</div>
+                    <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                      {!slotLoeschModus && (
+                        <button className="slot-chip belegt"
+                          style={!aktiverSlot
+                            ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
+                            : {color:"#9b9590"}}
+                          onClick={() => { setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus("alle"); setQuizPaketGroesse(null); }}>
+                          Neu
+                        </button>
+                      )}
+                      {slots.gespeichert.map(s => renderSlotChip(
+                        s.id, chipLabel(s),
+                        () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:s.id}) : ladeSlot('gespeichert', s.id),
+                        chipStil('gespeichert', s.id)
+                      ))}
+                    </div>
+                  </div>
+                  {slots.verlauf.length > 0 && (
+                    <div style={{marginBottom:14, padding:"0 16px"}}>
+                      <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Verlauf</div>
+                      <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                        {slots.verlauf.map(s => renderSlotChip(
+                          s.id, chipLabel(s),
+                          () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:s.id}) : ladeSlot('verlauf', s.id),
+                          chipStil('verlauf', s.id)
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>)}
+              </div>
+            </>
+          );
+        })()}
+
         {/* ── Statistik: Listen-Auswahl Header ── */}
         {tab === "statistik" && (() => {
           const n = statistikGewaehlteListenObjekte.length;
@@ -4188,7 +4259,7 @@ export default function VokabelApp() {
             ? (listenIndex.find(l => statistikListenIds.has(l.id))?.name || "Liste")
             : `${statistikListenIds.size} Listen`;
           return (<>
-            <div ref={statistikListenHeaderRef} className="statistik-listen-header" style={{top:headerH, zIndex:8, position:"sticky"}}>
+            <div ref={statistikListenHeaderRef} className="statistik-listen-header" style={{top:headerH + slotH, zIndex:8, position:"sticky"}}>
               {/* LINKS */}
               <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
                 {statistikListenAufgeklappt ? (
@@ -4259,7 +4330,7 @@ export default function VokabelApp() {
           const istBereich = statistikBereichTyp === "bereich";
           const auswahlAnzahl = statistikGefilterteVoks.length;
           return (<>
-            <div ref={statistikVokauswahlRef} style={{position:"sticky", top:headerH+statistikListenHeaderH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
+            <div ref={statistikVokauswahlRef} style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
               {/* LINKS */}
               <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
                 {istBereich && statistikEinzelauswahlAufgeklappt ? (
@@ -4395,7 +4466,9 @@ export default function VokabelApp() {
           // Graph-Daten
           const quizGraphVoks = statistikGraphOhneUnbeantwortet ? abgefragt : alleVoks;
           const diktatGraphVoks = statistikGraphOhneUnbeantwortet ? diktatAbgefragt : alleVoks;
-          const quizS = quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
+          const quizS = istSessionModus
+            ? sessionVoksAbgefragt.map(v => getSessionDelta(v) ?? 0).sort((a, b) => a - b)
+            : quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
           const diktatS = statistikGraphDiktatZeigen ? diktatGraphVoks.map(v => v.diktatFortschritt?.score ?? 0).sort((a, b) => a - b) : [];
           const allScores = [...quizS, ...diktatS];
           const minS = allScores.length > 0 ? Math.min(...allScores, -1) : -1;
@@ -4413,8 +4486,8 @@ export default function VokabelApp() {
               return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
             }).join(' ');
           }
-          // Zwei-Farben-Kurve: unbeantwortete grau links, beantwortete grün rechts
-          const quizTwoColor = !statistikGraphOhneUnbeantwortet && nieAnzahl > 0;
+          // Zwei-Farben-Kurve: unbeantwortete grau links, beantwortete grün rechts (nur im Global-Modus)
+          const quizTwoColor = !istSessionModus && !statistikGraphOhneUnbeantwortet && nieAnzahl > 0;
           let quizGreenPath = toPath(quizS), quizGrayPath = '';
           if (quizTwoColor) {
             const total = alleVoks.length;
@@ -4453,7 +4526,7 @@ export default function VokabelApp() {
 
           return (<>
             {/* Ø-Score sticky Header */}
-            <div style={{position:"sticky", top:headerH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
+            <div style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
               <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2, flexShrink:0}}>
                 <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Ø Score</span>
                 {hatSessionDaten && (
