@@ -821,6 +821,67 @@ MEHRFACH-SESSIONS (Architektur-Umbau):
 
 
 ================================================================
+SESSION 24 — UMGESETZTE ÄNDERUNGEN (Commits: a823a38, 1802b38, 384b010)
+================================================================
+
+STICKY HEADER: VERLAUF & GESPEICHERT (neu, über Listenauswahl)
+  Verlauf & Gespeichert ist jetzt ein eigenständiger sticky Header
+  mit aufklappbarem Chips-Bereich (slotSektionRef, slotContainerRef).
+  Listenauswahl-Header wurde aus headerRef herausgelöst und ist nun
+  ebenfalls ein eigenständiger sticky Header (listenauswahlHeaderRef).
+  Reihenfolge von oben: Verlauf & Gespeichert → Listenauswahl → Vokabel-Auswahl → ...
+
+NEUE STATES/REFS:
+  slotH                  = Höhe des Verlauf-&-Gespeichert-Headers
+  listenauswahlHeaderH   = Höhe des Listenauswahl-Headers
+  slotSektionRef         = ref auf Verlauf-&-Gespeichert-Header
+  slotContainerRef       = ref auf aufklappbaren Chips-Bereich
+  listenauswahlHeaderRef = ref auf Listenauswahl-Header
+
+STICKY-HIERARCHIE (Quiz-Tab, aktuell):
+  1. headerRef            top:0                zIndex:10
+  2. slotSektionRef       top:headerH          zIndex:9   (Verlauf & Gespeichert)
+  3. listenauswahlHeaderRef top:headerH+slotH  zIndex:8   (Listen-Auswahl)
+  4. alleBereichRef        top:+listenauswahlHeaderH      zIndex:8
+  5. abfrageModusRef       ...                 zIndex:7
+  6. reihenfolgeRef        ...                 zIndex:6
+  7. einstellungenRef      ...                 zIndex:5
+  8. sessionRef            ...                 zIndex:4
+  9. Quiz-Button           ...                 zIndex:3
+
+GEPLANT FÜR NÄCHSTE SESSION (noch nicht implementiert):
+  Neues Slot/Session-Konzept (beschlossen in Session 24):
+
+  TERMINOLOGIE:
+    aktiverSlot = null → "Neu"-Zustand (kein Slot geladen)
+    aktiverSlot = {typ:'gespeichert', id} → benannter Slot aktiv
+    aktiverSlot = {typ:'verlauf', id} → alter Verlaufseintrag aktiv
+
+  VERLAUF-HEADER (rechts statt Pfeil):
+    Chip zeigt: aktiven Slot-Namen (z.B. "Irregular1") ODER "Neu"
+    Chip ist der Toggle (auf-/zuklappen)
+
+  VERLAUF-INHALT:
+    Letzte 5 ungespeicherte Abfragen (mit Datum/Uhrzeit)
+    Anwählbar + nachträglich speicherbar
+
+  GESPEICHERT-SEKTION:
+    "Neu"-Chip zum Leeren des aktiven Slots (→ Neu-Zustand)
+
+  VERLAUFSEINTRAG ENTSTEHT NUR BEI:
+    1. Quiz-Start ohne aktiven Slot ("Neu")
+    2. Quiz-Start nach "Fortfahren ohne Speichern"
+
+  KEIN VERLAUFSEINTRAG BEI:
+    Quiz/Session-Start aus einem gespeicherten Slot →
+    Session-Fortschritt wird direkt am aktiven Slot gespeichert
+
+  ÄNDERUNGSERKENNUNG (nur bei gespeichertem Slot aktiv):
+    Vokabelgruppe geändert → Dialog vor Quiz-Start:
+      "Überspeichern" | "Neu speichern" | "Fortfahren ohne Speichern"
+    Einstellungen geändert → sofort stillschweigend überspeichern
+
+================================================================
 SESSION 23 — UMGESETZTE ÄNDERUNGEN (Commit: 5b34b9d)
 ================================================================
 
@@ -909,6 +970,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 5b34b9d (Session 23)
+Letzter Commit: 384b010 (Session 24)
 
 ================================================================
