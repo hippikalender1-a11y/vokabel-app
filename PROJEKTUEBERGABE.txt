@@ -1,7 +1,7 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-30  (Session 27 — Statistik-Slot-Isolation, Swipe, Abfrage-Ziel geplant)
+Stand: 2026-06-30  (Session 28 — Verlauf-Header Fix, Abfrage-Ziel)
 Letzter Commit: 8cd4861
 
 DATEIPFADE
@@ -960,31 +960,71 @@ FIX — QUIZ AUS LISTE (Commit 8cd4861):
   Nutzt handleTabWechsel("quiz") statt setTab("quiz")
 
 ================================================================
-NÄCHSTE SESSION — GEPLANT: ABFRAGE-ZIEL
+SESSION 28 — UMGESETZTE ÄNDERUNGEN (Commit: 13322fd)
 ================================================================
 
-Neues Feature im Session-Header (in BEIDEN Session-Modi: "alle" und "pakete" sichtbar).
+FIX — VERLAUF-HEADER QUIZ-TAB IMMER SICHTBAR:
+  War: if (!hatSlots) return null → Header verschwand wenn alle Slots gelöscht
+  Jetzt: Header bleibt immer sichtbar (zeigt "Neu"-Chip), konsistent mit Statistik-Tab
+  Änderung: die beiden Zeilen (hatSlots berechnen + if-Guard) entfernt
 
-MODUS 1 — "Anzahl" (aktuelles Verhalten, neue Einstellbarkeit):
-  Alle Vokabeln werden 1, 2 oder 3 mal abgefragt.
-  Einstellung: Chips/Buttons 1 / 2 / 3
+ABFRAGE-ZIEL (neues Feature):
+  Im aufklappbaren Session-Kontext sichtbar, in BEIDEN Modi (Alle + Pakete).
 
-MODUS 2 — "Mit Wiederholung":
-  Alle Vokabeln werden abgefragt bis sie mindestens 1, 2 oder 3 mal
-  richtig beantwortet wurden.
-  Einstellung: Chips/Buttons 1 / 2 / 3
+NEUE STATES:
+  abfrageZielModus    = "anzahl" | "wiederholung" | "score"   (default: "anzahl")
+  abfrageZielAnzahl   = 1 | 2 | 3                             (default: 1)
+  abfrageZielWiederholung = 1 | 2 | 3                         (default: 1)
+  abfrageZielScore    = number (−10…+10)                       (default: 0)
+  abfrageZielScoreTyp = "global" | "session"                  (default: "global")
+  initQuizDefaults() setzt alle auf ihre Defaults zurück.
 
-MODUS 3 — "Score":
-  Abfragen bis alle Vokabeln einen Mindest-Score erreicht haben.
-  Einstellung:
-    - Globaler oder Session-Score (Toggle)
-    - Slider −10 bis +10 (step 1)
-      Grüner Slider-Button zeigt aktuellen Wert
-      Nullpunkt dezent markiert
-  Score geclampt auf −10…+10 (wie bestehende Logik)
+SESSION-KONTEXT (sessionContainerRef):
+  Aufklappbar jetzt in BEIDEN Modi: "Alle" und "Pakete"
+  Toggle-Button-Verhalten geändert:
+    Klick auf aktiven Button → togglet Kontext (öffnen/schließen)
+    Klick auf inaktiven Button → wechselt Modus + öffnet Kontext
+  Inhalt (immer): Abfrage-Ziel-Sektion
+  Inhalt (nur Pakete): "Vokabeln pro Paket" + Session-Fortschritt
 
-POSITION: Im Session-Header-Kontext (sessionContainerRef), in beiden
-  quizSessionModus-Zuständen ("alle" + "pakete") sichtbar.
+ABFRAGE-ZIEL UI:
+  Modus-Toggle: [Anzahl] [Mit Wiederholung] [Score]
+
+  Anzahl: "Jede Vokabel [1×][2×][3×] abfragen"
+    Jede Vokabel wird N mal durchlaufen (Runden mit Neu-Mischung)
+
+  Mit Wiederholung: "Bis [1×][2×][3×] richtig"
+    Vokabeln werden re-gequeued bis jede N-mal korrekt beantwortet wurde
+    Tracking: richtigMap = { [vokId]: count } im quiz-State
+
+  Score: [Globaler Score] [Session-Score] Toggle
+    Slider −10…+10 (step 1), grüner Badge über Thumb mit Wert
+    Nullpunkt: dezenter grauer Strich unter Slider-Mitte
+    Vokabeln werden re-gequeued bis ihr Score das Ziel erreicht
+
+QUIZ-LOGIK (naechsteVokabelState):
+  Wenn Index Ende erreicht → abfrageZiel-Check vor phase:"fertig":
+    "anzahl": wenn runde < anzahl-1 → neu mischen + runde++ → weiter
+    "wiederholung": richtigMap prüfen → restVoks re-queue
+    "score": live-Scores aus quiz.liste.vokabeln prüfen → restVoks re-queue
+  Restart: starteVokabel(neuVoks, 0) — Hilfsfunktion initialisiert kompletten
+    Vokabel-State (frageTyp, antwortTypen, antwortTeile, mcButtons etc.)
+  richtigMap-Update: nur wenn warRichtig (= _warRichtig || vorigeRichtig.length > 0)
+
+_warRichtig-Flag:
+  In naechsteVokabel(): wenn richtigAufgedeckt===true und letzter AnswerTyp
+  → naechsteVokabelState({...prev, richtigAufgedeckt:false, _warRichtig:true})
+  Deckt tippen/MC-Pfad ab (wo vorigeRichtig nicht befüllt wird)
+  Karte-Pfad (bewerteKarte): über vorigeRichtig.length > 0 abgedeckt
+
+abfrageZiel in Quiz-State (starteQuiz):
+  { modus, anzahl, wiederholung, score, scoreTyp, runde:0, startScoresZiel }
+  startScoresZiel: nur für score+session — Snapshot der Scores bei Quiz-Start
+  abfrageZiel=null wenn modus="anzahl" UND anzahl=1 (Standard-Fall, kein Overhead)
+
+HINWEIS DIKTAT:
+  abfrageZiel gilt NUR für reguläres Quiz (nicht Diktat).
+  naechsteDiktatVokabel() setzt phase:"fertig" direkt — kein naechsteVokabelState.
 
 ================================================================
 SESSION 26 — UMGESETZTE ÄNDERUNGEN (Commit: ed767b3)
@@ -1109,6 +1149,93 @@ NOCH OFFEN / FOLGE-SESSION:
 
 
 ================================================================
+SESSION 29 — GEPLANTE ÄNDERUNGEN
+================================================================
+
+1. SLIDER-TAB-KOLLISION FIX (Quiz-Tab)
+   Problem: Slider im Session-Kontext (Abfrage-Ziel Score) kollidiert mit
+   Swipe-Gesten-Tab-Navigation. Horizontales Wischen auf dem Slider löst
+   zusätzlich einen Tab-Wechsel aus.
+   Fix: In onTouchStart prüfen ob e.target instanceof HTMLInputElement &&
+   e.target.type === "range" (oder Vorfahre). Wenn ja → touchStartRef.current
+   bleibt null → kein Swipe verarbeitet.
+
+2. STATISTIK: NEUE SORTIERUNG "LISTEN-NR."
+   Neue Sortieroption nach Reihenfolge: erst Liste (nach listenIndex-Reihenfolge),
+   dann Position innerhalb der Liste.
+   Umsetzung:
+   - statistikBasisVoks: _listIndex (Index innerhalb der Liste) und
+     _listenIndexRank (Position im listenIndex-Array) hinzufügen
+   - Sort-Logik: sKey === "listennr" → sort nach _listenIndexRank, dann _listIndex
+   - Sort-Buttons: {key:"listennr", label:"Listen-Nr.", def:"asc"} hinzufügen
+   - Default-Richtung: "asc" (erste Liste zuerst, erste Vokabel zuerst)
+
+3. STATISTIK: VOKABELLISTE REDESIGN
+   Jede Vokabelzeile wird flach/kompakt:
+   Layout (horizontal): [E1 – D1 Text] [Score-Balken] [Scorewert + Datum]
+
+   E1–D1 Text:
+   - "E1.wert – D1.wert" (erste aktive Spalte – erste andere aktive Spalte)
+   - Auf Listen mit anderen Spalten-Configs: erste und zweite aktive Spalte
+   - Fixe Max-Breite (z.B. ~35% der Zeilenbreite), overflow:hidden, textOverflow:ellipsis
+   - Einzeilig, fontWeight:600 für E1, D1 dahinter in einem Textstring
+
+   Score-Balken (~1/3 der Zeilenbreite, zentriert):
+   - Hintergrund: #f0ede8 (beige, Gesamtbreite = full range −10…+10)
+   - Nullpunkt: exakt in der Mitte des Balkens
+   - Negative Scores: roter Balken von Mitte nach links, Breite = |score|/10 * 50%
+   - Positive Scores: grüner Balken von Mitte nach rechts, Breite = score/10 * 50%
+   - Score 0: kein farbiger Balken (nur Hintergrund), kleiner Strich am Nullpunkt
+   - Kein Score (nie abgefragt): grauer Balken oder leer
+
+   Rechts (rechtsbündig, flexShrink:0):
+   - Scorewert: "+N" / "−N" / "–" (farbig: grün/rot/grau)
+   - Datum: klein darunter (formatDatum)
+
+4. STATISTIK: VOLLBILD-MODUS
+   Neuer State: statistikVollbild = false
+
+   Maximieren-Button:
+   - Position: ganz rechts in der "Sortierung"-Zeile (neben den Sort-Buttons)
+   - SVG-Icon: Pfeile nach außen (Expand), eigene Komponente IcoExpand({s})
+   - Im Vollbild-Modus: Button verschwindet (da Sortierung-Zeile noch sichtbar
+     ist, aber kein Expand-Button mehr nötig — Verlassen per Topbar)
+
+   Wenn statistikVollbild=true:
+   - Alle sticky Header der Statistik ausgeblendet:
+     slotSektionRef-Inhalt (wenn Statistik-Tab), statistikListenHeaderRef,
+     statistikVokauswahlRef, Ø-Score-div
+   - Tabs ausgeblendet (.tabs)
+   - Topbar: zeigt "Vollbild verlassen"-Button (rechtsbündig)
+     SVG-Icon: Pfeile nach innen (Collapse), IcoCollapse({s})
+   - Die sektion selbst (Graph + Filter + Sortierung + Vokabelliste) bleibt
+     komplett sichtbar und scrollbar
+
+   Vollbild verlassen:
+   - Klick auf "Vollbild verlassen"-Button → statistikVollbild=false
+   - Tab-Wechsel → statistikVollbild=false (in handleTabWechsel)
+   - Swipe-Geste → statistikVollbild=false + handleTabWechsel
+
+   NEUE SVG-ICONS:
+   IcoExpand ({s=16}): zwei Diagonalpfeile nach außen (standard Maximize)
+   IcoCollapse ({s=16}): zwei Diagonalpfeile nach innen (standard Minimize)
+
+5. STATISTIK: BALKENDIAGRAMM (alternativ zum Liniendiagramm)
+   Neuer State: statistikGraphTyp = "linie" | "balken" (default: "linie")
+   Toggle: Klick auf den Graph-Container wechselt zwischen den Typen.
+
+   Balkendiagramm:
+   - Balken folgen der aktuell gewählten Sortierung (statistikSort)
+   - Eine Spalte pro Vokabel, Farbe: grün wenn score >= 0, rot wenn score < 0
+   - Y-Achse: fest −10…+10 (Nulllinie in der Mitte)
+   - Balkenbreite: 6px, Gap: 1px → bei 200 Voks ca. 1400px Gesamtbreite
+   - Container: overflow-x:auto, scrollable
+   - SVG-Breite dynamisch = max(containerWidth, N * 7)
+   - Session-Modus: zeigt Delta-Scores (wie Liniengraph)
+   - Zwei-Farben-Logik (unbeantwortete grau) nicht im Balkendiagramm
+   - Klick-Hinweis: kleines Label "Zum Wechseln tippen" o.ä. im Graph
+
+================================================================
 PROMPT FÜR NEUEN CHAT
 ================================================================
 
@@ -1121,6 +1248,8 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 8cd4861 (Session 27 — Statistik-Slot-Isolation, Swipe, Quiz-aus-Liste-Fix)
+Letzter Commit: 13322fd (Session 28 — Verlauf-Header Fix, Abfrage-Ziel)
+Nächste Session: 29 — Slider-Fix, Listen-Nr.-Sort, Vokabelliste-Redesign,
+                       Vollbild-Modus, Balkendiagramm
 
 ================================================================

@@ -440,7 +440,9 @@ const IcoSpk   = ({s=18}) => <svg viewBox="0 0 20 20" width={s} height={s} style
 const IcoSpkOn = ({s=20}) => <svg viewBox="0 0 26 20" width={s} height={s*.77} style={{display:"block"}}><polygon points="2,7 2,13 6,13 12,18 12,2 6,7" fill="currentColor"/><path d="M15,7 Q17,10 15,13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M18,4 Q22,10 18,16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
 const IcoPlus  = ({s=15}) => <svg viewBox="0 0 14 14" width={s} height={s} style={{display:"block"}}><line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>;
 const IcoShare = ({s=15}) => <svg viewBox="0 0 16 18" width={s} height={s*1.1} style={{display:"block"}}><path d="M8,1 L8,12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><path d="M4,5 L8,1 L12,5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M3,9 L3,16 L13,16 L13,9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
-const IcoCopy  = ({s=15}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><rect x="5" y="1" width="10" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="2"/><rect x="1" y="4" width="10" height="11" rx="2" fill="#fff" stroke="currentColor" strokeWidth="2"/></svg>;
+const IcoCopy    = ({s=15}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><rect x="5" y="1" width="10" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="2"/><rect x="1" y="4" width="10" height="11" rx="2" fill="#fff" stroke="currentColor" strokeWidth="2"/></svg>;
+const IcoExpand  = ({s=16}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><polyline points="1,6 1,1 6,1" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="1" y1="1" x2="6.5" y2="6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="10,1 15,1 15,6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="15" y1="1" x2="9.5" y2="6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="1,10 1,15 6,15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="1" y1="15" x2="6.5" y2="9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="15,10 15,15 10,15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="15" y1="15" x2="9.5" y2="9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
+const IcoCollapse= ({s=16}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><polyline points="1,6 6,6 6,1" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="6" y1="6" x2="0.5" y2="0.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="15,6 10,6 10,1" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="10" y1="6" x2="15.5" y2="0.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="1,10 6,10 6,15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="6" y1="10" x2="0.5" y2="15.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="15,10 10,10 10,15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="10" y1="10" x2="15.5" y2="15.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
 
 export default function VokabelApp() {
   const [tab, setTab] = useState("quiz");
@@ -506,6 +508,8 @@ export default function VokabelApp() {
   const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
   const [statistikGraphOhneUnbeantwortet, setStatistikGraphOhneUnbeantwortet] = useState(false);
   const [statistikGraphDiktatZeigen, setStatistikGraphDiktatZeigen] = useState(false);
+  const [statistikVollbild, setStatistikVollbild] = useState(false);
+  const [statistikGraphTyp, setStatistikGraphTyp] = useState("linie");
   const [statistikBereichTyp, setStatistikBereichTyp] = useState("alle");
   const [statistikCheckboxAuswahl, setStatistikCheckboxAuswahl] = useState(new Set());
   const [statistikEinzelauswahlAufgeklappt, setStatistikEinzelauswahlAufgeklappt] = useState(false);
@@ -1095,6 +1099,7 @@ export default function VokabelApp() {
     setTab(neuerTab);
     setExportAuswahlModus(false);
     setExportAusgewaehlt(new Set());
+    setStatistikVollbild(false);
   }
 
   function toggleStatistikListe(id) {
@@ -2979,8 +2984,8 @@ export default function VokabelApp() {
   const statistikGewaehlteListenObjekte = statistikListenIds === null
     ? statistikAlleListenObjekte
     : statistikAlleListenObjekte.filter(l => statistikListenIds.has(l.id));
-  const statistikBasisVoks = statistikGewaehlteListenObjekte.flatMap(l =>
-    l.vokabeln.map(v => ({...v, id: `${l.id}__${v.id}`, _origId: v.id, _listeId: l.id, _listeName: l.name, _spalten: l.spalten}))
+  const statistikBasisVoks = statistikGewaehlteListenObjekte.flatMap((l, lRank) =>
+    l.vokabeln.map((v, vIdx) => ({...v, id: `${l.id}__${v.id}`, _origId: v.id, _listeId: l.id, _listeName: l.name, _spalten: l.spalten, _listenIndexRank: lRank, _listIndex: vIdx}))
   );
   const statistikGefilterteVoks = statistikBereichTyp === "bereich" && statistikCheckboxAuswahl.size > 0
     ? statistikBasisVoks.filter(v => statistikCheckboxAuswahl.has(v.id))
@@ -3019,7 +3024,11 @@ export default function VokabelApp() {
     <>
       <style>{CSS}</style>
       <div className="app"
-        onTouchStart={(e) => { touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
+        onTouchStart={(e) => {
+          const t = e.target;
+          if (t instanceof HTMLInputElement && t.type === "range") return;
+          touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }}
         onTouchEnd={(e) => {
           if (!touchStartRef.current) return;
           const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
@@ -3032,8 +3041,18 @@ export default function VokabelApp() {
           }
         }}>
         <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"#fff"}}>
-        <div className="topbar"><span className="topbar-title">Vokabel-Trainer</span></div>
-        <div className="tabs">
+        <div className="topbar">
+          <span className="topbar-title">Vokabel-Trainer</span>
+          {statistikVollbild && (
+            <button onClick={() => setStatistikVollbild(false)}
+              style={{position:"absolute", right:14, top:"50%", transform:"translateY(-50%)",
+                display:"flex", alignItems:"center", gap:6, background:"none", border:"none",
+                cursor:"pointer", color:"#2d6a4f", fontWeight:600, fontSize:"0.82rem", padding:"6px 8px"}}>
+              <IcoCollapse s={16}/>Vollbild verlassen
+            </button>
+          )}
+        </div>
+        {!statistikVollbild && <div className="tabs">
           <button className={`tab${tab==="listen"?" aktiv":""}`}
             onClick={() => handleTabWechsel("listen")}>Listen</button>
           <button className={`tab${tab==="quiz"?" aktiv":""}`}
@@ -3042,7 +3061,7 @@ export default function VokabelApp() {
             onClick={() => handleTabWechsel("statistik")}>Statistik</button>
           <button className={`tab${tab==="einstellungen"?" aktiv":""}`}
             onClick={() => handleTabWechsel("einstellungen")}>Einstellungen</button>
-        </div>
+        </div>}
         </div>{/* end sticky header wrapper */}
 
         {/* ── Listen-Header (persistent) ── */}
@@ -4392,6 +4411,7 @@ export default function VokabelApp() {
         })()}
         {/* ── Statistik: Verlauf & Gespeichert Header ── */}
         {tab === "statistik" && (() => {
+          if (statistikVollbild) return null;
           return (
             <>
               <div ref={slotSektionRef} style={{position:"sticky", top:headerH, zIndex:9, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
@@ -4457,6 +4477,7 @@ export default function VokabelApp() {
 
         {/* ── Statistik: Listen-Auswahl Header ── */}
         {tab === "statistik" && (() => {
+          if (statistikVollbild) return null;
           const n = statistikGewaehlteListenObjekte.length;
           const chipAktiv = statistikListenIds !== null;
           const chipText = statistikListenIds === null
@@ -4534,6 +4555,7 @@ export default function VokabelApp() {
 
         {/* ── Statistik: Vokabel-Auswahl Header ── */}
         {tab === "statistik" && (() => {
+          if (statistikVollbild) return null;
           const hatVoks = statistikBasisVoks.length > 0;
           const istBereich = statistikBereichTyp === "bereich";
           const auswahlAnzahl = statistikGefilterteVoks.length;
@@ -4722,6 +4744,7 @@ export default function VokabelApp() {
           else if (sKey === "streak") voks.sort((a, b) => { const d = (a.fortschritt?.streak ?? 0) - (b.fortschritt?.streak ?? 0); return sDir === "asc" ? d : -d; });
           else if (sKey === "datum") voks.sort((a, b) => { const da = a.fortschritt?.letzteAbfrage ? new Date(a.fortschritt.letzteAbfrage) : new Date(0); const db = b.fortschritt?.letzteAbfrage ? new Date(b.fortschritt.letzteAbfrage) : new Date(0); return sDir === "asc" ? da - db : db - da; });
           else if (sKey === "alpha") { voks.sort((a, b) => { const spa = TYPEN.find(t => a._spalten[t]?.aktiv); const spb = TYPEN.find(t => b._spalten[t]?.aktiv); const r = (a[spa]?.wert || '').localeCompare(b[spb]?.wert || ''); return sDir === "asc" ? r : -r; }); }
+          else if (sKey === "listennr") voks.sort((a, b) => { const dr = a._listenIndexRank - b._listenIndexRank; if (dr !== 0) return sDir === "asc" ? dr : -dr; const di = a._listIndex - b._listIndex; return sDir === "asc" ? di : -di; });
           const mehrereListenGewaehlt = statistikGewaehlteListenObjekte.length > 1;
 
           // Filter-Boxen (klickbar, ersetzen Filter-Buttons)
@@ -4734,6 +4757,7 @@ export default function VokabelApp() {
 
           return (<>
             {/* Ø-Score sticky Header */}
+            {!statistikVollbild && (
             <div style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
               <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2, flexShrink:0}}>
                 <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Ø Score</span>
@@ -4778,50 +4802,100 @@ export default function VokabelApp() {
               </div>
               <button className="btn btn-ghost btn-sm" style={{flexShrink:0}} onClick={() => window.scrollTo({top:0, behavior:"smooth"})}>nach oben</button>
             </div>
+            )}
             <div className="sektion" style={{paddingTop:12, paddingBottom:(statistikListenAufgeklappt||statistikEinzelauswahlAufgeklappt)?'100dvh':0}}>
               {/* Graph */}
-              <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid #e0dbd2"}}>
-                <svg viewBox={`0 0 ${GW} ${GH}`} preserveAspectRatio="none"
-                  style={{width:"100%", height:130, display:"block"}}>
-                  <rect width={GW} height={GH} fill="#fafaf8"/>
-                  {zeroY > pY && <rect x={pX} y={pY} width={gW} height={Math.max(0, zeroY - pY)} fill="#e8f5e9" opacity="0.6"/>}
-                  {zeroY < GH - pY && <rect x={pX} y={zeroY} width={gW} height={Math.max(0, GH - pY - zeroY)} fill="#ffebee" opacity="0.6"/>}
-                  <line x1={pX} y1={zeroY} x2={GW - pX} y2={zeroY} stroke="#ccc" strokeWidth="1"/>
-                  {quizTwoColor ? (<>
-                    <path d={quizGrayPath} fill="none" stroke="#b0bec5" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
-                    <path d={quizGreenPath} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
-                  </>) : (
-                    <path d={quizGreenPath} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
-                  )}
-                  <path d={toPath(diktatS)} fill="none" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="6 4" vectorEffect="non-scaling-stroke"/>
-                </svg>
-                <div style={{display:"flex", alignItems:"center", gap:8, padding:"6px 14px", background:"#f7f5f0", borderTop:"1px solid #e0dbd2", fontSize:"0.72rem", fontWeight:600, color:"#6b6560", flexWrap:"wrap"}}>
-                  <span style={{display:"flex", alignItems:"center", gap:5, fontSize:"0.68rem", padding:"3px 8px"}}>
-                    {quizTwoColor ? (<>
-                      <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}>
-                        <line x1="0" y1="1.5" x2="8" y2="1.5" stroke="#b0bec5" strokeWidth="2.5"/>
-                        <line x1="8" y1="1.5" x2="16" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/>
+              {(() => {
+                const istBalken = statistikGraphTyp === "balken";
+                // Balken-Konstanten
+                const BAR_W = 6, BAR_GAP = 1, BAR_STEP = BAR_W + BAR_GAP;
+                const SVG_H = 120, bpX = 4, bpY = 8;
+                const bgH = SVG_H - 2 * bpY;
+                const zeroBarY = bpY + bgH / 2;
+                const maxBarH = bgH / 2;
+                const barScores = voks.map(v => {
+                  const s = istSessionModus ? (getSessionDelta(v) ?? 0) : (v.fortschritt?.score ?? 0);
+                  return Math.min(10, Math.max(-10, s));
+                });
+                const barSvgW = Math.max(300, voks.length * BAR_STEP + bpX * 2 + BAR_W);
+                return (
+                <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid #e0dbd2"}}>
+                  {/* klickbarer Graph-Bereich */}
+                  <div style={{cursor:"pointer", position:"relative"}}
+                    onClick={() => setStatistikGraphTyp(t => t === "linie" ? "balken" : "linie")}>
+                    <div style={{position:"absolute", bottom:4, right:8, fontSize:"0.6rem",
+                      color:"#bbb", pointerEvents:"none", userSelect:"none"}}>
+                      Tippen zum Wechseln
+                    </div>
+                    {istBalken ? (
+                      <div style={{overflowX:"auto"}}>
+                        <svg width={barSvgW} height={SVG_H} style={{display:"block"}}>
+                          <rect width={barSvgW} height={SVG_H} fill="#fafaf8"/>
+                          <rect x={bpX} y={bpY} width={barSvgW - 2*bpX} height={maxBarH} fill="#e8f5e9" opacity="0.6"/>
+                          <rect x={bpX} y={zeroBarY} width={barSvgW - 2*bpX} height={maxBarH} fill="#ffebee" opacity="0.6"/>
+                          <line x1={bpX} y1={zeroBarY} x2={barSvgW - bpX} y2={zeroBarY} stroke="#ccc" strokeWidth="1"/>
+                          {barScores.map((s, i) => {
+                            const barH = Math.max(1, Math.abs(s) / 10 * maxBarH);
+                            const isP = s >= 0;
+                            return (
+                              <rect key={i} x={bpX + i * BAR_STEP} y={isP ? zeroBarY - barH : zeroBarY}
+                                width={BAR_W} height={barH}
+                                fill={isP ? "#2d6a4f" : "#c0392b"} opacity="0.85"/>
+                            );
+                          })}
+                        </svg>
+                      </div>
+                    ) : (
+                      <svg viewBox={`0 0 ${GW} ${GH}`} preserveAspectRatio="none"
+                        style={{width:"100%", height:130, display:"block"}}>
+                        <rect width={GW} height={GH} fill="#fafaf8"/>
+                        {zeroY > pY && <rect x={pX} y={pY} width={gW} height={Math.max(0, zeroY - pY)} fill="#e8f5e9" opacity="0.6"/>}
+                        {zeroY < GH - pY && <rect x={pX} y={zeroY} width={gW} height={Math.max(0, GH - pY - zeroY)} fill="#ffebee" opacity="0.6"/>}
+                        <line x1={pX} y1={zeroY} x2={GW - pX} y2={zeroY} stroke="#ccc" strokeWidth="1"/>
+                        {quizTwoColor ? (<>
+                          <path d={quizGrayPath} fill="none" stroke="#b0bec5" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
+                          <path d={quizGreenPath} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
+                        </>) : (
+                          <path d={quizGreenPath} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
+                        )}
+                        <path d={toPath(diktatS)} fill="none" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="6 4" vectorEffect="non-scaling-stroke"/>
                       </svg>
-                    </>) : (
-                      <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
                     )}
-                    Abfrage
-                  </span>
-                  <button className={`typ-btn${statistikGraphDiktatZeigen?" aktiv":""}`}
-                    style={{display:"flex", alignItems:"center", gap:5, fontSize:"0.68rem", padding:"3px 8px", opacity:statistikGraphDiktatZeigen?1:0.5}}
-                    onClick={() => setStatistikGraphDiktatZeigen(v => !v)}>
-                    <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="4 2"/></svg>
-                    Diktat
-                  </button>
-                  <span style={{marginLeft:"auto"}}>
-                    <button className={`typ-btn${statistikGraphOhneUnbeantwortet?" aktiv":""}`}
-                      style={{fontSize:"0.68rem", padding:"3px 8px"}}
-                      onClick={() => setStatistikGraphOhneUnbeantwortet(v => !v)}>
-                      {statistikGraphOhneUnbeantwortet ? "Nur beantwortete" : "Inkl. unbeantwortete"}
-                    </button>
-                  </span>
+                  </div>
+                  {/* Legende / Controls */}
+                  <div style={{display:"flex", alignItems:"center", gap:8, padding:"6px 14px", background:"#f7f5f0", borderTop:"1px solid #e0dbd2", fontSize:"0.72rem", fontWeight:600, color:"#6b6560", flexWrap:"wrap"}}>
+                    {!istBalken && (
+                      <span style={{display:"flex", alignItems:"center", gap:5, fontSize:"0.68rem", padding:"3px 8px"}}>
+                        {quizTwoColor ? (<>
+                          <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}>
+                            <line x1="0" y1="1.5" x2="8" y2="1.5" stroke="#b0bec5" strokeWidth="2.5"/>
+                            <line x1="8" y1="1.5" x2="16" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/>
+                          </svg>
+                        </>) : (
+                          <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
+                        )}
+                        Abfrage
+                      </span>
+                    )}
+                    {!istBalken && (
+                      <button className={`typ-btn${statistikGraphDiktatZeigen?" aktiv":""}`}
+                        style={{display:"flex", alignItems:"center", gap:5, fontSize:"0.68rem", padding:"3px 8px", opacity:statistikGraphDiktatZeigen?1:0.5}}
+                        onClick={() => setStatistikGraphDiktatZeigen(v => !v)}>
+                        <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="4 2"/></svg>
+                        Diktat
+                      </button>
+                    )}
+                    <span style={{marginLeft:"auto"}}>
+                      <button className={`typ-btn${statistikGraphOhneUnbeantwortet?" aktiv":""}`}
+                        style={{fontSize:"0.68rem", padding:"3px 8px"}}
+                        onClick={() => setStatistikGraphOhneUnbeantwortet(v => !v)}>
+                        {statistikGraphOhneUnbeantwortet ? "Nur beantwortete" : "Inkl. unbeantwortete"}
+                      </button>
+                    </span>
+                  </div>
                 </div>
-              </div>
+                );
+              })()}
 
               {/* Kennzahlen-Boxen als Filter */}
               <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16}}>
@@ -4839,12 +4913,13 @@ export default function VokabelApp() {
 
               {/* Sortierung */}
               <div className="sektion-label" style={{marginBottom:8}}>Sortierung</div>
-              <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:16}}>
+              <div style={{display:"flex", gap:6, flexWrap:"wrap", alignItems:"center", marginBottom:16}}>
                 {[
                   {key:"score", label:"Score", def:"asc"},
                   {key:"streak", label:"Streak", def:"desc"},
                   {key:"datum", label:"Datum", def:"desc"},
                   {key:"alpha", label:"A→Z", def:"asc"},
+                  {key:"listennr", label:"Listen-Nr.", def:"asc"},
                 ].map(s => {
                   const [aKey, aDir] = statistikSort.split("-");
                   const isActive = aKey === s.key;
@@ -4857,6 +4932,10 @@ export default function VokabelApp() {
                     </button>
                   );
                 })}
+                <button onClick={() => setStatistikVollbild(true)}
+                  style={{marginLeft:"auto", background:"none", border:"none", padding:"4px 6px", cursor:"pointer", color:"#6b6560", display:"flex", alignItems:"center"}}>
+                  <IcoExpand s={18}/>
+                </button>
               </div>
 
               {/* Vokabelliste */}
@@ -4865,25 +4944,43 @@ export default function VokabelApp() {
                 {voks.length === 0 ? (
                   <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln in diesem Filter.</div>
                 ) : voks.map((vok, idx) => {
-                  const score = vok.fortschritt?.score ?? null;
-                  const streak = vok.fortschritt?.streak ?? 0;
-                  const sp1 = TYPEN.find(t => vok._spalten[t]?.aktiv);
-                  const sp2 = TYPEN.filter(t => vok._spalten[t]?.aktiv)[1];
+                  const rawScore = vok.fortschritt?.score ?? null;
+                  const score = rawScore !== null ? Math.min(10, Math.max(-10, rawScore)) : null;
+                  const isPos = score !== null && score > 0;
+                  const isNeg = score !== null && score < 0;
+                  const scoreColor = isPos ? "#2d6a4f" : isNeg ? "#c0392b" : "#9b9590";
+                  const barPct = score !== null ? Math.abs(score) / 10 * 50 : 0;
+                  const t1 = vok.E1?.wert || "";
+                  const t2 = vok.D1?.wert || "";
+                  const displayText = [t1, t2].filter(Boolean).join(" – ");
                   return (
-                    <div key={`${vok._listeName}_${vok.id}_${idx}`} className="karte-zeile">
-                      <div style={{flex:1, minWidth:0}}>
-                        {sp1 && vok[sp1] && <div style={{fontWeight:600, fontSize:"0.9rem", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp1].wert}</div>}
-                        {sp2 && vok[sp2] && <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp2].wert}</div>}
-                        {mehrereListenGewaehlt && <div style={{fontSize:"0.68rem", color:"#aaa", marginTop:2}}>{vok._listeName}</div>}
+                    <div key={`${vok._listeName}_${vok.id}_${idx}`}
+                      style={{display:"flex", alignItems:"center", gap:8, padding:"7px 12px",
+                        borderBottom: idx < voks.length-1 ? "1px solid #e0dbd2" : "none"}}>
+                      {/* Text */}
+                      <div style={{width:"33%", minWidth:0, overflow:"hidden", textOverflow:"ellipsis",
+                        whiteSpace:"nowrap", fontSize:"0.8rem", color:"#1a1a1a", flexShrink:0}}>
+                        {displayText || <span style={{color:"#bbb"}}>–</span>}
                       </div>
-                      <div style={{display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3, flexShrink:0}}>
-                        <span className={`score-badge ${score !== null ? (score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null") : "score-null"}`}>
+                      {/* Score-Balken */}
+                      <div style={{flex:1, position:"relative", height:8, background:"#f0ede8", borderRadius:4, minWidth:0}}>
+                        {score !== null && score !== 0 && (
+                          <div style={{position:"absolute", top:0, bottom:0, borderRadius:4,
+                            background: isPos ? "#2d6a4f" : "#c0392b",
+                            ...(isPos ? {left:"50%", width:`${barPct}%`} : {right:"50%", width:`${barPct}%`})}}/>
+                        )}
+                        <div style={{position:"absolute", top:0, bottom:0, left:"50%",
+                          transform:"translateX(-50%)", width:1, background:"#c0bcb7"}}/>
+                      </div>
+                      {/* Score + Datum */}
+                      <div style={{width:"22%", display:"flex", flexDirection:"column",
+                        alignItems:"flex-end", flexShrink:0, gap:1}}>
+                        <span style={{fontSize:"0.78rem", fontWeight:700, color:scoreColor}}>
                           {score !== null ? (score > 0 ? "+" : "") + score : "–"}
                         </span>
-                        <div style={{fontSize:"0.68rem", color:"#6b6560", textAlign:"right"}}>
-                          {streak > 0 && <span style={{marginRight:4}}>🔥{streak}</span>}
+                        <span style={{fontSize:"0.62rem", color:"#9b9590"}}>
                           {formatDatum(vok.fortschritt?.letzteAbfrage)}
-                        </div>
+                        </span>
                       </div>
                     </div>
                   );
