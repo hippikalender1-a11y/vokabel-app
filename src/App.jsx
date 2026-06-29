@@ -521,6 +521,7 @@ export default function VokabelApp() {
   const [sessionSlotAktiv, setSessionSlotAktiv] = useState(null);
   const [statistikScoreModus, setStatistikScoreModus] = useState("global");
   const [sessionH, setSessionH] = useState(0);
+  const [slotH, setSlotH] = useState(0);
   const [sessionUeberschreibenModal, setSessionUeberschreibenModal] = useState(false);
   const [loescheSlotNr, setLoescheSlotNr] = useState(null);
   const [slotSektionAufgeklappt, setSlotSektionAufgeklappt] = useState(true);
@@ -557,6 +558,8 @@ export default function VokabelApp() {
   const reihenfolgeContainerRef = useRef(null);
   const sessionRef = useRef(null);
   const sessionContainerRef = useRef(null);
+  const slotSektionRef = useRef(null);
+  const slotContainerRef = useRef(null);
   const [headerH, setHeaderH] = useState(104);
   const [alleBereichH, setAlleBereichH] = useState(0);
   const [abfrageModusH, setAbfrageModusH] = useState(0);
@@ -580,13 +583,13 @@ export default function VokabelApp() {
       if (dropdownImmuneRef.current) return;
       const el = listenContainerRef.current;
       if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH) {
+      if (el.getBoundingClientRect().bottom <= headerH + slotH) {
         setListenAuswahlAufgeklappt(false);
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH]);
+  }, [headerH, slotH]);
 
   // Einzelauswahl: schließt wenn Inhalt-Unterkante die Quiz-Button-Oberkante passiert
   useEffect(() => {
@@ -594,13 +597,13 @@ export default function VokabelApp() {
       if (dropdownImmuneRef.current) return;
       const el = einzelauswahlRef.current;
       if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + alleBereichH) {
+      if (el.getBoundingClientRect().bottom <= headerH + slotH + alleBereichH) {
         setQuizListeAufgeklappt(false);
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, alleBereichH]);
+  }, [headerH, slotH, alleBereichH]);
 
   // Abfrage-Modus: schließt wenn Inhalt-Unterkante die Abfrage-Modus-Zeile-Unterkante passiert
   useEffect(() => {
@@ -608,13 +611,13 @@ export default function VokabelApp() {
       if (dropdownImmuneRef.current) return;
       const el = abfrageModusContainerRef.current;
       if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + alleBereichH + abfrageModusH) {
+      if (el.getBoundingClientRect().bottom <= headerH + slotH + alleBereichH + abfrageModusH) {
         setQuizAbfrageModusAufgeklappt(false);
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, alleBereichH, abfrageModusH]);
+  }, [headerH, slotH, alleBereichH, abfrageModusH]);
 
   // Reihenfolge: schließt wenn Inhalt-Unterkante die Reihenfolge-Zeile-Unterkante passiert
   useEffect(() => {
@@ -622,13 +625,13 @@ export default function VokabelApp() {
       if (dropdownImmuneRef.current) return;
       const el = reihenfolgeContainerRef.current;
       if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + alleBereichH + abfrageModusH + reihenfolgeH) {
+      if (el.getBoundingClientRect().bottom <= headerH + slotH + alleBereichH + abfrageModusH + reihenfolgeH) {
         setQuizReihenfolgeAufgeklappt(false);
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, alleBereichH, abfrageModusH, reihenfolgeH]);
+  }, [headerH, slotH, alleBereichH, abfrageModusH, reihenfolgeH]);
 
   // Einstellungen: schließt wenn Inhalt-Unterkante die Einstellungen-Zeile-Unterkante passiert
   useEffect(() => {
@@ -636,13 +639,13 @@ export default function VokabelApp() {
       if (dropdownImmuneRef.current) return;
       const el = einstellungenContainerRef.current;
       if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH) {
+      if (el.getBoundingClientRect().bottom <= headerH + slotH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH) {
         setQuizEinstellungenAufgeklappt(false);
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, alleBereichH, abfrageModusH, reihenfolgeH, einstellungenH]);
+  }, [headerH, slotH, alleBereichH, abfrageModusH, reihenfolgeH, einstellungenH]);
 
   // Alle/Bereich-Zeile Höhe messen
   useEffect(() => {
@@ -694,6 +697,30 @@ export default function VokabelApp() {
     return () => obs.disconnect();
   }, [quizTabListen.length]);
 
+  // Slot-Sektion Header Höhe messen
+  useEffect(() => {
+    const el = slotSektionRef.current;
+    if (!el) { setSlotH(0); return; }
+    const obs = new ResizeObserver(() => setSlotH(el.offsetHeight));
+    obs.observe(el);
+    setSlotH(el.offsetHeight);
+    return () => obs.disconnect();
+  }, [slots.verlauf.length, slots.gespeichert.length]);
+
+  // Slot-Chips auto-close beim Scrollen
+  useEffect(() => {
+    const onScroll = () => {
+      if (dropdownImmuneRef.current) return;
+      const el = slotContainerRef.current;
+      if (!el || el.offsetHeight === 0) return;
+      if (el.getBoundingClientRect().bottom <= headerH + slotH) {
+        setSlotSektionAufgeklappt(false);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [slotSektionAufgeklappt, headerH, slotH]);
+
   // Session-Kontext auto-close beim Scrollen
   useEffect(() => {
     const onScroll = () => {
@@ -702,13 +729,13 @@ export default function VokabelApp() {
       const el = sessionContainerRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      if (rect.bottom <= headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH) {
+      if (rect.bottom <= headerH + slotH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH) {
         setQuizSessionAufgeklappt(false);
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [quizSessionAufgeklappt, headerH, alleBereichH, abfrageModusH, reihenfolgeH, einstellungenH, sessionH]);
+  }, [quizSessionAufgeklappt, headerH, slotH, alleBereichH, abfrageModusH, reihenfolgeH, einstellungenH, sessionH]);
 
   // Von-Bis-Modus beenden wenn Einzelauswahl schließt (manuell oder auto)
   useEffect(() => {
@@ -1595,8 +1622,8 @@ export default function VokabelApp() {
         const el = listenContainerRef.current;
         if (!el) return;
         const rect = el.getBoundingClientRect();
-        if (rect.top < headerH) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH), behavior: 'instant' });
+        if (rect.top < headerH + slotH) {
+          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH - slotH), behavior: 'instant' });
         }
         setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
       }));
@@ -1611,7 +1638,7 @@ export default function VokabelApp() {
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = reihenfolgeContainerRef.current;
         if (!el) return;
-        const target = headerH + alleBereichH + abfrageModusH + reihenfolgeH;
+        const target = headerH + slotH + alleBereichH + abfrageModusH + reihenfolgeH;
         const rect = el.getBoundingClientRect();
         if (rect.top < target) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
@@ -1629,7 +1656,7 @@ export default function VokabelApp() {
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = einstellungenContainerRef.current;
         if (!el) return;
-        const target = headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH;
+        const target = headerH + slotH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH;
         const rect = el.getBoundingClientRect();
         if (rect.top < target) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
@@ -1647,7 +1674,7 @@ export default function VokabelApp() {
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = abfrageModusContainerRef.current;
         if (!el) return;
-        const target = headerH + alleBereichH + abfrageModusH;
+        const target = headerH + slotH + alleBereichH + abfrageModusH;
         const rect = el.getBoundingClientRect();
         if (rect.top < target) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
@@ -1665,7 +1692,7 @@ export default function VokabelApp() {
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = einzelauswahlRef.current;
         if (!el) return;
-        const target = headerH + alleBereichH;
+        const target = headerH + slotH + alleBereichH;
         const rect = el.getBoundingClientRect();
         if (rect.top < target) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
@@ -3279,8 +3306,8 @@ export default function VokabelApp() {
 
           return (
             <>
-              <div className="sektion" style={{paddingTop:0, paddingBottom: (listenAuswahlAufgeklappt || quizListeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt || quizEinstellungenAufgeklappt || quizSessionAufgeklappt) ? '100dvh' : 0}}>
-                {/* VERLAUF + GESPEICHERT – eigene Sektion oben */}
+              <div className="sektion" style={{paddingTop:0, paddingBottom: (slotSektionAufgeklappt || listenAuswahlAufgeklappt || quizListeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt || quizEinstellungenAufgeklappt || quizSessionAufgeklappt) ? '100dvh' : 0}}>
+                {/* VERLAUF + GESPEICHERT – sticky Header */}
                 {(() => {
                   const hatSlots = slots.verlauf.length > 0 || slots.gespeichert.length > 0;
                   if (!hatSlots) return null;
@@ -3299,15 +3326,15 @@ export default function VokabelApp() {
                       ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
                       : sf ? {background:"#f0f9f4", borderColor:"#a8d5be", color:"#2d6a4f"} : {};
                   };
-                  const chipLabel = (eintrag, typ) => {
+                  const chipLabel = (eintrag) => {
                     const sf = eintrag.sessionFortschritt;
-                    const base = eintrag.name;
-                    return sf ? `▶ ${base} · ${(sf.abgefragt||[]).length}/${sf.gesamt||0}` : base;
+                    return sf ? `▶ ${eintrag.name} · ${(sf.abgefragt||[]).length}/${sf.gesamt||0}` : eintrag.name;
                   };
                   return (
-                    <div style={{paddingTop:16, paddingBottom:4}}>
-                      <div style={{display:"flex", alignItems:"center", marginBottom: slotSektionAufgeklappt ? 8 : 12}}>
-                        <span className="sektion-label" style={{flex:1, marginBottom:0, display:"flex", alignItems:"center", gap:8}}>
+                    <>
+                      {/* Sticky Header-Zeile */}
+                      <div ref={slotSektionRef} style={{position:"sticky", top:headerH, zIndex:9, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                        <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832", display:"flex", alignItems:"center", gap:8}}>
                           Verlauf &amp; Gespeichert
                           {slotSektionAufgeklappt && (
                             <button onClick={() => setSlotLoeschModus(v => !v)} style={{
@@ -3320,37 +3347,40 @@ export default function VokabelApp() {
                           )}
                         </span>
                         <button onClick={() => { setSlotSektionAufgeklappt(v => !v); setSlotLoeschModus(false); }}
-                          style={{background:"none", border:"none", cursor:"pointer", color:"#6b6560", padding:"3px 4px", display:"flex", alignItems:"center"}}>
+                          className="btn-toggle" style={{padding:"6px 9px"}}>
                           {slotSektionAufgeklappt ? <IcoUp s={11}/> : <IcoDown s={11}/>}
                         </button>
                       </div>
-                      {slotSektionAufgeklappt && (<>
-                        {slots.gespeichert.length > 0 && (
-                          <div style={{marginBottom:8}}>
-                            <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Gespeichert</div>
-                            <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                              {slots.gespeichert.map(s => renderSlotChip(
-                                s.id, chipLabel(s, 'gespeichert'),
-                                () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:s.id}) : ladeSlot('gespeichert', s.id),
-                                chipStil('gespeichert', s.id)
-                              ))}
+                      {/* Aufklappbarer Chips-Bereich */}
+                      <div ref={slotContainerRef} style={{overflow:'hidden', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 4 : 0}}>
+                        {slotSektionAufgeklappt && (<>
+                          {slots.gespeichert.length > 0 && (
+                            <div style={{marginBottom:10}}>
+                              <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Gespeichert</div>
+                              <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                                {slots.gespeichert.map(s => renderSlotChip(
+                                  s.id, chipLabel(s),
+                                  () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:s.id}) : ladeSlot('gespeichert', s.id),
+                                  chipStil('gespeichert', s.id)
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        {slots.verlauf.length > 0 && (
-                          <div style={{marginBottom:16}}>
-                            <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Verlauf</div>
-                            <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                              {slots.verlauf.map(s => renderSlotChip(
-                                s.id, chipLabel(s, 'verlauf'),
-                                () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:s.id}) : ladeSlot('verlauf', s.id),
-                                chipStil('verlauf', s.id)
-                              ))}
+                          )}
+                          {slots.verlauf.length > 0 && (
+                            <div style={{marginBottom:14}}>
+                              <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Verlauf</div>
+                              <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                                {slots.verlauf.map(s => renderSlotChip(
+                                  s.id, chipLabel(s),
+                                  () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:s.id}) : ladeSlot('verlauf', s.id),
+                                  chipStil('verlauf', s.id)
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </>)}
-                    </div>
+                          )}
+                        </>)}
+                      </div>
+                    </>
                   );
                 })()}
 
@@ -3395,7 +3425,7 @@ export default function VokabelApp() {
 
                 {/* Alle/Bereich – sticky direkt unter Haupt-Header */}
                 {kombiListe && (
-                  <div ref={alleBereichRef} style={{position:"sticky", top:headerH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                  <div ref={alleBereichRef} style={{position:"sticky", top:headerH + slotH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     {/* LINKS */}
                     <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
                       {quizBereichTyp === "bereich" && quizListeAufgeklappt ? (
@@ -3479,7 +3509,7 @@ export default function VokabelApp() {
 
                 {/* Abfrage-Modus – sticky unter Alle/Bereich-Zeile */}
                 {kombiListe && (
-                  <div ref={abfrageModusRef} style={{position:"sticky", top:headerH + alleBereichH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                  <div ref={abfrageModusRef} style={{position:"sticky", top:headerH + slotH + alleBereichH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Abfrage-Modus</span>
                     <button className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleAbfrageModus}>
                       {quizModus === "sequenziell" ? "Frage – Antwort" : quizModus === "rotierend" ? "wechselnd" : "Diktat"}
@@ -3637,7 +3667,7 @@ export default function VokabelApp() {
 
                 {/* Reihenfolge – sticky unter Abfrage-Modus-Zeile */}
                 {kombiListe && (
-                  <div ref={reihenfolgeRef} style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                  <div ref={reihenfolgeRef} style={{position:"sticky", top:headerH + slotH + alleBereichH + abfrageModusH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Reihenfolge</span>
                     {quizReihenfolge === "schlechteste" && (
                       <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none", whiteSpace:"nowrap"}}>
@@ -3726,7 +3756,7 @@ export default function VokabelApp() {
 
                 {/* Einstellungen – sticky unter Reihenfolge-Zeile */}
                 {kombiListe && (
-                  <div ref={einstellungenRef} style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH + reihenfolgeH, zIndex:5, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                  <div ref={einstellungenRef} style={{position:"sticky", top:headerH + slotH + alleBereichH + abfrageModusH + reihenfolgeH, zIndex:5, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Einstellungen</span>
                     <button className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleEinstellungen}>
                       {einstellungen.modus === "einfach" ? "Einfach" : "Schwer"}
@@ -3794,7 +3824,7 @@ export default function VokabelApp() {
 
                 {/* Session-Zeile – sticky unter Einstellungen */}
                 {kombiListe && (
-                  <div ref={sessionRef} style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, zIndex:4, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                  <div ref={sessionRef} style={{position:"sticky", top:headerH + slotH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, zIndex:4, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Session</span>
                     {isPakete && sessionHatFortschritt && (
                       <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#6b6560", pointerEvents:"none", whiteSpace:"nowrap"}}>
@@ -3845,7 +3875,7 @@ export default function VokabelApp() {
 
                 {/* Quiz starten Button - sticky unter Session-Zeile */}
                 {kombiListe && (
-                  <div style={{position:"sticky", top:headerH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH, zIndex:3, background:"#fff", padding:"8px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid #e0dbd2"}}>
+                  <div style={{position:"sticky", top:headerH + slotH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH, zIndex:3, background:"#fff", padding:"8px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid #e0dbd2"}}>
                     {isPakete && sessionHatFortschritt && (
                       <div style={{marginBottom:8}}>
                         <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5, fontSize:"0.78rem"}}>

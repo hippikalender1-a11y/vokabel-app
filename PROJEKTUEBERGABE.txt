@@ -811,48 +811,89 @@ SESSION 22 — UMGESETZTE ÄNDERUNGEN (Commit: a3e219b)
 X-BUTTON "GESPEICHERTE KONFIGURATIONEN":
   Alt: Label | [×] | [▲/▼] — X direkt neben Pfeil
   Neu: Label + [×] (inline im Label-Span) | [▲/▼] — X rechts vom Text, Pfeil ganz rechts
-  Implementierung: <span style={{flex:1, display:"flex", alignItems:"center", gap:8}}>
 
 MEHRFACH-SESSIONS (Architektur-Umbau):
-  Neu: jeder benannte Slot (1–20) hat optionales sessionFortschritt-Feld:
-    { abgefragt:[vokId,...], gesamt:N, paketGroesse:N, startScores:{vokId:score,...} }
-  SK.sessionAktiv erhält neues Feld: slotNr (null = unbenannte/alte Session)
-  aktiverNormalSlotNr (State) = welcher Slot gerade als Session-Kontext aktiv ist
+  Neu: jeder benannte Slot hat sessionFortschritt-Feld
+  SK.sessionAktiv erhält slotNr (null = unbenannte Session)
+  aktiverNormalSlotNr (State) = welcher Slot gerade aktiv ist
+  [Global][Session] Toggle in Statistik Ø-Score-Header
+  statistikScoreModus State: "global" | "session"
 
-GEÄNDERTE FUNKTIONEN:
-  speichereSessionSlotNeu(paketGroesse, gesamtVoks, startScores={}):
-    → speichert slotNr + startScores in SK.sessionAktiv
-    → schreibt sessionFortschritt in den benannten Slot (SK.sessionSlots)
-  updateSessionSlotFortschritt(neueIds, isDurchlaufEnde):
-    → synct abgefragt auch in slot.sessionFortschritt (SK.sessionSlots)
-  loescheSessionSlot():
-    → löscht SK.sessionAktiv + setzt slot.sessionFortschritt=null + aktiverNormalSlotNr=null
-  ladeKonfigAusSlot(slot):
-    → setzt aktiverNormalSlotNr = slot.slot (außer Slot 6)
-    → lädt slot.sessionFortschritt als aktive Session wenn vorhanden
-  starteQuiz / starteDiktat:
-    → berechnen startScores (vokId → score) vor Aufruf von speichereSessionSlotNeu
 
-CHIP-ANZEIGE (Listenauswahl-Kontext):
-  Unbenannte Session (slotNr==null): bleibt als "▶ Session · N/M" in Spezial-Zeile
-  Benannte Slots mit sessionFortschritt:
-    Aktiv (aktiverNormalSlotNr===s.slot): "▶ Name · N/M", grüner Stil (#e8f5ee)
-    Inaktiv mit Session: "▶ Name · N/M", helles Grün (#f0f9f4 / #a8d5be)
-    Ohne Session: nur "Name" (bisheriges Verhalten)
+================================================================
+SESSION 23 — UMGESETZTE ÄNDERUNGEN (Commit: 5b34b9d)
+================================================================
 
-SESSION-DELTA-SCORE (Statistik):
-  getSessionDelta(vok): current - startScores[vok.id] (null wenn nicht in Session)
-  sessionVoksAbgefragt: nur Voks mit Eintrag in startScores UND fortschritt
-  avgSessionScore: Avg-Delta über sessionVoksAbgefragt (Nenner wie avgDenom)
+KONZEPTUELLE NEUAUSRICHTUNG (Plan erarbeitet + umgesetzt):
 
-STATISTIK Ø-SCORE-HEADER:
-  Neu: [Global][Session] Toggle-Buttons (nur sichtbar wenn hatSessionDaten)
-  Session-Modus: zeigt avgSessionScore statt avgScore
-  statistikScoreModus State: "global" | "session" (default "global")
+NEUE TERMINOLOGIE (festgelegt):
+  Vokabelliste   = importierte Vokabeln in Listen
+  Vokabelgruppe  = ausgewählte Vokabeln aus einer oder mehreren Listen
+  Abfragerunde   = alle Vokabeln der Gruppe einmal abfragen
+  Session        = Abfragerunden in kleine Pakete unterteilt
 
-NEUE STATES (Session 22):
-  aktiverNormalSlotNr  = null | number  — aktiver benannter Slot
-  statistikScoreModus  = "global" | "session"
+NEUES DATENMODELL:
+  SK.slots = "vokabel_slots"  (neu, ersetzt SK.sessionSlots)
+  Struktur: { verlauf: [...], gespeichert: [...] }
+  Jeder Eintrag: { id, name, timestamp, konfiguration, sessionFortschritt }
+    id:               "v_<timestamp>_<rand>" (Verlauf) | "g_<timestamp>_<rand>" (Gespeichert)
+    name:             Datum+Uhrzeit (Verlauf) | frei wählbar (Gespeichert)
+    konfiguration:    { listenIds, vokabelAuswahl, bereichTyp, quizModus, ... }
+    sessionFortschritt: null | { abgefragt, gesamt, paketGroesse, startScores }
+
+  Verlauf:    max. 5 Einträge, FIFO, automatisch beim Quiz-Start erstellt
+  Gespeichert: unbegrenzt, explizit benannt, dauerhaft
+
+  SK.sessionAktiv: { slotTyp, slotId, listenIds, vokabelAuswahl, bereichTyp,
+                     abgefragt, gesamt, paketGroesse, startScores }
+  SK.sessionSlots: nur noch für Migration alter Daten (legacy)
+
+NEUE/GEÄNDERTE STATES:
+  slots           = { verlauf:[], gespeichert:[] }   — ersetzt sessionSlots
+  aktiverSlot     = { typ:"verlauf"|"gespeichert", id:string } | null
+  slotGeaendert   = bool  — ob Einstellungen seit Laden geändert (noch nicht fertig implementiert)
+  ENTFERNT: sessionSlots, aktiverNormalSlotNr
+
+NEUE FUNKTIONEN:
+  getSlotsData()              → lsGet(SK.slots, defaultSlots())
+  setSlotsData(data)          → lsSet + setSlots
+  getSlotEintrag(typ, id)     → findet Eintrag in slots[typ]
+  aktuelleKonfiguration()     → snapshot aller aktuellen Quiz-Settings
+  applyKonfiguration(k)       → setzt alle Quiz-States aus gespeicherter Konfig
+  ladeSlot(typ, id)           → ersetzt ladeKonfigAusSlot + ladeSessionSlotKonfig
+  erstelleVerlaufEintrag()    → neuer Verlauf-Eintrag, gibt ID zurück (sync LS-Write)
+  speichereAlsGespeichert(id, name) → neu anlegen (id=null) oder überschreiben
+  loescheSlotEintrag(typ, id) → ersetzt loescheNormalSlot
+  updateSlotSF(typ, id, sf)   → schreibt sessionFortschritt in slots[typ][id]
+  sessionSlotKonflikt()       → prüft jetzt slotTyp+slotId statt slotNr
+  speichereSessionSlotNeu(paketGroesse, gesamtVoks, startScores, forceTyp, forceId)
+    → forceTyp/forceId: explizite Slot-IDs (wegen async React-State)
+
+QUIZ-START LOGIK:
+  Wenn isPakete && (!existingSlot || konflikt || !aktiverSlot):
+    → erstelleVerlaufEintrag() (gibt ID zurück)
+    → speichereSessionSlotNeu(..., 'verlauf', newId)
+  Sonst: bestehende Session weitermachen (abgefragte filtern)
+
+UI-ÄNDERUNGEN:
+  "Verlauf & Gespeichert"-Sektion: jetzt GANZ OBEN im Quiz-Tab (vor Listenauswahl)
+    Unterteilt in "Gespeichert" (oben) und "Verlauf" (unten)
+    Chips zeigen: "▶ Name · N/M" wenn sessionFortschritt, sonst nur Name
+    Aktiver Slot: grüner Rand (#2d6a4f), inaktiv mit Session: helles Grün
+  Speichern-Button: neben Quiz-Button (aus Einstellungen entfernt)
+    Bei gespeichertem Slot aktiv: "Aktualisieren", sonst "Neu speichern"
+    Überschreiben-Chips: vorhandene gespeicherte Slots wählbar
+
+MIGRATION:
+  Beim ersten Start: SK.sessionSlots → SK.slots migriert
+  Slot 6 "Zuletzt verwendet" → verlauf[0]
+  Slots 1–20 → gespeichert[]
+
+NOCH OFFEN / FOLGE-SESSION:
+  - "●" Indikator wenn Einstellungen nach Laden geändert (slotGeaendert noch nicht angebunden)
+  - Bestätigungs-Dialog beim Quiz-Start mit geänderten Settings
+  - Bestätigung Fortschritt-Reset wenn Vokabelgruppe geändert
+  - Aktiver Slot-Name sichtbar in Einstellungsbereich
 
 
 ================================================================
@@ -868,6 +909,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: a3e219b (Session 22)
+Letzter Commit: 5b34b9d (Session 23)
 
 ================================================================
