@@ -1762,6 +1762,24 @@ export default function VokabelApp() {
     }
   }
 
+  function toggleSlotSektion() {
+    const opening = !slotSektionAufgeklappt;
+    setSlotSektionAufgeklappt(v => !v);
+    setSlotLoeschModus(false);
+    if (opening) {
+      dropdownImmuneRef.current = true;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const el = slotContainerRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.top < headerH + slotH) {
+          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH - slotH), behavior: 'instant' });
+        }
+        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
+      }));
+    }
+  }
+
   function toggleStatistikListenAuswahl() {
     const opening = !statistikListenAufgeklappt;
     setStatistikListenAufgeklappt(v => !v);
@@ -3404,7 +3422,7 @@ export default function VokabelApp() {
                           )}
                         </span>
                         <button
-                          onClick={() => { setSlotSektionAufgeklappt(v => !v); setSlotLoeschModus(false); }}
+                          onClick={toggleSlotSektion}
                           className="toggle-opt aktiv"
                           style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
                             ...(vokabelgruppeGeaendert ? {background:"#c0392b", color:"#fff"} : {})}}>
@@ -4242,7 +4260,7 @@ export default function VokabelApp() {
                   )}
                 </span>
                 <button
-                  onClick={() => { setSlotSektionAufgeklappt(v => !v); setSlotLoeschModus(false); }}
+                  onClick={toggleSlotSektion}
                   className="toggle-opt aktiv"
                   style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
                   {statistikAktiverSlot?.typ === 'gespeichert'
