@@ -443,7 +443,7 @@ const IcoShare = ({s=15}) => <svg viewBox="0 0 16 18" width={s} height={s*1.1} s
 const IcoCopy  = ({s=15}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><rect x="5" y="1" width="10" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="2"/><rect x="1" y="4" width="10" height="11" rx="2" fill="#fff" stroke="currentColor" strokeWidth="2"/></svg>;
 
 export default function VokabelApp() {
-  const [tab, setTab] = useState("listen");
+  const [tab, setTab] = useState("quiz");
   const [listenIndex, setListenIndex] = useState([]);
   const [einstellungen, setEinstellungen] = useState(defaultEinstellungen());
   const [ansicht, setAnsicht] = useState("uebersicht");
@@ -515,6 +515,9 @@ export default function VokabelApp() {
   const [slots, setSlots] = useState(defaultSlots());          // {verlauf:[], gespeichert:[]}
   const [aktiverSlot, setAktiverSlot] = useState(null);        // {typ:"verlauf"|"gespeichert", id:string} | null
   const [slotGeaendert, setSlotGeaendert] = useState(false);   // ob Einstellungen seit Laden geändert
+  const [statistikAktiverSlot, setStatistikAktiverSlot] = useState(null); // separater Slot-Zustand für Statistik-Tab
+  const [statistikSessionDaten, setStatistikSessionDaten] = useState(null); // sessionFortschritt für Statistik
+  const [statistikSlotGeleert, setStatistikSlotGeleert] = useState(false);  // true wenn Slot durch Listen-Wechsel geleert
   const [quizSessionModus, setQuizSessionModus] = useState("alle");
   const [quizPaketGroesse, setQuizPaketGroesse] = useState(null);
   const [quizSessionAufgeklappt, setQuizSessionAufgeklappt] = useState(false);
@@ -564,6 +567,7 @@ export default function VokabelApp() {
   const slotSektionRef = useRef(null);
   const slotContainerRef = useRef(null);
   const listenauswahlHeaderRef = useRef(null);
+  const touchStartRef = useRef(null);
   const [headerH, setHeaderH] = useState(104);
   const [alleBereichH, setAlleBereichH] = useState(0);
   const [abfrageModusH, setAbfrageModusH] = useState(0);
@@ -1069,7 +1073,27 @@ export default function VokabelApp() {
     await teileAlsDatei(text, `${name}.txt`);
   }
 
+  const tabReihenfolge = ["listen", "quiz", "statistik", "einstellungen"];
+
+  function handleTabWechsel(neuerTab) {
+    if (neuerTab === "statistik") {
+      setStatistikListenIds(quizTabListen.length > 0 ? new Set(quizTabListen) : null);
+      setStatistikBereichTyp(quizBereichTyp);
+      setStatistikCheckboxAuswahl(new Set(quizCheckboxAuswahl));
+      setStatistikListenAufgeklappt(false);
+      setStatistikEinzelauswahlAufgeklappt(false);
+      setStatistikAktiverSlot(aktiverSlot);
+      setStatistikSessionDaten(sessionSlotAktiv);
+      setStatistikSlotGeleert(false);
+    }
+    if (neuerTab === "listen") setAnsicht("uebersicht");
+    setTab(neuerTab);
+    setExportAuswahlModus(false);
+    setExportAusgewaehlt(new Set());
+  }
+
   function toggleStatistikListe(id) {
+    if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); setStatistikSessionDaten(null); }
     setStatistikListenIds(prev => {
       const currentSet = prev === null
         ? new Set(listenIndex.map(l => l.id))
@@ -1466,6 +1490,21 @@ export default function VokabelApp() {
       lsDel(SK.sessionAktiv);
       setSessionSlotAktiv(null);
     }
+  }
+
+  function ladeSlotStatistik(typ, id) {
+    const eintrag = getSlotEintrag(typ, id);
+    if (!eintrag || !eintrag.konfiguration) return;
+    const k = eintrag.konfiguration;
+    setStatistikListenIds(k.listenIds?.length > 0 ? new Set(k.listenIds) : null);
+    setStatistikBereichTyp(k.bereichTyp || "alle");
+    setStatistikCheckboxAuswahl(new Set(k.vokabelAuswahl || []));
+    setStatistikListenAufgeklappt(false);
+    setStatistikEinzelauswahlAufgeklappt(false);
+    setStatistikAktiverSlot({ typ, id });
+    setStatistikSlotGeleert(false);
+    setStatistikScoreModus(eintrag.sessionFortschritt ? "session" : "global");
+    setStatistikSessionDaten(eintrag.sessionFortschritt || null);
   }
 
   function erstelleVerlaufEintrag() {
@@ -2832,8 +2871,8 @@ export default function VokabelApp() {
       {slotLoeschModus ? <><IcoX s={10}/>{" "}</> : null}{label}
     </button>
   );
-  const chipStil = (typ, id) => {
-    const istAktiv = aktiverSlot?.typ === typ && aktiverSlot?.id === id;
+  const chipStil = (typ, id, slotRef = aktiverSlot) => {
+    const istAktiv = slotRef?.typ === typ && slotRef?.id === id;
     const sf = getSlotEintrag(typ, id)?.sessionFortschritt;
     return istAktiv
       ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
@@ -2888,24 +2927,30 @@ export default function VokabelApp() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="app">
+      <div className="app"
+        onTouchStart={(e) => { touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
+        onTouchEnd={(e) => {
+          if (!touchStartRef.current) return;
+          const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+          const dy = Math.abs(e.changedTouches[0].clientY - touchStartRef.current.y);
+          touchStartRef.current = null;
+          if (Math.abs(dx) > 60 && dy < 80) {
+            const idx = tabReihenfolge.indexOf(tab);
+            const neuerIdx = idx + (dx < 0 ? 1 : -1);
+            if (neuerIdx >= 0 && neuerIdx < tabReihenfolge.length) handleTabWechsel(tabReihenfolge[neuerIdx]);
+          }
+        }}>
         <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"#fff"}}>
         <div className="topbar"><span className="topbar-title">Vokabel-Trainer</span></div>
         <div className="tabs">
           <button className={`tab${tab==="listen"?" aktiv":""}`}
-            onClick={() => { setTab("listen"); setAnsicht("uebersicht"); }}>Listen</button>
+            onClick={() => handleTabWechsel("listen")}>Listen</button>
           <button className={`tab${tab==="quiz"?" aktiv":""}`}
-            onClick={() => { setTab("quiz"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Quiz</button>
+            onClick={() => handleTabWechsel("quiz")}>Quiz</button>
           <button className={`tab${tab==="statistik"?" aktiv":""}`}
-            onClick={() => {
-              setStatistikListenIds(quizTabListen.length > 0 ? new Set(quizTabListen) : null);
-              setStatistikBereichTyp(quizBereichTyp);
-              setStatistikCheckboxAuswahl(new Set(quizCheckboxAuswahl));
-              setStatistikListenAufgeklappt(false);
-              setStatistikEinzelauswahlAufgeklappt(false);
-              setTab("statistik"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set());
-            }}>Statistik</button>
-          <button className={`tab${tab==="einstellungen"?" aktiv":""}`} onClick={() => { setTab("einstellungen"); setExportAuswahlModus(false); setExportAusgewaehlt(new Set()); }}>Einstellungen</button>
+            onClick={() => handleTabWechsel("statistik")}>Statistik</button>
+          <button className={`tab${tab==="einstellungen"?" aktiv":""}`}
+            onClick={() => handleTabWechsel("einstellungen")}>Einstellungen</button>
         </div>
         </div>{/* end sticky header wrapper */}
 
@@ -3360,7 +3405,7 @@ export default function VokabelApp() {
                         </span>
                         <button
                           onClick={() => { setSlotSektionAufgeklappt(v => !v); setSlotLoeschModus(false); }}
-                          className={`toggle-opt${aktiverSlot?.typ === 'gespeichert' ? " aktiv" : ""}`}
+                          className="toggle-opt aktiv"
                           style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
                             ...(vokabelgruppeGeaendert ? {background:"#c0392b", color:"#fff"} : {})}}>
                           {aktiverSlot?.typ === 'gespeichert'
@@ -4198,12 +4243,11 @@ export default function VokabelApp() {
                 </span>
                 <button
                   onClick={() => { setSlotSektionAufgeklappt(v => !v); setSlotLoeschModus(false); }}
-                  className={`toggle-opt${aktiverSlot?.typ === 'gespeichert' ? " aktiv" : ""}`}
-                  style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                    ...(vokabelgruppeGeaendert ? {background:"#c0392b", color:"#fff"} : {})}}>
-                  {aktiverSlot?.typ === 'gespeichert'
-                    ? (getSlotEintrag('gespeichert', aktiverSlot.id)?.name || aktiverSlot.id)
-                    : "Neu"}
+                  className="toggle-opt aktiv"
+                  style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
+                  {statistikAktiverSlot?.typ === 'gespeichert'
+                    ? (getSlotEintrag('gespeichert', statistikAktiverSlot.id)?.name || statistikAktiverSlot.id)
+                    : statistikSlotGeleert ? "Leer" : "Neu"}
                 </button>
               </div>
               <div ref={slotContainerRef} style={{overflow:'hidden', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 4 : 0}}>
@@ -4213,17 +4257,17 @@ export default function VokabelApp() {
                     <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
                       {!slotLoeschModus && (
                         <button className="slot-chip belegt"
-                          style={!aktiverSlot
+                          style={!statistikAktiverSlot && !statistikSlotGeleert
                             ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
                             : {color:"#9b9590"}}
-                          onClick={() => { setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus("alle"); setQuizPaketGroesse(null); }}>
+                          onClick={() => { setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setStatistikSessionDaten(null); setStatistikScoreModus("global"); }}>
                           Neu
                         </button>
                       )}
                       {slots.gespeichert.map(s => renderSlotChip(
                         s.id, slotChipLabel(s),
-                        () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:s.id}) : ladeSlot('gespeichert', s.id),
-                        chipStil('gespeichert', s.id)
+                        () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:s.id}) : ladeSlotStatistik('gespeichert', s.id),
+                        chipStil('gespeichert', s.id, statistikAktiverSlot)
                       ))}
                     </div>
                   </div>
@@ -4233,8 +4277,8 @@ export default function VokabelApp() {
                       <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
                         {slots.verlauf.map(s => renderSlotChip(
                           s.id, slotChipLabel(s),
-                          () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:s.id}) : ladeSlot('verlauf', s.id),
-                          chipStil('verlauf', s.id)
+                          () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:s.id}) : ladeSlotStatistik('verlauf', s.id),
+                          chipStil('verlauf', s.id, statistikAktiverSlot)
                         ))}
                       </div>
                     </div>
@@ -4264,13 +4308,13 @@ export default function VokabelApp() {
                   <>
                     {statistikListenIds !== null && (
                       <button className="btn btn-ghost btn-sm"
-                        onClick={() => setStatistikListenIds(null)}>
+                        onClick={() => { setStatistikListenIds(null); if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); setStatistikSessionDaten(null); } }}>
                         Alle
                       </button>
                     )}
                     {(statistikListenIds === null || statistikListenIds.size > 0) && (
                       <button className="btn btn-ghost btn-sm" style={{padding:"6px 8px"}}
-                        onClick={() => setStatistikListenIds(new Set())}>
+                        onClick={() => { setStatistikListenIds(new Set()); if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); setStatistikSessionDaten(null); } }}>
                         <IcoX s={12}/>
                       </button>
                     )}
@@ -4446,7 +4490,7 @@ export default function VokabelApp() {
             : null;
 
           // Session-Delta-Score
-          const sessionStartScores = sessionSlotAktiv?.startScores || {};
+          const sessionStartScores = statistikSessionDaten?.startScores || {};
           const hatSessionDaten = Object.keys(sessionStartScores).length > 0;
           const istSessionModus = statistikScoreModus === "session" && hatSessionDaten;
           const getSessionDelta = (vok) => {
