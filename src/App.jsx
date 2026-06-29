@@ -3967,7 +3967,7 @@ export default function VokabelApp() {
                     <div style={{display:"flex", gap:8}}>
                       {kannStarten && (
                         <button className="btn btn-ghost" style={{flexShrink:0}}
-                          onClick={() => { setModalInput(aktiverSlot?.typ === 'gespeichert' ? (getSlotEintrag('gespeichert', aktiverSlot.id)?.name || '') : ''); oeffneModal("slot-speichern"); }}>
+                          onClick={() => { setModalInput(''); oeffneModal("slot-speichern"); }}>
                           Speichern
                         </button>
                       )}
@@ -4840,39 +4840,61 @@ export default function VokabelApp() {
         );
       })()}
       {modal === "slot-speichern" && (() => {
-        const istUeberschreiben = aktiverSlot?.typ === 'gespeichert';
-        const vorhandenerName = istUeberschreiben ? (getSlotEintrag('gespeichert', aktiverSlot.id)?.name || '') : '';
-        const doSpeichern = (id) => {
-          const name = modalInput.trim() || vorhandenerName || formatSlotDatum();
-          speichereAlsGespeichert(id || null, name);
-          setModal(null); setModalInput("");
+        const istGespeichert = aktiverSlot?.typ === 'gespeichert';
+        const aktuellerSlot = istGespeichert ? getSlotEintrag('gespeichert', aktiverSlot.id) : null;
+        const schliesseModal = () => { setModal(null); setModalInput(""); };
+        const doAktualisieren = () => {
+          speichereAlsGespeichert(aktiverSlot.id, aktuellerSlot?.name || formatSlotDatum());
+          schliesseModal();
         };
+        const doSpeichernNeu = () => {
+          const name = modalInput.trim() || formatSlotDatum();
+          speichereAlsGespeichert(null, name);
+          schliesseModal();
+        };
+        const doUeberschreiben = (s) => {
+          speichereAlsGespeichert(s.id, s.name);
+          schliesseModal();
+        };
+        const andereSlots = slots.gespeichert.filter(s => !istGespeichert || s.id !== aktiverSlot.id);
         return (
-          <div className="overlay" onClick={() => setModal(null)}>
+          <div className="overlay" onClick={schliesseModal}>
             <div className="modal" onClick={e => e.stopPropagation()}>
-              <div className="modal-titel">Speichern</div>
+              <div className="modal-titel">{istGespeichert ? "Speichern" : "Neu speichern"}</div>
+
+              {istGespeichert && (<>
+                <button className="btn btn-primary" style={{width:"100%", marginBottom:4, textAlign:"left"}}
+                  onClick={doAktualisieren}>
+                  Aktualisieren · „{aktuellerSlot?.name}"
+                </button>
+                <div style={{fontSize:"0.78rem", color:"#9b9590", textAlign:"center", margin:"10px 0 6px"}}>
+                  oder als neue Konfiguration speichern:
+                </div>
+              </>)}
+
               <label className="inp-label">Name</label>
               <input className="inp" value={modalInput} autoFocus
                 onChange={e => setModalInput(e.target.value)}
-                placeholder={vorhandenerName || "z.B. Irregular Verbs"} />
-              {slots.gespeichert.length > 0 && (
+                placeholder="z.B. Irregular Verbs" />
+
+              {andereSlots.length > 0 && (
                 <div style={{marginTop:14}}>
-                  <div className="inp-label">Vorhandenen Slot überschreiben</div>
+                  <div className="inp-label">{istGespeichert ? "Anderen Slot ersetzen" : "Vorhandenen Slot ersetzen"}</div>
                   <div style={{display:"flex", gap:6, flexWrap:"wrap", marginTop:8}}>
-                    {slots.gespeichert.map(s => (
+                    {andereSlots.map(s => (
                       <button key={s.id} className="slot-chip belegt"
-                        style={s.id === aktiverSlot?.id ? {borderColor:"#2d6a4f", color:"#2d6a4f"} : {}}
-                        onClick={() => doSpeichern(s.id)}>
+                        onClick={() => doUeberschreiben(s)}>
                         {s.name}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
+
               <div className="modal-actions">
-                <button className="btn btn-ghost" onClick={() => { setModal(null); setModalInput(""); }}>Abbrechen</button>
-                <button className="btn btn-primary" onClick={() => doSpeichern(istUeberschreiben ? aktiverSlot.id : null)}>
-                  {istUeberschreiben ? "Aktualisieren" : "Neu speichern"}
+                <button className="btn btn-ghost" onClick={schliesseModal}>Abbrechen</button>
+                <button className="btn btn-primary" onClick={doSpeichernNeu}>
+                  {istGespeichert ? "Neu speichern" : "Speichern"}
                 </button>
               </div>
             </div>
