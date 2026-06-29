@@ -933,6 +933,18 @@ AUTO-CLOSE + TOGGLE-SCROLL KORREKTUREN:
   toggleStatistikEinzelauswahl scroll:    headerH + slotH + statistikListenHeaderH + ...
   slotSektionRef ResizeObserver dep: + tab (re-attach bei Tab-Wechsel)
 
+FIX: chipStil/renderSlotChip/slotChipLabel in Top-Level-Scope (Commit: dcb04f9)
+  War lokal im Quiz-Tab-IIFE definiert → ReferenceError im Statistik-Tab → Tab crashte
+  Jetzt als slotLoeschStil, renderSlotChip, chipStil, slotChipLabel im Komponenten-Scope
+
+FIX: Speichern-Modal redesigned (Commit: 3403ad9)
+  Vorher: immer gleiche Ansicht, unklare Trennung Aktualisieren vs. Neu
+  Jetzt:
+    Gespeicherter Slot aktiv: "Aktualisieren · „Name"" (Primary, Vollbreite) +
+      Trennlinie + Namensfeld + "Neu speichern"
+    Kein gespeicherter Slot: Namensfeld + "Speichern"
+    Beide Fälle: optional "Anderen/Vorhandenen Slot ersetzen"-Chips
+
 ================================================================
 SESSION 23 — UMGESETZTE ÄNDERUNGEN (Commit: 5b34b9d)
 ================================================================
@@ -1022,6 +1034,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 384b010 (Session 24)
+Letzter Commit: dcb04f9 (Session 26 + Fixes)
 
 ================================================================
