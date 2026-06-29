@@ -521,6 +521,11 @@ export default function VokabelApp() {
   const [quizSessionModus, setQuizSessionModus] = useState("alle");
   const [quizPaketGroesse, setQuizPaketGroesse] = useState(null);
   const [quizSessionAufgeklappt, setQuizSessionAufgeklappt] = useState(false);
+  const [abfrageZielModus, setAbfrageZielModus] = useState("anzahl");
+  const [abfrageZielAnzahl, setAbfrageZielAnzahl] = useState(1);
+  const [abfrageZielWiederholung, setAbfrageZielWiederholung] = useState(1);
+  const [abfrageZielScore, setAbfrageZielScore] = useState(0);
+  const [abfrageZielScoreTyp, setAbfrageZielScoreTyp] = useState("global");
   const [sessionSlotAktiv, setSessionSlotAktiv] = useState(null);
   const [statistikScoreModus, setStatistikScoreModus] = useState("global");
   const [sessionH, setSessionH] = useState(0);
@@ -1634,6 +1639,11 @@ export default function VokabelApp() {
     setQuizListeAufgeklappt(false);
     setQuizVonBisModus(false);
     setQuizVonBisErster(null);
+    setAbfrageZielModus("anzahl");
+    setAbfrageZielAnzahl(1);
+    setAbfrageZielWiederholung(1);
+    setAbfrageZielScore(0);
+    setAbfrageZielScoreTyp("global");
   }
 
   function getKombinierteListe(listenIds) {
@@ -1996,6 +2006,14 @@ export default function VokabelApp() {
     const erstesMC = ersterModusTyp0 === "mc"
       ? generiereButtons(voks, voks[0], antwortTypen[0]) : null;
 
+    const startScoresZiel = abfrageZielModus === "score" && abfrageZielScoreTyp === "session"
+      ? Object.fromEntries(voks.map(v => [v.id, Math.min(10, Math.max(-10, v.fortschritt?.score ?? 0))]))
+      : null;
+    const abfrageZiel = abfrageZielModus !== "anzahl" || abfrageZielAnzahl > 1
+      ? { modus: abfrageZielModus, anzahl: abfrageZielAnzahl, wiederholung: abfrageZielWiederholung,
+          score: abfrageZielScore, scoreTyp: abfrageZielScoreTyp, runde: 0, startScoresZiel }
+      : null;
+
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     setQuiz({
       sitzungsInfoTypen, modus: quizModus, spalteModus: quizSpalteModus,
@@ -2005,10 +2023,10 @@ export default function VokabelApp() {
       antwortTeile: erstesTeile, weitereIndices: [], weiterePos: 0,
       mcButtons: erstesMC?.buttons || [], mcRichtig: erstesMC?.richtig || [],
       vorigeRichtig: [], sessionFalsch: {}, feedback: "", mcWechsel: false,
-      aktuelleFehlversuche: 0, falschFlash: false,
+      aktuelleFehlversuche: 0, falschFlash: false, richtigMap: {}, _warRichtig: false,
       sessionVokIds: isPakete ? voks.map(v => v.id) : null,
       istSessionModus: isPakete,
-      sessionGesamt,
+      sessionGesamt, abfrageZiel,
     });
     setAnsicht("quiz");
   }
@@ -2022,8 +2040,13 @@ export default function VokabelApp() {
   // Berechnet den nächsten Vokabel-State als reines Objekt (kein setQuiz)
   function naechsteVokabelState(prev) {
     const naechsterIdx = prev.index + 1;
-    if (naechsterIdx >= prev.vokabeln.length) return {...prev, flash: false, phase: "fertig"};
-    function getFA(idx) {
+    const aktVokId = prev.vokabeln[prev.index]?.id;
+    const warRichtig = prev._warRichtig || (prev.vorigeRichtig?.length > 0);
+    const richtigMap = (prev.abfrageZiel?.modus === "wiederholung" && aktVokId && warRichtig)
+      ? { ...(prev.richtigMap || {}), [aktVokId]: ((prev.richtigMap || {})[aktVokId] || 0) + 1 }
+      : (prev.richtigMap || {});
+
+    function getFA(voks, idx) {
       if (prev.modus === "rotierend") {
         const alle = [...prev.antwortTypen, prev.frageTyp];
         const ft = alle[idx % alle.length];
@@ -2031,7 +2054,57 @@ export default function VokabelApp() {
       }
       return { frageTyp: prev.frageTyp, antwortTypen: prev.antwortTypen };
     }
-    const { frageTyp, antwortTypen } = getFA(naechsterIdx);
+
+    // Baut den State für vokabeln[idx] innerhalb von voks auf
+    function starteVokabel(voks, idx, extra = {}) {
+      const { frageTyp, antwortTypen } = getFA(voks, idx);
+      const vok = voks[idx];
+      const teile = vok[antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
+      const sp = prev.spalteModus;
+      const mc = (sp[antwortTypen[0]] || "tippen") === "mc" ? generiereButtons(voks, vok, antwortTypen[0]) : null;
+      return { ...prev, richtigMap, _warRichtig: false, flash: false, index: idx,
+        vokabeln: voks, frageTyp, antwortTypen, antwortTypIndex: 0,
+        phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
+        mcButtons: mc?.buttons || [], mcRichtig: mc?.richtig || [],
+        vorigeRichtig: [], infoSichtbar: false, infoSeite: 0, feedback: "",
+        spalteModus: sp, mcWechsel: false, aktuelleFehlversuche: 0, falschFlash: false,
+        sessionFalsch: {}, ...extra };
+    }
+
+    if (naechsterIdx >= prev.vokabeln.length) {
+      if (prev.abfrageZiel) {
+        const ziel = prev.abfrageZiel;
+        if (ziel.modus === "anzahl" && ziel.runde < ziel.anzahl - 1) {
+          const neuVoks = [...prev.vokabeln].sort(() => Math.random() - 0.5);
+          return starteVokabel(neuVoks, 0, { abfrageZiel: { ...ziel, runde: ziel.runde + 1 } });
+        }
+        if (ziel.modus === "wiederholung") {
+          const restVoks = prev.vokabeln.filter(v => (richtigMap[v.id] || 0) < ziel.wiederholung);
+          if (restVoks.length > 0) {
+            const neuVoks = [...restVoks].sort(() => Math.random() - 0.5);
+            return starteVokabel(neuVoks, 0);
+          }
+        }
+        if (ziel.modus === "score") {
+          const restVoks = prev.vokabeln.filter(v => {
+            const liveVok = prev.liste.vokabeln.find(lv => lv.id === v.id);
+            const score = Math.min(10, Math.max(-10, liveVok?.fortschritt?.score ?? 0));
+            if (ziel.scoreTyp === "session") {
+              const startScore = (ziel.startScoresZiel || {})[v.id] ?? 0;
+              return (score - startScore) < ziel.score;
+            }
+            return score < ziel.score;
+          });
+          if (restVoks.length > 0) {
+            const neuVoks = [...restVoks].sort(() => Math.random() - 0.5);
+            return starteVokabel(neuVoks, 0);
+          }
+        }
+      }
+      return {...prev, richtigMap, _warRichtig: false, flash: false, phase: "fertig"};
+    }
+
+    const { frageTyp, antwortTypen } = getFA(prev.vokabeln, naechsterIdx);
     const naechsteVok = prev.vokabeln[naechsterIdx];
     const teile = naechsteVok[antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
     const spalteModus = prev.mcWechsel
@@ -2039,7 +2112,7 @@ export default function VokabelApp() {
       : prev.spalteModus;
     const modusTyp0 = spalteModus[antwortTypen[0]] || "tippen";
     const mc = modusTyp0 === "mc" ? generiereButtons(prev.vokabeln, naechsteVok, antwortTypen[0]) : null;
-    return {...prev, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
+    return {...prev, richtigMap, _warRichtig: false, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
       phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
       mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
       vorigeRichtig: [], infoSichtbar: false, infoSeite: 0, feedback: "",
@@ -2203,7 +2276,7 @@ export default function VokabelApp() {
     if (quiz.richtigAufgedeckt) {
       setQuiz(prev => {
         const naechsterIdx = prev.antwortTypIndex + 1;
-        if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, richtigAufgedeckt: false});
+        if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, richtigAufgedeckt: false, _warRichtig: true});
         const currentTyp = prev.antwortTypen[prev.antwortTypIndex];
         const currentVorig = {
           typ: currentTyp, wert: prev.antwortTeile.join(" / "),
@@ -3403,8 +3476,6 @@ export default function VokabelApp() {
               <div className="sektion" style={{paddingTop:0, paddingBottom: (slotSektionAufgeklappt || listenAuswahlAufgeklappt || quizListeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt || quizEinstellungenAufgeklappt || quizSessionAufgeklappt) ? '100dvh' : 0}}>
                 {/* VERLAUF + GESPEICHERT – sticky Header */}
                 {(() => {
-                  const hatSlots = slots.verlauf.length > 0 || slots.gespeichert.length > 0;
-                  if (!hatSlots) return null;
                   return (
                     <>
                       {/* Sticky Header-Zeile */}
@@ -3970,11 +4041,11 @@ export default function VokabelApp() {
                     <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                       <div className="toggle-btn">
                         <button className={`toggle-opt${quizSessionModus==="alle"?" aktiv":""}`}
-                          onClick={() => { setQuizSessionModus("alle"); setQuizSessionAufgeklappt(false); }}>
+                          onClick={() => { if (quizSessionModus === "alle") setQuizSessionAufgeklappt(v => !v); else { setQuizSessionModus("alle"); setQuizSessionAufgeklappt(true); } }}>
                           Alle
                         </button>
                         <button className={`toggle-opt${quizSessionModus==="pakete"?" aktiv":""}`}
-                          onClick={() => { setQuizSessionModus("pakete"); setQuizSessionAufgeklappt(v => !v); }}>
+                          onClick={() => { if (quizSessionModus === "pakete") setQuizSessionAufgeklappt(v => !v); else { setQuizSessionModus("pakete"); setQuizSessionAufgeklappt(true); } }}>
                           {quizPaketGroesse != null ? `${quizPaketGroesse} V.` : "Pakete"}
                         </button>
                       </div>
@@ -3983,28 +4054,98 @@ export default function VokabelApp() {
                 )}
 
                 {/* Session-Kontext */}
-                {quizSessionAufgeklappt && quizSessionModus === "pakete" && kombiListe && (
+                {quizSessionAufgeklappt && kombiListe && (
                   <div ref={sessionContainerRef} className="karte" style={{marginBottom:8, marginTop:8}}>
-                    <div style={{padding:"12px 16px 8px", fontWeight:600, fontSize:"0.82rem", color:"#6b6560"}}>Vokabeln pro Paket</div>
-                    <div style={{display:"flex", gap:6, flexWrap:"wrap", padding:"0 16px 12px"}}>
-                      {[5,10,15,20,25,30,40,50].map(n => (
-                        <button key={n}
-                          className={`typ-btn${quizPaketGroesse === n ? " aktiv" : ""}`}
-                          onClick={() => setQuizPaketGroesse(n)}>
-                          {n}
-                        </button>
+                    {/* Abfrage-Ziel */}
+                    <div style={{padding:"12px 16px 8px", fontWeight:600, fontSize:"0.82rem", color:"#6b6560"}}>Abfrage-Ziel</div>
+                    <div style={{display:"flex", gap:6, flexWrap:"wrap", padding:"0 16px 8px"}}>
+                      {[["anzahl","Anzahl"],["wiederholung","Mit Wiederholung"],["score","Score"]].map(([m, label]) => (
+                        <button key={m} className={`typ-btn${abfrageZielModus===m?" aktiv":""}`}
+                          onClick={() => setAbfrageZielModus(m)}>{label}</button>
                       ))}
                     </div>
-                    {sessionHatFortschritt && (
-                      <div style={{padding:"0 16px 12px", display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid #e0dbd2", paddingTop:10, marginTop:2}}>
-                        <span style={{fontSize:"0.78rem", color:"#6b6560"}}>
-                          {(sessionSlotAktiv.abgefragt || []).length} / {sessionSlotAktiv.gesamt || 0} abgefragt
-                        </span>
-                        <button style={{fontSize:"0.75rem", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:0}}
-                          onClick={loescheSessionSlot}>
-                          Session löschen
-                        </button>
+                    {abfrageZielModus === "anzahl" && (
+                      <div style={{display:"flex", gap:6, padding:"0 16px 12px", alignItems:"center"}}>
+                        <span style={{fontSize:"0.78rem", color:"#9b9590", marginRight:4}}>Jede Vokabel</span>
+                        {[1,2,3].map(n => (
+                          <button key={n} className={`typ-btn${abfrageZielAnzahl===n?" aktiv":""}`}
+                            onClick={() => setAbfrageZielAnzahl(n)}>{n}×</button>
+                        ))}
+                        <span style={{fontSize:"0.78rem", color:"#9b9590", marginLeft:4}}>abfragen</span>
                       </div>
+                    )}
+                    {abfrageZielModus === "wiederholung" && (
+                      <div style={{display:"flex", gap:6, padding:"0 16px 12px", alignItems:"center"}}>
+                        <span style={{fontSize:"0.78rem", color:"#9b9590", marginRight:4}}>Bis</span>
+                        {[1,2,3].map(n => (
+                          <button key={n} className={`typ-btn${abfrageZielWiederholung===n?" aktiv":""}`}
+                            onClick={() => setAbfrageZielWiederholung(n)}>{n}×</button>
+                        ))}
+                        <span style={{fontSize:"0.78rem", color:"#9b9590", marginLeft:4}}>richtig</span>
+                      </div>
+                    )}
+                    {abfrageZielModus === "score" && (() => {
+                      const zielSliderPct = (abfrageZielScore + 10) / 20;
+                      return (
+                        <div style={{padding:"0 16px 12px"}}>
+                          <div style={{display:"flex", gap:6, marginBottom:10}}>
+                            {[["global","Globaler Score"],["session","Session-Score"]].map(([t, label]) => (
+                              <button key={t} className={`typ-btn${abfrageZielScoreTyp===t?" aktiv":""}`}
+                                onClick={() => setAbfrageZielScoreTyp(t)}>{label}</button>
+                            ))}
+                          </div>
+                          <div style={{fontSize:"0.75rem", color:"#9b9590", marginBottom:6}}>
+                            {abfrageZielScoreTyp === "session" ? "Session-Score-Ziel" : "Globaler Score-Ziel"}
+                          </div>
+                          <div style={{position:"relative", paddingTop:28}}>
+                            <div style={{
+                              position:"absolute", top:0,
+                              left:`calc(${zielSliderPct} * (100% - 28px) + 14px)`,
+                              transform:"translateX(-50%)",
+                              background:"#2d6a4f", color:"#fff",
+                              borderRadius:6, padding:"3px 9px",
+                              fontSize:"0.82rem", fontWeight:600, pointerEvents:"none",
+                            }}>{abfrageZielScore > 0 ? "+" : ""}{abfrageZielScore}</div>
+                            {/* Nullpunkt-Markierung */}
+                            <div style={{
+                              position:"absolute", top:32,
+                              left:`calc(0.5 * (100% - 28px) + 14px)`,
+                              transform:"translateX(-50%)",
+                              width:2, height:8, background:"#c0bcb7", borderRadius:1, pointerEvents:"none",
+                            }}/>
+                            <input type="range" min={-10} max={10} step={1}
+                              value={abfrageZielScore}
+                              onChange={e => setAbfrageZielScore(Number(e.target.value))}
+                              className="score-slider" style={{width:"100%", display:"block"}}/>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    {/* Pakete-spezifische Einstellungen */}
+                    {quizSessionModus === "pakete" && (
+                      <>
+                        <div style={{padding:"8px 16px 8px", borderTop:"1px solid #e0dbd2", fontWeight:600, fontSize:"0.82rem", color:"#6b6560"}}>Vokabeln pro Paket</div>
+                        <div style={{display:"flex", gap:6, flexWrap:"wrap", padding:"0 16px 12px"}}>
+                          {[5,10,15,20,25,30,40,50].map(n => (
+                            <button key={n}
+                              className={`typ-btn${quizPaketGroesse === n ? " aktiv" : ""}`}
+                              onClick={() => setQuizPaketGroesse(n)}>
+                              {n}
+                            </button>
+                          ))}
+                        </div>
+                        {sessionHatFortschritt && (
+                          <div style={{padding:"0 16px 12px", display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid #e0dbd2", paddingTop:10, marginTop:2}}>
+                            <span style={{fontSize:"0.78rem", color:"#6b6560"}}>
+                              {(sessionSlotAktiv.abgefragt || []).length} / {sessionSlotAktiv.gesamt || 0} abgefragt
+                            </span>
+                            <button style={{fontSize:"0.75rem", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:0}}
+                              onClick={loescheSessionSlot}>
+                              Session löschen
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
