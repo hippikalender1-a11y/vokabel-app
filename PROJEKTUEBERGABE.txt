@@ -899,12 +899,39 @@ VOKABELGRUPPE-ÄNDERUNGS-DIALOG:
 ladeSlot: setzt gespeicherteVokabelgruppe wenn typ==='gespeichert', sonst null
 speichereAlsGespeichert: aktualisiert gespeicherteVokabelgruppe auf aktuellen Stand
 
-GEPLANT FÜR NÄCHSTE SESSION:
-  Verlauf & Gespeichert Header auch im Statistik-Tab:
-  - Gleicher Slot-Header wie im Quiz-Tab (gleiche chips, gleiche Logik)
-  - Beim Laden eines Slots mit laufender Session: statistikScoreModus → "session"
-  - Graph zeigt je nach statistikScoreModus global oder Session-Score
-  - Sticky-Hierarchie Statistik-Tab muss um slotH erweitert werden
+================================================================
+SESSION 26 — UMGESETZTE ÄNDERUNGEN (Commit: ed767b3)
+================================================================
+
+VERLAUF & GESPEICHERT HEADER IM STATISTIK-TAB:
+  Identischer Slot-Header wie im Quiz-Tab (gleicher slotSektionRef/slotContainerRef)
+  Position: ganz oben im Statistik-Tab, vor Listen-Auswahl Header
+  Sticky top:headerH zIndex:9
+  Chips: Neu + gespeicherte Slots + Verlauf (inkl. Lösch-Modus)
+  Laden eines Slots wechselt auch im Statistik-Tab die Konfiguration
+
+STICKY-HIERARCHIE STATISTIK-TAB (aktuell):
+  1. headerRef               top:0                                         zIndex:10
+  2. slotSektionRef          top:headerH                                   zIndex:9
+  3. statistikListenHeaderRef top:headerH+slotH                            zIndex:8
+  4. statistikVokauswahlRef  top:headerH+slotH+statistikListenHeaderH      zIndex:7
+  5. Ø-Score div             top:headerH+slotH+statistikListenHeaderH+statistikVokauswahlH zIndex:6
+
+STATISTIK-SCORE-MODUS AUTO-PRESET:
+  ladeSlot: wenn Slot hat sessionFortschritt → statistikScoreModus="session"
+            sonst → statistikScoreModus="global"
+
+GRAPH SESSION-MODUS:
+  Bei istSessionModus: quizS = sessionVoksAbgefragt delta-Scores (getSessionDelta)
+  Bei global: quizS = normale fortschritt.score Werte (unverändert)
+  quizTwoColor (grau/grün): nur noch im globalen Modus (nicht bei Session)
+
+AUTO-CLOSE + TOGGLE-SCROLL KORREKTUREN:
+  statistikListenContainerRef auto-close: headerH + slotH
+  statistikEinzelauswahlRef auto-close:   headerH + slotH + statistikListenHeaderH
+  toggleStatistikListenAuswahl scroll:    headerH + slotH
+  toggleStatistikEinzelauswahl scroll:    headerH + slotH + statistikListenHeaderH + ...
+  slotSektionRef ResizeObserver dep: + tab (re-attach bei Tab-Wechsel)
 
 ================================================================
 SESSION 23 — UMGESETZTE ÄNDERUNGEN (Commit: 5b34b9d)
