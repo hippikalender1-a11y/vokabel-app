@@ -849,37 +849,62 @@ STICKY-HIERARCHIE (Quiz-Tab, aktuell):
   8. sessionRef            ...                 zIndex:4
   9. Quiz-Button           ...                 zIndex:3
 
-GEPLANT FÜR NÄCHSTE SESSION (noch nicht implementiert):
-  Neues Slot/Session-Konzept (beschlossen in Session 24):
+================================================================
+SESSION 25 — UMGESETZTE ÄNDERUNGEN (Commits: 4bd44a8, 7df9495, 516fe67, 5f854ac)
+================================================================
 
-  TERMINOLOGIE:
-    aktiverSlot = null → "Neu"-Zustand (kein Slot geladen)
-    aktiverSlot = {typ:'gespeichert', id} → benannter Slot aktiv
-    aktiverSlot = {typ:'verlauf', id} → alter Verlaufseintrag aktiv
+SLOT/SESSION REDESIGN (vollständig implementiert):
 
-  VERLAUF-HEADER (rechts statt Pfeil):
-    Chip zeigt: aktiven Slot-Namen (z.B. "Irregular1") ODER "Neu"
-    Chip ist der Toggle (auf-/zuklappen)
+NEUE STATES:
+  gespeicherteVokabelgruppe  = {listenIds, vokabelAuswahl, bereichTyp} | null
+                               Snapshot beim Laden eines gespeicherten Slots
+  gruppenAenderungsDialog    = bool — Dialog wenn Vokabelgruppe geändert
 
-  VERLAUF-INHALT:
-    Letzte 5 ungespeicherte Abfragen (mit Datum/Uhrzeit)
-    Anwählbar + nachträglich speicherbar
+COMPUTED:
+  vokabelgruppeGeaendert     = bool (IIFE, kein State)
+    true wenn aktiverSlot.typ==='gespeichert' UND gespeicherteVokabelgruppe
+    gesetzt UND aktuelle Listenids/Auswahl/BereichTyp davon abweicht
 
-  GESPEICHERT-SEKTION:
-    "Neu"-Chip zum Leeren des aktiven Slots (→ Neu-Zustand)
+VERLAUF-HEADER CHIP:
+  Pfeil-Button ersetzt durch toggle-opt-Chip rechts im Header
+  Chip zeigt: Slot-Name (grün) wenn gespeicherter Slot aktiv
+             "Neu" (neutral) wenn kein gespeicherter Slot
+             ROT (background:#c0392b) wenn vokabelgruppeGeaendert=true
 
-  VERLAUFSEINTRAG ENTSTEHT NUR BEI:
-    1. Quiz-Start ohne aktiven Slot ("Neu")
-    2. Quiz-Start nach "Fortfahren ohne Speichern"
+"NEU"-CHIP IN GESPEICHERT-SEKTION:
+  Immer sichtbar (außer Lösch-Modus) ganz links in Gespeichert-Zeile
+  Grün wenn kein aktiver Slot, sonst grau
+  Klick: setAktiverSlot(null), lsDel(SK.sessionAktiv), setSessionSlotAktiv(null),
+         setQuizSessionModus("alle"), setQuizPaketGroesse(null)
 
-  KEIN VERLAUFSEINTRAG BEI:
-    Quiz/Session-Start aus einem gespeicherten Slot →
-    Session-Fortschritt wird direkt am aktiven Slot gespeichert
+QUIZ-START LOGIK (starteQuiz + starteDiktat):
+  Neue Signatur: starteQuiz(force=false, overrideSlot=null)
+  effSlot = overrideSlot ?? aktiverSlot
+  Wenn effSlot.typ==='gespeichert':
+    → kein Verlaufseintrag; Session-Fortschritt auf Slot
+    → bei !force && vokabelgruppeGeaendert: Dialog zeigen
+  Sonst (null oder verlauf):
+    → Verlaufseintrag erstellen (außer wenn overrideSlot.typ==='verlauf')
+    → overrideSlot !== null → immer frisch starten
+  sessionUeberschreibenModal: nur noch wenn effSlot.typ !== 'gespeichert'
 
-  ÄNDERUNGSERKENNUNG (nur bei gespeichertem Slot aktiv):
-    Vokabelgruppe geändert → Dialog vor Quiz-Start:
-      "Überspeichern" | "Neu speichern" | "Fortfahren ohne Speichern"
-    Einstellungen geändert → sofort stillschweigend überspeichern
+VOKABELGRUPPE-ÄNDERUNGS-DIALOG:
+  Zeigt wenn gespeicherter Slot aktiv + Vokabelgruppe geändert + Quiz-Start
+  Buttons: "Überspeichern" | "Neu speichern" | "Fortfahren ohne Speichern" | "Abbrechen"
+  Überspeichern:            speichereAlsGespeichert(id,name) + starteQuiz(true)
+  Neu speichern:            öffnet slot-speichern Modal
+  Fortfahren ohne Speichern: erstelleVerlaufEintrag() + starteQuiz(true, {typ:'verlauf',id})
+  Abbrechen:                schließt Dialog
+
+ladeSlot: setzt gespeicherteVokabelgruppe wenn typ==='gespeichert', sonst null
+speichereAlsGespeichert: aktualisiert gespeicherteVokabelgruppe auf aktuellen Stand
+
+GEPLANT FÜR NÄCHSTE SESSION:
+  Verlauf & Gespeichert Header auch im Statistik-Tab:
+  - Gleicher Slot-Header wie im Quiz-Tab (gleiche chips, gleiche Logik)
+  - Beim Laden eines Slots mit laufender Session: statistikScoreModus → "session"
+  - Graph zeigt je nach statistikScoreModus global oder Session-Score
+  - Sticky-Hierarchie Statistik-Tab muss um slotH erweitert werden
 
 ================================================================
 SESSION 23 — UMGESETZTE ÄNDERUNGEN (Commit: 5b34b9d)
