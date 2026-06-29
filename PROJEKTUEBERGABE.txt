@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-28  (Session 22 abgeschlossen — Mehrfach-Sessions, X-Button, Delta-Score, Session-Toggle)
-Letzter Commit: (siehe SESSION 20)
+Stand: 2026-06-30  (Session 27 — Statistik-Slot-Isolation, Swipe, Abfrage-Ziel geplant)
+Letzter Commit: 8cd4861
 
 DATEIPFADE
 ----------
@@ -900,6 +900,93 @@ ladeSlot: setzt gespeicherteVokabelgruppe wenn typ==='gespeichert', sonst null
 speichereAlsGespeichert: aktualisiert gespeicherteVokabelgruppe auf aktuellen Stand
 
 ================================================================
+SESSION 27 — UMGESETZTE ÄNDERUNGEN (Commits: e3f04d3, e3803e3, 8cd4861)
+================================================================
+
+STATISTIK-SLOT ISOLATION:
+  Statistik hat eigene Slot-States, unabhängig vom Quiz-Tab.
+  Beim Quiz→Statistik-Wechsel werden Quiz-States einmalig kopiert.
+  Änderungen in Statistik berühren Quiz-Slot nie.
+
+NEUE STATES:
+  statistikAktiverSlot = null | {typ, id}   — Statistik-eigener Slot-Zustand
+  statistikSessionDaten = null | sessionFortschritt  — Session-Daten für Statistik-Graph
+  statistikSlotGeleert = bool  — true wenn Slot durch Listen-Wechsel auto-geleert
+
+NEUE FUNKTION ladeSlotStatistik(typ, id):
+  Setzt statistikListenIds, statistikBereichTyp, statistikCheckboxAuswahl
+  Setzt statistikAktiverSlot, statistikSlotGeleert=false, statistikScoreModus, statistikSessionDaten
+  Berührt NICHT aktiverSlot, sessionSlotAktiv oder Quiz-States
+
+NEUE FUNKTION handleTabWechsel(neuerTab):
+  Zentrale Tab-Wechsel-Logik (ersetzt direktes setTab in Tab-Buttons)
+  Für "statistik": kopiert Quiz-Slot + Session → statistikAktiverSlot + statistikSessionDaten
+  Für "listen": setzt ansicht="uebersicht"
+  Immer: setExportAuswahlModus(false), setExportAusgewaehlt(new Set())
+
+NEUE CONST: tabReihenfolge = ["listen","quiz","statistik","einstellungen"]
+
+STATISTIK IIFE: sessionStartScores aus statistikSessionDaten (statt sessionSlotAktiv)
+
+STATISTIK SLOT-HEADER:
+  Toggle-Button: immer aktiv-Klasse (grün), zeigt Slot-Name | "Leer" | "Neu"
+  "Leer": wenn statistikSlotGeleert=true (Slot durch Listen-Wechsel geleert)
+  "Neu": Normalzustand ohne aktiven Slot
+  chipStil(typ, id, slotRef=aktiverSlot): optionaler slotRef-Parameter
+  Statistik-Chips: verwenden statistikAktiverSlot und ladeSlotStatistik
+  "Neu"-Chip: löscht statistikAktiverSlot + statistikSessionDaten, slotGeleert=false
+  toggleStatistikListe: setzt statistikAktiverSlot=null + slotGeleert=true bei Listen-Wechsel
+  Statistik Alle/Clear-Buttons: gleiches Slot-Clearing
+
+QUIZ TOGGLE-BUTTON: immer aktiv-Klasse (Neu = grün wie Slot-Namen)
+
+SWIPE-GESTEN (Commit e3f04d3):
+  onTouchStart/onTouchEnd auf main div (touchStartRef = useRef(null))
+  Swipe links/rechts (≥60px horizontal, <80px vertikal) → handleTabWechsel(nächster/vorheriger Tab)
+
+APP STARTET IM QUIZ-TAB: useState("quiz") statt "listen"
+
+FIX — VERLAUF-HEADER SCROLL (Commit e3803e3):
+  Neue Funktion toggleSlotSektion():
+    Öffnen: 2×rAF → wenn slotContainerRef.top < headerH+slotH → scrollTo
+    dropdownImmuneRef gesetzt während Scroll
+  Beide Tabs (Quiz + Statistik) nutzen onClick={toggleSlotSektion}
+
+FIX — QUIZ AUS LISTE (Commit 8cd4861):
+  "Quiz starten" in Listen-Detail clearet jetzt vollständig:
+    aktiverSlot=null, slotGeaendert=false, gespeicherteVokabelgruppe=null
+    lsDel(SK.sessionAktiv), sessionSlotAktiv=null
+    quizSessionModus="alle", quizPaketGroesse=null
+  Nutzt handleTabWechsel("quiz") statt setTab("quiz")
+
+================================================================
+NÄCHSTE SESSION — GEPLANT: ABFRAGE-ZIEL
+================================================================
+
+Neues Feature im Session-Header (in BEIDEN Session-Modi: "alle" und "pakete" sichtbar).
+
+MODUS 1 — "Anzahl" (aktuelles Verhalten, neue Einstellbarkeit):
+  Alle Vokabeln werden 1, 2 oder 3 mal abgefragt.
+  Einstellung: Chips/Buttons 1 / 2 / 3
+
+MODUS 2 — "Mit Wiederholung":
+  Alle Vokabeln werden abgefragt bis sie mindestens 1, 2 oder 3 mal
+  richtig beantwortet wurden.
+  Einstellung: Chips/Buttons 1 / 2 / 3
+
+MODUS 3 — "Score":
+  Abfragen bis alle Vokabeln einen Mindest-Score erreicht haben.
+  Einstellung:
+    - Globaler oder Session-Score (Toggle)
+    - Slider −10 bis +10 (step 1)
+      Grüner Slider-Button zeigt aktuellen Wert
+      Nullpunkt dezent markiert
+  Score geclampt auf −10…+10 (wie bestehende Logik)
+
+POSITION: Im Session-Header-Kontext (sessionContainerRef), in beiden
+  quizSessionModus-Zuständen ("alle" + "pakete") sichtbar.
+
+================================================================
 SESSION 26 — UMGESETZTE ÄNDERUNGEN (Commit: ed767b3)
 ================================================================
 
@@ -1034,6 +1121,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: dcb04f9 (Session 26 + Fixes)
+Letzter Commit: 8cd4861 (Session 27 — Statistik-Slot-Isolation, Swipe, Quiz-aus-Liste-Fix)
 
 ================================================================
