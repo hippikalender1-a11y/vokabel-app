@@ -502,26 +502,131 @@ QUIZ AUSWERTUNG:
     je 5 alternative Texte (deterministisch je Ergebnis)
   getQuizFeedback(richtig, gesamt): Modul-Level-Funktion, kein State nötig
 
-NOCH AUSSTEHEND:
+NOCH AUSSTEHEND — SESSION 33:
   ┌─────────────────────────────────────────────────────────────────
-  │ FEATURE: "GELERNT"-STATUS
+  │ FEATURE: "GELERNT"-STATUS (IMPLEMENTIERUNGSPLAN)
   │
-  │ Konzept: Globale Einstellung für einen Score-Schwellwert (z.B. +8),
-  │   ab dem eine Vokabel als "gelernt" gilt und aus dem Quiz ausgeblendet wird.
+  │ Design-Entscheidungen (User, Session 33):
+  │   - Schwellwert global (alle Listen gleich)
+  │   - "Gelernte einschließen"-Toggle: pro Quiz-Start (nicht dauerhaft)
+  │   - Listen: gelernte Vokabeln ausblendbar (Toggle)
+  │   - Statistik: "Gelernt"-Button in der Abfrage/Diktat-Zeile (rechtsbündig)
+  │     → Zeile auch im Balkendiagramm-Modus anzeigen
   │
-  │ Teilfragen:
-  │   - Einstellung: Wo konfigurieren? (Einstellungen-Tab, globale Schwelle)
-  │   - Quiz: gelernte Vokabeln automatisch herausfiltern
-  │     (Option zum manuellen Einblenden im Quiz-Tab)
-  │   - Listen: gelernte Vokabeln kennzeichnen (Icon/Farbe) + Toggle zum
-  │     Ein-/Ausblenden in der Vokabelliste
-  │   - Statistik: gesondert anzeigen oder zusammen mit den anderen?
-  │     (Empfehlung: eigene Filter-Box "Gelernt" in der Statistik)
+  │ Daten: einstellungen.gelerntSchwelle (0 = deaktiviert, 1–10)
+  │   defaultEinstellungen(): gelerntSchwelle: 0  ← BEREITS GEÄNDERT
   │
-  │ Implementierungs-Hinweis: Score-Schwellwert in lsGet(SK.einstellungen)
-  │   speichern (neues Feld z.B. gelerntSchwelle, 0 = deaktiviert).
-  │   Quiz-Start: voks.filter(v => !istGelernt(v)) – aber Override-Option.
+  │ Neue States:
+  │   quizGelerntEinschliessen = false  (reset in initQuizDefaults)
+  │   listenGelerntAusblenden = false
+  │   statistikGelerntEinschliessen = true  ← BEREITS HINZUGEFÜGT (~Zeile 549)
+  │
+  │ ÄNDERUNGEN JE BEREICH:
+  │
+  │ 1. States (~Zeile 580, nach slotLoeschModus):
+  │      const [quizGelerntEinschliessen, setQuizGelerntEinschliessen] = useState(false);
+  │      const [listenGelerntAusblenden, setListenGelerntAusblenden] = useState(false);
+  │
+  │ 2. initQuizDefaults() (nach Zeile 1688, vor schließender }):
+  │      setQuizGelerntEinschliessen(false);
+  │
+  │ 3. starteDiktat() (nach Zeile 1903, nach bereich-Filter):
+  │      const schwelleDiktat = einstellungen.gelerntSchwelle ?? 0;
+  │      if (!quizGelerntEinschliessen && schwelleDiktat > 0)
+  │        voks = voks.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleDiktat);
+  │
+  │ 4. starteQuiz() (nach Zeile 1995, nach bereich-Filter):
+  │      const schwelle = einstellungen.gelerntSchwelle ?? 0;
+  │      if (!quizGelerntEinschliessen && schwelle > 0)
+  │        voks = voks.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelle);
+  │
+  │ 5. Quiz-Tab IIFE reihenfolgeVoks-Block (~Zeile 3549, nach score-Filter):
+  │      const schwelle = einstellungen.gelerntSchwelle ?? 0;
+  │      const gelernteAnzahl = schwelle > 0
+  │        ? gefilterteVoks.filter(v => (v.fortschritt?.score ?? -Infinity) >= schwelle).length : 0;
+  │      if (!quizGelerntEinschliessen && schwelle > 0)
+  │        reihenfolgeVoks = reihenfolgeVoks.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelle);
+  │
+  │ 6. Quiz-Button-Bereich (~Zeile 4295, nach </div> des Button-Rows):
+  │      {schwelle > 0 && gelernteAnzahl > 0 && (
+  │        <div style={{marginTop:6, fontSize:"0.78rem", color:"#6b6560",
+  │            display:"flex", alignItems:"center", gap:8, justifyContent:"center"}}>
+  │          <span>{quizGelerntEinschliessen
+  │            ? `${gelernteAnzahl} gelernte eingeschlossen`
+  │            : `${gelernteAnzahl} gelernte ausgeblendet`}</span>
+  │          <button className="toggle-opt" style={{padding:"2px 8px", fontSize:"0.72rem"}}
+  │            onClick={() => setQuizGelerntEinschliessen(v => !v)}>
+  │            {quizGelerntEinschliessen ? "Ausblenden" : "Einschließen"}
+  │          </button>
+  │        </div>
+  │      )}
+  │
+  │ 7. Einstellungen-Tab Übersicht (~Zeile 5119, vor "App" sektion-label):
+  │      <div className="sektion-label" style={{marginBottom:10}}>Lernen</div>
+  │      <div className="karte">
+  │        <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:8}}>
+  │          <div>
+  │            <div className="karte-zeile-name">Gelernt-Schwelle</div>
+  │            <div className="karte-zeile-sub">
+  │              {(einstellungen.gelerntSchwelle ?? 0) === 0
+  │                ? "Deaktiviert – alle Vokabeln werden abgefragt"
+  │                : `Score ≥ +${einstellungen.gelerntSchwelle} gilt als gelernt`}
+  │            </div>
+  │          </div>
+  │          <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+  │            {[0, 6, 7, 8, 9, 10].map(v => (
+  │              <button key={v} className={`toggle-opt${(einstellungen.gelerntSchwelle??0)===v?" aktiv":""}`}
+  │                onClick={() => speichereEinst({...einstellungen, gelerntSchwelle: v})}>
+  │                {v === 0 ? "Aus" : `+${v}`}
+  │              </button>
+  │            ))}
+  │          </div>
+  │        </div>
+  │      </div>
+  │
+  │ 8. Listen-Tab Vokabeln-Header (~Zeile 4436, in der Button-Gruppe rechts):
+  │      {vokabelAufgeklappt && schwelle > 0 && gelernteInListe > 0 && (
+  │        <button className={`btn btn-ghost btn-sm${listenGelerntAusblenden?" aktiv":""}`}
+  │          style={{background:"#fff", fontSize:"0.75rem"}}
+  │          onClick={() => setListenGelerntAusblenden(v => !v)}>
+  │          {listenGelerntAusblenden
+  │            ? `${gelernteInListe} gelernte ausgeblendet`
+  │            : "Gelernte anzeigen"}
+  │        </button>
+  │      )}
+  │      Dabei: schwelle = einstellungen.gelerntSchwelle ?? 0
+  │             gelernteInListe = aktiveListe.vokabeln.filter(v =>
+  │               (v.fortschritt?.score ?? -Infinity) >= schwelle).length
+  │      Vok-Filter: const anzeigeVoks = listenGelerntAusblenden && schwelle > 0
+  │        ? aktiveListe.vokabeln.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelle)
+  │        : aktiveListe.vokabeln;
+  │      Gelernt-Badge auf jeder Vok (score >= schwelle):
+  │        <span style={{background:"#e8f5e9", color:"#2d6a4f", borderRadius:4,
+  │          fontSize:"0.65rem", padding:"1px 5px", fontWeight:700}}>✓</span>
+  │
+  │ 9. Statistik alleVoks (~Zeile 4741, statt "const alleVoks = statistikGefilterteVoks"):
+  │      const schwelleS = einstellungen.gelerntSchwelle ?? 0;
+  │      const alleVoks = (schwelleS > 0 && !statistikGelerntEinschliessen)
+  │        ? statistikGefilterteVoks.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleS)
+  │        : statistikGefilterteVoks;
+  │
+  │ 10. Statistik Legende/Controls-Zeile (~Zeile 4962):
+  │      Die div-Zeile ist IMMER sichtbar (kein `{!istBalken && <div...>}` wrapper).
+  │      Abfrage-Span und Diktat-Button bleiben {!istBalken && ...}-bedingt.
+  │      Ganz rechts (marginLeft:"auto") neuer Button:
+  │        {schwelleS > 0 && (
+  │          <button className={`typ-btn${statistikGelerntEinschliessen?" aktiv":""}`}
+  │            style={{marginLeft:"auto", display:"flex", alignItems:"center", gap:4,
+  │              fontSize:"0.68rem", padding:"3px 8px",
+  │              opacity:statistikGelerntEinschliessen?1:0.5}}
+  │            onClick={() => setStatistikGelerntEinschliessen(v => !v)}>
+  │            ✓ Gelernt
+  │          </button>
+  │        )}
   └─────────────────────────────────────────────────────────────────
+  BEREITS IN APP.JSX GEÄNDERT (noch nicht committed):
+    - defaultEinstellungen: gelerntSchwelle: 0 hinzugefügt
+    - statistikGelerntEinschliessen State hinzugefügt (~Zeile 549)
 
 
 ================================================================

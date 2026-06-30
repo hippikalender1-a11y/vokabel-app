@@ -59,7 +59,7 @@ function getQuizFeedback(richtig, gesamt) {
 }
 
 // ── Defaults ───────────────────────────────────────────────────────────────
-function defaultEinstellungen() { return { modus: "schwer", autoplay: false, vorlesen: ["E1"] }; }
+function defaultEinstellungen() { return { modus: "schwer", autoplay: false, vorlesen: ["E1"], gelerntSchwelle: 0 }; }
 function defaultSessionSlots() {
   return [{ slot: 6, name: "Zuletzt verwendet", konfiguration: null, fortschritt: null }];
 }
@@ -546,6 +546,7 @@ export default function VokabelApp() {
   const [statistikListenIds, setStatistikListenIds] = useState(null); // null = alle
   const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
   const [statistikGraphDiktatZeigen, setStatistikGraphDiktatZeigen] = useState(false);
+  const [statistikGelerntEinschliessen, setStatistikGelerntEinschliessen] = useState(true);
   const [statistikVollbild, setStatistikVollbild] = useState(false);
   const [statistikGraphTyp, setStatistikGraphTyp] = useState("linie");
   const [statistikBereichTyp, setStatistikBereichTyp] = useState("alle");
