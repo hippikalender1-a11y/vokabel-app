@@ -1414,4 +1414,10 @@ Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 
 Letzter Commit: e2ca2df (Session 32 — Zurücksetzen, Statistik-Fixes, Abbruch-Auswertung)
 
+NÄCHSTE SESSION: PROTOKOLL UMSTRUKTURIEREN
+  Das Protokoll ist zu lang geworden (~1400 Zeilen).
+  Plan: Architektur-Abschnitte oben behalten, Session-Verlauf 15–29 zu
+  einem kurzen Absatz "Entwicklungshistorie" zusammenfassen (3–5 Zeilen),
+  nur Sessions 30–32 im Detail behalten. Ziel: ~400–500 Zeilen.
+
 ================================================================
