@@ -20,6 +20,44 @@ function lsDel(key) {
   try { localStorage.removeItem(key); } catch {}
 }
 
+// ── Quiz-Feedback ───────────────────────────────────────────────────────────
+function getQuizFeedback(richtig, gesamt) {
+  if (gesamt === 0) return "";
+  const pct = richtig / gesamt;
+  const t = pct >= 0.9 ? [
+    "Hervorragend! Du hast das wirklich drauf.",
+    "Ausgezeichnet – fast fehlerfrei!",
+    "Brilliant! So macht Lernen Spaß.",
+    "Beeindruckend. Weiter so!",
+    "Wow – kaum Fehler. Du bist gut!",
+  ] : pct >= 0.7 ? [
+    "Gut gemacht! Ein solides Ergebnis.",
+    "Sehr schön – die meisten Vokabeln sitzen.",
+    "Gut! Noch ein bisschen Feinschliff.",
+    "Starke Leistung! Die Lücken werden kleiner.",
+    "Das war gut. Beim nächsten Mal noch besser.",
+  ] : pct >= 0.5 ? [
+    "Nicht schlecht! Du lernst Schritt für Schritt.",
+    "Okay – noch etwas Übung, dann sitzen die Vokabeln.",
+    "Guter Ansatz. Regelmäßiges Wiederholen hilft.",
+    "Solide – noch ein paar Runden, dann klappt das.",
+    "Du bist auf dem richtigen Weg.",
+  ] : pct >= 0.3 ? [
+    "Noch nicht ganz drin – aber das ist normal am Anfang.",
+    "Nicht aufgeben! Wiederholen ist der Schlüssel.",
+    "Manches braucht Zeit. Morgen schon besser.",
+    "Die kniffligen Vokabeln – bleib dran!",
+    "Kein Meister fällt vom Himmel. Nächster Anlauf!",
+  ] : [
+    "Da ist noch Luft nach oben – aber du hast angefangen!",
+    "Das war ein harter Brocken. Öfter üben hilft wirklich.",
+    "Die Vokabeln kennen dich noch nicht. Noch nicht.",
+    "Heute schwer – morgen leichter. Wirklich.",
+    "Ausbaufähig – aber immerhin gemacht!",
+  ];
+  return t[(richtig * 7 + gesamt) % t.length];
+}
+
 // ── Defaults ───────────────────────────────────────────────────────────────
 function defaultEinstellungen() { return { modus: "schwer", autoplay: false, vorlesen: ["E1"] }; }
 function defaultSessionSlots() {
@@ -2028,6 +2066,7 @@ export default function VokabelApp() {
       mcButtons: erstesMC?.buttons || [], mcRichtig: erstesMC?.richtig || [],
       vorigeRichtig: [], sessionFalsch: {}, feedback: "", mcWechsel: false,
       aktuelleFehlversuche: 0, falschFlash: false, richtigMap: {}, _warRichtig: false,
+      quizRichtigAnzahl: 0, quizFalschAnzahl: 0,
       sessionVokIds: isPakete ? voks.map(v => v.id) : null,
       istSessionModus: isPakete,
       sessionGesamt, abfrageZiel,
@@ -2049,6 +2088,8 @@ export default function VokabelApp() {
     const richtigMap = (prev.abfrageZiel?.modus === "wiederholung" && aktVokId && warRichtig)
       ? { ...(prev.richtigMap || {}), [aktVokId]: ((prev.richtigMap || {})[aktVokId] || 0) + 1 }
       : (prev.richtigMap || {});
+    const quizRichtigAnzahl = (prev.quizRichtigAnzahl || 0) + (warRichtig ? 1 : 0);
+    const quizFalschAnzahl = (prev.quizFalschAnzahl || 0) + (warRichtig ? 0 : 1);
 
     function getFA(voks, idx) {
       if (prev.modus === "rotierend") {
@@ -2066,7 +2107,7 @@ export default function VokabelApp() {
       const teile = vok[antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
       const sp = prev.spalteModus;
       const mc = (sp[antwortTypen[0]] || "tippen") === "mc" ? generiereButtons(voks, vok, antwortTypen[0]) : null;
-      return { ...prev, richtigMap, _warRichtig: false, flash: false, index: idx,
+      return { ...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, _warRichtig: false, flash: false, index: idx,
         vokabeln: voks, frageTyp, antwortTypen, antwortTypIndex: 0,
         phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
         mcButtons: mc?.buttons || [], mcRichtig: mc?.richtig || [],
@@ -2105,7 +2146,7 @@ export default function VokabelApp() {
           }
         }
       }
-      return {...prev, richtigMap, _warRichtig: false, flash: false, phase: "fertig"};
+      return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, _warRichtig: false, flash: false, phase: "fertig"};
     }
 
     const { frageTyp, antwortTypen } = getFA(prev.vokabeln, naechsterIdx);
@@ -2116,7 +2157,7 @@ export default function VokabelApp() {
       : prev.spalteModus;
     const modusTyp0 = spalteModus[antwortTypen[0]] || "tippen";
     const mc = modusTyp0 === "mc" ? generiereButtons(prev.vokabeln, naechsteVok, antwortTypen[0]) : null;
-    return {...prev, richtigMap, _warRichtig: false, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
+    return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, _warRichtig: false, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
       phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
       mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
       vorigeRichtig: [], infoSichtbar: false, infoSeite: 0, feedback: "",
@@ -2640,6 +2681,12 @@ export default function VokabelApp() {
         const istLetzteBatch = schonAbgefragt.size >= (quiz.sessionGesamt || 0);
         const doBeende = (letzteRunde) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], letzteRunde); beendeQuiz(); };
         const doWeiter = (n) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], false); setQuizPaketGroesse(n); starteQuiz(); };
+        const r = quiz.quizRichtigAnzahl || 0;
+        const f = quiz.quizFalschAnzahl || 0;
+        const ges = r + f;
+        const pct = ges > 0 ? Math.round(r / ges * 100) : 0;
+        const balkenFarbe = pct >= 70 ? "#2d6a4f" : pct >= 40 ? "#e67e22" : "#c0392b";
+        const feedback = getQuizFeedback(r, ges);
         return (
           <>
             <style>{CSS}</style>
@@ -2650,12 +2697,25 @@ export default function VokabelApp() {
                 <span className="quiz-fortschritt">{schonAbgefragt.size}/{quiz.sessionGesamt}</span>
               </div>
               <div className="sektion">
-                <div className="leer">
-                  <div style={{fontSize:"2.5rem"}}>{istLetzteBatch ? "🎉" : "✓"}</div>
-                  <div className="leer-text">{istLetzteBatch ? `Alle ${quiz.sessionGesamt} Vokabeln abgefragt!` : "Paket abgeschlossen!"}</div>
-                  <div style={{fontSize:"0.85rem", color:"#6b6560", marginTop:4}}>
-                    {schonAbgefragt.size} / {quiz.sessionGesamt} ({Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100)}%)
+                {/* Paket-Auswertung */}
+                {ges > 0 && (<>
+                  <div style={{textAlign:"center", padding:"16px 0 10px"}}>
+                    <div style={{fontSize:"2.4rem", fontWeight:800, color:balkenFarbe, lineHeight:1}}>{pct}%</div>
+                    <div style={{fontSize:"0.82rem", color:"#6b6560", marginTop:3}}>{r} von {ges} richtig · dieses Paket</div>
                   </div>
+                  <div style={{background:"#f0ede8", borderRadius:8, height:8, marginBottom:14, overflow:"hidden"}}>
+                    <div style={{width:`${pct}%`, height:"100%", background:balkenFarbe, borderRadius:8}}/>
+                  </div>
+                  {feedback && (
+                    <div style={{background:"#f7f5f0", borderRadius:10, padding:"10px 14px", marginBottom:14, fontSize:"0.83rem", lineHeight:1.55, color:"#3b3832", fontStyle:"italic"}}>
+                      „{feedback}"
+                    </div>
+                  )}
+                </>)}
+                {/* Session-Fortschritt */}
+                <div style={{fontSize:"0.82rem", color:"#6b6560", textAlign:"center", marginBottom:14}}>
+                  {schonAbgefragt.size} / {quiz.sessionGesamt} Vokabeln gesamt
+                  {" "}({Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100)}%)
                 </div>
                 {istLetzteBatch ? (
                   <button className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
@@ -2681,27 +2741,43 @@ export default function VokabelApp() {
           </>
         );
       }
-      return (
-        <>
-          <style>{CSS}</style>
-          <div className="app">
-            <div className="topbar">
-              <button className="topbar-back" onClick={() => { beendeQuiz(); }}>Schließen</button>
-              <span className="topbar-title">Quiz abgeschlossen</span>
-            </div>
-            <div className="sektion">
-              <div className="leer">
-                <div style={{fontSize:"2.5rem"}}>✓</div>
-                <div className="leer-text">Alle {quiz.vokabeln.length} Vokabeln abgefragt!</div>
+      {
+        const r = quiz.quizRichtigAnzahl || 0;
+        const f = quiz.quizFalschAnzahl || 0;
+        const ges = r + f;
+        const pct = ges > 0 ? Math.round(r / ges * 100) : 0;
+        const feedback = getQuizFeedback(r, ges);
+        const balkenFarbe = pct >= 70 ? "#2d6a4f" : pct >= 40 ? "#e67e22" : "#c0392b";
+        return (
+          <>
+            <style>{CSS}</style>
+            <div className="app">
+              <div className="topbar">
+                <button className="topbar-back" onClick={() => { beendeQuiz(); }}>Schließen</button>
+                <span className="topbar-title">Auswertung</span>
+                <span className="quiz-fortschritt">{r}/{ges}</span>
               </div>
-              <button className="btn btn-primary" style={{width:"100%"}}
-                onClick={() => { beendeQuiz(); }}>
-                Zurück zur Liste
-              </button>
+              <div className="sektion">
+                <div style={{textAlign:"center", padding:"20px 0 16px"}}>
+                  <div style={{fontSize:"3rem", fontWeight:800, color:balkenFarbe, lineHeight:1}}>{pct}%</div>
+                  <div style={{fontSize:"0.85rem", color:"#6b6560", marginTop:4}}>{r} von {ges} richtig</div>
+                </div>
+                <div style={{background:"#f0ede8", borderRadius:8, height:10, marginBottom:20, overflow:"hidden"}}>
+                  <div style={{width:`${pct}%`, height:"100%", background:balkenFarbe, borderRadius:8, transition:"width 0.6s ease"}}/>
+                </div>
+                {feedback && (
+                  <div style={{background:"#f7f5f0", borderRadius:12, padding:"14px 16px", marginBottom:20, fontSize:"0.88rem", lineHeight:1.6, color:"#3b3832", fontStyle:"italic"}}>
+                    „{feedback}"
+                  </div>
+                )}
+                <button className="btn btn-primary" style={{width:"100%"}} onClick={() => { beendeQuiz(); }}>
+                  Zur Übersicht
+                </button>
+              </div>
             </div>
-          </div>
-        </>
-      );
+          </>
+        );
+      }
     }
 
     const aktVokRaw = quiz.vokabeln[quiz.index];

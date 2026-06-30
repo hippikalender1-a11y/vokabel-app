@@ -1298,6 +1298,73 @@ NOCH OFFEN / FALLS NICHT BEHOBEN:
     auftritt oder auch mit Verlauf-Slots
 
 ================================================================
+SESSION 31 — UMGESETZTE ÄNDERUNGEN (Commits: 0c6d7fc, ad3092e, 6b08f2c, aktuelle Session)
+================================================================
+
+STATISTIK FILTER UMBAU (Commit 0c6d7fc):
+  War: Radio-Auswahl (nur ein Filter aktiv)
+  Jetzt: Multi-Select (alle standardmäßig aktiv, einzeln deaktivierbar)
+  "Gesamt" = alle wieder aktivieren
+  statistikFilter: Set(['nie','positiv','negativ']) statt String "alle"|"nie"|...
+  statistikGraphOhneUnbeantwortet State + Button entfernt
+  Graph + Vokabelliste + Avg-Score reflektieren denselben Filter
+  quizTwoColor: nur wenn 'nie' im Filter + nieInGraph > 0
+
+EINSTELLUNGEN: INFO-TAB (Commits ad3092e, 6b08f2c):
+  Neuer sticky Header "Info" mit Toggle [Übersicht][Konzept][Anleitung]
+  State: infoModus = "uebersicht" | "konzept" | "anleitung"
+  Übersicht: Kurzbeschreibung + bestehende Einstellungen (App-Version, Daten)
+  Konzept: Fließtext zur Funktionsweise (Listen → Vokabelgruppen → Abfragen →
+    Modi → Scoring → Sessions → Abfrage-Ziel → Konfigurationen → Statistik)
+  Anleitung: Vollständige Button-by-Button-Referenz in 5 Abschnitten
+
+QUIZ AUSWERTUNG (aktuelle Session, ab Commit):
+  Richtig/Falsch-Tracking in quiz State: quizRichtigAnzahl, quizFalschAnzahl
+  Tracking in naechsteVokabelState (warRichtig → Zähler hochzählen)
+  Alle Pfade in naechsteVokabelState + starteVokabel übergeben die Zähler
+  Fertig-Screen zeigt: Ergebnis (X/Y), Prozentbalken, Feedback-Text
+  Feedback nach Prozentbereich (≥90% / ≥70% / ≥50% / ≥30% / <30%)
+    je 5 alternative Texte für Abwechslung (deterministisch je Ergebnis)
+  getQuizFeedback(richtig, gesamt): Modul-Level-Funktion, kein State nötig
+
+NOCH AUSSTEHEND — FOLGESESSION:
+  ┌─────────────────────────────────────────────────────────────────
+  │ FEATURE: "GELERNT"-STATUS
+  │
+  │ Konzept: Globale Einstellung für einen Score-Schwellwert (z.B. +8),
+  │   ab dem eine Vokabel als "gelernt" gilt und aus dem Quiz ausgeblendet wird.
+  │
+  │ Teilfragen:
+  │   - Einstellung: Wo konfigurieren? (Einstellungen-Tab, globale Schwelle)
+  │   - Quiz: gelernte Vokabeln automatisch herausfiltern
+  │     (Option zum manuellen Einblenden im Quiz-Tab)
+  │   - Listen: gelernte Vokabeln kennzeichnen (Icon/Farbe) + Toggle zum
+  │     Ein-/Ausblenden in der Vokabelliste
+  │   - Statistik: gesondert anzeigen oder zusammen mit den anderen?
+  │     (Empfehlung: eigene Filter-Box "Gelernt" in der Statistik)
+  │
+  │ Implementierungs-Hinweis: Score-Schwellwert in lsGet(SK.einstellungen)
+  │   speichern (neues Feld z.B. gelerntSchwelle, 0 = deaktiviert).
+  │   Quiz-Start: voks.filter(v => !istGelernt(v)) – aber Override-Option.
+  └─────────────────────────────────────────────────────────────────
+
+  ┌─────────────────────────────────────────────────────────────────
+  │ FEATURE: SESSION-ZWISCHENAUSWERTUNG
+  │
+  │ Konzept: Nach jedem Paket einer Session eine Zwischenabrechnung zeigen.
+  │   Am Ende aller Pakete eine Gesamtauswertung.
+  │
+  │ Details:
+  │   - Pro Paket: Richtig/Falsch + Prozent + Feedback (wie Auswertung oben)
+  │   - Gesamt-Auswertung am Session-Ende: alle Pakete aggregiert, Score-Verläufe
+  │   - Diktat: analoge Zwischenauswertung (diktatErgebnisse bereits vorhanden)
+  │
+  │ Implementierungs-Hinweis: quizRichtigAnzahl/quizFalschAnzahl auch im
+  │   Session-Fertig-Screen anzeigen. Für kumulierte Session-Stats:
+  │   in updateSessionSlotFortschritt mitführen.
+  └─────────────────────────────────────────────────────────────────
+
+================================================================
 PROMPT FÜR NEUEN CHAT
 ================================================================
 
@@ -1310,6 +1377,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: df300fe (Session 30 — Quiz aus Liste-Detail mit aktiver Session: Session-Clear-Reihenfolge gefixt)
+Letzter Commit: 6b08f2c (Session 31 — Konzept-Text, Info-Toggle, Filter-Umbau)
 
 ================================================================
