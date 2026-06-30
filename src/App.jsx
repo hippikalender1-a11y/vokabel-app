@@ -503,10 +503,9 @@ export default function VokabelApp() {
   const [exportAuswahlModus, setExportAuswahlModus] = useState(false);
   const [exportAusgewaehlt, setExportAusgewaehlt] = useState(new Set());
   const [statistikSort, setStatistikSort] = useState("score-asc");
-  const [statistikFilter, setStatistikFilter] = useState("alle");
+  const [statistikFilter, setStatistikFilter] = useState(new Set(['nie', 'positiv', 'negativ']));
   const [statistikListenIds, setStatistikListenIds] = useState(null); // null = alle
   const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
-  const [statistikGraphOhneUnbeantwortet, setStatistikGraphOhneUnbeantwortet] = useState(false);
   const [statistikGraphDiktatZeigen, setStatistikGraphDiktatZeigen] = useState(false);
   const [statistikVollbild, setStatistikVollbild] = useState(false);
   const [statistikGraphTyp, setStatistikGraphTyp] = useState("linie");
@@ -4655,13 +4654,11 @@ export default function VokabelApp() {
           const nieAnzahl = alleVoks.filter(v => !v.fortschritt).length;
           const positivAnzahl = abgefragt.filter(v => v.fortschritt.score > 0).length;
           const negativAnzahl = abgefragt.filter(v => v.fortschritt.score <= 0).length;
-          const avgDenom = statistikGraphOhneUnbeantwortet ? abgefragt.length : alleVoks.length;
           const avgScore = abgefragt.length > 0
-            ? abgefragt.reduce((s, v) => s + v.fortschritt.score, 0) / avgDenom
+            ? abgefragt.reduce((s, v) => s + v.fortschritt.score, 0) / abgefragt.length
             : null;
-          const avgDiktatDenom = statistikGraphOhneUnbeantwortet ? diktatAbgefragt.length : alleVoks.length;
           const avgDiktatScore = diktatAbgefragt.length > 0
-            ? diktatAbgefragt.reduce((s, v) => s + v.diktatFortschritt.score, 0) / avgDiktatDenom
+            ? diktatAbgefragt.reduce((s, v) => s + v.diktatFortschritt.score, 0) / diktatAbgefragt.length
             : null;
 
           // Session-Delta-Score
@@ -4675,14 +4672,21 @@ export default function VokabelApp() {
             return cur !== null ? cur - (start ?? 0) : null;
           };
           const sessionVoksAbgefragt = abgefragt.filter(v => sessionStartScores[v.id] !== undefined);
-          const avgSessionDenom = statistikGraphOhneUnbeantwortet ? sessionVoksAbgefragt.length : alleVoks.length;
           const avgSessionScore = sessionVoksAbgefragt.length > 0
-            ? sessionVoksAbgefragt.reduce((s, v) => s + (getSessionDelta(v) ?? 0), 0) / avgSessionDenom
+            ? sessionVoksAbgefragt.reduce((s, v) => s + (getSessionDelta(v) ?? 0), 0) / sessionVoksAbgefragt.length
             : null;
 
+          // Filter-Logik (wird für Graph + Vokabelliste verwendet)
+          const alleFilterAktiv = statistikFilter.has('nie') && statistikFilter.has('positiv') && statistikFilter.has('negativ');
+          const filterVok = v => {
+            if (!v.fortschritt) return statistikFilter.has('nie');
+            if (v.fortschritt.score > 0) return statistikFilter.has('positiv');
+            return statistikFilter.has('negativ');
+          };
+
           // Graph-Daten
-          const quizGraphVoks = statistikGraphOhneUnbeantwortet ? abgefragt : alleVoks;
-          const diktatGraphVoks = statistikGraphOhneUnbeantwortet ? diktatAbgefragt : alleVoks;
+          const quizGraphVoks = alleFilterAktiv ? alleVoks : alleVoks.filter(filterVok);
+          const diktatGraphVoks = alleFilterAktiv ? alleVoks : alleVoks.filter(filterVok);
           const quizS = istSessionModus
             ? sessionVoksAbgefragt.map(v => getSessionDelta(v) ?? 0).sort((a, b) => a - b)
             : quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
@@ -4703,12 +4707,13 @@ export default function VokabelApp() {
               return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
             }).join(' ');
           }
-          // Zwei-Farben-Kurve: unbeantwortete grau links, beantwortete grün rechts (nur im Global-Modus)
-          const quizTwoColor = !istSessionModus && !statistikGraphOhneUnbeantwortet && nieAnzahl > 0;
+          // Zwei-Farben-Kurve: unbeantwortete grau links, beantwortete grün rechts (nur im Global-Modus, nur wenn 'nie' aktiv)
+          const nieInGraph = quizGraphVoks.filter(v => !v.fortschritt).length;
+          const quizTwoColor = !istSessionModus && statistikFilter.has('nie') && nieInGraph > 0 && quizGraphVoks.some(v => v.fortschritt);
           let quizGreenPath = toPath(quizS), quizGrayPath = '';
           if (quizTwoColor) {
-            const total = alleVoks.length;
-            const answeredScores = abgefragt.map(v => v.fortschritt.score).sort((a, b) => a - b);
+            const total = quizGraphVoks.length;
+            const answeredScores = quizGraphVoks.filter(v => v.fortschritt).map(v => v.fortschritt.score).sort((a, b) => a - b);
             function sectionPath(count, startIdx, scores) {
               if (count === 0) return '';
               return Array.from({length: count}, (_, k) => {
@@ -4717,15 +4722,12 @@ export default function VokabelApp() {
                 return `${k === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
               }).join(' ');
             }
-            quizGrayPath = sectionPath(nieAnzahl, 0, null);
-            quizGreenPath = sectionPath(abgefragt.length, nieAnzahl, answeredScores);
+            quizGrayPath = sectionPath(nieInGraph, 0, null);
+            quizGreenPath = sectionPath(answeredScores.length, nieInGraph, answeredScores);
           }
 
           // Vokabelliste (gefiltert + sortiert)
-          let voks = [...alleVoks];
-          if (statistikFilter === "nie") voks = voks.filter(v => !v.fortschritt);
-          else if (statistikFilter === "negativ") voks = voks.filter(v => v.fortschritt && v.fortschritt.score <= 0);
-          else if (statistikFilter === "positiv") voks = voks.filter(v => v.fortschritt && v.fortschritt.score > 0);
+          let voks = alleFilterAktiv ? [...alleVoks] : alleVoks.filter(filterVok);
           const [sKey, sDir] = statistikSort.split("-");
           if (sKey === "score") voks.sort((a, b) => { const d = (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0); return sDir === "asc" ? d : -d; });
           else if (sKey === "streak") voks.sort((a, b) => { const d = (a.fortschritt?.streak ?? 0) - (b.fortschritt?.streak ?? 0); return sDir === "asc" ? d : -d; });
@@ -4734,12 +4736,12 @@ export default function VokabelApp() {
           else if (sKey === "listennr") voks.sort((a, b) => { const dr = a._listenIndexRank - b._listenIndexRank; if (dr !== 0) return sDir === "asc" ? dr : -dr; const di = a._listIndex - b._listIndex; return sDir === "asc" ? di : -di; });
           const mehrereListenGewaehlt = statistikGewaehlteListenObjekte.length > 1;
 
-          // Filter-Boxen (klickbar, ersetzen Filter-Buttons)
+          // Filter-Boxen (Multi-Select: alle standardmäßig aktiv)
           const filterBoxen = [
-            {key:"alle", label:"Gesamt", wert:alleVoks.length, bg:null, rand:null, farbe:null},
-            {key:"nie", label:"Nie abgefragt", wert:nieAnzahl, bg:null, rand:null, farbe:nieAnzahl>0?"#6b6560":"#2d6a4f"},
-            {key:"positiv", label:"Score positiv", wert:positivAnzahl, bg:"#e8f5e9", rand:"#c8e6c9", farbe:"#2d6a4f"},
-            {key:"negativ", label:"Score negativ", wert:negativAnzahl, bg:"#ffebee", rand:"#ffcdd2", farbe:"#c0392b"},
+            {key:"alle",    label:"Gesamt",        wert:alleVoks.length, bg:"#f0f9f4", rand:"#2d6a4f", farbe:"#2d6a4f"},
+            {key:"nie",     label:"Nie abgefragt", wert:nieAnzahl,       bg:"#f7f5f0", rand:"#9b9590", farbe:"#6b6560"},
+            {key:"positiv", label:"Score positiv", wert:positivAnzahl,   bg:"#e8f5e9", rand:"#2d6a4f", farbe:"#2d6a4f"},
+            {key:"negativ", label:"Score negativ", wert:negativAnzahl,   bg:"#ffebee", rand:"#c0392b", farbe:"#c0392b"},
           ];
 
           return (<>
@@ -4873,27 +4875,25 @@ export default function VokabelApp() {
                         Diktat
                       </button>
                     )}
-                    <span style={{marginLeft:"auto"}}>
-                      <button className={`typ-btn${statistikGraphOhneUnbeantwortet?" aktiv":""}`}
-                        style={{fontSize:"0.68rem", padding:"3px 8px"}}
-                        onClick={() => setStatistikGraphOhneUnbeantwortet(v => !v)}>
-                        {statistikGraphOhneUnbeantwortet ? "Nur beantwortete" : "Inkl. unbeantwortete"}
-                      </button>
-                    </span>
                   </div>
                 </div>
                 );
               })()}
 
-              {/* Kennzahlen-Boxen als Filter */}
+              {/* Kennzahlen-Boxen als Multi-Select-Filter */}
               <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16}}>
                 {filterBoxen.map(k => {
-                  const aktiv = statistikFilter === k.key;
+                  const isAlle = k.key === "alle";
+                  const aktiv = isAlle ? alleFilterAktiv : statistikFilter.has(k.key);
                   return (
-                    <div key={k.key} onClick={() => setStatistikFilter(aktiv ? "alle" : k.key)}
-                      style={{background:aktiv?(k.bg||"#f0f9f4"):(k.bg||"#fff"), border:`2px solid ${aktiv?"#2d6a4f":(k.rand||"#e0dbd2")}`, borderRadius:10, padding:"12px 14px", cursor:"pointer", userSelect:"none", transition:"border-color 0.15s"}}>
-                      <div style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:k.farbe||(aktiv?"#2d6a4f":"#6b6560")}}>{k.label}</div>
-                      <div style={{fontSize:"1.6rem", fontWeight:700, marginTop:4, color:k.farbe||(aktiv?"#2d6a4f":"#1a1a1a")}}>{k.wert}</div>
+                    <div key={k.key}
+                      onClick={() => isAlle
+                        ? setStatistikFilter(new Set(['nie', 'positiv', 'negativ']))
+                        : setStatistikFilter(prev => { const n = new Set(prev); n.has(k.key) ? n.delete(k.key) : n.add(k.key); return n; })
+                      }
+                      style={{background:aktiv?k.bg:"#fff", border:`2px solid ${aktiv?k.rand:"#e0dbd2"}`, borderRadius:10, padding:"12px 14px", cursor:"pointer", userSelect:"none", transition:"border-color 0.15s, opacity 0.15s", opacity:aktiv?1:0.45}}>
+                      <div style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:aktiv?k.farbe:"#9b9590"}}>{k.label}</div>
+                      <div style={{fontSize:"1.6rem", fontWeight:700, marginTop:4, color:aktiv?k.farbe:"#9b9590"}}>{k.wert}</div>
                     </div>
                   );
                 })}
