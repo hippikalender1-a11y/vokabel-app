@@ -1873,6 +1873,22 @@ export default function VokabelApp() {
     setAnsicht("uebersicht");
   }
 
+  function brecheQuizAb() {
+    if (!quiz) { beendeQuiz(); return; }
+    if (quiz.istSessionModus) {
+      const answeredIds = [...new Set(
+        (quiz.vokabeln || []).slice(0, quiz.index || 0).map(v => v.id)
+      )];
+      if (answeredIds.length > 0) updateSessionSlotFortschritt(answeredIds, false);
+    }
+    const ges = (quiz.quizRichtigAnzahl || 0) + (quiz.quizFalschAnzahl || 0);
+    if (ges > 0) {
+      setQuiz(prev => ({...prev, phase: "fertig", abgebrochen: true}));
+    } else {
+      beendeQuiz();
+    }
+  }
+
   function starteDiktat(force = false, overrideSlot = null) {
     const kombiListe = quizTabListen.length > 0 ? getKombinierteListe(quizTabListen) : aktiveListe;
     if (!kombiListe) return;
@@ -2693,7 +2709,7 @@ export default function VokabelApp() {
             <div className="app">
               <div className="topbar">
                 <button className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
-                <span className="topbar-title">{istLetzteBatch ? "Durchlauf abgeschlossen" : "Paket fertig"}</span>
+                <span className="topbar-title">{quiz.abgebrochen ? "Abgebrochen" : istLetzteBatch ? "Durchlauf abgeschlossen" : "Paket fertig"}</span>
                 <span className="quiz-fortschritt">{schonAbgefragt.size}/{quiz.sessionGesamt}</span>
               </div>
               <div className="sektion">
@@ -2701,13 +2717,13 @@ export default function VokabelApp() {
                 {ges > 0 && (<>
                   <div style={{textAlign:"center", padding:"16px 0 10px"}}>
                     <div style={{fontSize:"2.4rem", fontWeight:800, color:balkenFarbe, lineHeight:1}}>{pct}%</div>
-                    <div style={{fontSize:"0.82rem", color:"#6b6560", marginTop:3}}>{r} von {ges} richtig · dieses Paket</div>
+                    <div style={{fontSize:"0.82rem", color:"#6b6560", marginTop:3}}>{r} von {ges} richtig{quiz.abgebrochen ? "" : " · dieses Paket"}</div>
                   </div>
                   <div style={{background:"#f0ede8", borderRadius:8, height:8, marginBottom:14, overflow:"hidden"}}>
                     <div style={{width:`${pct}%`, height:"100%", background:balkenFarbe, borderRadius:8}}/>
                   </div>
                   {feedback && (
-                    <div style={{background:"#f7f5f0", borderRadius:10, padding:"10px 14px", marginBottom:14, fontSize:"0.83rem", lineHeight:1.55, color:"#3b3832", fontStyle:"italic"}}>
+                    <div style={{background:"#f7f5f0", borderRadius:12, padding:"18px 16px", margin:"20px 0", fontSize:"1rem", lineHeight:1.6, color:"#3b3832", fontStyle:"italic", textAlign:"center"}}>
                       „{feedback}"
                     </div>
                   )}
@@ -2717,7 +2733,9 @@ export default function VokabelApp() {
                   {schonAbgefragt.size} / {quiz.sessionGesamt} Vokabeln gesamt
                   {" "}({Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100)}%)
                 </div>
-                {istLetzteBatch ? (
+                {quiz.abgebrochen ? (
+                  <button className="btn btn-primary" style={{width:"100%"}} onClick={() => beendeQuiz()}>Zur Übersicht</button>
+                ) : istLetzteBatch ? (
                   <button className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
                 ) : (
                   <>
@@ -2754,7 +2772,7 @@ export default function VokabelApp() {
             <div className="app">
               <div className="topbar">
                 <button className="topbar-back" onClick={() => { beendeQuiz(); }}>Schließen</button>
-                <span className="topbar-title">Auswertung</span>
+                <span className="topbar-title">{quiz.abgebrochen ? "Abgebrochen" : "Auswertung"}</span>
                 <span className="quiz-fortschritt">{r}/{ges}</span>
               </div>
               <div className="sektion">
@@ -2766,7 +2784,7 @@ export default function VokabelApp() {
                   <div style={{width:`${pct}%`, height:"100%", background:balkenFarbe, borderRadius:8, transition:"width 0.6s ease"}}/>
                 </div>
                 {feedback && (
-                  <div style={{background:"#f7f5f0", borderRadius:12, padding:"14px 16px", marginBottom:20, fontSize:"0.88rem", lineHeight:1.6, color:"#3b3832", fontStyle:"italic"}}>
+                  <div style={{background:"#f7f5f0", borderRadius:12, padding:"18px 16px", margin:"20px 0", fontSize:"1rem", lineHeight:1.6, color:"#3b3832", fontStyle:"italic", textAlign:"center"}}>
                     „{feedback}"
                   </div>
                 )}
@@ -2807,7 +2825,7 @@ export default function VokabelApp() {
         <style>{CSS}</style>
         <div className="app">
           <div className="topbar">
-            <button className="topbar-back" onClick={() => { beendeQuiz(); }}>Beenden</button>
+            <button className="topbar-back" onClick={() => { brecheQuizAb(); }}>Beenden</button>
             <span className="topbar-title">{quiz.index + 1} / {quiz.vokabeln.length}</span>
             <span className="quiz-fortschritt">Score: {score > 0 ? "+" : ""}{score}</span>
           </div>
