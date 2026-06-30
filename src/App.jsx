@@ -4987,6 +4987,8 @@ export default function VokabelApp() {
             <div style={{display:"flex", gap:6}}>
               <button className={`typ-btn${infoModus==="uebersicht"?" aktiv":""}`}
                 onClick={() => setInfoModus("uebersicht")}>Übersicht</button>
+              <button className={`typ-btn${infoModus==="konzept"?" aktiv":""}`}
+                onClick={() => setInfoModus("konzept")}>Konzept</button>
               <button className={`typ-btn${infoModus==="anleitung"?" aktiv":""}`}
                 onClick={() => setInfoModus("anleitung")}>Anleitung</button>
             </div>
@@ -5031,6 +5033,28 @@ export default function VokabelApp() {
                   </div>
                 </div>
               </div>
+            </div>
+          ) : infoModus === "konzept" ? (
+            <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.75, color:"#3b3832"}}>
+              {[
+                {titel:"Listen", text:"Alles beginnt mit einer Liste. Eine Liste ist eine Sammlung von Vokabelpaaren – zum Beispiel Deutsch und Englisch, oder Begriff und Erklärung. Jede Liste kann bis zu sechs Spalten haben, die du frei benennen kannst. Du kannst so viele Listen anlegen wie du möchtest, sie importieren, exportieren und teilen."},
+                {titel:"Vokabelgruppen", text:"Für das Quiz wählst du aus, welche Vokabeln abgefragt werden sollen. Das ist deine Vokabelgruppe: entweder alle Vokabeln einer oder mehrerer Listen, oder eine gezielte Auswahl einzelner Einträge per Checkbox oder Von–Bis-Bereich. Die Vokabelgruppe ist das Material für eine Abfragerunde."},
+                {titel:"Abfragen", text:"Eine Abfrage geht durch alle Vokabeln der Gruppe einmal durch. Dabei bewertest du dich selbst: War die Antwort richtig oder falsch? Das Ergebnis fließt direkt in den Score ein. Jede Vokabel hat einen eigenen Score, der über Zeit steigt oder fällt. Unbeantwortete Vokabeln starten bei 0 und werden optionally zuerst gestellt."},
+                {titel:"Modi", text:"Du kannst zwischen drei Abfrage-Modi wählen:\n\nKarte (Frage–Antwort): Die Frage wird angezeigt, du denkst nach, tippst die Karte an um die Antwort zu sehen, und bewertest dich selbst mit Richtig oder Falsch.\n\nWechselnd: Frage- und Antwortspalte wechseln sich zwischen den Vokabeln ab – hält das Gehirn aktiver.\n\nDiktat: Die Antwort wird vorgelesen, du tippst sie ein. Ideal für Hörverstehen und Schreibübungen."},
+                {titel:"Scoring & Streak", text:"Jede Vokabel hat einen Score (von –10 bis +10). Richtige Antworten geben +1, falsche Antworten kosten Punkte je nach Schwierigkeitsgrad und Fehlerzahl. Wer mehrere Vokabeln hintereinander richtig beantwortet, bekommt ab dem dritten Mal in Folge einen Streak-Bonus – der Score steigt dann schneller."},
+                {titel:"Reihenfolge & Filter", text:"Du entscheidest, in welcher Reihenfolge die Vokabeln kommen: zufällig gemischt, nach schlechtestem Score (was du noch nicht gut kannst, kommt zuerst), oder in der Originalreihenfolge der Liste. Optional lässt sich ein Score-Filter setzen, sodass nur Vokabeln bis zu einem bestimmten Score angezeigt werden."},
+                {titel:"Sessions & Pakete", text:"Mit dem Session-Modus teilst du die Vokabelgruppe in kleinere Pakete auf – zum Beispiel 10 Vokabeln auf einmal. Nach jedem Paket kannst du pausieren, dann wird der Fortschritt gespeichert. Beim nächsten Mal werden bereits abgefragte Vokabeln übersprungen. So arbeitest du dich über mehrere Sitzungen durch die gesamte Gruppe."},
+                {titel:"Abfrage-Ziel", text:"Standardmäßig wird jede Vokabel einmal abgefragt. Mit dem Abfrage-Ziel kannst du das ändern:\n\nAnzahl: jede Vokabel 1×, 2× oder 3× pro Durchgang.\n\nMit Wiederholung: Vokabeln werden so lange neu eingereiht, bis du sie 1×, 2× oder 3× in Folge richtig beantwortet hast.\n\nScore-Ziel: Vokabeln werden wiederholt, bis ihr Score einen bestimmten Wert erreicht – global oder bezogen auf den Fortschritt der laufenden Session."},
+                {titel:"Konfigurationen speichern", text:"Eine Kombination aus Vokabelgruppe, Abfrage-Modus, Reihenfolge und Session-Einstellung kann gespeichert und jederzeit wieder geladen werden. So richtest du zum Beispiel eine tägliche Übung mit den schlechtesten 20 Vokabeln einmal ein und startest sie beim nächsten Mal mit einem Tipp."},
+                {titel:"Statistik", text:"Die Statistik zeigt dir für jede Vokabel den aktuellen Score als Balken und Zahl, das Datum der letzten Abfrage und einen sortierbaren Überblick. Der Graph oben zeigt alle Scores auf einen Blick – grau für nie abgefragt, grün für positive, rot für negative Scores. Im Session-Modus zeigt der Graph, wie viel sich in der letzten Einheit verändert hat."},
+              ].map(abschnitt => (
+                <div key={abschnitt.titel} style={{marginBottom:20}}>
+                  <div className="sektion-label" style={{marginBottom:6}}>{abschnitt.titel}</div>
+                  <div style={{background:"#f7f5f0", borderRadius:10, padding:"12px 14px", whiteSpace:"pre-line"}}>
+                    {abschnitt.text}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.7, color:"#3b3832"}}>
