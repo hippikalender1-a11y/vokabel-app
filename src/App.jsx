@@ -448,6 +448,7 @@ export default function VokabelApp() {
   const [tab, setTab] = useState("quiz");
   const [listenIndex, setListenIndex] = useState([]);
   const [einstellungen, setEinstellungen] = useState(defaultEinstellungen());
+  const [infoModus, setInfoModus] = useState("uebersicht");
   const [ansicht, setAnsicht] = useState("uebersicht");
   const [aktiveListeId, setAktiveListeId] = useState(null);
   const [aktiveListe, setAktiveListe] = useState(null);
@@ -4979,32 +4980,129 @@ export default function VokabelApp() {
             </div>
           </>);
         })()}
-        {tab === "einstellungen" && (
-          <div className="sektion">
-            <div className="sektion-label" style={{marginBottom:10}}>App</div>
-            <div className="karte">
-              <div className="karte-zeile">
-                <div className="karte-zeile-info">
-                  <div className="karte-zeile-name">App aktualisieren</div>
-                  <div className="karte-zeile-sub">Version {APP_VERSION} · Neueste Version laden</div>
-                </div>
-                <button className="btn btn-ghost btn-sm" onClick={() => {
-                  const url = window.location.href.split('?')[0] + '?t=' + Date.now();
-                  window.location.replace(url);
-                }}>Neu laden</button>
-              </div>
-            </div>
-            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Daten</div>
-            <div className="karte">
-              <div className="karte-zeile">
-                <div className="karte-zeile-info">
-                  <div className="karte-zeile-name">Gespeicherte Listen</div>
-                  <div className="karte-zeile-sub">{listenIndex.length} Liste{listenIndex.length!==1?"n":""}</div>
-                </div>
-              </div>
+        {tab === "einstellungen" && (<>
+          {/* Info sticky Header */}
+          <div style={{position:"sticky", top:headerH, zIndex:9, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+            <span style={{fontWeight:700, fontSize:"0.88rem", color:"#3b3832"}}>Info</span>
+            <div style={{display:"flex", gap:6}}>
+              <button className={`typ-btn${infoModus==="uebersicht"?" aktiv":""}`}
+                onClick={() => setInfoModus("uebersicht")}>Übersicht</button>
+              <button className={`typ-btn${infoModus==="anleitung"?" aktiv":""}`}
+                onClick={() => setInfoModus("anleitung")}>Anleitung</button>
             </div>
           </div>
-        )}
+
+          {infoModus === "uebersicht" ? (
+            <div className="sektion">
+              {/* Kurzbeschreibung */}
+              <div style={{background:"#f7f5f0", borderRadius:12, padding:"14px 16px", marginBottom:16, fontSize:"0.85rem", lineHeight:1.65, color:"#3b3832"}}>
+                <div style={{fontWeight:700, marginBottom:6, fontSize:"0.95rem"}}>Vokabel-Trainer</div>
+                <p style={{margin:0}}>
+                  Lerne Vokabeln aus eigenen Listen – flexibel, ohne Anmeldung, direkt im Browser.
+                  Alle Daten bleiben auf diesem Gerät.
+                </p>
+                <div style={{marginTop:10, display:"flex", flexDirection:"column", gap:4}}>
+                  <div><span style={{fontWeight:600}}>Listen</span> – Vokabeln verwalten, importieren und exportieren</div>
+                  <div><span style={{fontWeight:600}}>Quiz</span> – Abfragen mit Karte, Tippen oder Diktat</div>
+                  <div><span style={{fontWeight:600}}>Statistik</span> – Lernfortschritt auf einen Blick</div>
+                </div>
+              </div>
+
+              {/* Bestehende Einstellungen */}
+              <div className="sektion-label" style={{marginBottom:10}}>App</div>
+              <div className="karte">
+                <div className="karte-zeile">
+                  <div className="karte-zeile-info">
+                    <div className="karte-zeile-name">App aktualisieren</div>
+                    <div className="karte-zeile-sub">Version {APP_VERSION} · Neueste Version laden</div>
+                  </div>
+                  <button className="btn btn-ghost btn-sm" onClick={() => {
+                    const url = window.location.href.split('?')[0] + '?t=' + Date.now();
+                    window.location.replace(url);
+                  }}>Neu laden</button>
+                </div>
+              </div>
+              <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Daten</div>
+              <div className="karte">
+                <div className="karte-zeile">
+                  <div className="karte-zeile-info">
+                    <div className="karte-zeile-name">Gespeicherte Listen</div>
+                    <div className="karte-zeile-sub">{listenIndex.length} Liste{listenIndex.length!==1?"n":""}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.7, color:"#3b3832"}}>
+              {[
+                {titel:"Listen-Tab", inhalt:[
+                  {k:"Übersicht", v:"Zeigt alle Vokabellisten. Tippe eine Liste an, um sie zu öffnen."},
+                  {k:"[+] Neue Liste", v:"Legt eine leere Liste mit eigenem Namen an."},
+                  {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, TXT-Export, JSON-Export, Teilen, Löschen."},
+                  {k:"Stift-Button", v:"Listenname umbenennen."},
+                  {k:"Vokabeln [+]", v:"Neue Vokabel am Ende der Liste hinzufügen."},
+                  {k:"Stift an Vokabel", v:"Vokabel bearbeiten oder löschen."},
+                  {k:"Spalten", v:"Jede Liste hat bis zu 6 Spalten (z.B. Deutsch, Englisch, Info). Spalten lassen sich benennen und aktivieren/deaktivieren. Der Stift-Button neben der Spalte öffnet den Namen-Editor."},
+                  {k:"Quiz starten", v:"Wechselt direkt zum Quiz-Tab mit dieser Liste vorausgewählt."},
+                  {k:"Statistik", v:"Öffnet die Statistik für diese Liste."},
+                  {k:"Zusammenführen", v:"Fügt die Vokabeln einer anderen Liste in diese Liste ein."},
+                  {k:"Import", v:"Vokabeln aus einer TXT-Datei oder JSON-Datei importieren."},
+                ]},
+                {titel:"Quiz-Tab", inhalt:[
+                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts."},
+                  {k:"Neu-Chip", v:"Setzt die aktive Session zurück – Quiz startet ohne geladene Konfiguration."},
+                  {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
+                  {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl."},
+                  {k:"Vokabel-Auswahl [Alle]", v:"Alle Vokabeln der gewählten Listen werden abgefragt."},
+                  {k:"Vokabel-Auswahl [Bereich]", v:"Öffnet eine Checkbox-Liste. Einzelne Vokabeln an-/abwählen. [Von–Bis] ermöglicht Bereichsauswahl per 2 Klicks."},
+                  {k:"Abfrage-Modus", v:"Frage–Antwort: Karte aufdecken. Wechselnd: Frage- und Antwortspalten wechseln sich ab. Diktat: Antwort wird vorgelesen, du tippst die Lösung."},
+                  {k:"Reihenfolge", v:"Zufällig / Schlechteste (nach Score sortiert) / Listen-Nr. (Originalreihenfolge). Score-Filter: nur Vokabeln bis zu einem bestimmten Score zeigen. Unbeantwortete zuerst: noch nie abgefragte Vokabeln werden vorgezogen."},
+                  {k:"Einstellungen", v:"Lautsprache: Auto-Play und welche Spalten vorgelesen werden. Schwierigkeitsgrad: Einfach (3 Tippversuche) oder Schwer (sofortiger Fehler beim 1. Fehlversuch)."},
+                  {k:"Session [Alle]", v:"Alle verfügbaren Vokabeln in einem Durchgang abfragen."},
+                  {k:"Session [Pakete]", v:"Vokabeln in kleinere Pakete aufteilen (5–50 Stück). Nach jedem Paket kannst du pausieren oder weitermachen. Abgefragte Vokabeln werden beim nächsten Paket übersprungen."},
+                  {k:"Abfrage-Ziel", v:"Anzahl: jede Vokabel 1×/2×/3× pro Durchgang abfragen. Mit Wiederholung: Vokabeln so lange einreihen, bis jede 1×/2×/3× richtig beantwortet wurde. Score: Vokabeln so lange abfragen, bis ihr Score das Ziel erreicht."},
+                  {k:"Konfiguration speichern", v:"Speichert die aktuelle Auswahl und Einstellungen unter einem Namen. Beim nächsten Mal per Chip laden."},
+                  {k:"Quiz starten", v:"Startet das Quiz mit der aktuellen Konfiguration."},
+                ]},
+                {titel:"Im Quiz", inhalt:[
+                  {k:"Karte (Frage–Antwort)", v:"Tippe auf die Karte, um die Antwort aufzudecken. Dann: Richtig oder Falsch selbst einschätzen."},
+                  {k:"Tippen", v:"Antwort eintippen und bestätigen. Im Einfach-Modus: 3 Versuche. Im Schwer-Modus: 1 Versuch. Nach 3 Fehlern wird die Lösung gezeigt."},
+                  {k:"Diktat", v:"Großer Lautsprecher: Wort nochmals vorlesen. Kleiner Lautsprecher: langsamer/erneut. Antwort eintippen."},
+                  {k:"Scoring", v:"Richtig: +1 Punkt, Streak +1. Ab Streak 3: mindestens +2 Punkte. Falsch: Streak auf 0, Punktabzug je nach Fehlerzahl. Aufgedeckt: kein Punkt, kein Streak."},
+                  {k:"Aufdecken", v:"Zeigt die Antwort ohne Wertung."},
+                  {k:"Schließen", v:"Pausiert das Quiz – beim nächsten Start über 'Pakete' weitermachen."},
+                ]},
+                {titel:"Statistik-Tab", inhalt:[
+                  {k:"Listen-Auswahl", v:"Eine oder mehrere Listen für die Statistik wählen."},
+                  {k:"Vokabel-Auswahl", v:"Alle Vokabeln oder einen bestimmten Bereich filtern."},
+                  {k:"Filter-Boxen", v:"Gesamt / Nie abgefragt / Score positiv / Score negativ. Alle sind standardmäßig aktiv. Antippen deaktiviert eine Kategorie – sie erscheint dann weder in der Liste noch im Graphen. 'Gesamt' stellt alle wieder her."},
+                  {k:"Graph", v:"Sortierte Score-Kurve aller Vokabeln. Grau = nie abgefragt, Grün = abgefragt. Tippen auf den Graphen wechselt zwischen Linie und Balken."},
+                  {k:"Diktat-Linie", v:"Separate gestrichelte Linie für Diktat-Scores – ein-/ausblendbar."},
+                  {k:"Ø Score", v:"Durchschnittlicher Score der gefilterten Vokabeln. [Global] zeigt den Gesamtscore, [Session] zeigt die Veränderung seit dem letzten Quiz."},
+                  {k:"Sortierung", v:"Score / Streak / Datum / A→Z / Listen-Nr. Pfeil zeigt Richtung, nochmals tippen kehrt um."},
+                  {k:"Vollbild", v:"Maximiert Graph und Vokabelliste ohne die oberen Header-Zeilen. 'Vollbild verlassen' oben rechts."},
+                  {k:"Vokabelliste", v:"Alle gefilterten Vokabeln mit Score-Balken (grün = positiv, rot = negativ) und letztem Abfragedatum."},
+                ]},
+                {titel:"Einstellungen-Tab", inhalt:[
+                  {k:"App aktualisieren", v:"Lädt die neueste Version der App. Sinnvoll nach App-Updates."},
+                  {k:"Gespeicherte Listen", v:"Zeigt, wie viele Listen aktuell auf diesem Gerät gespeichert sind."},
+                ]},
+              ].map(abschnitt => (
+                <div key={abschnitt.titel} style={{marginBottom:20}}>
+                  <div className="sektion-label" style={{marginBottom:8}}>{abschnitt.titel}</div>
+                  <div className="karte">
+                    {abschnitt.inhalt.map((zeile, i) => (
+                      <div key={i} style={{padding:"9px 14px", borderBottom: i < abschnitt.inhalt.length-1 ? "1px solid #e0dbd2" : "none"}}>
+                        <div style={{fontWeight:600, fontSize:"0.8rem", color:"#2d6a4f", marginBottom:2}}>{zeile.k}</div>
+                        <div style={{fontSize:"0.82rem", color:"#3b3832"}}>{zeile.v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>)}
         {tab === "listen" && ansicht === "uebersicht" && exportAuswahlModus && exportAusgewaehlt.size > 0 && (
           <div className="quiz-action-bar">
             {navigator.share && (
