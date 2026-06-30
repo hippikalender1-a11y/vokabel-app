@@ -1,7 +1,7 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-30  (Session 29 — Slider-Fix, Listen-Nr.-Sort, Vokabelliste-Redesign, Vollbild-Modus, Balkendiagramm)
+Stand: 2026-06-30  (Session 29 — Slider-Fix→Swipe entfernt, Listen-Nr.-Sort, Vokabelliste-Redesign, Vollbild-Modus, Balkendiagramm)
 Letzter Commit: 8cd4861
 
 DATEIPFADE
@@ -1149,16 +1149,13 @@ NOCH OFFEN / FOLGE-SESSION:
 
 
 ================================================================
-SESSION 29 — UMGESETZTE ÄNDERUNGEN (Commit: e2f2ebe)
+SESSION 29 — UMGESETZTE ÄNDERUNGEN (Commits: e2f2ebe, cc5d381)
 ================================================================
 
-1. SLIDER-TAB-KOLLISION FIX (Quiz-Tab)
-   Problem: Slider im Session-Kontext (Abfrage-Ziel Score) kollidiert mit
-   Swipe-Gesten-Tab-Navigation. Horizontales Wischen auf dem Slider löst
-   zusätzlich einen Tab-Wechsel aus.
-   Fix: In onTouchStart prüfen ob e.target instanceof HTMLInputElement &&
-   e.target.type === "range" (oder Vorfahre). Wenn ja → touchStartRef.current
-   bleibt null → kein Swipe verarbeitet.
+1. SWIPE-NAVIGATION ENTFERNT (Quiz-Tab)
+   Swipe-Tab-Navigation (onTouchStart/onTouchEnd auf .app div) vollständig
+   entfernt — kollidierte mit Slider-Bedienung und horizontalem Scrollen im
+   Balkendiagramm. touchStartRef ebenfalls entfernt.
 
 2. STATISTIK: NEUE SORTIERUNG "LISTEN-NR."
    Neue Sortieroption nach Reihenfolge: erst Liste (nach listenIndex-Reihenfolge),
@@ -1222,18 +1219,24 @@ SESSION 29 — UMGESETZTE ÄNDERUNGEN (Commit: e2f2ebe)
 
 5. STATISTIK: BALKENDIAGRAMM (alternativ zum Liniendiagramm)
    Neuer State: statistikGraphTyp = "linie" | "balken" (default: "linie")
-   Toggle: Klick auf den Graph-Container wechselt zwischen den Typen.
+   Toggle: Klick auf den klickbaren Graph-Bereich wechselt zwischen den Typen.
+   Kleiner Hinweis "Tippen zum Wechseln" (unten rechts, grau).
 
    Balkendiagramm:
    - Balken folgen der aktuell gewählten Sortierung (statistikSort)
    - Eine Spalte pro Vokabel, Farbe: grün wenn score >= 0, rot wenn score < 0
-   - Y-Achse: fest −10…+10 (Nulllinie in der Mitte)
-   - Balkenbreite: 6px, Gap: 1px → bei 200 Voks ca. 1400px Gesamtbreite
-   - Container: overflow-x:auto, scrollable
-   - SVG-Breite dynamisch = max(containerWidth, N * 7)
+   - Y-Achse: fest −10…+10 (Nulllinie in der Mitte, sym. Zonen grün/rot)
+   - Balkenbreite: 6px, Gap: 1px; ViewBox skaliert auf Container-Breite
+   - SVG: viewBox + preserveAspectRatio="none" + width="100%" (kein Scrollen)
    - Session-Modus: zeigt Delta-Scores (wie Liniengraph)
-   - Zwei-Farben-Logik (unbeantwortete grau) nicht im Balkendiagramm
-   - Klick-Hinweis: kleines Label "Zum Wechseln tippen" o.ä. im Graph
+   - Diktat-Toggle und Inkl./Nur-beantwortete-Button im Balken-Modus ausgeblendet
+
+   VOLLBILD-FIXES (cc5d381):
+   - Expand-Button in Sortierung-Zeile: {!statistikVollbild && ...} → im Vollbild unsichtbar
+   - "Vollbild verlassen"-Button: nur IcoCollapse-Icon (kein Text)
+   - Sticky-Heights nach Vollbild: statistikVollbild zu den useEffect-Dependencies
+     von slotSektionRef, statistikListenHeaderRef, statistikVokauswahlRef hinzugefügt
+     → ResizeObserver re-attached nach Vollbild-Exit, Heights korrekt
 
 ================================================================
 PROMPT FÜR NEUEN CHAT
@@ -1248,6 +1251,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: e2f2ebe (Session 29 — Slider-Fix, Listen-Nr.-Sort, Vokabelliste-Redesign, Vollbild-Modus, Balkendiagramm)
+Letzter Commit: cc5d381 (Session 29 — Swipe entfernt, Listen-Nr.-Sort, Vokabelliste-Redesign, Vollbild-Modus, Balkendiagramm+Fixes)
 
 ================================================================

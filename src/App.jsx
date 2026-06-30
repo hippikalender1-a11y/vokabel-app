@@ -4266,11 +4266,14 @@ export default function VokabelApp() {
               {abfragbareSpalten.length >= 2 && aktiveListe.vokabeln.length > 0 && (
                 <button className="btn btn-primary" style={{width:"100%", marginBottom:8}}
                   onClick={() => {
+                    setSessionUeberschreibenModal(false);
+                    setGruppenAenderungsDialog(false);
                     setQuiz(null);
                     setAnsicht("uebersicht");
                     setQuizTabListen([aktiveListeId]);
                     initQuizDefaults(lsGet(SK.liste(aktiveListeId)));
                     setListenAuswahlAufgeklappt(false);
+                    setSlotSektionAufgeklappt(false);
                     setAktiverSlot(null);
                     setSlotGeaendert(false);
                     setGespeicherteVokabelgruppe(null);
@@ -4278,6 +4281,7 @@ export default function VokabelApp() {
                     setSessionSlotAktiv(null);
                     setQuizSessionModus("alle");
                     setQuizPaketGroesse(null);
+                    setQuizSessionAufgeklappt(false);
                     handleTabWechsel("quiz");
                   }}>
                   Quiz starten
