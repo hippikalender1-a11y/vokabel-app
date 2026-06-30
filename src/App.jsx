@@ -578,6 +578,8 @@ export default function VokabelApp() {
   const [loescheSlotNr, setLoescheSlotNr] = useState(null);
   const [slotSektionAufgeklappt, setSlotSektionAufgeklappt] = useState(true);
   const [slotLoeschModus, setSlotLoeschModus] = useState(false);
+  const [quizGelerntEinschliessen, setQuizGelerntEinschliessen] = useState(false);
+  const [listenGelerntAusblenden, setListenGelerntAusblenden] = useState(false);
   const [gespeicherteVokabelgruppe, setGespeicherteVokabelgruppe] = useState(null);
   const [gruppenAenderungsDialog, setGruppenAenderungsDialog] = useState(false);
   const [quizBereichTyp, setQuizBereichTyp] = useState("alle");
@@ -1687,6 +1689,7 @@ export default function VokabelApp() {
     setAbfrageZielWiederholung(1);
     setAbfrageZielScore(0);
     setAbfrageZielScoreTyp("global");
+    setQuizGelerntEinschliessen(false);
   }
 
   function getKombinierteListe(listenIds) {
@@ -1903,6 +1906,9 @@ export default function VokabelApp() {
     if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
       voks = voks.filter(v => quizCheckboxAuswahl.has(v.id));
     }
+    const schwelleDiktat = einstellungen.gelerntSchwelle ?? 0;
+    if (!quizGelerntEinschliessen && schwelleDiktat > 0)
+      voks = voks.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleDiktat);
     const sessionGesamt = isPakete ? voks.length : 0;
     if (isPakete) {
       const existingSlot = lsGet(SK.sessionAktiv);
@@ -1995,6 +2001,9 @@ export default function VokabelApp() {
     if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
       voks = voks.filter(v => quizCheckboxAuswahl.has(v.id));
     }
+    const schwelleQ = einstellungen.gelerntSchwelle ?? 0;
+    if (!quizGelerntEinschliessen && schwelleQ > 0)
+      voks = voks.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleQ);
 
     const sessionGesamt = isPakete ? voks.length : 0;
 
@@ -3551,6 +3560,11 @@ export default function VokabelApp() {
             const thr = parseFloat(quizSchlechtesteMaxScore);
             reihenfolgeVoks = gefilterteVoks.filter(v => (v.fortschritt?.score ?? 0) < thr);
           }
+          const schwelle = einstellungen.gelerntSchwelle ?? 0;
+          const gelernteAnzahl = schwelle > 0
+            ? gefilterteVoks.filter(v => (v.fortschritt?.score ?? -Infinity) >= schwelle).length : 0;
+          if (!quizGelerntEinschliessen && schwelle > 0)
+            reihenfolgeVoks = reihenfolgeVoks.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelle);
           const verfuegbarReihenfolge = reihenfolgeVoks.length;
           // Pakete/Session-Filter → nur für Quiz-Button
           let verfuegbar;
@@ -4294,6 +4308,18 @@ export default function VokabelApp() {
                         </button>
                       )}
                     </div>
+                    {schwelle > 0 && gelernteAnzahl > 0 && (
+                      <div style={{marginTop:6, fontSize:"0.78rem", color:"#6b6560",
+                          display:"flex", alignItems:"center", gap:8, justifyContent:"center"}}>
+                        <span>{quizGelerntEinschliessen
+                          ? `${gelernteAnzahl} gelernte eingeschlossen`
+                          : `${gelernteAnzahl} gelernte ausgeblendet`}</span>
+                        <button className="toggle-opt" style={{padding:"2px 8px", fontSize:"0.72rem"}}
+                          onClick={() => setQuizGelerntEinschliessen(v => !v)}>
+                          {quizGelerntEinschliessen ? "Ausblenden" : "Einschließen"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -4351,6 +4377,12 @@ export default function VokabelApp() {
         {tab === "listen" && ansicht === "liste-detail" && aktiveListe && (() => {
           const aktiveSpalten = TYPEN.filter(t => aktiveListe.spalten[t].aktiv);
           const abfragbareSpalten = aktiveSpalten.filter(t => !t.startsWith('i'));
+          const schwelleL = einstellungen.gelerntSchwelle ?? 0;
+          const gelernteInListe = schwelleL > 0
+            ? aktiveListe.vokabeln.filter(v => (v.fortschritt?.score ?? -Infinity) >= schwelleL).length : 0;
+          const anzeigeVoks = listenGelerntAusblenden && schwelleL > 0
+            ? aktiveListe.vokabeln.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleL)
+            : aktiveListe.vokabeln;
           return (
             <>
             {/* Aktionszeile */}
@@ -4441,6 +4473,13 @@ export default function VokabelApp() {
                       Zusammenführen
                     </button>
                   )}
+                  {vokabelAufgeklappt && schwelleL > 0 && gelernteInListe > 0 && (
+                    <button className={`btn btn-ghost btn-sm${listenGelerntAusblenden?" aktiv":""}`}
+                      style={{background:"#fff", fontSize:"0.75rem"}}
+                      onClick={() => setListenGelerntAusblenden(v => !v)}>
+                      {listenGelerntAusblenden ? `${gelernteInListe} ausgeblendet` : "Gelernte ausblenden"}
+                    </button>
+                  )}
                   <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px", background:"#fff"}} onClick={() => {
                     resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
                   }}><IcoPlus s={13}/></button>
@@ -4452,8 +4491,9 @@ export default function VokabelApp() {
                   <div className="leer"><div className="leer-text">Noch keine Vokabeln.<br/>Klicke auf + um zu importieren.</div></div>
                 ) : (
                   <div className="karte">
-                    {aktiveListe.vokabeln.map(vok => {
+                    {anzeigeVoks.map(vok => {
                       const score = vok.fortschritt != null ? clampScore(vok.fortschritt.score) : null;
+                      const istGelernt = schwelleL > 0 && (vok.fortschritt?.score ?? -Infinity) >= schwelleL;
                       return (
                         <div key={vok.id} className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
                           <div style={{display:"flex", width:"100%", justifyContent:"space-between", alignItems:"flex-start"}}>
@@ -4467,6 +4507,10 @@ export default function VokabelApp() {
                               ) : null)}
                             </div>
                             <div style={{display:"flex", alignItems:"center", gap:2, flexShrink:0, marginLeft:8}}>
+                              {istGelernt && (
+                                <span style={{background:"#e8f5e9", color:"#2d6a4f", borderRadius:4,
+                                  fontSize:"0.65rem", padding:"1px 5px", fontWeight:700, marginRight:2}}>✓</span>
+                              )}
                               {score !== null && (
                                 <span className={`score-badge ${score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null"}`} style={{marginRight:4}}>
                                   {score > 0 ? "+" : ""}{score}
@@ -4739,7 +4783,10 @@ export default function VokabelApp() {
 
         {/* ── Statistik: Inhalte ── */}
         {tab === "statistik" && (() => {
-          const alleVoks = statistikGefilterteVoks;
+          const schwelleS = einstellungen.gelerntSchwelle ?? 0;
+          const alleVoks = (schwelleS > 0 && !statistikGelerntEinschliessen)
+            ? statistikGefilterteVoks.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleS)
+            : statistikGefilterteVoks;
 
           if (alleVoks.length === 0) return (
             <div className="sektion">
@@ -4982,6 +5029,15 @@ export default function VokabelApp() {
                         Diktat
                       </button>
                     )}
+                    {schwelleS > 0 && (
+                      <button className={`typ-btn${statistikGelerntEinschliessen?" aktiv":""}`}
+                        style={{marginLeft:"auto", display:"flex", alignItems:"center", gap:4,
+                          fontSize:"0.68rem", padding:"3px 8px",
+                          opacity:statistikGelerntEinschliessen?1:0.5}}
+                        onClick={() => setStatistikGelerntEinschliessen(v => !v)}>
+                        ✓ Gelernt
+                      </button>
+                    )}
                   </div>
                 </div>
                 );
@@ -5117,7 +5173,28 @@ export default function VokabelApp() {
               </div>
 
               {/* Bestehende Einstellungen */}
-              <div className="sektion-label" style={{marginBottom:10}}>App</div>
+              <div className="sektion-label" style={{marginBottom:10}}>Lernen</div>
+              <div className="karte">
+                <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:8}}>
+                  <div>
+                    <div className="karte-zeile-name">Gelernt-Schwelle</div>
+                    <div className="karte-zeile-sub">
+                      {(einstellungen.gelerntSchwelle ?? 0) === 0
+                        ? "Deaktiviert – alle Vokabeln werden abgefragt"
+                        : `Score ≥ +${einstellungen.gelerntSchwelle} gilt als gelernt`}
+                    </div>
+                  </div>
+                  <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                    {[0, 6, 7, 8, 9, 10].map(v => (
+                      <button key={v} className={`toggle-opt${(einstellungen.gelerntSchwelle??0)===v?" aktiv":""}`}
+                        onClick={() => speichereEinst({...einstellungen, gelerntSchwelle: v})}>
+                        {v === 0 ? "Aus" : `+${v}`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>App</div>
               <div className="karte">
                 <div className="karte-zeile">
                   <div className="karte-zeile-info">
