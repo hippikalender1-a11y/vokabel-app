@@ -4772,8 +4772,9 @@ export default function VokabelApp() {
           // Graph-Daten
           const quizGraphVoks = alleFilterAktiv ? alleVoks : alleVoks.filter(filterVok);
           const diktatGraphVoks = alleFilterAktiv ? alleVoks : alleVoks.filter(filterVok);
+          const sessionGraphVoks = alleFilterAktiv ? sessionVoksAbgefragt : sessionVoksAbgefragt.filter(filterVok);
           const quizS = istSessionModus
-            ? sessionVoksAbgefragt.map(v => getSessionDelta(v) ?? 0).sort((a, b) => a - b)
+            ? sessionGraphVoks.map(v => getSessionDelta(v) ?? 0).sort((a, b) => a - b)
             : quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
           const diktatS = statistikGraphDiktatZeigen ? diktatGraphVoks.map(v => v.diktatFortschritt?.score ?? 0).sort((a, b) => a - b) : [];
           const allScores = [...quizS, ...diktatS];
@@ -4882,7 +4883,6 @@ export default function VokabelApp() {
               {(() => {
                 const istBalken = statistikGraphTyp === "balken";
                 // Balken-Konstanten
-                const BAR_W = 6, BAR_GAP = 1, BAR_STEP = BAR_W + BAR_GAP;
                 const SVG_H = 120, bpX = 4, bpY = 8;
                 const bgH = SVG_H - 2 * bpY;
                 const zeroBarY = bpY + bgH / 2;
@@ -4891,7 +4891,10 @@ export default function VokabelApp() {
                   const s = istSessionModus ? (getSessionDelta(v) ?? 0) : (v.fortschritt?.score ?? 0);
                   return Math.min(10, Math.max(-10, s));
                 });
-                const barSvgW = Math.max(300, voks.length * BAR_STEP + bpX * 2 + BAR_W);
+                const BAR_GAP = voks.length > 1 ? 1 : 0;
+                const barSvgW = 400;
+                const BAR_W = voks.length > 0 ? Math.max(4, Math.floor((barSvgW - 2 * bpX - (voks.length - 1) * BAR_GAP) / voks.length)) : 4;
+                const BAR_STEP = BAR_W + BAR_GAP;
                 return (
                 <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid #e0dbd2"}}>
                   {/* klickbarer Graph-Bereich */}
