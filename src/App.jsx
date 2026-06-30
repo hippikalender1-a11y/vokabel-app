@@ -3701,7 +3701,7 @@ export default function VokabelApp() {
                       {/* RECHTS */}
                       <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                         <button
-                          className={`toggle-opt${n > 0 ? " aktiv" : ""}`}
+                          className="toggle-opt aktiv"
                           style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"55%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}
                           onClick={toggleListenAuswahl}>
                           {chipText}
@@ -4653,7 +4653,7 @@ export default function VokabelApp() {
               {/* RECHTS */}
               <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                 <button
-                  className={`toggle-opt${chipAktiv ? " aktiv" : ""}`}
+                  className="toggle-opt aktiv"
                   style={{padding:"3px 8px", fontSize:"0.75rem", maxWidth:"55%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}
                   onClick={toggleStatistikListenAuswahl}>
                   {chipText}
@@ -5146,7 +5146,10 @@ export default function VokabelApp() {
           {/* Info sticky Header */}
           <div style={{position:"sticky", top:headerH, zIndex:9, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
             <span style={{fontWeight:700, fontSize:"0.88rem", color:"#3b3832"}}>Info</span>
-            <div style={{display:"flex", gap:6}}>
+            <div style={{display:"flex", gap:6, alignItems:"center"}}>
+              {infoModus !== "uebersicht" && (
+                <button className="btn-icon" style={{marginRight:2}} onClick={() => setInfoModus("uebersicht")}><IcoX s={14}/></button>
+              )}
               <button className={`typ-btn${infoModus==="uebersicht"?" aktiv":""}`}
                 onClick={() => setInfoModus("uebersicht")}>Übersicht</button>
               <button className={`typ-btn${infoModus==="konzept"?" aktiv":""}`}
@@ -5185,7 +5188,7 @@ export default function VokabelApp() {
                     </div>
                   </div>
                   <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                    {[0, 6, 7, 8, 9, 10].map(v => (
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(v => (
                       <button key={v} className={`toggle-opt${(einstellungen.gelerntSchwelle??0)===v?" aktiv":""}`}
                         onClick={() => speichereEinst({...einstellungen, gelerntSchwelle: v})}>
                         {v === 0 ? "Aus" : `+${v}`}
