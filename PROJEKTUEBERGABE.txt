@@ -1,7 +1,7 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-30  (Session 29 — Slider-Fix→Swipe entfernt, Listen-Nr.-Sort, Vokabelliste-Redesign, Vollbild-Modus, Balkendiagramm)
+Stand: 2026-06-30  (Session 31 — Filter-Umbau, Info-Tab, Quiz-Auswertung)
 Letzter Commit: 8cd4861
 
 DATEIPFADE
@@ -1377,6 +1377,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 6b08f2c (Session 31 — Konzept-Text, Info-Toggle, Filter-Umbau)
+Letzter Commit: 1032d98 (Session 31 — Quiz-Auswertung, Filter-Umbau, Info-Tab mit Konzept/Anleitung)
 
 ================================================================
