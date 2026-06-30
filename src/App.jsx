@@ -4957,10 +4957,11 @@ export default function VokabelApp() {
                   const s = istSessionModus ? (getSessionDelta(v) ?? 0) : (v.fortschritt?.score ?? 0);
                   return Math.min(10, Math.max(-10, s));
                 });
-                const BAR_GAP = voks.length > 1 ? 1 : 0;
                 const barSvgW = 400;
-                const BAR_W = voks.length > 0 ? Math.max(4, Math.floor((barSvgW - 2 * bpX - (voks.length - 1) * BAR_GAP) / voks.length)) : 4;
-                const BAR_STEP = BAR_W + BAR_GAP;
+                const availW = barSvgW - 2 * bpX;
+                const BAR_STEP = voks.length > 0 ? availW / voks.length : availW;
+                const BAR_GAP = BAR_STEP > 3 ? 1 : 0;
+                const BAR_W = BAR_STEP - BAR_GAP;
                 return (
                 <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid #e0dbd2"}}>
                   {/* klickbarer Graph-Bereich */}
