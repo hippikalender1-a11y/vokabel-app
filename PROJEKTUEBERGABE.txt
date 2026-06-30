@@ -1239,6 +1239,65 @@ SESSION 29 — UMGESETZTE ÄNDERUNGEN (Commits: e2f2ebe, cc5d381)
      → ResizeObserver re-attached nach Vollbild-Exit, Heights korrekt
 
 ================================================================
+SESSION 30 — UMGESETZTE ÄNDERUNGEN (Commits: d1aa48d, df300fe)
+================================================================
+
+BUG: "Quiz starten" aus Listen-Detail mit aktiver Session
+
+SYMPTOM:
+  Wenn eine gespeicherte Session aktiv ist und der Nutzer aus der
+  Listen-Detail-Ansicht "Quiz starten" drückt, wechselt die App
+  nicht zum Quiz-Tab. Navigiert man manuell zum Quiz-Tab, ist die
+  Session-Chip rot (vokabelgruppeGeaendert=true), weil quizTabListen
+  sich auf die neue Liste geändert hat, aktiverSlot aber noch gesetzt ist.
+
+URSACHEN-HYPOTHESE:
+  Mögliche Ursache 1: initQuizDefaults wirft einen Fehler →
+    alle nachfolgenden setState-Calls (inkl. setAktiverSlot(null) und
+    handleTabWechsel("quiz")) laufen nicht → nur die vorher gequeueten
+    States (inkl. setQuizTabListen([aktiveListeId])) werden angewendet
+    → Tab bleibt "listen", aktiverSlot bleibt gesetzt → roter Chip.
+  Mögliche Ursache 2: sessionUeberschreibenModal=true blockiert den Klick
+    via Overlay, sodass der Handler gar nicht ausgeführt wird.
+
+FIXES (d1aa48d + df300fe):
+  1. Handler räumt nun auch auf:
+     setSessionUeberschreibenModal(false), setGruppenAenderungsDialog(false),
+     setSlotSektionAufgeklappt(false), setQuizSessionAufgeklappt(false)
+  2. REIHENFOLGE geändert: Session-Clear und handleTabWechsel("quiz") kommen
+     jetzt VOR initQuizDefaults → auch bei Fehler in initQuizDefaults sind
+     Tab-Wechsel und Session-Bereinigung bereits angewendet.
+
+  Neue Handler-Reihenfolge (Liste-Detail "Quiz starten"):
+    setSessionUeberschreibenModal(false)
+    setGruppenAenderungsDialog(false)
+    setAktiverSlot(null)
+    setSlotGeaendert(false)
+    setGespeicherteVokabelgruppe(null)
+    lsDel(SK.sessionAktiv)
+    setSessionSlotAktiv(null)
+    setQuizSessionModus("alle")
+    setQuizPaketGroesse(null)
+    setSlotSektionAufgeklappt(false)
+    setQuizSessionAufgeklappt(false)
+    handleTabWechsel("quiz")          ← Tab-Wechsel vor initQuizDefaults
+    setQuiz(null)
+    setAnsicht("uebersicht")
+    setQuizTabListen([aktiveListeId])
+    setListenAuswahlAufgeklappt(false)
+    initQuizDefaults(...)             ← ggf. fehlerhaft, unkritisch
+
+NOCH OFFEN / FALLS NICHT BEHOBEN:
+  Falls das Problem weiterhin auftritt, muss die eigentliche Fehlerquelle
+  gefunden werden. Mögliche nächste Schritte:
+  - try-catch um initQuizDefaults im Handler → Fehler sichtbar machen
+  - Prüfen ob sessionUeberschreibenModal=true beim Klick aktiv ist
+    (z.B. durch console.log am Anfang des Handlers)
+  - Prüfen ob der Handler überhaupt aufgerufen wird (onClick feuert)
+  - Prüfen ob der Fehler nur mit gespeicherten Slots (typ='gespeichert')
+    auftritt oder auch mit Verlauf-Slots
+
+================================================================
 PROMPT FÜR NEUEN CHAT
 ================================================================
 
@@ -1251,6 +1310,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: cc5d381 (Session 29 — Swipe entfernt, Listen-Nr.-Sort, Vokabelliste-Redesign, Vollbild-Modus, Balkendiagramm+Fixes)
+Letzter Commit: df300fe (Session 30 — Quiz aus Liste-Detail mit aktiver Session: Session-Clear-Reihenfolge gefixt)
 
 ================================================================
