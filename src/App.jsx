@@ -3570,6 +3570,14 @@ export default function VokabelApp() {
                             }}><IcoX s={11}/></button>
                           )}
                         </span>
+                        {vokabelgruppeGeaendert && (
+                          <button
+                            onClick={() => ladeSlot(aktiverSlot.typ, aktiverSlot.id)}
+                            className="toggle-opt"
+                            style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", flexShrink:0}}>
+                            Zurücksetzen
+                          </button>
+                        )}
                         <button
                           onClick={toggleSlotSektion}
                           className="toggle-opt aktiv"
@@ -5434,6 +5442,10 @@ export default function VokabelApp() {
                   setGruppenAenderungsDialog(false);
                   starteQuiz(true, {typ:'verlauf', id:newId});
                 }}>Fortfahren ohne Speichern</button>
+                <button className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#6b6560"}} onClick={() => {
+                  ladeSlot(aktiverSlot.typ, aktiverSlot.id);
+                  setGruppenAenderungsDialog(false);
+                }}>Zurücksetzen</button>
                 <button className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#9b9590"}} onClick={() => setGruppenAenderungsDialog(false)}>Abbrechen</button>
               </div>
             </div>
