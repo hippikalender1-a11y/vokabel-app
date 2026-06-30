@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-06-30  (Session 31 — Filter-Umbau, Info-Tab, Quiz-Auswertung)
-Letzter Commit: 8cd4861
+Stand: 2026-07-01  (Session 32 — Zurücksetzen, Statistik-Fixes, Abbruch-Auswertung)
+Letzter Commit: e2ca2df
 
 DATEIPFADE
 ----------
@@ -1348,21 +1348,56 @@ NOCH AUSSTEHEND — FOLGESESSION:
   │   Quiz-Start: voks.filter(v => !istGelernt(v)) – aber Override-Option.
   └─────────────────────────────────────────────────────────────────
 
-  ┌─────────────────────────────────────────────────────────────────
-  │ FEATURE: SESSION-ZWISCHENAUSWERTUNG
-  │
-  │ Konzept: Nach jedem Paket einer Session eine Zwischenabrechnung zeigen.
-  │   Am Ende aller Pakete eine Gesamtauswertung.
-  │
-  │ Details:
-  │   - Pro Paket: Richtig/Falsch + Prozent + Feedback (wie Auswertung oben)
-  │   - Gesamt-Auswertung am Session-Ende: alle Pakete aggregiert, Score-Verläufe
-  │   - Diktat: analoge Zwischenauswertung (diktatErgebnisse bereits vorhanden)
-  │
-  │ Implementierungs-Hinweis: quizRichtigAnzahl/quizFalschAnzahl auch im
-  │   Session-Fertig-Screen anzeigen. Für kumulierte Session-Stats:
-  │   in updateSessionSlotFortschritt mitführen.
-  └─────────────────────────────────────────────────────────────────
+================================================================
+SESSION 32 — UMGESETZTE ÄNDERUNGEN (Commits: 807d49b, 2f9b8cc, e2ca2df)
+================================================================
+
+ZURÜCKSETZEN-BUTTON IM VOKABELGRUPPE-DIALOG (Commit 807d49b):
+  Vokabelgruppe-Änderungs-Dialog (beim Quiz-Start wenn gespeicherter Slot aktiv
+  und Vokabelgruppe geändert wurde) hat neuen Button zwischen
+  "Fortfahren ohne Speichern" und "Abbrechen":
+  → "Zurücksetzen": ladeSlot(aktiverSlot.typ, aktiverSlot.id) + Dialog schließen
+    (stellt Listen/Bereichsauswahl auf gespeicherten Stand zurück, kein Quiz-Start)
+
+ZURÜCKSETZEN-BUTTON IM VERLAUF-HEADER (Commit 807d49b):
+  Wenn vokabelgruppeGeaendert=true (Chip rot), erscheint links neben dem roten Chip
+  ein neutraler "Zurücksetzen"-Button im sticky Verlauf-&-Gespeichert-Header.
+  Klick: ladeSlot(aktiverSlot.typ, aktiverSlot.id) direkt ohne Dialog.
+
+STATISTIK KURVEN-FILTER IM SESSION-MODUS (Commit 2f9b8cc):
+  Bug: quizS im Session-Modus nutzte sessionVoksAbgefragt ohne statistikFilter.
+  Fix: sessionGraphVoks = alleFilterAktiv ? sessionVoksAbgefragt
+                                          : sessionVoksAbgefragt.filter(filterVok)
+  quizS im Session-Modus nutzt nun sessionGraphVoks.
+
+BALKENDIAGRAMM FÜLLT VOLLE BREITE (Commit 2f9b8cc):
+  Bug: BAR_W=6 fix, barSvgW=max(300,...) → wenige Vokabeln füllten viewBox nicht.
+  Fix: barSvgW=400 (fix), BAR_W = max(4, floor((400-8-(n-1)*BAR_GAP) / n))
+  → 1 Vokabel: 1 Balken füllt gesamte Breite; mit mehr Vokabeln schrumpft BAR_W.
+  BAR_GAP=0 wenn nur 1 Vokabel, sonst 1.
+
+ABBRUCH-AUSWERTUNG + ABGEFRAGT MARKIEREN (Commit e2ca2df):
+
+  NEUE FUNKTION brecheQuizAb():
+    Wird beim "Beenden"-Button im aktiven Quiz (Topbar) aufgerufen.
+    1. Session-Modus: answered vocabs (vokabeln.slice(0, index)) → updateSessionSlotFortschritt
+       → bereits beantwortete Vokabeln kommen im nächsten Paket nicht mehr
+    2. Wenn ≥1 Antwort gegeben: setQuiz(prev => {...prev, phase:"fertig", abgebrochen:true})
+       → zeigt Auswertungsscreen
+    3. Wenn 0 Antworten: beendeQuiz() direkt
+
+  ABGEBROCHEN-FLAG (quiz.abgebrochen = true):
+    Fertig-Screens reagieren auf dieses Flag:
+    - Topbar: "Abgebrochen" statt "Auswertung" / "Paket fertig"
+    - Session: Unterzeile "X von Y richtig" (ohne "· dieses Paket")
+    - Session: Buttons-Bereich zeigt nur "Zur Übersicht" (kein Nächste/Pause)
+      → "Zur Übersicht" ruft beendeQuiz() direkt (kein erneutes updateSessionSlotFortschritt)
+    - Non-Session: Topbar "Abgebrochen", ansonsten gleiche Auswertung
+
+  FEEDBACK-TEXT STIL (alle Auswertungs-Screens):
+    War: fontSize 0.83–0.88rem, marginBottom, linksbündig
+    Jetzt: fontSize:1rem, textAlign:"center", margin:"20px 0" (Freiraum oben+unten)
+    Gilt für: Session-Paket-fertig, Non-Session-fertig, Abgebrochen-Screens
 
 ================================================================
 PROMPT FÜR NEUEN CHAT
@@ -1377,6 +1412,6 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 1032d98 (Session 31 — Quiz-Auswertung, Filter-Umbau, Info-Tab mit Konzept/Anleitung)
+Letzter Commit: e2ca2df (Session 32 — Zurücksetzen, Statistik-Fixes, Abbruch-Auswertung)
 
 ================================================================
