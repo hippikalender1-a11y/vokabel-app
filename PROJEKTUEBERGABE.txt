@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-07-01  (Session 33 — Gelernt-Status Feature)
-Letzter Commit: 9d36fc6
+Stand: 2026-07-01  (Session 33 — Gelernt-Status, Korrekturen, Info-Kontext)
+Letzter Commit: 0020e68
 
 DATEIPFADE
 ----------
@@ -502,8 +502,9 @@ QUIZ AUSWERTUNG:
     je 5 alternative Texte (deterministisch je Ergebnis)
   getQuizFeedback(richtig, gesamt): Modul-Level-Funktion, kein State nötig
 
-UMGESETZT IN SESSION 33 (Commit 9d36fc6):
+UMGESETZT IN SESSION 33 (Commits 9d36fc6–0020e68):
   Gelernt-Status Feature vollständig implementiert. Siehe SESSION 33.
+  Weitere Korrekturen: Balkendiagramm, Listen-Chips, Gelernt-Schwelle, Info-Kontext.
 
 
 ================================================================
@@ -604,6 +605,45 @@ STATISTIK-TAB:
 
 
 ================================================================
+SESSION 33 (FORTSETZUNG) — WEITERE COMMITS
+================================================================
+
+GELERNT-SCHWELLE +1 BIS +10 (5c0f852):
+  War: [Aus][+6][+7][+8][+9][+10]
+  Jetzt: [Aus][+1][+2]...[+10] (vollständiger Bereich)
+
+INFO-KONTEXT SCHLIESSEN-BUTTON (5c0f852):
+  × erscheint links neben den Buttons wenn Konzept/Anleitung aktiv
+  Klick → zurück zu Übersicht
+
+LISTEN-CHIPS IMMER GRÜN (5c0f852):
+  Quiz-Tab "auswählen"-Chip: immer toggle-opt aktiv (grün+weiß)
+  Statistik-Tab Listen-Chip: immer toggle-opt aktiv (grün+weiß)
+  Konzept/Anleitung Buttons: togglen (nochmals klicken schließt)
+
+BALKENDIAGRAMM VOLLE BREITE (d820e57):
+  War: BAR_W=max(4,...) → bei vielen Vokabeln Überlauf/Abschneidung
+  Fix: BAR_STEP = availW / n (fraktionale SVG-Koordinaten)
+       BAR_GAP = BAR_STEP > 3 ? 1 : 0
+       BAR_W = BAR_STEP - BAR_GAP
+  → alle Vokabeln skalieren immer auf volle Breite
+
+INFO-KONTEXT AUFKLAPPBAR (0020e68):
+  Neue Refs: infoHeaderRef, infoKontextContainerRef
+  Neuer Scroll-useEffect: schließt Kontext wenn Inhalt-Unterkante
+    den Info-Header-Bottom passiert → setInfoModus("uebersicht")
+  Konzept/Anleitung buttons: toggle (nochmals klicken schließt)
+  Struktur Einstellungen-Tab:
+    1. Sticky Info-Header (ref=infoHeaderRef)
+    2. {infoModus==="uebersicht"}: Kurzbeschreibung-Box
+    3. {infoModus!=="uebersicht"}: <div ref={infoKontextContainerRef}>
+         Konzept | Anleitung (je nach infoModus)
+       </div>
+    4. Immer sichtbar: Lernen/App/Daten
+       (paddingBottom:'100dvh' wenn Kontext offen → Scroll-Auto-Close ermöglicht)
+
+
+================================================================
 PROMPT FÜR NEUEN CHAT
 ================================================================
 
@@ -616,7 +656,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 9d36fc6 (Session 33 — Gelernt-Status Feature)
+Letzter Commit: 0020e68 (Session 33 — Gelernt-Status, Korrekturen, Info-Kontext)
 
 AUSSTEHENDE FEATURES:
   (keine)
