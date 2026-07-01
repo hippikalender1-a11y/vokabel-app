@@ -1367,13 +1367,15 @@ export default function VokabelApp() {
     const title = jsonExportIds.length === 1
       ? (gefiltert[0]?.name || 'Liste')
       : `${jsonExportIds.length} Vokabellisten`;
-    setModal(null); setJsonExportIds(null);
-    if (jsonExportTeilen && navigator.share) {
+    const shouldShare = jsonExportTeilen;
+    setModal(null); setJsonExportIds(null); setJsonExportTeilen(false);
+    if (shouldShare && navigator.share) {
       const file = new File([text], name, { type: 'application/json' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title }); return; } catch {}
+      try {
+        await navigator.share({ files: [file], title });
+      } catch (e) {
+        if (e.name !== 'AbortError') teileAlsDatei(text, name);
       }
-      try { await navigator.share({ title, text }); } catch {}
     } else {
       teileAlsDatei(text, name);
     }
