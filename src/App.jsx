@@ -1370,7 +1370,7 @@ export default function VokabelApp() {
     const shouldShare = jsonExportTeilen;
     setModal(null); setJsonExportIds(null); setJsonExportTeilen(false);
     if (shouldShare && navigator.share) {
-      const file = new File([text], name, { type: 'application/json' });
+      const file = new File([text], name, { type: 'text/plain' });
       navigator.share({ files: [file], title }).catch(e => {
         if (e?.name !== 'AbortError') teileAlsDatei(text, name);
       });
