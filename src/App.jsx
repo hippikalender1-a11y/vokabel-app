@@ -1345,7 +1345,7 @@ export default function VokabelApp() {
     setModal("json-export");
   }
 
-  async function exportiereAlsJsonBestaetigt() {
+  function exportiereAlsJsonBestaetigt() {
     const listen = jsonExportIds.map(id => lsGet(SK.liste(id))).filter(Boolean);
     const gefiltert = listen.map(liste => {
       const l = { ...liste };
@@ -1371,11 +1371,9 @@ export default function VokabelApp() {
     setModal(null); setJsonExportIds(null); setJsonExportTeilen(false);
     if (shouldShare && navigator.share) {
       const file = new File([text], name, { type: 'application/json' });
-      try {
-        await navigator.share({ files: [file], title });
-      } catch (e) {
-        if (e.name !== 'AbortError') teileAlsDatei(text, name);
-      }
+      navigator.share({ files: [file], title }).catch(e => {
+        if (e?.name !== 'AbortError') teileAlsDatei(text, name);
+      });
     } else {
       teileAlsDatei(text, name);
     }
