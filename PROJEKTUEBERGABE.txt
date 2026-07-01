@@ -644,6 +644,88 @@ INFO-KONTEXT AUFKLAPPBAR (0020e68):
 
 
 ================================================================
+SESSION 34 — UMGESETZTE ÄNDERUNGEN (Commit: 7f31625)
+================================================================
+
+TOOLTIP-SYSTEM:
+
+Technischer Ansatz:
+  - Desktop: title-Attribut → nativer Browser-Tooltip bei Hover
+  - Touch: Long-Press 500ms → position:fixed Overlay-Div (zIndex:9999)
+  - Nach Long-Press: e.preventDefault() in onTouchEnd verhindert unbeabsichtigten Klick
+
+Neue Infrastruktur (in VokabelApp):
+  tooltipTimer = useRef(null)
+  tooltipShown = useRef(false)
+  tooltipEl = useState(null)   → {text, x, y}
+  tt(text) Funktion:
+    { title, onTouchStart (500ms Timer), onTouchEnd, onTouchMove, onTouchCancel }
+  Tooltip-<div> am Ende des JSX (position:fixed, pointerEvents:none)
+    Positionierung: 56px über Berührungspunkt; unter 80px Y → 24px darunter
+
+Buttons mit Tooltips (implementiert):
+  Quiz-Tab Slot-Zeile:
+    renderSlotChip (immer): "Konfiguration laden..." / "Eintrag löschen"
+    × Lösch-Modus: "Lösch-Modus aktivieren..." / "beenden"
+    Zurücksetzen (roter Chip): "Auswahl auf den gespeicherten Stand..."
+    Aktiver Chip (Neu/Name): "Verlauf und Gespeichert anzeigen"
+    Neu-Chip (ausgeklappt): "Neue Konfiguration – Auswahl und Session zurücksetzen"
+  Quiz-Tab Listen-Auswahl:
+    auswählen-Chip: "Listen für das Quiz auswählen"
+    Alle: "Alle Listen auswählen"
+    X: "Listenauswahl leeren"
+  Quiz-Tab Vokabel-Auswahl:
+    Alle: "Alle Vokabeln der gewählten Listen abfragen"
+    Bereich: "Einzelne Vokabeln per Checkbox oder Von–Bis..."
+    Von-Bis/Von.../…Bis: "Bereichsauswahl: erste Vokabel antippen, dann letzte"
+    X: "Checkbox-Auswahl aufheben"
+  Quiz-Tab Abfrage-Modus:
+    Chip: "Abfrage-Modus öffnen – Karte, wechselnd oder Diktat"
+    Frage–Antwort / wechselnd / Diktat: je eigener Tooltip
+    ▷ Info: "Spalten und Anzeigeoptionen konfigurieren"
+  Quiz-Tab Reihenfolge:
+    Chip: "Reihenfolge öffnen..."
+    Zufällig / Schlechteste / Listen-Nr.: je eigener Tooltip
+    Unbeantwortete zuerst (Toggle-Row): "Noch nie abgefragte Vokabeln werden vorgezogen"
+  Quiz-Tab Einstellungen:
+    Chip: "Einstellungen öffnen – Lautsprache und Schwierigkeitsgrad"
+    Auto-Play Aus/An: je eigener Tooltip
+    Einfach/Schwer: je eigener Tooltip
+  Quiz-Tab Session:
+    Alle / Pakete: je eigener Tooltip
+    Paket-Buttons [5..50]: "Paketgröße: N Vokabeln pro Runde"
+    Abfrage-Ziel Anzahl/Wiederholung/Score: je eigener Tooltip
+    Anzahl 1×/2×/3×: "Jede Vokabel N× pro Runde abfragen"
+    Wiederholung 1×/2×/3×: "Jede Vokabel N× in Folge richtig beantworten"
+    Score Global/Session: je eigener Tooltip
+  Quiz Button-Zeile:
+    Speichern: "Aktuelle Konfiguration unter einem Namen speichern..."
+    Quiz starten: "Quiz mit der aktuellen Konfiguration starten"
+    Neuer Durchlauf: "Session-Fortschritt löschen und alle Vokabeln erneut abfragen"
+    Einschließen/Ausblenden (Gelernt): "Gelernte Vokabeln ein- oder ausschließen"
+  Quiz aktiv:
+    Prüfen (Tippen + Diktat), Lösung anzeigen, Überspringen, Weiter →, ← Zurück
+    Nicht gewusst / Gewusst (Karte): je eigener Tooltip
+    Andere Stimme (Diktat): "Diktat-Wort nochmals mit anderer Stimme vorlesen"
+  Listen-Tab Übersicht:
+    Neu (+): "Neue Vokabelliste importieren oder anlegen"
+    Exportieren: "Listen zum Exportieren auswählen"
+  Listen-Tab Detail:
+    Aktionszeile-Toggle (▲/▼): "Aktionen zur Liste öffnen oder schließen"
+    Stift (Umbenennen): "Liste umbenennen"
+    + / Kopieren / TXT / Teilen / JSON / × Löschen: je eigener Tooltip
+    Quiz starten: "Quiz mit dieser Liste starten"
+    Statistik: "Statistik für diese Liste öffnen"
+    Spalten-Stift: "Spaltenname bearbeiten"
+
+NOCH AUSSTEHEND (nächste Session):
+  - Listen-Tab: Zusammenführen, Vokabeln-Toggle, + Neue Vokabel, Gelernte ausblenden
+  - Statistik-Tab: alle Buttons (auswählen, Filter, Graph, Sortierung, Vollbild, etc.)
+  - Einstellungen-Tab: Übersicht/Konzept/Anleitung, Gelernt-Schwelle, App aktualisieren
+  - Anleitung-Text: Tooltip-Hinweis einfügen
+
+
+================================================================
 PROMPT FÜR NEUEN CHAT
 ================================================================
 
@@ -656,9 +738,12 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 0020e68 (Session 33 — Gelernt-Status, Korrekturen, Info-Kontext)
+Letzter Commit: 7f31625 (Session 34 — Tooltip-System teilweise implementiert)
 
 AUSSTEHENDE FEATURES:
-  (keine)
+  Tooltips für: Listen-Tab (Zusammenführen, Vokabeln-Toggle, + Vokabel, Gelernte ausblenden,
+    Vorlesen/Stift/Löschen an Vokabel), Statistik-Tab (alle Buttons), Einstellungen-Tab
+    (Übersicht/Konzept/Anleitung, Gelernt-Schwelle, App aktualisieren)
+  Anleitung-Text: Tooltip-Hinweis ("Gedrückt halten für Erklärung") einfügen
 
 ================================================================

@@ -3170,7 +3170,8 @@ export default function VokabelApp() {
             <button onClick={() => setStatistikVollbild(false)}
               style={{position:"absolute", right:14, top:"50%", transform:"translateY(-50%)",
                 display:"flex", alignItems:"center", background:"none", border:"none",
-                cursor:"pointer", color:"#2d6a4f", padding:"6px 8px"}}>
+                cursor:"pointer", color:"#2d6a4f", padding:"6px 8px"}}
+              {...tt("Vollbild verlassen")}>
               <IcoCollapse s={18}/>
             </button>
           )}
@@ -4523,27 +4524,29 @@ export default function VokabelApp() {
                 <div style={{display:"flex", alignItems:"center", gap:8, cursor:"pointer"}}
                   onClick={() => setVokabelAufgeklappt(v => !v)}>
                   <div className="sektion-label">Vokabeln ({aktiveListe.vokabeln.length})</div>
-                  <button className="btn-toggle" style={{padding:"3px 6px"}} onClick={e => { e.stopPropagation(); setVokabelAufgeklappt(v => !v); }}>
+                  <button className="btn-toggle" style={{padding:"3px 6px"}} onClick={e => { e.stopPropagation(); setVokabelAufgeklappt(v => !v); }} {...tt(vokabelAufgeklappt ? "Vokabeln einklappen" : "Vokabeln ausklappen")}>
                     {vokabelAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
                   </button>
                 </div>
                 <div style={{display:"flex", gap:6}}>
                   {listenIndex.filter(l => l.id !== aktiveListeId).length > 0 && (
                     <button className="btn btn-ghost btn-sm" style={{background:"#fff"}}
-                      onClick={() => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); }}>
+                      onClick={() => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); }}
+                      {...tt("Vokabeln aus einer anderen Liste in diese Liste einfügen")}>
                       Zusammenführen
                     </button>
                   )}
                   {vokabelAufgeklappt && schwelleL > 0 && gelernteInListe > 0 && (
                     <button className={`btn btn-ghost btn-sm${listenGelerntAusblenden?" aktiv":""}`}
                       style={{background:"#fff", fontSize:"0.75rem"}}
-                      onClick={() => setListenGelerntAusblenden(v => !v)}>
+                      onClick={() => setListenGelerntAusblenden(v => !v)}
+                      {...tt(listenGelerntAusblenden ? "Gelernte Vokabeln wieder einblenden" : "Gelernte Vokabeln ausblenden")}>
                       {listenGelerntAusblenden ? `${gelernteInListe} ausgeblendet` : "Gelernte ausblenden"}
                     </button>
                   )}
                   <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px", background:"#fff"}} onClick={() => {
                     resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
-                  }}><IcoPlus s={13}/></button>
+                  }} {...tt("Neue Vokabel hinzufügen oder aus Datei importieren")}><IcoPlus s={13}/></button>
                 </div>
               </div>
 
@@ -4690,13 +4693,15 @@ export default function VokabelApp() {
                   <>
                     {statistikListenIds !== null && (
                       <button className="btn btn-ghost btn-sm"
-                        onClick={() => { setStatistikListenIds(null); if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); setStatistikSessionDaten(null); } }}>
+                        onClick={() => { setStatistikListenIds(null); if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); setStatistikSessionDaten(null); } }}
+                        {...tt("Alle Listen anzeigen")}>
                         Alle
                       </button>
                     )}
                     {(statistikListenIds === null || statistikListenIds.size > 0) && (
                       <button className="btn btn-ghost btn-sm" style={{padding:"6px 8px"}}
-                        onClick={() => { setStatistikListenIds(new Set()); if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); setStatistikSessionDaten(null); } }}>
+                        onClick={() => { setStatistikListenIds(new Set()); if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); setStatistikSessionDaten(null); } }}
+                        {...tt("Listenauswahl leeren")}>
                         <IcoX s={12}/>
                       </button>
                     )}
@@ -4716,7 +4721,8 @@ export default function VokabelApp() {
                 <button
                   className="toggle-opt aktiv"
                   style={{padding:"3px 8px", fontSize:"0.75rem", maxWidth:"55%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}
-                  onClick={toggleStatistikListenAuswahl}>
+                  onClick={toggleStatistikListenAuswahl}
+                  {...tt("Listen für die Statistik auswählen")}>
                   {chipText}
                 </button>
               </span>
@@ -4761,12 +4767,14 @@ export default function VokabelApp() {
                 {istBereich && statistikEinzelauswahlAufgeklappt ? (
                   <>
                     <button className={`btn btn-sm${statistikVonBisModus ? " btn-primary" : " btn-ghost"}`}
-                      onClick={() => { if (statistikVonBisModus) { setStatistikVonBisModus(false); setStatistikVonBisErster(null); } else { setStatistikVonBisModus(true); } }}>
+                      onClick={() => { if (statistikVonBisModus) { setStatistikVonBisModus(false); setStatistikVonBisErster(null); } else { setStatistikVonBisModus(true); } }}
+                      {...tt("Bereichsauswahl: erste Vokabel antippen, dann letzte")}>
                       {!statistikVonBisModus ? "Von–Bis" : statistikVonBisErster === null ? "Von…" : "…Bis"}
                     </button>
                     {statistikCheckboxAuswahl.size > 0 && (
                       <button className="btn btn-ghost btn-sm" style={{padding:"6px 8px"}}
-                        onClick={() => { setStatistikCheckboxAuswahl(new Set()); setStatistikVonBisModus(false); setStatistikVonBisErster(null); }}>
+                        onClick={() => { setStatistikCheckboxAuswahl(new Set()); setStatistikVonBisModus(false); setStatistikVonBisErster(null); }}
+                        {...tt("Checkbox-Auswahl aufheben")}>
                         <IcoX s={12}/>
                       </button>
                     )}
@@ -4783,7 +4791,8 @@ export default function VokabelApp() {
               <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                 <div className="toggle-btn">
                   <button className={`toggle-opt${!istBereich?" aktiv":""}`}
-                    onClick={() => { setStatistikBereichTyp("alle"); setStatistikEinzelauswahlAufgeklappt(false); setStatistikVonBisModus(false); setStatistikVonBisErster(null); }}>
+                    onClick={() => { setStatistikBereichTyp("alle"); setStatistikEinzelauswahlAufgeklappt(false); setStatistikVonBisModus(false); setStatistikVonBisErster(null); }}
+                    {...tt("Alle Vokabeln der gewählten Listen anzeigen")}>
                     Alle
                   </button>
                   <button className={`toggle-opt${istBereich?" aktiv":""}`}
@@ -4794,7 +4803,8 @@ export default function VokabelApp() {
                       } else {
                         toggleStatistikEinzelauswahl();
                       }
-                    }}>
+                    }}
+                    {...tt("Einzelne Vokabeln per Checkbox oder Von–Bis-Bereich auswählen")}>
                     Bereich
                   </button>
                 </div>
@@ -5002,7 +5012,7 @@ export default function VokabelApp() {
                   </div>
                 )}
               </div>
-              <button className="btn btn-ghost btn-sm" style={{flexShrink:0}} onClick={() => window.scrollTo({top:0, behavior:"smooth"})}>nach oben</button>
+              <button className="btn btn-ghost btn-sm" style={{flexShrink:0}} onClick={() => window.scrollTo({top:0, behavior:"smooth"})} {...tt("Zum Seitenanfang scrollen")}>nach oben</button>
             </div>
             )}
             <div className="sektion" style={{paddingTop:12, paddingBottom:(statistikListenAufgeklappt||statistikEinzelauswahlAufgeklappt)?'100dvh':0}}>
@@ -5086,7 +5096,8 @@ export default function VokabelApp() {
                     {!istBalken && (
                       <button className={`typ-btn${statistikGraphDiktatZeigen?" aktiv":""}`}
                         style={{display:"flex", alignItems:"center", gap:5, fontSize:"0.68rem", padding:"3px 8px", opacity:statistikGraphDiktatZeigen?1:0.5}}
-                        onClick={() => setStatistikGraphDiktatZeigen(v => !v)}>
+                        onClick={() => setStatistikGraphDiktatZeigen(v => !v)}
+                        {...tt("Diktat-Kurve ein- oder ausblenden")}>
                         <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="4 2"/></svg>
                         Diktat
                       </button>
@@ -5096,7 +5107,8 @@ export default function VokabelApp() {
                         style={{marginLeft:"auto", display:"flex", alignItems:"center", gap:4,
                           fontSize:"0.68rem", padding:"3px 8px",
                           opacity:statistikGelerntEinschliessen?1:0.5}}
-                        onClick={() => setStatistikGelerntEinschliessen(v => !v)}>
+                        onClick={() => setStatistikGelerntEinschliessen(v => !v)}
+                        {...tt(statistikGelerntEinschliessen ? "Gelernte Vokabeln aus der Statistik ausschließen" : "Gelernte Vokabeln in der Statistik einschließen")}>
                         ✓ Gelernt
                       </button>
                     )}
@@ -5140,14 +5152,16 @@ export default function VokabelApp() {
                     <button key={s.key} className={`typ-btn${isActive?" aktiv":""}`}
                       onClick={() => isActive
                         ? setStatistikSort(`${s.key}-${aDir === "asc" ? "desc" : "asc"}`)
-                        : setStatistikSort(`${s.key}-${s.def}`)}>
+                        : setStatistikSort(`${s.key}-${s.def}`)}
+                      {...tt(isActive ? `${s.label} – Richtung umkehren` : `Nach ${s.label} sortieren`)}>
                       {s.label}{isActive ? (aDir === "asc" ? " ↑" : " ↓") : ""}
                     </button>
                   );
                 })}
                 {!statistikVollbild && (
                   <button onClick={() => setStatistikVollbild(true)}
-                    style={{marginLeft:"auto", background:"none", border:"none", padding:"4px 6px", cursor:"pointer", color:"#6b6560", display:"flex", alignItems:"center"}}>
+                    style={{marginLeft:"auto", background:"none", border:"none", padding:"4px 6px", cursor:"pointer", color:"#6b6560", display:"flex", alignItems:"center"}}
+                    {...tt("Statistik im Vollbild anzeigen")}>
                     <IcoExpand s={18}/>
                   </button>
                 )}
@@ -5210,14 +5224,14 @@ export default function VokabelApp() {
             <span style={{fontWeight:700, fontSize:"0.88rem", color:"#3b3832"}}>Info</span>
             <div style={{display:"flex", gap:6, alignItems:"center"}}>
               {infoModus !== "uebersicht" && (
-                <button className="btn-icon" style={{marginRight:2}} onClick={() => setInfoModus("uebersicht")}><IcoX s={14}/></button>
+                <button className="btn-icon" style={{marginRight:2}} onClick={() => setInfoModus("uebersicht")} {...tt("Zurück zur Übersicht")}><IcoX s={14}/></button>
               )}
               <button className={`typ-btn${infoModus==="uebersicht"?" aktiv":""}`}
-                onClick={() => setInfoModus("uebersicht")}>Übersicht</button>
+                onClick={() => setInfoModus("uebersicht")} {...tt("App-Übersicht anzeigen")}>Übersicht</button>
               <button className={`typ-btn${infoModus==="konzept"?" aktiv":""}`}
-                onClick={() => setInfoModus(m => m==="konzept"?"uebersicht":"konzept")}>Konzept</button>
+                onClick={() => setInfoModus(m => m==="konzept"?"uebersicht":"konzept")} {...tt("Wie die App funktioniert – Konzepte erklärt")}>Konzept</button>
               <button className={`typ-btn${infoModus==="anleitung"?" aktiv":""}`}
-                onClick={() => setInfoModus(m => m==="anleitung"?"uebersicht":"anleitung")}>Anleitung</button>
+                onClick={() => setInfoModus(m => m==="anleitung"?"uebersicht":"anleitung")} {...tt("Vollständige Button-Referenz für alle Tabs")}>Anleitung</button>
             </div>
           </div>
 
@@ -5265,6 +5279,9 @@ export default function VokabelApp() {
             </div>
           ) : (
             <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.7, color:"#3b3832"}}>
+              <div style={{background:"#e8f5e9", borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:"0.8rem", color:"#2d6a4f", lineHeight:1.55}}>
+                💡 <strong>Tipp:</strong> Auf Touch-Geräten: Button gedrückt halten für eine kurze Erklärung. Am PC erscheint der Tooltip beim Hover.
+              </div>
               {[
                 {titel:"Listen-Tab", inhalt:[
                   {k:"Übersicht", v:"Zeigt alle Vokabellisten. Tippe eine Liste an, um sie zu öffnen."},
@@ -5352,7 +5369,8 @@ export default function VokabelApp() {
                 <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
                   {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(v => (
                     <button key={v} className={`toggle-opt${(einstellungen.gelerntSchwelle??0)===v?" aktiv":""}`}
-                      onClick={() => speichereEinst({...einstellungen, gelerntSchwelle: v})}>
+                      onClick={() => speichereEinst({...einstellungen, gelerntSchwelle: v})}
+                      {...tt(v === 0 ? "Deaktiviert – alle Vokabeln werden abgefragt" : `Vokabeln mit Score ≥ +${v} gelten als gelernt`)}>
                       {v === 0 ? "Aus" : `+${v}`}
                     </button>
                   ))}
@@ -5369,7 +5387,7 @@ export default function VokabelApp() {
                 <button className="btn btn-ghost btn-sm" onClick={() => {
                   const url = window.location.href.split('?')[0] + '?t=' + Date.now();
                   window.location.replace(url);
-                }}>Neu laden</button>
+                }} {...tt("App neu laden und auf die neueste Version aktualisieren")}>Neu laden</button>
               </div>
             </div>
             <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Daten</div>
