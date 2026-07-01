@@ -617,6 +617,8 @@ export default function VokabelApp() {
   const slotSektionRef = useRef(null);
   const slotContainerRef = useRef(null);
   const listenauswahlHeaderRef = useRef(null);
+  const infoHeaderRef = useRef(null);
+  const infoKontextContainerRef = useRef(null);
   const [headerH, setHeaderH] = useState(104);
   const [alleBereichH, setAlleBereichH] = useState(0);
   const [abfrageModusH, setAbfrageModusH] = useState(0);
@@ -859,6 +861,21 @@ export default function VokabelApp() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, [headerH, slotH, statistikListenHeaderH]);
+
+  // Info-Kontext (Konzept/Anleitung): schließt wenn Inhalt-Unterkante den Info-Header passiert
+  useEffect(() => {
+    if (infoModus === "uebersicht") return;
+    const onScroll = () => {
+      const el = infoKontextContainerRef.current;
+      const hdr = infoHeaderRef.current;
+      if (!el || !hdr || el.offsetHeight === 0) return;
+      if (el.getBoundingClientRect().bottom <= hdr.getBoundingClientRect().bottom) {
+        setInfoModus("uebersicht");
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [infoModus]);
 
   useEffect(() => {
     setListenIndex(lsGet(SK.listenIndex, []));
@@ -5145,7 +5162,7 @@ export default function VokabelApp() {
         })()}
         {tab === "einstellungen" && (<>
           {/* Info sticky Header */}
-          <div style={{position:"sticky", top:headerH, zIndex:9, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+          <div ref={infoHeaderRef} style={{position:"sticky", top:headerH, zIndex:9, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
             <span style={{fontWeight:700, fontSize:"0.88rem", color:"#3b3832"}}>Info</span>
             <div style={{display:"flex", gap:6, alignItems:"center"}}>
               {infoModus !== "uebersicht" && (
@@ -5154,16 +5171,15 @@ export default function VokabelApp() {
               <button className={`typ-btn${infoModus==="uebersicht"?" aktiv":""}`}
                 onClick={() => setInfoModus("uebersicht")}>Übersicht</button>
               <button className={`typ-btn${infoModus==="konzept"?" aktiv":""}`}
-                onClick={() => setInfoModus("konzept")}>Konzept</button>
+                onClick={() => setInfoModus(m => m==="konzept"?"uebersicht":"konzept")}>Konzept</button>
               <button className={`typ-btn${infoModus==="anleitung"?" aktiv":""}`}
-                onClick={() => setInfoModus("anleitung")}>Anleitung</button>
+                onClick={() => setInfoModus(m => m==="anleitung"?"uebersicht":"anleitung")}>Anleitung</button>
             </div>
           </div>
 
-          {infoModus === "uebersicht" ? (
+          {infoModus === "uebersicht" && (
             <div className="sektion">
-              {/* Kurzbeschreibung */}
-              <div style={{background:"#f7f5f0", borderRadius:12, padding:"14px 16px", marginBottom:16, fontSize:"0.85rem", lineHeight:1.65, color:"#3b3832"}}>
+              <div style={{background:"#f7f5f0", borderRadius:12, padding:"14px 16px", fontSize:"0.85rem", lineHeight:1.65, color:"#3b3832"}}>
                 <div style={{fontWeight:700, marginBottom:6, fontSize:"0.95rem"}}>Vokabel-Trainer</div>
                 <p style={{margin:0}}>
                   Lerne Vokabeln aus eigenen Listen – flexibel, ohne Anmeldung, direkt im Browser.
@@ -5175,63 +5191,23 @@ export default function VokabelApp() {
                   <div><span style={{fontWeight:600}}>Statistik</span> – Lernfortschritt auf einen Blick</div>
                 </div>
               </div>
-
-              {/* Bestehende Einstellungen */}
-              <div className="sektion-label" style={{marginBottom:10}}>Lernen</div>
-              <div className="karte">
-                <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:8}}>
-                  <div>
-                    <div className="karte-zeile-name">Gelernt-Schwelle</div>
-                    <div className="karte-zeile-sub">
-                      {(einstellungen.gelerntSchwelle ?? 0) === 0
-                        ? "Deaktiviert – alle Vokabeln werden abgefragt"
-                        : `Score ≥ +${einstellungen.gelerntSchwelle} gilt als gelernt`}
-                    </div>
-                  </div>
-                  <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(v => (
-                      <button key={v} className={`toggle-opt${(einstellungen.gelerntSchwelle??0)===v?" aktiv":""}`}
-                        onClick={() => speichereEinst({...einstellungen, gelerntSchwelle: v})}>
-                        {v === 0 ? "Aus" : `+${v}`}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>App</div>
-              <div className="karte">
-                <div className="karte-zeile">
-                  <div className="karte-zeile-info">
-                    <div className="karte-zeile-name">App aktualisieren</div>
-                    <div className="karte-zeile-sub">Version {APP_VERSION} · Neueste Version laden</div>
-                  </div>
-                  <button className="btn btn-ghost btn-sm" onClick={() => {
-                    const url = window.location.href.split('?')[0] + '?t=' + Date.now();
-                    window.location.replace(url);
-                  }}>Neu laden</button>
-                </div>
-              </div>
-              <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Daten</div>
-              <div className="karte">
-                <div className="karte-zeile">
-                  <div className="karte-zeile-info">
-                    <div className="karte-zeile-name">Gespeicherte Listen</div>
-                    <div className="karte-zeile-sub">{listenIndex.length} Liste{listenIndex.length!==1?"n":""}</div>
-                  </div>
-                </div>
-              </div>
             </div>
-          ) : infoModus === "konzept" ? (
-            <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.75, color:"#3b3832"}}>
-              {[
-                {titel:"Listen", text:"Alles beginnt mit einer Liste. Eine Liste ist eine Sammlung von Vokabelpaaren – zum Beispiel Deutsch und Englisch, oder Begriff und Erklärung. Jede Liste kann bis zu sechs Spalten haben, die du frei benennen kannst. Du kannst so viele Listen anlegen wie du möchtest, sie importieren, exportieren und teilen."},
-                {titel:"Vokabelgruppen", text:"Für das Quiz wählst du aus, welche Vokabeln abgefragt werden sollen. Das ist deine Vokabelgruppe: entweder alle Vokabeln einer oder mehrerer Listen, oder eine gezielte Auswahl einzelner Einträge per Checkbox oder Von–Bis-Bereich. Die Vokabelgruppe ist das Material für eine Abfragerunde."},
-                {titel:"Abfragen", text:"Eine Abfrage geht durch alle Vokabeln der Gruppe einmal durch. Dabei bewertest du dich selbst: War die Antwort richtig oder falsch? Das Ergebnis fließt direkt in den Score ein. Jede Vokabel hat einen eigenen Score, der über Zeit steigt oder fällt. Unbeantwortete Vokabeln starten bei 0 und werden optionally zuerst gestellt."},
-                {titel:"Modi", text:"Du kannst zwischen drei Abfrage-Modi wählen:\n\nKarte (Frage–Antwort): Die Frage wird angezeigt, du denkst nach, tippst die Karte an um die Antwort zu sehen, und bewertest dich selbst mit Richtig oder Falsch.\n\nWechselnd: Frage- und Antwortspalte wechseln sich zwischen den Vokabeln ab – hält das Gehirn aktiver.\n\nDiktat: Die Antwort wird vorgelesen, du tippst sie ein. Ideal für Hörverstehen und Schreibübungen."},
-                {titel:"Scoring & Streak", text:"Jede Vokabel hat einen Score (von –10 bis +10). Richtige Antworten geben +1, falsche Antworten kosten Punkte je nach Schwierigkeitsgrad und Fehlerzahl. Wer mehrere Vokabeln hintereinander richtig beantwortet, bekommt ab dem dritten Mal in Folge einen Streak-Bonus – der Score steigt dann schneller."},
-                {titel:"Reihenfolge & Filter", text:"Du entscheidest, in welcher Reihenfolge die Vokabeln kommen: zufällig gemischt, nach schlechtestem Score (was du noch nicht gut kannst, kommt zuerst), oder in der Originalreihenfolge der Liste. Optional lässt sich ein Score-Filter setzen, sodass nur Vokabeln bis zu einem bestimmten Score angezeigt werden."},
-                {titel:"Sessions & Pakete", text:"Mit dem Session-Modus teilst du die Vokabelgruppe in kleinere Pakete auf – zum Beispiel 10 Vokabeln auf einmal. Nach jedem Paket kannst du pausieren, dann wird der Fortschritt gespeichert. Beim nächsten Mal werden bereits abgefragte Vokabeln übersprungen. So arbeitest du dich über mehrere Sitzungen durch die gesamte Gruppe."},
-                {titel:"Abfrage-Ziel", text:"Standardmäßig wird jede Vokabel einmal abgefragt. Mit dem Abfrage-Ziel kannst du das ändern:\n\nAnzahl: jede Vokabel 1×, 2× oder 3× pro Durchgang.\n\nMit Wiederholung: Vokabeln werden so lange neu eingereiht, bis du sie 1×, 2× oder 3× in Folge richtig beantwortet hast.\n\nScore-Ziel: Vokabeln werden wiederholt, bis ihr Score einen bestimmten Wert erreicht – global oder bezogen auf den Fortschritt der laufenden Session."},
+          )}
+
+          {/* Aufklappbarer Kontext: Konzept / Anleitung */}
+          {infoModus !== "uebersicht" && (
+            <div ref={infoKontextContainerRef}>
+              {infoModus === "konzept" ? (
+                <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.75, color:"#3b3832"}}>
+                  {[
+                    {titel:"Listen", text:"Alles beginnt mit einer Liste. Eine Liste ist eine Sammlung von Vokabelpaaren – zum Beispiel Deutsch und Englisch, oder Begriff und Erklärung. Jede Liste kann bis zu sechs Spalten haben, die du frei benennen kannst. Du kannst so viele Listen anlegen wie du möchtest, sie importieren, exportieren und teilen."},
+                    {titel:"Vokabelgruppen", text:"Für das Quiz wählst du aus, welche Vokabeln abgefragt werden sollen. Das ist deine Vokabelgruppe: entweder alle Vokabeln einer oder mehrerer Listen, oder eine gezielte Auswahl einzelner Einträge per Checkbox oder Von–Bis-Bereich. Die Vokabelgruppe ist das Material für eine Abfragerunde."},
+                    {titel:"Abfragen", text:"Eine Abfrage geht durch alle Vokabeln der Gruppe einmal durch. Dabei bewertest du dich selbst: War die Antwort richtig oder falsch? Das Ergebnis fließt direkt in den Score ein. Jede Vokabel hat einen eigenen Score, der über Zeit steigt oder fällt. Unbeantwortete Vokabeln starten bei 0 und werden optionally zuerst gestellt."},
+                    {titel:"Modi", text:"Du kannst zwischen drei Abfrage-Modi wählen:\n\nKarte (Frage–Antwort): Die Frage wird angezeigt, du denkst nach, tippst die Karte an um die Antwort zu sehen, und bewertest dich selbst mit Richtig oder Falsch.\n\nWechselnd: Frage- und Antwortspalte wechseln sich zwischen den Vokabeln ab – hält das Gehirn aktiver.\n\nDiktat: Die Antwort wird vorgelesen, du tippst sie ein. Ideal für Hörverstehen und Schreibübungen."},
+                    {titel:"Scoring & Streak", text:"Jede Vokabel hat einen Score (von –10 bis +10). Richtige Antworten geben +1, falsche Antworten kosten Punkte je nach Schwierigkeitsgrad und Fehlerzahl. Wer mehrere Vokabeln hintereinander richtig beantwortet, bekommt ab dem dritten Mal in Folge einen Streak-Bonus – der Score steigt dann schneller."},
+                    {titel:"Reihenfolge & Filter", text:"Du entscheidest, in welcher Reihenfolge die Vokabeln kommen: zufällig gemischt, nach schlechtestem Score (was du noch nicht gut kannst, kommt zuerst), oder in der Originalreihenfolge der Liste. Optional lässt sich ein Score-Filter setzen, sodass nur Vokabeln bis zu einem bestimmten Score angezeigt werden."},
+                    {titel:"Sessions & Pakete", text:"Mit dem Session-Modus teilst du die Vokabelgruppe in kleinere Pakete auf – zum Beispiel 10 Vokabeln auf einmal. Nach jedem Paket kannst du pausieren, dann wird der Fortschritt gespeichert. Beim nächsten Mal werden bereits abgefragte Vokabeln übersprungen. So arbeitest du dich über mehrere Sitzungen durch die gesamte Gruppe."},
+                    {titel:"Abfrage-Ziel", text:"Standardmäßig wird jede Vokabel einmal abgefragt. Mit dem Abfrage-Ziel kannst du das ändern:\n\nAnzahl: jede Vokabel 1×, 2× oder 3× pro Durchgang.\n\nMit Wiederholung: Vokabeln werden so lange neu eingereiht, bis du sie 1×, 2× oder 3× in Folge richtig beantwortet hast.\n\nScore-Ziel: Vokabeln werden wiederholt, bis ihr Score einen bestimmten Wert erreicht – global oder bezogen auf den Fortschritt der laufenden Session."},
                 {titel:"Konfigurationen speichern", text:"Eine Kombination aus Vokabelgruppe, Abfrage-Modus, Reihenfolge und Session-Einstellung kann gespeichert und jederzeit wieder geladen werden. So richtest du zum Beispiel eine tägliche Übung mit den schlechtesten 20 Vokabeln einmal ein und startest sie beim nächsten Mal mit einem Tipp."},
                 {titel:"Statistik", text:"Die Statistik zeigt dir für jede Vokabel den aktuellen Score als Balken und Zahl, das Datum der letzten Abfrage und einen sortierbaren Überblick. Der Graph oben zeigt alle Scores auf einen Blick – grau für nie abgefragt, grün für positive, rot für negative Scores. Im Session-Modus zeigt der Graph, wie viel sich in der letzten Einheit verändert hat."},
               ].map(abschnitt => (
@@ -5313,6 +5289,55 @@ export default function VokabelApp() {
               ))}
             </div>
           )}
+            </div>
+          )}
+
+          {/* Immer sichtbar: Lernen / App / Daten */}
+          <div className="sektion" style={infoModus !== "uebersicht" ? {paddingBottom:'100dvh'} : {}}>
+            <div className="sektion-label" style={{marginBottom:10}}>Lernen</div>
+            <div className="karte">
+              <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:8}}>
+                <div>
+                  <div className="karte-zeile-name">Gelernt-Schwelle</div>
+                  <div className="karte-zeile-sub">
+                    {(einstellungen.gelerntSchwelle ?? 0) === 0
+                      ? "Deaktiviert – alle Vokabeln werden abgefragt"
+                      : `Score ≥ +${einstellungen.gelerntSchwelle} gilt als gelernt`}
+                  </div>
+                </div>
+                <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(v => (
+                    <button key={v} className={`toggle-opt${(einstellungen.gelerntSchwelle??0)===v?" aktiv":""}`}
+                      onClick={() => speichereEinst({...einstellungen, gelerntSchwelle: v})}>
+                      {v === 0 ? "Aus" : `+${v}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>App</div>
+            <div className="karte">
+              <div className="karte-zeile">
+                <div className="karte-zeile-info">
+                  <div className="karte-zeile-name">App aktualisieren</div>
+                  <div className="karte-zeile-sub">Version {APP_VERSION} · Neueste Version laden</div>
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={() => {
+                  const url = window.location.href.split('?')[0] + '?t=' + Date.now();
+                  window.location.replace(url);
+                }}>Neu laden</button>
+              </div>
+            </div>
+            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Daten</div>
+            <div className="karte">
+              <div className="karte-zeile">
+                <div className="karte-zeile-info">
+                  <div className="karte-zeile-name">Gespeicherte Listen</div>
+                  <div className="karte-zeile-sub">{listenIndex.length} Liste{listenIndex.length!==1?"n":""}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </>)}
         {tab === "listen" && ansicht === "uebersicht" && exportAuswahlModus && exportAusgewaehlt.size > 0 && (
           <div className="quiz-action-bar">
