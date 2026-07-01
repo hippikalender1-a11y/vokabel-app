@@ -718,11 +718,49 @@ Buttons mit Tooltips (implementiert):
     Statistik: "Statistik für diese Liste öffnen"
     Spalten-Stift: "Spaltenname bearbeiten"
 
-NOCH AUSSTEHEND (nächste Session):
+VOLLSTÄNDIG UMGESETZT in Session 35 (Commit f14ed25):
   - Listen-Tab: Zusammenführen, Vokabeln-Toggle, + Neue Vokabel, Gelernte ausblenden
-  - Statistik-Tab: alle Buttons (auswählen, Filter, Graph, Sortierung, Vollbild, etc.)
-  - Einstellungen-Tab: Übersicht/Konzept/Anleitung, Gelernt-Schwelle, App aktualisieren
-  - Anleitung-Text: Tooltip-Hinweis einfügen
+  - Statistik-Tab: Listen-Auswahl (Alle/X/Chip), Vokabel-Auswahl (Von-Bis/X/Alle/Bereich),
+      nach oben, Diktat-Kurve, ✓ Gelernt, Sortierung (mit Richtungs-Hinweis), Vollbild,
+      Vollbild verlassen (Topbar)
+  - Einstellungen-Tab: × / Übersicht / Konzept / Anleitung, Gelernt-Schwelle [Aus..+10],
+      Neu laden (App aktualisieren)
+  - Anleitung-Text: Tooltip-Hinweis-Box oben in der Anleitung ("Gedrückt halten...")
+
+KEINE offenen Tooltip-Punkte mehr.
+
+
+================================================================
+SESSION 35 — UMGESETZTE ÄNDERUNGEN (Commit: f14ed25)
+================================================================
+
+TOOLTIP-SYSTEM VERVOLLSTÄNDIGT:
+
+Listen-Tab (Detail – Vokabeln-Sektion):
+  Vokabeln-Toggle: "Vokabeln ein-/ausklappen"
+  Zusammenführen: "Vokabeln aus einer anderen Liste in diese Liste einfügen"
+  Gelernte ausblenden: "Gelernte Vokabeln ausblenden" / "wieder einblenden"
+  + (Neue Vokabel): "Neue Vokabel hinzufügen oder aus Datei importieren"
+
+Statistik-Tab:
+  Listen-Auswahl Header: Alle, X, Chip ("Listen für die Statistik auswählen")
+  Vokabel-Auswahl Header: Von-Bis, X, Alle, Bereich
+  Ø-Score-Zeile: "nach oben" Button
+  Legende: Diktat-Kurve, ✓ Gelernt (beide zustandsabhängig)
+  Sortierung: alle 5 Buttons (zustandsabhängig: "sortieren" vs. "Richtung umkehren")
+  Vollbild (IcoExpand): "Statistik im Vollbild anzeigen"
+  Vollbild verlassen (Topbar IcoCollapse): "Vollbild verlassen"
+
+Einstellungen-Tab:
+  × (Info-Kontext schließen): "Zurück zur Übersicht"
+  Übersicht / Konzept / Anleitung: je eigener Tooltip
+  Gelernt-Schwelle [Aus][+1]..[+10]: je eigener Tooltip (zustandsabhängig)
+  Neu laden: "App neu laden und auf die neueste Version aktualisieren"
+
+Anleitung-Text:
+  Neue grüne Info-Box oben in der Anleitung:
+  "Tipp: Auf Touch-Geräten: Button gedrückt halten für eine kurze Erklärung.
+   Am PC erscheint der Tooltip beim Hover."
 
 
 ================================================================
@@ -738,12 +776,8 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 7f31625 (Session 34 — Tooltip-System teilweise implementiert)
+Letzter Commit: f14ed25 (Session 35 — Tooltip-System vollständig)
 
-AUSSTEHENDE FEATURES:
-  Tooltips für: Listen-Tab (Zusammenführen, Vokabeln-Toggle, + Vokabel, Gelernte ausblenden,
-    Vorlesen/Stift/Löschen an Vokabel), Statistik-Tab (alle Buttons), Einstellungen-Tab
-    (Übersicht/Konzept/Anleitung, Gelernt-Schwelle, App aktualisieren)
-  Anleitung-Text: Tooltip-Hinweis ("Gedrückt halten für Erklärung") einfügen
+Keine offenen Features aus dem Protokoll.
 
 ================================================================

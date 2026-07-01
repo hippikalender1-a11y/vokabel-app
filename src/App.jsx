@@ -495,6 +495,7 @@ export default function VokabelApp() {
   const [modalMitVokabeln, setModalMitVokabeln] = useState(false);
   const [modalFehler, setModalFehler] = useState("");
   const [jsonExportIds, setJsonExportIds] = useState(null);
+  const [jsonExportTeilen, setJsonExportTeilen] = useState(false);
   const [jsonExportOptionen, setJsonExportOptionen] = useState({ fortschritt: true, diktatFortschritt: true, falsch: true });
   const [editSpalteTyp, setEditSpalteTyp] = useState(null);
 
@@ -1334,10 +1335,17 @@ export default function VokabelApp() {
 
   function exportiereAlsJson(ids) {
     setJsonExportIds(ids);
+    setJsonExportTeilen(false);
     setModal("json-export");
   }
 
-  function exportiereAlsJsonBestaetigt() {
+  function exportiereAlsJsonZumTeilen(ids) {
+    setJsonExportIds(ids);
+    setJsonExportTeilen(true);
+    setModal("json-export");
+  }
+
+  async function exportiereAlsJsonBestaetigt() {
     const listen = jsonExportIds.map(id => lsGet(SK.liste(id))).filter(Boolean);
     const gefiltert = listen.map(liste => {
       const l = { ...liste };
@@ -1356,8 +1364,19 @@ export default function VokabelApp() {
     const name = jsonExportIds.length === 1
       ? (gefiltert[0]?.name || 'Liste') + '.json'
       : jsonExportIds.length + '_Listen_Backup.json';
-    teileAlsDatei(text, name);
+    const title = jsonExportIds.length === 1
+      ? (gefiltert[0]?.name || 'Liste')
+      : `${jsonExportIds.length} Vokabellisten`;
     setModal(null); setJsonExportIds(null);
+    if (jsonExportTeilen && navigator.share) {
+      const file = new File([text], name, { type: 'application/json' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title }); return; } catch {}
+      }
+      try { await navigator.share({ title, text }); } catch {}
+    } else {
+      teileAlsDatei(text, name);
+    }
   }
 
   function setzeMapping(colIndex, typ) {
@@ -4451,7 +4470,9 @@ export default function VokabelApp() {
                 <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import"); }} {...tt("Vokabeln in diese Liste importieren")}><IcoPlus/></button>
                 <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={kopiereListeHandler} {...tt("Liste als Text in die Zwischenablage kopieren")}>{exportKopiert ? "✓" : <IcoCopy/>}</button>
                 <button className="btn btn-ghost btn-sm" onClick={teileListeAlsDateiHandler} {...tt("Liste als TXT-Datei exportieren")}>TXT</button>
-                <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={teileListeAlsJsonHandler} {...tt("Liste als JSON-Datei teilen")}><IcoShare/></button>
+                {navigator.share && (
+                  <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => exportiereAlsJsonZumTeilen([aktiveListeId])} {...tt("Liste als JSON-Datei teilen")}><IcoShare/></button>
+                )}
                 <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])} {...tt("Liste als JSON-Datei exportieren")}>JSON</button>
                 <button className="btn btn-danger btn-sm" style={{padding:"6px 10px", marginLeft:"auto"}} onClick={() => oeffneModal("loeschen")} {...tt("Liste löschen")}><IcoX/></button>
               </div>
@@ -5404,7 +5425,7 @@ export default function VokabelApp() {
         {tab === "listen" && ansicht === "uebersicht" && exportAuswahlModus && exportAusgewaehlt.size > 0 && (
           <div className="quiz-action-bar">
             {navigator.share && (
-              <button className="btn btn-primary" onClick={exportiereAusgewaehlteTeilenHandler}>📤 Teilen</button>
+              <button className="btn btn-primary" onClick={() => exportiereAlsJsonZumTeilen([...exportAusgewaehlt])}>📤 Teilen</button>
             )}
             <button className="btn btn-ghost" onClick={exportiereAusgewaehlteKopierenHandler}>
               {exportKopiert ? "✓ Kopiert!" : "📋 Kopieren"}
@@ -5673,7 +5694,7 @@ export default function VokabelApp() {
       {modal === "json-export" && jsonExportIds && (
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-titel">JSON exportieren</div>
+            <div className="modal-titel">{jsonExportTeilen ? "JSON teilen" : "JSON exportieren"}</div>
             <p style={{fontSize:"0.85rem", color:"#6b6560", marginBottom:14}}>
               {jsonExportIds.length === 1 ? "1 Liste" : `${jsonExportIds.length} Listen`} — was soll enthalten sein?
             </p>
@@ -5693,7 +5714,7 @@ export default function VokabelApp() {
             ))}
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => { setModal(null); setJsonExportIds(null); }}>Abbrechen</button>
-              <button className="btn btn-primary" onClick={exportiereAlsJsonBestaetigt}>Exportieren</button>
+              <button className="btn btn-primary" onClick={exportiereAlsJsonBestaetigt}>{jsonExportTeilen ? "Teilen" : "Exportieren"}</button>
             </div>
           </div>
         </div>
