@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-07-01  (Session 33 — Gelernt-Status, Korrekturen, Info-Kontext)
-Letzter Commit: 0020e68
+Stand: 2026-10-25  (Session 36 — PWA / Offline-Betrieb)
+Letzter Commit: fd1cdc8
 
 DATEIPFADE
 ----------
@@ -764,6 +764,72 @@ Anleitung-Text:
 
 
 ================================================================
+SESSION 35b — TEILEN ALS JSON (Commits: 33caeba … 8ccae4e)
+================================================================
+Teilen-Button (Liste-Detail + Mehrfach-Export) öffnet JSON-Optionen-Modal,
+danach navigator.share mit Datei.
+  - Datei als .txt / text/plain (Android-Chrome-MIME-Whitelist)
+  - navigator.share OHNE await (User-Gesture-Kontext bleibt erhalten)
+  - try/catch + .catch → Fallback teileAlsDatei() (außer AbortError)
+
+
+================================================================
+SESSION 36 — PWA / OFFLINE-BETRIEB (Commit: fd1cdc8)
+================================================================
+App ist installierbare PWA (vite-plugin-pwa, generateSW, Workbox).
+Nach erstem Laden mit Internet läuft sie vollständig offline.
+
+DATEIEN:
+  vite.config.js        VitePWA-Plugin: registerType 'prompt', Manifest
+                        (Name "Vokabel-Trainer", short "Vokabeln", #2d6a4f)
+  src/UpdateHinweis.jsx Banner "Neue Version verfügbar" [Später][Aktualisieren]
+                        (useRegisterSW), stündlicher reg.update() wenn online.
+                        Eingebunden in main.jsx neben <App/>.
+  public/app-icon.svg   Icon-Vorlage (zwei Lernkarten + Häkchen, grün)
+  pwa-assets.config.js  Icon-Generierung: npx pwa-assets-generator
+                        → pwa-64/192/512, maskable-512, apple-touch-180, favicon.ico
+  index.html            lang="de", Titel, theme-color, apple-touch-icon
+
+EINSTELLUNGEN → App: Button "Neu laden" ersetzt durch "Prüfen"
+  State updateStatus; reg.update() → "App ist aktuell" / "Neue Version
+  gefunden" / "Keine Internetverbindung"; Banner übernimmt das Aktivieren.
+  (Alter ?t=-Reload wirkt mit Service Worker nicht mehr.)
+
+HINWEISE:
+  - iPad/iPhone: Home-Bildschirm-App hat EIGENEN localStorage (getrennt
+    von Safari) → Listen per JSON-Export/Import übertragen.
+  - Verlauf/Gespeichert-Slots + Einstellungen sind NICHT im JSON-Backup.
+
+
+================================================================
+GEPLANTE FEATURES (noch nicht umgesetzt)
+================================================================
+
+1) FOTO → KI → VOKABELLISTE (direkt in der App)
+   Ziel: Vokabelseite fotografieren, KI wandelt direkt in Liste um,
+   ohne Prompt kopieren / KI-App / Einfügen.
+   Ablauf:
+     Listen → + Neu → [📷 Foto] → <input type="file" accept="image/*">
+     → Bild clientseitig verkleinern → an Claude-API (Vision) mit dem
+       vorhandenen Foto-Prompt aus generierePrompt(..., "foto")
+     → Antworttext in importText → analysiereImport() → bestehende
+       Import-Vorschau/Mapping → speichern
+   API-Schlüssel – zwei Varianten:
+     A) Eigener Schlüssel in Einstellungen, nur im localStorage des
+        Geräts; Browser-Direktzugriff (Header
+        anthropic-dangerous-direct-browser-access). Empfohlen für
+        Eigengebrauch, geringer Aufwand.
+     B) Kleiner Proxy (z. B. Cloudflare Worker) hält den Schlüssel;
+        nötig, wenn andere die App nutzen. Später aus A ausbaubar.
+   Zu beachten:
+     - API wird getrennt vom Claude-Abo abgerechnet (Guthaben,
+       Ausgabenlimit in console.anthropic.com setzbar). Aktuelle
+       Preise/Modell vor Umsetzung prüfen.
+     - Funktion braucht Internet; offline → Meldung, Rest bleibt offline.
+     - Bisheriger Weg (Prompt kopieren) bleibt erhalten.
+
+
+================================================================
 PROMPT FÜR NEUEN CHAT
 ================================================================
 
@@ -776,8 +842,9 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: f14ed25 (Session 35 — Tooltip-System vollständig)
+Letzter Commit: fd1cdc8 (Session 36 — PWA / Offline-Betrieb)
 
-Keine offenen Features aus dem Protokoll.
+Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
+(Foto → KI → Vokabelliste).
 
 ================================================================
