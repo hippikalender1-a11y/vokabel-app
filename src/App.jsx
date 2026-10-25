@@ -2135,6 +2135,30 @@ export default function VokabelApp() {
     setAnsicht("uebersicht");
   }
 
+  // Nach dem Quiz direkt zur Statistik: mit Session → deren Eintrag (Score seit
+  // Session-Beginn), sonst genau die Vokabeln dieser Runde (Score seit Rundenstart)
+  function zurRundenStatistik(abschluss) {
+    const q = quiz;
+    abschluss();
+    setStatistikListenAufgeklappt(false);
+    setStatistikEinzelauswahlAufgeklappt(false);
+    setStatistikVollbild(false);
+    setStatistikSlotGeleert(false);
+    if (q?.istSessionModus && aktiverSlot && getSlotEintrag(aktiverSlot.typ, aktiverSlot.id)) {
+      ladeSlotStatistik(aktiverSlot.typ, aktiverSlot.id);
+    } else {
+      const ids = [...new Set((q?.vokabeln || []).map(v => String(v.id).includes("__") ? String(v.id) : `${aktiveListeId}__${v.id}`))];
+      setStatistikAktiverSlot(null);
+      setStatistikListenIds(new Set(ids.map(id => id.split("__")[0])));
+      setStatistikBereichTyp("bereich");
+      setStatistikCheckboxAuswahl(new Set(ids));
+      const mitDelta = !!q?.rundeStartScores && q.modus !== "diktat";
+      setStatistikScoreModus(mitDelta ? "session" : "global");
+      setStatistikSessionDaten(mitDelta ? { startScores: q.rundeStartScores } : null);
+    }
+    setTab("statistik");
+  }
+
   function brecheQuizAb() {
     if (!quiz) { beendeQuiz(); return; }
     if (quiz.istSessionModus) {
@@ -2354,6 +2378,7 @@ export default function VokabelApp() {
       sessionVokIds: isPakete ? voks.map(v => v.id) : null,
       istSessionModus: isPakete,
       sessionGesamt, abfrageZiel,
+      rundeStartScores: Object.fromEntries(voks.map(v => [v.id, v.fortschritt?.score ?? null])),
     });
     setAnsicht("quiz");
   }
@@ -2815,7 +2840,8 @@ export default function VokabelApp() {
                   </div>
                 </div>
                 {istLetzteBatch ? (
-                  <button className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
+                  <><button className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
+                  <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
                 ) : (
                   <>
                     <div style={{marginBottom:10}}>
@@ -2848,10 +2874,11 @@ export default function VokabelApp() {
               <span className="quiz-fortschritt">{richtig} / {quiz.diktatErgebnisse.length} ✓</span>
             </div>
             <div className="sektion">
-              <button className="btn btn-primary" style={{width:"100%", marginBottom:16}}
+              <button className="btn btn-primary" style={{width:"100%"}}
                 onClick={() => { beendeQuiz(); }}>
                 Zurück zur Liste
               </button>
+              <div style={{marginBottom:16}}><button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></div>
               <div className="karte">
                 <div style={{padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer"}}
                   onClick={() => setDiktatListeAufgeklappt(v => !v)}>
@@ -3026,9 +3053,11 @@ export default function VokabelApp() {
                   {" "}({Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100)}%)
                 </div>
                 {quiz.abgebrochen ? (
-                  <button className="btn btn-primary" style={{width:"100%"}} onClick={() => beendeQuiz()}>Zur Übersicht</button>
+                  <><button className="btn btn-primary" style={{width:"100%"}} onClick={() => beendeQuiz()}>Zur Übersicht</button>
+                  <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
                 ) : istLetzteBatch ? (
-                  <button className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
+                  <><button className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
+                  <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
                 ) : (
                   <>
                     <div style={{marginBottom:10}}>
@@ -3083,6 +3112,7 @@ export default function VokabelApp() {
                 <button className="btn btn-primary" style={{width:"100%"}} onClick={() => { beendeQuiz(); }}>
                   Zur Übersicht
                 </button>
+                <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button>
               </div>
             </div>
           </>
