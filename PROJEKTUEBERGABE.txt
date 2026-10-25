@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-25  (Session 36 — PWA, Sprachen, Score, Fixes)
-Letzter Commit: ff48ce7
+Letzter Commit: 46d7b53
 
 DATEIPFADE
 ----------
@@ -964,6 +964,19 @@ TEST: e2e/gelernt.mjs 3/3.
 
 
 ================================================================
+SESSION 36 (FORTSETZUNG) — BUTTON "ZUR STATISTIK" (46d7b53)
+================================================================
+Auf allen Abschluss-Screens (Quiz/Diktat, mit/ohne Session, abgebrochen)
+  unter "Zur Übersicht": zurRundenStatistik(abschlussFn).
+  - Session + aktiverSlot → ladeSlotStatistik (Score seit Session-Start)
+  - sonst → Statistik-Bereich = Vokabel-IDs der Runde,
+    statistikSessionDaten = { startScores: quiz.rundeStartScores },
+    Score-Modus "session" (Delta der Runde; nicht bei Diktat)
+  quiz.rundeStartScores wird in starteQuiz() gesetzt.
+TEST: e2e/statistik.mjs 8/8.
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -1017,7 +1030,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: ff48ce7 (Session 36 — PWA, E3, Sprachen, Score, MC, Fixes)
+Letzter Commit: 46d7b53 (Session 36 — PWA, E3, Sprachen, Score, MC, Statistik, Fixes)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste; Wiederholung gelernter
