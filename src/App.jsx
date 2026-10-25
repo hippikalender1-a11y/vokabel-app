@@ -64,7 +64,7 @@ function getQuizFeedback(richtig, gesamt) {
 }
 
 // ── Defaults ───────────────────────────────────────────────────────────────
-function defaultEinstellungen() { return { modus: "schwer", autoplay: false, vorlesen: ["E1"], gelerntSchwelle: 0 }; }
+function defaultEinstellungen() { return { modus: "schwer", autoplay: false, vorlesen: ["E1"], gelerntSchwelle: 0, sprache: "alle" }; }
 function defaultSessionSlots() {
   return [{ slot: 6, name: "Zuletzt verwendet", konfiguration: null, fortschritt: null }];
 }
@@ -134,8 +134,28 @@ function generiereButtons(vokabeln, aktVok, antwortTyp) {
 }
 
 // ── Text-to-Speech ─────────────────────────────────────────────────────────
-function spalteLang(typ) {
-  if (typ.startsWith('E')) return 'en-US';
+// Sprache der Fremdsprach-Spalten (E1–E3) pro Liste; fehlt sie, gilt "en"
+const SPRACHEN = [
+  { code:"en", name:"Englisch",       flagge:"🇬🇧", tts:"en-US", keys:["englisch","english"] },
+  { code:"fr", name:"Französisch",    flagge:"🇫🇷", tts:"fr-FR", keys:["französisch","franzoesisch","french","français","francais"] },
+  { code:"es", name:"Spanisch",       flagge:"🇪🇸", tts:"es-ES", keys:["spanisch","spanish","español","espanol"] },
+  { code:"it", name:"Italienisch",    flagge:"🇮🇹", tts:"it-IT", keys:["italienisch","italian","italiano"] },
+  { code:"la", name:"Latein",         flagge:"🏛️", tts:"it-IT", keys:["latein","latin"] },
+  { code:"nl", name:"Niederländisch", flagge:"🇳🇱", tts:"nl-NL", keys:["niederländisch","niederlaendisch","dutch","nederlands"] },
+  { code:"pt", name:"Portugiesisch",  flagge:"🇵🇹", tts:"pt-PT", keys:["portugiesisch","portuguese","português","portugues"] },
+  { code:"ru", name:"Russisch",       flagge:"🇷🇺", tts:"ru-RU", keys:["russisch","russian","русский"] },
+  { code:"tr", name:"Türkisch",       flagge:"🇹🇷", tts:"tr-TR", keys:["türkisch","tuerkisch","turkish","türkçe"] },
+  { code:"pl", name:"Polnisch",       flagge:"🇵🇱", tts:"pl-PL", keys:["polnisch","polish","polski"] },
+];
+function sprachInfo(code) { return SPRACHEN.find(s => s.code === code) || SPRACHEN[0]; }
+function listeSprache(l) { return l?.sprache || "en"; }
+// Erste Sprache, deren Stichwort in einem Spaltennamen vorkommt (Import)
+function erkenneSprache(headerNamen) {
+  const low = headerNamen.map(n => (n || "").toLowerCase());
+  return SPRACHEN.find(s => s.keys.some(k => low.some(n => n.includes(k))))?.code || null;
+}
+function spalteLang(typ, sprache) {
+  if (typ.startsWith('E')) return sprachInfo(sprache).tts;
   if (typ.startsWith('D')) return 'de-DE';
   return 'de-DE';
 }
@@ -148,14 +168,22 @@ function sprich(text, lang) {
 }
 
 // ── KI-Prompt-Generator ────────────────────────────────────────────────────
-function generierePrompt(thema, anzahl, falsch, beispiele, synonyme, modus) {
+// Beispielzeile im Prompt je Sprache (Wort, falsche Antworten, Beispielsatz, Synonyme)
+const PROMPT_BEISPIELE = {
+  en: { wort:"go",     falsch:["went","goes","go","going"],        satz:"He goes to school every day.",       syn:"start, begin, head" },
+  fr: { wort:"aller",  falsch:["allé","va","venir","partir"],      satz:"Je vais à l'école tous les jours.",  syn:"se rendre, partir" },
+  es: { wort:"ir",     falsch:["fue","va","venir","salir"],        satz:"Voy a la escuela todos los días.",   syn:"marchar, andar" },
+  it: { wort:"andare", falsch:["andato","va","venire","partire"],  satz:"Vado a scuola ogni giorno.",         syn:"recarsi, partire" },
+  la: { wort:"ire",    falsch:["it","ivi","venire","currere"],     satz:"Marcus in forum it.",                syn:"vadere, proficisci" },
+};
+function generierePrompt(thema, anzahl, falsch, beispiele, synonyme, modus, sprache = "en") {
   const f = Math.min(20, Math.max(0, parseInt(falsch) || 0));
   const n = Math.max(1, parseInt(anzahl) || 20);
   const t = thema.trim() || "(Thema eingeben)";
+  const sprName = sprachInfo(sprache).name;
+  const bsp = PROMPT_BEISPIELE[sprache] || { wort:"Wort", falsch:["Fehler1","Fehler2","Fehler3","Fehler4"], satz:"Beispielsatz.", syn:"Synonym1, Synonym2" };
 
-  const falschBspEn = f > 0
-    ? ["gone || went | goes | go | going", "came || come | comes | comed | coming"].slice(0, 1).map(s => s.split(" || ")[1]?.split(" | ").slice(0, f).join(" | ")).join("")
-    : null;
+  const falschBspEn = f > 0 ? bsp.falsch.slice(0, f).join(" | ") : null;
   const falschBspDe = f > 0
     ? ["gegangen | gefahren | gelaufen | geflogen"].slice(0, 1).map(s => s.split(" | ").slice(0, f).join(" | ")).join("")
     : null;
@@ -163,19 +191,21 @@ function generierePrompt(thema, anzahl, falsch, beispiele, synonyme, modus) {
   const falschteilDe = falschBspDe ? ` || ${falschBspDe}` : "";
 
   const infoKopf = [beispiele ? "Beispielsatz" : null, synonyme ? "Synonyme" : null].filter(Boolean);
-  const infoDaten = [beispiele ? "He goes to school every day." : null, synonyme ? "start, begin, head" : null].filter(Boolean);
+  const infoDaten = [beispiele ? bsp.satz : null, synonyme ? bsp.syn : null].filter(Boolean);
 
-  const kopfzeile = `Englisch // Deutsch${infoKopf.length ? " // " + infoKopf.join(" // ") : ""}`;
-  const datenzeile = `go${falschteilEn} // gehen${falschteilDe}${infoDaten.length ? " // " + infoDaten.join(" // ") : ""}`;
+  const kopfzeile = `${sprName} // Deutsch${infoKopf.length ? " // " + infoKopf.join(" // ") : ""}`;
+  const datenzeile = `${bsp.wort}${falschteilEn} // gehen${falschteilDe}${infoDaten.length ? " // " + infoDaten.join(" // ") : ""}`;
 
   const regeln = [
     `- Spalten durch " // " trennen`,
     f > 0 ? `- Direkt nach jedem Wort " || " schreiben, dann genau ${f} falsche Antworten für Multiple Choice, mit " | " getrennt` : null,
     f > 0 ? `- WICHTIG: Eine falsche Antwort darf NIEMALS identisch mit der richtigen Antwort sein (auch nicht bei Groß-/Kleinschreibung)` : null,
-    f > 0 ? `- Englische falsche Antworten: Mische typische Verwechslungen/Schreibfehler des Wortes (z.B. "were"→"where","wehre","where") mit gleichartigen Wörtern gleicher Wortart (Verb→andere Verben, Adjektiv→andere Adjektive). Recherchiere typische Fehlerquellen von Deutschsprachigen beim Englischlernen` : null,
+    f > 0 && sprache === "en" ? `- Englische falsche Antworten: Mische typische Verwechslungen/Schreibfehler des Wortes (z.B. "were"→"where","wehre","where") mit gleichartigen Wörtern gleicher Wortart (Verb→andere Verben, Adjektiv→andere Adjektive). Recherchiere typische Fehlerquellen von Deutschsprachigen beim Englischlernen` : null,
+    f > 0 && sprache !== "en" ? `- Falsche Antworten auf ${sprName}: Mische typische Verwechslungen/Schreibfehler des Wortes (z.B. fehlende oder falsche Akzente, falsche Endungen, ähnlich klingende Wörter) mit gleichartigen Wörtern gleicher Wortart (Verb→andere Verben, Adjektiv→andere Adjektive). Recherchiere typische Fehlerquellen von Deutschsprachigen beim Lernen von ${sprName}` : null,
+    sprache !== "en" ? `- Wörter auf ${sprName} immer mit korrekten Akzenten/Sonderzeichen schreiben; bei Nomen den Artikel mit angeben, wenn im Lehrbuch üblich` : null,
     f > 0 ? `- Deutsche falsche Antworten: Verwende bedeutungsverwandte Wörter gleicher Wortart (kein Schreibfehler-Varianten, sondern echte verwandte Wörter wie bei "gehen"→"laufen, fahren, rennen")` : null,
-    beispiele ? `- Die Spalte „Beispielsatz" enthält je einen natürlichen Beispielsatz auf Englisch (keine falschen Antworten)` : null,
-    synonyme ? `- Die Spalte „Synonyme" enthält 2–4 englische Synonyme, kommagetrennt (keine falschen Antworten)` : null,
+    beispiele ? `- Die Spalte „Beispielsatz" enthält je einen natürlichen Beispielsatz auf ${sprName} (keine falschen Antworten)` : null,
+    synonyme ? `- Die Spalte „Synonyme" enthält 2–4 Synonyme auf ${sprName}, kommagetrennt (keine falschen Antworten)` : null,
     `- Keine Nummerierung, keine Erklärungen — nur den rohen Text ausgeben`,
   ].filter(Boolean).join("\n");
 
@@ -200,7 +230,7 @@ SCHRITT 2 — PHONETIK ENTFERNEN:
 Phonetische Umschriften in eckigen Klammern [fəˈnɛtɪk], Schrägstrichen /fəˈnɛtɪk/ oder runden Klammern (fəˈnɛtɪk) werden vollständig entfernt. Nur das tatsächliche Wort oder den Satz übernehmen.
 
 SCHRITT 3 — AUSGABE:
-Erste Zeile: Spaltennamen, die den tatsächlichen Inhalt beschreiben (z.B. Englisch, Deutsch, Beispiel).
+Erste Zeile: Spaltennamen, die den tatsächlichen Inhalt beschreiben (z.B. ${sprName}, Deutsch, Beispiel). Die Spalte(n) der Fremdsprache heißen „${sprName}“ (bei mehreren z.B. „${sprName} Infinitiv“, „${sprName} Präteritum“).
 Ab Zeile 2: je eine Vokabel oder Phrase pro Zeile, Spalten mit " // " getrennt.
 
 Beispielformat (Anzahl der Spalten an das Bild anpassen):
@@ -224,7 +254,7 @@ ${regeln}`;
 // ── Export-Generator ──────────────────────────────────────────────────────
 function generiereExportText(liste) {
   const aktiveSpalten = TYPEN.filter(t => liste.spalten[t].aktiv);
-  const namenszeile = `# ${liste.name}`;
+  const namenszeile = `# ${liste.name}${listeSprache(liste) !== "en" ? ` {${liste.sprache}}` : ""}`;
   const header = aktiveSpalten.map(t => `${liste.spalten[t].name || t} [${t}]`).join(' // ');
   const zeilen = liste.vokabeln.map(vok =>
     aktiveSpalten.map(typ => {
@@ -280,9 +310,20 @@ function generiereVarianten(wert) {
   }
   return [wert.toLowerCase().trim()];
 }
-function istRichtigeAntwort(eingabe, wert) {
-  return generiereVarianten(wert).includes(eingabe.toLowerCase().trim());
+// iPad-Tastatur setzt typografische Apostrophe (l’école) → immer vereinheitlichen
+function normApostroph(s) { return s.replace(/[’‘ʼ`´]/g, "'"); }
+function ohneAkzente(s) {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/œ/g, "oe").replace(/æ/g, "ae");
 }
+// true = exakt richtig, "akzent" = nur ohne Akzente richtig (nur wenn tolerant), false = falsch
+function istRichtigeAntwort(eingabe, wert, akzentTolerant = false) {
+  const varianten = generiereVarianten(normApostroph(wert));
+  const e = normApostroph(eingabe.toLowerCase().trim());
+  if (varianten.includes(e)) return true;
+  if (akzentTolerant && varianten.map(ohneAkzente).includes(ohneAkzente(e))) return "akzent";
+  return false;
+}
+const AKZENT_HINWEIS = "Richtig – achte auf die Akzente.";
 
 // ── Score-Clamp (Anzeige: −10 bis +10) ────────────────────────────────────
 function clampScore(s) { return Math.max(-10, Math.min(10, s ?? 0)); }
@@ -353,6 +394,7 @@ const CSS = `
   .app{max-width:600px;margin:0 auto;padding:0 0 80px;}
   .topbar{background:#fff;border-bottom:1px solid #e0dbd2;padding:14px 16px;display:flex;align-items:center;gap:12px;}
   .topbar-title{font-size:1.05rem;font-weight:700;flex:1;text-align:center;}
+  @media (max-width:480px){.sprach-chip-name{display:none;}}
   .topbar-back{background:#2d6a4f;color:#fff;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;padding:8px 12px;border-radius:10px;font-family:inherit;transition:opacity .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;}
   .topbar-back:active{opacity:.8;}
   .tabs{display:flex;background:#fff;border-bottom:1px solid #e0dbd2;}
@@ -552,6 +594,7 @@ export default function VokabelApp() {
   const [promptModus, setPromptModus] = useState("generieren");
   const [promptSynonyme, setPromptSynonyme] = useState(false);
   const [promptKopiert, setPromptKopiert] = useState(false);
+  const [promptSprache, setPromptSprache] = useState("en");
   const [letzterPrompt, setLetzterPrompt] = useState("");
   const [exportKopiert, setExportKopiert] = useState(false);
   const [exportAuswahlModus, setExportAuswahlModus] = useState(false);
@@ -596,6 +639,8 @@ export default function VokabelApp() {
   const [quizGelerntEinschliessen, setQuizGelerntEinschliessen] = useState(false);
   const [listenGelerntAusblenden, setListenGelerntAusblenden] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
+  const [sprachMenuOffen, setSprachMenuOffen] = useState(false);
+  const [importSprache, setImportSprache] = useState("en");
   const [gespeicherteVokabelgruppe, setGespeicherteVokabelgruppe] = useState(null);
   const [gruppenAenderungsDialog, setGruppenAenderungsDialog] = useState(false);
   const [quizBereichTyp, setQuizBereichTyp] = useState("alle");
@@ -912,7 +957,15 @@ export default function VokabelApp() {
   }, [infoModus]);
 
   useEffect(() => {
-    setListenIndex(lsGet(SK.listenIndex, []));
+    // Index-Einträge ohne Sprache einmalig aus der Liste übernehmen
+    const idx = lsGet(SK.listenIndex, []);
+    if (idx.some(l => !l.sprache)) {
+      const ergaenzt = idx.map(l => l.sprache ? l : { ...l, sprache: listeSprache(lsGet(SK.liste(l.id))) });
+      lsSet(SK.listenIndex, ergaenzt);
+      setListenIndex(ergaenzt);
+    } else {
+      setListenIndex(idx);
+    }
     setEinstellungen(lsGet(SK.einstellungen, defaultEinstellungen()));
     // Neues Slot-Format laden, ggf. vom alten Format migrieren
     let slotsData = lsGet(SK.slots);
@@ -965,13 +1018,13 @@ export default function VokabelApp() {
     if (ansicht !== "quiz" || !quiz || quiz.phase !== "eingabe" || quiz.flash) return;
     if (quiz.modus === "diktat") {
       const text = quiz.vokabeln?.[quiz.index]?.[quiz.diktatSpalte]?.wert;
-      if (text) sprich(text, spalteLang(quiz.diktatSpalte));
+      if (text) sprich(text, vokLang(quiz.vokabeln?.[quiz.index], quiz.diktatSpalte));
       return;
     }
     if (!einstellungen.autoplay) return;
     if (!(einstellungen.vorlesen || ["E1"]).includes(quiz.frageTyp)) return;
     const text = quiz.vokabeln?.[quiz.index]?.[quiz.frageTyp]?.wert;
-    if (text) sprich(text, spalteLang(quiz.frageTyp));
+    if (text) sprich(text, vokLang(quiz.vokabeln?.[quiz.index], quiz.frageTyp));
   }, [quiz?.index, ansicht, einstellungen.autoplay]);
 
   useEffect(() => {
@@ -998,6 +1051,62 @@ export default function VokabelApp() {
   // ── Hilfsfunktionen ───────────────────────────────────────────────────────
   function speichereIndex(idx) { setListenIndex(idx); lsSet(SK.listenIndex, idx); }
   function speichereEinst(e) { setEinstellungen(e); lsSet(SK.einstellungen, e); }
+
+  // ── Sprachen-Filter (global) ──────────────────────────────────────────────
+  const vorhandeneSprachen = SPRACHEN.filter(s => listenIndex.some(l => listeSprache(l) === s.code));
+  // Gewählte Sprache nur wirksam, solange es Listen dieser Sprache gibt
+  const sprachFilter = vorhandeneSprachen.some(s => s.code === einstellungen.sprache) ? einstellungen.sprache : "alle";
+  const sichtbareListen = sprachFilter === "alle" ? listenIndex : listenIndex.filter(l => listeSprache(l) === sprachFilter);
+  const sichtbareIds = new Set(sichtbareListen.map(l => l.id));
+  // Slot ist sichtbar, wenn alle seine (noch vorhandenen) Listen zur gewählten Sprache gehören
+  const slotSichtbar = s => {
+    if (sprachFilter === "alle") return true;
+    const ids = (s.konfiguration?.listenIds || []).filter(id => listenIndex.some(l => l.id === id));
+    return ids.length > 0 && ids.every(id => sichtbareIds.has(id));
+  };
+  // Flagge vor Listennamen nur, wenn "Alle Sprachen" gewählt und mehrere vorhanden
+  const listenFlagge = l => sprachFilter === "alle" && vorhandeneSprachen.length > 1 ? sprachInfo(listeSprache(l)).flagge + " " : "";
+  const spracheVonListe = id => listeSprache(listenIndex.find(l => l.id === id));
+  // Vorlese-Sprache einer Vokabel (Quiz-Vokabeln tragen _listeId)
+  const vokLang = (vok, typ) => spalteLang(typ, vok?._listeId ? spracheVonListe(vok._listeId) : listeSprache(aktiveListe));
+
+  function wechsleSprache(code) {
+    setSprachMenuOffen(false);
+    speichereEinst({ ...einstellungen, sprache: code });
+    if (code === "alle") return;
+    const passt = id => spracheVonListe(id) === code;
+    // Quiz: Auswahl/Konfiguration mit Listen anderer Sprache zurücksetzen
+    if (quizTabListen.some(id => !passt(id))) {
+      setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false);
+      lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus("alle"); setQuizPaketGroesse(null);
+      setQuizTabListen(quizTabListen.filter(passt));
+      setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set());
+    }
+    // Statistik
+    if (statistikListenIds && [...statistikListenIds].some(id => !passt(id))) {
+      setStatistikAktiverSlot(null); setStatistikSessionDaten(null);
+      const rest = [...statistikListenIds].filter(passt);
+      setStatistikListenIds(rest.length ? new Set(rest) : null);
+      setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
+    } else if (statistikAktiverSlot) {
+      setStatistikAktiverSlot(null); setStatistikSessionDaten(null);
+    }
+    // Listen-Tab: geöffnete Liste anderer Sprache schließen
+    if (aktiveListeId && ansicht === "liste-detail" && !passt(aktiveListeId)) {
+      setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null);
+    }
+    setExportAuswahlModus(false); setExportAusgewaehlt(new Set());
+  }
+
+  function setzeListenSprache(code) {
+    if (!aktiveListe) return;
+    const updated = { ...aktiveListe, sprache: code };
+    lsSet(SK.liste(aktiveListeId), updated);
+    setAktiveListe(updated);
+    speichereIndex(listenIndex.map(l => l.id === aktiveListeId ? { ...l, sprache: code } : l));
+    // Gefilterte Ansicht folgt der Liste, damit sie nicht verschwindet
+    if (sprachFilter !== "alle" && sprachFilter !== code) speichereEinst({ ...einstellungen, sprache: code });
+  }
   const vokabelAnzahl = id => { const l = lsGet(SK.liste(id)); return l ? l.vokabeln.length : 0; };
 
   // ── Listen-Aktionen ───────────────────────────────────────────────────────
@@ -1006,8 +1115,9 @@ export default function VokabelApp() {
     if (!name) { setModalFehler("Bitte einen Namen eingeben."); return; }
     if (listenIndex.some(l => l.name.toLowerCase() === name.toLowerCase())) { setModalFehler("Name bereits vorhanden."); return; }
     const id = "liste_" + Date.now();
-    lsSet(SK.liste(id), neueListeObjekt(id, name));
-    speichereIndex([...listenIndex, { id, name }]);
+    const sprache = sprachFilter === "alle" ? "en" : sprachFilter;
+    lsSet(SK.liste(id), { ...neueListeObjekt(id, name), sprache });
+    speichereIndex([...listenIndex, { id, name, sprache }]);
     setModal(null); setModalInput(""); setModalFehler("");
   }
 
@@ -1197,7 +1307,7 @@ export default function VokabelApp() {
     if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); setStatistikSessionDaten(null); }
     setStatistikListenIds(prev => {
       const currentSet = prev === null
-        ? new Set(listenIndex.map(l => l.id))
+        ? new Set(sichtbareListen.map(l => l.id))
         : new Set(prev);
       if (currentSet.has(id)) {
         currentSet.delete(id);
@@ -1216,7 +1326,7 @@ export default function VokabelApp() {
         }
       } else {
         currentSet.add(id);
-        if (currentSet.size === listenIndex.length) return null;
+        if (currentSet.size === sichtbareListen.length) return null;
       }
       return currentSet;
     });
@@ -1245,7 +1355,7 @@ export default function VokabelApp() {
     });
     // Pass 2 (fallback for files without tags): keyword detection
     if (used.size === 0) {
-      const eKeys = ['english', 'englisch'];
+      const eKeys = SPRACHEN.flatMap(s => s.keys);
       const dKeys = ['deutsch', 'german'];
       let eCount = 0, dCount = 0, iCount = 0;
       headerNamen.forEach((name, idx) => {
@@ -1267,20 +1377,28 @@ export default function VokabelApp() {
     const alleZeilen = normiert.trim().split('\n').filter(z => z.trim());
     if (alleZeilen.length < 2) { setImportFehler("Mindestens 2 Zeilen erforderlich."); return; }
 
+    // Namenszeile "# Name {fr}" (eigener TXT-Export) → Sprache
+    const parseNamensZeile = z => {
+      const m = z.slice(2).trim().match(/^(.*?)\s*\{([a-z]{2})\}$/);
+      return m && SPRACHEN.some(s => s.code === m[2]) ? { name: m[1], sprache: m[2] } : { name: z.slice(2).trim(), sprache: null };
+    };
+    const standardSprache = sprachFilter === "alle" ? "en" : sprachFilter;
+
     const hashIdx = alleZeilen.reduce((acc, z, i) => z.startsWith('# ') ? [...acc, i] : acc, []);
     if (hashIdx.length > 1) {
       const sektionen = hashIdx.map((startIdx, si) => {
         const endIdx = hashIdx[si + 1] ?? alleZeilen.length;
         const sz = alleZeilen.slice(startIdx, endIdx);
-        const name = sz[0].slice(2).trim();
+        const { name, sprache } = parseNamensZeile(sz[0]);
         const rest = sz.slice(1);
         if (rest.length < 2) return null;
         const header = parseZeile(rest[0]);
         const daten = rest.slice(1).map(parseZeile);
         const mapping = autoMappeKolumnen(header.map(h => h.wert));
-        return { name, header, daten, mapping };
+        return { name, header, daten, mapping, sprache: sprache || erkenneSprache(header.map(h => h.wert)) };
       }).filter(Boolean);
       if (!sektionen.length) { setImportFehler("Keine gültigen Listen gefunden."); return; }
+      setImportSprache(standardSprache);
       setImportMehrfachListen(sektionen);
       setImportParsed(null);
       setImportFehler("");
@@ -1290,12 +1408,14 @@ export default function VokabelApp() {
     setImportMehrfachListen(null);
     let zeilen = alleZeilen;
     let erkannterName = '';
+    let erkannteSprache = null;
     if (zeilen[0].startsWith('# ')) {
-      erkannterName = zeilen[0].slice(2).trim();
+      ({ name: erkannterName, sprache: erkannteSprache } = parseNamensZeile(zeilen[0]));
       zeilen = zeilen.slice(1);
       if (zeilen.length < 2) { setImportFehler("Mindestens 2 Zeilen erforderlich."); return; }
     }
     const header = parseZeile(zeilen[0]);
+    setImportSprache(erkannteSprache || erkenneSprache(header.map(h => h.wert)) || standardSprache);
     const daten = zeilen.slice(1).map(parseZeile);
     const mapping = {};
     header.forEach((_, i) => { mapping[i] = null; });
@@ -1314,9 +1434,10 @@ export default function VokabelApp() {
       if (abfragbar.length < 2) continue;
       const id = "liste_" + Date.now() + "_" + n;
       const liste = neueListeObjekt(id, s.name || `Import ${n + 1}`);
+      liste.sprache = s.sprache || importSprache;
       s.header.forEach((h, i) => {
         const typ = s.mapping[i];
-        if (typ) liste.spalten[typ] = { name: h.wert.replace(/\s*\[[EDi][12]\]\s*$/, '').trim(), aktiv: true };
+        if (typ) liste.spalten[typ] = { name: h.wert.replace(/\s*\[[EDi][123]\]\s*$/, '').trim(), aktiv: true };
       });
       s.daten.forEach(zeile => {
         const vok = { id: liste.naechste_id++ };
@@ -1326,7 +1447,7 @@ export default function VokabelApp() {
         liste.vokabeln.push(vok);
       });
       lsSet(SK.liste(id), liste);
-      neuerIndex.push({ id, name: liste.name });
+      neuerIndex.push({ id, name: liste.name, sprache: liste.sprache });
       n++;
     }
     speichereIndex(neuerIndex);
@@ -1339,9 +1460,9 @@ export default function VokabelApp() {
     const neuerIndex = [...listenIndex];
     importJsonData.forEach((l, i) => {
       const id = "liste_" + Date.now() + "_j" + i;
-      const liste = ergaenzeSpalten({ ...l, id });
+      const liste = ergaenzeSpalten({ ...l, id, sprache: listeSprache(l) });
       lsSet(SK.liste(id), liste);
-      neuerIndex.push({ id, name: liste.name });
+      neuerIndex.push({ id, name: liste.name, sprache: liste.sprache });
     });
     speichereIndex(neuerIndex);
     resetImport();
@@ -1450,7 +1571,7 @@ export default function VokabelApp() {
           if (!liste.spalten[typ].aktiv) liste.spalten[typ] = { name: bl.spalten[typ].name, aktiv: true };
         } else {
           // Neue Spalte: Import-Header-Name
-          liste.spalten[typ] = { name: importParsed.header[Number(idx)].wert.replace(/\s*\[[EDi][12]\]\s*$/, '').trim(), aktiv: true };
+          liste.spalten[typ] = { name: importParsed.header[Number(idx)].wert.replace(/\s*\[[EDi][123]\]\s*$/, '').trim(), aktiv: true };
         }
       });
     }
@@ -1467,11 +1588,11 @@ export default function VokabelApp() {
       if (!name) { setImportFehler("Bitte einen Namen eingeben."); return; }
       if (listenIndex.some(l => l.name.toLowerCase() === name.toLowerCase())) { setImportFehler("Name bereits vorhanden."); return; }
       const id = "liste_" + Date.now();
-      const liste = neueListeObjekt(id, name);
+      const liste = { ...neueListeObjekt(id, name), sprache: importSprache };
       aktualisiereSpaltennamen(liste);
       bauVokabeln(liste);
       lsSet(SK.liste(id), liste);
-      speichereIndex([...listenIndex, { id, name }]);
+      speichereIndex([...listenIndex, { id, name, sprache: importSprache }]);
     }
     resetImport();
     setAnsicht("uebersicht");
@@ -2277,22 +2398,28 @@ export default function VokabelApp() {
     if (!quiz || !quiz.eingabe.trim()) return;
     const eingabe = quiz.eingabe.trim();
 
+    // Modus "Einfach": fehlende/falsche Akzente zählen als richtig (mit Hinweis)
+    const tolerant = einstellungen.modus === "einfach";
+    let akzentHinweis = false;
+
     function setzeRichtigAufgedeckt(updates) {
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-      setQuiz(prev => ({...prev, ...updates, eingabe: "", phase: "aufgedeckt", flash: false,
-        richtigAufgedeckt: true, feedback: "", falschFlash: false, aktuelleFehlversuche: 0}));
+      setQuiz(prev => ({...prev, eingabe: "", phase: "aufgedeckt", flash: false,
+        richtigAufgedeckt: true, feedback: akzentHinweis ? AKZENT_HINWEIS : "", falschFlash: false, aktuelleFehlversuche: 0, ...updates}));
     }
 
     if (quiz.phase === "weitere") {
       const erwartet = quiz.antwortTeile[quiz.weitereIndices[quiz.weiterePos]];
-      if (istRichtigeAntwort(eingabe, erwartet)) {
+      const treffer = istRichtigeAntwort(eingabe, erwartet, tolerant);
+      if (treffer) {
+        if (treffer === "akzent") akzentHinweis = true;
         const naechstePos = quiz.weiterePos + 1;
         if (naechstePos >= quiz.weitereIndices.length) {
           // Alle "weitere" erledigt → Lösung zeigen, warten
           setzeRichtigAufgedeckt({});
         } else {
           // Nächstes "weitere" ohne Flash
-          setQuiz(prev => ({...prev, eingabe: "", weiterePos: naechstePos, feedback: ""}));
+          setQuiz(prev => ({...prev, eingabe: "", weiterePos: naechstePos, feedback: akzentHinweis ? AKZENT_HINWEIS : ""}));
         }
       } else {
         setQuiz(prev => ({...prev, eingabe: "", phase: "weitere", feedback: "Nicht ganz – versuch nochmal."}));
@@ -2301,7 +2428,11 @@ export default function VokabelApp() {
     }
 
     const aktVok = getAktVok();
-    const matchIdx = quiz.antwortTeile.findIndex(t => istRichtigeAntwort(eingabe, t));
+    let matchIdx = quiz.antwortTeile.findIndex(t => istRichtigeAntwort(eingabe, t) === true);
+    if (matchIdx === -1 && tolerant) {
+      matchIdx = quiz.antwortTeile.findIndex(t => istRichtigeAntwort(eingabe, t, true));
+      if (matchIdx !== -1) akzentHinweis = true;
+    }
 
     if (matchIdx !== -1) {
       const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, "richtig", 0, einstellungen.modus);
@@ -2310,7 +2441,7 @@ export default function VokabelApp() {
 
       if (restIndices.length > 0) {
         // Mehrere Teile (was/were): direkt zu "weitere", Score bereits gezählt
-        setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", phase: "weitere", weitereIndices: restIndices, weiterePos: 0, feedback: ""}));
+        setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", phase: "weitere", weitereIndices: restIndices, weiterePos: 0, feedback: akzentHinweis ? AKZENT_HINWEIS : ""}));
       } else {
         // Spalte fertig → Lösung zeigen, warten
         setzeRichtigAufgedeckt({liste: neueListe});
@@ -2494,13 +2625,14 @@ export default function VokabelApp() {
     if (!quiz || !quiz.eingabe.trim()) return;
     const aktVok = quiz.vokabeln[quiz.index];
     const wort = aktVok[quiz.diktatSpalte]?.wert || "";
-    if (istRichtigeAntwort(quiz.eingabe.trim(), wort)) {
+    const treffer = istRichtigeAntwort(quiz.eingabe.trim(), wort, einstellungen.modus === "einfach");
+    if (treffer) {
       const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "richtig");
       const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
       const ergebnis = { vokId: aktVok.id, wort, uebersetzung: aktVok[quiz.diktatUeberspalte]?.wert, richtig: true };
       setQuiz(prev => ({
         ...prev, liste: neueListe, eingabe: "", phase: "richtig", flash: false,
-        diktatErgebnisse: [...prev.diktatErgebnisse, ergebnis], feedback: "",
+        diktatErgebnisse: [...prev.diktatErgebnisse, ergebnis], feedback: treffer === "akzent" ? AKZENT_HINWEIS : "",
       }));
     } else {
       setQuiz(prev => ({
@@ -2698,7 +2830,7 @@ export default function VokabelApp() {
               <div className="quiz-label">{quiz.liste.spalten[quiz.diktatSpalte]?.name || quiz.diktatSpalte} — hör genau hin!</div>
               {quiz.diktatSpalte.startsWith('E') && (
                 <button className="diktat-play-btn"
-                  onClick={() => { setDiktatManualPlays(p => p + 1); sprich(diktatWort, spalteLang(quiz.diktatSpalte)); }}>
+                  onClick={() => { setDiktatManualPlays(p => p + 1); sprich(diktatWort, vokLang(aktVok, quiz.diktatSpalte)); }}>
                   <IcoSpkOn s={52}/>
                 </button>
               )}
@@ -2738,6 +2870,7 @@ export default function VokabelApp() {
                     <strong>{diktatWort}</strong>
                     {uebersetzung ? <span style={{color:"#1b5e20"}}> – {uebersetzung}</span> : null}
                     <span style={{color:"#1b5e20"}}> ✓</span>
+                    {quiz.feedback && <div className="quiz-feedback ok" style={{marginTop:6}}>{quiz.feedback}</div>}
                   </div>
                 )}
                 {quiz.phase === "aufgedeckt" && (
@@ -2756,7 +2889,7 @@ export default function VokabelApp() {
                   <>
                     <button className="btn btn-primary" onClick={pruefeDiktatAntwort} {...tt("Eingegebene Lösung prüfen")}>Prüfen</button>
                     {quiz.diktatSpalte.startsWith('E') && (
-                      <button className="btn btn-ghost" onClick={() => sprichDiktatNochmal(diktatWort, spalteLang(quiz.diktatSpalte))} {...tt("Diktat-Wort nochmals mit anderer Stimme vorlesen")}><IcoSpkOn s={18}/> Andere Stimme</button>
+                      <button className="btn btn-ghost" onClick={() => sprichDiktatNochmal(diktatWort, vokLang(aktVok, quiz.diktatSpalte))} {...tt("Diktat-Wort nochmals mit anderer Stimme vorlesen")}><IcoSpkOn s={18}/> Andere Stimme</button>
                     )}
                     <button className="btn btn-ghost" onClick={zeigeDiktatLoesung} {...tt("Lösung anzeigen – kein Punkt, kein Streak")}>Lösung anzeigen</button>
                   </>
@@ -2945,7 +3078,7 @@ export default function VokabelApp() {
                         <div className="quiz-frage-text" style={{textAlign:"center"}}>{frageWert}</div>
                         {quiz.frageTyp.startsWith('E') && (
                           <button className="btn-icon" style={{fontSize:"1.1rem", padding:"2px 4px"}}
-                            onClick={e => { e.stopPropagation(); sprich(frageWert, spalteLang(quiz.frageTyp)); }}><IcoSpk s={16}/></button>
+                            onClick={e => { e.stopPropagation(); sprich(frageWert, vokLang(aktVok, quiz.frageTyp)); }}><IcoSpk s={16}/></button>
                         )}
                       </div>
                     </div>
@@ -2957,7 +3090,7 @@ export default function VokabelApp() {
                           <strong>{v.wert}</strong>
                           {v.typ.startsWith('E') && (
                             <button className="btn-icon" style={{fontSize:"0.95rem", padding:"2px 4px"}}
-                              onClick={e => { e.stopPropagation(); sprich(v.wert, spalteLang(v.typ)); }}><IcoSpk s={16}/></button>
+                              onClick={e => { e.stopPropagation(); sprich(v.wert, vokLang(aktVok, v.typ)); }}><IcoSpk s={16}/></button>
                           )}
                         </div>
                       </div>
@@ -3030,14 +3163,14 @@ export default function VokabelApp() {
                               <div className="quiz-frage-text" style={{textAlign:"center"}}>{quiz.antwortTeile.join(" / ")}</div>
                               {aktAntwortTyp.startsWith('E') && (
                                 <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
-                                  onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}><IcoSpk s={16}/></button>
+                                  onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], vokLang(aktVok, aktAntwortTyp)); }}><IcoSpk s={16}/></button>
                               )}
                             </div>
                           : <div className="quiz-frage-text" style={{textAlign:"center", display:"flex", alignItems:"center", justifyContent:"center", gap:6, minHeight:"44px"}}>
                               {quiz.antwortTeile.join(" / ")}
                               {!isKarteAufgedeckt && aktAntwortTyp.startsWith('E') && (
                                 <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
-                                  onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], spalteLang(aktAntwortTyp)); }}><IcoSpk s={16}/></button>
+                                  onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], vokLang(aktVok, aktAntwortTyp)); }}><IcoSpk s={16}/></button>
                               )}
                             </div>
                       )}
@@ -3135,6 +3268,16 @@ export default function VokabelApp() {
   }
 
 
+  // ── Sprach-Buttons (Import, Liste-Detail) ────────────────────────────────
+  const renderSprachAuswahl = (wert, onWahl) => (
+    <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+      {SPRACHEN.map(s => (
+        <button key={s.code} className={`typ-btn${wert === s.code ? " aktiv" : ""}`}
+          onClick={() => onWahl(s.code)}>{s.flagge} {s.name}</button>
+      ))}
+    </div>
+  );
+
   // ── Slot-Chip Hilfsfunktionen (Quiz-Tab + Statistik-Tab) ─────────────────
   const slotLoeschStil = { background:"#fff0f0", borderColor:"#e74c3c", color:"#c0392b" };
   const renderSlotChip = (id, label, onClick, extraStil = {}) => (
@@ -3158,7 +3301,7 @@ export default function VokabelApp() {
   };
 
   // ── Statistik: Berechnungen ───────────────────────────────────────────────
-  const statistikAlleListenObjekte = listenIndex.map(l => lsGet(SK.liste(l.id))).filter(Boolean);
+  const statistikAlleListenObjekte = sichtbareListen.map(l => lsGet(SK.liste(l.id))).filter(Boolean);
   const statistikGewaehlteListenObjekte = statistikListenIds === null
     ? statistikAlleListenObjekte
     : statistikAlleListenObjekte.filter(l => statistikListenIds.has(l.id));
@@ -3203,8 +3346,32 @@ export default function VokabelApp() {
       <style>{CSS}</style>
       <div className="app">
         <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"#fff"}}>
-        <div className="topbar">
+        <div className="topbar" style={{position:"relative"}}>
           <span className="topbar-title">Vokabel-Trainer</span>
+          {!statistikVollbild && vorhandeneSprachen.length > 1 && (
+            <div style={{position:"absolute", right:12, top:"50%", transform:"translateY(-50%)"}}>
+              <button className="toggle-opt aktiv" style={{padding:"4px 10px", fontSize:"0.78rem", borderRadius:14, cursor:"pointer"}}
+                onClick={() => setSprachMenuOffen(o => !o)}
+                {...tt("Sprache wählen – zeigt nur Listen dieser Sprache")}>
+                {sprachFilter === "alle" ? "🌐" : sprachInfo(sprachFilter).flagge}
+                <span className="sprach-chip-name"> {sprachFilter === "alle" ? "Alle" : sprachInfo(sprachFilter).name}</span> ▾
+              </button>
+              {sprachMenuOffen && (<>
+                <div style={{position:"fixed", inset:0, zIndex:20}} onClick={() => setSprachMenuOffen(false)}/>
+                <div className="karte" style={{position:"absolute", right:0, top:"calc(100% + 6px)", zIndex:21, minWidth:220, marginBottom:0, boxShadow:"0 4px 16px rgba(0,0,0,0.15)"}}>
+                  {[{ code:"alle", flagge:"🌐", name:"Alle Sprachen", anzahl: listenIndex.length },
+                    ...vorhandeneSprachen.map(s => ({ ...s, anzahl: listenIndex.filter(l => listeSprache(l) === s.code).length }))
+                  ].map(s => (
+                    <div key={s.code} className="karte-zeile" style={{cursor:"pointer", background: sprachFilter === s.code ? "#e8f5ee" : undefined}}
+                      onClick={() => wechsleSprache(s.code)}>
+                      <span style={{fontWeight: sprachFilter === s.code ? 700 : 500}}>{s.flagge} {s.name}</span>
+                      <span style={{marginLeft:"auto", color:"#6b6560", fontSize:"0.8rem"}}>{s.anzahl} Liste{s.anzahl !== 1 ? "n" : ""}</span>
+                    </div>
+                  ))}
+                </div>
+              </>)}
+            </div>
+          )}
           {statistikVollbild && (
             <button onClick={() => setStatistikVollbild(false)}
               style={{position:"absolute", right:14, top:"50%", transform:"translateY(-50%)",
@@ -3275,7 +3442,7 @@ export default function VokabelApp() {
                   .then(() => { setPromptKopiert(true); setTimeout(() => setPromptKopiert(false), 2000); });
               }}>{promptKopiert ? "✓" : "📋 Prompt"}</button>
             )}
-            <button className="btn btn-ghost btn-sm" onClick={e => { e.stopPropagation(); setAnsicht("ki-prompt"); }}>Prompt generieren</button>
+            <button className="btn btn-ghost btn-sm" onClick={e => { e.stopPropagation(); setPromptSprache(sprachFilter === "alle" ? "en" : sprachFilter); setAnsicht("ki-prompt"); }}>Prompt generieren</button>
           </div>
         )}
 
@@ -3285,7 +3452,7 @@ export default function VokabelApp() {
             <span className="liste-detail-header-name">KI-Prompt generieren</span>
             <button className="btn btn-primary btn-sm"
               onClick={() => {
-                const text = generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus);
+                const text = generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus, promptSprache);
                 navigator.clipboard.writeText(text)
                   .then(() => {
                     setLetzterPrompt(text);
@@ -3314,7 +3481,7 @@ export default function VokabelApp() {
                   <div className="karte">
                     {importJsonData.map((l, i) => (
                       <div key={i} className="karte-zeile">
-                        <span style={{fontWeight:600}}>{l.name}</span>
+                        <span style={{fontWeight:600}}>{sprachInfo(listeSprache(l)).flagge} {l.name}</span>
                         <span style={{color:"#6b6560", fontSize:"0.85rem", marginLeft:"auto"}}>{l.vokabeln?.length || 0} Vokabeln</span>
                       </div>
                     ))}
@@ -3335,11 +3502,17 @@ export default function VokabelApp() {
                   <div className="karte">
                     {importMehrfachListen.map((s, i) => (
                       <div key={i} className="karte-zeile">
-                        <span style={{fontWeight:600}}>{s.name}</span>
+                        <span style={{fontWeight:600}}>{sprachInfo(s.sprache || importSprache).flagge} {s.name}</span>
                         <span style={{color:"#6b6560", fontSize:"0.85rem", marginLeft:"auto"}}>{s.daten.length} Vokabeln</span>
                       </div>
                     ))}
                   </div>
+                  {importMehrfachListen.some(s => !s.sprache) && (
+                    <div style={{marginBottom:16}}>
+                      <label className="inp-label">Fremdsprache für Listen ohne erkannte Sprache</label>
+                      {renderSprachAuswahl(importSprache, setImportSprache)}
+                    </div>
+                  )}
                   {importFehler && <div className="fehler">{importFehler}</div>}
                   <div style={{display:"flex", gap:10, marginBottom:24}}>
                     <button className="btn btn-ghost" onClick={() => { setImportMehrfachListen(null); }}>Zurück</button>
@@ -3430,17 +3603,19 @@ export default function VokabelApp() {
                         <input className="inp" value={importNeuName}
                           onChange={e => { setImportNeuName(e.target.value); setImportFehler(""); }}
                           placeholder="z.B. Irregular Verbs" />
+                        <label className="inp-label" style={{marginTop:12}}>Fremdsprache (Spalten E1–E3)</label>
+                        {renderSprachAuswahl(importSprache, setImportSprache)}
                       </div>
                     )}
                     {importZielTyp === "bestehend" && (
                       <div style={{padding:"0 16px 16px"}}>
-                        {listenIndex.length === 0 ? (
+                        {sichtbareListen.length === 0 ? (
                           <div style={{color:"#6b6560", fontSize:"0.85rem"}}>Noch keine Listen vorhanden.</div>
                         ) : (
                           <select className="inp" value={importBestehendId}
                             onChange={e => { setImportBestehendId(e.target.value); setImportFehler(""); }}>
                             <option value="">– Liste wählen –</option>
-                            {listenIndex.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                            {sichtbareListen.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                           </select>
                         )}
                       </div>
@@ -3560,6 +3735,8 @@ export default function VokabelApp() {
                 ? "KI erstellt neue Vokabeln zum angegebenen Thema."
                 : "KI liest Vokabeln aus einem beigefügten Foto und formatiert sie ins Import-Format."}
             </div>
+            <div className="sektion-label" style={{marginBottom:8}}>Fremdsprache</div>
+            <div style={{marginBottom:16}}>{renderSprachAuswahl(promptSprache, setPromptSprache)}</div>
             {promptModus === "generieren" && (
               <>
                 <div className="sektion-label" style={{marginBottom:8}}>Thema</div>
@@ -3591,7 +3768,7 @@ export default function VokabelApp() {
               <div className="toggle-row">
                 <div>
                   <div className="toggle-label">Beispielsätze</div>
-                  <div className="toggle-sub">Info-Spalte mit englischen Beispielsätzen</div>
+                  <div className="toggle-sub">Info-Spalte mit Beispielsätzen auf {sprachInfo(promptSprache).name}</div>
                 </div>
                 <div className="toggle-btn">
                   <button className={`toggle-opt${!promptBeispiele?" aktiv":""}`} onClick={() => setPromptBeispiele(false)}>Nein</button>
@@ -3601,7 +3778,7 @@ export default function VokabelApp() {
               <div className="toggle-row" style={{borderTop:"1px solid #e0dbd2"}}>
                 <div>
                   <div className="toggle-label">Synonyme</div>
-                  <div className="toggle-sub">Info-Spalte mit 2–4 englischen Synonymen</div>
+                  <div className="toggle-sub">Info-Spalte mit 2–4 Synonymen auf {sprachInfo(promptSprache).name}</div>
                 </div>
                 <div className="toggle-btn">
                   <button className={`toggle-opt${!promptSynonyme?" aktiv":""}`} onClick={() => setPromptSynonyme(false)}>Nein</button>
@@ -3611,7 +3788,7 @@ export default function VokabelApp() {
             </div>
             <div className="sektion-label" style={{marginBottom:8, marginTop:16}}>Generierter Prompt</div>
             <textarea className="inp" rows={12} readOnly
-              value={generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus)}
+              value={generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus, promptSprache)}
               style={{fontFamily:"monospace", fontSize:"0.78rem", lineHeight:1.6}} />
           </div>
         )}
@@ -3716,18 +3893,18 @@ export default function VokabelApp() {
                                   Neu
                                 </button>
                               )}
-                              {slots.gespeichert.map(s => renderSlotChip(
+                              {slots.gespeichert.filter(slotSichtbar).map(s => renderSlotChip(
                                 s.id, slotChipLabel(s),
                                 () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:s.id}) : ladeSlot('gespeichert', s.id),
                                 chipStil('gespeichert', s.id)
                               ))}
                             </div>
                           </div>
-                          {slots.verlauf.length > 0 && (
+                          {slots.verlauf.some(slotSichtbar) && (
                             <div style={{marginBottom:14}}>
                               <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Verlauf</div>
                               <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                                {slots.verlauf.map(s => renderSlotChip(
+                                {slots.verlauf.filter(slotSichtbar).map(s => renderSlotChip(
                                   s.id, slotChipLabel(s),
                                   () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:s.id}) : ladeSlot('verlauf', s.id),
                                   chipStil('verlauf', s.id)
@@ -3755,9 +3932,9 @@ export default function VokabelApp() {
                       <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
                         {listenAuswahlAufgeklappt ? (
                           <>
-                            {n < listenIndex.length && (
+                            {n < sichtbareListen.length && (
                               <button className="btn btn-ghost btn-sm"
-                                onClick={() => setQuizTabListen(listenIndex.map(l => l.id))}
+                                onClick={() => setQuizTabListen(sichtbareListen.map(l => l.id))}
                                 {...tt("Alle Listen auswählen")}>
                                 Alle
                               </button>
@@ -3796,10 +3973,10 @@ export default function VokabelApp() {
                 {/* LISTEN-AUSWAHL Inhalt */}
                 <div ref={listenContainerRef} style={{overflow:'hidden', paddingTop: listenAuswahlAufgeklappt ? 16 : 0}}>
                   {listenAuswahlAufgeklappt && (<>
-                    {listenIndex.length === 0
+                    {sichtbareListen.length === 0
                       ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
                       : <div className="karte" style={{marginBottom:16}}>
-                        {listenIndex.map(l => {
+                        {sichtbareListen.map(l => {
                           const ll = lsGet(SK.liste(l.id));
                           const lAbfragbar = ll ? TYPEN.filter(t => !t.startsWith('i') && ll.spalten[t].aktiv) : [];
                           const lInfo = ll ? TYPEN.filter(t => t.startsWith('i') && ll.spalten[t].aktiv) : [];
@@ -3810,7 +3987,7 @@ export default function VokabelApp() {
                               onClick={() => toggleQuizTabListe(l.id)}>
                               <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
                               <div style={{flex:1}}>
-                                <div style={{fontWeight:600, fontSize:"0.9rem"}}>{l.name}</div>
+                                <div style={{fontWeight:600, fontSize:"0.9rem"}}>{listenFlagge(l)}{l.name}</div>
                                 <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:2}}>
                                   {anzahl} Vokabel{anzahl!==1?"n":""}
                                   {ll && lAbfragbar.map(t => <span key={t} className="spalten-badge aktiv" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
@@ -4227,7 +4404,7 @@ export default function VokabelApp() {
                         <div className="toggle-row">
                           <div>
                             <div className="toggle-label">Modus</div>
-                            <div className="toggle-sub">{einstellungen.modus === "einfach" ? "Lösung anzeigen ohne Score-Einfluss." : "Lösung anzeigen zieht 1 Punkt ab."}</div>
+                            <div className="toggle-sub">{einstellungen.modus === "einfach" ? "Lösung anzeigen ohne Score-Einfluss. Fehlende Akzente (ete statt été) gelten als richtig." : "Lösung anzeigen zieht 1 Punkt ab."}</div>
                           </div>
                           <div className="toggle-btn">
                             <button className={`toggle-opt${einstellungen.modus==="einfach"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"einfach"})} {...tt("3 Tippversuche – Punkte erst beim dritten Fehlversuch abziehen")}>Einfach</button>
@@ -4430,11 +4607,11 @@ export default function VokabelApp() {
         {/* ── Listen-Übersicht ── */}
         {tab === "listen" && ansicht === "uebersicht" && (
           <div className="sektion">
-            {listenIndex.length === 0 ? (
+            {sichtbareListen.length === 0 ? (
               <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.<br/>Tippe auf <strong>+</strong> um eine neue Liste anzulegen.</div></div>
             ) : (
               <div className="karte">
-                {listenIndex.map(l => {
+                {sichtbareListen.map(l => {
                   const anzahl = vokabelAnzahl(l.id);
                   const liste = lsGet(SK.liste(l.id));
                   const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
@@ -4457,7 +4634,7 @@ export default function VokabelApp() {
                         </div>
                       )}
                       <div className="karte-zeile-info">
-                        <div className="karte-zeile-name">{l.name}</div>
+                        <div className="karte-zeile-name">{listenFlagge(l)}{l.name}</div>
                         <div className="karte-zeile-sub">
                           {anzahl} Vokabel{anzahl !== 1 ? "n" : ""}{" "}
                           {aktSpalten.map(t => <span key={t} className="spalten-badge aktiv">{liste.spalten[t].name || t}</span>)}
@@ -4539,6 +4716,12 @@ export default function VokabelApp() {
                 </button>
               )}
 
+              <div className="sektion-label" style={{marginBottom:10}}>Fremdsprache</div>
+              <div className="karte" style={{padding:"12px 16px"}}>
+                {renderSprachAuswahl(listeSprache(aktiveListe), setzeListenSprache)}
+                <div className="karte-zeile-sub" style={{marginTop:8}}>Gilt für die Spalten E1–E3 (Vorlesen, Diktat, Sprachfilter).</div>
+              </div>
+
               <div className="sektion-label" style={{marginBottom:10}}>Spalten</div>
               <div className="karte">
                 {TYPEN.map(typ => {
@@ -4570,7 +4753,7 @@ export default function VokabelApp() {
                   </button>
                 </div>
                 <div style={{display:"flex", gap:6}}>
-                  {listenIndex.filter(l => l.id !== aktiveListeId).length > 0 && (
+                  {sichtbareListen.filter(l => l.id !== aktiveListeId).length > 0 && (
                     <button className="btn btn-ghost btn-sm" style={{background:"#fff"}}
                       onClick={() => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); }}
                       {...tt("Vokabeln aus einer anderen Liste in diese Liste einfügen")}>
@@ -4628,7 +4811,7 @@ export default function VokabelApp() {
                                   aktiveSpalten.filter(typ => typ.startsWith('E')).forEach(typ => {
                                     if (!vok[typ]?.wert) return;
                                     const u = new SpeechSynthesisUtterance(vok[typ].wert.split('/')[0].trim());
-                                    u.lang = spalteLang(typ);
+                                    u.lang = spalteLang(typ, listeSprache(aktiveListe));
                                     window.speechSynthesis.speak(u);
                                   });
                                 }}><IcoSpk s={16}/></button>
@@ -4689,18 +4872,18 @@ export default function VokabelApp() {
                           Neu
                         </button>
                       )}
-                      {slots.gespeichert.map(s => renderSlotChip(
+                      {slots.gespeichert.filter(slotSichtbar).map(s => renderSlotChip(
                         s.id, slotChipLabel(s),
                         () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:s.id}) : ladeSlotStatistik('gespeichert', s.id),
                         chipStil('gespeichert', s.id, statistikAktiverSlot)
                       ))}
                     </div>
                   </div>
-                  {slots.verlauf.length > 0 && (
+                  {slots.verlauf.some(slotSichtbar) && (
                     <div style={{marginBottom:14, padding:"0 16px"}}>
                       <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Verlauf</div>
                       <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                        {slots.verlauf.map(s => renderSlotChip(
+                        {slots.verlauf.filter(slotSichtbar).map(s => renderSlotChip(
                           s.id, slotChipLabel(s),
                           () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:s.id}) : ladeSlotStatistik('verlauf', s.id),
                           chipStil('verlauf', s.id, statistikAktiverSlot)
@@ -4771,9 +4954,9 @@ export default function VokabelApp() {
             {statistikListenAufgeklappt && (
               <div ref={statistikListenContainerRef} style={{background:"#f7f5f0", borderBottom:"1px solid #e0dbd2", padding:"8px 16px"}}>
                 <div className="karte" style={{marginBottom:0}}>
-                  {listenIndex.length === 0
+                  {sichtbareListen.length === 0
                     ? <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.85rem"}}>Keine Listen vorhanden.</div>
-                    : listenIndex.map(l => {
+                    : sichtbareListen.map(l => {
                         const ll = statistikAlleListenObjekte.find(x => x.id === l.id);
                         const anzahl = ll ? ll.vokabeln.length : 0;
                         const gewaehlt = statistikListenIds === null || statistikListenIds.has(l.id);
@@ -4782,7 +4965,7 @@ export default function VokabelApp() {
                             onClick={() => toggleStatistikListe(l.id)}>
                             <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
                             <div style={{flex:1}}>
-                              <div style={{fontWeight:600, fontSize:"0.9rem"}}>{l.name}</div>
+                              <div style={{fontWeight:600, fontSize:"0.9rem"}}>{listenFlagge(l)}{l.name}</div>
                               <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:2}}>{anzahl} Vokabel{anzahl!==1?"n":""}</div>
                             </div>
                           </div>
@@ -5299,7 +5482,7 @@ export default function VokabelApp() {
               {infoModus === "konzept" ? (
                 <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.75, color:"#3b3832"}}>
                   {[
-                    {titel:"Listen", text:"Alles beginnt mit einer Liste. Eine Liste ist eine Sammlung von Vokabelpaaren – zum Beispiel Deutsch und Englisch, oder Begriff und Erklärung. Jede Liste kann bis zu sieben Spalten haben (drei Fremdsprache, zwei Deutsch, zwei Info), die du frei benennen kannst – z. B. für unregelmäßige Verben: Infinitiv, Simple Past, Past Participle. Du kannst so viele Listen anlegen wie du möchtest, sie importieren, exportieren und teilen."},
+                    {titel:"Listen", text:"Alles beginnt mit einer Liste. Eine Liste ist eine Sammlung von Vokabelpaaren – zum Beispiel Deutsch und Englisch, oder Begriff und Erklärung. Jede Liste kann bis zu sieben Spalten haben (drei Fremdsprache, zwei Deutsch, zwei Info), die du frei benennen kannst – z. B. für unregelmäßige Verben: Infinitiv, Simple Past, Past Participle. Jede Liste hat eine Fremdsprache; oben rechts kannst du zwischen den Sprachen wechseln. Du kannst so viele Listen anlegen wie du möchtest, sie importieren, exportieren und teilen."},
                     {titel:"Vokabelgruppen", text:"Für das Quiz wählst du aus, welche Vokabeln abgefragt werden sollen. Das ist deine Vokabelgruppe: entweder alle Vokabeln einer oder mehrerer Listen, oder eine gezielte Auswahl einzelner Einträge per Checkbox oder Von–Bis-Bereich. Die Vokabelgruppe ist das Material für eine Abfragerunde."},
                     {titel:"Abfragen", text:"Eine Abfrage geht durch alle Vokabeln der Gruppe einmal durch. Dabei bewertest du dich selbst: War die Antwort richtig oder falsch? Das Ergebnis fließt direkt in den Score ein. Jede Vokabel hat einen eigenen Score, der über Zeit steigt oder fällt. Unbeantwortete Vokabeln starten bei 0 und werden optionally zuerst gestellt."},
                     {titel:"Modi", text:"Du kannst zwischen drei Abfrage-Modi wählen:\n\nKarte (Frage–Antwort): Die Frage wird angezeigt, du denkst nach, tippst die Karte an um die Antwort zu sehen, und bewertest dich selbst mit Richtig oder Falsch.\n\nWechselnd: Frage- und Antwortspalte wechseln sich zwischen den Vokabeln ab – hält das Gehirn aktiver.\n\nDiktat: Die Antwort wird vorgelesen, du tippst sie ein. Ideal für Hörverstehen und Schreibübungen."},
@@ -5332,6 +5515,8 @@ export default function VokabelApp() {
                   {k:"Vokabeln [+]", v:"Neue Vokabel am Ende der Liste hinzufügen."},
                   {k:"Stift an Vokabel", v:"Vokabel bearbeiten oder löschen."},
                   {k:"Spalten", v:"Jede Liste hat bis zu 7 Spalten: E1–E3 (Fremdsprache), D1–D2 (Deutsch), i1–i2 (Info). Spalten lassen sich benennen und aktivieren/deaktivieren. Der Stift-Button neben der Spalte öffnet den Namen-Editor."},
+                  {k:"Fremdsprache", v:"Legt fest, welche Sprache in den Spalten E1–E3 steht (Englisch, Französisch, Spanisch …). Danach richten sich Vorlese-Stimme, Diktat und der Sprach-Filter."},
+                  {k:"Sprach-Auswahl (oben rechts)", v:"Erscheint, sobald Listen in mehr als einer Sprache vorhanden sind. Zeigt in Listen, Quiz und Statistik nur Listen der gewählten Sprache – oder alle."},
                   {k:"Quiz starten", v:"Wechselt direkt zum Quiz-Tab mit dieser Liste vorausgewählt."},
                   {k:"Statistik", v:"Öffnet die Statistik für diese Liste."},
                   {k:"Zusammenführen", v:"Fügt die Vokabeln einer anderen Liste in diese Liste ein."},
@@ -5552,7 +5737,7 @@ export default function VokabelApp() {
         </div>
       )}
       {modal === "liste-zusammenfuehren" && aktiveListe && (() => {
-        const andereListn = listenIndex.filter(l => l.id !== aktiveListeId);
+        const andereListn = sichtbareListen.filter(l => l.id !== aktiveListeId);
         const mergeQuelle = mergeQuelleId ? lsGet(SK.liste(mergeQuelleId)) : null;
         const neueSpalten = mergeQuelle ? TYPEN.filter(t => !aktiveListe.spalten[t].aktiv && mergeQuelle.spalten[t].aktiv) : [];
         return (
