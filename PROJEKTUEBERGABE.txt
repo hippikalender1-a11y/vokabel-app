@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-25  (Session 36 — PWA, Sprachen, Score, Fixes)
-Letzter Commit: 46d7b53
+Letzter Commit: 670fa23
 
 DATEIPFADE
 ----------
@@ -977,6 +977,27 @@ TEST: e2e/statistik.mjs 8/8.
 
 
 ================================================================
+SESSION 36 (FORTSETZUNG) — LERNFORTSCHRITT IN % (670fa23)
+================================================================
+Nutzer-Einstellung: Gelernt-Schwelle +3 (≈ 3–4× in Folge richtig;
+  durch Streak-Bonus erreicht auch Score −10 nach 4 Runden +3).
+Statistik:
+  alleVoks = immer ALLE Vokabeln (Kennzahlen, Boxen, Prozent).
+  anzeigeVoks = ohne Gelernte, wenn statistikGelerntEinschliessen=false
+    → nur Graph + Vokabelliste.
+  anteil(score) = clamp(score / schwelle, 0, 1); lernFortschritt =
+    Mittelwert × 100 (100 % = alle gelernt). Diktat analog (diktatFortschritt).
+  Session-Modus: fortschrittDelta = jetzt − (mit startScores) in Pp.
+  Kopfzeile: "Lernfortschritt" groß %, darunter "x / y gelernt · Ø Score";
+    Schwelle Aus → alte Ø-Score-Anzeige.
+  Knopf "✓ Gelernt N" (Anzahl); zurRundenStatistik setzt ihn auf anzeigen.
+TEST: e2e/fortschritt.mjs 9/9.
+Weitere Ideen (offen, vom Nutzer noch nicht entschieden): "+N neu gelernt"
+  in Rundenauswertung, Fortschritt je Liste in Listen-Übersicht,
+  100-%-Gratulation.
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -1030,7 +1051,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 46d7b53 (Session 36 — PWA, E3, Sprachen, Score, MC, Statistik, Fixes)
+Letzter Commit: 670fa23 (Session 36 — PWA, E3, Sprachen, Score, MC, Statistik, Lernfortschritt)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste; Wiederholung gelernter
