@@ -746,75 +746,71 @@ export default function VokabelApp() {
     return () => obs.disconnect();
   }, []);
 
-  // Listenauswahl: schließt wenn Inhalt-Unterkante die Header-Unterkante passiert
+  // ── Rolladen-Bereiche: Zuklappen beim Weiterscrollen, mit Bremse am Bereichsende ──
+  // Ein offener Bereich klappt erst zu, wenn sein Ende sichtbar war und das Scrollen dort
+  // angehalten hat ("freigegeben"). Schwung, der unfreigegeben übers Ende hinausläuft,
+  // klappt nicht zu, sondern gleitet zurück, bis das Ende wieder unten sichtbar ist.
+  const [zuklappHinweis, setZuklappHinweis] = useState(false);
+  const zuklappFreiRef = useRef(new Set());
+  const kontexteRef = useRef(() => []);
+  kontexteRef.current = () => {
+    const q = headerH + slotH + listenauswahlHeaderH;
+    return [
+      ["slot",      slotContainerRef,            headerH + slotH,                         () => setSlotSektionAufgeklappt(false)],
+      ["listen",    listenContainerRef,          q,                                       () => setListenAuswahlAufgeklappt(false)],
+      ["vokabeln",  einzelauswahlRef,            q + alleBereichH,                        () => setQuizListeAufgeklappt(false)],
+      ["modus",     abfrageModusContainerRef,    q + alleBereichH + abfrageModusH,        () => setQuizAbfrageModusAufgeklappt(false)],
+      ["reihe",     reihenfolgeContainerRef,     q + alleBereichH + abfrageModusH + reihenfolgeH, () => setQuizReihenfolgeAufgeklappt(false)],
+      ["einst",     einstellungenContainerRef,   q + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, () => setQuizEinstellungenAufgeklappt(false)],
+      ["session",   sessionContainerRef,         q + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH, () => setQuizSessionAufgeklappt(false), quizSessionAufgeklappt],
+      ["statListen", statistikListenContainerRef, headerH + slotH,                        () => setStatistikListenAufgeklappt(false)],
+      ["statVok",   statistikEinzelauswahlRef,   headerH + slotH + statistikListenHeaderH, () => setStatistikEinzelauswahlAufgeklappt(false)],
+      ["info",      infoKontextContainerRef,     infoHeaderRef.current?.getBoundingClientRect().bottom ?? 0, () => setInfoModus("uebersicht"), infoModus !== "uebersicht"],
+    ].filter(([, ref, , , offen = true]) => offen && ref.current && ref.current.offsetHeight > 0)
+     .map(([key, ref, linie, schliessen]) => ({ key, el: ref.current, linie, schliessen }));
+  };
+  const haltPruefenRef = useRef(() => {});
+  haltPruefenRef.current = () => {
+    if (dropdownImmuneRef.current) return;
+    const frei = new Set();
+    let zurueck = null, hinweis = false;
+    for (const k of kontexteRef.current()) {
+      const r = k.el.getBoundingClientRect();
+      if (r.bottom > window.innerHeight) continue;                 // Ende noch nicht sichtbar
+      if (r.bottom > k.linie || zuklappFreiRef.current.has(k.key)) {
+        frei.add(k.key);
+        if (r.top < k.linie) hinweis = true;                       // langer, gescrollter Bereich
+      } else if (zurueck === null) zurueck = r.bottom;             // Schwung zu weit, ohne Freigabe
+    }
+    if (zurueck !== null) window.scrollBy({ top: zurueck - (window.innerHeight - 96), behavior: "smooth" });
+    zuklappFreiRef.current = frei;
+    setZuklappHinweis(hinweis);
+  };
+  function klappeFreieZu() {
+    kontexteRef.current().forEach(k => k.schliessen());
+    zuklappFreiRef.current = new Set();
+    setZuklappHinweis(false);
+  }
   useEffect(() => {
+    let timer = null;
     const onScroll = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => haltPruefenRef.current(), 200);
       if (dropdownImmuneRef.current) return;
-      const el = listenContainerRef.current;
-      if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + slotH + listenauswahlHeaderH) {
-        setListenAuswahlAufgeklappt(false);
-      }
+      kontexteRef.current().forEach(k => {
+        if (zuklappFreiRef.current.has(k.key) && k.el.getBoundingClientRect().bottom <= k.linie) k.schliessen();
+      });
     };
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, slotH, listenauswahlHeaderH]);
+    return () => { clearTimeout(timer); window.removeEventListener('scroll', onScroll); };
+  }, []);
+  // Beim Auf-/Zuklappen neu prüfen (kurze Bereiche sind sofort freigegeben)
+  useEffect(() => {
+    const t = setTimeout(() => haltPruefenRef.current(), 350);
+    return () => clearTimeout(t);
+  }, [tab, slotSektionAufgeklappt, listenAuswahlAufgeklappt, quizListeAufgeklappt, quizAbfrageModusAufgeklappt, quizReihenfolgeAufgeklappt,
+      quizEinstellungenAufgeklappt, quizSessionAufgeklappt, statistikListenAufgeklappt, statistikEinzelauswahlAufgeklappt, infoModus]);
 
-  // Einzelauswahl: schließt wenn Inhalt-Unterkante die Quiz-Button-Oberkante passiert
-  useEffect(() => {
-    const onScroll = () => {
-      if (dropdownImmuneRef.current) return;
-      const el = einzelauswahlRef.current;
-      if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + slotH + listenauswahlHeaderH + alleBereichH) {
-        setQuizListeAufgeklappt(false);
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, slotH, listenauswahlHeaderH, alleBereichH]);
-
-  // Abfrage-Modus: schließt wenn Inhalt-Unterkante die Abfrage-Modus-Zeile-Unterkante passiert
-  useEffect(() => {
-    const onScroll = () => {
-      if (dropdownImmuneRef.current) return;
-      const el = abfrageModusContainerRef.current;
-      if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH) {
-        setQuizAbfrageModusAufgeklappt(false);
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, slotH, listenauswahlHeaderH, alleBereichH, abfrageModusH]);
-
-  // Reihenfolge: schließt wenn Inhalt-Unterkante die Reihenfolge-Zeile-Unterkante passiert
-  useEffect(() => {
-    const onScroll = () => {
-      if (dropdownImmuneRef.current) return;
-      const el = reihenfolgeContainerRef.current;
-      if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH) {
-        setQuizReihenfolgeAufgeklappt(false);
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, slotH, listenauswahlHeaderH, alleBereichH, abfrageModusH, reihenfolgeH]);
-
-  // Einstellungen: schließt wenn Inhalt-Unterkante die Einstellungen-Zeile-Unterkante passiert
-  useEffect(() => {
-    const onScroll = () => {
-      if (dropdownImmuneRef.current) return;
-      const el = einstellungenContainerRef.current;
-      if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH) {
-        setQuizEinstellungenAufgeklappt(false);
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, slotH, listenauswahlHeaderH, alleBereichH, abfrageModusH, reihenfolgeH, einstellungenH]);
 
   // Alle/Bereich-Zeile Höhe messen
   useEffect(() => {
@@ -886,35 +882,6 @@ export default function VokabelApp() {
     return () => obs.disconnect();
   }, [tab, quizTabListen.length]);
 
-  // Slot-Chips auto-close beim Scrollen
-  useEffect(() => {
-    const onScroll = () => {
-      if (dropdownImmuneRef.current) return;
-      const el = slotContainerRef.current;
-      if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + slotH) {
-        setSlotSektionAufgeklappt(false);
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [slotSektionAufgeklappt, headerH, slotH]);
-
-  // Session-Kontext auto-close beim Scrollen
-  useEffect(() => {
-    const onScroll = () => {
-      if (dropdownImmuneRef.current) return;
-      if (!quizSessionAufgeklappt) return;
-      const el = sessionContainerRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      if (rect.bottom <= headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH) {
-        setQuizSessionAufgeklappt(false);
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [quizSessionAufgeklappt, headerH, slotH, listenauswahlHeaderH, alleBereichH, abfrageModusH, reihenfolgeH, einstellungenH, sessionH]);
 
   // Von-Bis-Modus beenden wenn Einzelauswahl schließt (manuell oder auto)
   useEffect(() => {
@@ -950,42 +917,6 @@ export default function VokabelApp() {
     return () => obs.disconnect();
   }, [tab, statistikVollbild]);
 
-  useEffect(() => {
-    const onScroll = () => {
-      if (dropdownImmuneRef.current) return;
-      const el = statistikListenContainerRef.current;
-      if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + slotH) setStatistikListenAufgeklappt(false);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, slotH]);
-
-  useEffect(() => {
-    const onScroll = () => {
-      if (dropdownImmuneRef.current) return;
-      const el = statistikEinzelauswahlRef.current;
-      if (!el || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= headerH + slotH + statistikListenHeaderH) setStatistikEinzelauswahlAufgeklappt(false);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [headerH, slotH, statistikListenHeaderH]);
-
-  // Info-Kontext (Konzept/Anleitung): schließt wenn Inhalt-Unterkante den Info-Header passiert
-  useEffect(() => {
-    if (infoModus === "uebersicht") return;
-    const onScroll = () => {
-      const el = infoKontextContainerRef.current;
-      const hdr = infoHeaderRef.current;
-      if (!el || !hdr || el.offsetHeight === 0) return;
-      if (el.getBoundingClientRect().bottom <= hdr.getBoundingClientRect().bottom) {
-        setInfoModus("uebersicht");
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [infoModus]);
 
   useEffect(() => {
     // Index-Einträge ohne Sprache einmalig aus der Liste übernehmen
@@ -6228,6 +6159,14 @@ export default function VokabelApp() {
         </div>
       )}
 
+      {zuklappHinweis && !quiz && (
+        <button onClick={klappeFreieZu}
+          style={{position:"fixed", left:"50%", bottom:16, transform:"translateX(-50%)", zIndex:50,
+            background:"rgba(45,106,79,0.92)", color:"#fff", border:"none", borderRadius:20, padding:"7px 14px",
+            fontSize:"0.75rem", fontWeight:600, fontFamily:"inherit", boxShadow:"0 2px 10px rgba(0,0,0,0.2)", cursor:"pointer", whiteSpace:"nowrap"}}>
+          ▲ Weiter ziehen oder hier tippen zum Zuklappen
+        </button>
+      )}
       {tooltipEl && (
         <div style={{position:'fixed', zIndex:9999, pointerEvents:'none',
           left: Math.max(8, Math.min(tooltipEl.x - 105, window.innerWidth - 218)),
