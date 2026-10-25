@@ -581,6 +581,7 @@ export default function VokabelApp() {
   const [slotLoeschModus, setSlotLoeschModus] = useState(false);
   const [quizGelerntEinschliessen, setQuizGelerntEinschliessen] = useState(false);
   const [listenGelerntAusblenden, setListenGelerntAusblenden] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState(null);
   const [gespeicherteVokabelgruppe, setGespeicherteVokabelgruppe] = useState(null);
   const [gruppenAenderungsDialog, setGruppenAenderungsDialog] = useState(false);
   const [quizBereichTyp, setQuizBereichTyp] = useState("alle");
@@ -5358,7 +5359,7 @@ export default function VokabelApp() {
                   {k:"Vokabelliste", v:"Alle gefilterten Vokabeln mit Score-Balken (grün = positiv, rot = negativ) und letztem Abfragedatum."},
                 ]},
                 {titel:"Einstellungen-Tab", inhalt:[
-                  {k:"App aktualisieren", v:"Lädt die neueste Version der App. Sinnvoll nach App-Updates."},
+                  {k:"App aktualisieren", v:"„Prüfen“ sucht nach einer neuen App-Version. Wird eine gefunden, erscheint unten der Hinweis „Neue Version verfügbar“ – mit „Aktualisieren“ wird sie aktiv. Die App funktioniert auch offline."},
                   {k:"Gespeicherte Listen", v:"Zeigt, wie viele Listen aktuell auf diesem Gerät gespeichert sind."},
                 ]},
               ].map(abschnitt => (
@@ -5408,12 +5409,21 @@ export default function VokabelApp() {
               <div className="karte-zeile">
                 <div className="karte-zeile-info">
                   <div className="karte-zeile-name">App aktualisieren</div>
-                  <div className="karte-zeile-sub">Version {APP_VERSION} · Neueste Version laden</div>
+                  <div className="karte-zeile-sub">Version {APP_VERSION} · {updateStatus || "Nach neuer Version suchen"}</div>
                 </div>
-                <button className="btn btn-ghost btn-sm" onClick={() => {
-                  const url = window.location.href.split('?')[0] + '?t=' + Date.now();
-                  window.location.replace(url);
-                }} {...tt("App neu laden und auf die neueste Version aktualisieren")}>Neu laden</button>
+                <button className="btn btn-ghost btn-sm" onClick={async () => {
+                  // Offline-App: Service Worker nach neuer Version fragen; UpdateHinweis zeigt dann den Banner
+                  const reg = await navigator.serviceWorker?.getRegistration();
+                  if (!reg) { window.location.reload(); return; }
+                  if (!navigator.onLine) { setUpdateStatus("Keine Internetverbindung"); return; }
+                  setUpdateStatus("Suche…");
+                  try {
+                    await reg.update();
+                    setUpdateStatus(reg.installing || reg.waiting ? "Neue Version gefunden" : "App ist aktuell");
+                  } catch {
+                    setUpdateStatus("Prüfung fehlgeschlagen");
+                  }
+                }} {...tt("Nach neuer App-Version suchen")}>Prüfen</button>
               </div>
             </div>
             <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Daten</div>
