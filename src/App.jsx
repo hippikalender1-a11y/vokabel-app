@@ -2332,7 +2332,7 @@ export default function VokabelApp() {
       antwortTeile: erstesTeile, weitereIndices: [], weiterePos: 0,
       mcButtons: erstesMC?.buttons || [], mcRichtig: erstesMC?.richtig || [],
       vorigeRichtig: [], sessionFalsch: {}, feedback: "", mcWechsel: false,
-      aktuelleFehlversuche: 0, falschFlash: false, richtigMap: {}, _warRichtig: false,
+      aktuelleFehlversuche: 0, falschFlash: false, richtigMap: {}, spaltenErgebnisse: {}, vokErgebnis: null,
       quizRichtigAnzahl: 0, quizFalschAnzahl: 0,
       sessionVokIds: isPakete ? voks.map(v => v.id) : null,
       istSessionModus: isPakete,
@@ -2351,7 +2351,7 @@ export default function VokabelApp() {
   function naechsteVokabelState(prev) {
     const naechsterIdx = prev.index + 1;
     const aktVokId = prev.vokabeln[prev.index]?.id;
-    const warRichtig = prev._warRichtig || (prev.vorigeRichtig?.length > 0);
+    const warRichtig = prev.vokErgebnis === "richtig";
     const richtigMap = (prev.abfrageZiel?.modus === "wiederholung" && aktVokId && warRichtig)
       ? { ...(prev.richtigMap || {}), [aktVokId]: ((prev.richtigMap || {})[aktVokId] || 0) + 1 }
       : (prev.richtigMap || {});
@@ -2374,7 +2374,7 @@ export default function VokabelApp() {
       const teile = vok[antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
       const sp = prev.spalteModus;
       const mc = (sp[antwortTypen[0]] || "tippen") === "mc" ? generiereButtons(voks, vok, antwortTypen[0]) : null;
-      return { ...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, _warRichtig: false, flash: false, index: idx,
+      return { ...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, flash: false, index: idx,
         vokabeln: voks, frageTyp, antwortTypen, antwortTypIndex: 0,
         phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
         mcButtons: mc?.buttons || [], mcRichtig: mc?.richtig || [],
@@ -2413,7 +2413,7 @@ export default function VokabelApp() {
           }
         }
       }
-      return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, _warRichtig: false, flash: false, phase: "fertig"};
+      return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, flash: false, phase: "fertig"};
     }
 
     const { frageTyp, antwortTypen } = getFA(prev.vokabeln, naechsterIdx);
@@ -2424,7 +2424,7 @@ export default function VokabelApp() {
       : prev.spalteModus;
     const modusTyp0 = spalteModus[antwortTypen[0]] || "tippen";
     const mc = modusTyp0 === "mc" ? generiereButtons(prev.vokabeln, naechsteVok, antwortTypen[0]) : null;
-    return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, _warRichtig: false, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
+    return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
       phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
       mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
       vorigeRichtig: [], infoSichtbar: false, infoSeite: 0, feedback: "",
@@ -2438,6 +2438,24 @@ export default function VokabelApp() {
     flashTimerRef.current = setTimeout(() => {
       setQuiz(prev => { if (!prev.flash) return prev; return advanceFn(prev); });
     }, 1000);
+  }
+
+  // Score einmal pro Vokabel: Ergebnis je Antwort-Spalte sammeln, nach der letzten
+  // Spalte auswerten (alle richtig → richtig, sonst falsch bzw. aufgedeckt)
+  function spaltenAbschluss(ergebnis) {
+    const spaltenErgebnisse = { ...(quiz.spaltenErgebnisse || {}), [quiz.antwortTypIndex]: ergebnis };
+    const letzte = quiz.antwortTypIndex >= quiz.antwortTypen.length - 1;
+    if (!letzte || quiz.vokErgebnis) return { spaltenErgebnisse };
+    const alle = quiz.antwortTypen.map((_, i) => spaltenErgebnisse[i] || "aufgedeckt");
+    const vokErgebnis = alle.every(e => e === "richtig") ? "richtig" : alle.includes("falsch") ? "falsch" : "aufgedeckt";
+    const aktVok = getAktVok();
+    const neuerCount = vokErgebnis === "falsch" ? (quiz.sessionFalsch[aktVok.id] || 0) + 1 : 0;
+    const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, vokErgebnis, neuerCount, einstellungen.modus);
+    return {
+      spaltenErgebnisse, vokErgebnis,
+      liste: speichereScore(quiz.liste, aktVok.id, neuFortschritt),
+      sessionFalsch: vokErgebnis === "falsch" ? { ...quiz.sessionFalsch, [aktVok.id]: neuerCount } : quiz.sessionFalsch,
+    };
   }
 
   function pruefeAntwort() {
@@ -2473,7 +2491,6 @@ export default function VokabelApp() {
       return;
     }
 
-    const aktVok = getAktVok();
     let matchIdx = quiz.antwortTeile.findIndex(t => istRichtigeAntwort(eingabe, t) === true);
     if (matchIdx === -1 && tolerant) {
       matchIdx = quiz.antwortTeile.findIndex(t => istRichtigeAntwort(eingabe, t, true));
@@ -2481,29 +2498,24 @@ export default function VokabelApp() {
     }
 
     if (matchIdx !== -1) {
-      const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, "richtig", 0, einstellungen.modus);
-      const neueListe = speichereScore(quiz.liste, aktVok.id, neuFortschritt);
+      const abschluss = spaltenAbschluss("richtig");
       const restIndices = quiz.antwortTeile.map((_, i) => i).filter(i => i !== matchIdx);
 
       if (restIndices.length > 0) {
-        // Mehrere Teile (was/were): direkt zu "weitere", Score bereits gezählt
-        setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", phase: "weitere", weitereIndices: restIndices, weiterePos: 0, feedback: akzentHinweis ? AKZENT_HINWEIS : ""}));
+        // Mehrere Teile (was/were): direkt zu "weitere", Spalte gilt bereits als richtig
+        setQuiz(prev => ({...prev, ...abschluss, eingabe: "", phase: "weitere", weitereIndices: restIndices, weiterePos: 0, feedback: akzentHinweis ? AKZENT_HINWEIS : ""}));
       } else {
         // Spalte fertig → Lösung zeigen, warten
-        setzeRichtigAufgedeckt({liste: neueListe});
+        setzeRichtigAufgedeckt(abschluss);
       }
     } else {
-      const vokId = aktVok.id;
       const neueFehlversuche = (quiz.aktuelleFehlversuche || 0) + 1;
       if (neueFehlversuche >= 3) {
-        // 3. Fehlversuch: Score abziehen, Lösung automatisch anzeigen
-        const neuerCount = (quiz.sessionFalsch[vokId] || 0) + 1;
-        const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, "falsch", neuerCount, einstellungen.modus);
-        const neueListe = speichereScore(quiz.liste, vokId, neuFortschritt);
+        // 3. Fehlversuch: Spalte falsch, Lösung automatisch anzeigen
+        const abschluss = spaltenAbschluss("falsch");
         if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-        setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", phase: "aufgedeckt", flash: false,
-          feedback: "", falschFlash: false, aktuelleFehlversuche: 0,
-          sessionFalsch: {...prev.sessionFalsch, [vokId]: neuerCount}}));
+        setQuiz(prev => ({...prev, ...abschluss, eingabe: "", phase: "aufgedeckt", flash: false,
+          feedback: "", falschFlash: false, aktuelleFehlversuche: 0}));
       } else {
         // 1. oder 2. Fehlversuch: kurz rot aufleuchten, dann zurück
         if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
@@ -2526,11 +2538,9 @@ export default function VokabelApp() {
       const alleGefunden = neueButtons.filter(b => b.korrekt).every(b => b.status === "richtig");
 
       if (alleGefunden) {
-        const aktVok = getAktVok();
-        const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, "richtig", 0, einstellungen.modus);
-        const neueListe = speichereScore(quiz.liste, aktVok.id, neuFortschritt);
+        const abschluss = spaltenAbschluss("richtig");
         setQuiz(prev => ({
-          ...prev, liste: neueListe, mcButtons: neueButtons,
+          ...prev, ...abschluss, mcButtons: neueButtons,
           phase: "aufgedeckt", flash: false, richtigAufgedeckt: true,
         }));
       } else {
@@ -2547,14 +2557,12 @@ export default function VokabelApp() {
   function zeigeLosung() {
     if (!quiz) return;
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    const aktVok = getAktVok();
-    const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, "aufgedeckt", 0, einstellungen.modus);
-    const neueListe = speichereScore(quiz.liste, aktVok.id, neuFortschritt);
+    const abschluss = spaltenAbschluss("aufgedeckt");
     const aktModus = quiz.spalteModus?.[quiz.antwortTypen?.[quiz.antwortTypIndex]] || "tippen";
     const mcUpd = aktModus === "mc"
       ? { mcButtons: quiz.mcButtons.map(b => b.korrekt ? {...b, status: "richtig"} : b) }
       : {};
-    setQuiz(prev => ({...prev, liste: neueListe, eingabe: "", flash: false, phase: "aufgedeckt",
+    setQuiz(prev => ({...prev, ...abschluss, eingabe: "", flash: false, phase: "aufgedeckt",
       feedback: "", falschFlash: false, aktuelleFehlversuche: 0, ...mcUpd}));
   }
 
@@ -2595,15 +2603,16 @@ export default function VokabelApp() {
   function naechsteVokabel() {
     if (!quiz) return;
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    if (quiz.richtigAufgedeckt) {
+    // Auch nach falscher/aufgedeckter Spalte die restlichen Spalten abfragen
+    if (quiz.phase === "aufgedeckt") {
       setQuiz(prev => {
         const naechsterIdx = prev.antwortTypIndex + 1;
-        if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, richtigAufgedeckt: false, _warRichtig: true});
+        if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, richtigAufgedeckt: false});
         const currentTyp = prev.antwortTypen[prev.antwortTypIndex];
-        const currentVorig = {
+        const vorigeRichtig = prev.richtigAufgedeckt ? [...prev.vorigeRichtig, {
           typ: currentTyp, wert: prev.antwortTeile.join(" / "),
           label: prev.liste.spalten[currentTyp]?.name || currentTyp,
-        };
+        }] : prev.vorigeRichtig;
         const nt = prev.antwortTypen[naechsterIdx];
         const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
         const ntModus = prev.mcWechsel ? "mc" : (prev.spalteModus?.[nt] || "tippen");
@@ -2611,8 +2620,8 @@ export default function VokabelApp() {
         return {...prev, flash: false, phase: "eingabe", antwortTypIndex: naechsterIdx,
           antwortTeile: teile, mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
           weitereIndices: [], weiterePos: 0, infoSichtbar: false, richtigAufgedeckt: false,
-          aktuelleFehlversuche: 0, falschFlash: false,
-          vorigeRichtig: [...prev.vorigeRichtig, currentVorig]};
+          aktuelleFehlversuche: 0, falschFlash: false, feedback: "",
+          vorigeRichtig};
       });
     } else {
       setQuiz(prev => naechsteVokabelState(prev));
@@ -2629,11 +2638,7 @@ export default function VokabelApp() {
   function bewerteKarte(gewusst) {
     if (!quiz) return;
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    const aktVok = getAktVok();
-    const neuerCount = gewusst ? 0 : (quiz.sessionFalsch[aktVok.id] || 0) + 1;
-    const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, gewusst ? "richtig" : "falsch", neuerCount, einstellungen.modus);
-    const neueListe = speichereScore(quiz.liste, aktVok.id, neuFortschritt);
-    const sessionFalschNeu = gewusst ? quiz.sessionFalsch : {...quiz.sessionFalsch, [aktVok.id]: neuerCount};
+    const abschluss = spaltenAbschluss(gewusst ? "richtig" : "falsch");
 
     function naechsteSpalteOderVokabel(prev, vorigeRichtig) {
       const naechsterIdx = prev.antwortTypIndex + 1;
@@ -2648,7 +2653,7 @@ export default function VokabelApp() {
     }
 
     if (gewusst) {
-      mitFlash({liste: neueListe, sessionFalsch: sessionFalschNeu}, prev => {
+      mitFlash(abschluss, prev => {
         const vorigeRichtig = [...prev.vorigeRichtig, {
           typ: prev.antwortTypen[prev.antwortTypIndex],
           wert: prev.antwortTeile.join(" / "),
@@ -2657,7 +2662,7 @@ export default function VokabelApp() {
         return naechsteSpalteOderVokabel(prev, vorigeRichtig);
       });
     } else {
-      setQuiz(prev => ({...prev, liste: neueListe, sessionFalsch: sessionFalschNeu, karteNeinFlash: true}));
+      setQuiz(prev => ({...prev, ...abschluss, karteNeinFlash: true}));
       flashTimerRef.current = setTimeout(() => {
         setQuiz(prev => {
           if (!prev.karteNeinFlash) return prev;
@@ -5532,7 +5537,7 @@ export default function VokabelApp() {
                     {titel:"Vokabelgruppen", text:"Für das Quiz wählst du aus, welche Vokabeln abgefragt werden sollen. Das ist deine Vokabelgruppe: entweder alle Vokabeln einer oder mehrerer Listen, oder eine gezielte Auswahl einzelner Einträge per Checkbox oder Von–Bis-Bereich. Die Vokabelgruppe ist das Material für eine Abfragerunde."},
                     {titel:"Abfragen", text:"Eine Abfrage geht durch alle Vokabeln der Gruppe einmal durch. Dabei bewertest du dich selbst: War die Antwort richtig oder falsch? Das Ergebnis fließt direkt in den Score ein. Jede Vokabel hat einen eigenen Score, der über Zeit steigt oder fällt. Unbeantwortete Vokabeln starten bei 0 und werden optionally zuerst gestellt."},
                     {titel:"Modi", text:"Du kannst zwischen drei Abfrage-Modi wählen:\n\nKarte (Frage–Antwort): Die Frage wird angezeigt, du denkst nach, tippst die Karte an um die Antwort zu sehen, und bewertest dich selbst mit Richtig oder Falsch.\n\nWechselnd: Frage- und Antwortspalte wechseln sich zwischen den Vokabeln ab – hält das Gehirn aktiver.\n\nDiktat: Die Antwort wird vorgelesen, du tippst sie ein. Ideal für Hörverstehen und Schreibübungen."},
-                    {titel:"Scoring & Streak", text:"Jede Vokabel hat einen Score (von –10 bis +10). Richtige Antworten geben +1, falsche Antworten kosten Punkte je nach Schwierigkeitsgrad und Fehlerzahl. Wer mehrere Vokabeln hintereinander richtig beantwortet, bekommt ab dem dritten Mal in Folge einen Streak-Bonus – der Score steigt dann schneller."},
+                    {titel:"Scoring & Streak", text:"Jede Vokabel hat einen Score (von –10 bis +10). Richtige Antworten geben +1, falsche Antworten kosten Punkte je nach Schwierigkeitsgrad und Fehlerzahl. Wer mehrere Vokabeln hintereinander richtig beantwortet, bekommt ab dem dritten Mal in Folge einen Streak-Bonus – der Score steigt dann schneller. Hat eine Vokabel mehrere Antwort-Spalten (z. B. Infinitiv, Simple Past, Past Participle), werden alle abgefragt, aber der Score ändert sich nur einmal: richtig nur, wenn alle Spalten gewusst wurden."},
                     {titel:"Reihenfolge & Filter", text:"Du entscheidest, in welcher Reihenfolge die Vokabeln kommen: zufällig gemischt, nach schlechtestem Score (was du noch nicht gut kannst, kommt zuerst), oder in der Originalreihenfolge der Liste. Optional lässt sich ein Score-Filter setzen, sodass nur Vokabeln bis zu einem bestimmten Score angezeigt werden."},
                     {titel:"Sessions & Pakete", text:"Mit dem Session-Modus teilst du die Vokabelgruppe in kleinere Pakete auf – zum Beispiel 10 Vokabeln auf einmal. Nach jedem Paket kannst du pausieren, dann wird der Fortschritt gespeichert. Beim nächsten Mal werden bereits abgefragte Vokabeln übersprungen. So arbeitest du dich über mehrere Sitzungen durch die gesamte Gruppe."},
                     {titel:"Abfrage-Ziel", text:"Standardmäßig wird jede Vokabel einmal abgefragt. Mit dem Abfrage-Ziel kannst du das ändern:\n\nAnzahl: jede Vokabel 1×, 2× oder 3× pro Durchgang.\n\nMit Wiederholung: Vokabeln werden so lange neu eingereiht, bis du sie 1×, 2× oder 3× in Folge richtig beantwortet hast.\n\nScore-Ziel: Vokabeln werden wiederholt, bis ihr Score einen bestimmten Wert erreicht – global oder bezogen auf den Fortschritt der laufenden Session."},
@@ -5588,7 +5593,7 @@ export default function VokabelApp() {
                   {k:"Karte (Frage–Antwort)", v:"Tippe auf die Karte, um die Antwort aufzudecken. Dann: Richtig oder Falsch selbst einschätzen."},
                   {k:"Tippen", v:"Antwort eintippen und bestätigen. Im Einfach-Modus: 3 Versuche. Im Schwer-Modus: 1 Versuch. Nach 3 Fehlern wird die Lösung gezeigt."},
                   {k:"Diktat", v:"Großer Lautsprecher: Wort nochmals vorlesen. Kleiner Lautsprecher: langsamer/erneut. Antwort eintippen."},
-                  {k:"Scoring", v:"Richtig: +1 Punkt, Streak +1. Ab Streak 3: mindestens +2 Punkte. Falsch: Streak auf 0, Punktabzug je nach Fehlerzahl. Aufgedeckt: kein Punkt, kein Streak."},
+                  {k:"Scoring", v:"Richtig: +1 Punkt, Streak +1. Ab Streak 3: mindestens +2 Punkte. Falsch: Streak auf 0, Punktabzug je nach Fehlerzahl. Aufgedeckt: kein Punkt, kein Streak. Mehrere Antwort-Spalten zählen zusammen als eine Bewertung: alle gewusst = richtig, sonst falsch."},
                   {k:"Aufdecken", v:"Zeigt die Antwort ohne Wertung."},
                   {k:"Schließen", v:"Pausiert das Quiz – beim nächsten Start über 'Pakete' weitermachen."},
                 ]},
