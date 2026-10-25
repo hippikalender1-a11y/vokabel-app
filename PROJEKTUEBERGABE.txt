@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-25  (Session 36 — PWA / Offline-Betrieb)
-Letzter Commit: 033efa6
+Letzter Commit: ff48ce7
 
 DATEIPFADE
 ----------
@@ -931,6 +931,29 @@ TEST: score.mjs (Karte + Tippen, 8/8) im Scratchpad.
 
 
 ================================================================
+SESSION 36 (FORTSETZUNG) — MC-FEHLKLICK + PAKET-FIX (ff48ce7)
+================================================================
+MULTIPLE CHOICE:
+  Falscher Klick → spaltenErgebnisse[antwortTypIndex] = "falsch";
+  weitersuchen erlaubt; beim Finden spaltenAbschluss("falsch"),
+  richtigAufgedeckt=false, Feedback MC_FEHLKLICK_HINWEIS.
+  zeigeLosung nach Fehlklick bleibt "falsch" (nicht "aufgedeckt").
+  Feedback-Farbe: "nein" wenn Text mit "Nicht" beginnt.
+
+FIX "NÄCHSTE N VOKABELN" (Pakete + gespeicherte Konfiguration):
+  vokabelgruppeGeaendert war als const NACH den frühen Render-Returns
+  (Quiz/Diktat) definiert → starteQuiz()/starteDiktat() vom Paket-Ende-
+  Screen aus warf ReferenceError (TDZ) im Zweig effSlot.typ==='gespeichert'.
+  Jetzt vor den Returns (bei Sprachen-Filter). Geprüft: keine weiteren
+  Konstanten nach Zeile der ersten Früh-Rückgabe, die vorher benutzt werden.
+  REGEL: Werte, die Handler-Funktionen nutzen, immer VOR dem ersten
+  "if (ansicht === 'quiz' ...) return" definieren.
+
+TESTS (Scratchpad e2e/): score.mjs 13/13, pakete.mjs (quiztab/detail/
+  preset), test.mjs 16/16, export.mjs 17/17, quiz0.mjs 2/2.
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -971,7 +994,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 033efa6 (Session 36 — PWA, E3, Update-Hinweis, Sprachen, Fixes, Score)
+Letzter Commit: ff48ce7 (Session 36 — PWA, E3, Sprachen, Score, MC, Fixes)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste).
