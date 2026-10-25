@@ -1968,6 +1968,20 @@ export default function VokabelApp() {
     if (slotTyp && slotId) updateSlotSF(slotTyp, slotId, null);
   }
 
+  // "Neu": komplett neu beginnen – Session, Listen-/Vokabelauswahl und alle Abfrage-Einstellungen
+  function neueQuizKonfiguration() {
+    setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false);
+    lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus("alle"); setQuizPaketGroesse(null);
+    setQuizTabListen([]);
+    // Spalten wie beim App-Start; passen sich bei der Listenauswahl automatisch an
+    setQuizAusgewaehlt(["D1", "E1"]); setQuizFrageTyp("D1"); setQuizAntwortTypenGeordnet(["E1"]);
+    setQuizInfoTypenSession([]); setQuizSpalteModus({ E1: "karte" }); setQuizZeigeInfo({ i1: true, i2: true });
+    setQuizDiktatSpalte("E1");
+    setzeQuizEinstellungenZurueck();
+    setSlotSektionAufgeklappt(false);
+    setListenAuswahlAufgeklappt(true);
+  }
+
   function initQuizDefaults(kombiListe) {
     const liste = kombiListe || aktiveListe;
     if (!liste) return;
@@ -1987,6 +2001,11 @@ export default function VokabelApp() {
     setQuizInfoTypenSession([]);
     setQuizSpalteModus(spalteModus);
     setQuizZeigeInfo(zeigeInfo);
+    setzeQuizEinstellungenZurueck();
+  }
+
+  // Abfrage-Einstellungen ohne Spalten auf Standard (Quiz-Start aus Liste, "Neu")
+  function setzeQuizEinstellungenZurueck() {
     setQuizModus('sequenziell');
     setQuizBereichTyp('alle');
     setQuizReihenfolge('zufall');
@@ -4125,8 +4144,8 @@ export default function VokabelApp() {
                             style={!aktiverSlot
                               ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
                               : {color:"#9b9590"}}
-                            onClick={() => { setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus("alle"); setQuizPaketGroesse(null); }}
-                            {...tt("Neue Konfiguration – aktive Session und Auswahl zurücksetzen")}>
+                            onClick={neueQuizKonfiguration}
+                            {...tt("Neu beginnen – Listen, Vokabelauswahl und alle Einstellungen zurücksetzen")}>
                             Neu
                           </button>,
                           ladeSlot, aktiverSlot)}
@@ -5100,7 +5119,12 @@ export default function VokabelApp() {
                       style={!statistikAktiverSlot && !statistikSlotGeleert
                         ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
                         : {color:"#9b9590"}}
-                      onClick={() => { setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setStatistikSessionDaten(null); setStatistikScoreModus("global"); }}>
+                      onClick={() => {
+                        setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setStatistikSessionDaten(null); setStatistikScoreModus("global");
+                        setStatistikListenIds(null); setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
+                        setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']));
+                      }}
+                      {...tt("Neu – alle Listen und Vokabeln anzeigen")}>
                       Neu
                     </button>,
                     ladeSlotStatistik, statistikAktiverSlot, 16)}
