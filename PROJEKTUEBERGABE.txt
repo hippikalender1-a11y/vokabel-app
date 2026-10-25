@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-25  (Session 36 — PWA / Offline-Betrieb)
-Letzter Commit: 7cffba5
+Letzter Commit: 4aa3472
 
 DATEIPFADE
 ----------
@@ -463,7 +463,10 @@ FIXES (d1aa48d + df300fe):
     setListenAuswahlAufgeklappt(false)
     initQuizDefaults(...)             ← ggf. fehlerhaft, unkritisch
 
-NOCH OFFEN / FALLS NICHT BEHOBEN:
+ERLEDIGT in Session 36: Ursache war ReferenceError in initQuizDefaults
+(siehe "SESSION 36 — FEHLERKORREKTUREN").
+
+NOCH OFFEN / FALLS NICHT BEHOBEN (historisch):
   Falls das Problem weiterhin auftritt, muss die eigentliche Fehlerquelle
   gefunden werden. Mögliche nächste Schritte:
   - try-catch um initQuizDefaults im Handler → Fehler sichtbar machen
@@ -875,6 +878,36 @@ TEST: puppeteer-core-Skript (Scratchpad, nicht im Repo) gegen
 
 
 ================================================================
+SESSION 36 (FORTSETZUNG) — FEHLERKORREKTUREN (4aa3472)
+================================================================
+1) QUIZ: 0 VOKABELN NACH LISTENWECHSEL
+   Ursache: Spalten-Konfig (quizFrageTyp, quizAntwortTypenGeordnet,
+   quizAusgewaehlt …) blieb beim Wechsel der Listenauswahl erhalten;
+   quizBasisVoks verlangt ALLE Typen → z. B. D1→E1,E2,E3 (Verben) auf
+   Liste nur mit E1/D1 = 0. Fehlende Spalten im UI nicht abwählbar.
+   Fix: useEffect [quizListenKey, listenIndex]: fehlende Spalten
+   entfernen; wenn danach ungültig → Standard (E1/D1) wie
+   initQuizDefaults (nur Spalten). Diktat-Spalte ebenso.
+
+2) initQuizDefaults WARF FEHLER (= Vermutung aus Session 30)
+   setQuizBereichVon / setQuizBereichBis / setQuizBereichEingabeAufgeklappt
+   existierten nicht mehr → ReferenceError mitten in der Funktion,
+   nachfolgende Resets (Reihenfolge, Abfrage-Ziel …) liefen nicht.
+   Zeilen entfernt.
+
+3) TXT-IMPORT VERLOR SPALTEN-KENNUNGEN
+   entferneLautsprache() löschte auch "[E1]" usw. in der Kopfzeile →
+   Auto-Zuordnung nur per Stichwort; Listen mit Spaltennamen wie
+   "Infinitive" wurden beim Mehrfach-Import übersprungen.
+   Fix: parseKopfZeile() + SPALTEN_TAG rettet die Kennung; Einzel-Import
+   ordnet bei vorhandenen Kennungen jetzt automatisch zu.
+
+TESTS (puppeteer-core, Scratchpad): Sprachen 16/16, Export/Import
+  17/17 (TXT mehrfach/einzeln, JSON inkl. Fortschritt, E3, Akzente),
+  Quiz-Listenwechsel 2/2.
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -915,7 +948,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 7cffba5 (Session 36 — PWA, E3, Update-Hinweis, Sprachen)
+Letzter Commit: 4aa3472 (Session 36 — PWA, E3, Update-Hinweis, Sprachen, Fixes)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste).
