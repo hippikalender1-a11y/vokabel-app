@@ -10,7 +10,12 @@ const SK = {
   liste: (id)  => `vokabel_liste_${id}`,
 };
 function lsGet(key, fallback = null) {
-  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  try {
+    const v = localStorage.getItem(key);
+    if (!v) return fallback;
+    const daten = JSON.parse(v);
+    return key.startsWith("vokabel_liste_") ? ergaenzeSpalten(daten) : daten;
+  }
   catch { return fallback; }
 }
 function lsSet(key, value) {
@@ -74,13 +79,22 @@ function neueListeObjekt(id, name) {
   return {
     id, name,
     spalten: {
-      E1:{name:"",aktiv:false}, E2:{name:"",aktiv:false},
+      E1:{name:"",aktiv:false}, E2:{name:"",aktiv:false}, E3:{name:"",aktiv:false},
       D1:{name:"",aktiv:false}, D2:{name:"",aktiv:false},
       i1:{name:"",aktiv:false}, i2:{name:"",aktiv:false},
     },
     naechste_id: 1,
     vokabeln: [],
   };
+}
+// Ältere Listen/Backups kennen nicht alle Spalten (z. B. E3) → fehlende leer ergänzen
+function ergaenzeSpalten(liste) {
+  if (!liste?.spalten) return liste;
+  const fehlt = TYPEN.filter(t => !liste.spalten[t]);
+  if (!fehlt.length) return liste;
+  const spalten = { ...liste.spalten };
+  fehlt.forEach(t => { spalten[t] = { name: "", aktiv: false }; });
+  return { ...liste, spalten };
 }
 
 // ── Info-Seitenumbruch ─────────────────────────────────────────────────────
@@ -462,7 +476,7 @@ const CSS = `
   .score-slider::-moz-range-thumb{width:28px;height:28px;background:#2d6a4f;border-radius:6px;cursor:pointer;border:none;}
 `;
 
-const TYPEN = ["E1","E2","D1","D2","i1","i2"];
+const TYPEN = ["E1","E2","E3","D1","D2","i1","i2"];
 const APP_VERSION = (() => {
   const d = new Date(__BUILD_TIME__);
   return d.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
@@ -1216,12 +1230,12 @@ export default function VokabelApp() {
   }
 
   function autoMappeKolumnen(headerNamen) {
-    const VALID = new Set(['E1','E2','D1','D2','i1','i2']);
+    const VALID = new Set(TYPEN);
     const mapping = {};
     const used = new Set();
     // Pass 1: extract [TYPE] tags from header names (reliable, from our own export)
     headerNamen.forEach((name, idx) => {
-      const m = name.match(/\[([EDi][12])\]\s*$/);
+      const m = name.match(/\[([EDi][123])\]\s*$/);
       if (m && VALID.has(m[1]) && !used.has(m[1])) {
         mapping[idx] = m[1];
         used.add(m[1]);
@@ -1236,12 +1250,12 @@ export default function VokabelApp() {
       let eCount = 0, dCount = 0, iCount = 0;
       headerNamen.forEach((name, idx) => {
         const low = name.toLowerCase().trim();
-        if (eKeys.some(k => low.includes(k)) && eCount < 2) mapping[idx] = ['E1','E2'][eCount++];
+        if (eKeys.some(k => low.includes(k)) && eCount < 3) mapping[idx] = ['E1','E2','E3'][eCount++];
         else if (dKeys.some(k => low.includes(k)) && dCount < 2) mapping[idx] = ['D1','D2'][dCount++];
         else if (iCount < 2) mapping[idx] = ['i1','i2'][iCount++];
       });
       if (eCount === 0 && dCount === 0) {
-        const pos = ['E1','D1','i1','E2','D2','i2'];
+        const pos = ['E1','D1','i1','E2','D2','i2','E3'];
         headerNamen.forEach((_, idx) => { mapping[idx] = pos[idx] ?? null; });
       }
     }
@@ -1325,7 +1339,7 @@ export default function VokabelApp() {
     const neuerIndex = [...listenIndex];
     importJsonData.forEach((l, i) => {
       const id = "liste_" + Date.now() + "_j" + i;
-      const liste = { ...l, id };
+      const liste = ergaenzeSpalten({ ...l, id });
       lsSet(SK.liste(id), liste);
       neuerIndex.push({ id, name: liste.name });
     });
@@ -4189,7 +4203,7 @@ export default function VokabelApp() {
                           <div style={{padding:"12px 16px 16px", borderTop:"1px solid #e0dbd2"}}>
                             <div className="inp-label" style={{marginBottom:8}}>Spalten automatisch vorlesen</div>
                             <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                              {["E1","E2","D1","D2","i1","i2"].map(typ => {
+                              {TYPEN.map(typ => {
                                 const vorlesen = einstellungen.vorlesen || ["E1"];
                                 const aktiv = vorlesen.includes(typ);
                                 return (
@@ -5285,7 +5299,7 @@ export default function VokabelApp() {
               {infoModus === "konzept" ? (
                 <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.75, color:"#3b3832"}}>
                   {[
-                    {titel:"Listen", text:"Alles beginnt mit einer Liste. Eine Liste ist eine Sammlung von Vokabelpaaren – zum Beispiel Deutsch und Englisch, oder Begriff und Erklärung. Jede Liste kann bis zu sechs Spalten haben, die du frei benennen kannst. Du kannst so viele Listen anlegen wie du möchtest, sie importieren, exportieren und teilen."},
+                    {titel:"Listen", text:"Alles beginnt mit einer Liste. Eine Liste ist eine Sammlung von Vokabelpaaren – zum Beispiel Deutsch und Englisch, oder Begriff und Erklärung. Jede Liste kann bis zu sieben Spalten haben (drei Fremdsprache, zwei Deutsch, zwei Info), die du frei benennen kannst – z. B. für unregelmäßige Verben: Infinitiv, Simple Past, Past Participle. Du kannst so viele Listen anlegen wie du möchtest, sie importieren, exportieren und teilen."},
                     {titel:"Vokabelgruppen", text:"Für das Quiz wählst du aus, welche Vokabeln abgefragt werden sollen. Das ist deine Vokabelgruppe: entweder alle Vokabeln einer oder mehrerer Listen, oder eine gezielte Auswahl einzelner Einträge per Checkbox oder Von–Bis-Bereich. Die Vokabelgruppe ist das Material für eine Abfragerunde."},
                     {titel:"Abfragen", text:"Eine Abfrage geht durch alle Vokabeln der Gruppe einmal durch. Dabei bewertest du dich selbst: War die Antwort richtig oder falsch? Das Ergebnis fließt direkt in den Score ein. Jede Vokabel hat einen eigenen Score, der über Zeit steigt oder fällt. Unbeantwortete Vokabeln starten bei 0 und werden optionally zuerst gestellt."},
                     {titel:"Modi", text:"Du kannst zwischen drei Abfrage-Modi wählen:\n\nKarte (Frage–Antwort): Die Frage wird angezeigt, du denkst nach, tippst die Karte an um die Antwort zu sehen, und bewertest dich selbst mit Richtig oder Falsch.\n\nWechselnd: Frage- und Antwortspalte wechseln sich zwischen den Vokabeln ab – hält das Gehirn aktiver.\n\nDiktat: Die Antwort wird vorgelesen, du tippst sie ein. Ideal für Hörverstehen und Schreibübungen."},
@@ -5317,7 +5331,7 @@ export default function VokabelApp() {
                   {k:"Stift-Button", v:"Listenname umbenennen."},
                   {k:"Vokabeln [+]", v:"Neue Vokabel am Ende der Liste hinzufügen."},
                   {k:"Stift an Vokabel", v:"Vokabel bearbeiten oder löschen."},
-                  {k:"Spalten", v:"Jede Liste hat bis zu 6 Spalten (z.B. Deutsch, Englisch, Info). Spalten lassen sich benennen und aktivieren/deaktivieren. Der Stift-Button neben der Spalte öffnet den Namen-Editor."},
+                  {k:"Spalten", v:"Jede Liste hat bis zu 7 Spalten: E1–E3 (Fremdsprache), D1–D2 (Deutsch), i1–i2 (Info). Spalten lassen sich benennen und aktivieren/deaktivieren. Der Stift-Button neben der Spalte öffnet den Namen-Editor."},
                   {k:"Quiz starten", v:"Wechselt direkt zum Quiz-Tab mit dieser Liste vorausgewählt."},
                   {k:"Statistik", v:"Öffnet die Statistik für diese Liste."},
                   {k:"Zusammenführen", v:"Fügt die Vokabeln einer anderen Liste in diese Liste ein."},
