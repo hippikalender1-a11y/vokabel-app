@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-25  (Session 36 — PWA, Sprachen, Score, Fixes)
-Letzter Commit: 440fa5a
+Letzter Commit: 39c143d
 
 DATEIPFADE
 ----------
@@ -1015,6 +1015,37 @@ TEST: e2e/gruppen.mjs 15/15.
 
 
 ================================================================
+SESSION 36 (FORTSETZUNG) — LERN-BILANZ, LISTEN-FORTSCHRITT, SLOTS (c2e3b85, 39c143d)
+================================================================
+LERN-BILANZ (Quiz-Auswertung, nicht Diktat):
+  lernProzent(scores, schwelle) (Modul). quiz.gruppeVokIds = Vokabelgruppe
+  VOR Gelernt-Filter (starteQuiz). renderLernBilanz(q) (Funktions-
+  deklaration → in frühen Render-Returns nutzbar): "+N neu gelernt",
+  "Lernfortschritt X % → Y % (±d)", bei Erreichen von 100 %: 🏆 "Geschafft!".
+LISTEN-ÜBERSICHT: je Liste % + Mini-Balken (🏆 bei 100 %), Tooltip x/y gelernt.
+
+VERLAUF / GESPEICHERT:
+  renderSlotBereiche(neuChip, onLaden, slotRef, abstand) für Quiz- UND
+  Statistik-Tab: "📌 Gespeichert" (sortierbar) | gestrichelte Linie |
+  "🕘 Verlauf · letzte Abfragen" (CSS .slot-chip.verlauf, gestrichelt).
+  Verlauf max. 5 (FIFO), Gespeichert unbegrenzt.
+  merkeRundeImVerlauf(effSlot, startScores): jede Abfrage OHNE Pakete
+    (Quiz + Diktat) → Verlauf-Eintrag mit startScores; nicht bei
+    gespeichertem Slot; gleiche Konfiguration (JSON-Vergleich) → Eintrag
+    nach vorne statt neu. ladeSlotStatistik nutzt eintrag.startScores
+    für Session-Modus, wenn kein sessionFortschritt.
+  slotNamenVorschlag(): "Französisch 25.10.2026" (Sprachen mit " + "),
+    eindeutig mit " (2)"; gesetzt in oeffneModal("slot-speichern") und
+    im Gruppen-Änderungs-Dialog; Input selektiert beim Fokus.
+  Sortieren: States slotSortModus, slotDragId; Knopf "↕ Sortieren"/
+    "Fertig" (ab 2 Einträgen); Chips mit data-slot-id, touchAction:none;
+    useEffect bei slotDragId: window pointermove → elementFromPoint →
+    verschiebeSlot(); pointerup → lsSet(SK.slots). (Eigener Modus, weil
+    Long-Press schon Tooltips öffnet.)
+TESTS: e2e/bilanz.mjs 6/6, e2e/slots.mjs 10/10.
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -1068,7 +1099,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 440fa5a (Session 36 — PWA, E3, Sprachen, Score, MC, Statistik, Lernfortschritt, Gruppen)
+Letzter Commit: 39c143d (Session 36 — … Lernfortschritt, Gruppen, Bilanz, Verlauf/Gespeichert)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste; Wiederholung gelernter
