@@ -70,6 +70,15 @@ function defaultSessionSlots() {
 }
 function defaultSlots() { return { verlauf: [], gespeichert: [] }; }
 function neuerSlotId(typ) { return `${typ}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`; }
+// Gespeicherten Eintrag an die Position eines anderen verschieben (Drag & Drop)
+function verschiebeSlot(data, id, zielId) {
+  const alt = data.gespeichert.findIndex(s => s.id === id), ziel = data.gespeichert.findIndex(s => s.id === zielId);
+  if (alt < 0 || ziel < 0 || alt === ziel) return data;
+  const g = [...data.gespeichert];
+  const [e] = g.splice(alt, 1);
+  g.splice(ziel, 0, e);
+  return { ...data, gespeichert: g };
+}
 function formatSlotDatum() {
   const n = new Date();
   return n.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
@@ -473,6 +482,7 @@ const CSS = `
   .import-zaehler strong{color:#2d6a4f;}
   .slot-chip{padding:7px 13px;border-radius:8px;border:1.5px solid #e0dbd2;background:#f7f5f0;font-size:0.78rem;font-weight:600;color:#6b6560;cursor:pointer;font-family:inherit;white-space:nowrap;}
   .slot-chip.belegt{background:#e8f5e9;border-color:#2d6a4f;color:#2d6a4f;}
+  .slot-chip.verlauf{background:#fff;border-style:dashed;border-color:#c0bcb7;color:#6b6560;font-weight:500;}
   .slot-chip.zuletzt{background:#fffde7;border-color:#f9a825;color:#e65100;}
   .slot-chip.leer{opacity:0.35;cursor:default;}
   .score-badge{font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:10px;}
@@ -657,6 +667,8 @@ export default function VokabelApp() {
   const [listenGelerntAusblenden, setListenGelerntAusblenden] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
   const [sprachMenuOffen, setSprachMenuOffen] = useState(false);
+  const [slotSortModus, setSlotSortModus] = useState(false);
+  const [slotDragId, setSlotDragId] = useState(null);
   const [importSprache, setImportSprache] = useState("en");
   const [gespeicherteVokabelgruppe, setGespeicherteVokabelgruppe] = useState(null);
   const [gruppenAenderungsDialog, setGruppenAenderungsDialog] = useState(false);
@@ -1031,6 +1043,27 @@ export default function VokabelApp() {
     }
   }, [quizTabListen.length]);
 
+  // Drag & Drop der gespeicherten Einträge: Zeiger global verfolgen, beim Loslassen speichern
+  useEffect(() => {
+    if (!slotDragId) return;
+    const bewegen = e => {
+      const ziel = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-slot-id]")?.dataset.slotId;
+      if (ziel && ziel !== slotDragId) setSlots(prev => verschiebeSlot(prev, slotDragId, ziel));
+    };
+    const loslassen = () => {
+      setSlotDragId(null);
+      setSlots(prev => { lsSet(SK.slots, prev); return prev; });
+    };
+    window.addEventListener("pointermove", bewegen);
+    window.addEventListener("pointerup", loslassen);
+    window.addEventListener("pointercancel", loslassen);
+    return () => {
+      window.removeEventListener("pointermove", bewegen);
+      window.removeEventListener("pointerup", loslassen);
+      window.removeEventListener("pointercancel", loslassen);
+    };
+  }, [slotDragId]);
+
   const quizListenKey = quizTabListen.join(",");
   // Spalten-Konfiguration an neu gewählte Listen anpassen: Spalten, die dort fehlen,
   // würden sonst alle Vokabeln ausfiltern (0 abfragbar) und sind im UI nicht abwählbar
@@ -1219,7 +1252,8 @@ export default function VokabelApp() {
     else if (typ === "spalte-umbenennen" && extra) {
       setEditSpalteTyp(extra);
       setModalInput(aktiveListe?.spalten[extra]?.name || "");
-    } else setModalInput("");
+    } else if (typ === "slot-speichern") setModalInput(slotNamenVorschlag());
+    else setModalInput("");
     setModalFehler(""); setModal(typ);
   }
 
@@ -1818,13 +1852,29 @@ export default function VokabelApp() {
     setStatistikEinzelauswahlAufgeklappt(false);
     setStatistikAktiverSlot({ typ, id });
     setStatistikSlotGeleert(false);
-    setStatistikScoreModus(eintrag.sessionFortschritt ? "session" : "global");
-    setStatistikSessionDaten(eintrag.sessionFortschritt || null);
+    const sessionDaten = eintrag.sessionFortschritt || (eintrag.startScores ? { startScores: eintrag.startScores } : null);
+    setStatistikScoreModus(sessionDaten ? "session" : "global");
+    setStatistikSessionDaten(sessionDaten);
   }
 
-  function erstelleVerlaufEintrag() {
+  // Abfrage ohne Pakete im Verlauf festhalten (mit Start-Scores für die Statistik).
+  // Gespeicherte Konfiguration oder unveränderter Verlauf-Eintrag → kein neuer Eintrag.
+  function merkeRundeImVerlauf(effSlot, startScores) {
+    if (effSlot?.typ === 'gespeichert') return;
+    if (effSlot?.typ === 'verlauf') {
+      const e = getSlotEintrag('verlauf', effSlot.id);
+      if (e && JSON.stringify(e.konfiguration) === JSON.stringify(aktuelleKonfiguration())) {
+        const data = getSlotsData();
+        setSlotsData({ ...data, verlauf: [{ ...e, timestamp: Date.now(), startScores }, ...data.verlauf.filter(v => v.id !== e.id)] });
+        return;
+      }
+    }
+    erstelleVerlaufEintrag({ startScores });
+  }
+
+  function erstelleVerlaufEintrag(extra = {}) {
     const id = neuerSlotId('v');
-    const neuerEintrag = { id, name: formatSlotDatum(), timestamp: Date.now(), konfiguration: aktuelleKonfiguration(), sessionFortschritt: null };
+    const neuerEintrag = { id, name: formatSlotDatum(), timestamp: Date.now(), konfiguration: aktuelleKonfiguration(), sessionFortschritt: null, ...extra };
     const data = getSlotsData();
     const neuerVerlauf = [neuerEintrag, ...data.verlauf].slice(0, 5);
     const updated = { ...data, verlauf: neuerVerlauf };
@@ -2169,6 +2219,61 @@ export default function VokabelApp() {
     );
   }
 
+  // Namensvorschlag für gespeicherte Konfigurationen: Sprache(n) + Datum, eindeutig
+  function slotNamenVorschlag() {
+    const sprachen = [...new Set(quizTabListen.map(spracheVonListe))].map(c => sprachInfo(c).name);
+    const basis = `${sprachen.length ? sprachen.join(" + ") : "Abfrage"} ${new Date().toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'})}`;
+    const namen = new Set(slots.gespeichert.map(x => x.name));
+    let name = basis, n = 2;
+    while (namen.has(name)) name = `${basis} (${n++})`;
+    return name;
+  }
+
+  // Chips "Gespeichert" (sortierbar) und "Verlauf" (automatisch, letzte 5) – Quiz- und Statistik-Tab
+  function renderSlotBereiche(neuChip, onLaden, slotRef, abstand = 0) {
+    const gespeichert = slots.gespeichert.filter(slotSichtbar);
+    const verlauf = slots.verlauf.filter(slotSichtbar);
+    const label = {fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em"};
+    return (<>
+      <div style={{margin:`0 ${abstand}px 12px`}}>
+        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6, minHeight:22}}>
+          <span style={label}>📌 Gespeichert</span>
+          {gespeichert.length >= 2 && !slotLoeschModus && (
+            <button className={`typ-btn${slotSortModus ? " aktiv" : ""}`} style={{marginLeft:"auto", fontSize:"0.7rem", padding:"2px 8px"}}
+              onClick={() => { setSlotSortModus(v => !v); setSlotDragId(null); }}
+              {...tt(slotSortModus ? "Sortieren beenden" : "Reihenfolge der gespeicherten Einträge per Ziehen ändern")}>
+              {slotSortModus ? "Fertig" : "↕ Sortieren"}
+            </button>
+          )}
+        </div>
+        {slotSortModus && <div style={{fontSize:"0.72rem", color:"#6b6560", marginBottom:6}}>Einträge ziehen, um die Reihenfolge zu ändern.</div>}
+        <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+          {!slotLoeschModus && !slotSortModus && neuChip}
+          {gespeichert.map(x => slotSortModus ? (
+            <button key={x.id} data-slot-id={x.id} className="slot-chip belegt"
+              style={{touchAction:"none", cursor:"grab", userSelect:"none", WebkitUserSelect:"none",
+                ...(slotDragId === x.id ? {opacity:0.45, borderStyle:"dashed"} : {})}}
+              onPointerDown={e => { e.preventDefault(); setSlotDragId(x.id); }}>
+              ⠿ {slotChipLabel(x)}
+            </button>
+          ) : renderSlotChip(x.id, slotChipLabel(x),
+            () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:x.id}) : onLaden('gespeichert', x.id),
+            chipStil('gespeichert', x.id, slotRef)))}
+        </div>
+      </div>
+      {verlauf.length > 0 && !slotSortModus && (
+        <div style={{margin:`0 ${abstand}px 14px`, paddingTop:10, borderTop:"1px dashed #d6d2cb"}}>
+          <div style={{...label, marginBottom:6}}>🕘 Verlauf · letzte Abfragen</div>
+          <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+            {verlauf.map(x => renderSlotChip(x.id, slotChipLabel(x),
+              () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:x.id}) : onLaden('verlauf', x.id),
+              chipStil('verlauf', x.id, slotRef), "verlauf"))}
+          </div>
+        </div>
+      )}
+    </>);
+  }
+
   // Nach dem Quiz direkt zur Statistik: mit Session → deren Eintrag (Score seit
   // Session-Beginn), sonst genau die Vokabeln dieser Runde (Score seit Rundenstart)
   function zurRundenStatistik(abschluss) {
@@ -2277,6 +2382,7 @@ export default function VokabelApp() {
     }
     if (isPakete) voks = voks.slice(0, quizPaketGroesse);
     if (voks.length === 0) return;
+    if (!isPakete) merkeRundeImVerlauf(effSlot, Object.fromEntries(voks.map(v => [v.id, v.fortschritt?.score ?? null])));
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     setDiktatListeAufgeklappt(false);
     setDiktatManualPlays(0);
@@ -2377,6 +2483,7 @@ export default function VokabelApp() {
 
     if (isPakete) voks = voks.slice(0, quizPaketGroesse);
     if (voks.length === 0) return;
+    if (!isPakete) merkeRundeImVerlauf(effSlot, Object.fromEntries(voks.map(v => [v.id, v.fortschritt?.score ?? null])));
 
     function getFA(idx) {
       if (quizModus === "rotierend") {
@@ -3424,8 +3531,8 @@ export default function VokabelApp() {
 
   // ── Slot-Chip Hilfsfunktionen (Quiz-Tab + Statistik-Tab) ─────────────────
   const slotLoeschStil = { background:"#fff0f0", borderColor:"#e74c3c", color:"#c0392b" };
-  const renderSlotChip = (id, label, onClick, extraStil = {}) => (
-    <button key={id} className="slot-chip belegt"
+  const renderSlotChip = (id, label, onClick, extraStil = {}, typ = "gespeichert") => (
+    <button key={id} className={`slot-chip ${typ === "verlauf" ? "verlauf" : "belegt"}`}
       style={slotLoeschModus ? slotLoeschStil : extraStil}
       onClick={onClick}
       {...tt(slotLoeschModus ? "Eintrag löschen" : "Konfiguration laden – Liste, Vokabelauswahl und Einstellungen wiederherstellen")}>
@@ -4013,40 +4120,16 @@ export default function VokabelApp() {
                       </div>
                       {/* Aufklappbarer Chips-Bereich */}
                       <div ref={slotContainerRef} style={{overflow:'hidden', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 4 : 0}}>
-                        {slotSektionAufgeklappt && (<>
-                          <div style={{marginBottom:10}}>
-                            <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Gespeichert</div>
-                            <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                              {!slotLoeschModus && (
-                                <button className="slot-chip belegt"
-                                  style={!aktiverSlot
-                                    ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
-                                    : {color:"#9b9590"}}
-                                  onClick={() => { setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus("alle"); setQuizPaketGroesse(null); }}
-                                  {...tt("Neue Konfiguration – aktive Session und Auswahl zurücksetzen")}>
-                                  Neu
-                                </button>
-                              )}
-                              {slots.gespeichert.filter(slotSichtbar).map(s => renderSlotChip(
-                                s.id, slotChipLabel(s),
-                                () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:s.id}) : ladeSlot('gespeichert', s.id),
-                                chipStil('gespeichert', s.id)
-                              ))}
-                            </div>
-                          </div>
-                          {slots.verlauf.some(slotSichtbar) && (
-                            <div style={{marginBottom:14}}>
-                              <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Verlauf</div>
-                              <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                                {slots.verlauf.filter(slotSichtbar).map(s => renderSlotChip(
-                                  s.id, slotChipLabel(s),
-                                  () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:s.id}) : ladeSlot('verlauf', s.id),
-                                  chipStil('verlauf', s.id)
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </>)}
+                        {slotSektionAufgeklappt && renderSlotBereiche(
+                          <button className="slot-chip belegt"
+                            style={!aktiverSlot
+                              ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
+                              : {color:"#9b9590"}}
+                            onClick={() => { setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus("alle"); setQuizPaketGroesse(null); }}
+                            {...tt("Neue Konfiguration – aktive Session und Auswahl zurücksetzen")}>
+                            Neu
+                          </button>,
+                          ladeSlot, aktiverSlot)}
                       </div>
                     </>
                   );
@@ -4698,7 +4781,7 @@ export default function VokabelApp() {
                     <div style={{display:"flex", gap:8}}>
                       {kannStarten && (
                         <button className="btn btn-ghost" style={{flexShrink:0}}
-                          onClick={() => { setModalInput(''); oeffneModal("slot-speichern"); }}
+                          onClick={() => oeffneModal("slot-speichern")}
                           {...tt("Aktuelle Konfiguration unter einem Namen speichern – wiederherstellbar per Chip")}>
                           Speichern
                         </button>
@@ -5012,37 +5095,15 @@ export default function VokabelApp() {
               </div>
               <div ref={slotContainerRef} style={{overflow:'hidden', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 4 : 0}}>
                 {slotSektionAufgeklappt && (<>
-                  <div style={{marginBottom:10, padding:"0 16px"}}>
-                    <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Gespeichert</div>
-                    <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                      {!slotLoeschModus && (
-                        <button className="slot-chip belegt"
-                          style={!statistikAktiverSlot && !statistikSlotGeleert
-                            ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
-                            : {color:"#9b9590"}}
-                          onClick={() => { setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setStatistikSessionDaten(null); setStatistikScoreModus("global"); }}>
-                          Neu
-                        </button>
-                      )}
-                      {slots.gespeichert.filter(slotSichtbar).map(s => renderSlotChip(
-                        s.id, slotChipLabel(s),
-                        () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:s.id}) : ladeSlotStatistik('gespeichert', s.id),
-                        chipStil('gespeichert', s.id, statistikAktiverSlot)
-                      ))}
-                    </div>
-                  </div>
-                  {slots.verlauf.some(slotSichtbar) && (
-                    <div style={{marginBottom:14, padding:"0 16px"}}>
-                      <div style={{fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:5}}>Verlauf</div>
-                      <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                        {slots.verlauf.filter(slotSichtbar).map(s => renderSlotChip(
-                          s.id, slotChipLabel(s),
-                          () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:s.id}) : ladeSlotStatistik('verlauf', s.id),
-                          chipStil('verlauf', s.id, statistikAktiverSlot)
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {renderSlotBereiche(
+                    <button className="slot-chip belegt"
+                      style={!statistikAktiverSlot && !statistikSlotGeleert
+                        ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
+                        : {color:"#9b9590"}}
+                      onClick={() => { setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setStatistikSessionDaten(null); setStatistikScoreModus("global"); }}>
+                      Neu
+                    </button>,
+                    ladeSlotStatistik, statistikAktiverSlot, 16)}
                 </>)}
               </div>
             </>
@@ -6004,6 +6065,7 @@ export default function VokabelApp() {
               <label className="inp-label">Name</label>
               <input className="inp" value={modalInput} autoFocus
                 onChange={e => setModalInput(e.target.value)}
+                onFocus={e => e.target.select()}
                 placeholder="z.B. Irregular Verbs" />
 
               {andereSlots.length > 0 && (
@@ -6062,7 +6124,7 @@ export default function VokabelApp() {
                 }}>Überspeichern</button>
                 <button className="btn btn-ghost" onClick={() => {
                   setGruppenAenderungsDialog(false);
-                  setModalInput('');
+                  setModalInput(slotNamenVorschlag());
                   setModal("slot-speichern");
                 }}>Neu speichern</button>
                 <button className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#6b6560"}} onClick={() => {
