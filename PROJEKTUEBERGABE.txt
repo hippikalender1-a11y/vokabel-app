@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-25  (Session 36 — PWA, Sprachen, Score, Fixes)
-Letzter Commit: 39c143d
+Letzter Commit: 1d4aabb
 
 DATEIPFADE
 ----------
@@ -1046,6 +1046,35 @@ TESTS: e2e/bilanz.mjs 6/6, e2e/slots.mjs 10/10.
 
 
 ================================================================
+SESSION 36 (FORTSETZUNG) — NEU-RESET, KARTE-STANDARD, BREMSE (e5a2474…1d4aabb)
+================================================================
+"NEU" (Quiz-Tab): neueQuizKonfiguration() setzt Session, quizTabListen=[],
+  Spalten (D1→E1 Karte), Diktat-Spalte und setzeQuizEinstellungenZurueck()
+  (aus initQuizDefaults herausgelöst) zurück; Listen-Auswahl klappt auf.
+  Statistik-"Neu": alle Listen, Bereich alle, alle Gruppen-Filter, global.
+
+STANDARD-ANTWORTMODUS: STANDARD_ANTWORT_MODUS = "karte" ersetzt alle
+  Rückfallwerte "|| 'tippen'" (neue Antwort-Spalte, wechselnd usw.).
+  Ausnahme: mcWechsel setzt nach MC-Wechsel wieder "tippen" (gewollt).
+
+STATISTIK: gelernte Vokabeln → ganzer Balken dunkelgrün (inkl. negativer Bereich).
+
+ROLLADEN-BREMSE (ersetzt 10 Einzel-Scroll-Wächter):
+  kontexteRef: Liste [key, ref, linie, schliessen, offen] aller
+    aufklappbaren Bereiche (Slot, Listen, Vokabeln, Modus, Reihenfolge,
+    Einstellungen, Session, Statistik-Listen/-Vokabeln, Info).
+  zuklappFreiRef (Set der Keys): Zuklappen beim Scrollen NUR für
+    freigegebene Bereiche. Freigabe in haltPruefenRef (200 ms nach letztem
+    Scroll-Event bzw. 350 ms nach Auf-/Zuklappen): Bereichsende sichtbar
+    und unterhalb der Linie. Ende ohne Freigabe schon über der Linie
+    (Schwung) → scrollBy smooth zurück, bis Ende unten (innerHeight−96).
+  Hinweis-Knopf unten "▲ Weiter ziehen oder hier tippen zum Zuklappen"
+    nur bei langen (gescrollten) freigegebenen Bereichen → klappeFreieZu().
+  paddingBottom 100dvh bleibt (für Öffnen-Scroll + Zuklappen).
+TESTS: e2e/neu.mjs, karte.mjs, bremse.mjs (10/10).
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -1099,7 +1128,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 39c143d (Session 36 — … Lernfortschritt, Gruppen, Bilanz, Verlauf/Gespeichert)
+Letzter Commit: 1d4aabb (Session 36 — … Bilanz, Verlauf/Gespeichert, Neu-Reset, Karte, Bremse)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste; Wiederholung gelernter
