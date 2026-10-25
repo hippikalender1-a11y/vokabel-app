@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-25  (Session 36 — PWA / Offline-Betrieb)
-Letzter Commit: 9acb05f
+Letzter Commit: 7cffba5
 
 DATEIPFADE
 ----------
@@ -824,6 +824,57 @@ Anlass: unregelmäßige Verben (Infinitiv / Simple Past / Past Participle).
 
 
 ================================================================
+SESSION 36 (FORTSETZUNG) — SPRACHEN + AKZENT-TOLERANZ (7cffba5)
+================================================================
+DATEN:
+  liste.sprache = "en"|"fr"|"es"|"it"|"la"|"nl"|"pt"|"ru"|"tr"|"pl"
+    (fehlt → "en"; Helper listeSprache(l)). Auch im Index-Eintrag
+    {id,name,sprache}; Index wird beim Start einmalig ergänzt.
+  einstellungen.sprache = "alle" | Code  (globaler Filter)
+  SPRACHEN (Modul-Konstante): code, name, flagge, tts, keys (Import-Erkennung)
+    Latein: keine eigene Stimme → tts "it-IT".
+
+FILTER (in VokabelApp):
+  vorhandeneSprachen, sprachFilter (gewählte Sprache nur wirksam, wenn
+  Listen davon existieren, sonst "alle"), sichtbareListen, slotSichtbar,
+  listenFlagge(l) (Flagge vor Namen nur bei "alle" + mehreren Sprachen)
+  sichtbareListen ersetzt listenIndex in: Listen-Übersicht, Quiz-
+  Listenauswahl (+ "Alle"), Statistik (Liste + statistikAlleListenObjekte
+  + toggleStatistikListe), Import-Ziel "Bestehende", Zusammenführen.
+  Verlauf/Gespeichert-Chips: .filter(slotSichtbar).
+  wechsleSprache(code): speichert Filter; setzt Quiz-Konfiguration
+    (Slot/Session/Auswahl) zurück, wenn Listen anderer Sprache gewählt
+    waren; bereinigt Statistik-Auswahl; schließt fremde Liste-Detail.
+
+UI:
+  Topbar rechts: Sprach-Chip (nur bei >1 Sprache), Dropdown-Menü
+    (State sprachMenuOffen). <480px nur Flagge (.sprach-chip-name).
+  Liste-Detail: Abschnitt "Fremdsprache" (renderSprachAuswahl) →
+    setzeListenSprache(); aktiver Filter folgt der neuen Sprache.
+  Import: importSprache (Erkennung aus "# Name {fr}", Spaltennamen,
+    sonst aktueller Filter/en); Auswahl bei "Neue Liste" und Mehrfach-
+    Import. autoMappeKolumnen erkennt alle Sprach-Stichwörter als E.
+  TXT-Export: Namenszeile "# Name {fr}" (nur wenn ≠ en).
+  KI-Prompt: promptSprache + PROMPT_BEISPIELE (en/fr/es/it/la, sonst
+    Platzhalter); vorausgewählt aus Filter.
+
+VORLESEN:
+  spalteLang(typ, sprache); vokLang(vok, typ) nutzt vok._listeId
+  (Kombi-Liste) bzw. aktiveListe.
+
+ANTWORT-PRÜFUNG:
+  istRichtigeAntwort(eingabe, wert, akzentTolerant) → true | "akzent" | false
+  Immer: typografische Apostrophe ’‘ʼ`´ → ' (normApostroph).
+  Modus "einfach": ohneAkzente (NFD, œ→oe, æ→ae) → richtig + Feedback
+    AKZENT_HINWEIS ("Richtig – achte auf die Akzente."); gilt für
+    Tippen (inkl. "weitere") und Diktat. "schwer" bleibt exakt.
+  Hinweis: Toleranz greift auch bei Umlauten (Madchen = Mädchen).
+
+TEST: puppeteer-core-Skript (Scratchpad, nicht im Repo) gegen
+  vite preview – 16 Prüfpunkte grün.
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -864,7 +915,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 9acb05f (Session 36 — PWA, Spalte E3, Update-Hinweis)
+Letzter Commit: 7cffba5 (Session 36 — PWA, E3, Update-Hinweis, Sprachen)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste).
