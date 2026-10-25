@@ -2144,6 +2144,7 @@ export default function VokabelApp() {
     setStatistikEinzelauswahlAufgeklappt(false);
     setStatistikVollbild(false);
     setStatistikSlotGeleert(false);
+    setStatistikGelerntEinschliessen(true);
     if (q?.istSessionModus && aktiverSlot && getSlotEintrag(aktiverSlot.typ, aktiverSlot.id)) {
       ladeSlotStatistik(aktiverSlot.typ, aktiverSlot.id);
     } else {
@@ -5174,9 +5175,10 @@ export default function VokabelApp() {
         {/* ── Statistik: Inhalte ── */}
         {tab === "statistik" && (() => {
           const schwelleS = einstellungen.gelerntSchwelle ?? 0;
-          const alleVoks = (schwelleS > 0 && !statistikGelerntEinschliessen)
-            ? statistikGefilterteVoks.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleS)
-            : statistikGefilterteVoks;
+          // Kennzahlen immer über alle Vokabeln; der Gelernt-Knopf blendet nur Graph + Liste aus
+          const alleVoks = statistikGefilterteVoks;
+          const istGelerntS = v => schwelleS > 0 && (v.fortschritt?.score ?? -Infinity) >= schwelleS;
+          const anzeigeVoks = (schwelleS > 0 && !statistikGelerntEinschliessen) ? alleVoks.filter(v => !istGelerntS(v)) : alleVoks;
 
           if (alleVoks.length === 0) return (
             <div className="sektion">
@@ -5202,6 +5204,14 @@ export default function VokabelApp() {
             ? diktatAbgefragt.reduce((s, v) => s + v.diktatFortschritt.score, 0) / diktatAbgefragt.length
             : null;
 
+          // Lernfortschritt: jede Vokabel zählt anteilig bis zur Gelernt-Schwelle (0…100 %),
+          // 100 % = alle Vokabeln gelernt. Negativ/nie abgefragt = 0 %.
+          const anteil = score => schwelleS > 0 ? Math.min(1, Math.max(0, (score ?? 0) / schwelleS)) : 0;
+          const prozent = (voks, scoreVon) => voks.length > 0 ? voks.reduce((s, v) => s + anteil(scoreVon(v)), 0) / voks.length * 100 : 0;
+          const lernFortschritt = prozent(alleVoks, v => v.fortschritt?.score);
+          const diktatFortschrittProzent = prozent(alleVoks, v => v.diktatFortschritt?.score);
+          const gelerntAnzahl = alleVoks.filter(istGelerntS).length;
+
           // Session-Delta-Score
           const sessionStartScores = statistikSessionDaten?.startScores || {};
           const hatSessionDaten = Object.keys(sessionStartScores).length > 0;
@@ -5216,6 +5226,8 @@ export default function VokabelApp() {
           const avgSessionScore = sessionVoksAbgefragt.length > 0
             ? sessionVoksAbgefragt.reduce((s, v) => s + (getSessionDelta(v) ?? 0), 0) / sessionVoksAbgefragt.length
             : null;
+          const startFortschritt = prozent(alleVoks, v => v.id in sessionStartScores ? sessionStartScores[v.id] : v.fortschritt?.score);
+          const fortschrittDelta = lernFortschritt - startFortschritt;
 
           // Filter-Logik (wird für Graph + Vokabelliste verwendet)
           const alleFilterAktiv = statistikFilter.has('nie') && statistikFilter.has('positiv') && statistikFilter.has('negativ');
@@ -5226,9 +5238,10 @@ export default function VokabelApp() {
           };
 
           // Graph-Daten
-          const quizGraphVoks = alleFilterAktiv ? alleVoks : alleVoks.filter(filterVok);
-          const diktatGraphVoks = alleFilterAktiv ? alleVoks : alleVoks.filter(filterVok);
-          const sessionGraphVoks = alleFilterAktiv ? sessionVoksAbgefragt : sessionVoksAbgefragt.filter(filterVok);
+          const quizGraphVoks = alleFilterAktiv ? anzeigeVoks : anzeigeVoks.filter(filterVok);
+          const diktatGraphVoks = alleFilterAktiv ? anzeigeVoks : anzeigeVoks.filter(filterVok);
+          const sessionAnzeigeVoks = anzeigeVoks === alleVoks ? sessionVoksAbgefragt : sessionVoksAbgefragt.filter(v => !istGelerntS(v));
+          const sessionGraphVoks = alleFilterAktiv ? sessionAnzeigeVoks : sessionAnzeigeVoks.filter(filterVok);
           const quizS = istSessionModus
             ? sessionGraphVoks.map(v => getSessionDelta(v) ?? 0).sort((a, b) => a - b)
             : quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
@@ -5269,7 +5282,7 @@ export default function VokabelApp() {
           }
 
           // Vokabelliste (gefiltert + sortiert)
-          let voks = alleFilterAktiv ? [...alleVoks] : alleVoks.filter(filterVok);
+          let voks = alleFilterAktiv ? [...anzeigeVoks] : anzeigeVoks.filter(filterVok);
           const [sKey, sDir] = statistikSort.split("-");
           if (sKey === "score") voks.sort((a, b) => { const d = (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0); return sDir === "asc" ? d : -d; });
           else if (sKey === "streak") voks.sort((a, b) => { const d = (a.fortschritt?.streak ?? 0) - (b.fortschritt?.streak ?? 0); return sDir === "asc" ? d : -d; });
@@ -5291,7 +5304,7 @@ export default function VokabelApp() {
             {!statistikVollbild && (
             <div style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
               <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2, flexShrink:0}}>
-                <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Ø Score</span>
+                <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>{schwelleS > 0 ? "Lernfortschritt" : "Ø Score"}</span>
                 {hatSessionDaten && (
                   <div style={{display:"flex", gap:4}}>
                     <button className={`typ-btn${!istSessionModus?" aktiv":""}`}
@@ -5303,6 +5316,30 @@ export default function VokabelApp() {
                   </div>
                 )}
               </div>
+              {schwelleS > 0 && (
+                <div style={{display:"flex", flexDirection:"column", alignItems:"center", flex:1, minWidth:0}}>
+                  <div style={{display:"flex", alignItems:"baseline", gap:6}}>
+                    <span style={{fontWeight:800, fontSize:"1.25rem", color:"#2d6a4f"}}>{Math.round(lernFortschritt)} %</span>
+                    {istSessionModus && Math.round(fortschrittDelta) !== 0 && (
+                      <span style={{fontWeight:700, fontSize:"0.8rem", color: fortschrittDelta > 0 ? "#2d6a4f" : "#c0392b"}}
+                        {...tt("Veränderung seit Session-Beginn in Prozentpunkten")}>
+                        {fortschrittDelta > 0 ? "+" : ""}{Math.round(fortschrittDelta)}
+                      </span>
+                    )}
+                    {statistikGraphDiktatZeigen && (
+                      <span style={{fontWeight:700, fontSize:"0.8rem", color:"#e67e22"}} {...tt("Lernfortschritt im Diktat")}>Diktat {Math.round(diktatFortschrittProzent)} %</span>
+                    )}
+                  </div>
+                  <div style={{fontSize:"0.7rem", color:"#6b6560", whiteSpace:"nowrap"}}>
+                    {gelerntAnzahl} / {alleVoks.length} gelernt
+                    {(istSessionModus ? avgSessionScore : avgScore) !== null && (() => {
+                      const w = istSessionModus ? avgSessionScore : avgScore;
+                      return <> · Ø {w > 0 ? "+" : ""}{w.toFixed(1)}</>;
+                    })()}
+                  </div>
+                </div>
+              )}
+              {schwelleS <= 0 && (
               <div style={{display:"flex", alignItems:"center", gap:12, flex:1, justifyContent:"center"}}>
                 <div style={{display:"flex", alignItems:"center", gap:4}}>
                   <svg width="14" height="3" viewBox="0 0 14 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
@@ -5331,6 +5368,7 @@ export default function VokabelApp() {
                   </div>
                 )}
               </div>
+              )}
               <button className="btn btn-ghost btn-sm" style={{flexShrink:0}} onClick={() => window.scrollTo({top:0, behavior:"smooth"})} {...tt("Zum Seitenanfang scrollen")}>nach oben</button>
             </div>
             )}
@@ -5427,8 +5465,8 @@ export default function VokabelApp() {
                           fontSize:"0.68rem", padding:"3px 8px",
                           opacity:statistikGelerntEinschliessen?1:0.5}}
                         onClick={() => setStatistikGelerntEinschliessen(v => !v)}
-                        {...tt(statistikGelerntEinschliessen ? "Gelernte Vokabeln aus der Statistik ausschließen" : "Gelernte Vokabeln in der Statistik einschließen")}>
-                        ✓ Gelernt
+                        {...tt(statistikGelerntEinschliessen ? "Gelernte Vokabeln in Graph und Liste ausblenden (Zahlen bleiben)" : "Gelernte Vokabeln in Graph und Liste anzeigen")}>
+                        ✓ Gelernt {gelerntAnzahl}
                       </button>
                     )}
                   </div>
@@ -5647,7 +5685,8 @@ export default function VokabelApp() {
                   {k:"Filter-Boxen", v:"Gesamt / Nie abgefragt / Score positiv / Score negativ. Alle sind standardmäßig aktiv. Antippen deaktiviert eine Kategorie – sie erscheint dann weder in der Liste noch im Graphen. 'Gesamt' stellt alle wieder her."},
                   {k:"Graph", v:"Sortierte Score-Kurve aller Vokabeln. Grau = nie abgefragt, Grün = abgefragt. Tippen auf den Graphen wechselt zwischen Linie und Balken."},
                   {k:"Diktat-Linie", v:"Separate gestrichelte Linie für Diktat-Scores – ein-/ausblendbar."},
-                  {k:"Ø Score", v:"Durchschnittlicher Score der gefilterten Vokabeln. [Global] zeigt den Gesamtscore, [Session] zeigt die Veränderung seit dem letzten Quiz."},
+                  {k:"Lernfortschritt", v:"Wie weit die Vokabelgruppe gelernt ist (0–100 %). Jede Vokabel zählt anteilig bis zur Gelernt-Schwelle – bei +3 z. B. Score +1 = 33 %, +2 = 67 %, ab +3 = 100 %. 100 % = alle Vokabeln gelernt. Darunter: Anzahl gelernter Vokabeln und Ø Score. [Session] zeigt die Veränderung seit Session-Beginn in Prozentpunkten. Ohne Gelernt-Schwelle wird nur der Ø Score angezeigt."},
+                  {k:"✓ Gelernt N", v:"Zeigt die Anzahl gelernter Vokabeln. Antippen blendet sie in Graph und Liste aus – Lernfortschritt und Zahlen zählen sie immer mit."},
                   {k:"Sortierung", v:"Score / Streak / Datum / A→Z / Listen-Nr. Pfeil zeigt Richtung, nochmals tippen kehrt um."},
                   {k:"Vollbild", v:"Maximiert Graph und Vokabelliste ohne die oberen Header-Zeilen. 'Vollbild verlassen' oben rechts."},
                   {k:"Vokabelliste", v:"Alle gefilterten Vokabeln mit Score-Balken (grün = positiv, rot = negativ) und letztem Abfragedatum."},
