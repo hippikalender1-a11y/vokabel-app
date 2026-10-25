@@ -289,6 +289,16 @@ function parseKolumne(teil) {
   return { wert, falsch: teil.slice(idx + 2).split('|').map(f => entferneLautsprache(f.trim())).filter(Boolean) };
 }
 function parseZeile(zeile) { return zeile.split('//').map(t => parseKolumne(t)); }
+// Kopfzeile: Spalten-Kennung wie [E1] (eigener Export) vor dem Entfernen der Lautschrift retten
+const SPALTEN_TAG = /\s*(\[[EDi][123]\])\s*$/;
+function parseKopfZeile(zeile) {
+  return zeile.split('//').map(t => {
+    const m = t.match(SPALTEN_TAG);
+    if (!m) return parseKolumne(t);
+    const k = parseKolumne(t.slice(0, m.index));
+    return { ...k, wert: `${k.wert} ${m[1]}` };
+  });
+}
 
 // ── Antwort-Varianten ──────────────────────────────────────────────────────
 function generiereVarianten(wert) {
@@ -1014,6 +1024,43 @@ export default function VokabelApp() {
     }
   }, [quizTabListen.length]);
 
+  const quizListenKey = quizTabListen.join(",");
+  // Spalten-Konfiguration an neu gewählte Listen anpassen: Spalten, die dort fehlen,
+  // würden sonst alle Vokabeln ausfiltern (0 abfragbar) und sind im UI nicht abwählbar
+  useEffect(() => {
+    if (quizTabListen.length === 0) return;
+    const kombi = getKombinierteListe(quizTabListen);
+    if (!kombi) return;
+    const aktiv = t => !!kombi.spalten[t]?.aktiv;
+    const abfragbar = TYPEN.filter(t => !t.startsWith('i') && aktiv(t));
+    if (quizModus === "diktat" && !aktiv(quizDiktatSpalte)) {
+      setQuizDiktatSpalte(abfragbar.find(t => t.startsWith('E')) || abfragbar[0] || "E1");
+    }
+    const fehlt = [...quizAusgewaehlt, quizFrageTyp, ...quizAntwortTypenGeordnet, ...quizInfoTypenSession].some(t => t && !aktiv(t));
+    if (!fehlt) return;
+    const ausgewaehlt = quizAusgewaehlt.filter(aktiv);
+    const frage = aktiv(quizFrageTyp) ? quizFrageTyp : "";
+    const antworten = quizAntwortTypenGeordnet.filter(aktiv);
+    const nochGueltig = quizModus === "rotierend" ? ausgewaehlt.length >= 2 : !!frage && antworten.length > 0;
+    if (nochGueltig) {
+      setQuizAusgewaehlt(ausgewaehlt);
+      setQuizFrageTyp(frage);
+      setQuizAntwortTypenGeordnet(antworten);
+      setQuizInfoTypenSession(p => p.filter(aktiv));
+      setQuizSpalteModus(p => Object.fromEntries(Object.entries(p).filter(([t]) => aktiv(t))));
+    } else {
+      // Standard wie initQuizDefaults (nur Spalten)
+      const neuAus = abfragbar.includes('E1') && abfragbar.includes('D1') ? ['E1', 'D1'] : abfragbar.slice(0, 2);
+      const neuFrage = neuAus.find(t => t.startsWith('D')) || neuAus[0] || '';
+      const neuAntw = neuAus.filter(t => t !== neuFrage);
+      setQuizAusgewaehlt(neuAus);
+      setQuizFrageTyp(neuFrage);
+      setQuizAntwortTypenGeordnet(neuAntw);
+      setQuizInfoTypenSession([]);
+      setQuizSpalteModus(Object.fromEntries(neuAntw.map(t => [t, 'karte'])));
+    }
+  }, [quizListenKey, listenIndex]);
+
   useEffect(() => {
     if (ansicht !== "quiz" || !quiz || quiz.phase !== "eingabe" || quiz.flash) return;
     if (quiz.modus === "diktat") {
@@ -1392,7 +1439,7 @@ export default function VokabelApp() {
         const { name, sprache } = parseNamensZeile(sz[0]);
         const rest = sz.slice(1);
         if (rest.length < 2) return null;
-        const header = parseZeile(rest[0]);
+        const header = parseKopfZeile(rest[0]);
         const daten = rest.slice(1).map(parseZeile);
         const mapping = autoMappeKolumnen(header.map(h => h.wert));
         return { name, header, daten, mapping, sprache: sprache || erkenneSprache(header.map(h => h.wert)) };
@@ -1414,11 +1461,13 @@ export default function VokabelApp() {
       zeilen = zeilen.slice(1);
       if (zeilen.length < 2) { setImportFehler("Mindestens 2 Zeilen erforderlich."); return; }
     }
-    const header = parseZeile(zeilen[0]);
+    const header = parseKopfZeile(zeilen[0]);
     setImportSprache(erkannteSprache || erkenneSprache(header.map(h => h.wert)) || standardSprache);
     const daten = zeilen.slice(1).map(parseZeile);
-    const mapping = {};
-    header.forEach((_, i) => { mapping[i] = null; });
+    // Mit Spalten-Kennungen (eigener Export) direkt zuordnen, sonst manuell
+    const hatTags = header.some(h => SPALTEN_TAG.test(h.wert));
+    const mapping = hatTags ? autoMappeKolumnen(header.map(h => h.wert)) : {};
+    if (!hatTags) header.forEach((_, i) => { mapping[i] = null; });
     setImportParsed({ header, daten });
     setImportMapping(mapping);
     if (erkannterName && !importNeuName) setImportNeuName(erkannterName);
@@ -1869,9 +1918,6 @@ export default function VokabelApp() {
     setQuizZeigeInfo(zeigeInfo);
     setQuizModus('sequenziell');
     setQuizBereichTyp('alle');
-    setQuizBereichVon(1);
-    setQuizBereichBis('');
-    setQuizBereichEingabeAufgeklappt(false);
     setQuizReihenfolge('zufall');
     setQuizSchlechtesteMaxScore('');
     setQuizUnbeantwortetZuerst({ zufall: true, schlechteste: false, listennr: true });
