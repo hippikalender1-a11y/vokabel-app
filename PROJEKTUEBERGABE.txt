@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-25  (Session 36 — PWA, Sprachen, Score, Fixes)
-Letzter Commit: 670fa23
+Letzter Commit: 440fa5a
 
 DATEIPFADE
 ----------
@@ -998,6 +998,23 @@ Weitere Ideen (offen, vom Nutzer noch nicht entschieden): "+N neu gelernt"
 
 
 ================================================================
+SESSION 36 (FORTSETZUNG) — STATISTIK-GRUPPEN (440fa5a)
+================================================================
+gruppeVon(v): "nie" (kein fortschritt) | "negativ" (<0) | "gelernt"
+  (≥ Schwelle) | "arbeit" (0 … Schwelle−1; Score 0 = in Arbeit).
+statistikFilter = Set(['negativ','nie','arbeit','gelernt']) (vorher
+  nie/positiv/negativ); statistikGelerntEinschliessen ENTFERNT.
+Boxen: "Gesamt" schmale Zeile (alle an), 2×2 Negativ/Nie/In Arbeit/
+  ✓ Gelernt (ohne Schwelle: "Score ≥ 0", keine Gelernt-Box).
+Zeilen: Hintergrund GRUPPE_BG (negativ hellrot, gelernt hellgrün),
+  rechts "✓ +N" bei gelernt. Score-Balken: links bis −5, rechts bis
+  Schwelle (ohne Schwelle ±10), Null bei links/(links+rechts).
+Kopfzeile: Gruppen-Balken (GRUPPE_BALKEN) unter dem Prozentwert.
+Gelernt-Status wird nie gespeichert – immer live aus Score + Schwelle.
+TEST: e2e/gruppen.mjs 15/15.
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -1051,7 +1068,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 670fa23 (Session 36 — PWA, E3, Sprachen, Score, MC, Statistik, Lernfortschritt)
+Letzter Commit: 440fa5a (Session 36 — PWA, E3, Sprachen, Score, MC, Statistik, Lernfortschritt, Gruppen)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste; Wiederholung gelernter
