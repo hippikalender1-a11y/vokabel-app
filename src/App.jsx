@@ -613,11 +613,10 @@ export default function VokabelApp() {
   const [exportAuswahlModus, setExportAuswahlModus] = useState(false);
   const [exportAusgewaehlt, setExportAusgewaehlt] = useState(new Set());
   const [statistikSort, setStatistikSort] = useState("score-asc");
-  const [statistikFilter, setStatistikFilter] = useState(new Set(['nie', 'positiv', 'negativ']));
+  const [statistikFilter, setStatistikFilter] = useState(new Set(['negativ', 'nie', 'arbeit', 'gelernt'])); // Gruppen: negativ / nie / arbeit / gelernt
   const [statistikListenIds, setStatistikListenIds] = useState(null); // null = alle
   const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
   const [statistikGraphDiktatZeigen, setStatistikGraphDiktatZeigen] = useState(false);
-  const [statistikGelerntEinschliessen, setStatistikGelerntEinschliessen] = useState(true);
   const [statistikVollbild, setStatistikVollbild] = useState(false);
   const [statistikGraphTyp, setStatistikGraphTyp] = useState("linie");
   const [statistikBereichTyp, setStatistikBereichTyp] = useState("alle");
@@ -2144,7 +2143,7 @@ export default function VokabelApp() {
     setStatistikEinzelauswahlAufgeklappt(false);
     setStatistikVollbild(false);
     setStatistikSlotGeleert(false);
-    setStatistikGelerntEinschliessen(true);
+    setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']));
     if (q?.istSessionModus && aktiverSlot && getSlotEintrag(aktiverSlot.typ, aktiverSlot.id)) {
       ladeSlotStatistik(aktiverSlot.typ, aktiverSlot.id);
     } else {
@@ -5178,7 +5177,10 @@ export default function VokabelApp() {
           // Kennzahlen immer über alle Vokabeln; der Gelernt-Knopf blendet nur Graph + Liste aus
           const alleVoks = statistikGefilterteVoks;
           const istGelerntS = v => schwelleS > 0 && (v.fortschritt?.score ?? -Infinity) >= schwelleS;
-          const anzeigeVoks = (schwelleS > 0 && !statistikGelerntEinschliessen) ? alleVoks.filter(v => !istGelerntS(v)) : alleVoks;
+          // Drei Bewertungsgruppen + nie abgefragt; Score 0 zählt als "in Arbeit"
+          const gruppeVon = v => !v.fortschritt ? "nie" : v.fortschritt.score < 0 ? "negativ" : istGelerntS(v) ? "gelernt" : "arbeit";
+          const gruppenAnzahl = { negativ: 0, nie: 0, arbeit: 0, gelernt: 0 };
+          alleVoks.forEach(v => { gruppenAnzahl[gruppeVon(v)]++; });
 
           if (alleVoks.length === 0) return (
             <div className="sektion">
@@ -5194,9 +5196,6 @@ export default function VokabelApp() {
 
           const abgefragt = alleVoks.filter(v => v.fortschritt);
           const diktatAbgefragt = alleVoks.filter(v => v.diktatFortschritt);
-          const nieAnzahl = alleVoks.filter(v => !v.fortschritt).length;
-          const positivAnzahl = abgefragt.filter(v => v.fortschritt.score > 0).length;
-          const negativAnzahl = abgefragt.filter(v => v.fortschritt.score <= 0).length;
           const avgScore = abgefragt.length > 0
             ? abgefragt.reduce((s, v) => s + v.fortschritt.score, 0) / abgefragt.length
             : null;
@@ -5230,18 +5229,14 @@ export default function VokabelApp() {
           const fortschrittDelta = lernFortschritt - startFortschritt;
 
           // Filter-Logik (wird für Graph + Vokabelliste verwendet)
-          const alleFilterAktiv = statistikFilter.has('nie') && statistikFilter.has('positiv') && statistikFilter.has('negativ');
-          const filterVok = v => {
-            if (!v.fortschritt) return statistikFilter.has('nie');
-            if (v.fortschritt.score > 0) return statistikFilter.has('positiv');
-            return statistikFilter.has('negativ');
-          };
+          const alleFilterAktiv = ['negativ', 'nie', 'arbeit', 'gelernt'].every(g => statistikFilter.has(g));
+          const filterVok = v => statistikFilter.has(gruppeVon(v));
+          const anzeigeVoks = alleVoks;
 
           // Graph-Daten
           const quizGraphVoks = alleFilterAktiv ? anzeigeVoks : anzeigeVoks.filter(filterVok);
           const diktatGraphVoks = alleFilterAktiv ? anzeigeVoks : anzeigeVoks.filter(filterVok);
-          const sessionAnzeigeVoks = anzeigeVoks === alleVoks ? sessionVoksAbgefragt : sessionVoksAbgefragt.filter(v => !istGelerntS(v));
-          const sessionGraphVoks = alleFilterAktiv ? sessionAnzeigeVoks : sessionAnzeigeVoks.filter(filterVok);
+          const sessionGraphVoks = alleFilterAktiv ? sessionVoksAbgefragt : sessionVoksAbgefragt.filter(filterVok);
           const quizS = istSessionModus
             ? sessionGraphVoks.map(v => getSessionDelta(v) ?? 0).sort((a, b) => a - b)
             : quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
@@ -5293,11 +5288,18 @@ export default function VokabelApp() {
 
           // Filter-Boxen (Multi-Select: alle standardmäßig aktiv)
           const filterBoxen = [
-            {key:"alle",    label:"Gesamt",        wert:alleVoks.length, bg:"#f0f9f4", rand:"#2d6a4f", farbe:"#2d6a4f"},
-            {key:"nie",     label:"Nie abgefragt", wert:nieAnzahl,       bg:"#f7f5f0", rand:"#9b9590", farbe:"#6b6560"},
-            {key:"positiv", label:"Score positiv", wert:positivAnzahl,   bg:"#e8f5e9", rand:"#2d6a4f", farbe:"#2d6a4f"},
-            {key:"negativ", label:"Score negativ", wert:negativAnzahl,   bg:"#ffebee", rand:"#c0392b", farbe:"#c0392b"},
+            {key:"negativ", label:"Negativ",       wert:gruppenAnzahl.negativ, bg:"#ffebee", rand:"#c0392b", farbe:"#c0392b",
+              tip:"Score unter 0"},
+            {key:"nie",     label:"Nie abgefragt", wert:gruppenAnzahl.nie,     bg:"#f7f5f0", rand:"#9b9590", farbe:"#6b6560",
+              tip:"Noch nie im Quiz abgefragt"},
+            {key:"arbeit",  label: schwelleS > 0 ? "In Arbeit" : "Score ≥ 0", wert:gruppenAnzahl.arbeit, bg:"#fffaf0", rand:"#d4a017", farbe:"#a67c00",
+              tip: schwelleS > 0 ? `Score 0 bis +${schwelleS - 1} – noch nicht gelernt` : "Score 0 oder positiv"},
+            ...(schwelleS > 0 ? [{key:"gelernt", label:"✓ Gelernt", wert:gruppenAnzahl.gelernt, bg:"#e8f5e9", rand:"#2d6a4f", farbe:"#2d6a4f",
+              tip:`Score ab +${schwelleS} (Gelernt-Schwelle)`}] : []),
           ];
+          // Farben der Gruppen (Zeilen, Gruppen-Balken)
+          const GRUPPE_BG = { negativ:"#fdecec", gelernt:"#e8f5e9" };
+          const GRUPPE_BALKEN = [["gelernt", "#2d6a4f"], ["arbeit", "#e9c46a"], ["nie", "#d6d2cb"], ["negativ", "#e57373"]];
 
           return (<>
             {/* Ø-Score sticky Header */}
@@ -5329,6 +5331,12 @@ export default function VokabelApp() {
                     {statistikGraphDiktatZeigen && (
                       <span style={{fontWeight:700, fontSize:"0.8rem", color:"#e67e22"}} {...tt("Lernfortschritt im Diktat")}>Diktat {Math.round(diktatFortschrittProzent)} %</span>
                     )}
+                  </div>
+                  <div style={{display:"flex", width:"min(180px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"#f0ede8", margin:"3px 0 2px"}}
+                    {...tt(`Gelernt ${gruppenAnzahl.gelernt} · In Arbeit ${gruppenAnzahl.arbeit} · Nie abgefragt ${gruppenAnzahl.nie} · Negativ ${gruppenAnzahl.negativ}`)}>
+                    {GRUPPE_BALKEN.map(([g, farbe]) => gruppenAnzahl[g] > 0 && (
+                      <div key={g} style={{width:`${gruppenAnzahl[g] / alleVoks.length * 100}%`, background:farbe}}/>
+                    ))}
                   </div>
                   <div style={{fontSize:"0.7rem", color:"#6b6560", whiteSpace:"nowrap"}}>
                     {gelerntAnzahl} / {alleVoks.length} gelernt
@@ -5459,32 +5467,27 @@ export default function VokabelApp() {
                         Diktat
                       </button>
                     )}
-                    {schwelleS > 0 && (
-                      <button className={`typ-btn${statistikGelerntEinschliessen?" aktiv":""}`}
-                        style={{marginLeft:"auto", display:"flex", alignItems:"center", gap:4,
-                          fontSize:"0.68rem", padding:"3px 8px",
-                          opacity:statistikGelerntEinschliessen?1:0.5}}
-                        onClick={() => setStatistikGelerntEinschliessen(v => !v)}
-                        {...tt(statistikGelerntEinschliessen ? "Gelernte Vokabeln in Graph und Liste ausblenden (Zahlen bleiben)" : "Gelernte Vokabeln in Graph und Liste anzeigen")}>
-                        ✓ Gelernt {gelerntAnzahl}
-                      </button>
-                    )}
+
                   </div>
                 </div>
                 );
               })()}
 
               {/* Kennzahlen-Boxen als Multi-Select-Filter */}
+              <div onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
+                {...tt("Alle Gruppen anzeigen")}
+                style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8, padding:"8px 14px",
+                  borderRadius:10, cursor:"pointer", userSelect:"none", background: alleFilterAktiv ? "#f0f9f4" : "#fff",
+                  border:`2px solid ${alleFilterAktiv ? "#2d6a4f" : "#e0dbd2"}`}}>
+                <span style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color: alleFilterAktiv ? "#2d6a4f" : "#9b9590"}}>Gesamt</span>
+                <span style={{fontSize:"1.1rem", fontWeight:700, color: alleFilterAktiv ? "#2d6a4f" : "#9b9590"}}>{alleVoks.length}</span>
+              </div>
               <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16}}>
                 {filterBoxen.map(k => {
-                  const isAlle = k.key === "alle";
-                  const aktiv = isAlle ? alleFilterAktiv : statistikFilter.has(k.key);
+                  const aktiv = statistikFilter.has(k.key);
                   return (
-                    <div key={k.key}
-                      onClick={() => isAlle
-                        ? setStatistikFilter(new Set(['nie', 'positiv', 'negativ']))
-                        : setStatistikFilter(prev => { const n = new Set(prev); n.has(k.key) ? n.delete(k.key) : n.add(k.key); return n; })
-                      }
+                    <div key={k.key} {...tt(k.tip)}
+                      onClick={() => setStatistikFilter(prev => { const n = new Set(prev); n.has(k.key) ? n.delete(k.key) : n.add(k.key); return n; })}
                       style={{background:aktiv?k.bg:"#fff", border:`2px solid ${aktiv?k.rand:"#e0dbd2"}`, borderRadius:10, padding:"12px 14px", cursor:"pointer", userSelect:"none", transition:"border-color 0.15s, opacity 0.15s", opacity:aktiv?1:0.45}}>
                       <div style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:aktiv?k.farbe:"#9b9590"}}>{k.label}</div>
                       <div style={{fontSize:"1.6rem", fontWeight:700, marginTop:4, color:aktiv?k.farbe:"#9b9590"}}>{k.wert}</div>
@@ -5534,14 +5537,21 @@ export default function VokabelApp() {
                   const score = rawScore !== null ? Math.min(10, Math.max(-10, rawScore)) : null;
                   const isPos = score !== null && score > 0;
                   const isNeg = score !== null && score < 0;
-                  const scoreColor = isPos ? "#2d6a4f" : isNeg ? "#c0392b" : "#9b9590";
-                  const barPct = score !== null ? Math.abs(score) / 10 * 50 : 0;
+                  const gruppe = gruppeVon(vok);
+                  const istGel = gruppe === "gelernt";
+                  const scoreColor = istGel || isPos ? "#2d6a4f" : isNeg ? "#c0392b" : "#9b9590";
+                  // Balken: links bis −5, rechts bis zur Gelernt-Schwelle (ohne Schwelle ±10); Null in allen Zeilen gleich
+                  const links = schwelleS > 0 ? 5 : 10, rechts = schwelleS > 0 ? schwelleS : 10;
+                  const nullPct = links / (links + rechts) * 100;
+                  const barPct = score === null ? 0 : isPos
+                    ? Math.min(score, rechts) / (links + rechts) * 100
+                    : Math.min(-score, links) / (links + rechts) * 100;
                   const t1 = vok.E1?.wert || "";
                   const t2 = vok.D1?.wert || "";
                   const displayText = [t1, t2].filter(Boolean).join(" – ");
                   return (
                     <div key={`${vok._listeName}_${vok.id}_${idx}`}
-                      style={{display:"flex", alignItems:"center", gap:8, padding:"7px 12px",
+                      style={{display:"flex", alignItems:"center", gap:8, padding:"7px 12px", background: GRUPPE_BG[gruppe],
                         borderBottom: idx < voks.length-1 ? "1px solid #e0dbd2" : "none"}}>
                       {/* Text */}
                       <div style={{width:"33%", minWidth:0, overflow:"hidden", textOverflow:"ellipsis",
@@ -5552,17 +5562,18 @@ export default function VokabelApp() {
                       <div style={{flex:1, position:"relative", height:8, background:"#f0ede8", borderRadius:4, minWidth:0}}>
                         {score !== null && score !== 0 && (
                           <div style={{position:"absolute", top:0, bottom:0, borderRadius:4,
-                            background: isPos ? "#2d6a4f" : "#c0392b",
-                            ...(isPos ? {left:"50%", width:`${barPct}%`} : {right:"50%", width:`${barPct}%`})}}/>
+                            background: isPos ? (istGel ? "#2d6a4f" : "#52b788") : "#c0392b",
+                            ...(isPos ? {left:`${nullPct}%`, width:`${barPct}%`} : {right:`${100 - nullPct}%`, width:`${barPct}%`})}}/>
                         )}
-                        <div style={{position:"absolute", top:0, bottom:0, left:"50%",
+                        <div style={{position:"absolute", top:0, bottom:0, left:`${nullPct}%`,
                           transform:"translateX(-50%)", width:1, background:"#c0bcb7"}}/>
                       </div>
                       {/* Score + Datum */}
                       <div style={{width:"22%", display:"flex", flexDirection:"column",
                         alignItems:"flex-end", flexShrink:0, gap:1}}>
-                        <span style={{fontSize:"0.78rem", fontWeight:700, color:scoreColor}}>
-                          {score !== null ? (score > 0 ? "+" : "") + score : "–"}
+                        <span style={{fontSize:"0.78rem", fontWeight:700, color:scoreColor}}
+                          {...(istGel ? tt(`Gelernt (Schwelle +${schwelleS})`) : {})}>
+                          {istGel ? "✓ " : ""}{score !== null ? (score > 0 ? "+" : "") + score : "–"}
                         </span>
                         <span style={{fontSize:"0.62rem", color:"#9b9590"}}>
                           {formatDatum(vok.fortschritt?.letzteAbfrage)}
@@ -5686,7 +5697,8 @@ export default function VokabelApp() {
                   {k:"Graph", v:"Sortierte Score-Kurve aller Vokabeln. Grau = nie abgefragt, Grün = abgefragt. Tippen auf den Graphen wechselt zwischen Linie und Balken."},
                   {k:"Diktat-Linie", v:"Separate gestrichelte Linie für Diktat-Scores – ein-/ausblendbar."},
                   {k:"Lernfortschritt", v:"Wie weit die Vokabelgruppe gelernt ist (0–100 %). Jede Vokabel zählt anteilig bis zur Gelernt-Schwelle – bei +3 z. B. Score +1 = 33 %, +2 = 67 %, ab +3 = 100 %. 100 % = alle Vokabeln gelernt. Darunter: Anzahl gelernter Vokabeln und Ø Score. [Session] zeigt die Veränderung seit Session-Beginn in Prozentpunkten. Ohne Gelernt-Schwelle wird nur der Ø Score angezeigt."},
-                  {k:"✓ Gelernt N", v:"Zeigt die Anzahl gelernter Vokabeln. Antippen blendet sie in Graph und Liste aus – Lernfortschritt und Zahlen zählen sie immer mit."},
+                  {k:"Gruppen", v:"Jede Vokabel gehört zu einer Gruppe: Negativ (Score unter 0, rot hinterlegt), Nie abgefragt, In Arbeit (Score 0 bis unter der Gelernt-Schwelle) und ✓ Gelernt (ab der Schwelle, grün hinterlegt). Die Boxen zeigen die Anzahl und blenden die Gruppe in Graph und Liste ein oder aus – Lernfortschritt und Zahlen zählen immer alle Vokabeln. 'Gesamt' zeigt wieder alle. Der farbige Balken unter dem Lernfortschritt zeigt die Verteilung."},
+                  {k:"Score-Balken", v:"Null ist in allen Zeilen an derselben Stelle. Nach links bis −5 (tiefer = voller roter Balken), nach rechts bis zur Gelernt-Schwelle (voller dunkelgrüner Balken = gelernt)."},
                   {k:"Sortierung", v:"Score / Streak / Datum / A→Z / Listen-Nr. Pfeil zeigt Richtung, nochmals tippen kehrt um."},
                   {k:"Vollbild", v:"Maximiert Graph und Vokabelliste ohne die oberen Header-Zeilen. 'Vollbild verlassen' oben rechts."},
                   {k:"Vokabelliste", v:"Alle gefilterten Vokabeln mit Score-Balken (grün = positiv, rot = negativ) und letztem Abfragedatum."},
