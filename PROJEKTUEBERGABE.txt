@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-25  (Session 36 — PWA / Offline-Betrieb)
-Letzter Commit: fd1cdc8
+Letzter Commit: 9acb05f
 
 DATEIPFADE
 ----------
@@ -800,6 +800,28 @@ HINWEISE:
     von Safari) → Listen per JSON-Export/Import übertragen.
   - Verlauf/Gespeichert-Slots + Einstellungen sind NICHT im JSON-Backup.
 
+UPDATE-HINWEIS NACHBESSERUNG (Commit 9acb05f):
+  - "Aktualisieren" → Text "Wird aktualisiert…", updateServiceWorker(true)
+    + Fallback window.location.reload() nach 1,5 s (iPad-Web-App lud
+    sonst nicht neu, Banner blieb stehen).
+  - Flag localStorage "vokabel_update_laeuft" → nach Neustart 4 s
+    "✓ App wurde aktualisiert".
+
+
+================================================================
+SESSION 36 (FORTSETZUNG) — DRITTE FREMDSPRACH-SPALTE E3 (fb724c7)
+================================================================
+Anlass: unregelmäßige Verben (Infinitiv / Simple Past / Past Participle).
+  TYPEN = ["E1","E2","E3","D1","D2","i1","i2"]  (alles Weitere generisch)
+  neueListeObjekt(): E3 ergänzt
+  ergaenzeSpalten(liste): fehlende Spalten leer+inaktiv ergänzen;
+    automatisch in lsGet() für Keys "vokabel_liste_*" und beim JSON-Import
+    → alte Listen/Backups ohne E3 funktionieren ohne Migration-Schreiben.
+  Import: Tag-Regex [EDi][123]; Keyword "englisch" → E1/E2/E3;
+    Positions-Fallback ['E1','D1','i1','E2','D2','i2','E3']
+  Vorlese-Auswahl (Einstellungen) nutzt TYPEN.
+  Konzept-/Anleitung-Text: "bis zu sieben Spalten".
+
 
 ================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
@@ -842,7 +864,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: fd1cdc8 (Session 36 — PWA / Offline-Betrieb)
+Letzter Commit: 9acb05f (Session 36 — PWA, Spalte E3, Update-Hinweis)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste).
