@@ -342,6 +342,8 @@ function istRichtigeAntwort(eingabe, wert, akzentTolerant = false) {
   if (akzentTolerant && varianten.map(ohneAkzente).includes(ohneAkzente(e))) return "akzent";
   return false;
 }
+// Antwort-Modus, wenn für eine Spalte nichts festgelegt ist (Karte aufdecken)
+const STANDARD_ANTWORT_MODUS = "karte";
 const AKZENT_HINWEIS = "Richtig – achte auf die Akzente.";
 const MC_FEHLKLICK_HINWEIS = "Nicht auf Anhieb gefunden – zählt als nicht gewusst.";
 
@@ -1118,7 +1120,7 @@ export default function VokabelApp() {
     if (ansicht !== "quiz" || !quiz) return;
     const isDiktatWeiter = quiz.modus === "diktat" && (quiz.phase === "richtig" || quiz.phase === "aufgedeckt");
     const isKarteAufgedeckt = quiz.modus !== "diktat" && quiz.phase === "aufgedeckt" &&
-      (quiz.spalteModus?.[quiz.antwortTypen?.[quiz.antwortTypIndex]] || "tippen") === "karte";
+      (quiz.spalteModus?.[quiz.antwortTypen?.[quiz.antwortTypIndex]] || STANDARD_ANTWORT_MODUS) === "karte";
     if (quiz.phase !== "aufgedeckt" && !isDiktatWeiter) return;
     if (isKarteAufgedeckt) return;
     let active = false;
@@ -1731,7 +1733,7 @@ export default function VokabelApp() {
         if (quizFrageTyp === typ) setQuizFrageTyp("");
         setQuizInfoTypenSession(p => p.filter(t => t !== typ));
         setQuizAntwortTypenGeordnet(p => [...p, typ]);
-        setQuizSpalteModus(p => ({...p, [typ]: p[typ] || "tippen"}));
+        setQuizSpalteModus(p => ({...p, [typ]: p[typ] || STANDARD_ANTWORT_MODUS}));
       }
     } else if (rolle === "info") {
       if (quizInfoTypenSession.includes(typ)) {
@@ -2514,7 +2516,7 @@ export default function VokabelApp() {
 
     const { frageTyp, antwortTypen } = getFA(0);
     const erstesTeile = voks[0][antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
-    const ersterModusTyp0 = quizSpalteModus[antwortTypen[0]] || "tippen";
+    const ersterModusTyp0 = quizSpalteModus[antwortTypen[0]] || STANDARD_ANTWORT_MODUS;
     const erstesMC = ersterModusTyp0 === "mc"
       ? generiereButtons(voks, voks[0], antwortTypen[0]) : null;
 
@@ -2578,7 +2580,7 @@ export default function VokabelApp() {
       const vok = voks[idx];
       const teile = vok[antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
       const sp = prev.spalteModus;
-      const mc = (sp[antwortTypen[0]] || "tippen") === "mc" ? generiereButtons(voks, vok, antwortTypen[0]) : null;
+      const mc = (sp[antwortTypen[0]] || STANDARD_ANTWORT_MODUS) === "mc" ? generiereButtons(voks, vok, antwortTypen[0]) : null;
       return { ...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, flash: false, index: idx,
         vokabeln: voks, frageTyp, antwortTypen, antwortTypIndex: 0,
         phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
@@ -2627,7 +2629,7 @@ export default function VokabelApp() {
     const spalteModus = prev.mcWechsel
       ? {...prev.spalteModus, [antwortTypen[0]]: "tippen"}
       : prev.spalteModus;
-    const modusTyp0 = spalteModus[antwortTypen[0]] || "tippen";
+    const modusTyp0 = spalteModus[antwortTypen[0]] || STANDARD_ANTWORT_MODUS;
     const mc = modusTyp0 === "mc" ? generiereButtons(prev.vokabeln, naechsteVok, antwortTypen[0]) : null;
     return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
       phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
@@ -2770,7 +2772,7 @@ export default function VokabelApp() {
     // Fehlklick bei Multiple Choice bleibt "falsch", auch wenn danach die Lösung angezeigt wird
     const schonFalsch = quiz.spaltenErgebnisse?.[quiz.antwortTypIndex] === "falsch";
     const abschluss = spaltenAbschluss(schonFalsch ? "falsch" : "aufgedeckt");
-    const aktModus = quiz.spalteModus?.[quiz.antwortTypen?.[quiz.antwortTypIndex]] || "tippen";
+    const aktModus = quiz.spalteModus?.[quiz.antwortTypen?.[quiz.antwortTypIndex]] || STANDARD_ANTWORT_MODUS;
     const mcUpd = aktModus === "mc"
       ? { mcButtons: quiz.mcButtons.map(b => b.korrekt ? {...b, status: "richtig"} : b) }
       : {};
@@ -2801,7 +2803,7 @@ export default function VokabelApp() {
 
   function wechsleZuMC() {
     const typ = quiz?.antwortTypen?.[quiz.antwortTypIndex];
-    const aktuellerModus = quiz?.spalteModus?.[typ] || "tippen";
+    const aktuellerModus = quiz?.spalteModus?.[typ] || STANDARD_ANTWORT_MODUS;
     if (!quiz || !typ || aktuellerModus !== "tippen") return;
     const mc = generiereButtons(quiz.liste.vokabeln, quiz.vokabeln[quiz.index], typ);
     setQuiz(prev => ({
@@ -2827,7 +2829,7 @@ export default function VokabelApp() {
         }] : prev.vorigeRichtig;
         const nt = prev.antwortTypen[naechsterIdx];
         const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
-        const ntModus = prev.mcWechsel ? "mc" : (prev.spalteModus?.[nt] || "tippen");
+        const ntModus = prev.mcWechsel ? "mc" : (prev.spalteModus?.[nt] || STANDARD_ANTWORT_MODUS);
         const mc = ntModus === "mc" ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt) : null;
         return {...prev, flash: false, phase: "eingabe", antwortTypIndex: naechsterIdx,
           antwortTeile: teile, mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
@@ -2843,7 +2845,7 @@ export default function VokabelApp() {
   function deckeKarteAuf() {
     if (!quiz || quiz.phase !== "eingabe") return;
     const typ = quiz.antwortTypen?.[quiz.antwortTypIndex];
-    if ((quiz.spalteModus?.[typ] || "tippen") !== "karte") return;
+    if ((quiz.spalteModus?.[typ] || STANDARD_ANTWORT_MODUS) !== "karte") return;
     setQuiz(prev => ({...prev, phase: "aufgedeckt", eingabe: "", flash: false, feedback: ""}));
   }
 
@@ -2857,7 +2859,7 @@ export default function VokabelApp() {
       if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, vorigeRichtig});
       const nt = prev.antwortTypen[naechsterIdx];
       const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
-      const ntModus = prev.spalteModus?.[nt] || "tippen";
+      const ntModus = prev.spalteModus?.[nt] || STANDARD_ANTWORT_MODUS;
       const mc = ntModus === "mc" ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt) : null;
       return {...prev, flash: false, phase: "eingabe", antwortTypIndex: naechsterIdx,
         antwortTeile: teile, weitereIndices: [], weiterePos: 0, vorigeRichtig, infoSichtbar: false,
@@ -3290,7 +3292,7 @@ export default function VokabelApp() {
     const frageLabel = quiz.liste.spalten[quiz.frageTyp]?.name || quiz.frageTyp;
     const aktAntwortTyp = quiz.antwortTypen[quiz.antwortTypIndex];
     const antwortLabel = quiz.liste.spalten[aktAntwortTyp]?.name || aktAntwortTyp;
-    const aktSpaltModus = quiz.spalteModus?.[aktAntwortTyp] || "tippen";
+    const aktSpaltModus = quiz.spalteModus?.[aktAntwortTyp] || STANDARD_ANTWORT_MODUS;
     const isKarteEingabe = aktSpaltModus === "karte" && quiz.phase === "eingabe";
     const isKarteAufgedeckt = aktSpaltModus === "karte" && quiz.phase === "aufgedeckt" && !quiz.karteNeinFlash;
     const richtigAufgedeckt = !!quiz.richtigAufgedeckt && quiz.phase === "aufgedeckt";
@@ -4446,11 +4448,11 @@ export default function VokabelApp() {
                                     )}
                                     {isAntwort && (
                                       <div style={{display:"flex", gap:4, marginLeft:4}}>
-                                        <button className={`spalten-modus-btn${(quizSpalteModus[typ]||"tippen")==="tippen"?" aktiv":""}`}
+                                        <button className={`spalten-modus-btn${quizSpalteModus[typ]==="tippen"?" aktiv":""}`}
                                           onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"tippen"}))}>Tastatur</button>
                                         <button className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
                                           onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"mc"}))}>MC</button>
-                                        <button className={`spalten-modus-btn${quizSpalteModus[typ]==="karte"?" aktiv":""}`}
+                                        <button className={`spalten-modus-btn${(quizSpalteModus[typ]||STANDARD_ANTWORT_MODUS)==="karte"?" aktiv":""}`}
                                           onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"karte"}))}>Karte</button>
                                       </div>
                                     )}
@@ -4458,11 +4460,11 @@ export default function VokabelApp() {
                                 )}
                                 {checked && quizModus === "rotierend" && (
                                   <div style={{display:"flex", gap:5, marginTop:8, marginLeft:30}}>
-                                    <button className={`spalten-modus-btn${(quizSpalteModus[typ]||"tippen")==="tippen"?" aktiv":""}`}
+                                    <button className={`spalten-modus-btn${quizSpalteModus[typ]==="tippen"?" aktiv":""}`}
                                       onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"tippen"}))}>Tastatur</button>
                                     <button className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
                                       onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"mc"}))}>MC</button>
-                                    <button className={`spalten-modus-btn${quizSpalteModus[typ]==="karte"?" aktiv":""}`}
+                                    <button className={`spalten-modus-btn${(quizSpalteModus[typ]||STANDARD_ANTWORT_MODUS)==="karte"?" aktiv":""}`}
                                       onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"karte"}))}>Karte</button>
                                   </div>
                                 )}
@@ -5702,13 +5704,16 @@ export default function VokabelApp() {
                       </div>
                       {/* Score-Balken */}
                       <div style={{flex:1, position:"relative", height:8, background:"#f0ede8", borderRadius:4, minWidth:0}}>
-                        {score !== null && score !== 0 && (
+                        {istGel ? (
+                          // Gelernt: ganzer Balken grün (auch der negative Bereich)
+                          <div style={{position:"absolute", top:0, bottom:0, left:0, right:0, borderRadius:4, background:"#2d6a4f"}}/>
+                        ) : score !== null && score !== 0 && (
                           <div style={{position:"absolute", top:0, bottom:0, borderRadius:4,
-                            background: isPos ? (istGel ? "#2d6a4f" : "#52b788") : "#c0392b",
+                            background: isPos ? "#52b788" : "#c0392b",
                             ...(isPos ? {left:`${nullPct}%`, width:`${barPct}%`} : {right:`${100 - nullPct}%`, width:`${barPct}%`})}}/>
                         )}
                         <div style={{position:"absolute", top:0, bottom:0, left:`${nullPct}%`,
-                          transform:"translateX(-50%)", width:1, background:"#c0bcb7"}}/>
+                          transform:"translateX(-50%)", width:1, background: istGel ? "#e8f5e9" : "#c0bcb7"}}/>
                       </div>
                       {/* Score + Datum */}
                       <div style={{width:"22%", display:"flex", flexDirection:"column",
@@ -5840,7 +5845,7 @@ export default function VokabelApp() {
                   {k:"Diktat-Linie", v:"Separate gestrichelte Linie für Diktat-Scores – ein-/ausblendbar."},
                   {k:"Lernfortschritt", v:"Wie weit die Vokabelgruppe gelernt ist (0–100 %). Jede Vokabel zählt anteilig bis zur Gelernt-Schwelle – bei +3 z. B. Score +1 = 33 %, +2 = 67 %, ab +3 = 100 %. 100 % = alle Vokabeln gelernt. Darunter: Anzahl gelernter Vokabeln und Ø Score. [Session] zeigt die Veränderung seit Session-Beginn in Prozentpunkten. Ohne Gelernt-Schwelle wird nur der Ø Score angezeigt."},
                   {k:"Gruppen", v:"Jede Vokabel gehört zu einer Gruppe: Negativ (Score unter 0, rot hinterlegt), Nie abgefragt, In Arbeit (Score 0 bis unter der Gelernt-Schwelle) und ✓ Gelernt (ab der Schwelle, grün hinterlegt). Die Boxen zeigen die Anzahl und blenden die Gruppe in Graph und Liste ein oder aus – Lernfortschritt und Zahlen zählen immer alle Vokabeln. 'Gesamt' zeigt wieder alle. Der farbige Balken unter dem Lernfortschritt zeigt die Verteilung."},
-                  {k:"Score-Balken", v:"Null ist in allen Zeilen an derselben Stelle. Nach links bis −5 (tiefer = voller roter Balken), nach rechts bis zur Gelernt-Schwelle (voller dunkelgrüner Balken = gelernt)."},
+                  {k:"Score-Balken", v:"Null ist in allen Zeilen an derselben Stelle. Nach links bis −5 (tiefer = voller roter Balken), nach rechts bis zur Gelernt-Schwelle. Gelernte Vokabeln: ganzer Balken dunkelgrün."},
                   {k:"Sortierung", v:"Score / Streak / Datum / A→Z / Listen-Nr. Pfeil zeigt Richtung, nochmals tippen kehrt um."},
                   {k:"Vollbild", v:"Maximiert Graph und Vokabelliste ohne die oberen Header-Zeilen. 'Vollbild verlassen' oben rechts."},
                   {k:"Vokabelliste", v:"Alle gefilterten Vokabeln mit Score-Balken (grün = positiv, rot = negativ) und letztem Abfragedatum."},
