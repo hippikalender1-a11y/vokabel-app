@@ -334,6 +334,7 @@ function istRichtigeAntwort(eingabe, wert, akzentTolerant = false) {
   return false;
 }
 const AKZENT_HINWEIS = "Richtig – achte auf die Akzente.";
+const MC_FEHLKLICK_HINWEIS = "Nicht auf Anhieb gefunden – zählt als nicht gewusst.";
 
 // ── Score-Clamp (Anzeige: −10 bis +10) ────────────────────────────────────
 function clampScore(s) { return Math.max(-10, Math.min(10, s ?? 0)); }
@@ -1098,6 +1099,20 @@ export default function VokabelApp() {
   // ── Hilfsfunktionen ───────────────────────────────────────────────────────
   function speichereIndex(idx) { setListenIndex(idx); lsSet(SK.listenIndex, idx); }
   function speichereEinst(e) { setEinstellungen(e); lsSet(SK.einstellungen, e); }
+
+  // Vor allen frühen Render-Rückgaben berechnen: starteQuiz() nutzt den Wert auch
+  // vom Paket-Ende-Bildschirm aus (sonst ReferenceError → Button ohne Wirkung)
+  const vokabelgruppeGeaendert = (() => {
+    if (!aktiverSlot || aktiverSlot.typ !== 'gespeichert' || !gespeicherteVokabelgruppe) return false;
+    const { listenIds, vokabelAuswahl, bereichTyp } = gespeicherteVokabelgruppe;
+    if (listenIds.length !== quizTabListen.length) return true;
+    if (!listenIds.every(id => quizTabListen.includes(id))) return true;
+    if (bereichTyp !== quizBereichTyp) return true;
+    const savedAuswahl = new Set(vokabelAuswahl || []);
+    if (savedAuswahl.size !== quizCheckboxAuswahl.size) return true;
+    for (const id of savedAuswahl) { if (!quizCheckboxAuswahl.has(id)) return true; }
+    return false;
+  })();
 
   // ── Sprachen-Filter (global) ──────────────────────────────────────────────
   const vorhandeneSprachen = SPRACHEN.filter(s => listenIndex.some(l => listeSprache(l) === s.code));
@@ -2538,16 +2553,21 @@ export default function VokabelApp() {
       const alleGefunden = neueButtons.filter(b => b.korrekt).every(b => b.status === "richtig");
 
       if (alleGefunden) {
-        const abschluss = spaltenAbschluss("richtig");
+        // Nach einem Fehlklick darf weitergesucht werden – die Spalte zählt aber als nicht gewusst
+        const fehlklick = quiz.spaltenErgebnisse?.[quiz.antwortTypIndex] === "falsch";
+        const abschluss = spaltenAbschluss(fehlklick ? "falsch" : "richtig");
         setQuiz(prev => ({
           ...prev, ...abschluss, mcButtons: neueButtons,
-          phase: "aufgedeckt", flash: false, richtigAufgedeckt: true,
+          phase: "aufgedeckt", flash: false, richtigAufgedeckt: !fehlklick,
+          feedback: fehlklick ? MC_FEHLKLICK_HINWEIS : "",
         }));
       } else {
         setQuiz(prev => ({...prev, mcButtons: neueButtons}));
       }
     } else {
-      setQuiz(prev => ({...prev, mcButtons: prev.mcButtons.map((b, i) => i === idx ? {...b, status: "falsch"} : b)}));
+      setQuiz(prev => ({...prev,
+        spaltenErgebnisse: { ...(prev.spaltenErgebnisse || {}), [prev.antwortTypIndex]: "falsch" },
+        mcButtons: prev.mcButtons.map((b, i) => i === idx ? {...b, status: "falsch"} : b)}));
       setTimeout(() => {
         setQuiz(prev => ({...prev, mcButtons: prev.mcButtons.map((b, i) => i === idx ? {...b, status: "neutral"} : b)}));
       }, 500);
@@ -2557,7 +2577,9 @@ export default function VokabelApp() {
   function zeigeLosung() {
     if (!quiz) return;
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    const abschluss = spaltenAbschluss("aufgedeckt");
+    // Fehlklick bei Multiple Choice bleibt "falsch", auch wenn danach die Lösung angezeigt wird
+    const schonFalsch = quiz.spaltenErgebnisse?.[quiz.antwortTypIndex] === "falsch";
+    const abschluss = spaltenAbschluss(schonFalsch ? "falsch" : "aufgedeckt");
     const aktModus = quiz.spalteModus?.[quiz.antwortTypen?.[quiz.antwortTypIndex]] || "tippen";
     const mcUpd = aktModus === "mc"
       ? { mcButtons: quiz.mcButtons.map(b => b.korrekt ? {...b, status: "richtig"} : b) }
@@ -3226,7 +3248,7 @@ export default function VokabelApp() {
                             </div>
                       )}
                       {quiz.feedback && !quiz.flash && (
-                        <div className={`quiz-feedback ${(quiz.falschFlash || (isWeitere && quiz.feedback.startsWith("Nicht"))) ? "nein" : "ok"}`}
+                        <div className={`quiz-feedback ${(quiz.falschFlash || quiz.feedback.startsWith("Nicht")) ? "nein" : "ok"}`}
                           style={{textAlign:"center"}}>
                           {quiz.feedback}
                         </div>
@@ -3379,17 +3401,6 @@ export default function VokabelApp() {
     ? quizBasisVoks.filter(v => quizCheckboxAuswahl.has(v.id))
     : quizBasisVoks;
 
-  const vokabelgruppeGeaendert = (() => {
-    if (!aktiverSlot || aktiverSlot.typ !== 'gespeichert' || !gespeicherteVokabelgruppe) return false;
-    const { listenIds, vokabelAuswahl, bereichTyp } = gespeicherteVokabelgruppe;
-    if (listenIds.length !== quizTabListen.length) return true;
-    if (!listenIds.every(id => quizTabListen.includes(id))) return true;
-    if (bereichTyp !== quizBereichTyp) return true;
-    const savedAuswahl = new Set(vokabelAuswahl || []);
-    if (savedAuswahl.size !== quizCheckboxAuswahl.size) return true;
-    for (const id of savedAuswahl) { if (!quizCheckboxAuswahl.has(id)) return true; }
-    return false;
-  })();
 
   // ── Render: Haupt (Tabs immer sichtbar) ──────────────────────────────────
   return (
@@ -5593,7 +5604,7 @@ export default function VokabelApp() {
                   {k:"Karte (Frage–Antwort)", v:"Tippe auf die Karte, um die Antwort aufzudecken. Dann: Richtig oder Falsch selbst einschätzen."},
                   {k:"Tippen", v:"Antwort eintippen und bestätigen. Im Einfach-Modus: 3 Versuche. Im Schwer-Modus: 1 Versuch. Nach 3 Fehlern wird die Lösung gezeigt."},
                   {k:"Diktat", v:"Großer Lautsprecher: Wort nochmals vorlesen. Kleiner Lautsprecher: langsamer/erneut. Antwort eintippen."},
-                  {k:"Scoring", v:"Richtig: +1 Punkt, Streak +1. Ab Streak 3: mindestens +2 Punkte. Falsch: Streak auf 0, Punktabzug je nach Fehlerzahl. Aufgedeckt: kein Punkt, kein Streak. Mehrere Antwort-Spalten zählen zusammen als eine Bewertung: alle gewusst = richtig, sonst falsch."},
+                  {k:"Scoring", v:"Richtig: +1 Punkt, Streak +1. Ab Streak 3: mindestens +2 Punkte. Falsch: Streak auf 0, Punktabzug je nach Fehlerzahl. Aufgedeckt: kein Punkt, kein Streak. Mehrere Antwort-Spalten zählen zusammen als eine Bewertung: alle gewusst = richtig, sonst falsch. Multiple Choice: nur ein Treffer ohne Fehlklick gilt als gewusst – nach einem Fehlklick darf man weitersuchen, die Spalte zählt aber als nicht gewusst."},
                   {k:"Aufdecken", v:"Zeigt die Antwort ohne Wertung."},
                   {k:"Schließen", v:"Pausiert das Quiz – beim nächsten Start über 'Pakete' weitermachen."},
                 ]},
