@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-25  (Session 36 — PWA / Offline-Betrieb)
-Letzter Commit: 4aa3472
+Letzter Commit: 033efa6
 
 DATEIPFADE
 ----------
@@ -908,6 +908,29 @@ TESTS (puppeteer-core, Scratchpad): Sprachen 16/16, Export/Import
 
 
 ================================================================
+SESSION 36 (FORTSETZUNG) — SCORE BEI MEHREREN ANTWORT-SPALTEN (033efa6)
+================================================================
+War: jede Antwort-Spalte änderte den Score einzeln (Verb mit E1–E3 bis
+  +3 pro Runde, Streak-Bonus innerhalb einer Vokabel); Auswertung zählte
+  Vokabel als richtig, sobald EINE Spalte gewusst; Tippen/MC sprang nach
+  falscher Spalte zur nächsten Vokabel.
+Jetzt:
+  spaltenAbschluss(ergebnis): sammelt quiz.spaltenErgebnisse
+    {antwortTypIndex: "richtig"|"falsch"|"aufgedeckt"}; nach der letzten
+    Spalte EINMAL berechneNeuenScore mit vokErgebnis:
+      alle richtig → "richtig" | eine falsch → "falsch" | sonst "aufgedeckt"
+    Schutz gegen Doppelwertung (quiz.vokErgebnis gesetzt).
+  Aufrufer: pruefeAntwort (richtig / 3. Fehlversuch), klickeButton (MC),
+    zeigeLosung, bewerteKarte.
+  naechsteVokabel: in Phase "aufgedeckt" immer zur nächsten Spalte
+    (vorigeRichtig nur bei richtig ergänzt).
+  naechsteVokabelState: warRichtig = prev.vokErgebnis === "richtig"
+    (Auswertung + Abfrage-Ziel "Wiederholung"); _warRichtig entfernt.
+  MC: falsche Klicks weiterhin ohne Abzug (unverändert).
+TEST: score.mjs (Karte + Tippen, 8/8) im Scratchpad.
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -948,7 +971,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 4aa3472 (Session 36 — PWA, E3, Update-Hinweis, Sprachen, Fixes)
+Letzter Commit: 033efa6 (Session 36 — PWA, E3, Update-Hinweis, Sprachen, Fixes, Score)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste).
