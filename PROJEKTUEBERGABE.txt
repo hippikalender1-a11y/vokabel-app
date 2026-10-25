@@ -1,7 +1,7 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-10-25  (Session 36 — PWA / Offline-Betrieb)
+Stand: 2026-10-25  (Session 36 — PWA, Sprachen, Score, Fixes)
 Letzter Commit: ff48ce7
 
 DATEIPFADE
@@ -954,6 +954,16 @@ TESTS (Scratchpad e2e/): score.mjs 13/13, pakete.mjs (quiztab/detail/
 
 
 ================================================================
+SESSION 36 (FORTSETZUNG) — DIKTAT: EIGENER SCORE FÜR "GELERNT"
+================================================================
+gelerntScore(v, diktat): Diktat nutzt diktatFortschritt.score, sonst
+  fortschritt.score. Angewendet in starteDiktat() und im Quiz-Tab
+  (gelernteAnzahl / reihenfolgeVoks, istDiktat = quizModus==="diktat").
+  Listen-✓ und Statistik bleiben beim normalen Quiz-Score.
+TEST: e2e/gelernt.mjs 3/3.
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -980,6 +990,19 @@ GEPLANTE FEATURES (noch nicht umgesetzt)
      - Funktion braucht Internet; offline → Meldung, Rest bleibt offline.
      - Bisheriger Weg (Prompt kopieren) bleibt erhalten.
 
+2) GELERNTE VOKABELN WIEDERHOLEN (Idee, offen – Nutzer überlegt noch)
+   Heute: gelernte Vokabeln (Score ≥ Schwelle) werden nie mehr abgefragt,
+   außer per "Einschließen" → Score ändert sich nicht mehr, kein
+   Vergessen-Schutz. Idee: nach einer Zeit (z. B. letzteAbfrage älter als
+   X Tage) wieder ins Quiz holen (Spaced Repetition).
+
+3) INTERNER SCORE ÜBER ±10 (offen – Nutzer überlegt noch)
+   berechneNeuenScore() begrenzt nicht; Anzeige/Logik clampen auf ±10,
+   istGelernt nutzt den Rohwert → Vokabel mit intern +15 bleibt nach
+   Fehlern länger "gelernt" als die Anzeige (+10) vermuten lässt.
+   Ebenso: aufgedecktStreak ≥ 3 setzt Score auf −100.
+   Option: Score beim Speichern auf −10…+10 begrenzen.
+
 
 ================================================================
 PROMPT FÜR NEUEN CHAT
@@ -997,6 +1020,7 @@ Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 Letzter Commit: ff48ce7 (Session 36 — PWA, E3, Sprachen, Score, MC, Fixes)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
-(Foto → KI → Vokabelliste).
+(Foto → KI → Vokabelliste; Wiederholung gelernter
+Vokabeln; Score-Begrenzung ±10).
 
 ================================================================

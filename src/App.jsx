@@ -338,6 +338,8 @@ const MC_FEHLKLICK_HINWEIS = "Nicht auf Anhieb gefunden – zählt als nicht gew
 
 // ── Score-Clamp (Anzeige: −10 bis +10) ────────────────────────────────────
 function clampScore(s) { return Math.max(-10, Math.min(10, s ?? 0)); }
+// Score für den Gelernt-Status: Diktat hat einen eigenen Fortschritt
+function gelerntScore(v, diktat) { return (diktat ? v.diktatFortschritt?.score : v.fortschritt?.score) ?? -Infinity; }
 
 // ── Scoring ────────────────────────────────────────────────────────────────
 function berechneNeuenScore(fortschritt, ereignis, sessionFalschAnzahl, modus) {
@@ -2164,7 +2166,7 @@ export default function VokabelApp() {
     }
     const schwelleDiktat = einstellungen.gelerntSchwelle ?? 0;
     if (!quizGelerntEinschliessen && schwelleDiktat > 0)
-      voks = voks.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleDiktat);
+      voks = voks.filter(v => gelerntScore(v, true) < schwelleDiktat);
     const sessionGesamt = isPakete ? voks.length : 0;
     if (isPakete) {
       const existingSlot = lsGet(SK.sessionAktiv);
@@ -3876,10 +3878,11 @@ export default function VokabelApp() {
             reihenfolgeVoks = gefilterteVoks.filter(v => (v.fortschritt?.score ?? 0) < thr);
           }
           const schwelle = einstellungen.gelerntSchwelle ?? 0;
+          const istDiktat = quizModus === "diktat";
           const gelernteAnzahl = schwelle > 0
-            ? gefilterteVoks.filter(v => (v.fortschritt?.score ?? -Infinity) >= schwelle).length : 0;
+            ? gefilterteVoks.filter(v => gelerntScore(v, istDiktat) >= schwelle).length : 0;
           if (!quizGelerntEinschliessen && schwelle > 0)
-            reihenfolgeVoks = reihenfolgeVoks.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelle);
+            reihenfolgeVoks = reihenfolgeVoks.filter(v => gelerntScore(v, istDiktat) < schwelle);
           const verfuegbarReihenfolge = reihenfolgeVoks.length;
           // Pakete/Session-Filter → nur für Quiz-Button
           let verfuegbar;
@@ -5651,7 +5654,7 @@ export default function VokabelApp() {
                   <div className="karte-zeile-sub">
                     {(einstellungen.gelerntSchwelle ?? 0) === 0
                       ? "Deaktiviert – alle Vokabeln werden abgefragt"
-                      : `Score ≥ +${einstellungen.gelerntSchwelle} gilt als gelernt`}
+                      : `Score ≥ +${einstellungen.gelerntSchwelle} gilt als gelernt (Diktat: eigener Diktat-Score)`}
                   </div>
                 </div>
                 <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
