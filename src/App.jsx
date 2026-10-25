@@ -338,6 +338,11 @@ const MC_FEHLKLICK_HINWEIS = "Nicht auf Anhieb gefunden – zählt als nicht gew
 
 // ── Score-Clamp (Anzeige: −10 bis +10) ────────────────────────────────────
 function clampScore(s) { return Math.max(-10, Math.min(10, s ?? 0)); }
+// Lernfortschritt in %: jede Vokabel anteilig bis zur Gelernt-Schwelle (negativ/nie = 0)
+function lernProzent(scores, schwelle) {
+  if (!scores.length || schwelle <= 0) return 0;
+  return scores.reduce((s, sc) => s + Math.min(1, Math.max(0, (sc ?? 0) / schwelle)), 0) / scores.length * 100;
+}
 // Score für den Gelernt-Status: Diktat hat einen eigenen Fortschritt
 function gelerntScore(v, diktat) { return (diktat ? v.diktatFortschritt?.score : v.fortschritt?.score) ?? -Infinity; }
 
@@ -2134,6 +2139,36 @@ export default function VokabelApp() {
     setAnsicht("uebersicht");
   }
 
+  // Lern-Bilanz am Rundenende: neu gelernte Vokabeln + Lernfortschritt der Vokabelgruppe
+  function renderLernBilanz(q) {
+    const schwelle = einstellungen.gelerntSchwelle ?? 0;
+    if (schwelle <= 0 || !q?.rundeStartScores || !q.gruppeVokIds?.length) return null;
+    const start = q.rundeStartScores;
+    const jetztMap = new Map(q.liste.vokabeln.map(v => [v.id, v.fortschritt?.score ?? null]));
+    const ids = q.gruppeVokIds;
+    const vorher = ids.map(id => id in start ? start[id] : jetztMap.get(id));
+    const nachher = ids.map(id => jetztMap.get(id));
+    const vorherP = lernProzent(vorher, schwelle), nachherP = lernProzent(nachher, schwelle);
+    const neuGelernt = ids.filter(id => id in start && (start[id] ?? -Infinity) < schwelle && (jetztMap.get(id) ?? -Infinity) >= schwelle).length;
+    const komplett = nachherP >= 99.999 && vorherP < 99.999;
+    const delta = Math.round(nachherP) - Math.round(vorherP);
+    return (
+      <div style={{border:"1.5px solid #a8d5be", background: komplett ? "#e8f5e9" : "#f0f9f4", borderRadius:12, padding:"12px 16px", margin:"14px 0", textAlign:"center"}}>
+        {komplett && (<>
+          <div style={{fontSize:"2rem", lineHeight:1.2}}>🏆</div>
+          <div style={{fontWeight:800, color:"#2d6a4f", fontSize:"1rem", marginBottom:4}}>Geschafft! Alle {ids.length} Vokabeln gelernt.</div>
+        </>)}
+        {neuGelernt > 0 && (
+          <div style={{fontWeight:700, color:"#2d6a4f", fontSize:"0.95rem", marginBottom:2}}>✓ +{neuGelernt} neu gelernt</div>
+        )}
+        <div style={{fontSize:"0.85rem", color:"#3b3832"}}>
+          Lernfortschritt {Math.round(vorherP)} % → <strong>{Math.round(nachherP)} %</strong>
+          {delta !== 0 && <span style={{color: delta > 0 ? "#2d6a4f" : "#c0392b", fontWeight:700}}> ({delta > 0 ? "+" : ""}{delta})</span>}
+        </div>
+      </div>
+    );
+  }
+
   // Nach dem Quiz direkt zur Statistik: mit Session → deren Eintrag (Score seit
   // Session-Beginn), sonst genau die Vokabeln dieser Runde (Score seit Rundenstart)
   function zurRundenStatistik(abschluss) {
@@ -2283,6 +2318,7 @@ export default function VokabelApp() {
     if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
       voks = voks.filter(v => quizCheckboxAuswahl.has(v.id));
     }
+    const gruppeVokIds = voks.map(v => v.id);   // ganze Vokabelgruppe inkl. Gelernter (für Lern-Bilanz)
     const schwelleQ = einstellungen.gelerntSchwelle ?? 0;
     if (!quizGelerntEinschliessen && schwelleQ > 0)
       voks = voks.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleQ);
@@ -2379,6 +2415,7 @@ export default function VokabelApp() {
       istSessionModus: isPakete,
       sessionGesamt, abfrageZiel,
       rundeStartScores: Object.fromEntries(voks.map(v => [v.id, v.fortschritt?.score ?? null])),
+      gruppeVokIds,
     });
     setAnsicht("quiz");
   }
@@ -3041,6 +3078,7 @@ export default function VokabelApp() {
                   <div style={{background:"#f0ede8", borderRadius:8, height:8, marginBottom:14, overflow:"hidden"}}>
                     <div style={{width:`${pct}%`, height:"100%", background:balkenFarbe, borderRadius:8}}/>
                   </div>
+                  {renderLernBilanz(quiz)}
                   {feedback && (
                     <div style={{background:"#f7f5f0", borderRadius:12, padding:"18px 16px", margin:"20px 0", fontSize:"1rem", lineHeight:1.6, color:"#3b3832", fontStyle:"italic", textAlign:"center"}}>
                       „{feedback}"
@@ -3104,6 +3142,7 @@ export default function VokabelApp() {
                 <div style={{background:"#f0ede8", borderRadius:8, height:10, marginBottom:20, overflow:"hidden"}}>
                   <div style={{width:`${pct}%`, height:"100%", background:balkenFarbe, borderRadius:8, transition:"width 0.6s ease"}}/>
                 </div>
+                {renderLernBilanz(quiz)}
                 {feedback && (
                   <div style={{background:"#f7f5f0", borderRadius:12, padding:"18px 16px", margin:"20px 0", fontSize:"1rem", lineHeight:1.6, color:"#3b3832", fontStyle:"italic", textAlign:"center"}}>
                     „{feedback}"
@@ -4735,6 +4774,24 @@ export default function VokabelApp() {
                           {aktSpalten.map(t => <span key={t} className="spalten-badge aktiv">{liste.spalten[t].name || t}</span>)}
                         </div>
                       </div>
+                      {(() => {
+                        const schwelle = einstellungen.gelerntSchwelle ?? 0;
+                        if (schwelle <= 0 || !liste?.vokabeln.length) return null;
+                        const scores = liste.vokabeln.map(v => v.fortschritt?.score);
+                        const pct = lernProzent(scores, schwelle);
+                        const gelernt = scores.filter(sc => (sc ?? -Infinity) >= schwelle).length;
+                        return (
+                          <div style={{display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3, flexShrink:0, width:64}}
+                            {...tt(`Lernfortschritt ${Math.round(pct)} % · ${gelernt} / ${scores.length} gelernt`)}>
+                            <span style={{fontSize:"0.78rem", fontWeight:700, color: pct >= 99.999 ? "#2d6a4f" : "#6b6560"}}>
+                              {pct >= 99.999 ? "🏆 " : ""}{Math.round(pct)} %
+                            </span>
+                            <div style={{width:"100%", height:5, background:"#f0ede8", borderRadius:3, overflow:"hidden"}}>
+                              <div style={{width:`${pct}%`, height:"100%", background:"#2d6a4f", borderRadius:3}}/>
+                            </div>
+                          </div>
+                        );
+                      })()}
                       {!exportAuswahlModus && <span style={{color:"#6b6560"}}>{">"}</span>}
                     </div>
                   );
