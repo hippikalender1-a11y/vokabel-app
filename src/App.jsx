@@ -5296,8 +5296,12 @@ export default function VokabelApp() {
             </div>
           );
 
-          const abgefragt = alleVoks.filter(v => v.fortschritt);
-          const diktatAbgefragt = alleVoks.filter(v => v.diktatFortschritt);
+          // Kopfzeile (Lernfortschritt, Gruppen-Balken, Ø) zählt nur die eingeblendeten Gruppen
+          const kopfVoks = alleVoks.filter(v => statistikFilter.has(gruppeVon(v)));
+          const kopfAnzahl = { negativ: 0, nie: 0, arbeit: 0, gelernt: 0 };
+          kopfVoks.forEach(v => { kopfAnzahl[gruppeVon(v)]++; });
+          const abgefragt = kopfVoks.filter(v => v.fortschritt);
+          const diktatAbgefragt = kopfVoks.filter(v => v.diktatFortschritt);
           const avgScore = abgefragt.length > 0
             ? abgefragt.reduce((s, v) => s + v.fortschritt.score, 0) / abgefragt.length
             : null;
@@ -5309,9 +5313,9 @@ export default function VokabelApp() {
           // 100 % = alle Vokabeln gelernt. Negativ/nie abgefragt = 0 %.
           const anteil = score => schwelleS > 0 ? Math.min(1, Math.max(0, (score ?? 0) / schwelleS)) : 0;
           const prozent = (voks, scoreVon) => voks.length > 0 ? voks.reduce((s, v) => s + anteil(scoreVon(v)), 0) / voks.length * 100 : 0;
-          const lernFortschritt = prozent(alleVoks, v => v.fortschritt?.score);
-          const diktatFortschrittProzent = prozent(alleVoks, v => v.diktatFortschritt?.score);
-          const gelerntAnzahl = alleVoks.filter(istGelerntS).length;
+          const lernFortschritt = prozent(kopfVoks, v => v.fortschritt?.score);
+          const diktatFortschrittProzent = prozent(kopfVoks, v => v.diktatFortschritt?.score);
+          const gelerntAnzahl = kopfVoks.filter(istGelerntS).length;
 
 
           // Filter-Logik (wird für Graph + Vokabelliste verwendet)
@@ -5349,13 +5353,13 @@ export default function VokabelApp() {
                     )}
                   </div>
                   <div style={{display:"flex", width:"min(180px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"#f0ede8", margin:"3px 0 2px"}}
-                    {...tt(`Gelernt ${gruppenAnzahl.gelernt} · In Arbeit ${gruppenAnzahl.arbeit} · Nie abgefragt ${gruppenAnzahl.nie} · Negativ ${gruppenAnzahl.negativ}`)}>
-                    {GRUPPE_BALKEN.map(([g, farbe]) => gruppenAnzahl[g] > 0 && (
-                      <div key={g} style={{width:`${gruppenAnzahl[g] / alleVoks.length * 100}%`, background:farbe}}/>
+                    {...tt(`Gelernt ${kopfAnzahl.gelernt} · In Arbeit ${kopfAnzahl.arbeit} · Nie abgefragt ${kopfAnzahl.nie} · Negativ ${kopfAnzahl.negativ}`)}>
+                    {kopfVoks.length > 0 && GRUPPE_BALKEN.map(([g, farbe]) => kopfAnzahl[g] > 0 && (
+                      <div key={g} style={{width:`${kopfAnzahl[g] / kopfVoks.length * 100}%`, background:farbe}}/>
                     ))}
                   </div>
                   <div style={{fontSize:"0.7rem", color:"#6b6560", whiteSpace:"nowrap"}}>
-                    {gelerntAnzahl} / {alleVoks.length} gelernt
+                    {gelerntAnzahl} / {kopfVoks.length} gelernt
                     {avgScore !== null && <> · Ø {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}</>}
                   </div>
                 </div>
@@ -5679,7 +5683,7 @@ export default function VokabelApp() {
                   {k:"Kreisdiagramm", v:"Anteil der Gruppen Gelernt, In Arbeit, Nie abgefragt und Negativ mit Anzahl und Prozent. Segment antippen blendet die Gruppe in der Liste aus/ein, 'Gesamt' zeigt wieder alle. Symbol oben rechts: Vollbild."},
                   {k:"Diktat", v:"Sobald Diktat-Ergebnisse vorhanden sind, zeigt die Kopfzeile zusätzlich den Lernfortschritt im Diktat."},
                   {k:"Lernfortschritt", v:"Wie weit die Vokabelgruppe gelernt ist (0–100 %). Jede Vokabel zählt anteilig bis zur Gelernt-Schwelle – bei +3 z. B. Score +1 = 33 %, +2 = 67 %, ab +3 = 100 %. 100 % = alle Vokabeln gelernt. Darunter: Anzahl gelernter Vokabeln und Ø Score. Ohne Gelernt-Schwelle wird nur der Ø Score angezeigt."},
-                  {k:"Gruppen", v:"Jede Vokabel gehört zu einer Gruppe: Negativ (Score unter 0, rot hinterlegt), Nie abgefragt, In Arbeit (Score 0 bis unter der Gelernt-Schwelle) und ✓ Gelernt (ab der Schwelle, grün hinterlegt). Das Kreisdiagramm (Standard-Ansicht) zeigt Anzahl und Anteil jeder Gruppe; ein Segment antippen blendet die Gruppe in Graph und Liste aus oder wieder ein, 'Gesamt' zeigt wieder alle. Lernfortschritt und Zahlen zählen immer alle Vokabeln. Das Symbol oben rechts im Kreis öffnet die Statistik im Vollbild. Der farbige Balken unter dem Lernfortschritt zeigt die Verteilung."},
+                  {k:"Gruppen", v:"Jede Vokabel gehört zu einer Gruppe: Negativ (Score unter 0, rot hinterlegt), Nie abgefragt, In Arbeit (Score 0 bis unter der Gelernt-Schwelle) und ✓ Gelernt (ab der Schwelle, grün hinterlegt). Das Kreisdiagramm (Standard-Ansicht) zeigt Anzahl und Anteil jeder Gruppe; ein Segment antippen blendet die Gruppe in Graph und Liste aus oder wieder ein, 'Gesamt' zeigt wieder alle. Lernfortschritt, Gruppen-Balken und Zähler beziehen sich auf die eingeblendeten Gruppen. Das Symbol oben rechts im Kreis öffnet die Statistik im Vollbild. Der farbige Balken unter dem Lernfortschritt zeigt die Verteilung."},
                   {k:"Score-Balken", v:"Null ist in allen Zeilen an derselben Stelle. Nach links bis −5 (tiefer = voller roter Balken), nach rechts bis zur Gelernt-Schwelle. Gelernte Vokabeln: ganzer Balken dunkelgrün."},
                   {k:"Sortierung", v:"Score / Streak / Datum / A→Z / Listen-Nr. Pfeil zeigt Richtung, nochmals tippen kehrt um."},
                   {k:"Vollbild", v:"Maximiert Graph und Vokabelliste ohne die oberen Header-Zeilen. 'Vollbild verlassen' oben rechts."},
