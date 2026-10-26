@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-26  (Session 37 — Standards, Score-Regel, Kreisdiagramm)
-Letzter Commit: 1f816fa
+Letzter Commit: df78209
 
 DATEIPFADE
 ----------
@@ -1172,6 +1172,27 @@ TEST: e2e/ipad_export.mjs (UA iPad + share-Stub), einfuegen.mjs.
 
 
 ================================================================
+SESSION 37 (FORTSETZUNG) — INFO-MODUS + ERKLÄR-TAFEL (a140db0, df78209)
+================================================================
+Neue Dateien: src/InfoTafel.jsx (Komponente, in main.jsx neben <App/>),
+  src/infoEreignisse.js (zeigeInfo(text,x,y), schalteInfoModus() via
+  window-CustomEvents "vokabel-info" / "vokabel-infomodus").
+tt(text): title + data-info; Touch lang drücken (500 ms) → zeigeInfo;
+  touchend nach Anzeige verhindert den Klick. Alte Tooltip-Blase
+  (tooltipEl) entfernt – sie erschien nur im Haupt-Render, nicht im Quiz.
+InfoTafel: Sprechblase an der Fingerstelle (14 px darüber, oben zu
+  wenig Platz → darunter), Breite ≤300, seitlich geklemmt; bleibt bis zum
+  nächsten Antippen (Capture-Klick wird geschluckt).
+Info-Modus: ⓘ-Knopf (.info-schalter, data-info-schalter) links in der
+  Hauptkopfzeile; body.info-modus → [data-info] gestrichelt; Klick auf
+  [data-info] zeigt Erklärung (am Element verankert) statt Aktion;
+  "ⓘ Info-Modus beenden" unten links (auf allen Screens).
+Offen: Elemente ohne tt()-Text (Listenzeilen, Checkboxen, Überschriften)
+  sind im Info-Modus nicht erklärbar → Texte nach und nach ergänzen.
+TEST: e2e/info.mjs (11/11, Touch via CDP).
+
+
+================================================================
 TODO / GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 Reihenfolge = Priorität (Stand 2026-10-26). Nutzer entscheidet jeweils.
@@ -1264,7 +1285,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 1f816fa (Session 37 — … Datei-Import robust, Export-Fix iPad)
+Letzter Commit: df78209 (Session 37 — … Export-Fix iPad, Info-Modus)
 
 Offene Punkte: siehe Abschnitt "TODO / GEPLANTE FEATURES" (nach Priorität;
 als Nächstes: Datei-Übertragung iPad → Android).
