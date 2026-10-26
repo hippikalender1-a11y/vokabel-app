@@ -649,7 +649,6 @@ export default function VokabelApp() {
   const [aktiverSlot, setAktiverSlot] = useState(null);        // {typ:"verlauf"|"gespeichert", id:string} | null
   const [slotGeaendert, setSlotGeaendert] = useState(false);   // ob Einstellungen seit Laden geändert
   const [statistikAktiverSlot, setStatistikAktiverSlot] = useState(null); // separater Slot-Zustand für Statistik-Tab
-  const [statistikSessionDaten, setStatistikSessionDaten] = useState(null); // sessionFortschritt für Statistik
   const [statistikSlotGeleert, setStatistikSlotGeleert] = useState(false);  // true wenn Slot durch Listen-Wechsel geleert
   const [quizSessionModus, setQuizSessionModus] = useState(STANDARD_SESSION_MODUS);
   const [quizPaketGroesse, setQuizPaketGroesse] = useState(STANDARD_PAKET_GROESSE);
@@ -660,7 +659,6 @@ export default function VokabelApp() {
   const [abfrageZielScore, setAbfrageZielScore] = useState(0);
   const [abfrageZielScoreTyp, setAbfrageZielScoreTyp] = useState("global");
   const [sessionSlotAktiv, setSessionSlotAktiv] = useState(null);
-  const [statistikScoreModus, setStatistikScoreModus] = useState("global");
   const [sessionH, setSessionH] = useState(0);
   const [slotH, setSlotH] = useState(0);
   const [listenauswahlHeaderH, setListenauswahlHeaderH] = useState(0);
@@ -1121,13 +1119,11 @@ export default function VokabelApp() {
     }
     // Statistik
     if (statistikListenIds && [...statistikListenIds].some(id => !passt(id))) {
-      setStatistikAktiverSlot(null); setStatistikSessionDaten(null);
-      const rest = [...statistikListenIds].filter(passt);
+      setStatistikAktiverSlot(null);      const rest = [...statistikListenIds].filter(passt);
       setStatistikListenIds(rest.length ? new Set(rest) : null);
       setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
     } else if (statistikAktiverSlot) {
-      setStatistikAktiverSlot(null); setStatistikSessionDaten(null);
-    }
+      setStatistikAktiverSlot(null);    }
     // Listen-Tab: geöffnete Liste anderer Sprache schließen
     if (aktiveListeId && ansicht === "liste-detail" && !passt(aktiveListeId)) {
       setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null);
@@ -1331,7 +1327,6 @@ export default function VokabelApp() {
       setStatistikListenAufgeklappt(false);
       setStatistikEinzelauswahlAufgeklappt(false);
       setStatistikAktiverSlot(aktiverSlot);
-      setStatistikSessionDaten(sessionSlotAktiv);
       setStatistikSlotGeleert(false);
     }
     if (neuerTab === "listen") setAnsicht("uebersicht");
@@ -1342,7 +1337,7 @@ export default function VokabelApp() {
   }
 
   function toggleStatistikListe(id) {
-    if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); setStatistikSessionDaten(null); }
+    if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); }
     setStatistikListenIds(prev => {
       const currentSet = prev === null
         ? new Set(sichtbareListen.map(l => l.id))
@@ -1763,7 +1758,6 @@ export default function VokabelApp() {
     setQuizSessionAufgeklappt(false);
     setAktiverSlot({ typ, id });
     setSlotGeaendert(false);
-    setStatistikScoreModus(eintrag.sessionFortschritt ? "session" : "global");
     if (eintrag.sessionFortschritt) {
       const sf = eintrag.sessionFortschritt;
       const sessionObj = { slotTyp: typ, slotId: id, listenIds: eintrag.konfiguration.listenIds || [], vokabelAuswahl: eintrag.konfiguration.vokabelAuswahl || [], bereichTyp: eintrag.konfiguration.bereichTyp || "alle", abgefragt: sf.abgefragt || [], gesamt: sf.gesamt || 0, paketGroesse: sf.paketGroesse || STANDARD_PAKET_GROESSE, startScores: sf.startScores || {} };
@@ -1788,9 +1782,6 @@ export default function VokabelApp() {
     setStatistikEinzelauswahlAufgeklappt(false);
     setStatistikAktiverSlot({ typ, id });
     setStatistikSlotGeleert(false);
-    const sessionDaten = eintrag.sessionFortschritt || (eintrag.startScores ? { startScores: eintrag.startScores } : null);
-    setStatistikScoreModus(sessionDaten ? "session" : "global");
-    setStatistikSessionDaten(sessionDaten);
   }
 
   // Abfrage ohne Pakete im Verlauf festhalten (mit Start-Scores für die Statistik).
@@ -2229,8 +2220,8 @@ export default function VokabelApp() {
     </>);
   }
 
-  // Nach dem Quiz direkt zur Statistik: mit Session → deren Eintrag (Score seit
-  // Session-Beginn), sonst genau die Vokabeln dieser Runde (Score seit Rundenstart)
+  // Nach dem Quiz direkt zur Statistik: mit Session → deren Eintrag (ganze Vokabelgruppe),
+  // sonst genau die Vokabeln dieser Runde
   function zurRundenStatistik(abschluss) {
     const q = quiz;
     abschluss();
@@ -2247,9 +2238,6 @@ export default function VokabelApp() {
       setStatistikListenIds(new Set(ids.map(id => id.split("__")[0])));
       setStatistikBereichTyp("bereich");
       setStatistikCheckboxAuswahl(new Set(ids));
-      const mitDelta = !!q?.rundeStartScores && q.modus !== "diktat";
-      setStatistikScoreModus(mitDelta ? "session" : "global");
-      setStatistikSessionDaten(mitDelta ? { startScores: q.rundeStartScores } : null);
     }
     setTab("statistik");
   }
@@ -5063,8 +5051,7 @@ export default function VokabelApp() {
                         ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
                         : {color:"#9b9590"}}
                       onClick={() => {
-                        setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setStatistikSessionDaten(null); setStatistikScoreModus("global");
-                        setStatistikListenIds(null); setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
+                        setStatistikAktiverSlot(null); setStatistikSlotGeleert(false);                        setStatistikListenIds(null); setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
                         setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']));
                       }}
                       {...tt("Neu – alle Listen und Vokabeln anzeigen")}>
@@ -5097,14 +5084,14 @@ export default function VokabelApp() {
                   <>
                     {statistikListenIds !== null && (
                       <button className="btn btn-ghost btn-sm"
-                        onClick={() => { setStatistikListenIds(null); if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); setStatistikSessionDaten(null); } }}
+                        onClick={() => { setStatistikListenIds(null); if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); } }}
                         {...tt("Alle Listen anzeigen")}>
                         Alle
                       </button>
                     )}
                     {(statistikListenIds === null || statistikListenIds.size > 0) && (
                       <button className="btn btn-ghost btn-sm" style={{padding:"6px 8px"}}
-                        onClick={() => { setStatistikListenIds(new Set()); if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); setStatistikSessionDaten(null); } }}
+                        onClick={() => { setStatistikListenIds(new Set()); if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); } }}
                         {...tt("Listenauswahl leeren")}>
                         <IcoX s={12}/>
                       </button>
@@ -5296,22 +5283,6 @@ export default function VokabelApp() {
           const diktatFortschrittProzent = prozent(alleVoks, v => v.diktatFortschritt?.score);
           const gelerntAnzahl = alleVoks.filter(istGelerntS).length;
 
-          // Session-Delta-Score
-          const sessionStartScores = statistikSessionDaten?.startScores || {};
-          const hatSessionDaten = Object.keys(sessionStartScores).length > 0;
-          const istSessionModus = statistikScoreModus === "session" && hatSessionDaten;
-          const getSessionDelta = (vok) => {
-            const start = sessionStartScores[vok.id];
-            if (start === undefined) return null;
-            const cur = vok.fortschritt?.score ?? null;
-            return cur !== null ? cur - (start ?? 0) : null;
-          };
-          const sessionVoksAbgefragt = abgefragt.filter(v => sessionStartScores[v.id] !== undefined);
-          const avgSessionScore = sessionVoksAbgefragt.length > 0
-            ? sessionVoksAbgefragt.reduce((s, v) => s + (getSessionDelta(v) ?? 0), 0) / sessionVoksAbgefragt.length
-            : null;
-          const startFortschritt = prozent(alleVoks, v => v.id in sessionStartScores ? sessionStartScores[v.id] : v.fortschritt?.score);
-          const fortschrittDelta = lernFortschritt - startFortschritt;
 
           // Filter-Logik (wird für Graph + Vokabelliste verwendet)
           const alleFilterAktiv = ['negativ', 'nie', 'arbeit', 'gelernt'].every(g => statistikFilter.has(g));
@@ -5339,27 +5310,11 @@ export default function VokabelApp() {
             <div style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
               <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2, flexShrink:0}}>
                 <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>{schwelleS > 0 ? "Lernfortschritt" : "Ø Score"}</span>
-                {hatSessionDaten && (
-                  <div style={{display:"flex", gap:4}}>
-                    <button className={`typ-btn${!istSessionModus?" aktiv":""}`}
-                      style={{fontSize:"0.6rem", padding:"1px 6px"}}
-                      onClick={() => setStatistikScoreModus("global")}>Global</button>
-                    <button className={`typ-btn${istSessionModus?" aktiv":""}`}
-                      style={{fontSize:"0.6rem", padding:"1px 6px"}}
-                      onClick={() => setStatistikScoreModus("session")}>Session</button>
-                  </div>
-                )}
               </div>
               {schwelleS > 0 && (
                 <div style={{display:"flex", flexDirection:"column", alignItems:"center", flex:1, minWidth:0}}>
                   <div style={{display:"flex", alignItems:"baseline", gap:6}}>
                     <span style={{fontWeight:800, fontSize:"1.25rem", color:"#2d6a4f"}}>{Math.round(lernFortschritt)} %</span>
-                    {istSessionModus && Math.round(fortschrittDelta) !== 0 && (
-                      <span style={{fontWeight:700, fontSize:"0.8rem", color: fortschrittDelta > 0 ? "#2d6a4f" : "#c0392b"}}
-                        {...tt("Veränderung seit Session-Beginn in Prozentpunkten")}>
-                        {fortschrittDelta > 0 ? "+" : ""}{Math.round(fortschrittDelta)}
-                      </span>
-                    )}
                     {diktatAbgefragt.length > 0 && (
                       <span style={{fontWeight:700, fontSize:"0.8rem", color:"#e67e22"}} {...tt("Lernfortschritt im Diktat")}>Diktat {Math.round(diktatFortschrittProzent)} %</span>
                     )}
@@ -5372,10 +5327,7 @@ export default function VokabelApp() {
                   </div>
                   <div style={{fontSize:"0.7rem", color:"#6b6560", whiteSpace:"nowrap"}}>
                     {gelerntAnzahl} / {alleVoks.length} gelernt
-                    {(istSessionModus ? avgSessionScore : avgScore) !== null && (() => {
-                      const w = istSessionModus ? avgSessionScore : avgScore;
-                      return <> · Ø {w > 0 ? "+" : ""}{w.toFixed(1)}</>;
-                    })()}
+                    {avgScore !== null && <> · Ø {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}</>}
                   </div>
                 </div>
               )}
@@ -5383,19 +5335,11 @@ export default function VokabelApp() {
               <div style={{display:"flex", alignItems:"center", gap:12, flex:1, justifyContent:"center"}}>
                 <div style={{display:"flex", alignItems:"center", gap:4}}>
                   <svg width="14" height="3" viewBox="0 0 14 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
-                  {istSessionModus ? (
-                    avgSessionScore !== null ? (
-                      <span style={{fontWeight:700, fontSize:"0.88rem", color: avgSessionScore > 0 ? "#2d6a4f" : avgSessionScore < 0 ? "#c0392b" : "#6b6560"}}>
-                        {avgSessionScore > 0 ? "+" : ""}{avgSessionScore.toFixed(1)}
-                      </span>
-                    ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>
-                  ) : (
-                    avgScore !== null ? (
-                      <span style={{fontWeight:700, fontSize:"0.88rem", color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
-                        {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
-                      </span>
-                    ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>
-                  )}
+                  {avgScore !== null ? (
+                    <span style={{fontWeight:700, fontSize:"0.88rem", color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
+                      {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
+                    </span>
+                  ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>}
                 </div>
                 {diktatAbgefragt.length > 0 && (
                   <div style={{display:"flex", alignItems:"center", gap:4}}>
@@ -5621,7 +5565,7 @@ export default function VokabelApp() {
                     {titel:"Sessions & Pakete", text:"Mit dem Session-Modus teilst du die Vokabelgruppe in kleinere Pakete auf – zum Beispiel 10 Vokabeln auf einmal. Nach jedem Paket kannst du pausieren, dann wird der Fortschritt gespeichert. Beim nächsten Mal werden bereits abgefragte Vokabeln übersprungen. So arbeitest du dich über mehrere Sitzungen durch die gesamte Gruppe."},
                     {titel:"Abfrage-Ziel", text:"Standardmäßig wird jede Vokabel einmal abgefragt. Mit dem Abfrage-Ziel kannst du das ändern:\n\nAnzahl: jede Vokabel 1×, 2× oder 3× pro Durchgang.\n\nMit Wiederholung: Vokabeln werden so lange neu eingereiht, bis du sie 1×, 2× oder 3× in Folge richtig beantwortet hast.\n\nScore-Ziel: Vokabeln werden wiederholt, bis ihr Score einen bestimmten Wert erreicht – global oder bezogen auf den Fortschritt der laufenden Session."},
                 {titel:"Konfigurationen speichern", text:"Eine Kombination aus Vokabelgruppe, Abfrage-Modus, Reihenfolge und Session-Einstellung kann gespeichert und jederzeit wieder geladen werden. So richtest du zum Beispiel eine tägliche Übung mit den schlechtesten 20 Vokabeln einmal ein und startest sie beim nächsten Mal mit einem Tipp."},
-                {titel:"Statistik", text:"Die Statistik zeigt dir für jede Vokabel den aktuellen Score als Balken und Zahl, das Datum der letzten Abfrage und einen sortierbaren Überblick. Das Kreisdiagramm oben zeigt auf einen Blick, wie viele Vokabeln gelernt, in Arbeit, nie abgefragt oder negativ sind. Der Lernfortschritt in der Kopfzeile zeigt im Session-Modus, wie viel sich seit Beginn der Session verändert hat."},
+                {titel:"Statistik", text:"Die Statistik zeigt dir für jede Vokabel den aktuellen Score als Balken und Zahl, das Datum der letzten Abfrage und einen sortierbaren Überblick. Das Kreisdiagramm oben zeigt auf einen Blick, wie viele Vokabeln gelernt, in Arbeit, nie abgefragt oder negativ sind. Der Lernfortschritt in der Kopfzeile zeigt, wie weit die gewählte Vokabelgruppe gelernt ist."},
               ].map(abschnitt => (
                 <div key={abschnitt.titel} style={{marginBottom:20}}>
                   <div className="sektion-label" style={{marginBottom:6}}>{abschnitt.titel}</div>
@@ -5682,7 +5626,7 @@ export default function VokabelApp() {
                   {k:"Filter-Boxen", v:"Gesamt / Nie abgefragt / Score positiv / Score negativ. Alle sind standardmäßig aktiv. Antippen deaktiviert eine Kategorie – sie erscheint dann weder in der Liste noch im Graphen. 'Gesamt' stellt alle wieder her."},
                   {k:"Kreisdiagramm", v:"Anteil der Gruppen Gelernt, In Arbeit, Nie abgefragt und Negativ mit Anzahl und Prozent. Segment antippen blendet die Gruppe in der Liste aus/ein, 'Gesamt' zeigt wieder alle. Symbol oben rechts: Vollbild."},
                   {k:"Diktat", v:"Sobald Diktat-Ergebnisse vorhanden sind, zeigt die Kopfzeile zusätzlich den Lernfortschritt im Diktat."},
-                  {k:"Lernfortschritt", v:"Wie weit die Vokabelgruppe gelernt ist (0–100 %). Jede Vokabel zählt anteilig bis zur Gelernt-Schwelle – bei +3 z. B. Score +1 = 33 %, +2 = 67 %, ab +3 = 100 %. 100 % = alle Vokabeln gelernt. Darunter: Anzahl gelernter Vokabeln und Ø Score. [Session] zeigt die Veränderung seit Session-Beginn in Prozentpunkten. Ohne Gelernt-Schwelle wird nur der Ø Score angezeigt."},
+                  {k:"Lernfortschritt", v:"Wie weit die Vokabelgruppe gelernt ist (0–100 %). Jede Vokabel zählt anteilig bis zur Gelernt-Schwelle – bei +3 z. B. Score +1 = 33 %, +2 = 67 %, ab +3 = 100 %. 100 % = alle Vokabeln gelernt. Darunter: Anzahl gelernter Vokabeln und Ø Score. Ohne Gelernt-Schwelle wird nur der Ø Score angezeigt."},
                   {k:"Gruppen", v:"Jede Vokabel gehört zu einer Gruppe: Negativ (Score unter 0, rot hinterlegt), Nie abgefragt, In Arbeit (Score 0 bis unter der Gelernt-Schwelle) und ✓ Gelernt (ab der Schwelle, grün hinterlegt). Das Kreisdiagramm (Standard-Ansicht) zeigt Anzahl und Anteil jeder Gruppe; ein Segment antippen blendet die Gruppe in Graph und Liste aus oder wieder ein, 'Gesamt' zeigt wieder alle. Lernfortschritt und Zahlen zählen immer alle Vokabeln. Das Symbol oben rechts im Kreis öffnet die Statistik im Vollbild. Der farbige Balken unter dem Lernfortschritt zeigt die Verteilung."},
                   {k:"Score-Balken", v:"Null ist in allen Zeilen an derselben Stelle. Nach links bis −5 (tiefer = voller roter Balken), nach rechts bis zur Gelernt-Schwelle. Gelernte Vokabeln: ganzer Balken dunkelgrün."},
                   {k:"Sortierung", v:"Score / Streak / Datum / A→Z / Listen-Nr. Pfeil zeigt Richtung, nochmals tippen kehrt um."},
