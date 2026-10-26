@@ -344,6 +344,9 @@ function istRichtigeAntwort(eingabe, wert, akzentTolerant = false) {
 }
 // Antwort-Modus, wenn für eine Spalte nichts festgelegt ist (Karte aufdecken)
 const STANDARD_ANTWORT_MODUS = "karte";
+// Session-Standard: in Paketen abfragen
+const STANDARD_SESSION_MODUS = "pakete";
+const STANDARD_PAKET_GROESSE = 10;
 const AKZENT_HINWEIS = "Richtig – achte auf die Akzente.";
 const MC_FEHLKLICK_HINWEIS = "Nicht auf Anhieb gefunden – zählt als nicht gewusst.";
 
@@ -648,8 +651,8 @@ export default function VokabelApp() {
   const [statistikAktiverSlot, setStatistikAktiverSlot] = useState(null); // separater Slot-Zustand für Statistik-Tab
   const [statistikSessionDaten, setStatistikSessionDaten] = useState(null); // sessionFortschritt für Statistik
   const [statistikSlotGeleert, setStatistikSlotGeleert] = useState(false);  // true wenn Slot durch Listen-Wechsel geleert
-  const [quizSessionModus, setQuizSessionModus] = useState("alle");
-  const [quizPaketGroesse, setQuizPaketGroesse] = useState(null);
+  const [quizSessionModus, setQuizSessionModus] = useState(STANDARD_SESSION_MODUS);
+  const [quizPaketGroesse, setQuizPaketGroesse] = useState(STANDARD_PAKET_GROESSE);
   const [quizSessionAufgeklappt, setQuizSessionAufgeklappt] = useState(false);
   const [abfrageZielModus, setAbfrageZielModus] = useState("anzahl");
   const [abfrageZielAnzahl, setAbfrageZielAnzahl] = useState(1);
@@ -954,7 +957,7 @@ export default function VokabelApp() {
     if (sSlot) {
       setSessionSlotAktiv(sSlot);
       setQuizSessionModus("pakete");
-      setQuizPaketGroesse(sSlot.paketGroesse || 20);
+      setQuizPaketGroesse(sSlot.paketGroesse || STANDARD_PAKET_GROESSE);
       if (sSlot.slotTyp && sSlot.slotId) setAktiverSlot({ typ: sSlot.slotTyp, id: sSlot.slotId });
     }
   }, []);
@@ -1112,7 +1115,7 @@ export default function VokabelApp() {
     // Quiz: Auswahl/Konfiguration mit Listen anderer Sprache zurücksetzen
     if (quizTabListen.some(id => !passt(id))) {
       setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false);
-      lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus("alle"); setQuizPaketGroesse(null);
+      lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
       setQuizTabListen(quizTabListen.filter(passt));
       setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set());
     }
@@ -1763,11 +1766,11 @@ export default function VokabelApp() {
     setStatistikScoreModus(eintrag.sessionFortschritt ? "session" : "global");
     if (eintrag.sessionFortschritt) {
       const sf = eintrag.sessionFortschritt;
-      const sessionObj = { slotTyp: typ, slotId: id, listenIds: eintrag.konfiguration.listenIds || [], vokabelAuswahl: eintrag.konfiguration.vokabelAuswahl || [], bereichTyp: eintrag.konfiguration.bereichTyp || "alle", abgefragt: sf.abgefragt || [], gesamt: sf.gesamt || 0, paketGroesse: sf.paketGroesse || 20, startScores: sf.startScores || {} };
+      const sessionObj = { slotTyp: typ, slotId: id, listenIds: eintrag.konfiguration.listenIds || [], vokabelAuswahl: eintrag.konfiguration.vokabelAuswahl || [], bereichTyp: eintrag.konfiguration.bereichTyp || "alle", abgefragt: sf.abgefragt || [], gesamt: sf.gesamt || 0, paketGroesse: sf.paketGroesse || STANDARD_PAKET_GROESSE, startScores: sf.startScores || {} };
       lsSet(SK.sessionAktiv, sessionObj);
       setSessionSlotAktiv(sessionObj);
       setQuizSessionModus("pakete");
-      setQuizPaketGroesse(sf.paketGroesse || 20);
+      setQuizPaketGroesse(sf.paketGroesse || STANDARD_PAKET_GROESSE);
     } else {
       lsDel(SK.sessionAktiv);
       setSessionSlotAktiv(null);
@@ -1904,7 +1907,7 @@ export default function VokabelApp() {
   // "Neu": komplett neu beginnen – Session, Listen-/Vokabelauswahl und alle Abfrage-Einstellungen
   function neueQuizKonfiguration() {
     setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false);
-    lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus("alle"); setQuizPaketGroesse(null);
+    lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
     setQuizTabListen([]);
     // Spalten wie beim App-Start; passen sich bei der Listenauswahl automatisch an
     setQuizAusgewaehlt(["D1", "E1"]); setQuizFrageTyp("D1"); setQuizAntwortTypenGeordnet(["E1"]);
@@ -4603,7 +4606,7 @@ export default function VokabelApp() {
                           Alle
                         </button>
                         <button className={`toggle-opt${quizSessionModus==="pakete"?" aktiv":""}`}
-                          onClick={() => { if (quizSessionModus === "pakete") setQuizSessionAufgeklappt(v => !v); else { setQuizSessionModus("pakete"); setQuizSessionAufgeklappt(true); } }}
+                          onClick={() => { if (quizSessionModus === "pakete") setQuizSessionAufgeklappt(v => !v); else { setQuizSessionModus("pakete"); setQuizPaketGroesse(g => g ?? STANDARD_PAKET_GROESSE); setQuizSessionAufgeklappt(true); } }}
                           {...tt("Vokabeln in kleinere Pakete aufteilen – Fortschritt bleibt zwischen Sitzungen erhalten")}>
                           {quizPaketGroesse != null ? `${quizPaketGroesse} V.` : "Pakete"}
                         </button>
@@ -4873,8 +4876,8 @@ export default function VokabelApp() {
                     setGespeicherteVokabelgruppe(null);
                     lsDel(SK.sessionAktiv);
                     setSessionSlotAktiv(null);
-                    setQuizSessionModus("alle");
-                    setQuizPaketGroesse(null);
+                    setQuizSessionModus(STANDARD_SESSION_MODUS);
+                    setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
                     setSlotSektionAufgeklappt(false);
                     setQuizSessionAufgeklappt(false);
                     handleTabWechsel("quiz");
