@@ -286,6 +286,47 @@ function formatDatum(isoString) {
   return d.toLocaleDateString('de-DE', {day:'numeric', month:'numeric', year:'2-digit'});
 }
 
+// ── Datei-Import ───────────────────────────────────────────────────────────
+// Datei robust als Text lesen: UTF-8 (mit/ohne BOM), UTF-16 (mit/ohne BOM), sonst Windows-1252.
+// Dateien, die unterwegs (Mail, Editor, Cloud) umgespeichert wurden, kommen oft anders kodiert an.
+async function leseDateiAlsText(file) {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  if (buf[0] === 0xFF && buf[1] === 0xFE) return new TextDecoder("utf-16le").decode(buf.subarray(2));
+  if (buf[0] === 0xFE && buf[1] === 0xFF) return new TextDecoder("utf-16be").decode(buf.subarray(2));
+  const probe = buf.subarray(0, 400);
+  if (probe.length > 8 && probe.filter(b => b === 0).length > probe.length / 4)
+    return new TextDecoder(buf[0] === 0 ? "utf-16be" : "utf-16le").decode(buf);
+  try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); }
+  catch { return new TextDecoder("windows-1252").decode(buf); }
+}
+// JSON-Backup im Text finden (auch wenn davor/danach etwas steht). null = kein JSON; wirft bei kaputtem JSON.
+function findeJsonListen(text) {
+  const t = text.replace(/^[\uFEFF\u200B\s]+/, "");
+  let kandidat = null;
+  if (t.startsWith("[") || t.startsWith("{")) kandidat = t;
+  else if (/"vokabeln"\s*:/.test(t)) {
+    const a = t.search(/[[{]/), b = Math.max(t.lastIndexOf("]"), t.lastIndexOf("}"));
+    if (a >= 0 && b > a) kandidat = t.slice(a, b + 1);
+  }
+  if (!kandidat) return null;
+  let parsed = JSON.parse(kandidat.trim());
+  if (!Array.isArray(parsed)) parsed = [parsed];
+  return parsed.filter(l => l && l.name && l.vokabeln);
+}
+// Keine Textdatei (Bild, PDF, Office-Datei …): mehrere Steuerzeichen am Anfang
+function istBinaer(text) {
+  let steuer = 0;
+  for (let i = 0; i < Math.min(text.length, 2000); i++) {
+    const c = text.charCodeAt(i);
+    if ((c < 32 && c !== 9 && c !== 10 && c !== 13) || c === 127) steuer++;
+  }
+  return steuer > 5;
+}
+function dateiVorschau(text) {
+  const anfang = text.slice(0, 60).replace(/\s+/g, " ").trim();
+  return anfang ? `„${anfang}${text.length > 60 ? "…" : ""}“` : "(leer)";
+}
+
 // ── Import-Parser ──────────────────────────────────────────────────────────
 function entferneLautsprache(text) {
   // Entfernt phonetische Umschriften in eckigen Klammern, z.B. [ˈwɜːrd] oder [bɪˈɡɪn]
@@ -1408,7 +1449,7 @@ export default function VokabelApp() {
   }
 
   function analysiereImport() {
-    const normiert = importText.replace(/^﻿/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const normiert = importText.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const alleZeilen = normiert.trim().split('\n').filter(z => z.trim());
     if (alleZeilen.length < 2) { setImportFehler("Mindestens 2 Zeilen erforderlich."); return; }
 
@@ -3747,32 +3788,36 @@ export default function VokabelApp() {
                     <strong>Format:</strong> Spalten mit <code>//</code> trennen, falsche Antworten mit <code>||</code> einleiten und mit <code>|</code> trennen.<br/>
                     Erste Zeile = Spaltennamen.
                   </div>
-                  <input type="file" accept=".txt,.text,.json" ref={fileInputRef} style={{display:"none"}}
-                    onChange={e => {
+                  {/* bewusst ohne accept: Android-Dateiauswahlen blenden sonst passende Dateien aus */}
+                  <input type="file" ref={fileInputRef} style={{display:"none"}}
+                    onChange={async e => {
                       const file = e.target.files[0];
+                      e.target.value = "";
                       if (!file) return;
                       setImportDateiname(file.name);
-                      const reader = new FileReader();
-                      reader.onload = ev => {
-                        const raw = ev.target.result || "";
-                        const bereinigt = raw.replace(/^﻿/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-                        const trimmed = bereinigt.trim();
-                        if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-                          try {
-                            let parsed = JSON.parse(trimmed);
-                            if (!Array.isArray(parsed)) parsed = [parsed];
-                            const listen = parsed.filter(l => l && l.name && l.vokabeln);
-                            if (!listen.length) { setImportFehler("Keine gültigen Listen im JSON."); return; }
-                            setImportJsonData(listen);
-                            setImportText(""); setImportFehler("");
-                          } catch { setImportFehler("JSON konnte nicht gelesen werden."); }
-                        } else {
-                          setImportText(bereinigt);
-                          setImportFehler("");
-                        }
-                      };
-                      reader.readAsText(file, "UTF-8");
-                      e.target.value = "";
+                      const info = `Datei „${file.name}“ (${file.size} Bytes)`;
+                      const fehler = text => { setImportDateiname(""); setImportFehler(text); };
+                      let raw;
+                      try { raw = await leseDateiAlsText(file); }
+                      catch { fehler(`${info} konnte nicht gelesen werden – evtl. noch nicht vollständig heruntergeladen.`); return; }
+                      const bereinigt = raw.replace(/^[\uFEFF\u200B]+/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                      if (!bereinigt.trim()) { fehler(`${info} ist leer – evtl. noch nicht vollständig heruntergeladen.`); return; }
+                      let listen;
+                      try { listen = findeJsonListen(bereinigt); }
+                      catch { fehler(`${info}: JSON-Backup ist beschädigt. Anfang: ${dateiVorschau(bereinigt)}`); return; }
+                      if (listen) {
+                        if (!listen.length) { fehler(`${info}: keine Vokabellisten im JSON gefunden.`); return; }
+                        setImportJsonData(listen);
+                        setImportText(""); setImportFehler("");
+                        return;
+                      }
+                      if (istBinaer(bereinigt)) { fehler(`${info} ist keine Textdatei (z. B. Bild, PDF oder Office-Dokument). Bitte die exportierte .txt- oder .json-Datei wählen.`); return; }
+                      if (bereinigt.split('\n').filter(z => z.trim()).length < 2 || (bereinigt.match(/\uFFFD/g) || []).length > 3) {
+                        fehler(`${info} ist keine lesbare Vokabelliste. Anfang: ${dateiVorschau(bereinigt)}`);
+                        return;
+                      }
+                      setImportText(bereinigt);
+                      setImportFehler("");
                     }}
                   />
                   <div style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:6}}>
