@@ -5363,11 +5363,14 @@ export default function VokabelApp() {
                 const renderKreis = () => {
                   const NAME = { gelernt:"✓ Gelernt", arbeit:"In Arbeit", nie:"Nie abgefragt", negativ:"Negativ" };
                   const TEXTFARBE = { gelernt:"#2d6a4f", arbeit:"#a67c00", nie:"#6b6560", negativ:"#c0392b" };
-                  const gesamt = alleVoks.length;
+                  // Nur eingeblendete Gruppen teilen sich den Kreis; ausgeblendete stehen in der Legende
+                  const vorhanden = GRUPPE_BALKEN.filter(([g]) => gruppenAnzahl[g] > 0);
+                  const sichtbar = vorhanden.filter(([g]) => statistikFilter.has(g));
+                  const gesamt = sichtbar.reduce((sum, [g]) => sum + gruppenAnzahl[g], 0);
                   const W = 400, H = 230, cx = 200, cy = 115, r = 80;
                   const punkt = (a, rr) => [cx + rr * Math.cos(a), cy + rr * Math.sin(a)];
                   let winkel = -Math.PI / 2;
-                  const teile = GRUPPE_BALKEN.filter(([g]) => gruppenAnzahl[g] > 0).map(([g, farbe]) => {
+                  const teile = sichtbar.map(([g, farbe]) => {
                     const a0 = winkel, a1 = winkel + gruppenAnzahl[g] / gesamt * 2 * Math.PI;
                     winkel = a1;
                     const mitte = (a0 + a1) / 2;
@@ -5387,31 +5390,51 @@ export default function VokabelApp() {
                   const umschalten = g => setStatistikFilter(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
                   return (
                     <div style={{background:"#fafaf8", padding:"8px 6px 10px"}}>
+                      {teile.length === 0 ? (
+                        <div style={{textAlign:"center", color:"#9b9590", fontSize:"0.85rem", padding:"40px 0"}}>Alle Gruppen ausgeblendet</div>
+                      ) : (
                       <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%", maxHeight:260, display:"block", userSelect:"none"}}>
                         {teile.map(t => {
-                          const aktiv = statistikFilter.has(t.g);
                           const [ax, ay] = punkt(t.mitte, r + 2), [bx, by] = punkt(t.mitte, r + 14);
                           const tx = t.rechts ? cx + r + 34 : cx - r - 34;
                           return (
                             <g key={t.g} style={{cursor:"pointer"}} onClick={() => umschalten(t.g)}>
                               {teile.length === 1
-                                ? <circle cx={cx} cy={cy} r={r} fill={t.farbe} opacity={aktiv ? 1 : 0.25}/>
-                                : <path d={pfad(t)} fill={t.farbe} opacity={aktiv ? 1 : 0.25} stroke="#fafaf8" strokeWidth="2"/>}
+                                ? <circle cx={cx} cy={cy} r={r} fill={t.farbe}/>
+                                : <path d={pfad(t)} fill={t.farbe} stroke="#fafaf8" strokeWidth="2"/>}
                               <polyline points={`${ax},${ay} ${bx},${by} ${t.rechts ? tx - 4 : tx + 4},${t.y}`}
-                                fill="none" stroke="#b5b0aa" strokeWidth="1" opacity={aktiv ? 1 : 0.4}/>
+                                fill="none" stroke="#b5b0aa" strokeWidth="1"/>
                               <text x={tx} y={t.y - 2} textAnchor={t.rechts ? "start" : "end"} fontSize="13" fontWeight="700"
-                                fill={aktiv ? TEXTFARBE[t.g] : "#c0bcb7"}>{NAME[t.g]}</text>
+                                fill={TEXTFARBE[t.g]}>{NAME[t.g]}</text>
                               <text x={tx} y={t.y + 13} textAnchor={t.rechts ? "start" : "end"} fontSize="12"
-                                fill={aktiv ? "#6b6560" : "#c0bcb7"}>{t.n} · {Math.round(t.n / gesamt * 100)} %</text>
+                                fill="#6b6560">{t.n} · {Math.round(t.n / gesamt * 100)} %</text>
                             </g>
                           );
                         })}
                       </svg>
-                      <div style={{display:"flex", justifyContent:"center", alignItems:"center", gap:10, marginTop:2}}>
+                      )}
+                      {/* Legende: alle vorhandenen Gruppen; ausgeblendete blass – antippen blendet ein/aus */}
+                      <div style={{display:"flex", justifyContent:"center", flexWrap:"wrap", gap:6, marginTop:4}}>
+                        {vorhanden.map(([g, farbe]) => {
+                          const an = statistikFilter.has(g);
+                          return (
+                            <button key={g} onClick={() => umschalten(g)} data-legende={g}
+                              {...tt(an ? `${NAME[g]} ausblenden` : `${NAME[g]} wieder einblenden`)}
+                              style={{display:"inline-flex", alignItems:"center", gap:5, padding:"3px 9px", borderRadius:12, cursor:"pointer",
+                                fontFamily:"inherit", fontSize:"0.72rem", fontWeight:600, background:"#fff",
+                                border:`1.5px solid ${an ? farbe : "#e0dbd2"}`, color: an ? TEXTFARBE[g] : "#b5b0aa",
+                                textDecoration: an ? "none" : "line-through", opacity: an ? 1 : 0.8}}>
+                              <span style={{width:8, height:8, borderRadius:"50%", background: an ? farbe : "#e0dbd2"}}/>
+                              {NAME[g]} {gruppenAnzahl[g]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div style={{display:"flex", justifyContent:"center", alignItems:"center", gap:10, marginTop:6}}>
                         <button className={`typ-btn${alleFilterAktiv ? " aktiv" : ""}`} style={{fontSize:"0.72rem", padding:"3px 12px"}}
                           onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
-                          {...tt("Alle Gruppen in der Liste anzeigen")}>Gesamt {gesamt}</button>
-                        <span style={{fontSize:"0.65rem", color:"#9b9590"}}>Segment antippen: ein-/ausblenden</span>
+                          {...tt("Alle Gruppen einblenden")}>Gesamt {alleVoks.length}</button>
+                        <span style={{fontSize:"0.65rem", color:"#9b9590"}}>Segment oder Legende antippen: aus-/einblenden</span>
                       </div>
                     </div>
                   );
