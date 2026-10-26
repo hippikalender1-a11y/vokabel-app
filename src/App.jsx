@@ -640,7 +640,7 @@ export default function VokabelApp() {
   const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
   const [statistikGraphDiktatZeigen, setStatistikGraphDiktatZeigen] = useState(false);
   const [statistikVollbild, setStatistikVollbild] = useState(false);
-  const [statistikGraphTyp, setStatistikGraphTyp] = useState("linie");
+  const [statistikGraphTyp, setStatistikGraphTyp] = useState("kreis"); // kreis | linie | balken
   const [statistikBereichTyp, setStatistikBereichTyp] = useState("alle");
   const [statistikCheckboxAuswahl, setStatistikCheckboxAuswahl] = useState(new Set());
   const [statistikEinzelauswahlAufgeklappt, setStatistikEinzelauswahlAufgeklappt] = useState(false);
@@ -2473,7 +2473,7 @@ export default function VokabelApp() {
       antwortTeile: erstesTeile, weitereIndices: [], weiterePos: 0,
       mcButtons: erstesMC?.buttons || [], mcRichtig: erstesMC?.richtig || [],
       vorigeRichtig: [], sessionFalsch: {}, feedback: "", mcWechsel: false,
-      aktuelleFehlversuche: 0, falschFlash: false, richtigMap: {}, spaltenErgebnisse: {}, vokErgebnis: null,
+      aktuelleFehlversuche: 0, falschFlash: false, richtigMap: {}, spaltenErgebnisse: {}, vokErgebnis: null, gewertet: {},
       quizRichtigAnzahl: 0, quizFalschAnzahl: 0,
       sessionVokIds: isPakete ? voks.map(v => v.id) : null,
       istSessionModus: isPakete,
@@ -2498,8 +2498,10 @@ export default function VokabelApp() {
     const richtigMap = (prev.abfrageZiel?.modus === "wiederholung" && aktVokId && warRichtig)
       ? { ...(prev.richtigMap || {}), [aktVokId]: ((prev.richtigMap || {})[aktVokId] || 0) + 1 }
       : (prev.richtigMap || {});
-    const quizRichtigAnzahl = (prev.quizRichtigAnzahl || 0) + (warRichtig ? 1 : 0);
-    const quizFalschAnzahl = (prev.quizFalschAnzahl || 0) + (warRichtig ? 0 : 1);
+    // Auswertung zählt jede Vokabel einmal (erste Bewertung der Runde); Wiederholungen nicht
+    const zaehlt = prev.erstbewertung !== false;
+    const quizRichtigAnzahl = (prev.quizRichtigAnzahl || 0) + (zaehlt && warRichtig ? 1 : 0);
+    const quizFalschAnzahl = (prev.quizFalschAnzahl || 0) + (zaehlt && !warRichtig ? 1 : 0);
 
     function getFA(voks, idx) {
       if (prev.modus === "rotierend") {
@@ -2517,7 +2519,7 @@ export default function VokabelApp() {
       const teile = vok[antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
       const sp = prev.spalteModus;
       const mc = (sp[antwortTypen[0]] || STANDARD_ANTWORT_MODUS) === "mc" ? generiereButtons(voks, vok, antwortTypen[0]) : null;
-      return { ...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, flash: false, index: idx,
+      return { ...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, erstbewertung: null, flash: false, index: idx,
         vokabeln: voks, frageTyp, antwortTypen, antwortTypIndex: 0,
         phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
         mcButtons: mc?.buttons || [], mcRichtig: mc?.richtig || [],
@@ -2556,7 +2558,7 @@ export default function VokabelApp() {
           }
         }
       }
-      return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, flash: false, phase: "fertig"};
+      return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, erstbewertung: null, flash: false, phase: "fertig"};
     }
 
     const { frageTyp, antwortTypen } = getFA(prev.vokabeln, naechsterIdx);
@@ -2567,7 +2569,7 @@ export default function VokabelApp() {
       : prev.spalteModus;
     const modusTyp0 = spalteModus[antwortTypen[0]] || STANDARD_ANTWORT_MODUS;
     const mc = modusTyp0 === "mc" ? generiereButtons(prev.vokabeln, naechsteVok, antwortTypen[0]) : null;
-    return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
+    return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, erstbewertung: null, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
       phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
       mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
       vorigeRichtig: [], infoSichtbar: false, infoSeite: 0, feedback: "",
@@ -2592,10 +2594,15 @@ export default function VokabelApp() {
     const alle = quiz.antwortTypen.map((_, i) => spaltenErgebnisse[i] || "aufgedeckt");
     const vokErgebnis = alle.every(e => e === "richtig") ? "richtig" : alle.includes("falsch") ? "falsch" : "aufgedeckt";
     const aktVok = getAktVok();
+    // Pro Vokabel und Runde zählt nur die erste Bewertung (Wiederholungen sind reines Üben).
+    // Ausnahme Abfrage-Ziel "Score": dort muss jede Antwort zählen, sonst endet die Runde nie.
+    const erstbewertung = !(aktVok.id in (quiz.gewertet || {}));
+    const gewertet = erstbewertung ? { ...(quiz.gewertet || {}), [aktVok.id]: vokErgebnis } : quiz.gewertet;
+    if (!erstbewertung && quiz.abfrageZiel?.modus !== "score") return { spaltenErgebnisse, vokErgebnis, erstbewertung, gewertet };
     const neuerCount = vokErgebnis === "falsch" ? (quiz.sessionFalsch[aktVok.id] || 0) + 1 : 0;
     const neuFortschritt = berechneNeuenScore(aktVok.fortschritt, vokErgebnis, neuerCount, einstellungen.modus);
     return {
-      spaltenErgebnisse, vokErgebnis,
+      spaltenErgebnisse, vokErgebnis, erstbewertung, gewertet,
       liste: speichereScore(quiz.liste, aktVok.id, neuFortschritt),
       sessionFalsch: vokErgebnis === "falsch" ? { ...quiz.sessionFalsch, [aktVok.id]: neuerCount } : quiz.sessionFalsch,
     };
@@ -5367,16 +5374,6 @@ export default function VokabelApp() {
           const mehrereListenGewaehlt = statistikGewaehlteListenObjekte.length > 1;
 
           // Filter-Boxen (Multi-Select: alle standardmäßig aktiv)
-          const filterBoxen = [
-            {key:"negativ", label:"Negativ",       wert:gruppenAnzahl.negativ, bg:"#ffebee", rand:"#c0392b", farbe:"#c0392b",
-              tip:"Score unter 0"},
-            {key:"nie",     label:"Nie abgefragt", wert:gruppenAnzahl.nie,     bg:"#f7f5f0", rand:"#9b9590", farbe:"#6b6560",
-              tip:"Noch nie im Quiz abgefragt"},
-            {key:"arbeit",  label: schwelleS > 0 ? "In Arbeit" : "Score ≥ 0", wert:gruppenAnzahl.arbeit, bg:"#fffaf0", rand:"#d4a017", farbe:"#a67c00",
-              tip: schwelleS > 0 ? `Score 0 bis +${schwelleS - 1} – noch nicht gelernt` : "Score 0 oder positiv"},
-            ...(schwelleS > 0 ? [{key:"gelernt", label:"✓ Gelernt", wert:gruppenAnzahl.gelernt, bg:"#e8f5e9", rand:"#2d6a4f", farbe:"#2d6a4f",
-              tip:`Score ab +${schwelleS} (Gelernt-Schwelle)`}] : []),
-          ];
           // Farben der Gruppen (Zeilen, Gruppen-Balken)
           const GRUPPE_BG = { negativ:"#fdecec", gelernt:"#e8f5e9" };
           const GRUPPE_BALKEN = [["gelernt", "#2d6a4f"], ["arbeit", "#e9c46a"], ["nie", "#d6d2cb"], ["negativ", "#e57373"]];
@@ -5464,6 +5461,68 @@ export default function VokabelApp() {
               {/* Graph */}
               {(() => {
                 const istBalken = statistikGraphTyp === "balken";
+                const istKreis = statistikGraphTyp === "kreis";
+                const ansichtKnopf = (typ, label) => (
+                  <button key={typ} className={`typ-btn${statistikGraphTyp === typ ? " aktiv" : ""}`}
+                    style={{fontSize:"0.7rem", padding:"3px 10px"}} onClick={() => setStatistikGraphTyp(typ)}>{label}</button>
+                );
+                // Kreisdiagramm der Gruppen: leere Gruppen fehlen, Segment antippen = Gruppe ein-/ausblenden
+                const renderKreis = () => {
+                  const NAME = { gelernt:"✓ Gelernt", arbeit:"In Arbeit", nie:"Nie abgefragt", negativ:"Negativ" };
+                  const TEXTFARBE = { gelernt:"#2d6a4f", arbeit:"#a67c00", nie:"#6b6560", negativ:"#c0392b" };
+                  const gesamt = alleVoks.length;
+                  const W = 400, H = 230, cx = 200, cy = 115, r = 80;
+                  const punkt = (a, rr) => [cx + rr * Math.cos(a), cy + rr * Math.sin(a)];
+                  let winkel = -Math.PI / 2;
+                  const teile = GRUPPE_BALKEN.filter(([g]) => gruppenAnzahl[g] > 0).map(([g, farbe]) => {
+                    const a0 = winkel, a1 = winkel + gruppenAnzahl[g] / gesamt * 2 * Math.PI;
+                    winkel = a1;
+                    const mitte = (a0 + a1) / 2;
+                    return { g, farbe, n: gruppenAnzahl[g], a0, a1, mitte, rechts: Math.cos(mitte) >= 0, y: punkt(mitte, r + 24)[1] };
+                  });
+                  // Beschriftungen je Seite von oben nach unten entzerren
+                  for (const seite of [true, false]) {
+                    const l = teile.filter(t => t.rechts === seite).sort((a, b) => a.y - b.y);
+                    for (let i = 1; i < l.length; i++) if (l[i].y - l[i - 1].y < 32) l[i].y = l[i - 1].y + 32;
+                    if (l.length && l[l.length - 1].y > H - 20) { const d = l[l.length - 1].y - (H - 20); l.forEach(t => { t.y -= d; }); }
+                    l.forEach(t => { if (t.y < 16) t.y = 16; });
+                  }
+                  const pfad = t => {
+                    const [x0, y0] = punkt(t.a0, r), [x1, y1] = punkt(t.a1, r);
+                    return `M${cx},${cy} L${x0},${y0} A${r},${r} 0 ${t.a1 - t.a0 > Math.PI ? 1 : 0} 1 ${x1},${y1} Z`;
+                  };
+                  const umschalten = g => setStatistikFilter(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
+                  return (
+                    <div style={{background:"#fafaf8", padding:"8px 6px 10px"}}>
+                      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%", maxHeight:260, display:"block", userSelect:"none"}}>
+                        {teile.map(t => {
+                          const aktiv = statistikFilter.has(t.g);
+                          const [ax, ay] = punkt(t.mitte, r + 2), [bx, by] = punkt(t.mitte, r + 14);
+                          const tx = t.rechts ? cx + r + 34 : cx - r - 34;
+                          return (
+                            <g key={t.g} style={{cursor:"pointer"}} onClick={() => umschalten(t.g)}>
+                              {teile.length === 1
+                                ? <circle cx={cx} cy={cy} r={r} fill={t.farbe} opacity={aktiv ? 1 : 0.25}/>
+                                : <path d={pfad(t)} fill={t.farbe} opacity={aktiv ? 1 : 0.25} stroke="#fafaf8" strokeWidth="2"/>}
+                              <polyline points={`${ax},${ay} ${bx},${by} ${t.rechts ? tx - 4 : tx + 4},${t.y}`}
+                                fill="none" stroke="#b5b0aa" strokeWidth="1" opacity={aktiv ? 1 : 0.4}/>
+                              <text x={tx} y={t.y - 2} textAnchor={t.rechts ? "start" : "end"} fontSize="13" fontWeight="700"
+                                fill={aktiv ? TEXTFARBE[t.g] : "#c0bcb7"}>{NAME[t.g]}</text>
+                              <text x={tx} y={t.y + 13} textAnchor={t.rechts ? "start" : "end"} fontSize="12"
+                                fill={aktiv ? "#6b6560" : "#c0bcb7"}>{t.n} · {Math.round(t.n / gesamt * 100)} %</text>
+                            </g>
+                          );
+                        })}
+                      </svg>
+                      <div style={{display:"flex", justifyContent:"center", alignItems:"center", gap:10, marginTop:2}}>
+                        <button className={`typ-btn${alleFilterAktiv ? " aktiv" : ""}`} style={{fontSize:"0.72rem", padding:"3px 12px"}}
+                          onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
+                          {...tt("Alle Gruppen in der Liste anzeigen")}>Gesamt {gesamt}</button>
+                        <span style={{fontSize:"0.65rem", color:"#9b9590"}}>Segment antippen: ein-/ausblenden</span>
+                      </div>
+                    </div>
+                  );
+                };
                 // Balken-Konstanten
                 const SVG_H = 120, bpX = 4, bpY = 8;
                 const bgH = SVG_H - 2 * bpY;
@@ -5480,13 +5539,16 @@ export default function VokabelApp() {
                 const BAR_W = BAR_STEP - BAR_GAP;
                 return (
                 <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid #e0dbd2"}}>
-                  {/* klickbarer Graph-Bereich */}
-                  <div style={{cursor:"pointer", position:"relative"}}
-                    onClick={() => setStatistikGraphTyp(t => t === "linie" ? "balken" : "linie")}>
-                    <div style={{position:"absolute", bottom:4, right:8, fontSize:"0.6rem",
-                      color:"#bbb", pointerEvents:"none", userSelect:"none"}}>
-                      Tippen zum Wechseln
-                    </div>
+                  {/* Ansicht wählen */}
+                  <div style={{display:"flex", alignItems:"center", gap:6, padding:"6px 14px", background:"#f7f5f0", borderBottom:"1px solid #e0dbd2", flexWrap:"wrap"}}>
+                    {ansichtKnopf("kreis", "◔ Kreis")}{ansichtKnopf("linie", "Linie")}{ansichtKnopf("balken", "Balken")}
+                    {!istKreis && !alleFilterAktiv && (
+                      <span style={{marginLeft:"auto", fontSize:"0.68rem", color:"#a67c00", fontWeight:600}}
+                        {...tt("Gruppen sind ausgeblendet – in der Kreis-Ansicht ändern")}>Filter aktiv</span>
+                    )}
+                  </div>
+                  {istKreis ? renderKreis() : (<>
+                  <div style={{position:"relative"}}>
                     {istBalken ? (
                       <>
                         <svg viewBox={`0 0 ${barSvgW} ${SVG_H}`} preserveAspectRatio="none"
@@ -5549,32 +5611,10 @@ export default function VokabelApp() {
                     )}
 
                   </div>
+                  </>)}
                 </div>
                 );
               })()}
-
-              {/* Kennzahlen-Boxen als Multi-Select-Filter */}
-              <div onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
-                {...tt("Alle Gruppen anzeigen")}
-                style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8, padding:"8px 14px",
-                  borderRadius:10, cursor:"pointer", userSelect:"none", background: alleFilterAktiv ? "#f0f9f4" : "#fff",
-                  border:`2px solid ${alleFilterAktiv ? "#2d6a4f" : "#e0dbd2"}`}}>
-                <span style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color: alleFilterAktiv ? "#2d6a4f" : "#9b9590"}}>Gesamt</span>
-                <span style={{fontSize:"1.1rem", fontWeight:700, color: alleFilterAktiv ? "#2d6a4f" : "#9b9590"}}>{alleVoks.length}</span>
-              </div>
-              <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16}}>
-                {filterBoxen.map(k => {
-                  const aktiv = statistikFilter.has(k.key);
-                  return (
-                    <div key={k.key} {...tt(k.tip)}
-                      onClick={() => setStatistikFilter(prev => { const n = new Set(prev); n.has(k.key) ? n.delete(k.key) : n.add(k.key); return n; })}
-                      style={{background:aktiv?k.bg:"#fff", border:`2px solid ${aktiv?k.rand:"#e0dbd2"}`, borderRadius:10, padding:"12px 14px", cursor:"pointer", userSelect:"none", transition:"border-color 0.15s, opacity 0.15s", opacity:aktiv?1:0.45}}>
-                      <div style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:aktiv?k.farbe:"#9b9590"}}>{k.label}</div>
-                      <div style={{fontSize:"1.6rem", fontWeight:700, marginTop:4, color:aktiv?k.farbe:"#9b9590"}}>{k.wert}</div>
-                    </div>
-                  );
-                })}
-              </div>
 
               {/* Sortierung */}
               <div className="sektion-label" style={{marginBottom:8}}>Sortierung</div>
@@ -5780,7 +5820,7 @@ export default function VokabelApp() {
                   {k:"Graph", v:"Sortierte Score-Kurve aller Vokabeln. Grau = nie abgefragt, Grün = abgefragt. Tippen auf den Graphen wechselt zwischen Linie und Balken."},
                   {k:"Diktat-Linie", v:"Separate gestrichelte Linie für Diktat-Scores – ein-/ausblendbar."},
                   {k:"Lernfortschritt", v:"Wie weit die Vokabelgruppe gelernt ist (0–100 %). Jede Vokabel zählt anteilig bis zur Gelernt-Schwelle – bei +3 z. B. Score +1 = 33 %, +2 = 67 %, ab +3 = 100 %. 100 % = alle Vokabeln gelernt. Darunter: Anzahl gelernter Vokabeln und Ø Score. [Session] zeigt die Veränderung seit Session-Beginn in Prozentpunkten. Ohne Gelernt-Schwelle wird nur der Ø Score angezeigt."},
-                  {k:"Gruppen", v:"Jede Vokabel gehört zu einer Gruppe: Negativ (Score unter 0, rot hinterlegt), Nie abgefragt, In Arbeit (Score 0 bis unter der Gelernt-Schwelle) und ✓ Gelernt (ab der Schwelle, grün hinterlegt). Die Boxen zeigen die Anzahl und blenden die Gruppe in Graph und Liste ein oder aus – Lernfortschritt und Zahlen zählen immer alle Vokabeln. 'Gesamt' zeigt wieder alle. Der farbige Balken unter dem Lernfortschritt zeigt die Verteilung."},
+                  {k:"Gruppen", v:"Jede Vokabel gehört zu einer Gruppe: Negativ (Score unter 0, rot hinterlegt), Nie abgefragt, In Arbeit (Score 0 bis unter der Gelernt-Schwelle) und ✓ Gelernt (ab der Schwelle, grün hinterlegt). Das Kreisdiagramm (Standard-Ansicht) zeigt Anzahl und Anteil jeder Gruppe; ein Segment antippen blendet die Gruppe in Graph und Liste aus oder wieder ein, 'Gesamt' zeigt wieder alle. Lernfortschritt und Zahlen zählen immer alle Vokabeln. [Kreis] [Linie] [Balken] wechseln die Ansicht. Der farbige Balken unter dem Lernfortschritt zeigt die Verteilung."},
                   {k:"Score-Balken", v:"Null ist in allen Zeilen an derselben Stelle. Nach links bis −5 (tiefer = voller roter Balken), nach rechts bis zur Gelernt-Schwelle. Gelernte Vokabeln: ganzer Balken dunkelgrün."},
                   {k:"Sortierung", v:"Score / Streak / Datum / A→Z / Listen-Nr. Pfeil zeigt Richtung, nochmals tippen kehrt um."},
                   {k:"Vollbild", v:"Maximiert Graph und Vokabelliste ohne die oberen Header-Zeilen. 'Vollbild verlassen' oben rechts."},
