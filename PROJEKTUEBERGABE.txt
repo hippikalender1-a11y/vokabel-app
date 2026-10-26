@@ -1,8 +1,8 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-10-25  (Session 36 — PWA, Sprachen, Score, Fixes)
-Letzter Commit: 1d4aabb
+Stand: 2026-10-26  (Session 37 — Standards, Score-Regel, Kreisdiagramm)
+Letzter Commit: 5a44135
 
 DATEIPFADE
 ----------
@@ -1075,6 +1075,35 @@ TESTS: e2e/neu.mjs, karte.mjs, bremse.mjs (10/10).
 
 
 ================================================================
+SESSION 37 (2026-10-26) — STANDARDS, SCORE-REGEL, KREISDIAGRAMM (89fc505…5a44135)
+================================================================
+STANDARDS (Modul-Konstanten):
+  STANDARD_SESSION_MODUS = "pakete", STANDARD_PAKET_GROESSE = 10
+    → App-Start, "Neu", Quiz aus Liste, Sprachwechsel, Klick "Pakete"
+    ohne Größe; Rückfallwerte (vorher 20) ebenfalls 10.
+  STANDARD_ABFRAGE_ZIEL = "wiederholung" (1×) → App-Start und
+    setzeQuizEinstellungenZurueck().
+
+SCORE-REGEL: pro Vokabel und Runde zählt nur die ERSTE Bewertung.
+  spaltenAbschluss(): quiz.gewertet {vokId: ergebnis} (pro Runde = pro
+  starteQuiz, Pakete = je Paket); erstbewertung=false → kein speichereScore
+  (Ausnahme abfrageZiel.modus === "score": jede Antwort zählt, sonst
+  endet die Runde nie). Auswertung (quizRichtig/FalschAnzahl) zählt nur
+  Erstbewertungen → "X von Y" = Anzahl Vokabeln. Diktat unverändert
+  (keine Wiederholung). Wiederholungs-Logik (richtigMap) unverändert.
+
+KREISDIAGRAMM (statistikGraphTyp "kreis" = Standard; Knöpfe Kreis/Linie/Balken,
+  "Tippen zum Wechseln" entfernt):
+  renderKreis(): voller Kreis aus GRUPPE_BALKEN, Gruppen mit 0 fehlen,
+  1 Gruppe = <circle>. Beschriftung außen (Name, "n · p %") mit Linie,
+  je Seite vertikal entzerrt (≥32 Einheiten). Segment-Klick toggelt
+  statistikFilter (blass = ausgeblendet), "Gesamt N" = alle an.
+  Filter-Boxen + filterBoxen ENTFERNT. Linie/Balken: "Filter aktiv"-Hinweis.
+TESTS: e2e/standard.mjs, wiederholung.mjs (6/6), kreis.mjs (11/11);
+  ältere Tests setzen ggf. ausdrücklich "Alle" bzw. Ziel "Anzahl".
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -1128,7 +1157,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 1d4aabb (Session 36 — … Bilanz, Verlauf/Gespeichert, Neu-Reset, Karte, Bremse)
+Letzter Commit: 5a44135 (Session 37 — Standards, Score-Regel, Kreisdiagramm)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste; Wiederholung gelernter
