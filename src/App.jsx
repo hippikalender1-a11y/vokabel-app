@@ -1323,14 +1323,26 @@ export default function VokabelApp() {
   }
 
   function teileAlsDatei(text, dateiname) {
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
+    // iPad/iPhone: Downloads aus der Home-Bildschirm-App kommen oft leer an → Teilen-Menü
+    // ("In Dateien sichern", Mail, AirDrop). Als .txt/text/plain, damit alle Ziele die Datei annehmen.
+    const istIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (istIOS && navigator.share) {
+      const file = new File([text], dateiname.replace(/\.json$/, '.txt'), { type: 'text/plain' });
+      if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+        try { navigator.share({ files: [file], title: dateiname.replace(/\.(json|txt)$/, '') }).catch(() => {}); return; }
+        catch { /* weiter mit Download */ }
+      }
+    }
+    // Passender Typ, sonst hängen Browser ".txt" an (".json.txt")
+    const typ = dateiname.endsWith('.json') ? 'application/json;charset=utf-8' : 'text/plain;charset=utf-8';
+    const url = URL.createObjectURL(new Blob([text], { type: typ }));
     const a = document.createElement('a');
     a.href = url; a.download = dateiname;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    // Großzügig warten: manche Browser holen den Inhalt erst nach dem Download-Dialog
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
   async function teileListeAlsDateiHandler() {
     if (!aktiveListe) return;
@@ -1450,8 +1462,19 @@ export default function VokabelApp() {
 
   function analysiereImport() {
     const normiert = importText.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Eingefügtes JSON-Backup (z. B. aus der Zwischenablage) direkt als Backup übernehmen
+    try {
+      const listen = findeJsonListen(normiert);
+      if (listen) {
+        if (!listen.length) { setImportFehler("Keine Vokabellisten im JSON gefunden."); return; }
+        setImportJsonData(listen); setImportText(""); setImportFehler(""); return;
+      }
+    } catch { setImportFehler(`JSON-Backup ist beschädigt. Anfang: ${dateiVorschau(normiert)}`); return; }
     const alleZeilen = normiert.trim().split('\n').filter(z => z.trim());
-    if (alleZeilen.length < 2) { setImportFehler("Mindestens 2 Zeilen erforderlich."); return; }
+    if (alleZeilen.length < 2) {
+      setImportFehler(`Nur ${alleZeilen.length} Zeile${alleZeilen.length === 1 ? "" : "n"} erkannt – nötig sind eine Kopfzeile und mindestens eine Vokabel. Anfang: ${dateiVorschau(normiert)}. Dateien bitte über „📄 Datei“ laden.`);
+      return;
+    }
 
     // Namenszeile "# Name {fr}" (eigener TXT-Export) → Sprache
     const parseNamensZeile = z => {
@@ -3831,7 +3854,10 @@ export default function VokabelApp() {
                     <div style={{display:"flex", gap:6}}>
                       <button className="btn btn-ghost btn-sm" onClick={() => fileInputRef.current?.click()}>📄 Datei</button>
                       <button className="btn btn-ghost btn-sm" onClick={() =>
-                        navigator.clipboard.readText().then(t => { setImportText(t); setImportDateiname(""); setImportFehler(""); }).catch(() => {})
+                        navigator.clipboard.readText().then(t => {
+                          if (!t || !t.trim()) { setImportFehler("Die Zwischenablage enthält keinen Text (evtl. eine Datei). Dateien bitte über „📄 Datei“ laden."); return; }
+                          setImportText(t); setImportDateiname(""); setImportFehler("");
+                        }).catch(() => setImportFehler("Kein Zugriff auf die Zwischenablage – Text bitte ins Feld einfügen (lange tippen → Einfügen)."))
                       }>Aus Zwischenablage</button>
                     </div>
                   </div>
