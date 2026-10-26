@@ -1,15 +1,19 @@
 ================================================================
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
-Stand: 2026-10-26  (Session 37 — Standards, Score-Regel, Kreisdiagramm)
+Stand: 2026-10-26  (Session 37 — Standards, Score-Regel, Kreisdiagramm, Info-Modus)
 Letzter Commit: df78209
 
 DATEIPFADE
 ----------
 Projektordner:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\
 Quellcode:        C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\App.jsx
-                  (eine einzige React-Datei, ~4200 Zeilen)
+                  (Haupt-React-Datei, ~6200 Zeilen)
+                  dazu src/main.jsx, src/UpdateHinweis.jsx (PWA-Update-Banner),
+                  src/InfoTafel.jsx + src/infoEreignisse.js (Info-Modus/Erklär-Tafel)
 Deploy-Skript:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\deploy.ps1
+Browser-Tests:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\e2e\  (siehe Abschnitt
+                  "BROWSER-TESTS"; nicht Teil der veröffentlichten App)
 
 DEPLOYMENT
 ----------
@@ -24,6 +28,7 @@ TECHNIK-STACK
 - Vite, kein CSS-Framework, alles inline-Styles + globaler CSS-String
 - localStorage für alle Datenpersistenz
 - Web Speech API (SpeechSynthesis) für Text-to-Speech
+- PWA (vite-plugin-pwa): offline, installierbar, Update-Hinweis
 
 
 ================================================================
@@ -873,7 +878,7 @@ ANTWORT-PRÜFUNG:
     Tippen (inkl. "weitere") und Diktat. "schwer" bleibt exakt.
   Hinweis: Toleranz greift auch bei Umlauten (Madchen = Mädchen).
 
-TEST: puppeteer-core-Skript (Scratchpad, nicht im Repo) gegen
+TEST: puppeteer-core-Skript (e2e/sprachen.mjs) gegen
   vite preview – 16 Prüfpunkte grün.
 
 
@@ -902,7 +907,7 @@ SESSION 36 (FORTSETZUNG) — FEHLERKORREKTUREN (4aa3472)
    Fix: parseKopfZeile() + SPALTEN_TAG rettet die Kennung; Einzel-Import
    ordnet bei vorhandenen Kennungen jetzt automatisch zu.
 
-TESTS (puppeteer-core, Scratchpad): Sprachen 16/16, Export/Import
+TESTS (puppeteer-core, e2e/): Sprachen 16/16, Export/Import
   17/17 (TXT mehrfach/einzeln, JSON inkl. Fortschritt, E3, Akzente),
   Quiz-Listenwechsel 2/2.
 
@@ -927,7 +932,7 @@ Jetzt:
   naechsteVokabelState: warRichtig = prev.vokErgebnis === "richtig"
     (Auswertung + Abfrage-Ziel "Wiederholung"); _warRichtig entfernt.
   MC: falsche Klicks weiterhin ohne Abzug (unverändert).
-TEST: score.mjs (Karte + Tippen, 8/8) im Scratchpad.
+TEST: e2e/score.mjs (Karte + Tippen).
 
 
 ================================================================
@@ -949,7 +954,7 @@ FIX "NÄCHSTE N VOKABELN" (Pakete + gespeicherte Konfiguration):
   REGEL: Werte, die Handler-Funktionen nutzen, immer VOR dem ersten
   "if (ansicht === 'quiz' ...) return" definieren.
 
-TESTS (Scratchpad e2e/): score.mjs 13/13, pakete.mjs (quiztab/detail/
+TESTS (e2e/): score.mjs 13/13, pakete.mjs (quiztab/detail/
   preset), test.mjs 16/16, export.mjs 17/17, quiz0.mjs 2/2.
 
 
@@ -1187,9 +1192,39 @@ Info-Modus: ⓘ-Knopf (.info-schalter, data-info-schalter) links in der
   Hauptkopfzeile; body.info-modus → [data-info] gestrichelt; Klick auf
   [data-info] zeigt Erklärung (am Element verankert) statt Aktion;
   "ⓘ Info-Modus beenden" unten links (auf allen Screens).
-Offen: Elemente ohne tt()-Text (Listenzeilen, Checkboxen, Überschriften)
-  sind im Info-Modus nicht erklärbar → Texte nach und nach ergänzen.
+Erledigt (siehe "ERKLÄRTEXTE ÜBERALL"): fehlende tt()-Texte ergänzt.
 TEST: e2e/info.mjs (11/11, Touch via CDP).
+
+
+================================================================
+SESSION 37 (FORTSETZUNG) — ERKLÄRTEXTE ÜBERALL + BROWSER-TESTS IM REPO
+================================================================
+ERKLÄRTEXTE: ~143 bisher fehlende Texte ergänzt (Quiz/Diktat-Abläufe,
+  Auswertungs-Screens, Import/KI-Prompt, Spaltenrollen, Sprach-Knöpfe,
+  Listen-/Vokabelzeilen, Statistik, Kreis-Segmente, alle Modal-Knöpfe, Tabs).
+  ttFeld(text) (neu, neben tt()): nur title + data-info, OHNE Touch-Lang-
+  Druck – für input/select/textarea und Drag-Chips (Lang-Druck bleibt dort
+  Einfügen/Markieren/Ziehen).
+  Bewusst OHNE Text: große klickbare Container (Quiz-Karte "Tippe zum
+  Aufdecken", Aktionsleisten mit stopPropagation), Modal-Overlays und
+  Modal-Rahmen, verstecktes Datei-Input.
+  REGEL für neue Elemente: jedes interaktive Element bekommt {...tt("…")}
+  bzw. {...ttFeld("…")}. Prüfung: Skript (siehe unten) bzw. e2e/info_audit.mjs.
+
+BROWSER-TESTS (e2e/, im Repo; node_modules/Ausgaben per .gitignore aus):
+  Einmalig:  cd e2e ; PUPPETEER_SKIP_DOWNLOAD=1 npm install
+  Ablauf:    im Projektordner  npm run build
+             npx vite preview --port 4199 --strictPort   (im Hintergrund)
+             bash e2e/alle.sh     → je Test "ALLES OK" bzw. letzte OK-Zeile
+  Nutzt das lokal installierte Chrome
+  (C:/Program Files/Google/Chrome/Application/chrome.exe, in jedem Skript).
+  Skripte: sprachen, export, quiz0, score, pakete (preset|quiztab|detail),
+  gelernt, statistik, fortschritt, gruppen, bilanz, slots, neu, karte,
+  bremse, standard, wiederholung, kreis, vollbild, import_kodierung,
+  einfuegen, ipad_export, info; Werkzeuge: info_audit.mjs (findet klickbare
+  Elemente ohne Erklärtext), installierbar.mjs (PWA-Prüfung der Live-Seite).
+  Ältere Tests wählen ggf. ausdrücklich Session "Alle" bzw. Ziel "Anzahl",
+  weil die Standards (Pakete 10, Wiederholung 1×) sonst Abläufe ändern.
 
 
 ================================================================
@@ -1276,7 +1311,7 @@ Reihenfolge = Priorität (Stand 2026-10-26). Nutzer entscheidet jeweils.
 PROMPT FÜR NEUEN CHAT
 ================================================================
 
-Wir arbeiten an einer Vokabel-App (React, iPad-optimiert, eine Datei):
+Wir arbeiten an einer Vokabel-App (React-PWA, iPad/Android, Haupt-Datei App.jsx):
 
 Pfad:    C:\EIGENE DATEIEN\CLAUDE\vokabel-app\src\App.jsx
 GitHub:  https://github.com/hippikalender1-a11y/vokabel-app
@@ -1284,6 +1319,8 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
+Nach Änderungen: Browser-Tests in e2e/ laufen lassen (Abschnitt "BROWSER-TESTS");
+neue interaktive Elemente bekommen einen Erklärtext ({...tt("…")}).
 
 Letzter Commit: df78209 (Session 37 — … Export-Fix iPad, Info-Modus)
 

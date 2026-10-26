@@ -1,0 +1,12 @@
+import puppeteer from "puppeteer-core";
+const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
+const page = await browser.newPage();
+await page.goto("https://hippikalender1-a11y.github.io/vokabel-app/", { waitUntil: "networkidle0" });
+await new Promise(r => setTimeout(r, 3000));
+const cdp = await page.createCDPSession();
+const fehler = await cdp.send("Page.getInstallabilityErrors");
+const manifest = await cdp.send("Page.getAppManifest");
+console.log("Installierbarkeits-Fehler:", JSON.stringify(fehler.installabilityErrors));
+console.log("Manifest-Fehler:", JSON.stringify(manifest.errors));
+console.log("Service Worker aktiv:", await page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration())?.active));
+await browser.close();

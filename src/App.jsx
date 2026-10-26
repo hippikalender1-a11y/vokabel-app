@@ -779,6 +779,8 @@ export default function VokabelApp() {
       onTouchCancel() { clearTimeout(tooltipTimer.current); tooltipShown.current = false; },
     };
   }
+  // Eingabefelder/Ziehen: nur Maus-Hinweis + Info-Modus (langes Drücken bleibt Einfügen/Markieren/Ziehen)
+  function ttFeld(text) { return text ? { title: text, "data-info": text } : {}; }
   const [headerH, setHeaderH] = useState(104);
   const [alleBereichH, setAlleBereichH] = useState(0);
   const [abfrageModusH, setAbfrageModusH] = useState(0);
@@ -2296,7 +2298,7 @@ export default function VokabelApp() {
         <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
           {!slotLoeschModus && !slotSortModus && neuChip}
           {gespeichert.map(x => slotSortModus ? (
-            <button key={x.id} data-slot-id={x.id} className="slot-chip belegt"
+            <button {...ttFeld("Gedrückt halten und ziehen, um die Reihenfolge zu ändern")} key={x.id} data-slot-id={x.id} className="slot-chip belegt"
               style={{touchAction:"none", cursor:"grab", userSelect:"none", WebkitUserSelect:"none",
                 ...(slotDragId === x.id ? {opacity:0.45, borderStyle:"dashed"} : {})}}
               onPointerDown={e => { e.preventDefault(); setSlotDragId(x.id); }}>
@@ -3021,7 +3023,7 @@ export default function VokabelApp() {
             <style>{CSS}</style>
             <div className="app">
               <div className="topbar">
-                <button className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
+                <button {...tt("Schließen – Fortschritt wird gespeichert, zurück zur Übersicht")} className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
                 <span className="topbar-title">{istLetzteBatch ? "Durchlauf abgeschlossen" : "Paket fertig"}</span>
                 <span className="quiz-fortschritt">{richtig}/{quiz.diktatErgebnisse.length} ✓</span>
               </div>
@@ -3034,7 +3036,7 @@ export default function VokabelApp() {
                   </div>
                 </div>
                 {istLetzteBatch ? (
-                  <><button className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
+                  <><button {...tt("Durchlauf beenden und zur Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
                   <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
                 ) : (
                   <>
@@ -3042,15 +3044,15 @@ export default function VokabelApp() {
                       <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:6}}>Nächstes Paket:</div>
                       <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
                         {[5,10,15,20,25,30,40,50].map(n => (
-                          <button key={n} className={`typ-btn${quizPaketGroesse===n?" aktiv":""}`}
+                          <button {...tt(`Nächstes Paket mit ${n} Vokabeln`)} key={n} className={`typ-btn${quizPaketGroesse===n?" aktiv":""}`}
                             onClick={() => setQuizPaketGroesse(n)}>{n}</button>
                         ))}
                       </div>
                     </div>
-                    <button className="btn btn-primary" style={{width:"100%", marginBottom:8}} onClick={() => doWeiter(quizPaketGroesse)}>
+                    <button {...tt("Nächstes Paket starten – bereits abgefragte Vokabeln werden übersprungen")} className="btn btn-primary" style={{width:"100%", marginBottom:8}} onClick={() => doWeiter(quizPaketGroesse)}>
                       Nächste {quizPaketGroesse} Vokabeln
                     </button>
-                    <button className="btn btn-ghost" style={{width:"100%"}} onClick={() => doBeende(false)}>Pause</button>
+                    <button {...tt("Pause – Fortschritt bleibt gespeichert, später über die Session weitermachen")} className="btn btn-ghost" style={{width:"100%"}} onClick={() => doBeende(false)}>Pause</button>
                   </>
                 )}
               </div>
@@ -3063,21 +3065,21 @@ export default function VokabelApp() {
           <style>{CSS}</style>
           <div className="app">
             <div className="topbar">
-              <button className="topbar-back" onClick={() => { beendeQuiz(); }}>Schließen</button>
+              <button {...tt("Diktat schließen und zur Übersicht")} className="topbar-back" onClick={() => { beendeQuiz(); }}>Schließen</button>
               <span className="topbar-title">Diktat abgeschlossen</span>
               <span className="quiz-fortschritt">{richtig} / {quiz.diktatErgebnisse.length} ✓</span>
             </div>
             <div className="sektion">
-              <button className="btn btn-primary" style={{width:"100%"}}
+              <button {...tt("Diktat beenden und zur Übersicht")} className="btn btn-primary" style={{width:"100%"}}
                 onClick={() => { beendeQuiz(); }}>
                 Zurück zur Liste
               </button>
               <div style={{marginBottom:16}}><button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></div>
               <div className="karte">
-                <div style={{padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer"}}
+                <div {...tt("Liste der Diktat-Ergebnisse auf- oder zuklappen")} style={{padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer"}}
                   onClick={() => setDiktatListeAufgeklappt(v => !v)}>
                   <span style={{fontWeight:600}}>{richtig} / {quiz.diktatErgebnisse.length} richtig</span>
-                  <button className="btn-toggle" style={{padding:"3px 6px"}} onClick={e => { e.stopPropagation(); setDiktatListeAufgeklappt(v => !v); }}>
+                  <button {...tt("Liste der Diktat-Ergebnisse auf- oder zuklappen")} className="btn-toggle" style={{padding:"3px 6px"}} onClick={e => { e.stopPropagation(); setDiktatListeAufgeklappt(v => !v); }}>
                     {diktatListeAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
                   </button>
                 </div>
@@ -3116,7 +3118,7 @@ export default function VokabelApp() {
         <style>{CSS}</style>
         <div className="app">
           <div className="topbar">
-            <button className="topbar-back" onClick={() => { beendeQuiz(); }}>Beenden</button>
+            <button {...tt("Diktat abbrechen – bisherige Ergebnisse werden ausgewertet")} className="topbar-back" onClick={() => { beendeQuiz(); }}>Beenden</button>
             <span className="topbar-title">{quiz.index + 1} / {quiz.vokabeln.length}</span>
             <span className="quiz-fortschritt">Score: {diktatScore > 0 ? "+" : ""}{diktatScore}</span>
           </div>
@@ -3125,7 +3127,7 @@ export default function VokabelApp() {
             <div className="quiz-frage-box" style={{textAlign:"center", marginBottom:14, flexShrink:0}}>
               <div className="quiz-label">{quiz.liste.spalten[quiz.diktatSpalte]?.name || quiz.diktatSpalte} — hör genau hin!</div>
               {quiz.diktatSpalte.startsWith('E') && (
-                <button className="diktat-play-btn"
+                <button {...tt("Wort vorlesen")} className="diktat-play-btn"
                   onClick={() => { setDiktatManualPlays(p => p + 1); sprich(diktatWort, vokLang(aktVok, quiz.diktatSpalte)); }}>
                   <IcoSpkOn s={52}/>
                 </button>
@@ -3152,7 +3154,7 @@ export default function VokabelApp() {
                 {quiz.phase === "eingabe" && <div className="quiz-label">Deine Eingabe</div>}
                 {quiz.phase === "eingabe" && hint && <div className="diktat-hint">{hint}</div>}
                 {quiz.phase === "eingabe" && (
-                  <input ref={eingabeRef} className="inp"
+                  <input {...ttFeld("Das vorgelesene Wort hier eintippen, dann „Prüfen“")} ref={eingabeRef} className="inp"
                     value={quiz.eingabe}
                     onChange={e => setQuiz(prev => ({...prev, eingabe: e.target.value}))}
                     onKeyDown={e => e.key === "Enter" && pruefeDiktatAntwort()}
@@ -3221,7 +3223,7 @@ export default function VokabelApp() {
             <style>{CSS}</style>
             <div className="app">
               <div className="topbar">
-                <button className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
+                <button {...tt("Schließen – Fortschritt wird gespeichert, zurück zur Übersicht")} className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
                 <span className="topbar-title">{quiz.abgebrochen ? "Abgebrochen" : istLetzteBatch ? "Durchlauf abgeschlossen" : "Paket fertig"}</span>
                 <span className="quiz-fortschritt">{schonAbgefragt.size}/{quiz.sessionGesamt}</span>
               </div>
@@ -3248,10 +3250,10 @@ export default function VokabelApp() {
                   {" "}({Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100)}%)
                 </div>
                 {quiz.abgebrochen ? (
-                  <><button className="btn btn-primary" style={{width:"100%"}} onClick={() => beendeQuiz()}>Zur Übersicht</button>
+                  <><button {...tt("Zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => beendeQuiz()}>Zur Übersicht</button>
                   <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
                 ) : istLetzteBatch ? (
-                  <><button className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
+                  <><button {...tt("Durchlauf beenden und zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
                   <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
                 ) : (
                   <>
@@ -3259,15 +3261,15 @@ export default function VokabelApp() {
                       <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:6}}>Nächstes Paket:</div>
                       <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
                         {[5,10,15,20,25,30,40,50].map(n => (
-                          <button key={n} className={`typ-btn${quizPaketGroesse===n?" aktiv":""}`}
+                          <button {...tt(`Nächstes Paket mit ${n} Vokabeln`)} key={n} className={`typ-btn${quizPaketGroesse===n?" aktiv":""}`}
                             onClick={() => setQuizPaketGroesse(n)}>{n}</button>
                         ))}
                       </div>
                     </div>
-                    <button className="btn btn-primary" style={{width:"100%", marginBottom:8}} onClick={() => doWeiter(quizPaketGroesse)}>
+                    <button {...tt("Nächstes Paket starten – bereits abgefragte Vokabeln werden übersprungen")} className="btn btn-primary" style={{width:"100%", marginBottom:8}} onClick={() => doWeiter(quizPaketGroesse)}>
                       Nächste {quizPaketGroesse} Vokabeln
                     </button>
-                    <button className="btn btn-ghost" style={{width:"100%"}} onClick={() => doBeende(false)}>Pause</button>
+                    <button {...tt("Pause – Fortschritt bleibt gespeichert, später über die Session weitermachen")} className="btn btn-ghost" style={{width:"100%"}} onClick={() => doBeende(false)}>Pause</button>
                   </>
                 )}
               </div>
@@ -3287,7 +3289,7 @@ export default function VokabelApp() {
             <style>{CSS}</style>
             <div className="app">
               <div className="topbar">
-                <button className="topbar-back" onClick={() => { beendeQuiz(); }}>Schließen</button>
+                <button {...tt("Auswertung schließen und zur Quiz-Übersicht")} className="topbar-back" onClick={() => { beendeQuiz(); }}>Schließen</button>
                 <span className="topbar-title">{quiz.abgebrochen ? "Abgebrochen" : "Auswertung"}</span>
                 <span className="quiz-fortschritt">{r}/{ges}</span>
               </div>
@@ -3305,7 +3307,7 @@ export default function VokabelApp() {
                     „{feedback}"
                   </div>
                 )}
-                <button className="btn btn-primary" style={{width:"100%"}} onClick={() => { beendeQuiz(); }}>
+                <button {...tt("Zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => { beendeQuiz(); }}>
                   Zur Übersicht
                 </button>
                 <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button>
@@ -3343,7 +3345,7 @@ export default function VokabelApp() {
         <style>{CSS}</style>
         <div className="app">
           <div className="topbar">
-            <button className="topbar-back" onClick={() => { brecheQuizAb(); }}>Beenden</button>
+            <button {...tt("Quiz abbrechen – bisher beantwortete Vokabeln werden ausgewertet")} className="topbar-back" onClick={() => { brecheQuizAb(); }}>Beenden</button>
             <span className="topbar-title">{quiz.index + 1} / {quiz.vokabeln.length}</span>
             <span className="quiz-fortschritt">Score: {score > 0 ? "+" : ""}{score}</span>
           </div>
@@ -3378,7 +3380,7 @@ export default function VokabelApp() {
                       <div style={{display:"flex", alignItems:"baseline", gap:8, justifyContent:"center"}}>
                         <div className="quiz-frage-text" style={{textAlign:"center"}}>{frageWert}</div>
                         {quiz.frageTyp.startsWith('E') && (
-                          <button className="btn-icon" style={{fontSize:"1.1rem", padding:"2px 4px"}}
+                          <button {...tt("Frage vorlesen")} className="btn-icon" style={{fontSize:"1.1rem", padding:"2px 4px"}}
                             onClick={e => { e.stopPropagation(); sprich(frageWert, vokLang(aktVok, quiz.frageTyp)); }}><IcoSpk s={16}/></button>
                         )}
                       </div>
@@ -3390,7 +3392,7 @@ export default function VokabelApp() {
                         <div style={{textAlign:"center", fontSize:"1rem", display:"flex", alignItems:"center", justifyContent:"center", gap:6}}>
                           <strong>{v.wert}</strong>
                           {v.typ.startsWith('E') && (
-                            <button className="btn-icon" style={{fontSize:"0.95rem", padding:"2px 4px"}}
+                            <button {...tt("Diese Antwort vorlesen")} className="btn-icon" style={{fontSize:"0.95rem", padding:"2px 4px"}}
                               onClick={e => { e.stopPropagation(); sprich(v.wert, vokLang(aktVok, v.typ)); }}><IcoSpk s={16}/></button>
                           )}
                         </div>
@@ -3414,7 +3416,7 @@ export default function VokabelApp() {
                       {aktSpaltModus === "mc" && !quiz.flash && quiz.phase === "eingabe" && (
                         <div style={{display:"flex", flexWrap:"wrap", gap:8, marginTop:8, justifyContent:"center"}}>
                           {(quiz.mcButtons || []).map((btn, idx) => (
-                            <button key={idx}
+                            <button {...tt("Diese Antwort wählen – nur ein Treffer ohne Fehlklick zählt als gewusst")} key={idx}
                               onClick={e => { e.stopPropagation(); quiz.phase === "eingabe" && klickeButton(idx); }}
                               style={{
                                 padding:"9px 16px", borderRadius:10, border:"none",
@@ -3432,7 +3434,7 @@ export default function VokabelApp() {
                       )}
                       {/* Tippen */}
                       {aktSpaltModus === "tippen" && !quiz.flash && quiz.phase === "eingabe" && (
-                        <input ref={eingabeRef} className="inp"
+                        <input {...ttFeld("Antwort eintippen und mit Enter oder „Prüfen“ bestätigen")} ref={eingabeRef} className="inp"
                           value={quiz.eingabe}
                           onChange={e => setQuiz(prev => ({...prev, eingabe: e.target.value}))}
                           onKeyDown={e => e.key === "Enter" && pruefeAntwort()}
@@ -3442,7 +3444,7 @@ export default function VokabelApp() {
                         />
                       )}
                       {aktSpaltModus === "tippen" && !quiz.flash && isWeitere && (
-                        <input ref={eingabeRef} className="inp"
+                        <input {...ttFeld("Weitere richtige Antwort eintippen (z. B. bei was/were)")} ref={eingabeRef} className="inp"
                           value={quiz.eingabe}
                           onChange={e => setQuiz(prev => ({...prev, eingabe: e.target.value}))}
                           onKeyDown={e => e.key === "Enter" && pruefeAntwort()}
@@ -3463,14 +3465,14 @@ export default function VokabelApp() {
                           ? <div style={{display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginTop:8, minHeight:60}}>
                               <div className="quiz-frage-text" style={{textAlign:"center"}}>{quiz.antwortTeile.join(" / ")}</div>
                               {aktAntwortTyp.startsWith('E') && (
-                                <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
+                                <button {...tt("Antwort vorlesen")} className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
                                   onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], vokLang(aktVok, aktAntwortTyp)); }}><IcoSpk s={16}/></button>
                               )}
                             </div>
                           : <div className="quiz-frage-text" style={{textAlign:"center", display:"flex", alignItems:"center", justifyContent:"center", gap:6, minHeight:"44px"}}>
                               {quiz.antwortTeile.join(" / ")}
                               {!isKarteAufgedeckt && aktAntwortTyp.startsWith('E') && (
-                                <button className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
+                                <button {...tt("Antwort vorlesen")} className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
                                   onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], vokLang(aktVok, aktAntwortTyp)); }}><IcoSpk s={16}/></button>
                               )}
                             </div>
@@ -3486,7 +3488,7 @@ export default function VokabelApp() {
 
                   {/* Rechte Spalte: Info-Box */}
                   {quiz.infoSichtbar && aktInfoSeite && (
-                    <div onClick={() => setQuiz(prev => ({...prev, infoSeite: ((prev.infoSeite || 0) + 1) % infoSeitenAnzahl}))}
+                    <div {...tt("Nächste Info-Seite anzeigen")} onClick={() => setQuiz(prev => ({...prev, infoSeite: ((prev.infoSeite || 0) + 1) % infoSeitenAnzahl}))}
                       style={{
                         width:150, flexShrink:0, background:"#fffde7",
                         border:"1px solid #ffe082", borderRadius:12, padding:"12px",
@@ -3527,7 +3529,7 @@ export default function VokabelApp() {
                   )}
                   <button className="btn btn-ghost" onClick={zeigeLosung} {...tt("Lösung anzeigen – kein Punkt, kein Streak")}>Lösung anzeigen</button>
                   {infoSpalten.length > 0 && (
-                    <button className="btn btn-ghost"
+                    <button {...tt("Info-Spalten (z. B. Beispielsatz) ein- oder ausblenden")} className="btn btn-ghost"
                       onClick={() => setQuiz(prev => ({...prev, infoSichtbar: !prev.infoSichtbar}))}>
                       {quiz.infoSichtbar ? "Info ▲" : "Info"}
                     </button>
@@ -3539,7 +3541,7 @@ export default function VokabelApp() {
                   <button className="btn btn-primary" onClick={pruefeAntwort} {...tt("Eingegebene Antwort prüfen")}>Prüfen</button>
                   <button className="btn btn-ghost" onClick={ueberspringeWeitere} {...tt("Vokabel ohne Wertung überspringen")}>Überspringen</button>
                   {infoSpalten.length > 0 && (
-                    <button className="btn btn-ghost"
+                    <button {...tt("Info-Spalten (z. B. Beispielsatz) ein- oder ausblenden")} className="btn btn-ghost"
                       onClick={() => setQuiz(prev => ({...prev, infoSichtbar: !prev.infoSichtbar}))}>
                       {quiz.infoSichtbar ? "Info ▲" : "Info"}
                     </button>
@@ -3573,7 +3575,7 @@ export default function VokabelApp() {
   const renderSprachAuswahl = (wert, onWahl) => (
     <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
       {SPRACHEN.map(s => (
-        <button key={s.code} className={`typ-btn${wert === s.code ? " aktiv" : ""}`}
+        <button {...tt(`Fremdsprache ${s.name} – bestimmt Vorlese-Stimme und Sprachfilter`)} key={s.code} className={`typ-btn${wert === s.code ? " aktiv" : ""}`}
           onClick={() => onWahl(s.code)}>{s.flagge} {s.name}</button>
       ))}
     </div>
@@ -3653,7 +3655,7 @@ export default function VokabelApp() {
                   {[{ code:"alle", flagge:"🌐", name:"Alle Sprachen", anzahl: listenIndex.length },
                     ...vorhandeneSprachen.map(s => ({ ...s, anzahl: listenIndex.filter(l => listeSprache(l) === s.code).length }))
                   ].map(s => (
-                    <div key={s.code} className="karte-zeile" style={{cursor:"pointer", background: sprachFilter === s.code ? "#e8f5ee" : undefined}}
+                    <div {...tt(s.code === "alle" ? "Listen aller Sprachen anzeigen" : `Nur Listen auf ${s.name} anzeigen`)} key={s.code} className="karte-zeile" style={{cursor:"pointer", background: sprachFilter === s.code ? "#e8f5ee" : undefined}}
                       onClick={() => wechsleSprache(s.code)}>
                       <span style={{fontWeight: sprachFilter === s.code ? 700 : 500}}>{s.flagge} {s.name}</span>
                       <span style={{marginLeft:"auto", color:"#6b6560", fontSize:"0.8rem"}}>{s.anzahl} Liste{s.anzahl !== 1 ? "n" : ""}</span>
@@ -3674,13 +3676,13 @@ export default function VokabelApp() {
           )}
         </div>
         {!statistikVollbild && <div className="tabs">
-          <button className={`tab${tab==="listen"?" aktiv":""}`}
+          <button {...tt("Listen verwalten: anlegen, importieren, bearbeiten, exportieren")} className={`tab${tab==="listen"?" aktiv":""}`}
             onClick={() => handleTabWechsel("listen")}>Listen</button>
-          <button className={`tab${tab==="quiz"?" aktiv":""}`}
+          <button {...tt("Abfrage einstellen und starten")} className={`tab${tab==="quiz"?" aktiv":""}`}
             onClick={() => handleTabWechsel("quiz")}>Quiz</button>
-          <button className={`tab${tab==="statistik"?" aktiv":""}`}
+          <button {...tt("Lernfortschritt und Scores ansehen")} className={`tab${tab==="statistik"?" aktiv":""}`}
             onClick={() => handleTabWechsel("statistik")}>Statistik</button>
-          <button className={`tab${tab==="einstellungen"?" aktiv":""}`}
+          <button {...tt("Einstellungen, Info und Anleitung")} className={`tab${tab==="einstellungen"?" aktiv":""}`}
             onClick={() => handleTabWechsel("einstellungen")}>Einstellungen</button>
         </div>}
         </div>{/* end sticky header wrapper */}
@@ -3694,7 +3696,7 @@ export default function VokabelApp() {
                   <span className="liste-detail-header-name">
                     {exportAusgewaehlt.size === 0 ? "Liste auswählen" : `${exportAusgewaehlt.size} ausgewählt`}
                   </span>
-                  <button className="btn btn-ghost btn-sm" onClick={() => {
+                  <button {...tt("Export-Auswahl beenden")} className="btn btn-ghost btn-sm" onClick={() => {
                     setExportAuswahlModus(false); setExportAusgewaehlt(new Set());
                   }}>Abbrechen</button>
                 </>
@@ -3724,16 +3726,16 @@ export default function VokabelApp() {
             onClick={ansicht === "ki-prompt" ? () => setAnsicht("import") : undefined}>
             <span className="liste-detail-header-name">Importieren</span>
             {ansicht === "import" && !importParsed && !importMehrfachListen && !importJsonData && (
-              <button className="btn btn-primary btn-sm" onClick={e => { e.stopPropagation(); analysiereImport(); }}>Analysieren</button>
+              <button {...tt("Eingefügten Text auswerten und Spalten zuordnen")} className="btn btn-primary btn-sm" onClick={e => { e.stopPropagation(); analysiereImport(); }}>Analysieren</button>
             )}
             {ansicht === "import" && letzterPrompt && (
-              <button className="btn btn-ghost btn-sm" onClick={e => {
+              <button {...tt("Zuletzt erzeugten KI-Prompt erneut kopieren")} className="btn btn-ghost btn-sm" onClick={e => {
                 e.stopPropagation();
                 navigator.clipboard.writeText(letzterPrompt)
                   .then(() => { setPromptKopiert(true); setTimeout(() => setPromptKopiert(false), 2000); });
               }}>{promptKopiert ? "✓" : "📋 Prompt"}</button>
             )}
-            <button className="btn btn-ghost btn-sm" onClick={e => { e.stopPropagation(); setPromptSprache(sprachFilter === "alle" ? "en" : sprachFilter); setAnsicht("ki-prompt"); }}>Prompt generieren</button>
+            <button {...tt("KI-Prompt erstellen, um von einer KI eine Vokabelliste erzeugen zu lassen")} className="btn btn-ghost btn-sm" onClick={e => { e.stopPropagation(); setPromptSprache(sprachFilter === "alle" ? "en" : sprachFilter); setAnsicht("ki-prompt"); }}>Prompt generieren</button>
           </div>
         )}
 
@@ -3741,7 +3743,7 @@ export default function VokabelApp() {
         {tab === "listen" && ansicht === "ki-prompt" && (
           <div className="liste-detail-header" style={{top: headerH}}>
             <span className="liste-detail-header-name">KI-Prompt generieren</span>
-            <button className="btn btn-primary btn-sm"
+            <button {...tt("Prompt kopieren – danach in einer KI-App einfügen und die Antwort hier importieren")} className="btn btn-primary btn-sm"
               onClick={() => {
                 const text = generierePrompt(promptThema, promptAnzahl, promptFalsch, promptBeispiele, promptSynonyme, promptModus, promptSprache);
                 navigator.clipboard.writeText(text)
@@ -3779,8 +3781,8 @@ export default function VokabelApp() {
                   </div>
                   {importFehler && <div className="fehler">{importFehler}</div>}
                   <div style={{display:"flex", gap:10, marginBottom:24}}>
-                    <button className="btn btn-ghost" onClick={() => { setImportJsonData(null); setImportDateiname(""); }}>Zurück</button>
-                    <button className="btn btn-primary" onClick={importiereAusJsonDaten}>
+                    <button {...tt("Zurück zur Eingabe")} className="btn btn-ghost" onClick={() => { setImportJsonData(null); setImportDateiname(""); }}>Zurück</button>
+                    <button {...tt("Alle Listen aus dem Backup als neue Listen anlegen")} className="btn btn-primary" onClick={importiereAusJsonDaten}>
                       Alle importieren ({importJsonData.length})
                     </button>
                   </div>
@@ -3806,8 +3808,8 @@ export default function VokabelApp() {
                   )}
                   {importFehler && <div className="fehler">{importFehler}</div>}
                   <div style={{display:"flex", gap:10, marginBottom:24}}>
-                    <button className="btn btn-ghost" onClick={() => { setImportMehrfachListen(null); }}>Zurück</button>
-                    <button className="btn btn-primary" onClick={importiereAlleListen}>
+                    <button {...tt("Zurück zur Eingabe")} className="btn btn-ghost" onClick={() => { setImportMehrfachListen(null); }}>Zurück</button>
+                    <button {...tt("Alle erkannten Listen als neue Listen anlegen")} className="btn btn-primary" onClick={importiereAlleListen}>
                       Alle importieren ({importMehrfachListen.length})
                     </button>
                   </div>
@@ -3854,13 +3856,13 @@ export default function VokabelApp() {
                     <div style={{display:"flex", alignItems:"baseline", gap:8}}>
                       <label className="inp-label" style={{marginBottom:0}}>Vokabeln einfügen</label>
                       {importText && (
-                        <button className="btn-icon" style={{color:"#c0392b", fontSize:"0.82rem", fontWeight:700}}
+                        <button {...tt("Eingefügten Text löschen")} className="btn-icon" style={{color:"#c0392b", fontSize:"0.82rem", fontWeight:700}}
                           onClick={() => { setImportText(""); setImportDateiname(""); setImportFehler(""); }}>✕</button>
                       )}
                     </div>
                     <div style={{display:"flex", gap:6}}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => fileInputRef.current?.click()}>📄 Datei</button>
-                      <button className="btn btn-ghost btn-sm" onClick={() =>
+                      <button {...tt("Datei (.txt oder .json) vom Gerät laden")} className="btn btn-ghost btn-sm" onClick={() => fileInputRef.current?.click()}>📄 Datei</button>
+                      <button {...tt("Kopierten Text aus der Zwischenablage einfügen")} className="btn btn-ghost btn-sm" onClick={() =>
                         navigator.clipboard.readText().then(t => {
                           if (!t || !t.trim()) { setImportFehler("Die Zwischenablage enthält keinen Text (evtl. eine Datei). Dateien bitte über „📄 Datei“ laden."); return; }
                           setImportText(t); setImportDateiname(""); setImportFehler("");
@@ -3878,7 +3880,7 @@ export default function VokabelApp() {
                       <span style={{color:"#888"}}>— {importText.split('\n').filter(z => z.trim()).length} Zeilen erkannt</span>
                     </div>
                   )}
-                  <textarea className="inp" rows={8}
+                  <textarea {...ttFeld("Vokabeln hier einfügen oder tippen: erste Zeile = Spaltennamen, Spalten mit // trennen")} className="inp" rows={8}
                     placeholder={"Infinitiv // Simple Past // Deutsch\nbe || bee | bi // was/were || wos // sein || ist"}
                     value={importText}
                     onChange={e => { setImportText(e.target.value); setImportFehler(""); }}
@@ -3891,14 +3893,14 @@ export default function VokabelApp() {
                   <div className="karte">
                     <div className="toggle-row">
                       <div className="toggle-btn">
-                        <button className={`toggle-opt${importZielTyp==="neu"?" aktiv":""}`} onClick={() => setImportZielTyp("neu")}>Neue Liste</button>
-                        <button className={`toggle-opt${importZielTyp==="bestehend"?" aktiv":""}`} onClick={() => setImportZielTyp("bestehend")}>Bestehende</button>
+                        <button {...tt("Als neue Liste importieren")} className={`toggle-opt${importZielTyp==="neu"?" aktiv":""}`} onClick={() => setImportZielTyp("neu")}>Neue Liste</button>
+                        <button {...tt("Vokabeln an eine vorhandene Liste anhängen")} className={`toggle-opt${importZielTyp==="bestehend"?" aktiv":""}`} onClick={() => setImportZielTyp("bestehend")}>Bestehende</button>
                       </div>
                     </div>
                     {importZielTyp === "neu" && (
                       <div style={{padding:"0 16px 16px"}}>
                         <label className="inp-label">Name der neuen Liste</label>
-                        <input className="inp" value={importNeuName}
+                        <input {...ttFeld("Name der neuen Liste")} className="inp" value={importNeuName}
                           onChange={e => { setImportNeuName(e.target.value); setImportFehler(""); }}
                           placeholder="z.B. Irregular Verbs" />
                         <label className="inp-label" style={{marginTop:12}}>Fremdsprache (Spalten E1–E3)</label>
@@ -3910,7 +3912,7 @@ export default function VokabelApp() {
                         {sichtbareListen.length === 0 ? (
                           <div style={{color:"#6b6560", fontSize:"0.85rem"}}>Noch keine Listen vorhanden.</div>
                         ) : (
-                          <select className="inp" value={importBestehendId}
+                          <select {...ttFeld("Liste wählen, an die die Vokabeln angehängt werden")} className="inp" value={importBestehendId}
                             onChange={e => { setImportBestehendId(e.target.value); setImportFehler(""); }}>
                             <option value="">– Liste wählen –</option>
                             {sichtbareListen.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
@@ -3939,7 +3941,7 @@ export default function VokabelApp() {
                             <div className="import-kompakt">
                               <span className="spalten-badge aktiv" style={{padding:"3px 8px", fontSize:"0.78rem"}}>{label}</span>
                               <span style={{fontSize:"0.85rem", color:"#6b6560"}}>← {h.wert || `Spalte ${i+1}`}</span>
-                              <button className="btn-icon" style={{marginLeft:"auto", color:"#c0392b", fontSize:"0.75rem"}}
+                              <button {...tt("Zuordnung dieser Spalte aufheben")} className="btn-icon" style={{marginLeft:"auto", color:"#c0392b", fontSize:"0.75rem"}}
                                 onClick={() => setImportMapping(prev => ({...prev, [i]: null}))}>✕</button>
                             </div>
                           </div>
@@ -3954,7 +3956,7 @@ export default function VokabelApp() {
                               zielOptionen.map(opt => {
                                 const belegt = Object.entries(importMapping).some(([k, t]) => t === opt.typ && Number(k) !== i);
                                 return (
-                                  <button key={opt.typ}
+                                  <button {...tt(opt.neu ? `Neue Spalte ${opt.typ} anlegen` : `In die Spalte „${opt.label}“ importieren`)} key={opt.typ}
                                     className={`typ-btn${importMapping[i] === opt.typ ? " aktiv" : ""}`}
                                     disabled={belegt}
                                     onClick={() => setzeMapping(i, opt.typ)}
@@ -3967,7 +3969,7 @@ export default function VokabelApp() {
                               TYPEN.map(typ => {
                                 const belegt = Object.entries(importMapping).some(([k, t]) => t === typ && Number(k) !== i);
                                 return (
-                                  <button key={typ}
+                                  <button {...tt(`Als Spalte ${typ} importieren (E = Fremdsprache, D = Deutsch, i = Info)`)} key={typ}
                                     className={`typ-btn${importMapping[i] === typ ? " aktiv" : ""}`}
                                     disabled={belegt}
                                     onClick={() => setzeMapping(i, typ)}
@@ -4008,8 +4010,8 @@ export default function VokabelApp() {
                   </div>
                   {importFehler && <div className="fehler">{importFehler}</div>}
                   <div style={{display:"flex", gap:10, marginBottom:24}}>
-                    <button className="btn btn-ghost" onClick={() => setImportParsed(null)}>Zurück</button>
-                    <button className="btn btn-primary" onClick={fuehreImportDurch}>
+                    <button {...tt("Zurück zur Eingabe")} className="btn btn-ghost" onClick={() => setImportParsed(null)}>Zurück</button>
+                    <button {...tt("Vokabeln mit dieser Zuordnung importieren")} className="btn btn-primary" onClick={fuehreImportDurch}>
                       Importieren ({importParsed.daten.length})
                     </button>
                   </div>
@@ -4023,9 +4025,9 @@ export default function VokabelApp() {
         {tab === "listen" && ansicht === "ki-prompt" && (
           <div className="sektion">
             <div style={{display:"flex", justifyContent:"center", gap:8, marginBottom:12}}>
-              <button className={`typ-btn${promptModus==="generieren"?" aktiv":""}`}
+              <button {...tt("Prompt für eine neue Vokabelliste zu einem Thema")} className={`typ-btn${promptModus==="generieren"?" aktiv":""}`}
                 onClick={() => setPromptModus("generieren")}>Generieren</button>
-              <button className={`typ-btn${promptModus==="foto"?" aktiv":""}`}
+              <button {...tt("Prompt, um ein Foto einer Vokabelseite umwandeln zu lassen")} className={`typ-btn${promptModus==="foto"?" aktiv":""}`}
                 onClick={() => setPromptModus("foto")}>Foto umwandeln</button>
             </div>
             <div style={{fontSize:"0.82rem", color:"#6b6560", marginBottom:12, textAlign:"center"}}>
@@ -4038,18 +4040,18 @@ export default function VokabelApp() {
             {promptModus === "generieren" && (
               <>
                 <div className="sektion-label" style={{marginBottom:8}}>Thema</div>
-                <input className="inp" value={promptThema}
+                <input {...ttFeld("Thema der Vokabelliste, z. B. Schule, Tiere, Unit 5")} className="inp" value={promptThema}
                   onChange={e => setPromptThema(e.target.value)}
                   placeholder="z.B. Irregular Verbs, Adjektive Unit 5" />
                 <div style={{display:"flex", gap:12, marginTop:12}}>
                   <div style={{flex:1}}>
                     <label className="inp-label">Anzahl Vokabeln</label>
-                    <input className="inp" type="number" min={1} max={200} value={promptAnzahl}
+                    <input {...ttFeld("Wie viele Vokabeln die KI erzeugen soll")} className="inp" type="number" min={1} max={200} value={promptAnzahl}
                       onChange={e => setPromptAnzahl(e.target.value)} />
                   </div>
                   <div style={{flex:1}}>
                     <label className="inp-label">Falsche Antworten (0–20)</label>
-                    <input className="inp" type="number" min={0} max={20} value={promptFalsch}
+                    <input {...ttFeld("Anzahl falscher Antworten je Wort für Multiple Choice")} className="inp" type="number" min={0} max={20} value={promptFalsch}
                       onChange={e => setPromptFalsch(Math.min(20, Math.max(0, parseInt(e.target.value)||0)))} />
                   </div>
                 </div>
@@ -4058,7 +4060,7 @@ export default function VokabelApp() {
             {promptModus === "foto" && (
               <div style={{marginBottom:4}}>
                 <label className="inp-label">Falsche Antworten (0–20)</label>
-                <input className="inp" type="number" min={0} max={20} value={promptFalsch}
+                <input {...ttFeld("Anzahl falscher Antworten je Wort für Multiple Choice")} className="inp" type="number" min={0} max={20} value={promptFalsch}
                   onChange={e => setPromptFalsch(Math.min(20, Math.max(0, parseInt(e.target.value)||0)))} />
               </div>
             )}
@@ -4069,8 +4071,8 @@ export default function VokabelApp() {
                   <div className="toggle-sub">Info-Spalte mit Beispielsätzen auf {sprachInfo(promptSprache).name}</div>
                 </div>
                 <div className="toggle-btn">
-                  <button className={`toggle-opt${!promptBeispiele?" aktiv":""}`} onClick={() => setPromptBeispiele(false)}>Nein</button>
-                  <button className={`toggle-opt${promptBeispiele?" aktiv":""}`} onClick={() => setPromptBeispiele(true)}>Ja</button>
+                  <button {...tt("Ohne Beispielsätze")} className={`toggle-opt${!promptBeispiele?" aktiv":""}`} onClick={() => setPromptBeispiele(false)}>Nein</button>
+                  <button {...tt("Mit Beispielsätzen in einer Info-Spalte")} className={`toggle-opt${promptBeispiele?" aktiv":""}`} onClick={() => setPromptBeispiele(true)}>Ja</button>
                 </div>
               </div>
               <div className="toggle-row" style={{borderTop:"1px solid #e0dbd2"}}>
@@ -4079,8 +4081,8 @@ export default function VokabelApp() {
                   <div className="toggle-sub">Info-Spalte mit 2–4 Synonymen auf {sprachInfo(promptSprache).name}</div>
                 </div>
                 <div className="toggle-btn">
-                  <button className={`toggle-opt${!promptSynonyme?" aktiv":""}`} onClick={() => setPromptSynonyme(false)}>Nein</button>
-                  <button className={`toggle-opt${promptSynonyme?" aktiv":""}`} onClick={() => setPromptSynonyme(true)}>Ja</button>
+                  <button {...tt("Ohne Synonyme")} className={`toggle-opt${!promptSynonyme?" aktiv":""}`} onClick={() => setPromptSynonyme(false)}>Nein</button>
+                  <button {...tt("Mit Synonymen in einer Info-Spalte")} className={`toggle-opt${promptSynonyme?" aktiv":""}`} onClick={() => setPromptSynonyme(true)}>Ja</button>
                 </div>
               </div>
             </div>
@@ -4258,7 +4260,7 @@ export default function VokabelApp() {
                           const anzahl = ll ? ll.vokabeln.length : 0;
                           const gewaehlt = quizTabListen.includes(l.id);
                           return (
-                            <div key={l.id} className="quiz-setup-check" style={{padding:"10px 16px"}}
+                            <div {...tt("Liste für das Quiz aus- oder abwählen")} key={l.id} className="quiz-setup-check" style={{padding:"10px 16px"}}
                               onClick={() => toggleQuizTabListe(l.id)}>
                               <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
                               <div style={{flex:1}}>
@@ -4343,7 +4345,7 @@ export default function VokabelApp() {
                         const isVon = quizVonBisModus && vok.id === quizVonBisErster;
                         const sp1 = abfragbar[0]; const sp2 = abfragbar[1];
                         return (
-                          <div key={vok.id} className="vok-zeile"
+                          <div {...tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs)")} key={vok.id} className="vok-zeile"
                             style={{background: isVon ? "#fff3cd" : inChk ? "#f0f7f0" : "transparent"}}
                             onClick={() => {
                               if (!quizVonBisModus) { toggleVokCheckbox(vok.id); return; }
@@ -4420,7 +4422,7 @@ export default function VokabelApp() {
                               <div className="inp-label">Diktat-Spalte (wird vorgelesen)</div>
                               <div style={{display:"flex", gap:6, marginTop:8, flexWrap:"wrap"}}>
                                 {abfragbar.map(typ => (
-                                  <button key={typ} className={`typ-btn${quizDiktatSpalte===typ?" aktiv":""}`}
+                                  <button {...tt("Diese Spalte wird vorgelesen und muss geschrieben werden")} key={typ} className={`typ-btn${quizDiktatSpalte===typ?" aktiv":""}`}
                                     onClick={() => setQuizDiktatSpalte(typ)}>
                                     {kombiListe.spalten[typ].name || typ}
                                   </button>
@@ -4430,10 +4432,10 @@ export default function VokabelApp() {
                             <div style={{padding:"12px 16px"}}>
                               <div className="inp-label">Übersetzungs-Spalte (als Hinweis, optional)</div>
                               <div style={{display:"flex", gap:6, marginTop:8, flexWrap:"wrap"}}>
-                                <button className={`typ-btn${quizDiktatUebersetzung===""?" aktiv":""}`}
+                                <button {...tt("Keine Übersetzung als Hinweis anzeigen")} className={`typ-btn${quizDiktatUebersetzung===""?" aktiv":""}`}
                                   onClick={() => setQuizDiktatUebersetzung("")}>Keine</button>
                                 {abfragbar.filter(t => t !== quizDiktatSpalte).map(typ => (
-                                  <button key={typ} className="typ-btn"
+                                  <button {...tt("Diese Spalte als Übersetzung/Hinweis anzeigen")} key={typ} className="typ-btn"
                                     style={quizDiktatUebersetzung===typ ? {background:"#f9a825",color:"#fff",borderColor:"#f9a825"} : undefined}
                                     onClick={() => setQuizDiktatUebersetzung(typ)}>
                                     {kombiListe.spalten[typ].name || typ}
@@ -4459,7 +4461,7 @@ export default function VokabelApp() {
                             const anzGesamt = quizAusgewaehlt.length;
                             return (
                               <div key={typ} style={{padding:"10px 16px", borderBottom:"1px solid #e0dbd2"}}>
-                                <div style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer"}}
+                                <div {...tt("Spalte für die Abfrage aus- oder abwählen")} style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer"}}
                                   onClick={() => toggleQuizSpalte(typ)}>
                                   <div className={`checkbox${checked?" checked":""}`}>{checked?"✓":""}</div>
                                   <div style={{flex:1}}>
@@ -4470,26 +4472,26 @@ export default function VokabelApp() {
                                 {checked && quizModus === "sequenziell" && (
                                   <div style={{display:"flex", gap:5, marginTop:8, marginLeft:30, flexWrap:"wrap", alignItems:"center"}}>
                                     {(!hatFrage || isFrage) && (
-                                      <button className={`spalten-rolle-btn${isFrage?" frage":""}`}
+                                      <button {...tt("Diese Spalte wird als Frage gezeigt")} className={`spalten-rolle-btn${isFrage?" frage":""}`}
                                         onClick={() => toggleSpalteRolle(typ,"frage")}>Frage</button>
                                     )}
                                     {!isFrage && !isInfo && (
-                                      <button className={`spalten-rolle-btn${isAntwort?" antwort":""}`}
+                                      <button {...tt("Diese Spalte muss beantwortet werden (mehrere Antworten möglich, in dieser Reihenfolge)")} className={`spalten-rolle-btn${isAntwort?" antwort":""}`}
                                         onClick={() => toggleSpalteRolle(typ,"antwort")}>
                                         {isAntwort ? `Antwort ${antwortNr+1}` : "Antwort"}
                                       </button>
                                     )}
                                     {!isFrage && !isAntwort && anzGesamt >= 3 && (
-                                      <button className={`spalten-rolle-btn${isInfo?" info":""}`}
+                                      <button {...tt("Diese Spalte nur als Hinweis zeigen, nicht abfragen")} className={`spalten-rolle-btn${isInfo?" info":""}`}
                                         onClick={() => toggleSpalteRolle(typ,"info")}>Info</button>
                                     )}
                                     {isAntwort && (
                                       <div style={{display:"flex", gap:4, marginLeft:4}}>
-                                        <button className={`spalten-modus-btn${quizSpalteModus[typ]==="tippen"?" aktiv":""}`}
+                                        <button {...tt("Antwort eintippen")} className={`spalten-modus-btn${quizSpalteModus[typ]==="tippen"?" aktiv":""}`}
                                           onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"tippen"}))}>Tastatur</button>
-                                        <button className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
+                                        <button {...tt("Antwort aus mehreren Vorschlägen wählen (Multiple Choice)")} className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
                                           onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"mc"}))}>MC</button>
-                                        <button className={`spalten-modus-btn${(quizSpalteModus[typ]||STANDARD_ANTWORT_MODUS)==="karte"?" aktiv":""}`}
+                                        <button {...tt("Karte aufdecken und selbst bewerten: gewusst / nicht gewusst")} className={`spalten-modus-btn${(quizSpalteModus[typ]||STANDARD_ANTWORT_MODUS)==="karte"?" aktiv":""}`}
                                           onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"karte"}))}>Karte</button>
                                       </div>
                                     )}
@@ -4497,11 +4499,11 @@ export default function VokabelApp() {
                                 )}
                                 {checked && quizModus === "rotierend" && (
                                   <div style={{display:"flex", gap:5, marginTop:8, marginLeft:30}}>
-                                    <button className={`spalten-modus-btn${quizSpalteModus[typ]==="tippen"?" aktiv":""}`}
+                                    <button {...tt("Antwort eintippen")} className={`spalten-modus-btn${quizSpalteModus[typ]==="tippen"?" aktiv":""}`}
                                       onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"tippen"}))}>Tastatur</button>
-                                    <button className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
+                                    <button {...tt("Antwort aus mehreren Vorschlägen wählen (Multiple Choice)")} className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
                                       onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"mc"}))}>MC</button>
-                                    <button className={`spalten-modus-btn${(quizSpalteModus[typ]||STANDARD_ANTWORT_MODUS)==="karte"?" aktiv":""}`}
+                                    <button {...tt("Karte aufdecken und selbst bewerten: gewusst / nicht gewusst")} className={`spalten-modus-btn${(quizSpalteModus[typ]||STANDARD_ANTWORT_MODUS)==="karte"?" aktiv":""}`}
                                       onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"karte"}))}>Karte</button>
                                   </div>
                                 )}
@@ -4514,7 +4516,7 @@ export default function VokabelApp() {
                             <div className="sektion-label" style={{marginBottom:8}}>Info-Spalten anzeigen</div>
                             <div className="karte" style={{marginBottom:16}}>
                               {infoSpalten.map(typ => (
-                                <div key={typ} className="quiz-setup-check" style={{padding:"10px 16px"}}
+                                <div {...tt("Diese Info-Spalte während der Abfrage anzeigen")} key={typ} className="quiz-setup-check" style={{padding:"10px 16px"}}
                                   onClick={() => toggleInfoSpalte(typ)}>
                                   <div className={`checkbox${quizZeigeInfo[typ]?" checked":""}`}>{quizZeigeInfo[typ]?"✓":""}</div>
                                   <div>
@@ -4579,7 +4581,7 @@ export default function VokabelApp() {
                                     fontSize:"0.82rem", fontWeight:600,
                                     pointerEvents:"none",
                                   }}>{sliderVal}</div>
-                                  <input
+                                  <input {...ttFeld("Höchster Score, der noch abgefragt wird")}
                                     type="range" min={-10} max={10} step={1}
                                     value={sliderVal}
                                     onChange={e => setQuizSchlechtesteMaxScore(String(e.target.value))}
@@ -4587,7 +4589,7 @@ export default function VokabelApp() {
                                     style={{width:"100%", display:"block"}}
                                   />
                                 </div>
-                                <button
+                                <button {...tt("Score-Grenze entfernen – alle Vokabeln, schlechteste zuerst")}
                                   className="toggle-opt"
                                   style={{width:"100%", marginTop:8, padding:"5px 0", borderRadius:8, fontSize:"0.78rem"}}
                                   onClick={() => setQuizSchlechtesteMaxScore("")}>
@@ -4599,7 +4601,7 @@ export default function VokabelApp() {
                                 <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:8, textAlign:"center"}}>
                                   Vokabeln mit dem niedrigsten Score werden abgefragt.
                                 </div>
-                                <button
+                                <button {...tt("Nur Vokabeln bis zu einem bestimmten Score abfragen")}
                                   className="toggle-opt"
                                   style={{width:"100%", padding:"7px 0", borderRadius:8}}
                                   onClick={() => setQuizSchlechtesteMaxScore("0")}>
@@ -4659,7 +4661,7 @@ export default function VokabelApp() {
                                 const vorlesen = einstellungen.vorlesen || ["E1"];
                                 const aktiv = vorlesen.includes(typ);
                                 return (
-                                  <button key={typ} className={`typ-btn${aktiv?" aktiv":""}`}
+                                  <button {...tt(`Spalte ${typ} beim Abfragen automatisch vorlesen`)} key={typ} className={`typ-btn${aktiv?" aktiv":""}`}
                                     onClick={() => speichereEinst({...einstellungen, vorlesen: aktiv ? vorlesen.filter(t=>t!==typ) : [...vorlesen,typ]})}>
                                     {typ}
                                   </button>
@@ -4778,7 +4780,7 @@ export default function VokabelApp() {
                               transform:"translateX(-50%)",
                               width:2, height:8, background:"#c0bcb7", borderRadius:1, pointerEvents:"none",
                             }}/>
-                            <input type="range" min={-10} max={10} step={1}
+                            <input {...ttFeld("Ziel-Score: Vokabeln werden wiederholt, bis sie ihn erreichen")} type="range" min={-10} max={10} step={1}
                               value={abfrageZielScore}
                               onChange={e => setAbfrageZielScore(Number(e.target.value))}
                               className="score-slider" style={{width:"100%", display:"block"}}/>
@@ -4805,7 +4807,7 @@ export default function VokabelApp() {
                             <span style={{fontSize:"0.78rem", color:"#6b6560"}}>
                               {(sessionSlotAktiv.abgefragt || []).length} / {sessionSlotAktiv.gesamt || 0} abgefragt
                             </span>
-                            <button style={{fontSize:"0.75rem", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:0}}
+                            <button {...tt("Aktuelle Session löschen – der Paket-Fortschritt wird zurückgesetzt")} style={{fontSize:"0.75rem", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:0}}
                               onClick={loescheSessionSlot}>
                               Session löschen
                             </button>
@@ -4891,7 +4893,7 @@ export default function VokabelApp() {
                   const liste = lsGet(SK.liste(l.id));
                   const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
                   return (
-                    <div key={l.id} className="karte-zeile" style={{cursor:"pointer"}}
+                    <div {...tt(exportAuswahlModus ? "Liste für den Export auswählen" : "Liste öffnen: Vokabeln, Spalten, Sprache, Export")} key={l.id} className="karte-zeile" style={{cursor:"pointer"}}
                       onClick={() => {
                         if (exportAuswahlModus) {
                           setExportAusgewaehlt(prev => {
@@ -5038,7 +5040,7 @@ export default function VokabelApp() {
 
               {/* Vokabeln – ein-/ausklappbar */}
               <div className="sektion-header" style={{marginTop:8}}>
-                <div style={{display:"flex", alignItems:"center", gap:8, cursor:"pointer"}}
+                <div {...tt("Vokabeln der Liste anzeigen oder ausblenden")} style={{display:"flex", alignItems:"center", gap:8, cursor:"pointer"}}
                   onClick={() => setVokabelAufgeklappt(v => !v)}>
                   <div className="sektion-label">Vokabeln ({aktiveListe.vokabeln.length})</div>
                   <button className="btn-toggle" style={{padding:"3px 6px"}} onClick={e => { e.stopPropagation(); setVokabelAufgeklappt(v => !v); }} {...tt(vokabelAufgeklappt ? "Vokabeln einklappen" : "Vokabeln ausklappen")}>
@@ -5098,7 +5100,7 @@ export default function VokabelApp() {
                                 </span>
                               )}
                               {aktiveSpalten.some(typ => typ.startsWith('E') && vok[typ]?.wert) && (
-                                <button className="btn-icon" title="Vorlesen" onClick={() => {
+                                <button {...tt("Fremdsprachige Spalten vorlesen")} className="btn-icon" title="Vorlesen" onClick={() => {
                                   if (!window.speechSynthesis) return;
                                   window.speechSynthesis.cancel();
                                   aktiveSpalten.filter(typ => typ.startsWith('E')).forEach(typ => {
@@ -5109,8 +5111,8 @@ export default function VokabelApp() {
                                   });
                                 }}><IcoSpk s={16}/></button>
                               )}
-                              <button className="btn-icon" title="Bearbeiten" onClick={() => oeffneVokabelBearbeiten(vok)}><IcoPencil s={14}/></button>
-                              <button className="btn-icon" title="Löschen" style={{color:"#c0392b"}}
+                              <button {...tt("Vokabel bearbeiten")} className="btn-icon" title="Bearbeiten" onClick={() => oeffneVokabelBearbeiten(vok)}><IcoPencil s={14}/></button>
+                              <button {...tt("Vokabel löschen")} className="btn-icon" title="Löschen" style={{color:"#c0392b"}}
                                 onClick={() => { setBearbeiteVokabel(vok); setModal('vokabel-loeschen'); }}>✕</button>
                             </div>
                           </div>
@@ -5133,7 +5135,7 @@ export default function VokabelApp() {
                 <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832", display:"flex", alignItems:"center", gap:8}}>
                   Verlauf &amp; Gespeichert
                   {slotSektionAufgeklappt && (
-                    <button onClick={() => setSlotLoeschModus(v => !v)} style={{
+                    <button {...tt("Lösch-Modus: Einträge aus Verlauf und Gespeichert entfernen")} onClick={() => setSlotLoeschModus(v => !v)} style={{
                       background: slotLoeschModus ? "#2d6a4f" : "none",
                       border:`1.5px solid ${slotLoeschModus ? "#2d6a4f" : "#c0bcb7"}`,
                       color: slotLoeschModus ? "#fff" : "#6b6560",
@@ -5142,7 +5144,7 @@ export default function VokabelApp() {
                     }}><IcoX s={11}/></button>
                   )}
                 </span>
-                <button
+                <button {...tt("Verlauf und Gespeichert anzeigen")}
                   onClick={toggleSlotSektion}
                   className="toggle-opt aktiv"
                   style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
@@ -5236,7 +5238,7 @@ export default function VokabelApp() {
                         const anzahl = ll ? ll.vokabeln.length : 0;
                         const gewaehlt = statistikListenIds === null || statistikListenIds.has(l.id);
                         return (
-                          <div key={l.id} className="quiz-setup-check" style={{padding:"10px 16px"}}
+                          <div {...tt("Liste in der Statistik ein- oder ausblenden")} key={l.id} className="quiz-setup-check" style={{padding:"10px 16px"}}
                             onClick={() => toggleStatistikListe(l.id)}>
                             <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
                             <div style={{flex:1}}>
@@ -5318,7 +5320,7 @@ export default function VokabelApp() {
                     const sp1 = TYPEN.find(t => vok._spalten[t]?.aktiv);
                     const sp2 = TYPEN.filter(t => vok._spalten[t]?.aktiv)[1];
                     return (
-                      <div key={vok.id} className="vok-zeile"
+                      <div {...tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs)")} key={vok.id} className="vok-zeile"
                         style={{background: isVon ? "#fff3cd" : gewaehlt ? "#f0f7f0" : "transparent"}}
                         onClick={() => {
                           if (!statistikVonBisModus) {
@@ -5509,7 +5511,7 @@ export default function VokabelApp() {
                           const [ax, ay] = punkt(t.mitte, r + 2), [bx, by] = punkt(t.mitte, r + 14);
                           const tx = t.rechts ? cx + r + 34 : cx - r - 34;
                           return (
-                            <g key={t.g} style={{cursor:"pointer"}} onClick={() => umschalten(t.g)}>
+                            <g {...tt(`${NAME[t.g]}: antippen blendet die Gruppe aus`)} key={t.g} style={{cursor:"pointer"}} onClick={() => umschalten(t.g)}>
                               {teile.length === 1
                                 ? <circle cx={cx} cy={cy} r={r} fill={t.farbe}/>
                                 : <path d={pfad(t)} fill={t.farbe} stroke="#fafaf8" strokeWidth="2"/>}
@@ -5849,13 +5851,13 @@ export default function VokabelApp() {
         {tab === "listen" && ansicht === "uebersicht" && exportAuswahlModus && exportAusgewaehlt.size > 0 && (
           <div className="quiz-action-bar">
             {navigator.share && (
-              <button className="btn btn-primary" onClick={() => exportiereAlsJsonZumTeilen([...exportAusgewaehlt])}>📤 Teilen</button>
+              <button {...tt("Ausgewählte Listen als Datei teilen (Mail, WhatsApp, Dateien …)")} className="btn btn-primary" onClick={() => exportiereAlsJsonZumTeilen([...exportAusgewaehlt])}>📤 Teilen</button>
             )}
-            <button className="btn btn-ghost" onClick={exportiereAusgewaehlteKopierenHandler}>
+            <button {...tt("Ausgewählte Listen als Text kopieren (ohne Scores)")} className="btn btn-ghost" onClick={exportiereAusgewaehlteKopierenHandler}>
               {exportKopiert ? "✓ Kopiert!" : "📋 Kopieren"}
             </button>
-            <button className="btn btn-ghost" onClick={exportiereAusgewaehlteAlsDateiHandler}>📄 Datei</button>
-            <button className="btn btn-ghost" onClick={() => exportiereAlsJson([...exportAusgewaehlt])}>💾 JSON</button>
+            <button {...tt("Ausgewählte Listen als Textdatei speichern")} className="btn btn-ghost" onClick={exportiereAusgewaehlteAlsDateiHandler}>📄 Datei</button>
+            <button {...tt("Ausgewählte Listen als JSON-Backup speichern (mit Scores)")} className="btn btn-ghost" onClick={() => exportiereAlsJson([...exportAusgewaehlt])}>💾 JSON</button>
           </div>
         )}
       </div>
@@ -5866,13 +5868,13 @@ export default function VokabelApp() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Neue Liste anlegen</div>
             <label className="inp-label">Name der Liste</label>
-            <input className="inp" placeholder="z.B. Irregular Verbs, Unit 5" value={modalInput} autoFocus
+            <input {...ttFeld("Name der neuen Liste")} className="inp" placeholder="z.B. Irregular Verbs, Unit 5" value={modalInput} autoFocus
               onChange={e => { setModalInput(e.target.value); setModalFehler(""); }}
               onKeyDown={e => e.key === "Enter" && erstelleListe()} />
             {modalFehler && <div className="fehler">{modalFehler}</div>}
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
-              <button className="btn btn-primary" onClick={erstelleListe}>Erstellen</button>
+              <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+              <button {...tt("Neue leere Liste anlegen")} className="btn btn-primary" onClick={erstelleListe}>Erstellen</button>
             </div>
           </div>
         </div>
@@ -5882,13 +5884,13 @@ export default function VokabelApp() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Liste umbenennen</div>
             <label className="inp-label">Neuer Name</label>
-            <input className="inp" value={modalInput} autoFocus
+            <input {...ttFeld("Neuer Name der Liste")} className="inp" value={modalInput} autoFocus
               onChange={e => { setModalInput(e.target.value); setModalFehler(""); }}
               onKeyDown={e => e.key === "Enter" && umbenennen()} />
             {modalFehler && <div className="fehler">{modalFehler}</div>}
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
-              <button className="btn btn-primary" onClick={umbenennen}>Speichern</button>
+              <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+              <button {...tt("Neuen Namen speichern")} className="btn btn-primary" onClick={umbenennen}>Speichern</button>
             </div>
           </div>
         </div>
@@ -5899,12 +5901,12 @@ export default function VokabelApp() {
             <div className="modal-titel">Spalte umbenennen</div>
             <div style={{fontSize:"0.82rem", color:"#6b6560", marginBottom:12}}>Typ: {editSpalteTyp}</div>
             <label className="inp-label">Name</label>
-            <input className="inp" value={modalInput} autoFocus
+            <input {...ttFeld("Neuer Name der Spalte")} className="inp" value={modalInput} autoFocus
               onChange={e => setModalInput(e.target.value)}
               onKeyDown={e => e.key === "Enter" && speichereSpaltenname()} />
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
-              <button className="btn btn-primary" onClick={speichereSpaltenname}>Speichern</button>
+              <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+              <button {...tt("Spaltennamen speichern")} className="btn btn-primary" onClick={speichereSpaltenname}>Speichern</button>
             </div>
           </div>
         </div>
@@ -5919,15 +5921,15 @@ export default function VokabelApp() {
                   {aktiveListe.spalten[typ].name || typ}
                   {!typ.startsWith('i') && <span style={{fontWeight:400}}> (|| falsche Antworten)</span>}
                 </label>
-                <input className="inp" value={bearbeiteEingaben[typ] || ''}
+                <input {...ttFeld("Inhalt dieser Spalte bearbeiten")} className="inp" value={bearbeiteEingaben[typ] || ''}
                   onChange={e => setBearbeiteEingaben(prev => ({...prev, [typ]: e.target.value}))}
                   onKeyDown={e => e.key === 'Enter' && speichereVokabelBearbeitung()}
                 />
               </div>
             ))}
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => { setModal(null); setBearbeiteVokabel(null); }}>Abbrechen</button>
-              <button className="btn btn-primary" onClick={speichereVokabelBearbeitung}>Speichern</button>
+              <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => { setModal(null); setBearbeiteVokabel(null); }}>Abbrechen</button>
+              <button {...tt("Änderungen an der Vokabel speichern")} className="btn btn-primary" onClick={speichereVokabelBearbeitung}>Speichern</button>
             </div>
           </div>
         </div>
@@ -5940,8 +5942,8 @@ export default function VokabelApp() {
               Diese Vokabel wird dauerhaft gelöscht. Der Lernfortschritt geht dabei verloren.
             </p>
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
-              <button className="btn btn-danger" onClick={() => loescheVokabel(bearbeiteVokabel.id)}>Löschen</button>
+              <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+              <button {...tt("Vokabel endgültig löschen")} className="btn btn-danger" onClick={() => loescheVokabel(bearbeiteVokabel.id)}>Löschen</button>
             </div>
           </div>
         </div>
@@ -5955,7 +5957,7 @@ export default function VokabelApp() {
             <div className="modal" onClick={e => e.stopPropagation()}>
               <div className="modal-titel">Liste zusammenführen</div>
               <label className="inp-label">Quelle (wird in „{aktiveListe.name}" eingefügt)</label>
-              <select className="inp" value={mergeQuelleId} onChange={e => setMergeQuelleId(e.target.value)}>
+              <select {...ttFeld("Liste, deren Vokabeln übernommen werden")} className="inp" value={mergeQuelleId} onChange={e => setMergeQuelleId(e.target.value)}>
                 <option value="">– Liste wählen –</option>
                 {andereListn.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
               </select>
@@ -5968,8 +5970,8 @@ export default function VokabelApp() {
                 </div>
               )}
               <div className="modal-actions">
-                <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
-                <button className="btn btn-primary" onClick={fuehreListenZusammen} disabled={!mergeQuelleId}>Zusammenführen</button>
+                <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+                <button {...tt("Vokabeln der gewählten Liste in diese Liste übernehmen")} className="btn btn-primary" onClick={fuehreListenZusammen} disabled={!mergeQuelleId}>Zusammenführen</button>
               </div>
             </div>
           </div>
@@ -5999,7 +6001,7 @@ export default function VokabelApp() {
               <div className="modal-titel">{istGespeichert ? "Speichern" : "Neu speichern"}</div>
 
               {istGespeichert && (<>
-                <button className="btn btn-primary" style={{width:"100%", marginBottom:4, textAlign:"left"}}
+                <button {...tt("Gespeicherten Eintrag mit der aktuellen Einstellung überschreiben")} className="btn btn-primary" style={{width:"100%", marginBottom:4, textAlign:"left"}}
                   onClick={doAktualisieren}>
                   Aktualisieren · „{aktuellerSlot?.name}"
                 </button>
@@ -6009,7 +6011,7 @@ export default function VokabelApp() {
               </>)}
 
               <label className="inp-label">Name</label>
-              <input className="inp" value={modalInput} autoFocus
+              <input {...ttFeld("Name für den gespeicherten Eintrag")} className="inp" value={modalInput} autoFocus
                 onChange={e => setModalInput(e.target.value)}
                 onFocus={e => e.target.select()}
                 placeholder="z.B. Irregular Verbs" />
@@ -6019,7 +6021,7 @@ export default function VokabelApp() {
                   <div className="inp-label">{istGespeichert ? "Anderen Slot ersetzen" : "Vorhandenen Slot ersetzen"}</div>
                   <div style={{display:"flex", gap:6, flexWrap:"wrap", marginTop:8}}>
                     {andereSlots.map(s => (
-                      <button key={s.id} className="slot-chip belegt"
+                      <button {...tt(`Eintrag „${s.name}“ mit der aktuellen Einstellung überschreiben`)} key={s.id} className="slot-chip belegt"
                         onClick={() => doUeberschreiben(s)}>
                         {s.name}
                       </button>
@@ -6029,8 +6031,8 @@ export default function VokabelApp() {
               )}
 
               <div className="modal-actions">
-                <button className="btn btn-ghost" onClick={schliesseModal}>Abbrechen</button>
-                <button className="btn btn-primary" onClick={doSpeichernNeu}>
+                <button {...tt("Schließen, ohne etwas zu speichern")} className="btn btn-ghost" onClick={schliesseModal}>Abbrechen</button>
+                <button {...tt("Als neuen Eintrag speichern")} className="btn btn-primary" onClick={doSpeichernNeu}>
                   {istGespeichert ? "Neu speichern" : "Speichern"}
                 </button>
               </div>
@@ -6047,8 +6049,8 @@ export default function VokabelApp() {
               {getSlotEintrag(loescheSlotNr.typ, loescheSlotNr.id)?.sessionFortschritt ? " Der Session-Fortschritt geht verloren." : ""}
             </p>
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setLoescheSlotNr(null)}>Abbrechen</button>
-              <button className="btn btn-danger" onClick={() => loescheSlotEintrag(loescheSlotNr.typ, loescheSlotNr.id)}>Löschen</button>
+              <button {...tt("Schließen, ohne etwas zu löschen")} className="btn btn-ghost" onClick={() => setLoescheSlotNr(null)}>Abbrechen</button>
+              <button {...tt("Eintrag endgültig löschen")} className="btn btn-danger" onClick={() => loescheSlotEintrag(loescheSlotNr.typ, loescheSlotNr.id)}>Löschen</button>
             </div>
           </div>
         </div>
@@ -6063,26 +6065,26 @@ export default function VokabelApp() {
                 Die Vokabelgruppe wurde seit dem Laden von „{slotName}" geändert.
               </p>
               <div className="modal-actions" style={{flexDirection:"column", gap:8}}>
-                <button className="btn btn-primary" onClick={() => {
+                <button {...tt("Gespeicherten Eintrag mit der geänderten Auswahl überschreiben")} className="btn btn-primary" onClick={() => {
                   speichereAlsGespeichert(aktiverSlot.id, slotName);
                   setGruppenAenderungsDialog(false);
                   starteQuiz(true);
                 }}>Überspeichern</button>
-                <button className="btn btn-ghost" onClick={() => {
+                <button {...tt("Geänderte Auswahl als neuen Eintrag speichern")} className="btn btn-ghost" onClick={() => {
                   setGruppenAenderungsDialog(false);
                   setModalInput(slotNamenVorschlag());
                   setModal("slot-speichern");
                 }}>Neu speichern</button>
-                <button className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#6b6560"}} onClick={() => {
+                <button {...tt("Quiz mit der geänderten Auswahl starten, ohne zu speichern")} className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#6b6560"}} onClick={() => {
                   const newId = erstelleVerlaufEintrag();
                   setGruppenAenderungsDialog(false);
                   starteQuiz(true, {typ:'verlauf', id:newId});
                 }}>Fortfahren ohne Speichern</button>
-                <button className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#6b6560"}} onClick={() => {
+                <button {...tt("Auswahl auf den gespeicherten Stand zurücksetzen")} className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#6b6560"}} onClick={() => {
                   ladeSlot(aktiverSlot.typ, aktiverSlot.id);
                   setGruppenAenderungsDialog(false);
                 }}>Zurücksetzen</button>
-                <button className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#9b9590"}} onClick={() => setGruppenAenderungsDialog(false)}>Abbrechen</button>
+                <button {...tt("Schließen, ohne zu starten")} className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#9b9590"}} onClick={() => setGruppenAenderungsDialog(false)}>Abbrechen</button>
               </div>
             </div>
           </div>
@@ -6096,8 +6098,8 @@ export default function VokabelApp() {
               Es gibt bereits eine aktive Session mit einer anderen Konfiguration. Soll diese überschrieben werden?
             </p>
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setSessionUeberschreibenModal(false)}>Abbrechen</button>
-              <button className="btn btn-primary" onClick={() => { setSessionUeberschreibenModal(false); starteQuiz(true); }}>Neu starten</button>
+              <button {...tt("Schließen, ohne zu starten")} className="btn btn-ghost" onClick={() => setSessionUeberschreibenModal(false)}>Abbrechen</button>
+              <button {...tt("Bisherige Session verwerfen und neu beginnen")} className="btn btn-primary" onClick={() => { setSessionUeberschreibenModal(false); starteQuiz(true); }}>Neu starten</button>
             </div>
           </div>
         </div>
@@ -6110,8 +6112,8 @@ export default function VokabelApp() {
               Diese Liste wird dauerhaft gelöscht. Das kann nicht rückgängig gemacht werden.
             </p>
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
-              <button className="btn btn-danger" onClick={loeschen}>Löschen</button>
+              <button {...tt("Schließen, ohne etwas zu löschen")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+              <button {...tt("Liste mit allen Vokabeln endgültig löschen")} className="btn btn-danger" onClick={loeschen}>Löschen</button>
             </div>
           </div>
         </div>
@@ -6130,7 +6132,7 @@ export default function VokabelApp() {
               { key: "diktatFortschritt", label: "Diktat-Fortschritt" },
             ].map(({ key, label, pflicht }) => (
               <label key={key} style={{display:"flex", alignItems:"center", gap:10, marginBottom:10, fontSize:"0.9rem", cursor: pflicht ? "default" : "pointer"}}>
-                <input type="checkbox" checked={pflicht || !!jsonExportOptionen[key]}
+                <input {...ttFeld("Diesen Teil in den Export aufnehmen")} type="checkbox" checked={pflicht || !!jsonExportOptionen[key]}
                   disabled={pflicht}
                   onChange={e => !pflicht && setJsonExportOptionen(prev => ({...prev, [key]: e.target.checked}))}
                   style={{width:18, height:18}} />
@@ -6138,15 +6140,15 @@ export default function VokabelApp() {
               </label>
             ))}
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => { setModal(null); setJsonExportIds(null); }}>Abbrechen</button>
-              <button className="btn btn-primary" onClick={exportiereAlsJsonBestaetigt}>{jsonExportTeilen ? "Teilen" : "Exportieren"}</button>
+              <button {...tt("Schließen, ohne zu exportieren")} className="btn btn-ghost" onClick={() => { setModal(null); setJsonExportIds(null); }}>Abbrechen</button>
+              <button {...tt("Export mit diesen Optionen erstellen")} className="btn btn-primary" onClick={exportiereAlsJsonBestaetigt}>{jsonExportTeilen ? "Teilen" : "Exportieren"}</button>
             </div>
           </div>
         </div>
       )}
 
       {zuklappHinweis && !quiz && (
-        <button onClick={klappeFreieZu}
+        <button {...tt("Bereich zuklappen")} onClick={klappeFreieZu}
           style={{position:"fixed", left:"50%", bottom:16, transform:"translateX(-50%)", zIndex:50,
             background:"rgba(45,106,79,0.92)", color:"#fff", border:"none", borderRadius:20, padding:"7px 14px",
             fontSize:"0.75rem", fontWeight:600, fontFamily:"inherit", boxShadow:"0 2px 10px rgba(0,0,0,0.2)", cursor:"pointer", whiteSpace:"nowrap"}}>

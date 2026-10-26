@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Browser-Tests: Ausgaben
+e2e/downloads
+e2e/importdateien
+e2e/*.png

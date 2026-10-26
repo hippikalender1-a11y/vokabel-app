@@ -1,0 +1,9 @@
+{
+  "name": "vokabel-app-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Browser-Tests (Puppeteer + lokales Chrome) gegen die Vorschau auf Port 4199",
+  "dependencies": {
+    "puppeteer-core": "^23.0.0"
+  }
+}
