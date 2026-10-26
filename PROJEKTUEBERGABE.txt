@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-26  (Session 37 — Standards, Score-Regel, Kreisdiagramm)
-Letzter Commit: 5a44135
+Letzter Commit: 7e92080
 
 DATEIPFADE
 ----------
@@ -1104,6 +1104,25 @@ TESTS: e2e/standard.mjs, wiederholung.mjs (6/6), kreis.mjs (11/11);
 
 
 ================================================================
+SESSION 37 (FORTSETZUNG) — STATISTIK NUR KREIS, EINHEITLICHER FORTSCHRITT (a795560…7e92080)
+================================================================
+- Linie/Balken ENTFERNT (inkl. Graph-Daten, toPath, Diktat-Linie, States
+  statistikGraphTyp, statistikGraphDiktatZeigen). Vollbild-Knopf (IcoExpand)
+  oben rechts in der Kreisfläche. Diktat-Fortschritt in der Kopfzeile,
+  sobald Diktat-Ergebnisse vorhanden (diktatAbgefragt.length > 0).
+- Global/Session-Schalter ENTFERNT (States statistikScoreModus,
+  statistikSessionDaten samt Settern; Delta/Ø-Session-Berechnung).
+  Kopfzeile: nur Lernfortschritt %, Gruppen-Balken, "x / y gelernt · Ø".
+  Start-Scores (rundeStartScores, Verlauf startScores) bleiben für die
+  Lern-Bilanz am Quiz-Ende.
+- Kreis: nur EINGEBLENDETE Gruppen (statistikFilter) teilen sich den Kreis,
+  Prozente relativ dazu; Legende (data-legende) unter dem Kreis mit allen
+  vorhandenen Gruppen, ausgeblendete durchgestrichen → antippen blendet
+  ein/aus; alle aus → "Alle Gruppen ausgeblendet"; "Gesamt N" = alle an.
+TEST: e2e/kreis.mjs (18/18).
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -1157,7 +1176,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 5a44135 (Session 37 — Standards, Score-Regel, Kreisdiagramm)
+Letzter Commit: 7e92080 (Session 37 — Standards, Score-Regel, Kreisdiagramm, nur Kreis)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste; Wiederholung gelernter
