@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-26  (Session 37 — Standards, Score-Regel, Kreisdiagramm)
-Letzter Commit: 15ef32b
+Letzter Commit: b23d556
 
 DATEIPFADE
 ----------
@@ -1137,6 +1137,25 @@ TEST: e2e/vollbild.mjs (5/5); kreis/gruppen/fortschritt angepasst.
 
 
 ================================================================
+SESSION 37 (FORTSETZUNG) — DATEI-IMPORT ROBUST (b23d556)
+================================================================
+Anlass: Exporte ließen sich auf Android nicht lesen ("Mindestens 2 Zeilen"
+  bzw. seltsame Zeichen).
+leseDateiAlsText(file): ArrayBuffer → UTF-16 LE/BE (BOM oder viele
+  Nullbytes), sonst UTF-8 (fatal, BOM wird entfernt), sonst Windows-1252.
+findeJsonListen(text): JSON auch mit Text davor/danach (Mail); null = kein
+  JSON, wirft bei kaputtem JSON. istBinaer(): >5 Steuerzeichen am Anfang.
+Datei-Input OHNE accept (Android-Picker blendeten Dateien aus).
+Fehlermeldungen mit Dateiname, Größe, Dateianfang (dateiVorschau):
+  leer / nicht lesbar / keine Textdatei / JSON beschädigt / keine Listen.
+Unsichtbare Zeichen im Quelltext als ﻿/​/� geschrieben
+  (BOM am Dateianfang von App.jsx bleibt echt!).
+Hinweis für Nutzer: auf dem iPad (Home-Bildschirm-App) zum Übertragen
+  "📤 Teilen" statt Download ("💾 JSON"/"📄 Datei") nutzen.
+TEST: e2e/import_kodierung.mjs (10/10).
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -1190,7 +1209,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 15ef32b (Session 37 — Standards, Score-Regel, Kreisdiagramm, Fortschritt nach Filter)
+Letzter Commit: b23d556 (Session 37 — … Fortschritt nach Filter, Datei-Import robust)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste; Wiederholung gelernter
