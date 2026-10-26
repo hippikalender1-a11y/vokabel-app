@@ -347,6 +347,8 @@ const STANDARD_ANTWORT_MODUS = "karte";
 // Session-Standard: in Paketen abfragen
 const STANDARD_SESSION_MODUS = "pakete";
 const STANDARD_PAKET_GROESSE = 10;
+// Abfrage-Ziel-Standard: jede Vokabel wird wiederholt, bis sie 1× richtig war
+const STANDARD_ABFRAGE_ZIEL = "wiederholung";
 const AKZENT_HINWEIS = "Richtig – achte auf die Akzente.";
 const MC_FEHLKLICK_HINWEIS = "Nicht auf Anhieb gefunden – zählt als nicht gewusst.";
 
@@ -654,7 +656,7 @@ export default function VokabelApp() {
   const [quizSessionModus, setQuizSessionModus] = useState(STANDARD_SESSION_MODUS);
   const [quizPaketGroesse, setQuizPaketGroesse] = useState(STANDARD_PAKET_GROESSE);
   const [quizSessionAufgeklappt, setQuizSessionAufgeklappt] = useState(false);
-  const [abfrageZielModus, setAbfrageZielModus] = useState("anzahl");
+  const [abfrageZielModus, setAbfrageZielModus] = useState(STANDARD_ABFRAGE_ZIEL);
   const [abfrageZielAnzahl, setAbfrageZielAnzahl] = useState(1);
   const [abfrageZielWiederholung, setAbfrageZielWiederholung] = useState(1);
   const [abfrageZielScore, setAbfrageZielScore] = useState(0);
@@ -1951,7 +1953,7 @@ export default function VokabelApp() {
     setQuizListeAufgeklappt(false);
     setQuizVonBisModus(false);
     setQuizVonBisErster(null);
-    setAbfrageZielModus("anzahl");
+    setAbfrageZielModus(STANDARD_ABFRAGE_ZIEL);
     setAbfrageZielAnzahl(1);
     setAbfrageZielWiederholung(1);
     setAbfrageZielScore(0);
