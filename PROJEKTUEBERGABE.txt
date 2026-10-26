@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-26  (Session 37 — Standards, Score-Regel, Kreisdiagramm)
-Letzter Commit: 7e92080
+Letzter Commit: 15ef32b
 
 DATEIPFADE
 ----------
@@ -1123,6 +1123,20 @@ TEST: e2e/kreis.mjs (18/18).
 
 
 ================================================================
+SESSION 37 (FORTSETZUNG) — FORTSCHRITT FOLGT DEM FILTER (2994dbc, 15ef32b)
+================================================================
+- Vollbild: Kopfzeile (.topbar) zeigt statt "Vokabel-Trainer"
+  renderVollbildKopf(): Lernfortschritt %, Gruppen-Balken, "x / y gelernt"
+  der EINGEBLENDETEN Gruppen (Schwelle Aus → Ø Score, "N Vokabeln").
+  GRUPPE_BALKEN jetzt Modul-Konstante.
+- Normale Lernfortschritt-Zeile ebenso nach Filter: kopfVoks/kopfAnzahl
+  (lernFortschritt, Diktat-%, gelerntAnzahl, Ø, Gruppen-Balken).
+  Kreis-Legende behält gruppenAnzahl (alle Vokabeln), damit
+  ausgeblendete Gruppen mit Anzahl sichtbar bleiben.
+TEST: e2e/vollbild.mjs (5/5); kreis/gruppen/fortschritt angepasst.
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -1176,7 +1190,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: 7e92080 (Session 37 — Standards, Score-Regel, Kreisdiagramm, nur Kreis)
+Letzter Commit: 15ef32b (Session 37 — Standards, Score-Regel, Kreisdiagramm, Fortschritt nach Filter)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste; Wiederholung gelernter
