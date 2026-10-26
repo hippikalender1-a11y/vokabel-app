@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { schalteInfoModus } from "./infoEreignisse.js";
 
-// Erklär-Tafel: zeigt Erklärtexte (data-info) gut lesbar am gegenüberliegenden Bildschirmrand,
+// Erklär-Tafel: zeigt Erklärtexte (data-info) als Sprechblase an der Stelle des Fingers,
 // bis man irgendwo hintippt. Info-Modus: Antippen eines Elements erklärt es, statt es auszuführen.
 
 export default function InfoTafel() {
@@ -32,7 +32,9 @@ export default function InfoTafel() {
       const el = modus ? e.target.closest("[data-info]") : null;
       if (el) {
         e.preventDefault(); e.stopPropagation();
-        setInfo({ text: el.getAttribute("data-info"), y: e.clientY });
+        // am angetippten Element verankern (auch bei Klicks ohne Koordinaten, z. B. Tastatur)
+        const r = el.getBoundingClientRect();
+        setInfo({ text: el.getAttribute("data-info"), x: r.left + r.width / 2, y: r.top + r.height / 2 });
         return;
       }
       if (info) { e.preventDefault(); e.stopPropagation(); setInfo(null); }
@@ -41,16 +43,20 @@ export default function InfoTafel() {
     return () => document.removeEventListener("click", klick, true);
   }, [info, modus]);
 
-  const oben = info && info.y > window.innerHeight / 2;   // Finger unten → Tafel oben, sonst unten
+  // Sprechblase an der Fingerstelle: knapp darüber, bei zu wenig Platz oben knapp darunter
+  const breite = Math.min(300, window.innerWidth - 24);
+  const links = info ? Math.max(12, Math.min(info.x - breite / 2, window.innerWidth - breite - 12)) : 0;
+  const darueber = info && info.y > 150;
   return (
     <>
       {info && (
         <div role="status" style={{
-          position: "fixed", left: 12, right: 12, zIndex: 10001,
-          ...(oben ? { top: 12 } : { bottom: modus ? 60 : 16 }),
+          position: "fixed", left: links, width: breite, zIndex: 10001,
+          top: darueber ? info.y - 14 : info.y + 14,
+          transform: darueber ? "translateY(-100%)" : "none",
           background: "rgba(28,24,20,0.95)", color: "#fff", borderRadius: 14,
-          padding: "14px 16px 10px", boxShadow: "0 6px 24px rgba(0,0,0,0.3)",
-          fontFamily: "system-ui,sans-serif", maxWidth: 560, margin: "0 auto",
+          padding: "12px 14px 8px", boxShadow: "0 6px 24px rgba(0,0,0,0.3)",
+          fontFamily: "system-ui,sans-serif", boxSizing: "border-box",
         }}>
           <div style={{ fontSize: "0.95rem", lineHeight: 1.5 }}>{info.text}</div>
           <div style={{ fontSize: "0.7rem", color: "#c0bcb7", textAlign: "right", marginTop: 6 }}>Antippen zum Schließen</div>

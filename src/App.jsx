@@ -772,7 +772,7 @@ export default function VokabelApp() {
         const t = e.touches[0];
         clearTimeout(tooltipTimer.current);
         tooltipShown.current = false;
-        tooltipTimer.current = setTimeout(() => { tooltipShown.current = true; zeigeInfo(text, t.clientY); }, 500);
+        tooltipTimer.current = setTimeout(() => { tooltipShown.current = true; zeigeInfo(text, t.clientX, t.clientY); }, 500);
       },
       onTouchEnd(e)   { clearTimeout(tooltipTimer.current); if (tooltipShown.current) { e.preventDefault(); tooltipShown.current = false; } },
       onTouchMove()   { clearTimeout(tooltipTimer.current); tooltipShown.current = false; },
