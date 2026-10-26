@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useRef } from "react";
+import { zeigeInfo, schalteInfoModus } from "./infoEreignisse.js";
 
 // ── Storage ────────────────────────────────────────────────────────────────
 const SK = {
@@ -471,6 +472,9 @@ const CSS = `
   .app{max-width:600px;margin:0 auto;padding:0 0 80px;}
   .topbar{background:#fff;border-bottom:1px solid #e0dbd2;padding:14px 16px;display:flex;align-items:center;gap:12px;}
   .topbar-title{font-size:1.05rem;font-weight:700;flex:1;text-align:center;}
+  .info-schalter{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:1.5px solid #2d6a4f;background:#fff;color:#2d6a4f;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit;}
+  body.info-modus .info-schalter{background:#2d6a4f;color:#fff;}
+  body.info-modus [data-info]{outline:1.5px dashed #52b788 !important;outline-offset:2px;}
   @media (max-width:480px){.sprach-chip-name{display:none;}}
   .topbar-back{background:#2d6a4f;color:#fff;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;padding:8px 12px;border-radius:10px;font-family:inherit;transition:opacity .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;}
   .topbar-back:active{opacity:.8;}
@@ -757,20 +761,22 @@ export default function VokabelApp() {
   const infoKontextContainerRef = useRef(null);
   const tooltipTimer = useRef(null);
   const tooltipShown = useRef(false);
-  const [tooltipEl, setTooltipEl] = useState(null);
+  // Erklärtext: Maus = title; Touch = lange drücken → Info-Tafel (bleibt bis Antippen, InfoTafel.jsx);
+  // data-info macht das Element im Info-Modus erklärbar
   function tt(text) {
     if (!text) return {};
     return {
       title: text,
+      "data-info": text,
       onTouchStart(e) {
         const t = e.touches[0];
         clearTimeout(tooltipTimer.current);
         tooltipShown.current = false;
-        tooltipTimer.current = setTimeout(() => { tooltipShown.current = true; setTooltipEl({ text, x: t.clientX, y: t.clientY }); }, 500);
+        tooltipTimer.current = setTimeout(() => { tooltipShown.current = true; zeigeInfo(text, t.clientY); }, 500);
       },
-      onTouchEnd(e)   { clearTimeout(tooltipTimer.current); if (tooltipShown.current) { e.preventDefault(); tooltipShown.current = false; } setTooltipEl(null); },
-      onTouchMove()   { clearTimeout(tooltipTimer.current); tooltipShown.current = false; setTooltipEl(null); },
-      onTouchCancel() { clearTimeout(tooltipTimer.current); tooltipShown.current = false; setTooltipEl(null); },
+      onTouchEnd(e)   { clearTimeout(tooltipTimer.current); if (tooltipShown.current) { e.preventDefault(); tooltipShown.current = false; } },
+      onTouchMove()   { clearTimeout(tooltipTimer.current); tooltipShown.current = false; },
+      onTouchCancel() { clearTimeout(tooltipTimer.current); tooltipShown.current = false; },
     };
   }
   const [headerH, setHeaderH] = useState(104);
@@ -3631,6 +3637,7 @@ export default function VokabelApp() {
       <div className="app">
         <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"#fff"}}>
         <div className="topbar" style={{position:"relative"}}>
+          <button className="info-schalter" data-info-schalter onClick={schalteInfoModus} title="Info-Modus: Elemente antippen, um sie erklärt zu bekommen">ⓘ</button>
           {statistikVollbild && tab === "statistik" ? renderVollbildKopf() : <span className="topbar-title">Vokabel-Trainer</span>}
           {!statistikVollbild && vorhandeneSprachen.length > 1 && (
             <div style={{position:"absolute", right:12, top:"50%", transform:"translateY(-50%)"}}>
@@ -5705,7 +5712,7 @@ export default function VokabelApp() {
           ) : (
             <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.7, color:"#3b3832"}}>
               <div style={{background:"#e8f5e9", borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:"0.8rem", color:"#2d6a4f", lineHeight:1.55}}>
-                💡 <strong>Tipp:</strong> Auf Touch-Geräten: Button gedrückt halten für eine kurze Erklärung. Am PC erscheint der Tooltip beim Hover.
+                💡 <strong>Tipp:</strong> Tippe oben links auf ⓘ: Im Info-Modus sind erklärbare Elemente gestrichelt markiert – antippen zeigt die Erklärung, statt die Aktion auszuführen. Alternativ einen Knopf gedrückt halten. Die Erklärung bleibt stehen, bis du irgendwo hintippst. Am PC erscheint sie auch beim Darüberfahren.
               </div>
               {[
                 {titel:"Listen-Tab", inhalt:[
@@ -6145,16 +6152,6 @@ export default function VokabelApp() {
             fontSize:"0.75rem", fontWeight:600, fontFamily:"inherit", boxShadow:"0 2px 10px rgba(0,0,0,0.2)", cursor:"pointer", whiteSpace:"nowrap"}}>
           ▲ Weiter ziehen oder hier tippen zum Zuklappen
         </button>
-      )}
-      {tooltipEl && (
-        <div style={{position:'fixed', zIndex:9999, pointerEvents:'none',
-          left: Math.max(8, Math.min(tooltipEl.x - 105, window.innerWidth - 218)),
-          top: tooltipEl.y > 80 ? tooltipEl.y - 56 : tooltipEl.y + 24,
-          background:'rgba(28,24,20,0.92)', color:'#fff',
-          padding:'8px 12px', borderRadius:8, fontSize:'0.8rem', lineHeight:1.45,
-          maxWidth:210, boxShadow:'0 4px 16px rgba(0,0,0,0.25)'}}>
-          {tooltipEl.text}
-        </div>
       )}
     </>
   );
