@@ -638,9 +638,7 @@ export default function VokabelApp() {
   const [statistikFilter, setStatistikFilter] = useState(new Set(['negativ', 'nie', 'arbeit', 'gelernt'])); // Gruppen: negativ / nie / arbeit / gelernt
   const [statistikListenIds, setStatistikListenIds] = useState(null); // null = alle
   const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
-  const [statistikGraphDiktatZeigen, setStatistikGraphDiktatZeigen] = useState(false);
   const [statistikVollbild, setStatistikVollbild] = useState(false);
-  const [statistikGraphTyp, setStatistikGraphTyp] = useState("kreis"); // kreis | linie | balken
   const [statistikBereichTyp, setStatistikBereichTyp] = useState("alle");
   const [statistikCheckboxAuswahl, setStatistikCheckboxAuswahl] = useState(new Set());
   const [statistikEinzelauswahlAufgeklappt, setStatistikEinzelauswahlAufgeklappt] = useState(false);
@@ -5320,49 +5318,6 @@ export default function VokabelApp() {
           const filterVok = v => statistikFilter.has(gruppeVon(v));
           const anzeigeVoks = alleVoks;
 
-          // Graph-Daten
-          const quizGraphVoks = alleFilterAktiv ? anzeigeVoks : anzeigeVoks.filter(filterVok);
-          const diktatGraphVoks = alleFilterAktiv ? anzeigeVoks : anzeigeVoks.filter(filterVok);
-          const sessionGraphVoks = alleFilterAktiv ? sessionVoksAbgefragt : sessionVoksAbgefragt.filter(filterVok);
-          const quizS = istSessionModus
-            ? sessionGraphVoks.map(v => getSessionDelta(v) ?? 0).sort((a, b) => a - b)
-            : quizGraphVoks.map(v => v.fortschritt?.score ?? 0).sort((a, b) => a - b);
-          const diktatS = statistikGraphDiktatZeigen ? diktatGraphVoks.map(v => v.diktatFortschritt?.score ?? 0).sort((a, b) => a - b) : [];
-          const allScores = [...quizS, ...diktatS];
-          const minS = allScores.length > 0 ? Math.min(...allScores, -1) : -1;
-          const maxS = allScores.length > 0 ? Math.max(...allScores, 1) : 1;
-          const range = maxS - minS;
-          const GW = 400, GH = 120, pX = 4, pY = 10;
-          const gW = GW - 2 * pX, gH = GH - 2 * pY;
-          const zeroY = pY + (maxS / range) * gH;
-          function toPath(scores) {
-            if (scores.length === 0) return '';
-            const m = scores.length;
-            return scores.map((s, i) => {
-              const x = pX + (m > 1 ? i / (m - 1) : 0.5) * gW;
-              const y = pY + ((maxS - s) / range) * gH;
-              return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
-            }).join(' ');
-          }
-          // Zwei-Farben-Kurve: unbeantwortete grau links, beantwortete grün rechts (nur im Global-Modus, nur wenn 'nie' aktiv)
-          const nieInGraph = quizGraphVoks.filter(v => !v.fortschritt).length;
-          const quizTwoColor = !istSessionModus && statistikFilter.has('nie') && nieInGraph > 0 && quizGraphVoks.some(v => v.fortschritt);
-          let quizGreenPath = toPath(quizS), quizGrayPath = '';
-          if (quizTwoColor) {
-            const total = quizGraphVoks.length;
-            const answeredScores = quizGraphVoks.filter(v => v.fortschritt).map(v => v.fortschritt.score).sort((a, b) => a - b);
-            function sectionPath(count, startIdx, scores) {
-              if (count === 0) return '';
-              return Array.from({length: count}, (_, k) => {
-                const x = pX + (total > 1 ? (startIdx + k) / (total - 1) : 0.5) * gW;
-                const y = pY + ((maxS - (scores ? scores[k] : 0)) / range) * gH;
-                return `${k === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
-              }).join(' ');
-            }
-            quizGrayPath = sectionPath(nieInGraph, 0, null);
-            quizGreenPath = sectionPath(answeredScores.length, nieInGraph, answeredScores);
-          }
-
           // Vokabelliste (gefiltert + sortiert)
           let voks = alleFilterAktiv ? [...anzeigeVoks] : anzeigeVoks.filter(filterVok);
           const [sKey, sDir] = statistikSort.split("-");
@@ -5405,7 +5360,7 @@ export default function VokabelApp() {
                         {fortschrittDelta > 0 ? "+" : ""}{Math.round(fortschrittDelta)}
                       </span>
                     )}
-                    {statistikGraphDiktatZeigen && (
+                    {diktatAbgefragt.length > 0 && (
                       <span style={{fontWeight:700, fontSize:"0.8rem", color:"#e67e22"}} {...tt("Lernfortschritt im Diktat")}>Diktat {Math.round(diktatFortschrittProzent)} %</span>
                     )}
                   </div>
@@ -5442,7 +5397,7 @@ export default function VokabelApp() {
                     ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>
                   )}
                 </div>
-                {statistikGraphDiktatZeigen && (
+                {diktatAbgefragt.length > 0 && (
                   <div style={{display:"flex", alignItems:"center", gap:4}}>
                     <svg width="14" height="3" viewBox="0 0 14 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="4 2"/></svg>
                     {avgDiktatScore !== null ? (
@@ -5458,14 +5413,8 @@ export default function VokabelApp() {
             </div>
             )}
             <div className="sektion" style={{paddingTop:12, paddingBottom:(statistikListenAufgeklappt||statistikEinzelauswahlAufgeklappt)?'100dvh':0}}>
-              {/* Graph */}
+              {/* Kreisdiagramm */}
               {(() => {
-                const istBalken = statistikGraphTyp === "balken";
-                const istKreis = statistikGraphTyp === "kreis";
-                const ansichtKnopf = (typ, label) => (
-                  <button key={typ} className={`typ-btn${statistikGraphTyp === typ ? " aktiv" : ""}`}
-                    style={{fontSize:"0.7rem", padding:"3px 10px"}} onClick={() => setStatistikGraphTyp(typ)}>{label}</button>
-                );
                 // Kreisdiagramm der Gruppen: leere Gruppen fehlen, Segment antippen = Gruppe ein-/ausblenden
                 const renderKreis = () => {
                   const NAME = { gelernt:"✓ Gelernt", arbeit:"In Arbeit", nie:"Nie abgefragt", negativ:"Negativ" };
@@ -5523,95 +5472,16 @@ export default function VokabelApp() {
                     </div>
                   );
                 };
-                // Balken-Konstanten
-                const SVG_H = 120, bpX = 4, bpY = 8;
-                const bgH = SVG_H - 2 * bpY;
-                const zeroBarY = bpY + bgH / 2;
-                const maxBarH = bgH / 2;
-                const barScores = voks.map(v => {
-                  const s = istSessionModus ? (getSessionDelta(v) ?? 0) : (v.fortschritt?.score ?? 0);
-                  return Math.min(10, Math.max(-10, s));
-                });
-                const barSvgW = 400;
-                const availW = barSvgW - 2 * bpX;
-                const BAR_STEP = voks.length > 0 ? availW / voks.length : availW;
-                const BAR_GAP = BAR_STEP > 3 ? 1 : 0;
-                const BAR_W = BAR_STEP - BAR_GAP;
                 return (
-                <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid #e0dbd2"}}>
-                  {/* Ansicht wählen */}
-                  <div style={{display:"flex", alignItems:"center", gap:6, padding:"6px 14px", background:"#f7f5f0", borderBottom:"1px solid #e0dbd2", flexWrap:"wrap"}}>
-                    {ansichtKnopf("kreis", "◔ Kreis")}{ansichtKnopf("linie", "Linie")}{ansichtKnopf("balken", "Balken")}
-                    {!istKreis && !alleFilterAktiv && (
-                      <span style={{marginLeft:"auto", fontSize:"0.68rem", color:"#a67c00", fontWeight:600}}
-                        {...tt("Gruppen sind ausgeblendet – in der Kreis-Ansicht ändern")}>Filter aktiv</span>
-                    )}
-                  </div>
-                  {istKreis ? renderKreis() : (<>
-                  <div style={{position:"relative"}}>
-                    {istBalken ? (
-                      <>
-                        <svg viewBox={`0 0 ${barSvgW} ${SVG_H}`} preserveAspectRatio="none"
-                          style={{width:"100%", height:SVG_H, display:"block"}}>
-                          <rect width={barSvgW} height={SVG_H} fill="#fafaf8"/>
-                          <rect x={bpX} y={bpY} width={barSvgW - 2*bpX} height={maxBarH} fill="#e8f5e9" opacity="0.6"/>
-                          <rect x={bpX} y={zeroBarY} width={barSvgW - 2*bpX} height={maxBarH} fill="#ffebee" opacity="0.6"/>
-                          <line x1={bpX} y1={zeroBarY} x2={barSvgW - bpX} y2={zeroBarY} stroke="#ccc" strokeWidth="1"/>
-                          {barScores.map((s, i) => {
-                            const barH = Math.max(1, Math.abs(s) / 10 * maxBarH);
-                            const isP = s >= 0;
-                            return (
-                              <rect key={i} x={bpX + i * BAR_STEP} y={isP ? zeroBarY - barH : zeroBarY}
-                                width={BAR_W} height={barH}
-                                fill={isP ? "#2d6a4f" : "#c0392b"} opacity="0.85"/>
-                            );
-                          })}
-                        </svg>
-                      </>
-                    ) : (
-                      <svg viewBox={`0 0 ${GW} ${GH}`} preserveAspectRatio="none"
-                        style={{width:"100%", height:130, display:"block"}}>
-                        <rect width={GW} height={GH} fill="#fafaf8"/>
-                        {zeroY > pY && <rect x={pX} y={pY} width={gW} height={Math.max(0, zeroY - pY)} fill="#e8f5e9" opacity="0.6"/>}
-                        {zeroY < GH - pY && <rect x={pX} y={zeroY} width={gW} height={Math.max(0, GH - pY - zeroY)} fill="#ffebee" opacity="0.6"/>}
-                        <line x1={pX} y1={zeroY} x2={GW - pX} y2={zeroY} stroke="#ccc" strokeWidth="1"/>
-                        {quizTwoColor ? (<>
-                          <path d={quizGrayPath} fill="none" stroke="#b0bec5" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
-                          <path d={quizGreenPath} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
-                        </>) : (
-                          <path d={quizGreenPath} fill="none" stroke="#2d6a4f" strokeWidth="2.5" vectorEffect="non-scaling-stroke"/>
-                        )}
-                        <path d={toPath(diktatS)} fill="none" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="6 4" vectorEffect="non-scaling-stroke"/>
-                      </svg>
-                    )}
-                  </div>
-                  {/* Legende / Controls */}
-                  <div style={{display:"flex", alignItems:"center", gap:8, padding:"6px 14px", background:"#f7f5f0", borderTop:"1px solid #e0dbd2", fontSize:"0.72rem", fontWeight:600, color:"#6b6560", flexWrap:"wrap"}}>
-                    {!istBalken && (
-                      <span style={{display:"flex", alignItems:"center", gap:5, fontSize:"0.68rem", padding:"3px 8px"}}>
-                        {quizTwoColor ? (<>
-                          <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}>
-                            <line x1="0" y1="1.5" x2="8" y2="1.5" stroke="#b0bec5" strokeWidth="2.5"/>
-                            <line x1="8" y1="1.5" x2="16" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/>
-                          </svg>
-                        </>) : (
-                          <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
-                        )}
-                        Abfrage
-                      </span>
-                    )}
-                    {!istBalken && (
-                      <button className={`typ-btn${statistikGraphDiktatZeigen?" aktiv":""}`}
-                        style={{display:"flex", alignItems:"center", gap:5, fontSize:"0.68rem", padding:"3px 8px", opacity:statistikGraphDiktatZeigen?1:0.5}}
-                        onClick={() => setStatistikGraphDiktatZeigen(v => !v)}
-                        {...tt("Diktat-Kurve ein- oder ausblenden")}>
-                        <svg width="16" height="3" viewBox="0 0 16 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="16" y2="1.5" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="4 2"/></svg>
-                        Diktat
-                      </button>
-                    )}
-
-                  </div>
-                  </>)}
+                <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid #e0dbd2", position:"relative"}}>
+                  {!statistikVollbild && (
+                    <button onClick={() => setStatistikVollbild(true)}
+                      style={{position:"absolute", top:6, right:8, zIndex:1, background:"none", border:"none", padding:"4px 6px", cursor:"pointer", color:"#6b6560", display:"flex", alignItems:"center"}}
+                      {...tt("Statistik im Vollbild anzeigen")}>
+                      <IcoExpand s={18}/>
+                    </button>
+                  )}
+                  {renderKreis()}
                 </div>
                 );
               })()}
@@ -5638,13 +5508,6 @@ export default function VokabelApp() {
                     </button>
                   );
                 })}
-                {!statistikVollbild && (
-                  <button onClick={() => setStatistikVollbild(true)}
-                    style={{marginLeft:"auto", background:"none", border:"none", padding:"4px 6px", cursor:"pointer", color:"#6b6560", display:"flex", alignItems:"center"}}
-                    {...tt("Statistik im Vollbild anzeigen")}>
-                    <IcoExpand s={18}/>
-                  </button>
-                )}
               </div>
 
               {/* Vokabelliste */}
@@ -5758,7 +5621,7 @@ export default function VokabelApp() {
                     {titel:"Sessions & Pakete", text:"Mit dem Session-Modus teilst du die Vokabelgruppe in kleinere Pakete auf – zum Beispiel 10 Vokabeln auf einmal. Nach jedem Paket kannst du pausieren, dann wird der Fortschritt gespeichert. Beim nächsten Mal werden bereits abgefragte Vokabeln übersprungen. So arbeitest du dich über mehrere Sitzungen durch die gesamte Gruppe."},
                     {titel:"Abfrage-Ziel", text:"Standardmäßig wird jede Vokabel einmal abgefragt. Mit dem Abfrage-Ziel kannst du das ändern:\n\nAnzahl: jede Vokabel 1×, 2× oder 3× pro Durchgang.\n\nMit Wiederholung: Vokabeln werden so lange neu eingereiht, bis du sie 1×, 2× oder 3× in Folge richtig beantwortet hast.\n\nScore-Ziel: Vokabeln werden wiederholt, bis ihr Score einen bestimmten Wert erreicht – global oder bezogen auf den Fortschritt der laufenden Session."},
                 {titel:"Konfigurationen speichern", text:"Eine Kombination aus Vokabelgruppe, Abfrage-Modus, Reihenfolge und Session-Einstellung kann gespeichert und jederzeit wieder geladen werden. So richtest du zum Beispiel eine tägliche Übung mit den schlechtesten 20 Vokabeln einmal ein und startest sie beim nächsten Mal mit einem Tipp."},
-                {titel:"Statistik", text:"Die Statistik zeigt dir für jede Vokabel den aktuellen Score als Balken und Zahl, das Datum der letzten Abfrage und einen sortierbaren Überblick. Der Graph oben zeigt alle Scores auf einen Blick – grau für nie abgefragt, grün für positive, rot für negative Scores. Im Session-Modus zeigt der Graph, wie viel sich in der letzten Einheit verändert hat."},
+                {titel:"Statistik", text:"Die Statistik zeigt dir für jede Vokabel den aktuellen Score als Balken und Zahl, das Datum der letzten Abfrage und einen sortierbaren Überblick. Das Kreisdiagramm oben zeigt auf einen Blick, wie viele Vokabeln gelernt, in Arbeit, nie abgefragt oder negativ sind. Der Lernfortschritt in der Kopfzeile zeigt im Session-Modus, wie viel sich seit Beginn der Session verändert hat."},
               ].map(abschnitt => (
                 <div key={abschnitt.titel} style={{marginBottom:20}}>
                   <div className="sektion-label" style={{marginBottom:6}}>{abschnitt.titel}</div>
@@ -5817,10 +5680,10 @@ export default function VokabelApp() {
                   {k:"Listen-Auswahl", v:"Eine oder mehrere Listen für die Statistik wählen."},
                   {k:"Vokabel-Auswahl", v:"Alle Vokabeln oder einen bestimmten Bereich filtern."},
                   {k:"Filter-Boxen", v:"Gesamt / Nie abgefragt / Score positiv / Score negativ. Alle sind standardmäßig aktiv. Antippen deaktiviert eine Kategorie – sie erscheint dann weder in der Liste noch im Graphen. 'Gesamt' stellt alle wieder her."},
-                  {k:"Graph", v:"Sortierte Score-Kurve aller Vokabeln. Grau = nie abgefragt, Grün = abgefragt. Tippen auf den Graphen wechselt zwischen Linie und Balken."},
-                  {k:"Diktat-Linie", v:"Separate gestrichelte Linie für Diktat-Scores – ein-/ausblendbar."},
+                  {k:"Kreisdiagramm", v:"Anteil der Gruppen Gelernt, In Arbeit, Nie abgefragt und Negativ mit Anzahl und Prozent. Segment antippen blendet die Gruppe in der Liste aus/ein, 'Gesamt' zeigt wieder alle. Symbol oben rechts: Vollbild."},
+                  {k:"Diktat", v:"Sobald Diktat-Ergebnisse vorhanden sind, zeigt die Kopfzeile zusätzlich den Lernfortschritt im Diktat."},
                   {k:"Lernfortschritt", v:"Wie weit die Vokabelgruppe gelernt ist (0–100 %). Jede Vokabel zählt anteilig bis zur Gelernt-Schwelle – bei +3 z. B. Score +1 = 33 %, +2 = 67 %, ab +3 = 100 %. 100 % = alle Vokabeln gelernt. Darunter: Anzahl gelernter Vokabeln und Ø Score. [Session] zeigt die Veränderung seit Session-Beginn in Prozentpunkten. Ohne Gelernt-Schwelle wird nur der Ø Score angezeigt."},
-                  {k:"Gruppen", v:"Jede Vokabel gehört zu einer Gruppe: Negativ (Score unter 0, rot hinterlegt), Nie abgefragt, In Arbeit (Score 0 bis unter der Gelernt-Schwelle) und ✓ Gelernt (ab der Schwelle, grün hinterlegt). Das Kreisdiagramm (Standard-Ansicht) zeigt Anzahl und Anteil jeder Gruppe; ein Segment antippen blendet die Gruppe in Graph und Liste aus oder wieder ein, 'Gesamt' zeigt wieder alle. Lernfortschritt und Zahlen zählen immer alle Vokabeln. [Kreis] [Linie] [Balken] wechseln die Ansicht. Der farbige Balken unter dem Lernfortschritt zeigt die Verteilung."},
+                  {k:"Gruppen", v:"Jede Vokabel gehört zu einer Gruppe: Negativ (Score unter 0, rot hinterlegt), Nie abgefragt, In Arbeit (Score 0 bis unter der Gelernt-Schwelle) und ✓ Gelernt (ab der Schwelle, grün hinterlegt). Das Kreisdiagramm (Standard-Ansicht) zeigt Anzahl und Anteil jeder Gruppe; ein Segment antippen blendet die Gruppe in Graph und Liste aus oder wieder ein, 'Gesamt' zeigt wieder alle. Lernfortschritt und Zahlen zählen immer alle Vokabeln. Das Symbol oben rechts im Kreis öffnet die Statistik im Vollbild. Der farbige Balken unter dem Lernfortschritt zeigt die Verteilung."},
                   {k:"Score-Balken", v:"Null ist in allen Zeilen an derselben Stelle. Nach links bis −5 (tiefer = voller roter Balken), nach rechts bis zur Gelernt-Schwelle. Gelernte Vokabeln: ganzer Balken dunkelgrün."},
                   {k:"Sortierung", v:"Score / Streak / Datum / A→Z / Listen-Nr. Pfeil zeigt Richtung, nochmals tippen kehrt um."},
                   {k:"Vollbild", v:"Maximiert Graph und Vokabelliste ohne die oberen Header-Zeilen. 'Vollbild verlassen' oben rechts."},
