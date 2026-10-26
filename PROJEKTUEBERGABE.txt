@@ -1172,44 +1172,83 @@ TEST: e2e/ipad_export.mjs (UA iPad + share-Stub), einfuegen.mjs.
 
 
 ================================================================
-GEPLANTE FEATURES (noch nicht umgesetzt)
+TODO / GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
+Reihenfolge = Priorität (Stand 2026-10-26). Nutzer entscheidet jeweils.
 
-1) FOTO → KI → VOKABELLISTE (direkt in der App)
-   Ziel: Vokabelseite fotografieren, KI wandelt direkt in Liste um,
-   ohne Prompt kopieren / KI-App / Einfügen.
-   Ablauf:
-     Listen → + Neu → [📷 Foto] → <input type="file" accept="image/*">
-     → Bild clientseitig verkleinern → an Claude-API (Vision) mit dem
-       vorhandenen Foto-Prompt aus generierePrompt(..., "foto")
-     → Antworttext in importText → analysiereImport() → bestehende
-       Import-Vorschau/Mapping → speichern
-   API-Schlüssel – zwei Varianten:
-     A) Eigener Schlüssel in Einstellungen, nur im localStorage des
-        Geräts; Browser-Direktzugriff (Header
-        anthropic-dangerous-direct-browser-access). Empfohlen für
-        Eigengebrauch, geringer Aufwand.
-     B) Kleiner Proxy (z. B. Cloudflare Worker) hält den Schlüssel;
-        nötig, wenn andere die App nutzen. Später aus A ausbaubar.
-   Zu beachten:
-     - API wird getrennt vom Claude-Abo abgerechnet (Guthaben,
-       Ausgabenlimit in console.anthropic.com setzbar). Aktuelle
-       Preise/Modell vor Umsetzung prüfen.
-     - Funktion braucht Internet; offline → Meldung, Rest bleibt offline.
-     - Bisheriger Weg (Prompt kopieren) bleibt erhalten.
+1) DATEI-ÜBERTRAGUNG iPad → ANDROID (offen, nächster Schritt)
+   Befund: Export auf dem iPad ist vollständig (~377 KB, geprüft in der
+   Dateien-App). Auf Android (Chrome) meldet der Import "(2 Bytes) ist leer";
+   Übertragung per WhatsApp und Mail getestet. Android meldete beim Öffnen
+   im Browser außerdem, die Datei nicht speichern zu können.
+   Nutzer will KEINEN Zwischenablage-Weg (Dateien zu groß) → Datei-Weg
+   beibehalten.
+   Diagnose-Test (mit Version ≥ 07:53 vom 26.10.):
+     1. iPad: Listen → Exportieren → 📤 Teilen → WhatsApp an sich selbst
+        (Datei muss "….txt" heißen, nicht ".json.txt" = alter Export).
+     2. Android: Datei in WhatsApp speichern, Größe in "Dateien"
+        (Files by Google) prüfen.
+     3. Vokabel-App → Listen → + Neu → 📄 Datei → Meldung/Größe notieren.
+   Auswertung: Android-Dateien-App ~377 KB, App 2 Bytes → Einlesen in Chrome
+   prüfen (z. B. anderer Lesemechanismus/Picker); schon dort 2 Bytes →
+   Übertragungsweg (z. B. Google Drive testen).
 
-2) GELERNTE VOKABELN WIEDERHOLEN (Idee, offen – Nutzer überlegt noch)
+2) BELOHNUNGSSYSTEM / SVG-ANIMATIONEN (Nutzer macht sich eigene Gedanken)
+   Tendenz: SVG-Animationen (inline, offline, klein, per CSS animierbar).
+   Vorgeschlagene Stufen:
+     Stufe 1: Serien-Anzeige im Quiz ("🔥 5 richtig in Folge"), Konfetti
+       bei fehlerfreier Runde / 100 %, optionale Töne.
+     Stufe 2: Sterne/XP, Level mit Namen + Aufstiegs-Animation,
+       Tagesziel mit Fortschrittsring, Tage-Serie.
+     Stufe 3: Abzeichen-Sammlung, mitwachsendes Maskottchen (z. B. Eule/
+       Pflanze).
+   Offene Rückfragen: Zielgruppe (Kind 5. Klasse?), Bilder zur Gestaltung
+   oder Bilder ZU Vokabeln, mehrere Nutzer auf einem Gerät (→ Profile),
+   Töne ja/nein, echte Belohnungen (einstellbare Ziele)?
+   Vorgehen: erst Entwurf als Bild zeigen, dann einbauen.
+
+3) GELERNTE VOKABELN WIEDERHOLEN (Idee, offen – Nutzer überlegt noch)
    Heute: gelernte Vokabeln (Score ≥ Schwelle) werden nie mehr abgefragt,
    außer per "Einschließen" → Score ändert sich nicht mehr, kein
-   Vergessen-Schutz. Idee: nach einer Zeit (z. B. letzteAbfrage älter als
-   X Tage) wieder ins Quiz holen (Spaced Repetition).
+   Vergessen-Schutz; 100 % bleiben stehen. Idee: nach einer Zeit (z. B.
+   letzteAbfrage älter als X Tage) wieder ins Quiz holen (Spaced Repetition).
 
-3) INTERNER SCORE ÜBER ±10 (offen – Nutzer überlegt noch)
+4) INTERNER SCORE ÜBER ±10 (offen – Nutzer überlegt noch)
    berechneNeuenScore() begrenzt nicht; Anzeige/Logik clampen auf ±10,
    istGelernt nutzt den Rohwert → Vokabel mit intern +15 bleibt nach
    Fehlern länger "gelernt" als die Anzeige (+10) vermuten lässt.
    Ebenso: aufgedecktStreak ≥ 3 setzt Score auf −100.
    Option: Score beim Speichern auf −10…+10 begrenzen.
+
+5) FORTSCHRITT ZURÜCKSETZEN (Idee)
+   Scores einer Liste bzw. einzelner Vokabeln auf "nie abgefragt" setzen
+   (z. B. Verben mit Punkten aus der alten Zählweise je Spalte).
+
+6) WEITERGABE AN ANDERE / SICHERHEIT
+   App ist öffentlich (GitHub Pages), Repo public; Daten nur lokal je Gerät,
+   keine Server/Tracking; Import fremder Dateien ist sicher (kein
+   innerHTML/eval, React escaped).
+   To-dos:
+     - GitHub: Zwei-Faktor-Anmeldung aktivieren (Konto = Auslieferungsweg
+       für alle Nutzer).
+     - Commit-E-Mail ist öffentlich sichtbar (hippi.kalender1@gmail.com);
+       ggf. künftig GitHub-"noreply"-Adresse verwenden (git config).
+     - Hinweis für neue Nutzer: Daten nur auf dem Gerät → gelegentlich
+       JSON-Backup (evtl. Hinweis-/Willkommensseite in der App).
+     - Nur bei öffentlicher Verbreitung an Fremde: Impressum + kurze
+       Datenschutzerklärung prüfen; Urheberrecht bei Schulbuch-Listen.
+
+7) FOTO → KI → VOKABELLISTE (ganz hinten; zweifelhaft, ob es je kommt)
+   Ziel: Vokabelseite fotografieren, KI wandelt direkt in Liste um.
+   Ablauf: Listen → + Neu → [📷 Foto] → Bild verkleinern → Claude-API
+   (Vision) mit Foto-Prompt aus generierePrompt(..., "foto") → Antwort in
+   importText → analysiereImport() → Import-Vorschau.
+   API-Schlüssel NIE in den Code (Repo/App öffentlich!):
+     A) Eigener Schlüssel je Gerät in den Einstellungen (localStorage),
+        Header anthropic-dangerous-direct-browser-access.
+     B) Kleiner Proxy (z. B. Cloudflare Worker) hält den Schlüssel.
+   API wird getrennt vom Claude-Abo abgerechnet; Preise/Modell vor
+   Umsetzung prüfen; braucht Internet; Prompt-Kopieren-Weg bleibt.
 
 
 ================================================================
@@ -1227,8 +1266,7 @@ Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 
 Letzter Commit: 1f816fa (Session 37 — … Datei-Import robust, Export-Fix iPad)
 
-Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
-(Foto → KI → Vokabelliste; Wiederholung gelernter
-Vokabeln; Score-Begrenzung ±10).
+Offene Punkte: siehe Abschnitt "TODO / GEPLANTE FEATURES" (nach Priorität;
+als Nächstes: Datei-Übertragung iPad → Android).
 
 ================================================================
