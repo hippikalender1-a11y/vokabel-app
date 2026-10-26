@@ -344,6 +344,8 @@ function istRichtigeAntwort(eingabe, wert, akzentTolerant = false) {
 }
 // Antwort-Modus, wenn für eine Spalte nichts festgelegt ist (Karte aufdecken)
 const STANDARD_ANTWORT_MODUS = "karte";
+// Statistik-Gruppen in Anzeige-Reihenfolge mit Farbe (Kreis, Gruppen-Balken)
+const GRUPPE_BALKEN = [["gelernt", "#2d6a4f"], ["arbeit", "#e9c46a"], ["nie", "#d6d2cb"], ["negativ", "#e57373"]];
 // Session-Standard: in Paketen abfragen
 const STANDARD_SESSION_MODUS = "pakete";
 const STANDARD_PAKET_GROESSE = 10;
@@ -2135,6 +2137,34 @@ export default function VokabelApp() {
     setAnsicht("uebersicht");
   }
 
+  // Statistik-Vollbild: Kopfzeile zeigt den Lernfortschritt der EINGEBLENDETEN Gruppen
+  function renderVollbildKopf() {
+    const schwelle = einstellungen.gelerntSchwelle ?? 0;
+    const gruppe = v => !v.fortschritt ? "nie" : v.fortschritt.score < 0 ? "negativ"
+      : (schwelle > 0 && v.fortschritt.score >= schwelle) ? "gelernt" : "arbeit";
+    const voks = statistikGefilterteVoks.filter(v => statistikFilter.has(gruppe(v)));
+    const anzahl = { gelernt: 0, arbeit: 0, nie: 0, negativ: 0 };
+    voks.forEach(v => { anzahl[gruppe(v)]++; });
+    const abgefragt = voks.filter(v => v.fortschritt);
+    const avg = abgefragt.length ? abgefragt.reduce((sum, v) => sum + v.fortschritt.score, 0) / abgefragt.length : null;
+    return (
+      <div className="topbar-title" style={{display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"0 44px"}}
+        {...tt("Lernfortschritt der eingeblendeten Gruppen")}>
+        {schwelle > 0
+          ? <span style={{fontWeight:800, fontSize:"1.1rem", color:"#2d6a4f", lineHeight:1}}>{Math.round(lernProzent(voks.map(v => v.fortschritt?.score), schwelle))} %</span>
+          : <span style={{fontWeight:800, fontSize:"1.1rem", color:"#2d6a4f", lineHeight:1}}>Ø {avg === null ? "–" : `${avg > 0 ? "+" : ""}${avg.toFixed(1)}`}</span>}
+        <div style={{display:"flex", width:"min(200px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"#f0ede8"}}>
+          {voks.length > 0 && GRUPPE_BALKEN.map(([g, farbe]) => anzahl[g] > 0 && (
+            <div key={g} style={{width:`${anzahl[g] / voks.length * 100}%`, background:farbe}}/>
+          ))}
+        </div>
+        <span style={{fontSize:"0.68rem", fontWeight:500, color:"#6b6560", lineHeight:1}}>
+          {schwelle > 0 ? `${anzahl.gelernt} / ${voks.length} gelernt` : `${voks.length} Vokabeln`}
+        </span>
+      </div>
+    );
+  }
+
   // Lern-Bilanz am Rundenende: neu gelernte Vokabeln + Lernfortschritt der Vokabelgruppe
   function renderLernBilanz(q) {
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
@@ -3537,7 +3567,7 @@ export default function VokabelApp() {
       <div className="app">
         <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"#fff"}}>
         <div className="topbar" style={{position:"relative"}}>
-          <span className="topbar-title">Vokabel-Trainer</span>
+          {statistikVollbild && tab === "statistik" ? renderVollbildKopf() : <span className="topbar-title">Vokabel-Trainer</span>}
           {!statistikVollbild && vorhandeneSprachen.length > 1 && (
             <div style={{position:"absolute", right:12, top:"50%", transform:"translateY(-50%)"}}>
               <button className="toggle-opt aktiv" style={{padding:"4px 10px", fontSize:"0.78rem", borderRadius:14, cursor:"pointer"}}
@@ -5302,7 +5332,6 @@ export default function VokabelApp() {
           // Filter-Boxen (Multi-Select: alle standardmäßig aktiv)
           // Farben der Gruppen (Zeilen, Gruppen-Balken)
           const GRUPPE_BG = { negativ:"#fdecec", gelernt:"#e8f5e9" };
-          const GRUPPE_BALKEN = [["gelernt", "#2d6a4f"], ["arbeit", "#e9c46a"], ["nie", "#d6d2cb"], ["negativ", "#e57373"]];
 
           return (<>
             {/* Ø-Score sticky Header */}
