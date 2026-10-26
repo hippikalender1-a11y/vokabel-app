@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-26  (Session 37 — Standards, Score-Regel, Kreisdiagramm)
-Letzter Commit: b23d556
+Letzter Commit: 1f816fa
 
 DATEIPFADE
 ----------
@@ -1156,6 +1156,22 @@ TEST: e2e/import_kodierung.mjs (10/10).
 
 
 ================================================================
+SESSION 37 (FORTSETZUNG) — EXPORT-FIX iPad/Android (1f816fa)
+================================================================
+Befund: Android-Import "Englisch Buch 5. Klasse.json.txt" (2 Bytes) –
+  Datei war schon beim Export leer: Blob-Download text/plain mit Namen .json
+  (Browser hängt .txt an) + revokeObjectURL nach 1 s (iPad-Home-Bildschirm-
+  App holt Inhalt später → leer).
+teileAlsDatei(): iOS (UA bzw. MacIntel+Touch) + navigator.share → Teilen-
+  Menü mit File .txt/text/plain; sonst Download mit passendem Typ
+  (.json → application/json) und revoke nach 60 s.
+analysiereImport(): eingefügtes JSON (findeJsonListen) → Backup-Import;
+  "Nur N Zeile(n) erkannt … Anfang: …" statt "Mindestens 2 Zeilen".
+  "Aus Zwischenablage": Meldung bei leerer Zwischenablage/kein Zugriff.
+TEST: e2e/ipad_export.mjs (UA iPad + share-Stub), einfuegen.mjs.
+
+
+================================================================
 GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 
@@ -1209,7 +1225,7 @@ Deploy:  .\deploy.ps1 "commit message"  (im Projektordner, PowerShell)
 Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 (zumindest die relevanten Abschnitte per Grep/Read) bevor du Änderungen machst.
 
-Letzter Commit: b23d556 (Session 37 — … Fortschritt nach Filter, Datei-Import robust)
+Letzter Commit: 1f816fa (Session 37 — … Datei-Import robust, Export-Fix iPad)
 
 Geplant (noch nicht umgesetzt): siehe Abschnitt "GEPLANTE FEATURES"
 (Foto → KI → Vokabelliste; Wiederholung gelernter
