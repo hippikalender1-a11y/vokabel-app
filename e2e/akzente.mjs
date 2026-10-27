@@ -62,44 +62,58 @@ await clickText(".quiz-setup-check", "auch Wörter ohne Akzent");
 await clickText("button", "Quiz starten (");
 await sleep(400);
 const gesehen = [];
-let garconFalsch = false, rotGesehen = false, ligaturOk = false;
-for (let k = 0; k < 8; k++) {
+const klassen = () => page.evaluate(() => [...document.querySelectorAll(".akzent-kachel")].map(b => b.className.replace("akzent-kachel", "").trim()));
+const tippe = async i => { await page.evaluate(i => document.querySelectorAll(".akzent-kachel")[i].click(), i); await sleep(120); };
+const kartenFarbe = () => page.evaluate(() => document.querySelector(".quiz-antwort-box")?.className || "");
+for (let k = 0; k < 10; k++) {
   t = await text();
   if (/Durchlauf abgeschlossen|Auswertung|Paket fertig/.test(t)) break;
   if (t.includes("Weiter zur Wiederholung")) { gesehen.push("[W]"); await clickText("button", "Weiter zur Wiederholung"); continue; }
   const frage = ["Schüler", "Herz", "Junge"].find(w => t.includes(w));
+  const mal = gesehen.filter(x => x === frage).length + 1;
   gesehen.push(frage);
-  const vorher = await kacheln();
   if (frage === "Schüler") {
-    ok(vorher.join(" ") === "e* l e* v e*", `élève startet ohne Akzente: ${vorher.join(" ")}`);
-    await setze(2, "è"); await setze(0, "é");
-  } else if (frage === "Herz") {
+    const vorher = await kacheln();
+    ok(vorher.join(" ") === "e* l* e* v* e*", `élève startet ohne Akzente, alle Kacheln gleich antippbar: ${vorher.join(" ")}`);
+    await setze(2, "è");
+    ok((await klassen())[2] === "ok", "Richtig gesetzter Akzent wird sofort grün");
+    await setze(0, "é");
+    ok(!(await text()).includes("Prüfen"), "Alle Akzente richtig → automatisch übernommen (ohne Prüfen)");
+    ok((await kartenFarbe()).includes("richtig"), "Ganze Karte wird grün");
+  } else if (frage === "Herz" && mal === 1) {
+    await tippe(0);
+    ok((await klassen())[0] === "blink", "Buchstabe ohne Akzent (c) leuchtet rot auf");
+    ok(!(await page.$(".akzent-leiste")), "… und öffnet keine Variantenleiste");
+    await sleep(700);
+    ok((await klassen())[0] === "", "Rotes Aufleuchten verschwindet wieder");
+    await setze(1, "ô");
+    ok((await kacheln())[1] === "o*" && (await klassen())[1] === "blink", "Falsche Variante: leuchtet rot, Buchstabe bleibt o");
     await setze(1, "œ");
     const nach = await kacheln();
-    ligaturOk = nach.map(x => x.replace("*", "")).join("") === "cœur";
-    ok(ligaturOk, `œ ersetzt o + e: ${nach.join(" ")}`);
+    t = await text();
+    ok(nach.map(x => x.replace("*", "")).join("") === "cœur", `œ ersetzt o + e: ${nach.join(" ")}`);
+    ok(t.includes("Fehlgriff") && !(await kartenFarbe()).includes("richtig"), "Mit Fehlgriff: zählt als nicht gewusst, Karte nicht grün");
+  } else if (frage === "Herz") {
+    await setze(1, "œ");
+  } else if (frage === "Junge" && mal === 1) {
+    await clickText("button", "Prüfen", true);   // ohne ç geprüft
+    t = await text();
+    ok(await page.evaluate(() => document.querySelectorAll(".akzent-kachel.falsch").length === 1) && t.includes("garçon"),
+      "Prüfen ohne Akzent: fehlender Buchstabe rot, Lösung „garçon“ angezeigt");
   } else if (frage === "Junge") {
-    if (!garconFalsch) { garconFalsch = true; }   // erst falsch: c bleibt ohne Cedille
-    else await setze(3, "ç");
+    await setze(3, "ç");
   }
-  await clickText("button", "Prüfen", true);
-  await sleep(200);
-  t = await text();
-  if (frage === "Junge" && gesehen.filter(x => x === "Junge").length === 1) {
-    rotGesehen = await page.evaluate(() => document.querySelectorAll(".akzent-kachel.falsch").length === 1) && t.includes("rot markierte");
-    ok(rotGesehen, "Falscher Buchstabe wird rot markiert, Lösung „garçon“ angezeigt");
-    ok(t.includes("garçon"), "Lösung sichtbar");
-  }
+  await sleep(150);
   await clickText("button", "Weiter →");
   await sleep(300);
 }
 console.log("     Abfolge:", gesehen.join(" → "));
-ok(gesehen.includes("[W]") && gesehen.filter(x => x === "Junge").length === 2, "Falsch beantwortetes garçon kommt nach der Wiederholungs-Karte erneut");
+ok(gesehen.includes("[W]") && gesehen.filter(x => x === "Junge").length === 2 && gesehen.filter(x => x === "Herz").length === 2, "Falsch beantwortete Wörter kommen nach der Wiederholungs-Karte erneut");
 t = await text();
-ok(/2 von 3 richtig/.test(t), "Auswertung: 2 von 3 richtig");
+ok(/1 von 3 richtig/.test(t), "Auswertung: 1 von 3 richtig");
 const st = await page.evaluate(() => Object.fromEntries(JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.map(v => [v.E1.wert, [v.akzentFortschritt?.score ?? null, v.fortschritt?.score ?? null]])));
 console.log("     [Akzent-Score, normaler Score]:", JSON.stringify(st));
-ok(st["élève"][0] === 1 && st["cœur"][0] === 1 && st["garçon"][0] === -1, "Eigener Akzent-Score: richtig +1, falsch −1 (nur erste Antwort)");
+ok(st["élève"][0] === 1 && st["cœur"][0] === -1 && st["garçon"][0] === -1, "Eigener Akzent-Score: richtig +1, falsch −1 (nur erste Antwort)");
 ok(Object.values(st).every(([, n]) => n === null), "Normaler Score bleibt unverändert");
 ok(st["chat"][0] === null, "chat wurde nicht abgefragt");
 
@@ -110,6 +124,42 @@ await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check, div")].find(e => e.textContent.trim() === "Akzente")?.click());
 await sleep(300);
 ok(/Akzente (\d+ %|[+−-]?\d)/.test(await text()), "Statistik-Kopf zeigt den Akzent-Fortschritt");
+
+// Schwierigkeitsgrad: Hervorheben gilt standardmäßig nur in "Einfach"; per Haken änderbar
+await clickText(".tab", "Quiz");
+await sleep(300);
+const markiert = () => page.evaluate(() => document.querySelectorAll(".akzent-kachel.markiert").length);
+const starteUndZaehle = async () => {
+  await clickText("button", "Quiz starten (");
+  await sleep(400);
+  if ((await text()).includes("Weiter zur Wiederholung")) await clickText("button", "Weiter zur Wiederholung");
+  const n = await markiert();
+  await clickText("button", "Beenden", true);
+  await sleep(300);
+  if (/Zur Übersicht/.test(await text())) await clickText("button", "Zur Übersicht");
+  await sleep(300);
+  return n;
+};
+ok(await starteUndZaehle() === 0, "Stufe „Schwer“ (Standard): Akzent-Buchstaben nicht hervorgehoben");
+const oeffneEinst = async () => {
+  if (!(await text()).includes("Was gilt als einfach / schwer?")) await page.evaluate(() => [...document.querySelectorAll("button.toggle-opt")].find(b => /^(Einfach|Schwer)$/.test(b.textContent.trim()) && b.closest("div[style*='sticky']"))?.click());
+  await sleep(300);
+};
+await oeffneEinst();
+ok((await text()).includes("Was gilt als einfach / schwer?"), "Einstellungen zeigen die Tabelle „Was gilt als einfach / schwer?“");
+await clickText(".toggle-opt", "Einfach", true);
+ok(await starteUndZaehle() > 0, "Stufe „Einfach“: Buchstaben mit Akzent hervorgehoben");
+// Haken "hervorheben" in Spalte Einfach entfernen
+await oeffneEinst();
+await page.evaluate(() => {
+  const zeile = [...document.querySelectorAll("div")].find(d => d.textContent.trim() === "Akzent-Modus: Buchstaben mit Akzent hervorheben");
+  zeile.parentElement.nextElementSibling.click();
+});
+await sleep(200);
+const einst = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"));
+console.log("     gespeicherte Stufen:", JSON.stringify(einst.stufen));
+ok(einst.stufen?.einfach?.akzentHervorheben === false, "Haken wird gespeichert");
+ok(await starteUndZaehle() === 0, "Ohne Haken: auch in „Einfach“ keine Hervorhebung");
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);

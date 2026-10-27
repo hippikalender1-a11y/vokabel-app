@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef, Fragment } from "react";
 import { zeigeInfo, schalteInfoModus } from "./infoEreignisse.js";
 
 // ── Storage ────────────────────────────────────────────────────────────────
@@ -394,6 +394,18 @@ const STANDARD_PAKET_GROESSE = 10;
 // Abfrage-Ziel-Standard: jede Vokabel wird wiederholt, bis sie 1× richtig war
 const STANDARD_ABFRAGE_ZIEL = "wiederholung";
 const AKZENT_HINWEIS = "Richtig – achte auf die Akzente.";
+
+// Schwierigkeitsgrad: welche Regel in "Einfach" bzw. "Schwer" gilt (in den Einstellungen per Haken änderbar)
+const STUFEN_REGELN = [
+  { key: "akzenteTolerant", label: "Fehlende Akzente beim Tippen gelten als richtig", sub: "z. B. ete statt été", einfach: true, schwer: false },
+  { key: "aufdeckenAbzug", label: "„Lösung anzeigen“ zieht 1 Punkt ab", sub: "sonst ohne Score-Einfluss", einfach: false, schwer: true },
+  { key: "akzentHervorheben", label: "Akzent-Modus: Buchstaben mit Akzent hervorheben", sub: "zeigt, wo ein Akzent hingehört", einfach: true, schwer: false },
+];
+// Regeln der aktuell gewählten Stufe (gespeicherte Haken, sonst Standard)
+function stufenRegeln(einst) {
+  const stufe = einst?.modus === "einfach" ? "einfach" : "schwer";
+  return Object.fromEntries(STUFEN_REGELN.map(r => [r.key, einst?.stufen?.[stufe]?.[r.key] ?? r[stufe]]));
+}
 const MC_FEHLKLICK_HINWEIS = "Nicht auf Anhieb gefunden – zählt als nicht gewusst.";
 
 // ── Score-Clamp (Anzeige: −10 bis +10) ────────────────────────────────────
@@ -598,18 +610,19 @@ const CSS = `
   .score-neg{background:#ffebee;color:#c0392b;}
   .score-null{background:#e0dbd2;color:#6b6560;}
   .quiz-frage-box{background:#fff;border:1px solid #e0dbd2;border-radius:14px;padding:20px;margin-bottom:14px;}
-  .akzent-wort{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin-top:8px;}
-  .akzent-kachel{min-width:44px;height:60px;padding:0 6px;border-radius:10px;border:1.5px solid #e0dbd2;background:#f7f5f0;font-family:inherit;font-size:2rem;font-weight:700;color:#9b9590;display:flex;align-items:center;justify-content:center;}
-  .akzent-wort.klein .akzent-kachel{min-width:34px;height:48px;font-size:1.5rem;}
-  .akzent-kachel.waehlbar{background:#fff;border-color:#2d6a4f;color:#1a1a1a;cursor:pointer;}
-  .akzent-kachel.aktiv{background:#2d6a4f;color:#fff;}
-  .akzent-kachel.ok{background:#e8f5e9;border-color:#2d6a4f;color:#1b5e20;}
+  .akzent-rahmen{container-type:inline-size;}
+  .akzent-wort{--k:min(48px, calc((100cqw - (var(--n) - 1) * 4px) / var(--n)));display:flex;flex-wrap:wrap;justify-content:center;column-gap:calc(var(--k) * 0.6);row-gap:8px;margin-top:8px;}
+  .akzent-wortgruppe{display:flex;gap:4px;}
+  .akzent-kachel{box-sizing:border-box;width:var(--k);height:calc(var(--k) * 1.3);padding:0;border-radius:calc(var(--k) * 0.2);border:1.5px solid #c9c2b6;background:#fff;font-family:inherit;font-size:calc(var(--k) * 0.68);font-weight:700;color:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,border-color .15s;}
+  .akzent-kachel.markiert{background:#fff4d6;border-color:#e0a800;}
+  .akzent-kachel.aktiv{border:2.5px solid #3b3832;background:#f0ede8;}
+  .akzent-kachel.ok{background:#c8e6c9;border-color:#2d6a4f;color:#1b5e20;}
   .akzent-kachel.falsch{background:#fdecea;border-color:#c0392b;color:#c0392b;}
-  .akzent-kachel:disabled{opacity:1;}
-  .akzent-luecke{width:18px;}
+  .akzent-kachel.blink{background:#e74c3c;border-color:#c0392b;color:#fff;}
+  .akzent-aktionen{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .akzent-pruefen{min-width:60%;padding:14px 28px;font-size:1.15rem;}
   .akzent-leiste{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:12px;padding:10px 6px;background:#f0f9f4;border-radius:12px;}
   .akzent-variante{min-width:48px;height:58px;border-radius:10px;border:1.5px solid #2d6a4f;background:#fff;font-family:inherit;font-size:1.9rem;font-weight:700;color:#1a1a1a;cursor:pointer;}
-  .akzent-variante.aktiv{background:#2d6a4f;color:#fff;}
   .wiederholung-karte{background:#fdf3e7;border:2px dashed #e67e22;text-align:center;}
   .wiederholung-marke{color:#c0640f;font-size:0.85rem;font-weight:700;}
   .quiz-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6b6560;margin-bottom:6px;}
@@ -805,6 +818,7 @@ export default function VokabelApp() {
   const [listenAuswahlAufgeklappt, setListenAuswahlAufgeklappt] = useState(true);
   const eingabeRef = useRef(null);
   const flashTimerRef = useRef(null);
+  const akzentBlinkRef = useRef(null);
   const diktatPlayCountRef = useRef(0);
   const fileInputRef = useRef(null);
   const headerRef = useRef(null);
@@ -2788,7 +2802,7 @@ export default function VokabelApp() {
     if (normal.length > 0) {
       const erg = gesamt(normal);
       const neuerCount = erg === "falsch" ? (quiz.sessionFalsch[aktVok.id] || 0) + 1 : 0;
-      liste = speichereScore(liste, aktVok.id, berechneNeuenScore(aktVok.fortschritt, erg, neuerCount, einstellungen.modus));
+      liste = speichereScore(liste, aktVok.id, berechneNeuenScore(aktVok.fortschritt, erg, neuerCount, stufenRegeln(einstellungen).aufdeckenAbzug ? "schwer" : "einfach"));
       if (erg === "falsch") sessionFalsch = { ...quiz.sessionFalsch, [aktVok.id]: neuerCount };
     }
     if (akzent.length > 0) {
@@ -2802,7 +2816,7 @@ export default function VokabelApp() {
     const eingabe = quiz.eingabe.trim();
 
     // Modus "Einfach": fehlende/falsche Akzente zählen als richtig (mit Hinweis)
-    const tolerant = einstellungen.modus === "einfach";
+    const tolerant = stufenRegeln(einstellungen).akzenteTolerant;
     let akzentHinweis = false;
 
     function setzeRichtigAufgedeckt(updates) {
@@ -2990,38 +3004,54 @@ export default function VokabelApp() {
     const vok = q.vokabeln[q.index];
     const key = `${vok?.id}|${q.antwortTypIndex}|${q.abfrageZiel?.runde || 0}|${q.wiederholungDurchgang || 0}`;
     const kacheln = akzentKacheln(vok?.[typ]?.wert || "");
-    const passt = q.akzent?.key === key;
-    return { key, typ, kacheln, wahl: passt ? q.akzent.wahl : kacheln.map(k => k.basis), aktiv: passt ? q.akzent.aktiv : null, geprueft: passt && q.akzent.geprueft };
+    const a = q.akzent?.key === key ? q.akzent : null;
+    return { key, typ, kacheln, wahl: a ? a.wahl : kacheln.map(k => k.basis), aktiv: a ? a.aktiv : null,
+      geprueft: !!a?.geprueft, fehler: !!a?.fehler, blink: a ? a.blink : null };
+  }
+  // Kachel braucht einen Akzent bzw. eine Ligatur (die von der Ligatur verbrauchte Kachel nicht)
+  const kachelMitAkzent = k => k.richtig !== "" && k.richtig !== k.basis;
+  // Fehlgriff: Kachel kurz rot aufleuchten lassen; zählt wie ein Fehlklick bei MC (Vokabel gilt als nicht gewusst)
+  function akzentFehlgriff(s, i, extra = {}) {
+    if (akzentBlinkRef.current) clearTimeout(akzentBlinkRef.current);
+    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl: s.wahl, aktiv: null, fehler: true, blink: i, ...extra }}));
+    akzentBlinkRef.current = setTimeout(() => {
+      setQuiz(prev => prev?.akzent?.key === s.key ? {...prev, akzent: {...prev.akzent, blink: null}} : prev);
+    }, 600);
   }
   function waehleAkzentKachel(i) {
-    setQuiz(prev => {
-      if (prev.phase !== "eingabe") return prev;
-      const s = akzentStand(prev);
-      return {...prev, akzent: { key: s.key, wahl: s.wahl, aktiv: s.aktiv === i ? null : i }};
-    });
+    if (!quiz || quiz.phase !== "eingabe") return;
+    const s = akzentStand(quiz);
+    const k = s.kacheln[i];
+    if (s.wahl[i] === k.richtig && kachelMitAkzent(k)) return;   // schon richtig gesetzt
+    if (!kachelMitAkzent(k)) { akzentFehlgriff(s, i); return; }
+    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl: s.wahl, fehler: s.fehler, blink: null, aktiv: s.aktiv === i ? null : i }}));
   }
   function setzeAkzentVariante(v) {
-    setQuiz(prev => {
-      const s = akzentStand(prev);
-      const i = s.aktiv;
-      if (i == null) return prev;
-      const wahl = [...s.wahl];
-      const warLigatur = !!LIGATUR_TEILE[wahl[i]];
-      wahl[i] = v;
-      if (LIGATUR_TEILE[v]) wahl[i + 1] = "";
-      else if (warLigatur && i + 1 < wahl.length) wahl[i + 1] = s.kacheln[i + 1].basis;
-      return {...prev, akzent: { key: s.key, wahl, aktiv: null }};
-    });
+    if (!quiz || quiz.phase !== "eingabe") return;
+    const s = akzentStand(quiz);
+    const i = s.aktiv;
+    if (i == null) return;
+    if (v !== s.kacheln[i].richtig) { akzentFehlgriff(s, i); return; }
+    const wahl = [...s.wahl];
+    wahl[i] = v;
+    if (LIGATUR_TEILE[v]) wahl[i + 1] = "";
+    // Alle Akzente gefunden → automatisch als Antwort übernehmen
+    if (s.kacheln.every((k, j) => wahl[j] === k.richtig)) { schliesseAkzenteAb({ ...s, wahl }); return; }
+    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl, aktiv: null, fehler: s.fehler, blink: null }}));
+  }
+  function schliesseAkzenteAb(s) {
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    const komplett = s.kacheln.every((k, i) => s.wahl[i] === k.richtig);
+    const richtig = komplett && !s.fehler;
+    const abschluss = spaltenAbschluss(richtig ? "richtig" : "falsch");
+    setQuiz(prev => ({...prev, ...abschluss, akzent: { key: s.key, wahl: s.wahl, aktiv: null, geprueft: true, fehler: s.fehler, blink: null },
+      eingabe: "", phase: "aufgedeckt", flash: false, richtigAufgedeckt: richtig,
+      feedback: richtig ? "" : komplett ? "Nicht ganz – mit Fehlgriff zählt die Vokabel als nicht gewusst."
+        : "Nicht ganz – rot markierte Buchstaben fehlen noch.", falschFlash: false, aktuelleFehlversuche: 0}));
   }
   function pruefeAkzente() {
     if (!quiz || quiz.phase !== "eingabe") return;
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    const s = akzentStand(quiz);
-    const richtig = s.kacheln.every((k, i) => s.wahl[i] === k.richtig);
-    const abschluss = spaltenAbschluss(richtig ? "richtig" : "falsch");
-    setQuiz(prev => ({...prev, ...abschluss, akzent: { key: s.key, wahl: s.wahl, aktiv: null, geprueft: true },
-      eingabe: "", phase: "aufgedeckt", flash: false, richtigAufgedeckt: richtig,
-      feedback: richtig ? "" : "Nicht ganz – rot markierte Buchstaben sind falsch.", falschFlash: false, aktuelleFehlversuche: 0}));
+    schliesseAkzenteAb(akzentStand(quiz));
   }
 
   function deckeKarteAuf() {
@@ -3072,7 +3102,7 @@ export default function VokabelApp() {
     if (!quiz || !quiz.eingabe.trim()) return;
     const aktVok = quiz.vokabeln[quiz.index];
     const wort = aktVok[quiz.diktatSpalte]?.wert || "";
-    const treffer = istRichtigeAntwort(quiz.eingabe.trim(), wort, einstellungen.modus === "einfach");
+    const treffer = istRichtigeAntwort(quiz.eingabe.trim(), wort, stufenRegeln(einstellungen).akzenteTolerant);
     if (treffer) {
       const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "richtig");
       const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
@@ -3649,36 +3679,50 @@ export default function VokabelApp() {
                           style={{marginTop:4}}
                         />
                       )}
-                      {/* Akzente: Buchstaben-Kacheln, antippbare zeigen darunter ihre Varianten */}
-                      {akz && !quiz.flash && (quiz.phase === "eingabe" || akz.geprueft) && (
-                        <div onClick={e => e.stopPropagation()}>
-                          <div className={`akzent-wort${akz.kacheln.length > 10 ? " klein" : ""}`}>
-                            {akz.kacheln.map((k, i) => {
-                              const w = akz.wahl[i];
-                              if (w === "") return null;   // von einer Ligatur (œ, æ, ß) belegt
-                              if (k.basis === " ") return <span key={i} className="akzent-luecke"/>;
-                              const waehlbar = quiz.phase === "eingabe" && akzentVarianten(akz.kacheln, i, akzLang).length > 0;
-                              const status = akz.geprueft ? (w === k.richtig ? " ok" : " falsch") : "";
-                              return (
-                                <button key={i} className={`akzent-kachel${waehlbar ? " waehlbar" : ""}${akz.aktiv === i ? " aktiv" : ""}${status}`}
-                                  disabled={!waehlbar} onClick={() => waehleAkzentKachel(i)}
-                                  {...tt(waehlbar ? "Buchstaben antippen und darunter den passenden Akzent wählen" : "Dieser Buchstabe hat keine Akzent-Varianten")}>{w}</button>
-                              );
-                            })}
+                      {/* Akzente: Buchstaben-Kacheln (Umbruch nur zwischen Wörtern), Varianten darunter */}
+                      {akz && !quiz.flash && (quiz.phase === "eingabe" || akz.geprueft) && (() => {
+                        // Wörter = Kachel-Indizes zwischen Leerzeichen; Kachelbreite so, dass ≥ 12 Zeichen nebeneinander passen
+                        const woerter = [[]];
+                        akz.kacheln.forEach((k, i) => { if (k.basis === " ") woerter.push([]); else woerter[woerter.length - 1].push(i); });
+                        const sichtbar = w => w.filter(i => akz.wahl[i] !== "").length;
+                        const n = Math.max(12, ...woerter.map(sichtbar));
+                        const hervorheben = stufenRegeln(einstellungen).akzentHervorheben;
+                        return (
+                        <div className="akzent-rahmen" onClick={e => e.stopPropagation()}>
+                          <div className="akzent-wort" style={{"--n": n}}>
+                            {woerter.filter(w => w.length > 0).map((w, wi) => (
+                              <span key={wi} className="akzent-wortgruppe">
+                                {w.map(i => {
+                                  const k = akz.kacheln[i];
+                                  const z = akz.wahl[i];
+                                  if (z === "") return null;   // von einer Ligatur (œ, æ, ß) belegt
+                                  const status = akz.blink === i ? " blink"
+                                    : z === k.richtig && kachelMitAkzent(k) ? " ok"
+                                    : akz.geprueft ? (z === k.richtig ? (richtigAufgedeckt ? " ok" : "") : " falsch")
+                                    : hervorheben && kachelMitAkzent(k) ? " markiert" : "";
+                                  return (
+                                    <button key={i} className={`akzent-kachel${akz.aktiv === i ? " aktiv" : ""}${status}`}
+                                      onClick={() => waehleAkzentKachel(i)}
+                                      {...tt("Buchstaben antippen und darunter den passenden Akzent wählen – ohne Akzent leuchtet er kurz rot")}>{z}</button>
+                                  );
+                                })}
+                              </span>
+                            ))}
                           </div>
                           {akz.aktiv != null && quiz.phase === "eingabe" && (
                             <div className="akzent-leiste">
                               {akzentVarianten(akz.kacheln, akz.aktiv, akzLang).map(v => (
-                                <button key={v} className={`akzent-variante${akz.wahl[akz.aktiv] === v ? " aktiv" : ""}`}
+                                <button key={v} className="akzent-variante"
                                   onClick={() => setzeAkzentVariante(v)} {...tt(`„${v}“ einsetzen`)}>{v}</button>
                               ))}
                             </div>
                           )}
                           {quiz.phase === "eingabe" && akz.aktiv == null && (
-                            <div style={{textAlign:"center", fontSize:"0.78rem", color:"#9b9590", marginTop:8}}>Buchstaben antippen, Akzent wählen, dann „Prüfen“</div>
+                            <div style={{textAlign:"center", fontSize:"0.78rem", color:"#9b9590", marginTop:8}}>Buchstaben antippen und Akzent wählen</div>
                           )}
                         </div>
-                      )}
+                        );
+                      })()}
                       {/* Lösung: Flash (richtig) */}
                       {quiz.flash && (
                         <div className="quiz-frage-text" style={{textAlign:"center", color:"#1b5e20", minHeight:"44px", display:"flex", alignItems:"center", justifyContent:"center"}}>
@@ -3748,13 +3792,26 @@ export default function VokabelApp() {
             )}
 
             <div className="quiz-aktionen" onClick={e => e.stopPropagation()}>
-              {!quiz.flash && quiz.phase === "eingabe" && !isKarteEingabe && (
+              {/* Akzente: Prüfen groß und mittig, übrige Knöpfe klein darunter */}
+              {!quiz.flash && quiz.phase === "eingabe" && akz && (
+                <div className="akzent-aktionen">
+                  <button className="btn btn-primary akzent-pruefen" onClick={pruefeAkzente}
+                    {...tt("Antwort übernehmen und prüfen (alle Akzente richtig gesetzt → wird automatisch übernommen)")}>Prüfen</button>
+                  <div style={{display:"flex", gap:8, justifyContent:"center"}}>
+                    <button className="btn btn-ghost btn-sm" onClick={zeigeLosung} {...tt("Lösung anzeigen – zählt als nicht gewusst")}>Lösung anzeigen</button>
+                    {infoSpalten.length > 0 && (
+                      <button {...tt("Info-Spalten (z. B. Beispielsatz) ein- oder ausblenden")} className="btn btn-ghost btn-sm"
+                        onClick={() => setQuiz(prev => ({...prev, infoSichtbar: !prev.infoSichtbar}))}>
+                        {quiz.infoSichtbar ? "Info ▲" : "Info"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+              {!quiz.flash && quiz.phase === "eingabe" && !isKarteEingabe && !akz && (
                 <>
                   {aktSpaltModus === "tippen" && (
                     <button className="btn btn-primary" onClick={pruefeAntwort} {...tt("Eingegebene Antwort prüfen")}>Prüfen</button>
-                  )}
-                  {akz && (
-                    <button className="btn btn-primary" onClick={pruefeAkzente} {...tt("Gewählte Akzente übernehmen und prüfen")}>Prüfen</button>
                   )}
                   <button className="btn btn-ghost" onClick={zeigeLosung} {...tt("Lösung anzeigen – kein Punkt, kein Streak")}>Lösung anzeigen</button>
                   {infoSpalten.length > 0 && (
@@ -4938,11 +4995,36 @@ export default function VokabelApp() {
                         <div className="toggle-row">
                           <div>
                             <div className="toggle-label">Modus</div>
-                            <div className="toggle-sub">{einstellungen.modus === "einfach" ? "Lösung anzeigen ohne Score-Einfluss. Fehlende Akzente (ete statt été) gelten als richtig." : "Lösung anzeigen zieht 1 Punkt ab."}</div>
+                            <div className="toggle-sub">Was jeweils gilt, legst du unten per Haken fest.</div>
                           </div>
                           <div className="toggle-btn">
-                            <button className={`toggle-opt${einstellungen.modus==="einfach"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"einfach"})} {...tt("3 Tippversuche – Punkte erst beim dritten Fehlversuch abziehen")}>Einfach</button>
-                            <button className={`toggle-opt${einstellungen.modus==="schwer"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"schwer"})} {...tt("Beim ersten Fehlversuch sofort Punkte abziehen")}>Schwer</button>
+                            <button className={`toggle-opt${einstellungen.modus==="einfach"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"einfach"})} {...tt("Stufe „Einfach“ verwenden – es gelten die Haken in der Spalte „Einfach“")}>Einfach</button>
+                            <button className={`toggle-opt${einstellungen.modus==="schwer"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"schwer"})} {...tt("Stufe „Schwer“ verwenden – es gelten die Haken in der Spalte „Schwer“")}>Schwer</button>
+                          </div>
+                        </div>
+                        {/* Was gilt als einfach / schwer: je Regel ein Haken pro Stufe */}
+                        <div style={{borderTop:"1px solid #e0dbd2", padding:"10px 16px 12px"}}>
+                          <div style={{display:"grid", gridTemplateColumns:"1fr 58px 58px", alignItems:"center", rowGap:10, columnGap:6}}>
+                            <div className="inp-label" style={{margin:0}}>Was gilt als einfach / schwer?</div>
+                            {["einfach", "schwer"].map(st => (
+                              <div key={st} style={{textAlign:"center", fontSize:"0.75rem", fontWeight:700, color: einstellungen.modus === st ? "#2d6a4f" : "#9b9590"}}>{st === "einfach" ? "Einfach" : "Schwer"}</div>
+                            ))}
+                            {STUFEN_REGELN.map(r => (<Fragment key={r.key}>
+                              <div>
+                                <div style={{fontSize:"0.85rem", fontWeight:600, color:"#3b3832"}}>{r.label}</div>
+                                <div style={{fontSize:"0.72rem", color:"#6b6560"}}>{r.sub}</div>
+                              </div>
+                              {["einfach", "schwer"].map(st => {
+                                const an = einstellungen.stufen?.[st]?.[r.key] ?? r[st];
+                                return (
+                                  <div key={st} style={{display:"flex", justifyContent:"center", cursor:"pointer"}}
+                                    onClick={() => speichereEinst({...einstellungen, stufen: {...(einstellungen.stufen || {}), [st]: {...(einstellungen.stufen?.[st] || {}), [r.key]: !an}}})}
+                                    {...tt(`${r.label} – in der Stufe „${st === "einfach" ? "Einfach" : "Schwer"}“ ${an ? "ausschalten" : "einschalten"}`)}>
+                                    <div className={`checkbox${an ? " checked" : ""}`}>{an ? "✓" : ""}</div>
+                                  </div>
+                                );
+                              })}
+                            </Fragment>))}
                           </div>
                         </div>
                       </div>
@@ -6011,7 +6093,7 @@ export default function VokabelApp() {
                   {k:"Abfrage-Modus", v:"Frage–Antwort: Karte aufdecken. Wechselnd: Frage- und Antwortspalten wechseln sich ab. Diktat: Antwort wird vorgelesen, du tippst die Lösung."},
                   {k:"Akzente", v:"Antwort-Modus für Fremdsprachen-Spalten: Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …), dann „Prüfen“. Falsche Buchstaben werden rot markiert. Eigener Akzent-Score (+1 richtig, −1 falsch). Standardmäßig nur Wörter mit Akzent; „auch Wörter ohne Akzent“ mischt die übrigen bei."},
                   {k:"Reihenfolge", v:"Zufällig / Schlechteste (nach Score sortiert) / Listen-Nr. (Originalreihenfolge). Score-Filter: nur Vokabeln bis zu einem bestimmten Score zeigen. Unbeantwortete zuerst: noch nie abgefragte Vokabeln werden vorgezogen."},
-                  {k:"Einstellungen", v:"Lautsprache: Auto-Play und welche Spalten vorgelesen werden. Schwierigkeitsgrad: Einfach (3 Tippversuche) oder Schwer (sofortiger Fehler beim 1. Fehlversuch)."},
+                  {k:"Einstellungen", v:"Lautsprache: Auto-Play und welche Spalten vorgelesen werden. Schwierigkeitsgrad: Einfach oder Schwer. Darunter legst du per Haken fest, was in welcher Stufe gilt: fehlende Akzente beim Tippen als richtig werten, Punktabzug bei „Lösung anzeigen“, Buchstaben mit Akzent im Akzent-Modus hervorheben."},
                   {k:"Session [Alle]", v:"Alle verfügbaren Vokabeln in einem Durchgang abfragen."},
                   {k:"Session [Pakete]", v:"Vokabeln in kleinere Pakete aufteilen (5–50 Stück). Nach jedem Paket kannst du pausieren oder weitermachen. Abgefragte Vokabeln werden beim nächsten Paket übersprungen."},
                   {k:"Abfrage-Ziel", v:"Anzahl: jede Vokabel 1×/2×/3× pro Durchgang abfragen. Mit Wiederholung: Vokabeln so lange einreihen, bis jede 1×/2×/3× richtig beantwortet wurde. Score: Vokabeln so lange abfragen, bis ihr Score das Ziel erreicht."},
@@ -6020,7 +6102,7 @@ export default function VokabelApp() {
                 ]},
                 {titel:"Im Quiz", inhalt:[
                   {k:"Karte (Frage–Antwort)", v:"Tippe auf die Karte, um die Antwort aufzudecken. Dann: Richtig oder Falsch selbst einschätzen."},
-                  {k:"Tippen", v:"Antwort eintippen und bestätigen. Im Einfach-Modus: 3 Versuche. Im Schwer-Modus: 1 Versuch. Nach 3 Fehlern wird die Lösung gezeigt."},
+                  {k:"Tippen", v:"Antwort eintippen und bestätigen. Nach 3 Fehlversuchen wird die Lösung gezeigt. Ob fehlende Akzente als richtig gelten, hängt vom Schwierigkeitsgrad ab (Einstellungen)."},
                   {k:"Diktat", v:"Großer Lautsprecher: Wort nochmals vorlesen. Kleiner Lautsprecher: langsamer/erneut. Antwort eintippen."},
                   {k:"Scoring", v:"Richtig: +1 Punkt, Streak +1. Ab Streak 3: mindestens +2 Punkte. Falsch: Streak auf 0, Punktabzug je nach Fehlerzahl. Aufgedeckt: kein Punkt, kein Streak. Mehrere Antwort-Spalten zählen zusammen als eine Bewertung: alle gewusst = richtig, sonst falsch. Multiple Choice: nur ein Treffer ohne Fehlklick gilt als gewusst – nach einem Fehlklick darf man weitersuchen, die Spalte zählt aber als nicht gewusst."},
                   {k:"Aufdecken", v:"Zeigt die Antwort ohne Wertung."},

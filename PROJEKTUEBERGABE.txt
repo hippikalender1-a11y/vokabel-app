@@ -1228,7 +1228,7 @@ BROWSER-TESTS (e2e/, im Repo; node_modules/Ausgaben per .gitignore aus):
 
 
 ================================================================
-SESSION 38 — ZWISCHENKARTE "WIEDERHOLUNG" + AKZENT-MODUS
+SESSION 38 — ZWISCHENKARTE "WIEDERHOLUNG" + AKZENT-MODUS + SCHWIERIGKEITS-REGELN
 ================================================================
 Abfrage-Ziel "Mit Wiederholung" bzw. "Score": Sind alle Vokabeln einmal
   abgefragt und werden welche neu eingereiht, erscheint statt einer Vokabel
@@ -1261,6 +1261,28 @@ AKZENT-MODUS (4. Antwort-Modus "akzent", nur E-Spalten, Knopf "Akzente"):
   in der Konfiguration nur gespeichert, wenn an). Statistik-Kopf:
   "Akzente x %" (Basis: Vokabeln mit Akzent). JSON-Export-Option
   "Akzent-Fortschritt". Test: e2e/akzente.mjs.
+  BEDIENUNG (Überarbeitung): sofortige Rückmeldung – Buchstabe ohne Akzent
+  antippen bzw. falsche Variante wählen → Kachel leuchtet 0,6 s rot
+  (akzentFehlgriff, quiz.akzent.fehler = true → Vokabel zählt wie ein
+  MC-Fehlklick als nicht gewusst); richtige Variante → Kachel grün; alle
+  Akzente gesetzt → automatisch übernommen (schliesseAkzenteAb), ohne
+  Fehlgriff = richtig, ganze Antwort-Karte grün. "Prüfen" (groß, mittig;
+  Lösung/Info klein darunter) für Wörter ohne Akzent bzw. zum Aufgeben.
+  Alle Kacheln sehen gleich aus. Layout: Wörter als nicht umbrechende
+  Gruppen (.akzent-wortgruppe), Umbruch nur zwischen Wörtern; Kachelbreite
+  per Container-Einheit: --k = min(48px, (100cqw − Lücken) / n), n = max(12,
+  längstes Wort) → mindestens 12 Zeichen nebeneinander.
+
+SCHWIERIGKEITSGRAD-REGELN (Quiz-Tab → Einstellungen → Schwierigkeitsgrad):
+  Tabelle "Was gilt als einfach / schwer?" mit je einem Haken pro Stufe.
+  STUFEN_REGELN (Modul-Konstante, Standardwerte = bisheriges Verhalten):
+    akzenteTolerant   (Einfach ✓, Schwer –) fehlende Akzente beim Tippen ok
+    aufdeckenAbzug    (Einfach –, Schwer ✓) "Lösung anzeigen" −1 Punkt
+    akzentHervorheben (Einfach ✓, Schwer –) Akzent-Modus: Kacheln mit Akzent
+                      gelb markiert (.markiert)
+  Gespeichert in einstellungen.stufen[einfach|schwer][key]; stufenRegeln(e)
+  liefert die Regeln der aktuellen Stufe. Neue Regeln: Eintrag in
+  STUFEN_REGELN ergänzen und an der Wirkstelle stufenRegeln() abfragen.
 
 
 ================================================================
