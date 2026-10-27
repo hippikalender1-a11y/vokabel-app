@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-26  (Session 37 — Standards, Score-Regel, Kreisdiagramm, Info-Modus)
-Letzter Commit: 44eb17d
+Letzter Commit: 5fe4760
 
 DATEIPFADE
 ----------
@@ -1473,7 +1473,7 @@ Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 Nach Änderungen: Browser-Tests in e2e/ laufen lassen (Abschnitt "BROWSER-TESTS");
 neue interaktive Elemente bekommen einen Erklärtext ({...tt("…")}).
 
-Letzter Commit: 44eb17d (Session 38 — Zwischenkarte Wiederholung, Akzent-Modus, Schwierigkeits-Regeln, Statistik-Umschalter, Auswertung neu, Abfrage-Modus-Anzeige, Anzahl-Kette Quiz-Tab, kein Text-Markieren)
+Letzter Commit: 5fe4760 (Session 38 — Zwischenkarte Wiederholung, Akzent-Modus, Schwierigkeits-Regeln, Statistik-Umschalter, Auswertung neu, Abfrage-Modus-Anzeige, Anzahl-Kette Quiz-Tab, kein Text-Markieren, Fortschritt je Abfrageart)
 
 Offene Punkte: siehe Abschnitt "TODO / GEPLANTE FEATURES" (nach Priorität;
 als Nächstes: Datei-Übertragung iPad → Android).
