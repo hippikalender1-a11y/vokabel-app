@@ -1353,6 +1353,9 @@ Session-Zeile (Quiz-Tab): Mitte zeigt immer die tatsächliche Anzahl
   starteQuiz: Score-Grenze ("schlechteste") jetzt VOR sessionGesamt (wie
   Anzeige); quiz.sessionIds = Session-Menge; "Paket fertig" zählt nur
   abgefragte IDs aus dieser Menge.
+Text-Markieren per Lang-Druck app-weit aus (CSS body user-select:none,
+  -webkit-touch-callout:none), weil es mit den Info-Texten kollidierte;
+  input/textarea/contenteditable bleiben markierbar (Kopieren/Einfügen).
 
 
 ================================================================

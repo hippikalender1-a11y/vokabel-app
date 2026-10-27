@@ -556,6 +556,9 @@ const C = {
 const CSS = `
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   body{background:#f7f5f0;font-family:system-ui,sans-serif;color:#1a1a1a;}
+  /* Kein Text-Markieren per Lang-Druck (kollidiert mit den Info-Texten); Eingabefelder bleiben markierbar */
+  body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+  input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
   .app{max-width:600px;margin:0 auto;padding:0 0 80px;}
   .topbar{background:#fff;border-bottom:1px solid #e0dbd2;padding:14px 16px;display:flex;align-items:center;gap:12px;}
   .topbar-title{font-size:1.05rem;font-weight:700;flex:1;text-align:center;}
