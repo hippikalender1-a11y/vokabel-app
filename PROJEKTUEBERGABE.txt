@@ -1356,6 +1356,26 @@ Session-Zeile (Quiz-Tab): Mitte zeigt immer die tatsächliche Anzahl
 Text-Markieren per Lang-Druck app-weit aus (CSS body user-select:none,
   -webkit-touch-callout:none), weil es mit den Info-Texten kollidierte;
   input/textarea/contenteditable bleiben markierbar (Kopieren/Einfügen).
+SESSION-FORTSCHRITT JE ABFRAGEART (gespeicherte/Verlauf-Slots):
+  abfrageArtVon(modus, antwortTypen, spalteModus) (Modul): "diktat" |
+  "akzente" (sequenziell + alle Antwortspalten Akzente) | "uebersetzung"
+  (alles andere, auch gemischt). Im Component: quizAbfrageArt.
+  Slot-Eintrag: sessionFortschritte {uebersetzung|diktat|akzente: sf};
+  altes Feld sessionFortschritt wird als "uebersetzung" gelesen
+  (slotSFAlle) und beim nächsten Schreiben abgelöst (updateSlotSF(typ,id,sf,art)).
+  SK.sessionAktiv hat jetzt art; sessionSlotKonflikt() = true bei anderer Art.
+  useEffect [quizAbfrageArt, aktiverSlot] → aktiviereSlotFortschritt():
+  Wechsel der Art lädt deren Fortschritt bzw. keine Session.
+  loescheSessionSlot() löscht nur die aktuelle Art; Knopf "↺ Zurücksetzen"
+  (data-session-zuruecksetzen, mit confirm) in der Fortschrittszeile, die
+  jetzt "Fortschritt <Art>" heißt. Slot-Chip zeigt den Fortschritt der Art
+  (aktiver Chip: eingestellte Art, sonst Art seiner Konfiguration).
+  Bekannt: nach App-Neustart ist die Quiz-Konfiguration nicht geladen –
+  gespeicherte Session neu antippen (war schon vorher so).
+KOPFZEILE "Verlauf & Gespeichert" (Quiz-Tab): zugeklappt ohne Überschrift,
+  Auswahl-Knopf mittig; bei gespeicherter Konfiguration ganze Zeile grün
+  (data-slot-kopf="gruen"). ladeSlot() klappt den Bereich automatisch zu.
+  Test: e2e/session_arten.mjs.
 
 
 ================================================================

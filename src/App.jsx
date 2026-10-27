@@ -387,6 +387,21 @@ function istRichtigeAntwort(eingabe, wert, akzentTolerant = false) {
 // Antwort-Modus, wenn für eine Spalte nichts festgelegt ist (Karte aufdecken)
 const STANDARD_ANTWORT_MODUS = "karte";
 const ANTWORT_MODUS_NAMEN = { karte: "Karte", mc: "MC", tippen: "Tastatur", akzent: "Akzente" };
+// Abfrageart einer Quiz-Konfiguration: eigener Session-Fortschritt je Art
+function abfrageArtVon(modus, antwortTypen, spalteModus) {
+  if (modus === "diktat") return "diktat";
+  return modus === "sequenziell" && antwortTypen?.length > 0 && antwortTypen.every(t => spalteModus?.[t] === "akzent")
+    ? "akzente" : "uebersetzung";
+}
+const ABFRAGE_ART_NAMEN = { uebersetzung: "Übersetzung", diktat: "Diktat", akzente: "Akzente" };
+// Fortschritte eines Slot-Eintrags je Art (altes Format: ein Fortschritt = Übersetzung)
+function slotSFAlle(eintrag) {
+  return eintrag?.sessionFortschritte || (eintrag?.sessionFortschritt ? { uebersetzung: eintrag.sessionFortschritt } : {});
+}
+function slotKonfigArt(eintrag) {
+  const k = eintrag?.konfiguration || {};
+  return abfrageArtVon(k.quizModus || "sequenziell", k.quizAntwortTypenGeordnet, k.quizSpalteModus);
+}
 // Statistik-Gruppen in Anzeige-Reihenfolge mit Farbe (Kreis, Gruppen-Balken)
 const GRUPPE_BALKEN = [["gelernt", "#2d6a4f"], ["arbeit", "#e9c46a"], ["nie", "#d6d2cb"], ["negativ", "#e57373"]];
 // Session-Standard: in Paketen abfragen
@@ -982,6 +997,16 @@ export default function VokabelApp() {
     setAlleBereichH(el.offsetHeight);
     return () => obs.disconnect();
   }, [quizTabListen.length]);
+
+  // Wechsel der Abfrageart (Übersetzung / Diktat / Akzente) → Session-Fortschritt dieser Art laden
+  const quizAbfrageArt = abfrageArtVon(quizModus, quizAntwortTypenGeordnet, quizSpalteModus);
+  useEffect(() => {
+    if (!aktiverSlot) return;
+    const s = lsGet(SK.sessionAktiv);
+    if (s && (s.art || "uebersetzung") === quizAbfrageArt && s.slotTyp === aktiverSlot.typ && s.slotId === aktiverSlot.id) return;
+    const eintrag = getSlotEintrag(aktiverSlot.typ, aktiverSlot.id);
+    if (eintrag) aktiviereSlotFortschritt(eintrag, aktiverSlot.typ, aktiverSlot.id, quizAbfrageArt);
+  }, [quizAbfrageArt, aktiverSlot]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Abfrage-Modus-Zeile Höhe messen
   useEffect(() => {
@@ -1949,9 +1974,17 @@ export default function VokabelApp() {
     setQuizSessionAufgeklappt(false);
     setAktiverSlot({ typ, id });
     setSlotGeaendert(false);
-    if (eintrag.sessionFortschritt) {
-      const sf = eintrag.sessionFortschritt;
-      const sessionObj = { slotTyp: typ, slotId: id, listenIds: eintrag.konfiguration.listenIds || [], vokabelAuswahl: eintrag.konfiguration.vokabelAuswahl || [], bereichTyp: eintrag.konfiguration.bereichTyp || "alle", abgefragt: sf.abgefragt || [], gesamt: sf.gesamt || 0, paketGroesse: sf.paketGroesse || STANDARD_PAKET_GROESSE, startScores: sf.startScores || {} };
+    setSlotSektionAufgeklappt(false);   // nach der Auswahl nur noch die Kopfzeile zeigen
+    setSlotLoeschModus(false);
+    aktiviereSlotFortschritt(eintrag, typ, id, slotKonfigArt(eintrag));
+  }
+
+  // Session-Fortschritt der Abfrageart aus dem Slot-Eintrag aktivieren (oder keine Session, wenn es keinen gibt)
+  function aktiviereSlotFortschritt(eintrag, typ, id, art) {
+    const sf = slotSFAlle(eintrag)[art];
+    if (sf) {
+      const k = eintrag.konfiguration || {};
+      const sessionObj = { slotTyp: typ, slotId: id, art, listenIds: k.listenIds || [], vokabelAuswahl: k.vokabelAuswahl || [], bereichTyp: k.bereichTyp || "alle", abgefragt: sf.abgefragt || [], gesamt: sf.gesamt || 0, paketGroesse: sf.paketGroesse || STANDARD_PAKET_GROESSE, startScores: sf.startScores || {} };
       lsSet(SK.sessionAktiv, sessionObj);
       setSessionSlotAktiv(sessionObj);
       setQuizSessionModus("pakete");
@@ -2033,15 +2066,23 @@ export default function VokabelApp() {
     setLoescheSlotNr(null);
   }
 
-  function updateSlotSF(typ, id, sf) {
+  // Session-Fortschritt je Abfrageart (Übersetzung / Diktat / Akzente) getrennt im Slot-Eintrag
+  function updateSlotSF(typ, id, sf, art) {
     const data = getSlotsData();
-    const updated = { ...data, [typ]: data[typ].map(s => s.id === id ? { ...s, sessionFortschritt: sf } : s) };
+    const updated = { ...data, [typ]: data[typ].map(s => {
+      if (s.id !== id) return s;
+      const alle = { ...slotSFAlle(s) };
+      if (sf) alle[art] = sf; else delete alle[art];
+      const { sessionFortschritt: _alt, ...rest } = s;   // altes Einzel-Format ablösen
+      return { ...rest, sessionFortschritte: alle };
+    }) };
     setSlotsData(updated);
   }
 
   function sessionSlotKonflikt() {
     const slot = lsGet(SK.sessionAktiv);
     if (!slot) return false;
+    if ((slot.art || "uebersetzung") !== quizAbfrageArt) return true;
     const isSameSlot = aktiverSlot && slot.slotTyp === aktiverSlot.typ && slot.slotId === aktiverSlot.id;
     if (!isSameSlot) return false;
     const slotListenIds = slot.listenIds || [];
@@ -2056,11 +2097,12 @@ export default function VokabelApp() {
   function speichereSessionSlotNeu(paketGroesse, gesamtVoks, startScores = {}, forceTyp, forceId) {
     const slotTyp = forceTyp ?? aktiverSlot?.typ ?? null;
     const slotId = forceId ?? aktiverSlot?.id ?? null;
-    const sessionObj = { slotTyp, slotId, listenIds: [...quizTabListen], vokabelAuswahl: Array.from(quizCheckboxAuswahl), bereichTyp: quizBereichTyp, abgefragt: [], gesamt: gesamtVoks, paketGroesse, startScores };
+    const art = quizAbfrageArt;
+    const sessionObj = { slotTyp, slotId, art, listenIds: [...quizTabListen], vokabelAuswahl: Array.from(quizCheckboxAuswahl), bereichTyp: quizBereichTyp, abgefragt: [], gesamt: gesamtVoks, paketGroesse, startScores };
     lsSet(SK.sessionAktiv, sessionObj);
     setSessionSlotAktiv(sessionObj);
     if (slotTyp && slotId) {
-      updateSlotSF(slotTyp, slotId, { abgefragt: [], gesamt: gesamtVoks, paketGroesse, startScores });
+      updateSlotSF(slotTyp, slotId, { abgefragt: [], gesamt: gesamtVoks, paketGroesse, startScores }, art);
     }
     return sessionObj;
   }
@@ -2074,16 +2116,17 @@ export default function VokabelApp() {
     setSessionSlotAktiv(updated);
     const { slotTyp, slotId } = slot;
     if (slotTyp && slotId) {
-      updateSlotSF(slotTyp, slotId, { abgefragt: neuAbgefragt, gesamt: updated.gesamt, paketGroesse: updated.paketGroesse, startScores: updated.startScores });
+      updateSlotSF(slotTyp, slotId, { abgefragt: neuAbgefragt, gesamt: updated.gesamt, paketGroesse: updated.paketGroesse, startScores: updated.startScores }, slot.art || "uebersetzung");
     }
   }
 
+  // Löscht nur den Fortschritt der aktuellen Abfrageart; die anderen Arten bleiben im Slot erhalten
   function loescheSessionSlot() {
     const sSlot = lsGet(SK.sessionAktiv);
     const { slotTyp, slotId } = sSlot || {};
     lsDel(SK.sessionAktiv);
     setSessionSlotAktiv(null);
-    if (slotTyp && slotId) updateSlotSF(slotTyp, slotId, null);
+    if (slotTyp && slotId) updateSlotSF(slotTyp, slotId, null, sSlot.art || "uebersetzung");
   }
 
   // "Neu": komplett neu beginnen – Session, Listen-/Vokabelauswahl und alle Abfrage-Einstellungen
@@ -3949,13 +3992,14 @@ export default function VokabelApp() {
   );
   const chipStil = (typ, id, slotRef = aktiverSlot) => {
     const istAktiv = slotRef?.typ === typ && slotRef?.id === id;
-    const sf = getSlotEintrag(typ, id)?.sessionFortschritt;
+    const sf = Object.keys(slotSFAlle(getSlotEintrag(typ, id))).length > 0;
     return istAktiv
       ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
       : sf ? {background:"#f0f9f4", borderColor:"#a8d5be", color:"#2d6a4f"} : {};
   };
+  // Fortschritt der Abfrageart: beim aktiven Eintrag die gerade eingestellte, sonst die gespeicherte
   const slotChipLabel = (eintrag) => {
-    const sf = eintrag.sessionFortschritt;
+    const sf = slotSFAlle(eintrag)[aktiverSlot?.id === eintrag.id ? quizAbfrageArt : slotKonfigArt(eintrag)];
     return sf ? `▶ ${eintrag.name} · ${(sf.abgefragt||[]).length}/${sf.gesamt||0}` : eintrag.name;
   };
 
@@ -4518,12 +4562,25 @@ export default function VokabelApp() {
           return (
             <>
               <div className="sektion" style={{paddingTop:0, paddingBottom: (slotSektionAufgeklappt || listenAuswahlAufgeklappt || quizListeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt || quizEinstellungenAufgeklappt || quizSessionAufgeklappt) ? '100dvh' : 0}}>
-                {/* VERLAUF + GESPEICHERT – sticky Header */}
+                {/* VERLAUF + GESPEICHERT – sticky Header; zugeklappt nur der zentrierte Auswahl-Knopf,
+                    bei gespeicherter Session ganze Zeile grün */}
                 {(() => {
+                  const zu = !slotSektionAufgeklappt;
+                  const gruen = zu && aktiverSlot?.typ === 'gespeichert' && !vokabelgruppeGeaendert;
                   return (
                     <>
                       {/* Sticky Header-Zeile */}
-                      <div ref={slotSektionRef} style={{position:"sticky", top:headerH, zIndex:9, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                      <div ref={slotSektionRef} data-slot-kopf={gruen ? "gruen" : zu ? "zu" : "offen"} style={{position:"sticky", top:headerH, zIndex:9, background: gruen ? "#2d6a4f" : "#fff", borderBottom:`1px solid ${gruen ? "#2d6a4f" : "#e0dbd2"}`, padding:"10px 16px", display:"flex", alignItems:"center", justifyContent: zu ? "center" : undefined, gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                        {zu && vokabelgruppeGeaendert && (
+                          <button
+                            onClick={() => ladeSlot(aktiverSlot.typ, aktiverSlot.id)}
+                            className="toggle-opt"
+                            style={{position:"absolute", left:16, padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer"}}
+                            {...tt("Auswahl auf den gespeicherten Stand zurücksetzen")}>
+                            Zurücksetzen
+                          </button>
+                        )}
+                        {!zu && (<>
                         <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832", display:"flex", alignItems:"center", gap:8}}>
                           Verlauf &amp; Gespeichert
                           {slotSektionAufgeklappt && (
@@ -4546,10 +4603,12 @@ export default function VokabelApp() {
                             Zurücksetzen
                           </button>
                         )}
+                        </>)}
                         <button
                           onClick={toggleSlotSektion}
                           className="toggle-opt aktiv"
-                          style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                          style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth: zu ? "60%" : "50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                            ...(gruen ? {fontSize:"0.85rem", border:"1.5px solid rgba(255,255,255,0.7)"} : {}),
                             ...(vokabelgruppeGeaendert ? {background:"#c0392b", color:"#fff"} : {})}}
                           {...tt(aktiverSlot?.typ === 'gespeichert' ? "Gespeicherte Konfiguration – Verlauf und Gespeichert anzeigen" : "Verlauf und Gespeichert anzeigen")}>
                           {aktiverSlot?.typ === 'gespeichert'
@@ -5226,7 +5285,7 @@ export default function VokabelApp() {
                             <span style={{fontSize:"0.78rem", color:"#6b6560"}}>
                               {sessionAbgefragtAnzahl} / {sessionAnzahl} abgefragt
                             </span>
-                            <button {...tt("Aktuelle Session löschen – der Paket-Fortschritt wird zurückgesetzt")} style={{fontSize:"0.75rem", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:0}}
+                            <button {...tt("Fortschritt dieser Abfrageart löschen – die nächste Abfrage beginnt eine neue Session")} style={{fontSize:"0.75rem", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:0}}
                               onClick={loescheSessionSlot}>
                               Session löschen
                             </button>
@@ -5243,7 +5302,14 @@ export default function VokabelApp() {
                     {isPakete && sessionHatFortschritt && (
                       <div style={{marginBottom:8}}>
                         <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5, fontSize:"0.78rem"}}>
-                          <span style={{color:"#6b6560"}}>Fortschritt</span>
+                          <span style={{color:"#6b6560", display:"flex", alignItems:"center", gap:8}}>
+                            Fortschritt {ABFRAGE_ART_NAMEN[quizAbfrageArt]}
+                            <button data-session-zuruecksetzen className="toggle-opt" style={{padding:"1px 8px", fontSize:"0.7rem"}}
+                              onClick={() => { if (window.confirm(`Fortschritt „${ABFRAGE_ART_NAMEN[quizAbfrageArt]}“ zurücksetzen und eine neue Session mit Paketen beginnen?`)) loescheSessionSlot(); }}
+                              {...tt("Fortschritt dieser Abfrageart zurücksetzen – danach beginnt eine komplett neue Session mit Paketen. Die Fortschritte der anderen Abfragearten bleiben erhalten.")}>
+                              ↺ Zurücksetzen
+                            </button>
+                          </span>
                           <span style={{color:"#3b3832", fontWeight:600}} {...tt("So viele Vokabeln der Session wurden schon abgefragt")}>
                             <span data-anzahl="fortschritt">{sessionAbgefragtAnzahl} / {sessionAnzahl}</span>
                             {sessionAnzahl > 0 && ` — ${sessionPct}%`}
@@ -6151,7 +6217,7 @@ export default function VokabelApp() {
                   {k:"Import", v:"Vokabeln aus einer TXT-Datei oder JSON-Datei importieren."},
                 ]},
                 {titel:"Quiz-Tab", inhalt:[
-                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts."},
+                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts. Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann mittig in einer grünen Kopfzeile – antippen öffnet die Auswahl wieder. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt: Beim Wechsel des Abfrage-Modus springt der Fortschritt auf den Stand dieser Art. „↺ Zurücksetzen“ in der Fortschrittszeile beginnt für die aktuelle Art eine neue Session."},
                   {k:"Neu-Chip", v:"Setzt die aktive Session zurück – Quiz startet ohne geladene Konfiguration."},
                   {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl."},
@@ -6465,7 +6531,7 @@ export default function VokabelApp() {
             <div className="modal-titel">Slot löschen?</div>
             <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
               {`"${getSlotEintrag(loescheSlotNr.typ, loescheSlotNr.id)?.name || 'Dieser Eintrag'}" wird dauerhaft gelöscht.`}
-              {getSlotEintrag(loescheSlotNr.typ, loescheSlotNr.id)?.sessionFortschritt ? " Der Session-Fortschritt geht verloren." : ""}
+              {Object.keys(slotSFAlle(getSlotEintrag(loescheSlotNr.typ, loescheSlotNr.id))).length > 0 ? " Der Session-Fortschritt geht verloren." : ""}
             </p>
             <div className="modal-actions">
               <button {...tt("Schließen, ohne etwas zu löschen")} className="btn btn-ghost" onClick={() => setLoescheSlotNr(null)}>Abbrechen</button>
