@@ -11,9 +11,12 @@ export default function InfoTafel() {
   useEffect(() => {
     const zeigen = e => setInfo(e.detail);
     const umschalten = () => setModus(m => !m);
+    const schliessen = () => setInfo(null);
     window.addEventListener("vokabel-info", zeigen);
     window.addEventListener("vokabel-infomodus", umschalten);
+    window.addEventListener("vokabel-info-schliessen", schliessen);
     return () => {
+      window.removeEventListener("vokabel-info-schliessen", schliessen);
       window.removeEventListener("vokabel-info", zeigen);
       window.removeEventListener("vokabel-infomodus", umschalten);
     };

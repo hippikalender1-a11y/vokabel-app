@@ -1398,6 +1398,9 @@ RASTER DER GESPEICHERTEN KONFIGURATIONEN (ersetzt "↕ Sortieren"):
   vollem Namen. Einträge anderer Sprache belegen ihren Platz, sind aber
   nicht bedienbar ("andere Sprache" im Verschieben-Modus).
   "Neu" klein oben neben "Verschieben" (.slot-kopf-knoepfe). Verlauf bleibt Liste.
+  Lang-Druck-Erklärung beim Verschieben: schliesseInfo() (infoEreignisse.js,
+  Ereignis "vokabel-info-schliessen" → InfoTafel) sobald das Ziehen beginnt;
+  tt()-Timer zeigt während eines aktiven Ziehens nichts an.
   Test: e2e/slots.mjs Abschnitt 4.
 
 

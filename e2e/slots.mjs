@@ -107,7 +107,13 @@ ok(pl[n1] === "0|1" && pl[n2] === "0|0", "Antippen → belegten Platz antippen: 
 const box = k => page.evaluate(k => { const r = document.querySelector(`[data-raster-zelle="${k}"]`).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, k);
 const von = await box("3|1"), nach = await box("0|0");
 await page.mouse.move(von.x, von.y); await page.mouse.down();
-for (let i = 1; i <= 10; i++) { await page.mouse.move(von.x + (nach.x - von.x) * i / 10, von.y + (nach.y - von.y) * i / 10); await sleep(40); }
+// wie nach einem Lang-Druck: Erklärung offen – sie muss beim Ziehen sofort verschwinden
+await page.evaluate(() => window.dispatchEvent(new CustomEvent("vokabel-info", { detail: { text: "Test-Erklärung", x: 100, y: 300 } })));
+await sleep(100);
+const infoVorher = await page.evaluate(() => !!document.querySelector('[role="status"]'));
+await page.mouse.move(von.x + (nach.x - von.x) / 10, von.y + (nach.y - von.y) / 10); await sleep(80);
+ok(infoVorher && !(await page.evaluate(() => !!document.querySelector('[role="status"]'))), "Lang-Druck-Erklärung verschwindet, sobald gezogen wird");
+for (let i = 2; i <= 10; i++) { await page.mouse.move(von.x + (nach.x - von.x) * i / 10, von.y + (nach.y - von.y) * i / 10); await sleep(40); }
 await page.mouse.up(); await sleep(300);
 pl = await plaetze();
 console.log("     nach Ziehen:", JSON.stringify(pl));

@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useRef, Fragment } from "react";
-import { zeigeInfo, schalteInfoModus } from "./infoEreignisse.js";
+import { zeigeInfo, schliesseInfo, schalteInfoModus } from "./infoEreignisse.js";
 
 // ── Storage ────────────────────────────────────────────────────────────────
 const SK = {
@@ -944,7 +944,10 @@ export default function VokabelApp() {
         const t = e.touches[0];
         clearTimeout(tooltipTimer.current);
         tooltipShown.current = false;
-        tooltipTimer.current = setTimeout(() => { tooltipShown.current = true; zeigeInfo(text, t.clientX, t.clientY); }, 500);
+        tooltipTimer.current = setTimeout(() => {
+          if (slotZiehenRef.current?.aktiv) return;   // beim Verschieben im Raster keine Erklärung einblenden
+          tooltipShown.current = true; zeigeInfo(text, t.clientX, t.clientY);
+        }, 500);
       },
       onTouchEnd(e)   { clearTimeout(tooltipTimer.current); if (tooltipShown.current) { e.preventDefault(); tooltipShown.current = false; } },
       onTouchMove()   { clearTimeout(tooltipTimer.current); tooltipShown.current = false; },
@@ -1229,7 +1232,10 @@ export default function VokabelApp() {
     const bewegen = e => {
       const d = slotZiehenRef.current;
       if (!d) return;
-      if (!d.aktiv && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8) { d.aktiv = true; setSlotDragId(d.id); setSlotAuswahlId(null); }
+      if (!d.aktiv && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8) {
+        d.aktiv = true; setSlotDragId(d.id); setSlotAuswahlId(null);
+        clearTimeout(tooltipTimer.current); schliesseInfo();   // Lang-Druck-Erklärung weg, sobald gezogen wird
+      }
       if (!d.aktiv) return;
       setSlotDragZiel(zelleUnter(e));
       if (e.clientY < 90) window.scrollBy(0, -12); else if (e.clientY > window.innerHeight - 60) window.scrollBy(0, 12);
