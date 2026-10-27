@@ -643,8 +643,9 @@ const CSS = `
   textarea.inp{resize:vertical;font-family:monospace;font-size:0.82rem;line-height:1.5;}
   select.inp{cursor:pointer;}
   .inp-label{font-size:0.8rem;font-weight:600;color:#6b6560;margin-bottom:6px;display:block;}
-  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;z-index:100;padding:16px;}
-  .modal{background:#fff;border-radius:16px;width:100%;max-width:500px;padding:24px;}
+  /* Fenster oben anzeigen, damit die Bildschirmtastatur sie nicht verdeckt */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-start;justify-content:center;z-index:100;padding:max(16px, env(safe-area-inset-top)) 16px 16px;overflow-y:auto;}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:500px;padding:24px;margin-top:4vh;box-sizing:border-box;}
   .modal-titel{font-size:1.1rem;font-weight:700;margin-bottom:16px;}
   .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
   .leer{text-align:center;padding:48px 24px;color:#6b6560;}
@@ -936,10 +937,12 @@ export default function VokabelApp() {
   // Erklärtext: Maus = title; Touch = lange drücken → Info-Tafel (bleibt bis Antippen, InfoTafel.jsx);
   // data-info macht das Element im Info-Modus erklärbar
   // aktionen (optional): Lang-Druck bzw. Rechtsklick zeigt die Erklärung mit Menü-Knöpfen darunter
-  function tt(text, aktionen) {
+  // opts.langText: anderer Text für den Lang-Druck (z. B. nur der volle Name); opts.beimZeigen(x, y): Rückruf
+  function tt(text, aktionen, opts = {}) {
     if (!text) return {};
+    const langText = opts.langText || text;
     return {
-      ...(aktionen ? { onContextMenu(e) { e.preventDefault(); zeigeInfo(text, e.clientX, e.clientY, aktionen); } } : {}),
+      ...(aktionen ? { onContextMenu(e) { e.preventDefault(); zeigeInfo(langText, e.clientX, e.clientY, aktionen); } } : {}),
       title: text,
       "data-info": text,
       onTouchStart(e) {
@@ -948,7 +951,8 @@ export default function VokabelApp() {
         tooltipShown.current = false;
         tooltipTimer.current = setTimeout(() => {
           if (slotZiehenRef.current?.aktiv) return;   // beim Verschieben im Raster keine Erklärung einblenden
-          tooltipShown.current = true; zeigeInfo(text, t.clientX, t.clientY, aktionen);
+          tooltipShown.current = true; zeigeInfo(langText, t.clientX, t.clientY, aktionen);
+          opts.beimZeigen?.(t.clientX, t.clientY);
         }, 500);
       },
       onTouchEnd(e)   { clearTimeout(tooltipTimer.current); if (tooltipShown.current) { e.preventDefault(); tooltipShown.current = false; } },
@@ -1226,6 +1230,45 @@ export default function VokabelApp() {
     }
   }, [quizTabListen.length]);
 
+  // Lang-Druck auf einen Raster-Eintrag und dann ziehen (auch außerhalb des Verschieben-Modus):
+  // sobald der Finger sich bewegt, Menü/Erklärung weg, Verschieben-Modus an, Eintrag folgt dem Finger
+  useEffect(() => {
+    const zelleUnter = t => document.elementFromPoint(t.clientX, t.clientY)?.closest("[data-raster-zelle]")?.dataset.rasterZelle || null;
+    const bewegen = e => {
+      const d = slotZiehenRef.current;
+      if (!d?.langdruck) return;
+      const t = e.touches[0];
+      if (!d.aktiv && Math.hypot(t.clientX - d.x, t.clientY - d.y) > 8) {
+        d.aktiv = true;
+        clearTimeout(tooltipTimer.current); tooltipShown.current = false; schliesseInfo();
+        setSlotSortModus(true); setSlotAuswahlId(null); setSlotDragId(d.id);
+      }
+      if (!d.aktiv) return;
+      if (e.cancelable) e.preventDefault();   // Seite nicht scrollen, solange gezogen wird
+      setSlotDragZiel(zelleUnter(t));
+      if (t.clientY < 90) window.scrollBy(0, -12); else if (t.clientY > window.innerHeight - 60) window.scrollBy(0, 12);
+    };
+    const loslassen = e => {
+      const d = slotZiehenRef.current;
+      if (!d?.langdruck) return;
+      slotZiehenRef.current = null;
+      if (!d.aktiv) return;   // nur Lang-Druck: Menü bleibt offen
+      slotGezogenRef.current = true; setTimeout(() => { slotGezogenRef.current = false; }, 400);   // nur den Klick direkt danach schlucken
+      const t = e.changedTouches[0];
+      const ziel = e.type === "touchend" && t ? zelleUnter(t) : null;
+      setSlotDragId(null); setSlotDragZiel(null);
+      if (ziel) { const [z, sp] = ziel.split("|").map(Number); setzeSlotPlatz(d.id, { z, s: sp }); }
+    };
+    window.addEventListener("touchmove", bewegen, { passive: false });
+    window.addEventListener("touchend", loslassen);
+    window.addEventListener("touchcancel", loslassen);
+    return () => {
+      window.removeEventListener("touchmove", bewegen);
+      window.removeEventListener("touchend", loslassen);
+      window.removeEventListener("touchcancel", loslassen);
+    };
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+
   // Raster verschieben per Ziehen: ab 8 px Bewegung wird gezogen, beim Loslassen auf den Platz darunter
   // (belegt → tauschen). Ohne Bewegung bleibt es ein Antippen (Auswahl) bzw. Lang-Druck (Info).
   useEffect(() => {
@@ -1233,7 +1276,7 @@ export default function VokabelApp() {
     const zelleUnter = e => document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-raster-zelle]")?.dataset.rasterZelle || null;
     const bewegen = e => {
       const d = slotZiehenRef.current;
-      if (!d) return;
+      if (!d || d.langdruck) return;   // Lang-Druck-Zug läuft über die Touch-Verfolgung
       if (!d.aktiv && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8) {
         d.aktiv = true; setSlotDragId(d.id); setSlotAuswahlId(null);
         clearTimeout(tooltipTimer.current); schliesseInfo();   // Lang-Druck-Erklärung weg, sobald gezogen wird
@@ -1244,9 +1287,10 @@ export default function VokabelApp() {
     };
     const loslassen = e => {
       const d = slotZiehenRef.current;
+      if (d?.langdruck) return;
       slotZiehenRef.current = null;
       if (!d?.aktiv) return;
-      slotGezogenRef.current = true;
+      slotGezogenRef.current = true; setTimeout(() => { slotGezogenRef.current = false; }, 400);   // nur den Klick direkt danach schlucken
       const ziel = e.type === "pointerup" ? zelleUnter(e) : null;
       setSlotDragId(null); setSlotDragZiel(null);
       if (ziel) { const [z, sp] = ziel.split("|").map(Number); setzeSlotPlatz(d.id, { z, s: sp }); }
@@ -2617,7 +2661,9 @@ export default function VokabelApp() {
               { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
               { label: "⇄ Verschieben", fn: () => { setSlotSortModus(true); setSlotAuswahlId(x.id); } },
               { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
-            ])}>
+            ], { langText: x.name,
+                 // Lang-Druck und dann ziehen: Menü weg, Verschieben-Modus, Eintrag wandert mit
+                 beimZeigen: (px, py) => { slotZiehenRef.current = { id: x.id, x: px, y: py, aktiv: false, langdruck: true }; } })}>
             {inhalt}
           </button>
         ));
@@ -4153,7 +4199,7 @@ export default function VokabelApp() {
       style={extraStil}
       onClick={onClick}
       {...tt(`${label} – antippen: Konfiguration laden (Liste, Vokabelauswahl und Einstellungen)`,
-        [{ label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ, id }) }])}>
+        [{ label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ, id }) }], { langText: label })}>
       {label}
     </button>
   );

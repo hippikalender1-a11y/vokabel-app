@@ -46,34 +46,41 @@ export default function InfoTafel() {
     return () => document.removeEventListener("click", klick, true);
   }, [info, modus]);
 
-  // Sprechblase an der Fingerstelle: knapp darüber, bei zu wenig Platz oben knapp darunter
+  // Sprechblase an der Fingerstelle: knapp darüber, bei zu wenig Platz oben knapp darunter.
+  // Menü-Knöpfe (aktionen) schweben getrennt unter der Blase.
   const breite = Math.min(300, window.innerWidth - 24);
   const links = info ? Math.max(12, Math.min(info.x - breite / 2, window.innerWidth - breite - 12)) : 0;
-  const darueber = info && info.y > 150;
+  const mitMenue = info?.aktionen?.length > 0;
+  const darueber = info && info.y > (mitMenue ? 330 : 150);
   return (
     <>
       {info && (
-        <div role="status" style={{
+        <div style={{
           position: "fixed", left: links, width: breite, zIndex: 10001,
           top: darueber ? info.y - 14 : info.y + 14,
           transform: darueber ? "translateY(-100%)" : "none",
-          background: "rgba(28,24,20,0.95)", color: "#fff", borderRadius: 14,
-          padding: "12px 14px 8px", boxShadow: "0 6px 24px rgba(0,0,0,0.3)",
-          fontFamily: "system-ui,sans-serif", boxSizing: "border-box",
+          display: "flex", flexDirection: "column", gap: 10,
+          fontFamily: "system-ui,sans-serif",
         }}>
-          <div style={{ fontSize: "0.95rem", lineHeight: 1.5 }}>{info.text}</div>
-          {info.aktionen?.length > 0 && (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+          <div role="status" style={{
+            background: "rgba(28,24,20,0.95)", color: "#fff", borderRadius: 14,
+            padding: "12px 14px 8px", boxShadow: "0 6px 24px rgba(0,0,0,0.3)", boxSizing: "border-box",
+          }}>
+            <div style={{ fontSize: mitMenue ? "1.05rem" : "0.95rem", fontWeight: mitMenue ? 700 : 400, lineHeight: 1.5, overflowWrap: "anywhere" }}>{info.text}</div>
+            <div style={{ fontSize: "0.7rem", color: "#c0bcb7", textAlign: "right", marginTop: 6 }}>Antippen zum Schließen</div>
+          </div>
+          {mitMenue && (
+            <div data-info-menue style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {info.aktionen.map(a => (
                 <button key={a.label} data-info-aktion={a.label} onClick={() => { setInfo(null); a.fn(); }} style={{
-                  flex: "1 1 0", minWidth: 90, background: a.gefahr ? "#5a2620" : "#3b3832", color: "#fff",
-                  border: `1px solid ${a.gefahr ? "#c0392b" : "#6b6560"}`, borderRadius: 10, padding: "9px 10px",
-                  fontSize: "0.88rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
+                  background: "#fff", color: a.gefahr ? "#c0392b" : "#2d6a4f", textAlign: "left", whiteSpace: "nowrap",
+                  border: `1.5px solid ${a.gefahr ? "#e8a39b" : "#a8d5be"}`, borderRadius: 22, padding: "11px 18px",
+                  fontSize: "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: "pointer",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.22)",
                 }}>{a.label}</button>
               ))}
             </div>
           )}
-          <div style={{ fontSize: "0.7rem", color: "#c0bcb7", textAlign: "right", marginTop: 6 }}>Antippen zum Schließen</div>
         </div>
       )}
       {modus && (

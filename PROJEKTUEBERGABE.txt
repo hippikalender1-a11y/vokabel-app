@@ -1411,6 +1411,18 @@ LANG-DRUCK-MENÜ (ersetzt "⇄ Verschieben"-Knopf und ✕-Lösch-Modus, der ganz
   (Modus an + Eintrag ausgewählt; Knopf "Fertig" nur im Modus), 🗑 Löschen
   (bisheriges Bestätigungs-Fenster). Verlauf-Eintrag: nur 🗑 Löschen.
   Hinweiszeile über dem Raster: "Lang drücken: umbenennen, verschieben oder löschen".
+  Erklärung beim Lang-Druck = nur der volle Name (tt(text, aktionen,
+  {langText, beimZeigen})); Menü-Knöpfe schweben GETRENNT unter der Blase
+  (InfoTafel: data-info-menue, untereinander, weiß mit Schatten).
+  Lang-Druck + Ziehen (auch ohne Verschieben-Modus): beimZeigen setzt
+  slotZiehenRef {langdruck:true}; nativer window-touchmove (passive:false,
+  React-Touch-Handler sind passiv) → ab Bewegung schliesseInfo(), Verschieben-
+  Modus an, Eintrag folgt, touchend legt ab (Ziel belegt → tauschen).
+  Hinweis: Chrome meldet touchmove erst ab ~15 px (Touch-Slop).
+  slotGezogenRef schluckt nur 400 ms lang den Klick nach dem Ziehen.
+ALLE FENSTER (.overlay) jetzt OBEN statt unten (align-items:flex-start,
+  .modal margin-top 4vh), damit die Bildschirmtastatur sie nicht verdeckt.
+  Test: e2e/langdruck.mjs (echte Touch-Ereignisse über page.touchscreen).
 
 
 ================================================================
