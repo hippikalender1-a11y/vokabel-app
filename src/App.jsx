@@ -872,7 +872,7 @@ export default function VokabelApp() {
   const [sessionUeberschreibenModal, setSessionUeberschreibenModal] = useState(false);
   const [loescheSlotNr, setLoescheSlotNr] = useState(null);
   const [slotSektionAufgeklappt, setSlotSektionAufgeklappt] = useState(true);
-  const [slotLoeschModus, setSlotLoeschModus] = useState(false);
+  const [slotUmbenennen, setSlotUmbenennen] = useState(null);   // {id, name} – Fenster "Umbenennen"
   const [quizGelerntEinschliessen, setQuizGelerntEinschliessen] = useState(false);
   const [listenGelerntAusblenden, setListenGelerntAusblenden] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
@@ -935,9 +935,11 @@ export default function VokabelApp() {
   const tooltipShown = useRef(false);
   // Erklärtext: Maus = title; Touch = lange drücken → Info-Tafel (bleibt bis Antippen, InfoTafel.jsx);
   // data-info macht das Element im Info-Modus erklärbar
-  function tt(text) {
+  // aktionen (optional): Lang-Druck bzw. Rechtsklick zeigt die Erklärung mit Menü-Knöpfen darunter
+  function tt(text, aktionen) {
     if (!text) return {};
     return {
+      ...(aktionen ? { onContextMenu(e) { e.preventDefault(); zeigeInfo(text, e.clientX, e.clientY, aktionen); } } : {}),
       title: text,
       "data-info": text,
       onTouchStart(e) {
@@ -946,7 +948,7 @@ export default function VokabelApp() {
         tooltipShown.current = false;
         tooltipTimer.current = setTimeout(() => {
           if (slotZiehenRef.current?.aktiv) return;   // beim Verschieben im Raster keine Erklärung einblenden
-          tooltipShown.current = true; zeigeInfo(text, t.clientX, t.clientY);
+          tooltipShown.current = true; zeigeInfo(text, t.clientX, t.clientY, aktionen);
         }, 500);
       },
       onTouchEnd(e)   { clearTimeout(tooltipTimer.current); if (tooltipShown.current) { e.preventDefault(); tooltipShown.current = false; } },
@@ -2072,7 +2074,6 @@ export default function VokabelApp() {
     setSlotGeaendert(false);
     if (typ === 'gespeichert') lsSet(SK.letzterSlot, id); else lsDel(SK.letzterSlot);
     setSlotSektionAufgeklappt(false);   // nach der Auswahl nur noch die Kopfzeile zeigen
-    setSlotLoeschModus(false);
     aktiviereSlotFortschritt(eintrag, typ, id, slotKonfigArt(eintrag));
   }
 
@@ -2150,6 +2151,11 @@ export default function VokabelApp() {
     lsSet(SK.letzterSlot, id);
     setSlotGeaendert(false);
     setGespeicherteVokabelgruppe({ listenIds: [...quizTabListen], vokabelAuswahl: Array.from(quizCheckboxAuswahl), bereichTyp: quizBereichTyp });
+  }
+
+  function benenneSlotUm(id, name) {
+    const data = getSlotsData();
+    setSlotsData({ ...data, gespeichert: data.gespeichert.map(x => x.id === id ? { ...x, name } : x) });
   }
 
   function loescheSlotEintrag(typ, id) {
@@ -2414,7 +2420,7 @@ export default function VokabelApp() {
   function toggleSlotSektion() {
     const opening = !slotSektionAufgeklappt;
     setSlotSektionAufgeklappt(v => !v);
-    setSlotLoeschModus(false);
+    setSlotSortModus(false); setSlotAuswahlId(null);
     if (opening) {
       dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -2605,10 +2611,14 @@ export default function VokabelApp() {
           </button>
         ) : (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} className="slot-chip belegt raster-chip"
-            style={slotLoeschModus ? slotLoeschStil : chipStil('gespeichert', x.id, slotRef)}
-            onClick={() => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:x.id}) : onLaden('gespeichert', x.id)}
-            {...tt(slotLoeschModus ? `${x.name} – Eintrag löschen` : `${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`)}>
-            {slotLoeschModus ? <span className="raster-name"><IcoX s={10}/> {x.name}</span> : inhalt}
+            style={chipStil('gespeichert', x.id, slotRef)}
+            onClick={() => onLaden('gespeichert', x.id)}
+            {...tt(`${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`, [
+              { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
+              { label: "⇄ Verschieben", fn: () => { setSlotSortModus(true); setSlotAuswahlId(x.id); } },
+              { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
+            ])}>
+            {inhalt}
           </button>
         ));
       } else if (x) {
@@ -2628,19 +2638,20 @@ export default function VokabelApp() {
       <div style={{margin:`0 ${abstand}px 12px`}}>
         <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6, minHeight:22}}>
           <span style={label}>📌 Gespeichert</span>
-          {!slotLoeschModus && (
-            <span className="slot-kopf-knoepfe" style={{marginLeft:"auto", display:"flex", gap:6, alignItems:"center"}}>
-              {!slotSortModus && neuChip}
-              {raster.gespeichert.length >= 1 && (
-                <button className={`typ-btn${slotSortModus ? " aktiv" : ""}`} style={{fontSize:"0.7rem", padding:"2px 8px"}}
-                  onClick={() => { setSlotSortModus(v => !v); setSlotDragId(null); setSlotAuswahlId(null); setSlotDragZiel(null); }}
-                  {...tt(slotSortModus ? "Verschieben beenden" : "Gespeicherte Einträge frei im Raster platzieren – Rastergröße in den Einstellungen")}>
-                  {slotSortModus ? "Fertig" : "⇄ Verschieben"}
-                </button>
-              )}
-            </span>
-          )}
+          <span className="slot-kopf-knoepfe" style={{marginLeft:"auto", display:"flex", gap:6, alignItems:"center"}}>
+            {!slotSortModus && neuChip}
+            {slotSortModus && (
+              <button className="typ-btn aktiv" style={{fontSize:"0.7rem", padding:"2px 8px"}}
+                onClick={() => { setSlotSortModus(false); setSlotDragId(null); setSlotAuswahlId(null); setSlotDragZiel(null); }}
+                {...tt("Verschieben beenden")}>
+                Fertig
+              </button>
+            )}
+          </span>
         </div>
+        {!slotSortModus && raster.gespeichert.length > 0 && (
+          <div style={{fontSize:"0.68rem", color:"#9b9590", marginBottom:6}}>Lang drücken: umbenennen, verschieben oder löschen</div>
+        )}
         {slotSortModus && <div style={{fontSize:"0.72rem", color:"#6b6560", marginBottom:6}}>
           {slotAuswahlId ? "Jetzt den Zielplatz antippen – ist er belegt, tauschen die beiden." : "Paket antippen, dann Zielplatz antippen – oder direkt ziehen. Belegter Platz: die beiden tauschen."}
         </div>}
@@ -2655,7 +2666,7 @@ export default function VokabelApp() {
           <div style={{...label, marginBottom:6}}>🕘 Verlauf · letzte Abfragen</div>
           <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
             {verlauf.map(x => renderSlotChip(x.id, slotChipLabel(x),
-              () => slotLoeschModus ? setLoescheSlotNr({typ:'verlauf', id:x.id}) : onLaden('verlauf', x.id),
+              () => onLaden('verlauf', x.id),
               chipStil('verlauf', x.id, slotRef), "verlauf"))}
           </div>
         </div>
@@ -4136,13 +4147,14 @@ export default function VokabelApp() {
   );
 
   // ── Slot-Chip Hilfsfunktionen (Quiz-Tab + Statistik-Tab) ─────────────────
-  const slotLoeschStil = { background:"#fff0f0", borderColor:"#e74c3c", color:"#c0392b" };
+  // Verlauf-Chip: Lang-Druck → Erklärung + "Löschen"
   const renderSlotChip = (id, label, onClick, extraStil = {}, typ = "gespeichert") => (
     <button key={id} className={`slot-chip ${typ === "verlauf" ? "verlauf" : "belegt"}`}
-      style={slotLoeschModus ? slotLoeschStil : extraStil}
+      style={extraStil}
       onClick={onClick}
-      {...tt(slotLoeschModus ? "Eintrag löschen" : "Konfiguration laden – Liste, Vokabelauswahl und Einstellungen wiederherstellen")}>
-      {slotLoeschModus ? <><IcoX s={10}/>{" "}</> : null}{label}
+      {...tt(`${label} – antippen: Konfiguration laden (Liste, Vokabelauswahl und Einstellungen)`,
+        [{ label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ, id }) }])}>
+      {label}
     </button>
   );
   const chipStil = (typ, id, slotRef = aktiverSlot) => {
@@ -4738,16 +4750,6 @@ export default function VokabelApp() {
                         {!zu && (<>
                         <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832", display:"flex", alignItems:"center", gap:8}}>
                           Verlauf &amp; Gespeichert
-                          {slotSektionAufgeklappt && (
-                            <button onClick={() => setSlotLoeschModus(v => !v)} style={{
-                              background: slotLoeschModus ? "#2d6a4f" : "none",
-                              border:`1.5px solid ${slotLoeschModus ? "#2d6a4f" : "#c0bcb7"}`,
-                              color: slotLoeschModus ? "#fff" : "#6b6560",
-                              borderRadius:6, cursor:"pointer", padding:"3px 7px",
-                              display:"inline-flex", alignItems:"center",
-                            }}
-                            {...tt(slotLoeschModus ? "Lösch-Modus beenden" : "Lösch-Modus aktivieren – Einträge aus Verlauf und Gespeichert entfernen")}><IcoX s={11}/></button>
-                          )}
                         </span>
                         {vokabelgruppeGeaendert && (
                           <button
@@ -5791,15 +5793,6 @@ export default function VokabelApp() {
               <div ref={slotSektionRef} style={{position:"sticky", top:headerH, zIndex:9, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
                 <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832", display:"flex", alignItems:"center", gap:8}}>
                   Verlauf &amp; Gespeichert
-                  {slotSektionAufgeklappt && (
-                    <button {...tt("Lösch-Modus: Einträge aus Verlauf und Gespeichert entfernen")} onClick={() => setSlotLoeschModus(v => !v)} style={{
-                      background: slotLoeschModus ? "#2d6a4f" : "none",
-                      border:`1.5px solid ${slotLoeschModus ? "#2d6a4f" : "#c0bcb7"}`,
-                      color: slotLoeschModus ? "#fff" : "#6b6560",
-                      borderRadius:6, cursor:"pointer", padding:"3px 7px",
-                      display:"inline-flex", alignItems:"center",
-                    }}><IcoX s={11}/></button>
-                  )}
                 </span>
                 <button {...tt("Verlauf und Gespeichert anzeigen")}
                   onClick={toggleSlotSektion}
@@ -6389,7 +6382,7 @@ export default function VokabelApp() {
                   {k:"Import", v:"Vokabeln aus einer TXT-Datei oder JSON-Datei importieren."},
                 ]},
                 {titel:"Quiz-Tab", inhalt:[
-                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts. Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann mittig in einer grünen Kopfzeile – antippen öffnet die Auswahl wieder. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt: Beim Wechsel des Abfrage-Modus springt der Fortschritt auf den Stand dieser Art. „↺ Zurücksetzen“ in der Fortschrittszeile beginnt nach kurzer Rückfrage für die aktuelle Art eine neue Session – gelöscht wird nur, welche Vokabeln schon abgefragt wurden; Scores und Lernfortschritt bleiben. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Gespeicherte Konfigurationen, bis 100 Zeilen × 4 Spalten). „⇄ Verschieben“: Eintrag antippen und Zielplatz antippen oder direkt ziehen – auf einem belegten Platz tauschen die beiden. Neu Gespeichertes kommt auf den ersten freien Platz; ist das Raster voll, kommt automatisch eine Zeile dazu. Lang-Druck zeigt den vollständigen Namen."},
+                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts. Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann mittig in einer grünen Kopfzeile – antippen öffnet die Auswahl wieder. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt: Beim Wechsel des Abfrage-Modus springt der Fortschritt auf den Stand dieser Art. „↺ Zurücksetzen“ in der Fortschrittszeile beginnt nach kurzer Rückfrage für die aktuelle Art eine neue Session – gelöscht wird nur, welche Vokabeln schon abgefragt wurden; Scores und Lernfortschritt bleiben. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Gespeicherte Konfigurationen, bis 100 Zeilen × 4 Spalten). Lang drücken auf einen Eintrag zeigt den vollständigen Namen und darunter „Umbenennen“, „Verschieben“ und „Löschen“ (Verlauf-Einträge: „Löschen“). „Verschieben“: Zielplatz antippen oder direkt ziehen – auf einem belegten Platz tauschen die beiden; „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt auf den ersten freien Platz; ist das Raster voll, kommt automatisch eine Zeile dazu."},
                   {k:"Neu-Chip", v:"Setzt die aktive Session zurück – Quiz startet ohne geladene Konfiguration."},
                   {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl."},
@@ -6726,6 +6719,30 @@ export default function VokabelApp() {
                 <button {...tt("Als neuen Eintrag speichern")} className="btn btn-primary" onClick={doSpeichernNeu}>
                   {istGespeichert ? "Neu speichern" : "Speichern"}
                 </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+      {slotUmbenennen && (() => {
+        const schliessen = () => setSlotUmbenennen(null);
+        const name = slotUmbenennen.name.trim();
+        const doppelt = name && slots.gespeichert.some(x => x.id !== slotUmbenennen.id && x.name === name);
+        const speichern = () => { if (name && !doppelt) { benenneSlotUm(slotUmbenennen.id, name); schliessen(); } };
+        return (
+          <div className="overlay" onClick={schliessen}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-titel">Umbenennen</div>
+              <label className="inp-label">Name</label>
+              <input {...ttFeld("Neuer Name für den gespeicherten Eintrag")} data-umbenennen-feld className="inp" value={slotUmbenennen.name} autoFocus
+                onChange={e => setSlotUmbenennen(u => ({ ...u, name: e.target.value }))}
+                onFocus={e => e.target.select()}
+                onKeyDown={e => e.key === "Enter" && speichern()} />
+              {doppelt && <div style={{fontSize:"0.78rem", color:"#c0392b", marginTop:6}}>Diesen Namen gibt es schon.</div>}
+              <div style={{fontSize:"0.75rem", color:"#9b9590", marginTop:8}}>Platz im Raster, Einstellungen und Fortschritt bleiben erhalten.</div>
+              <div className="modal-actions">
+                <button {...tt("Schließen, ohne umzubenennen")} className="btn btn-ghost" onClick={schliessen}>Abbrechen</button>
+                <button {...tt("Neuen Namen speichern")} data-umbenennen-speichern className="btn btn-primary" disabled={!name || doppelt} onClick={speichern}>Speichern</button>
               </div>
             </div>
           </div>

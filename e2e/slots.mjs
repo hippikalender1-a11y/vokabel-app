@@ -94,12 +94,26 @@ console.log("     Plätze:", JSON.stringify(pl));
 ok(pl[n1] === "0|0" && pl[n2] === "0|1" && pl[n3] === "1|0", "Neue Einträge zeilenweise auf freie Plätze (Raster 10 × 2)");
 ok(await page.evaluate(() => getComputedStyle(document.querySelector(".slot-raster")).gridTemplateColumns.split(" ").length === 2), "Raster mit 2 Spalten");
 ok(await page.evaluate(() => { const neu = [...document.querySelectorAll(".slot-kopf-knoepfe .slot-chip")].find(b => b.textContent.trim() === "Neu"); return !!neu && !neu.closest(".slot-raster"); }),
-  "„Neu“ klein oben neben „Verschieben“, nicht im Raster");
-await clickText("button", "⇄ Verschieben");
+  "„Neu“ klein oben, nicht im Raster");
+t = await page.evaluate(() => document.body.innerText);
+ok(!t.includes("⇄ Verschieben") && /Lang drücken: umbenennen, verschieben oder löschen/.test(t) && !(await page.$("svg + svg")),
+  "Kein Verschieben-Knopf mehr, stattdessen Hinweis auf den Lang-Druck");
+// Lang-Druck (am Rechner: Rechtsklick) → Erklärung mit Menü
+const menue = async key => { await page.evaluate(k => { const el = document.querySelector(`[data-raster-zelle="${k}"]`); const r = el.getBoundingClientRect();
+  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, key); await sleep(200); };
+const aktion = async label => { await page.evaluate(l => document.querySelector(`[data-info-aktion="${l}"]`).click(), label); await sleep(250); };
+await menue("1|0");
+const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.textContent.trim()));
+const blase = await page.evaluate(() => document.querySelector('[role="status"]')?.innerText || "");
+console.log("     Menü:", knoepfe.join(" | "));
+ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⇄ Verschieben|🗑 Löschen", "Lang-Druck: voller Name + Umbenennen / Verschieben / Löschen");
+await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
-await tippZelle("1|0"); await sleep(150); await tippZelle("3|1"); await sleep(250);
+ok(!(await page.$('[role="status"]')) && /Jetzt den Zielplatz antippen/.test(await page.evaluate(() => document.body.innerText)),
+  "„Verschieben“: Menü zu, Verschieben-Modus mit diesem Paket ausgewählt");
+await tippZelle("3|1"); await sleep(250);
 pl = await plaetze();
-ok(pl[n3] === "3|1", "Antippen → freien Platz antippen: verschoben");
+ok(pl[n3] === "3|1", "Zielplatz antippen: verschoben");
 await tippZelle("0|0"); await sleep(150); await tippZelle("0|1"); await sleep(250);
 pl = await plaetze();
 ok(pl[n1] === "0|1" && pl[n2] === "0|0", "Antippen → belegten Platz antippen: die beiden tauschen");
@@ -125,6 +139,22 @@ ok((lang || "").startsWith(n3), "Info-Text (Lang-Druck) nennt den kompletten Nam
 await page.reload(); await sleep(400);
 ok(JSON.stringify(await plaetze()) === JSON.stringify(pl), "Plätze bleiben nach Neuladen erhalten");
 
+// Umbenennen über das Menü: Name ändert sich, Platz bleibt; doppelter Name wird abgelehnt
+await clickText(".tab", "Quiz");
+if (!(await page.$("[data-raster-zelle]"))) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
+await sleep(300);
+const platzN1 = pl[n1];
+await menue(platzN1);
+await aktion("✎ Umbenennen");
+const setzeFeld = async v => page.evaluate(v => { const f = document.querySelector("[data-umbenennen-feld]"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(f, v); f.dispatchEvent(new Event("input", { bubbles: true })); }, v);
+await setzeFeld(n2); await sleep(150);
+ok(await page.evaluate(() => document.querySelector("[data-umbenennen-speichern]").disabled) && /Diesen Namen gibt es schon/.test(await page.evaluate(() => document.body.innerText)),
+  "Umbenennen: vorhandener Name wird abgelehnt");
+await setzeFeld("Meine Verben"); await sleep(150);
+await page.click("[data-umbenennen-speichern]"); await sleep(250);
+pl = await plaetze();
+ok(pl["Meine Verben"] === platzN1 && !(n1 in pl), "Umbenennen: neuer Name, gleicher Platz");
+
 // Einstellungen: 3 Spalten, Zeilen verkleinern → Einträge rücken nach, voll → beim Speichern automatisch eine Zeile mehr
 await clickText(".tab", "Einstellungen");
 await page.evaluate(() => document.querySelector('[data-raster-spalten="3"]').click()); await sleep(200);
@@ -139,6 +169,14 @@ const einst = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel
 pl = await plaetze();
 console.log("     nach 4. Speichern:", JSON.stringify(einst), JSON.stringify(pl));
 ok(einst.zeilen === 2 && Object.values(pl).includes("1|0"), "Raster voll: neuer Eintrag → automatisch eine Zeile mehr (1|0)");
+// Löschen über das Menü (mit Rückfrage)
+if (!(await page.$('[data-raster-zelle="1|0"]'))) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
+await sleep(300);
+await menue("1|0");
+await aktion("🗑 Löschen");
+await clickText(".modal .btn-danger", "Löschen", true);
+pl = await plaetze();
+ok(Object.keys(pl).length === 3 && !Object.values(pl).includes("1|0"), "Löschen über das Menü: Eintrag weg");
 // für den Statistik-Teil wieder Standard (10 × 2)
 await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen")); e.slotRaster = { zeilen: 10, spalten: 2 }; localStorage.setItem("vokabel_einstellungen", JSON.stringify(e)); });
 await page.reload(); await sleep(400);

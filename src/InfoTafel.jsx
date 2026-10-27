@@ -31,7 +31,7 @@ export default function InfoTafel() {
   useEffect(() => {
     if (!info && !modus) return;
     const klick = e => {
-      if (e.target.closest("[data-info-schalter]")) return;
+      if (e.target.closest("[data-info-schalter]") || e.target.closest("[data-info-aktion]")) return;
       const el = modus ? e.target.closest("[data-info]") : null;
       if (el) {
         e.preventDefault(); e.stopPropagation();
@@ -62,6 +62,17 @@ export default function InfoTafel() {
           fontFamily: "system-ui,sans-serif", boxSizing: "border-box",
         }}>
           <div style={{ fontSize: "0.95rem", lineHeight: 1.5 }}>{info.text}</div>
+          {info.aktionen?.length > 0 && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+              {info.aktionen.map(a => (
+                <button key={a.label} data-info-aktion={a.label} onClick={() => { setInfo(null); a.fn(); }} style={{
+                  flex: "1 1 0", minWidth: 90, background: a.gefahr ? "#5a2620" : "#3b3832", color: "#fff",
+                  border: `1px solid ${a.gefahr ? "#c0392b" : "#6b6560"}`, borderRadius: 10, padding: "9px 10px",
+                  fontSize: "0.88rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
+                }}>{a.label}</button>
+              ))}
+            </div>
+          )}
           <div style={{ fontSize: "0.7rem", color: "#c0bcb7", textAlign: "right", marginTop: 6 }}>Antippen zum Schließen</div>
         </div>
       )}

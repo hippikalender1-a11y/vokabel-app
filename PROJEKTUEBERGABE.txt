@@ -1402,6 +1402,15 @@ RASTER DER GESPEICHERTEN KONFIGURATIONEN (ersetzt "↕ Sortieren"):
   Ereignis "vokabel-info-schliessen" → InfoTafel) sobald das Ziehen beginnt;
   tt()-Timer zeigt während eines aktiven Ziehens nichts an.
   Test: e2e/slots.mjs Abschnitt 4.
+LANG-DRUCK-MENÜ (ersetzt "⇄ Verschieben"-Knopf und ✕-Lösch-Modus, der ganz entfernt ist):
+  tt(text, aktionen) – aktionen [{label, fn, gefahr}] erscheinen als Knöpfe
+  unter der Erklärung (InfoTafel, data-info-aktion; Klicks darauf werden
+  nicht abgefangen). Zusätzlich onContextMenu (Rechtsklick am Rechner,
+  Android-Lang-Druck). Raster-Eintrag: ✎ Umbenennen (Fenster, State
+  slotUmbenennen, benenneSlotUm(); doppelte Namen abgelehnt), ⇄ Verschieben
+  (Modus an + Eintrag ausgewählt; Knopf "Fertig" nur im Modus), 🗑 Löschen
+  (bisheriges Bestätigungs-Fenster). Verlauf-Eintrag: nur 🗑 Löschen.
+  Hinweiszeile über dem Raster: "Lang drücken: umbenennen, verschieben oder löschen".
 
 
 ================================================================
