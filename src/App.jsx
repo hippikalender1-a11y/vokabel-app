@@ -400,7 +400,7 @@ const STUFEN_REGELN = [
   { key: "akzenteTolerant", label: "Fehlende Akzente beim Tippen gelten als richtig", sub: "z. B. ete statt été", einfach: true, schwer: false },
   { key: "aufdeckenAbzug", label: "„Lösung anzeigen“ zieht 1 Punkt ab", sub: "sonst ohne Score-Einfluss", einfach: false, schwer: true },
   { key: "akzentOhneMischen", label: "Akzent-Modus: auch Wörter ohne Akzent abfragen", sub: "dann muss man erkennen, dass nichts zu ändern ist", einfach: false, schwer: true },
-  { key: "akzentHervorheben", label: "Akzent-Modus: Buchstaben mit Akzent hervorheben", sub: "zeigt, wo ein Akzent hingehört", einfach: true, schwer: false },
+  { key: "akzentHervorheben", label: "Akzent-Modus: Buchstaben mit Akzent hervorheben", sub: "zeigt, wo ein Akzent hingehört; Tippen auf andere Buchstaben zählt dann nicht als Fehler", einfach: true, schwer: false },
   { key: "akzentZaehler", label: "Akzent-Modus: anzeigen, wie viele Akzente noch fehlen", sub: "z. B. „Akzente 2 / 3“", einfach: true, schwer: false },
   { key: "akzentAutoUebernahme", label: "Akzent-Modus: alle Akzente richtig → automatisch übernehmen", sub: "sonst muss man „Prüfen“ antippen", einfach: true, schwer: false },
 ];
@@ -2344,7 +2344,34 @@ export default function VokabelApp() {
     );
   }
 
-  // Lern-Bilanz am Rundenende: neu gelernte Vokabeln + Lernfortschritt der Vokabelgruppe
+  // Rundenergebnis im Kasten: Kreisdiagramm richtig/falsch, Zahlen daneben, Lern-Bilanz darunter
+  function renderRundenErgebnis(q, r, f, titel) {
+    const ges = r + f;
+    const pct = ges > 0 ? Math.round(r / ges * 100) : 0;
+    const farbe = pct >= 70 ? "#2d6a4f" : pct >= 40 ? "#e67e22" : "#c0392b";
+    const R = 40, U = 2 * Math.PI * R;
+    return (
+      <div className="karte" style={{padding:"14px 16px", margin:"0 0 14px"}}>
+        <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"#6b6560", marginBottom:10}}>{titel}</div>
+        <div style={{display:"flex", alignItems:"center", gap:18, justifyContent:"center"}}>
+          <svg width="112" height="112" viewBox="0 0 112 112" data-ergebniskreis {...tt(`${r} richtig, ${f} falsch`)}>
+            <circle cx="56" cy="56" r={R} fill="none" stroke={f > 0 ? "#e8a39b" : "#f0ede8"} strokeWidth="16"/>
+            {r > 0 && <circle cx="56" cy="56" r={R} fill="none" stroke="#2d6a4f" strokeWidth="16"
+              strokeDasharray={`${U * r / ges} ${U}`} transform="rotate(-90 56 56)"/>}
+            <text x="56" y="62" textAnchor="middle" fontSize="20" fontWeight="800" fill={farbe}>{pct}%</text>
+          </svg>
+          <div style={{lineHeight:1.6}}>
+            <div style={{fontWeight:700, fontSize:"1rem", color:"#3b3832"}}>{r} von {ges} richtig</div>
+            <div style={{fontSize:"0.85rem", color:"#2d6a4f"}}>✓ {r} gewusst</div>
+            <div style={{fontSize:"0.85rem", color:"#c0392b"}}>✗ {f} nicht gewusst</div>
+          </div>
+        </div>
+        {renderLernBilanz(q)}
+      </div>
+    );
+  }
+
+  // Lern-Bilanz am Rundenende: neu gelernte Vokabeln (Gelernt-Schwelle erreicht) bzw. Gratulation
   function renderLernBilanz(q) {
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
     if (schwelle <= 0 || !q?.rundeStartScores || !q.gruppeVokIds?.length) return null;
@@ -2356,20 +2383,19 @@ export default function VokabelApp() {
     const vorherP = lernProzent(vorher, schwelle), nachherP = lernProzent(nachher, schwelle);
     const neuGelernt = ids.filter(id => id in start && (start[id] ?? -Infinity) < schwelle && (jetztMap.get(id) ?? -Infinity) >= schwelle).length;
     const komplett = nachherP >= 99.999 && vorherP < 99.999;
-    const delta = Math.round(nachherP) - Math.round(vorherP);
+    if (!komplett && neuGelernt === 0) return null;
     return (
-      <div style={{border:"1.5px solid #a8d5be", background: komplett ? "#e8f5e9" : "#f0f9f4", borderRadius:12, padding:"12px 16px", margin:"14px 0", textAlign:"center"}}>
+      <div style={{border:"1.5px solid #a8d5be", background: komplett ? "#e8f5e9" : "#f0f9f4", borderRadius:12, padding:"10px 14px", marginTop:12, textAlign:"center"}}>
         {komplett && (<>
           <div style={{fontSize:"2rem", lineHeight:1.2}}>🏆</div>
           <div style={{fontWeight:800, color:"#2d6a4f", fontSize:"1rem", marginBottom:4}}>Geschafft! Alle {ids.length} Vokabeln gelernt.</div>
         </>)}
         {neuGelernt > 0 && (
-          <div style={{fontWeight:700, color:"#2d6a4f", fontSize:"0.95rem", marginBottom:2}}>✓ +{neuGelernt} neu gelernt</div>
+          <div style={{fontWeight:700, color:"#2d6a4f", fontSize:"0.95rem"}}
+            {...tt(`Diese Vokabeln haben in dieser Runde den Score +${schwelle} erreicht und gelten jetzt als gelernt`)}>
+            ✓ +{neuGelernt} neu gelernt <span style={{fontWeight:400, fontSize:"0.8rem", color:"#6b6560"}}>(Score +{schwelle} erreicht)</span>
+          </div>
         )}
-        <div style={{fontSize:"0.85rem", color:"#3b3832"}}>
-          Lernfortschritt {Math.round(vorherP)} % → <strong>{Math.round(nachherP)} %</strong>
-          {delta !== 0 && <span style={{color: delta > 0 ? "#2d6a4f" : "#c0392b", fontWeight:700}}> ({delta > 0 ? "+" : ""}{delta})</span>}
-        </div>
       </div>
     );
   }
@@ -3035,7 +3061,8 @@ export default function VokabelApp() {
     const s = akzentStand(quiz);
     const k = s.kacheln[i];
     if (s.wahl[i] === k.richtig && kachelMitAkzent(k)) return;   // schon richtig gesetzt
-    if (!kachelMitAkzent(k)) { akzentFehlgriff(s, i); return; }
+    // Akzent-Buchstaben hervorgehoben → Fehlgriff nur anzeigen, nicht als Fehler werten
+    if (!kachelMitAkzent(k)) { akzentFehlgriff(s, i, stufenRegeln(einstellungen).akzentHervorheben ? { fehler: s.fehler } : {}); return; }
     setQuiz(prev => ({...prev, akzent: { key: s.key, wahl: s.wahl, fehler: s.fehler, blink: null, pruefFehler: s.pruefFehler, aktiv: s.aktiv === i ? null : i }}));
   }
   function setzeAkzentVariante(v) {
@@ -3413,9 +3440,8 @@ export default function VokabelApp() {
         const r = quiz.quizRichtigAnzahl || 0;
         const f = quiz.quizFalschAnzahl || 0;
         const ges = r + f;
-        const pct = ges > 0 ? Math.round(r / ges * 100) : 0;
-        const balkenFarbe = pct >= 70 ? "#2d6a4f" : pct >= 40 ? "#e67e22" : "#c0392b";
         const feedback = getQuizFeedback(r, ges);
+        const sessionPct = Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100);
         return (
           <>
             <style>{CSS}</style>
@@ -3426,27 +3452,25 @@ export default function VokabelApp() {
                 <span className="quiz-fortschritt">{schonAbgefragt.size}/{quiz.sessionGesamt}</span>
               </div>
               <div className="sektion">
+                {/* Session-Fortschritt: wie viele Vokabeln der Vokabelgruppe schon abgefragt */}
+                <div style={{padding:"8px 0 16px"}} {...tt("So viele Vokabeln dieser Vokabelgruppe wurden in diesem Durchlauf schon abgefragt")}>
+                  <div style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:6}}>
+                    <span style={{fontWeight:700, fontSize:"1.05rem", color:"#3b3832"}}>{schonAbgefragt.size} von {quiz.sessionGesamt} Vokabeln abgefragt</span>
+                    <span style={{fontSize:"0.85rem", color:"#6b6560"}}>{sessionPct} %</span>
+                  </div>
+                  <div style={{background:"#e8e4dc", borderRadius:8, height:10, overflow:"hidden"}}>
+                    <div style={{width:`${sessionPct}%`, height:"100%", background:"#2d6a4f", borderRadius:8}}/>
+                  </div>
+                </div>
                 {/* Paket-Auswertung */}
                 {ges > 0 && (<>
-                  <div style={{textAlign:"center", padding:"16px 0 10px"}}>
-                    <div style={{fontSize:"2.4rem", fontWeight:800, color:balkenFarbe, lineHeight:1}}>{pct}%</div>
-                    <div style={{fontSize:"0.82rem", color:"#6b6560", marginTop:3}}>{r} von {ges} richtig{quiz.abgebrochen ? "" : " · dieses Paket"}</div>
-                  </div>
-                  <div style={{background:"#f0ede8", borderRadius:8, height:8, marginBottom:14, overflow:"hidden"}}>
-                    <div style={{width:`${pct}%`, height:"100%", background:balkenFarbe, borderRadius:8}}/>
-                  </div>
-                  {renderLernBilanz(quiz)}
+                  {renderRundenErgebnis(quiz, r, f, quiz.abgebrochen ? "Bis zum Abbruch" : istLetzteBatch ? "Letztes Paket" : "Dieses Paket")}
                   {feedback && (
-                    <div style={{background:"#f7f5f0", borderRadius:12, padding:"18px 16px", margin:"20px 0", fontSize:"1rem", lineHeight:1.6, color:"#3b3832", fontStyle:"italic", textAlign:"center"}}>
+                    <div style={{background:"#f7f5f0", borderRadius:12, padding:"14px 16px", margin:"0 0 16px", fontSize:"1rem", lineHeight:1.6, color:"#3b3832", fontStyle:"italic", textAlign:"center"}}>
                       „{feedback}"
                     </div>
                   )}
                 </>)}
-                {/* Session-Fortschritt */}
-                <div style={{fontSize:"0.82rem", color:"#6b6560", textAlign:"center", marginBottom:14}}>
-                  {schonAbgefragt.size} / {quiz.sessionGesamt} Vokabeln gesamt
-                  {" "}({Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100)}%)
-                </div>
                 {quiz.abgebrochen ? (
                   <><button {...tt("Zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => beendeQuiz()}>Zur Übersicht</button>
                   <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
@@ -3479,9 +3503,7 @@ export default function VokabelApp() {
         const r = quiz.quizRichtigAnzahl || 0;
         const f = quiz.quizFalschAnzahl || 0;
         const ges = r + f;
-        const pct = ges > 0 ? Math.round(r / ges * 100) : 0;
         const feedback = getQuizFeedback(r, ges);
-        const balkenFarbe = pct >= 70 ? "#2d6a4f" : pct >= 40 ? "#e67e22" : "#c0392b";
         return (
           <>
             <style>{CSS}</style>
@@ -3492,16 +3514,10 @@ export default function VokabelApp() {
                 <span className="quiz-fortschritt">{r}/{ges}</span>
               </div>
               <div className="sektion">
-                <div style={{textAlign:"center", padding:"20px 0 16px"}}>
-                  <div style={{fontSize:"3rem", fontWeight:800, color:balkenFarbe, lineHeight:1}}>{pct}%</div>
-                  <div style={{fontSize:"0.85rem", color:"#6b6560", marginTop:4}}>{r} von {ges} richtig</div>
-                </div>
-                <div style={{background:"#f0ede8", borderRadius:8, height:10, marginBottom:20, overflow:"hidden"}}>
-                  <div style={{width:`${pct}%`, height:"100%", background:balkenFarbe, borderRadius:8, transition:"width 0.6s ease"}}/>
-                </div>
-                {renderLernBilanz(quiz)}
+                <div style={{height:8}}/>
+                {renderRundenErgebnis(quiz, r, f, quiz.abgebrochen ? "Bis zum Abbruch" : "Diese Runde")}
                 {feedback && (
-                  <div style={{background:"#f7f5f0", borderRadius:12, padding:"18px 16px", margin:"20px 0", fontSize:"1rem", lineHeight:1.6, color:"#3b3832", fontStyle:"italic", textAlign:"center"}}>
+                  <div style={{background:"#f7f5f0", borderRadius:12, padding:"14px 16px", margin:"0 0 16px", fontSize:"1rem", lineHeight:1.6, color:"#3b3832", fontStyle:"italic", textAlign:"center"}}>
                     „{feedback}"
                   </div>
                 )}

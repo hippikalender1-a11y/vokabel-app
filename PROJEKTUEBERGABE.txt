@@ -1027,6 +1027,9 @@ LERN-BILANZ (Quiz-Auswertung, nicht Diktat):
   VOR Gelernt-Filter (starteQuiz). renderLernBilanz(q) (Funktions-
   deklaration → in frühen Render-Returns nutzbar): "+N neu gelernt",
   "Lernfortschritt X % → Y % (±d)", bei Erreichen von 100 %: 🏆 "Geschafft!".
+  (Session 38: Prozent-Zeile entfernt – für Nutzer unverständlich; Box nur
+  noch bei "+N neu gelernt (Score +S erreicht)" bzw. 🏆, innerhalb des
+  Ergebnis-Kastens renderRundenErgebnis.)
 LISTEN-ÜBERSICHT: je Liste % + Mini-Balken (🏆 bei 100 %), Tooltip x/y gelernt.
 
 VERLAUF / GESPEICHERT:
@@ -1299,7 +1302,8 @@ SCHWIERIGKEITSGRAD-REGELN (Quiz-Tab → Einstellungen → Schwierigkeitsgrad):
                       Akzent abfragen (ersetzt den früheren Quiz-Schalter
                       quizAkzentMischen; wirkt in starteQuiz + Zähler im Quiz-Tab)
     akzentHervorheben (Einfach ✓, Schwer –) Akzent-Modus: Kacheln mit Akzent
-                      gelb markiert (.markiert)
+                      gelb markiert (.markiert); Fehlgriff auf andere
+                      Buchstaben leuchtet dann nur rot, zählt NICHT als Fehler
     akzentZaehler     (Einfach ✓, Schwer –) Akzent-Modus: Zähler "Akzente 1 / 3"
                       (richtig gesetzt / im Wort) über den Kacheln
     akzentAutoUebernahme (Einfach ✓, Schwer –) alle Akzente richtig →
@@ -1307,6 +1311,21 @@ SCHWIERIGKEITSGRAD-REGELN (Quiz-Tab → Einstellungen → Schwierigkeitsgrad):
   Gespeichert in einstellungen.stufen[einfach|schwer][key]; stufenRegeln(e)
   liefert die Regeln der aktuellen Stufe. Neue Regeln: Eintrag in
   STUFEN_REGELN ergänzen und an der Wirkstelle stufenRegeln() abfragen.
+
+
+================================================================
+SESSION 38 (FORTSETZUNG) — AUSWERTUNG NEU
+================================================================
+Quiz-Auswertung ("Paket fertig" / "Durchlauf abgeschlossen" / "Auswertung"):
+  - Session: ganz oben "X von Y Vokabeln abgefragt" + % + Fortschrittsbalken
+    (vorher klein unten als "X / Y Vokabeln gesamt").
+  - Darunter Kasten renderRundenErgebnis(q, r, f, titel): Titel "Dieses
+    Paket" / "Letztes Paket" / "Diese Runde" / "Bis zum Abbruch", Ring-
+    Kreisdiagramm (svg[data-ergebniskreis], grün richtig / hellrot falsch,
+    % in der Mitte), daneben "r von n richtig", ✓ gewusst, ✗ nicht gewusst;
+    Lern-Bilanz (neu gelernt / 🏆) im Kasten. Der frühere %-Balken entfällt.
+  - Diktat-Auswertung unverändert.
+Akzent-Modus "Lösung anzeigen": Kacheln bleiben, Lösung grün auf gelb.
 
 
 ================================================================

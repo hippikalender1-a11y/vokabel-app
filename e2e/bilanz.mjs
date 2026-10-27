@@ -61,14 +61,15 @@ async function runde(scores, antworten) {
 let t = await runde([3, 3, 2, 2], { abfahren: true, ausgehen: false });
 console.log("     Runde 1:", (t.match(/✓ \+\d+ neu gelernt|Lernfortschritt[^\n]*/g) || []).join(" | "));
 ok(/✓ \+1 neu gelernt/.test(t), "Runde 1: „+1 neu gelernt“");
-ok(/Lernfortschritt 83 % → 83 %/.test(t), "Runde 1: Lernfortschritt 83 % → 83 %");
+ok(!/Lernfortschritt/.test(t) && /\(Score \+3 erreicht\)/.test(t), "Runde 1: keine unklare Lernfortschritt-Zahl, „neu gelernt“ mit Erklärung (Score +3 erreicht)");
+ok(await page.evaluate(() => !!document.querySelector("svg[data-ergebniskreis]")), "Ergebnis als Kreisdiagramm");
 ok(!/Geschafft/.test(t), "Runde 1: keine Gratulation");
 
 // Runde 2: partir 2 ✓, sortir 2 ✓ → alle gelernt → 100 %
 t = await runde([3, 3, 2, 2], { abfahren: true, ausgehen: true });
 console.log("     Runde 2:", (t.match(/Geschafft[^\n]*|✓ \+\d+ neu gelernt|Lernfortschritt[^\n]*/g) || []).join(" | "));
 ok(/Geschafft! Alle 4 Vokabeln gelernt\./.test(t), "Runde 2: Gratulation „Geschafft! Alle 4 Vokabeln gelernt.“");
-ok(/✓ \+2 neu gelernt/.test(t) && /Lernfortschritt 83 % → 100 % \(\+17\)/.test(t), "Runde 2: +2 neu gelernt, 83 % → 100 % (+17)");
+ok(/✓ \+2 neu gelernt/.test(t), "Runde 2: +2 neu gelernt");
 await page.screenshot({ path: "bilanz.png" });
 
 // Listen-Übersicht

@@ -203,9 +203,15 @@ await sleep(400);
   const schritte = loesung[Object.keys(loesung).find(w => tt0.includes(w))];
   const zaehler = () => page.evaluate(() => document.querySelector(".akzent-zaehler")?.textContent.trim());
   ok(await zaehler() === `Akzente 0 / ${schritte.length}`, `Stufe „Einfach“: Zähler „${await zaehler()}“`);
+  // Fehlgriff auf Buchstaben ohne Akzent: leuchtet rot, zählt bei Hervorhebung aber nicht als Fehler
+  await page.evaluate(i => document.querySelectorAll(".akzent-kachel")[i].click(), tt0.includes("Schüler") ? 1 : 0);
+  await sleep(100);
+  ok(await page.evaluate(() => document.querySelectorAll(".akzent-kachel.blink").length === 1), "Stufe „Einfach“: Fehlgriff leuchtet rot auf");
+  await sleep(700);
   if (schritte.length > 1) { await setze(...schritte[0]); ok(await zaehler() === `Akzente 1 / ${schritte.length}`, "Zähler steigt nach richtigem Akzent"); schritte.shift(); }
   for (const [i, v] of schritte) await setze(i, v);
   ok((await text()).includes("Weiter →") && (await kartenFarbe()).includes("richtig"), "Stufe „Einfach“: alle Akzente richtig → automatisch übernommen");
+  ok(!(await text()).includes("Nicht fehlerfrei"), "Stufe „Einfach“ (hervorgehoben): Fehlgriff zählt nicht als Fehler");
   await clickText("button", "Beenden", true);
   await sleep(300);
   if (/Zur Übersicht/.test(await text())) await clickText("button", "Zur Übersicht");
