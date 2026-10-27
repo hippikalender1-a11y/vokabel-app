@@ -122,11 +122,16 @@ ok(await fortschritt() === "10 / 14", "Übersetzungs-Fortschritt bleibt nach dem
 await page.reload(); await sleep(600);
 await clickText(".tab", "Quiz");
 await sleep(300);
-if (!(await page.$(".slot-chip"))) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
+ok(await kopf() === "gruen" && (await text()).includes("Mein Paket") && await fortschritt() === "10 / 14",
+  "Nach Neuladen: gespeicherte Session automatisch geladen (grüne Kopfzeile, Übersetzung 10 / 14)");
+// „Neu“ → beim nächsten Start nichts automatisch laden
+await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
-await clickText(".slot-chip", "Mein Paket");
+await clickText(".slot-chip", "Neu", true);
+await page.reload(); await sleep(600);
+await clickText(".tab", "Quiz");
 await sleep(300);
-ok(await fortschritt() === "10 / 14", "Nach Neuladen + Auswahl der gespeicherten Session: Übersetzung 10 / 14");
+ok(await kopf() !== "gruen" && await fortschritt() === null, "Nach „Neu“ und Neuladen: keine Session automatisch geladen");
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);

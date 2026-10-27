@@ -1370,12 +1370,34 @@ SESSION-FORTSCHRITT JE ABFRAGEART (gespeicherte/Verlauf-Slots):
   (data-session-zuruecksetzen, mit confirm) in der Fortschrittszeile, die
   jetzt "Fortschritt <Art>" heißt. Slot-Chip zeigt den Fortschritt der Art
   (aktiver Chip: eingestellte Art, sonst Art seiner Konfiguration).
-  Bekannt: nach App-Neustart ist die Quiz-Konfiguration nicht geladen –
-  gespeicherte Session neu antippen (war schon vorher so).
+  App-Start: SK.letzterSlot (vokabel_letzter_slot) = zuletzt gewählte
+  GESPEICHERTE Konfiguration; Effekt lädt sie per ladeSlot(), sobald
+  listenIndex da ist (letzterSlotGeladenRef). Gesetzt in ladeSlot('gespeichert')
+  und speichereAlsGespeichert; gelöscht bei Verlauf-Auswahl, "Neu"
+  (neueQuizKonfiguration) und Löschen des Eintrags.
 KOPFZEILE "Verlauf & Gespeichert" (Quiz-Tab): zugeklappt ohne Überschrift,
   Auswahl-Knopf mittig; bei gespeicherter Konfiguration ganze Zeile grün
   (data-slot-kopf="gruen"). ladeSlot() klappt den Bereich automatisch zu.
   Test: e2e/session_arten.mjs.
+RASTER DER GESPEICHERTEN KONFIGURATIONEN (ersetzt "↕ Sortieren"):
+  Eintrag hat platz {z, s}. einstellungen.slotRaster {zeilen 1–100, spalten 1–4},
+  Standard 10 × 2 (rasterGroesse). ordneRaster() (Modul): gültige freie
+  Plätze bleiben, Rest zeilenweise auf freie Plätze, Raster wächst bei Bedarf
+  (zeilen im Ergebnis). platziereSlot(): Ziel belegt → TAUSCHEN.
+  Component: rasterEinordnen(data, einst) (speichert gewachsene Zeilenzahl),
+  setzeSlotPlatz(), setzeRasterGroesse() (Einstellungen: Spalten 1–4, Zeilen
+  −/+/+10, minimal ceil(Anzahl/Spalten)). Beim Start einmalige Verteilung
+  vorhandener Einträge ohne platz; neue Einträge in speichereAlsGespeichert.
+  renderSlotBereiche: CSS-Grid .slot-raster, Zellen data-raster-zelle="z|s";
+  normal nur bis zur letzten belegten Zeile, Leerplätze unsichtbar;
+  "⇄ Verschieben" (State slotSortModus) zeigt alle Zeilen, leere Plätze
+  gestrichelt. Antippen → Zielplatz antippen (slotAuswahlId) oder Ziehen
+  (slotZiehenRef, ab 8 px; Effekt auf window pointermove/up, Auto-Scroll am
+  Rand; slotGezogenRef schluckt den Klick danach). Lang-Druck = tt() mit
+  vollem Namen. Einträge anderer Sprache belegen ihren Platz, sind aber
+  nicht bedienbar ("andere Sprache" im Verschieben-Modus).
+  "Neu" klein oben neben "Verschieben" (.slot-kopf-knoepfe). Verlauf bleibt Liste.
+  Test: e2e/slots.mjs Abschnitt 4.
 
 
 ================================================================

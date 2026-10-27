@@ -86,33 +86,63 @@ const verlaufKlasse = await page.evaluate(() => [...document.querySelectorAll(".
 ok(verlaufKlasse === 1, "Verlauf-Chip mit eigenem Stil (gestrichelt)");
 await page.screenshot({ path: "slots.png" });
 
-// ── 4) Drag & Drop: letzten Eintrag an den Anfang ziehen ──
-const vorher = (await slots()).gespeichert.map(x => x.name);
-await clickText("button", "↕ Sortieren");
-const pos = await page.evaluate((a, b) => {
-  const box = n => { const r = [...document.querySelectorAll("[data-slot-id]")].find(e => e.textContent.trim() === "⠿ " + n).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
-  return { von: box(a), nach: box(b) };
-}, vorher[2], vorher[0]);
-await page.mouse.move(pos.von.x, pos.von.y);
-await page.mouse.down();
-for (let i = 1; i <= 8; i++) { await page.mouse.move(pos.von.x + (pos.nach.x - pos.von.x) * i / 8, pos.von.y + (pos.nach.y - pos.von.y) * i / 8); await sleep(40); }
-await page.mouse.up();
-await sleep(300);
-const nachher = (await slots()).gespeichert.map(x => x.name);
-console.log("     vorher:", vorher.join(" | "));
-console.log("     nachher:", nachher.join(" | "));
-ok(nachher[0] === vorher[2] && nachher.length === 3, "Drag & Drop: Reihenfolge geändert und gespeichert");
-await page.screenshot({ path: "slots_sortieren.png" });
+// ── 4) Raster: Plätze, Verschieben per Antippen und Ziehen (belegt → tauschen) ──
+const plaetze = async () => Object.fromEntries((await slots()).gespeichert.map(x => [x.name, x.platz ? `${x.platz.z}|${x.platz.s}` : "-"]));
+const [n1, n2, n3] = [v1, v2, `Französisch ${heute} (3)`];
+let pl = await plaetze();
+console.log("     Plätze:", JSON.stringify(pl));
+ok(pl[n1] === "0|0" && pl[n2] === "0|1" && pl[n3] === "1|0", "Neue Einträge zeilenweise auf freie Plätze (Raster 10 × 2)");
+ok(await page.evaluate(() => getComputedStyle(document.querySelector(".slot-raster")).gridTemplateColumns.split(" ").length === 2), "Raster mit 2 Spalten");
+ok(await page.evaluate(() => { const neu = [...document.querySelectorAll(".slot-kopf-knoepfe .slot-chip")].find(b => b.textContent.trim() === "Neu"); return !!neu && !neu.closest(".slot-raster"); }),
+  "„Neu“ klein oben neben „Verschieben“, nicht im Raster");
+await clickText("button", "⇄ Verschieben");
+const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
+await tippZelle("1|0"); await sleep(150); await tippZelle("3|1"); await sleep(250);
+pl = await plaetze();
+ok(pl[n3] === "3|1", "Antippen → freien Platz antippen: verschoben");
+await tippZelle("0|0"); await sleep(150); await tippZelle("0|1"); await sleep(250);
+pl = await plaetze();
+ok(pl[n1] === "0|1" && pl[n2] === "0|0", "Antippen → belegten Platz antippen: die beiden tauschen");
+// Ziehen: n3 (3|1) auf n2 (0|0) → Tausch
+const box = k => page.evaluate(k => { const r = document.querySelector(`[data-raster-zelle="${k}"]`).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, k);
+const von = await box("3|1"), nach = await box("0|0");
+await page.mouse.move(von.x, von.y); await page.mouse.down();
+for (let i = 1; i <= 10; i++) { await page.mouse.move(von.x + (nach.x - von.x) * i / 10, von.y + (nach.y - von.y) * i / 10); await sleep(40); }
+await page.mouse.up(); await sleep(300);
+pl = await plaetze();
+console.log("     nach Ziehen:", JSON.stringify(pl));
+ok(pl[n3] === "0|0" && pl[n2] === "3|1", "Ziehen auf belegten Platz: tauschen");
+await page.screenshot({ path: "slots_raster.png" });
 await clickText("button", "Fertig", true);
+const lang = await page.evaluate(n => document.querySelector(`[data-slot-id] [class="raster-name"]`) && [...document.querySelectorAll("[data-slot-id]")].find(b => b.textContent.includes(n))?.getAttribute("data-info"), n3);
+ok((lang || "").startsWith(n3), "Info-Text (Lang-Druck) nennt den kompletten Namen");
 await page.reload(); await sleep(400);
-const nachReload = (await slots()).gespeichert.map(x => x.name);
-ok(JSON.stringify(nachReload) === JSON.stringify(nachher), "Reihenfolge bleibt nach Neuladen erhalten");
+ok(JSON.stringify(await plaetze()) === JSON.stringify(pl), "Plätze bleiben nach Neuladen erhalten");
+
+// Einstellungen: 3 Spalten, Zeilen verkleinern → Einträge rücken nach, voll → beim Speichern automatisch eine Zeile mehr
+await clickText(".tab", "Einstellungen");
+await page.evaluate(() => document.querySelector('[data-raster-spalten="3"]').click()); await sleep(200);
+for (let i = 0; i < 12; i++) { const weiter = await page.evaluate(() => { const b = [...document.querySelectorAll("button")].find(x => x.textContent.trim() === "−" && x.nextElementSibling?.hasAttribute("data-raster-zeilen")); if (!b || b.disabled) return false; b.click(); return true; }); if (!weiter) break; await sleep(80); }
+const zeilen = await page.evaluate(() => document.querySelector("[data-raster-zeilen]").textContent.trim());
+pl = await plaetze();
+console.log("     1 Zeile × 3:", JSON.stringify(pl));
+ok(zeilen === "1" && Object.values(pl).every(p => p.startsWith("0|")) && new Set(Object.values(pl)).size === 3, "Verkleinern auf 1 × 3: alle Einträge in Zeile 1, keiner doppelt");
+await clickText(".tab", "Quiz");
+await speichern();
+const einst = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen")).slotRaster);
+pl = await plaetze();
+console.log("     nach 4. Speichern:", JSON.stringify(einst), JSON.stringify(pl));
+ok(einst.zeilen === 2 && Object.values(pl).includes("1|0"), "Raster voll: neuer Eintrag → automatisch eine Zeile mehr (1|0)");
+// für den Statistik-Teil wieder Standard (10 × 2)
+await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen")); e.slotRaster = { zeilen: 10, spalten: 2 }; localStorage.setItem("vokabel_einstellungen", JSON.stringify(e)); });
+await page.reload(); await sleep(400);
 
 // ── 5) Statistik: Verlauf-Eintrag zeigt Session-Modus ──
 await clickText(".tab", "Statistik");
 await sleep(300);
 const offen = await page.evaluate(() => /🕘 Verlauf/i.test(document.body.innerText));
-if (!offen) await clickText("button", "Neu", true);
+// Kopf-Knopf öffnen (zeigt „Neu“ oder – nach Auto-Laden – den Namen der zuletzt gewählten Konfiguration)
+if (!offen) { await page.evaluate(() => [...document.querySelectorAll("div")].find(d => d.firstElementChild?.textContent.trim().startsWith("Verlauf & Gespeichert") && d.querySelector("button.toggle-opt.aktiv"))?.querySelector("button.toggle-opt.aktiv").click()); await sleep(300); }
 await page.evaluate(() => document.querySelector(".slot-chip.verlauf")?.click());
 await sleep(400);
 t = await page.evaluate(() => document.body.innerText);

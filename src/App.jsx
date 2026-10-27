@@ -8,6 +8,7 @@ const SK = {
   sessionSlots:  "vokabel_session_slots",  // legacy, nur für Migration
   sessionAktiv:  "vokabel_session_aktiv",
   slots:         "vokabel_slots",
+  letzterSlot:   "vokabel_letzter_slot",   // zuletzt gewählte gespeicherte Konfiguration → beim Start wieder laden
   liste: (id)  => `vokabel_liste_${id}`,
 };
 function lsGet(key, fallback = null) {
@@ -71,14 +72,44 @@ function defaultSessionSlots() {
 }
 function defaultSlots() { return { verlauf: [], gespeichert: [] }; }
 function neuerSlotId(typ) { return `${typ}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`; }
-// Gespeicherten Eintrag an die Position eines anderen verschieben (Drag & Drop)
-function verschiebeSlot(data, id, zielId) {
-  const alt = data.gespeichert.findIndex(s => s.id === id), ziel = data.gespeichert.findIndex(s => s.id === zielId);
-  if (alt < 0 || ziel < 0 || alt === ziel) return data;
-  const g = [...data.gespeichert];
-  const [e] = g.splice(alt, 1);
-  g.splice(ziel, 0, e);
-  return { ...data, gespeichert: g };
+// ── Raster der gespeicherten Konfigurationen: jeder Eintrag hat einen Platz {z, s} ──
+const RASTER_MAX_SPALTEN = 4, RASTER_MAX_ZEILEN = 100;
+function rasterGroesse(einst) {
+  const r = einst?.slotRaster || {};
+  return { zeilen: Math.min(RASTER_MAX_ZEILEN, Math.max(1, r.zeilen ?? 10)), spalten: Math.min(RASTER_MAX_SPALTEN, Math.max(1, r.spalten ?? 2)) };
+}
+// Gültige, freie Plätze bleiben; alle anderen Einträge kommen auf den ersten freien Platz (zeilenweise).
+// Reicht das Raster nicht, wächst es um Zeilen (zeilen im Ergebnis).
+function ordneRaster(gespeichert, { zeilen, spalten }) {
+  const belegt = new Set();
+  const key = p => `${p.z}|${p.s}`;
+  let z = zeilen;
+  const gueltig = p => p && Number.isInteger(p.z) && Number.isInteger(p.s) && p.z >= 0 && p.s >= 0 && p.s < spalten && p.z < z;
+  const behalten = gespeichert.map(e => {
+    if (gueltig(e.platz) && !belegt.has(key(e.platz))) { belegt.add(key(e.platz)); return true; }
+    return false;
+  });
+  let geaendert = false;
+  const neu = gespeichert.map((e, i) => {
+    if (behalten[i]) return e;
+    geaendert = true;
+    let p = null;
+    for (let zz = 0; !p; zz++) {
+      if (zz >= z) z = zz + 1;
+      for (let s = 0; s < spalten && !p; s++) if (!belegt.has(`${zz}|${s}`)) p = { z: zz, s };
+    }
+    belegt.add(key(p));
+    return { ...e, platz: p };
+  });
+  return { gespeichert: neu, zeilen: z, geaendert };
+}
+// Eintrag auf Platz ziel setzen; ist der Platz belegt, tauschen die beiden
+function platziereSlot(gespeichert, id, ziel) {
+  const quelle = gespeichert.find(e => e.id === id);
+  if (!quelle) return gespeichert;
+  const besetzer = gespeichert.find(e => e.id !== id && e.platz?.z === ziel.z && e.platz?.s === ziel.s);
+  return gespeichert.map(e => e.id === id ? { ...e, platz: ziel }
+    : besetzer && e.id === besetzer.id ? { ...e, platz: quelle.platz } : e);
 }
 function formatSlotDatum() {
   const n = new Date();
@@ -644,6 +675,12 @@ const CSS = `
   .slot-chip.verlauf{background:#fff;border-style:dashed;border-color:#c0bcb7;color:#6b6560;font-weight:500;}
   .slot-chip.zuletzt{background:#fffde7;border-color:#f9a825;color:#e65100;}
   .slot-chip.leer{opacity:0.35;cursor:default;}
+  .slot-raster{display:grid;gap:6px;}
+  .raster-chip{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-height:44px;min-width:0;text-align:left;padding:6px 10px;}
+  .raster-name{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .raster-fortschritt{font-size:0.68rem;font-weight:600;opacity:0.8;}
+  .raster-leer{min-height:44px;border:1.5px solid #e0dbd2;border-radius:8px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .slot-kopf-knoepfe .slot-chip{padding:2px 9px;font-size:0.7rem;}
   .score-badge{font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:10px;}
   .score-pos{background:#e8f5e9;color:#2d6a4f;}
   .score-neg{background:#ffebee;color:#c0392b;}
@@ -840,8 +877,12 @@ export default function VokabelApp() {
   const [listenGelerntAusblenden, setListenGelerntAusblenden] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
   const [sprachMenuOffen, setSprachMenuOffen] = useState(false);
-  const [slotSortModus, setSlotSortModus] = useState(false);
-  const [slotDragId, setSlotDragId] = useState(null);
+  const [slotSortModus, setSlotSortModus] = useState(false);   // "Verschieben"-Modus des Rasters
+  const [slotDragId, setSlotDragId] = useState(null);         // wird gerade gezogen
+  const [slotAuswahlId, setSlotAuswahlId] = useState(null);   // angetippt, wartet auf Zielplatz
+  const [slotDragZiel, setSlotDragZiel] = useState(null);     // "z|s" unter dem Finger
+  const slotZiehenRef = useRef(null);                         // {id, x, y, aktiv}
+  const slotGezogenRef = useRef(false);                       // Klick nach dem Ziehen schlucken
   const [importSprache, setImportSprache] = useState("en");
   const [gespeicherteVokabelgruppe, setGespeicherteVokabelgruppe] = useState(null);
   const [gruppenAenderungsDialog, setGruppenAenderungsDialog] = useState(false);
@@ -998,6 +1039,15 @@ export default function VokabelApp() {
     return () => obs.disconnect();
   }, [quizTabListen.length]);
 
+  // App-Start: zuletzt gewählte gespeicherte Konfiguration wieder laden (sobald die Listen bekannt sind)
+  const letzterSlotGeladenRef = useRef(false);
+  useEffect(() => {
+    if (letzterSlotGeladenRef.current || listenIndex.length === 0) return;
+    letzterSlotGeladenRef.current = true;
+    const id = lsGet(SK.letzterSlot);
+    if (id && getSlotEintrag('gespeichert', id)) ladeSlot('gespeichert', id);
+  }, [listenIndex]);   // eslint-disable-line react-hooks/exhaustive-deps
+
   // Wechsel der Abfrageart (Übersetzung / Diktat / Akzente) → Session-Fortschritt dieser Art laden
   const quizAbfrageArt = abfrageArtVon(quizModus, quizAntwortTypenGeordnet, quizSpalteModus);
   useEffect(() => {
@@ -1135,6 +1185,8 @@ export default function VokabelApp() {
       slotsData = { verlauf, gespeichert };
       lsSet(SK.slots, slotsData);
     }
+    // Raster: Einträge ohne Platz einmalig in bisheriger Reihenfolge zeilenweise verteilen
+    if (slotsData.gespeichert.some(x => !x.platz)) { slotsData = rasterEinordnen(slotsData); lsSet(SK.slots, slotsData); }
     setSlots(slotsData);
     const sSlot = lsGet(SK.sessionAktiv);
     if (sSlot) {
@@ -1162,16 +1214,27 @@ export default function VokabelApp() {
     }
   }, [quizTabListen.length]);
 
-  // Drag & Drop der gespeicherten Einträge: Zeiger global verfolgen, beim Loslassen speichern
+  // Raster verschieben per Ziehen: ab 8 px Bewegung wird gezogen, beim Loslassen auf den Platz darunter
+  // (belegt → tauschen). Ohne Bewegung bleibt es ein Antippen (Auswahl) bzw. Lang-Druck (Info).
   useEffect(() => {
-    if (!slotDragId) return;
+    if (!slotSortModus) return;
+    const zelleUnter = e => document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-raster-zelle]")?.dataset.rasterZelle || null;
     const bewegen = e => {
-      const ziel = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-slot-id]")?.dataset.slotId;
-      if (ziel && ziel !== slotDragId) setSlots(prev => verschiebeSlot(prev, slotDragId, ziel));
+      const d = slotZiehenRef.current;
+      if (!d) return;
+      if (!d.aktiv && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8) { d.aktiv = true; setSlotDragId(d.id); setSlotAuswahlId(null); }
+      if (!d.aktiv) return;
+      setSlotDragZiel(zelleUnter(e));
+      if (e.clientY < 90) window.scrollBy(0, -12); else if (e.clientY > window.innerHeight - 60) window.scrollBy(0, 12);
     };
-    const loslassen = () => {
-      setSlotDragId(null);
-      setSlots(prev => { lsSet(SK.slots, prev); return prev; });
+    const loslassen = e => {
+      const d = slotZiehenRef.current;
+      slotZiehenRef.current = null;
+      if (!d?.aktiv) return;
+      slotGezogenRef.current = true;
+      const ziel = e.type === "pointerup" ? zelleUnter(e) : null;
+      setSlotDragId(null); setSlotDragZiel(null);
+      if (ziel) { const [z, sp] = ziel.split("|").map(Number); setzeSlotPlatz(d.id, { z, s: sp }); }
     };
     window.addEventListener("pointermove", bewegen);
     window.addEventListener("pointerup", loslassen);
@@ -1181,7 +1244,7 @@ export default function VokabelApp() {
       window.removeEventListener("pointerup", loslassen);
       window.removeEventListener("pointercancel", loslassen);
     };
-  }, [slotDragId]);
+  }, [slotSortModus]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const quizListenKey = quizTabListen.join(",");
   // Spalten-Konfiguration an neu gewählte Listen anpassen: Spalten, die dort fehlen,
@@ -1909,6 +1972,26 @@ export default function VokabelApp() {
 
   function setSlotsData(data) { lsSet(SK.slots, data); setSlots(data); }
 
+  // Raster: Plätze vergeben und bei Bedarf Zeilen anhängen (Einstellung wird mitgespeichert)
+  function rasterEinordnen(data, einst = lsGet(SK.einstellungen, defaultEinstellungen())) {
+    const groesse = rasterGroesse(einst);
+    const r = ordneRaster(data.gespeichert, groesse);
+    if (r.zeilen !== groesse.zeilen) speichereEinst({ ...einst, slotRaster: { ...groesse, zeilen: r.zeilen } });
+    return { ...data, gespeichert: r.gespeichert };
+  }
+  // Rastergröße ändern: Einträge außerhalb rücken auf freie Plätze; reicht der Platz nicht,
+  // bleiben so viele Zeilen wie nötig (kleiner geht dann nicht)
+  function setzeRasterGroesse(zeilen, spalten) {
+    const einst = { ...einstellungen, slotRaster: { zeilen, spalten } };
+    speichereEinst(einst);
+    setSlotsData(rasterEinordnen(getSlotsData(), einst));
+  }
+  function setzeSlotPlatz(id, ziel) {
+    const data = rasterEinordnen(getSlotsData());
+    setSlotsData({ ...data, gespeichert: platziereSlot(data.gespeichert, id, ziel) });
+    setSlotAuswahlId(null);
+  }
+
   function getSlotEintrag(typ, id) {
     const data = getSlotsData();
     return data[typ]?.find(s => s.id === id) || null;
@@ -1974,6 +2057,7 @@ export default function VokabelApp() {
     setQuizSessionAufgeklappt(false);
     setAktiverSlot({ typ, id });
     setSlotGeaendert(false);
+    if (typ === 'gespeichert') lsSet(SK.letzterSlot, id); else lsDel(SK.letzterSlot);
     setSlotSektionAufgeklappt(false);   // nach der Auswahl nur noch die Kopfzeile zeigen
     setSlotLoeschModus(false);
     aktiviereSlotFortschritt(eintrag, typ, id, slotKonfigArt(eintrag));
@@ -2044,11 +2128,13 @@ export default function VokabelApp() {
     } else {
       const newId = neuerSlotId('g');
       const neuerEintrag = { id: newId, name, timestamp: Date.now(), konfiguration, sessionFortschritt: null };
-      updated = { ...data, gespeichert: [neuerEintrag, ...data.gespeichert] };
+      // bestehende Plätze festhalten, der neue Eintrag kommt auf den ersten freien Platz (Raster wächst automatisch)
+      updated = rasterEinordnen({ ...data, gespeichert: [...rasterEinordnen(data).gespeichert, neuerEintrag] });
       id = newId;
     }
     setSlotsData(updated);
     setAktiverSlot({ typ: 'gespeichert', id });
+    lsSet(SK.letzterSlot, id);
     setSlotGeaendert(false);
     setGespeicherteVokabelgruppe({ listenIds: [...quizTabListen], vokabelAuswahl: Array.from(quizCheckboxAuswahl), bereichTyp: quizBereichTyp });
   }
@@ -2057,6 +2143,7 @@ export default function VokabelApp() {
     const data = getSlotsData();
     const updated = { ...data, [typ]: data[typ].filter(s => s.id !== id) };
     setSlotsData(updated);
+    if (lsGet(SK.letzterSlot) === id) lsDel(SK.letzterSlot);
     if (aktiverSlot?.typ === typ && aktiverSlot?.id === id) {
       setAktiverSlot(null);
       setSlotGeaendert(false);
@@ -2132,6 +2219,7 @@ export default function VokabelApp() {
   // "Neu": komplett neu beginnen – Session, Listen-/Vokabelauswahl und alle Abfrage-Einstellungen
   function neueQuizKonfiguration() {
     setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false);
+    lsDel(SK.letzterSlot);
     lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
     setQuizTabListen([]);
     // Spalten wie beim App-Start; passen sich bei der Listenauswahl automatisch an
@@ -2465,35 +2553,89 @@ export default function VokabelApp() {
 
   // Chips "Gespeichert" (sortierbar) und "Verlauf" (automatisch, letzte 5) – Quiz- und Statistik-Tab
   function renderSlotBereiche(neuChip, onLaden, slotRef, abstand = 0) {
-    const gespeichert = slots.gespeichert.filter(slotSichtbar);
     const verlauf = slots.verlauf.filter(slotSichtbar);
     const label = {fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em"};
+    // Raster: alle Einträge (auch andere Sprache) belegen ihren Platz; sichtbar nur die der gewählten Sprache
+    const groesse = rasterGroesse(einstellungen);
+    const raster = ordneRaster(slots.gespeichert, groesse);
+    const platzMap = new Map(raster.gespeichert.map(x => [`${x.platz.z}|${x.platz.s}`, x]));
+    const sichtbar = raster.gespeichert.filter(slotSichtbar);
+    const zeilenAnzeige = slotSortModus ? raster.zeilen : sichtbar.reduce((m, x) => Math.max(m, x.platz.z + 1), 0);
+    const sfVon = x => slotSFAlle(x)[aktiverSlot?.id === x.id ? quizAbfrageArt : slotKonfigArt(x)];
+    const tippeImRaster = (x, platz) => {
+      if (slotGezogenRef.current) { slotGezogenRef.current = false; return; }
+      if (x && slotAuswahlId === x.id) { setSlotAuswahlId(null); return; }
+      if (slotAuswahlId) { setzeSlotPlatz(slotAuswahlId, platz); return; }
+      if (x) setSlotAuswahlId(x.id);
+    };
+    const zellen = [];
+    for (let z = 0; z < zeilenAnzeige; z++) for (let sp = 0; sp < groesse.spalten; sp++) {
+      const key = `${z}|${sp}`;
+      const x = platzMap.get(key);
+      const ziel = slotDragZiel === key && slotDragId && slotDragId !== x?.id;
+      if (x && slotSichtbar(x)) {
+        const sf = sfVon(x);
+        const inhalt = (<>
+          <span className="raster-name">{x.name}</span>
+          {sf && <span className="raster-fortschritt">▶ {(sf.abgefragt || []).length}/{sf.gesamt || 0}</span>}
+        </>);
+        zellen.push(slotSortModus ? (
+          <button key={key} data-raster-zelle={key} data-slot-id={x.id} className="slot-chip belegt raster-chip"
+            style={{touchAction:"none", cursor:"grab",
+              ...(slotAuswahlId === x.id ? {outline:"3px solid #e0a800", outlineOffset:1} : {}),
+              ...(slotDragId === x.id ? {opacity:0.4, borderStyle:"dashed"} : {}),
+              ...(ziel ? {outline:"3px solid #52b788", outlineOffset:1} : {})}}
+            onPointerDown={e => { slotZiehenRef.current = { id: x.id, x: e.clientX, y: e.clientY, aktiv: false }; }}
+            onClick={() => tippeImRaster(x, x.platz)}
+            {...tt(`${x.name} – antippen und dann den Zielplatz antippen oder direkt ziehen; auf einem belegten Platz tauschen die beiden`)}>
+            {inhalt}
+          </button>
+        ) : (
+          <button key={key} data-raster-zelle={key} data-slot-id={x.id} className="slot-chip belegt raster-chip"
+            style={slotLoeschModus ? slotLoeschStil : chipStil('gespeichert', x.id, slotRef)}
+            onClick={() => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:x.id}) : onLaden('gespeichert', x.id)}
+            {...tt(slotLoeschModus ? `${x.name} – Eintrag löschen` : `${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`)}>
+            {slotLoeschModus ? <span className="raster-name"><IcoX s={10}/> {x.name}</span> : inhalt}
+          </button>
+        ));
+      } else if (x) {
+        // Eintrag einer anderen Sprache: Platz belegt, aber hier nicht bedienbar
+        zellen.push(<div key={key} className="raster-leer" style={{opacity: slotSortModus ? 0.6 : 0, fontSize:"0.65rem", color:"#9b9590"}}>andere Sprache</div>);
+      } else if (slotSortModus) {
+        zellen.push(<div key={key} data-raster-zelle={key} className="raster-leer"
+          style={{borderStyle:"dashed", cursor: slotAuswahlId ? "pointer" : "default",
+            ...(ziel ? {borderColor:"#52b788", background:"#e8f5ee"} : {})}}
+          onClick={() => tippeImRaster(null, { z, s: sp })}
+          {...tt("Freier Platz – erst ein Paket antippen, dann hier tippen (oder ein Paket hierher ziehen)")}/>);
+      } else {
+        zellen.push(<div key={key} className="raster-leer" style={{border:"none"}}/>);
+      }
+    }
     return (<>
       <div style={{margin:`0 ${abstand}px 12px`}}>
         <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6, minHeight:22}}>
           <span style={label}>📌 Gespeichert</span>
-          {gespeichert.length >= 2 && !slotLoeschModus && (
-            <button className={`typ-btn${slotSortModus ? " aktiv" : ""}`} style={{marginLeft:"auto", fontSize:"0.7rem", padding:"2px 8px"}}
-              onClick={() => { setSlotSortModus(v => !v); setSlotDragId(null); }}
-              {...tt(slotSortModus ? "Sortieren beenden" : "Reihenfolge der gespeicherten Einträge per Ziehen ändern")}>
-              {slotSortModus ? "Fertig" : "↕ Sortieren"}
-            </button>
+          {!slotLoeschModus && (
+            <span className="slot-kopf-knoepfe" style={{marginLeft:"auto", display:"flex", gap:6, alignItems:"center"}}>
+              {!slotSortModus && neuChip}
+              {raster.gespeichert.length >= 1 && (
+                <button className={`typ-btn${slotSortModus ? " aktiv" : ""}`} style={{fontSize:"0.7rem", padding:"2px 8px"}}
+                  onClick={() => { setSlotSortModus(v => !v); setSlotDragId(null); setSlotAuswahlId(null); setSlotDragZiel(null); }}
+                  {...tt(slotSortModus ? "Verschieben beenden" : "Gespeicherte Einträge frei im Raster platzieren – Rastergröße in den Einstellungen")}>
+                  {slotSortModus ? "Fertig" : "⇄ Verschieben"}
+                </button>
+              )}
+            </span>
           )}
         </div>
-        {slotSortModus && <div style={{fontSize:"0.72rem", color:"#6b6560", marginBottom:6}}>Einträge ziehen, um die Reihenfolge zu ändern.</div>}
-        <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-          {!slotLoeschModus && !slotSortModus && neuChip}
-          {gespeichert.map(x => slotSortModus ? (
-            <button {...ttFeld("Gedrückt halten und ziehen, um die Reihenfolge zu ändern")} key={x.id} data-slot-id={x.id} className="slot-chip belegt"
-              style={{touchAction:"none", cursor:"grab", userSelect:"none", WebkitUserSelect:"none",
-                ...(slotDragId === x.id ? {opacity:0.45, borderStyle:"dashed"} : {})}}
-              onPointerDown={e => { e.preventDefault(); setSlotDragId(x.id); }}>
-              ⠿ {slotChipLabel(x)}
-            </button>
-          ) : renderSlotChip(x.id, slotChipLabel(x),
-            () => slotLoeschModus ? setLoescheSlotNr({typ:'gespeichert', id:x.id}) : onLaden('gespeichert', x.id),
-            chipStil('gespeichert', x.id, slotRef)))}
-        </div>
+        {slotSortModus && <div style={{fontSize:"0.72rem", color:"#6b6560", marginBottom:6}}>
+          {slotAuswahlId ? "Jetzt den Zielplatz antippen – ist er belegt, tauschen die beiden." : "Paket antippen, dann Zielplatz antippen – oder direkt ziehen. Belegter Platz: die beiden tauschen."}
+        </div>}
+        {zellen.length > 0 && (
+          <div className="slot-raster" style={{gridTemplateColumns:`repeat(${groesse.spalten}, minmax(0, 1fr))`}}>
+            {zellen}
+          </div>
+        )}
       </div>
       {verlauf.length > 0 && !slotSortModus && (
         <div style={{margin:`0 ${abstand}px 14px`, paddingTop:10, borderTop:"1px dashed #d6d2cb"}}>
@@ -6217,7 +6359,7 @@ export default function VokabelApp() {
                   {k:"Import", v:"Vokabeln aus einer TXT-Datei oder JSON-Datei importieren."},
                 ]},
                 {titel:"Quiz-Tab", inhalt:[
-                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts. Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann mittig in einer grünen Kopfzeile – antippen öffnet die Auswahl wieder. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt: Beim Wechsel des Abfrage-Modus springt der Fortschritt auf den Stand dieser Art. „↺ Zurücksetzen“ in der Fortschrittszeile beginnt für die aktuelle Art eine neue Session."},
+                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts. Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann mittig in einer grünen Kopfzeile – antippen öffnet die Auswahl wieder. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt: Beim Wechsel des Abfrage-Modus springt der Fortschritt auf den Stand dieser Art. „↺ Zurücksetzen“ in der Fortschrittszeile beginnt für die aktuelle Art eine neue Session. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Gespeicherte Konfigurationen, bis 100 Zeilen × 4 Spalten). „⇄ Verschieben“: Eintrag antippen und Zielplatz antippen oder direkt ziehen – auf einem belegten Platz tauschen die beiden. Neu Gespeichertes kommt auf den ersten freien Platz; ist das Raster voll, kommt automatisch eine Zeile dazu. Lang-Druck zeigt den vollständigen Namen."},
                   {k:"Neu-Chip", v:"Setzt die aktive Session zurück – Quiz startet ohne geladene Konfiguration."},
                   {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl."},
@@ -6300,6 +6442,40 @@ export default function VokabelApp() {
                 </div>
               </div>
             </div>
+            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Gespeicherte Konfigurationen</div>
+            {(() => {
+              const g = rasterGroesse(einstellungen);
+              const minZeilen = Math.max(1, Math.ceil(slots.gespeichert.length / g.spalten));
+              return (
+                <div className="karte">
+                  <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:8}}>
+                    <div>
+                      <div className="karte-zeile-name">Raster</div>
+                      <div className="karte-zeile-sub">{g.zeilen} Zeilen × {g.spalten} Spalten – Plätze für gespeicherte Konfigurationen im Quiz- und Statistik-Tab</div>
+                    </div>
+                    <div style={{display:"flex", alignItems:"center", gap:6, flexWrap:"wrap"}}>
+                      <span style={{fontSize:"0.8rem", color:"#6b6560", minWidth:56}}>Spalten</span>
+                      {[1, 2, 3, 4].map(n => (
+                        <button key={n} data-raster-spalten={n} className={`toggle-opt${g.spalten === n ? " aktiv" : ""}`}
+                          onClick={() => setzeRasterGroesse(g.zeilen, n)}
+                          {...tt(`${n} Spalte${n > 1 ? "n" : ""} nebeneinander (höchstens 4)`)}>{n}</button>
+                      ))}
+                    </div>
+                    <div style={{display:"flex", alignItems:"center", gap:6}}>
+                      <span style={{fontSize:"0.8rem", color:"#6b6560", minWidth:56}}>Zeilen</span>
+                      <button className="toggle-opt" disabled={g.zeilen <= minZeilen} onClick={() => setzeRasterGroesse(g.zeilen - 1, g.spalten)}
+                        {...tt("Eine Zeile weniger – nur bis alle gespeicherten Einträge noch Platz haben")}>−</button>
+                      <span data-raster-zeilen style={{minWidth:32, textAlign:"center", fontWeight:700}}>{g.zeilen}</span>
+                      <button className="toggle-opt" disabled={g.zeilen >= RASTER_MAX_ZEILEN} onClick={() => setzeRasterGroesse(g.zeilen + 1, g.spalten)}
+                        {...tt("Eine Zeile mehr (höchstens 100)")}>+</button>
+                      <button className="toggle-opt" disabled={g.zeilen >= RASTER_MAX_ZEILEN} onClick={() => setzeRasterGroesse(Math.min(RASTER_MAX_ZEILEN, g.zeilen + 10), g.spalten)}
+                        {...tt("Zehn Zeilen mehr")}>+10</button>
+                    </div>
+                    <div style={{fontSize:"0.72rem", color:"#9b9590"}}>Ist das Raster beim Speichern voll, kommt automatisch eine Zeile dazu.</div>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>App</div>
             <div className="karte">
               <div className="karte-zeile">
