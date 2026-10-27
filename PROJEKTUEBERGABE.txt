@@ -1367,7 +1367,8 @@ SESSION-FORTSCHRITT JE ABFRAGEART (gespeicherte/Verlauf-Slots):
   useEffect [quizAbfrageArt, aktiverSlot] → aktiviereSlotFortschritt():
   Wechsel der Art lädt deren Fortschritt bzw. keine Session.
   loescheSessionSlot() löscht nur die aktuelle Art; Knopf "↺ Zurücksetzen"
-  (data-session-zuruecksetzen, mit confirm) in der Fortschrittszeile, die
+  (data-session-zuruecksetzen; Rückfrage IN der Zeile statt window.confirm:
+  State sessionResetFrage, "Ja, neu beginnen" data-reset-ja / "Nein", nach 6 s zurück) in der Fortschrittszeile, die
   jetzt "Fortschritt <Art>" heißt. Slot-Chip zeigt den Fortschritt der Art
   (aktiver Chip: eingestellte Art, sonst Art seiner Konfiguration).
   App-Start: SK.letzterSlot (vokabel_letzter_slot) = zuletzt gewählte

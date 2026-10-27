@@ -883,6 +883,13 @@ export default function VokabelApp() {
   const [slotDragZiel, setSlotDragZiel] = useState(null);     // "z|s" unter dem Finger
   const slotZiehenRef = useRef(null);                         // {id, x, y, aktiv}
   const slotGezogenRef = useRef(false);                       // Klick nach dem Ziehen schlucken
+  // Rückfrage "Abgefragt-Stand löschen?" in der Fortschrittszeile; ohne Antwort nach 6 s wieder weg
+  const [sessionResetFrage, setSessionResetFrage] = useState(false);
+  useEffect(() => {
+    if (!sessionResetFrage) return;
+    const t = setTimeout(() => setSessionResetFrage(false), 6000);
+    return () => clearTimeout(t);
+  }, [sessionResetFrage]);
   const [importSprache, setImportSprache] = useState("en");
   const [gespeicherteVokabelgruppe, setGespeicherteVokabelgruppe] = useState(null);
   const [gruppenAenderungsDialog, setGruppenAenderungsDialog] = useState(false);
@@ -5443,12 +5450,28 @@ export default function VokabelApp() {
                   <div style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH, zIndex:3, background:"#fff", padding:"8px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid #e0dbd2"}}>
                     {isPakete && sessionHatFortschritt && (
                       <div style={{marginBottom:8}}>
+                        {sessionResetFrage ? (
+                          <div data-reset-frage style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:5, fontSize:"0.78rem"}}>
+                            <span style={{color:"#3b3832", fontWeight:600}}>Abgefragt-Stand löschen?</span>
+                            <button data-reset-ja className="toggle-opt aktiv" style={{padding:"2px 10px", fontSize:"0.72rem"}}
+                              onClick={() => { setSessionResetFrage(false); loescheSessionSlot(); }}
+                              {...tt("Ja: die Session beginnt von vorn – alle Vokabeln kommen wieder in die Pakete. Scores und Lernfortschritt bleiben erhalten.")}>
+                              Ja, neu beginnen
+                            </button>
+                            <button className="toggle-opt" style={{padding:"2px 10px", fontSize:"0.72rem"}}
+                              onClick={() => setSessionResetFrage(false)}
+                              {...tt("Nein: nichts ändern")}>
+                              Nein
+                            </button>
+                            <span style={{color:"#9b9590", fontSize:"0.7rem"}}>(Scores bleiben)</span>
+                          </div>
+                        ) : (
                         <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5, fontSize:"0.78rem"}}>
                           <span style={{color:"#6b6560", display:"flex", alignItems:"center", gap:8}}>
                             Fortschritt {ABFRAGE_ART_NAMEN[quizAbfrageArt]}
                             <button data-session-zuruecksetzen className="toggle-opt" style={{padding:"1px 8px", fontSize:"0.7rem"}}
-                              onClick={() => { if (window.confirm(`Fortschritt „${ABFRAGE_ART_NAMEN[quizAbfrageArt]}“ zurücksetzen und eine neue Session mit Paketen beginnen?`)) loescheSessionSlot(); }}
-                              {...tt("Fortschritt dieser Abfrageart zurücksetzen – danach beginnt eine komplett neue Session mit Paketen. Die Fortschritte der anderen Abfragearten bleiben erhalten.")}>
+                              onClick={() => setSessionResetFrage(true)}
+                              {...tt("Abgefragt-Stand dieser Abfrageart löschen – die Session beginnt von vorn. Scores, Lernfortschritt und die Stände der anderen Abfragearten bleiben erhalten.")}>
                               ↺ Zurücksetzen
                             </button>
                           </span>
@@ -5457,6 +5480,7 @@ export default function VokabelApp() {
                             {sessionAnzahl > 0 && ` — ${sessionPct}%`}
                           </span>
                         </div>
+                        )}
                         <div style={{height:5, background:"#e0dbd2", borderRadius:3}}>
                           <div style={{
                             width:`${sessionPct}%`,
@@ -6359,7 +6383,7 @@ export default function VokabelApp() {
                   {k:"Import", v:"Vokabeln aus einer TXT-Datei oder JSON-Datei importieren."},
                 ]},
                 {titel:"Quiz-Tab", inhalt:[
-                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts. Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann mittig in einer grünen Kopfzeile – antippen öffnet die Auswahl wieder. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt: Beim Wechsel des Abfrage-Modus springt der Fortschritt auf den Stand dieser Art. „↺ Zurücksetzen“ in der Fortschrittszeile beginnt für die aktuelle Art eine neue Session. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Gespeicherte Konfigurationen, bis 100 Zeilen × 4 Spalten). „⇄ Verschieben“: Eintrag antippen und Zielplatz antippen oder direkt ziehen – auf einem belegten Platz tauschen die beiden. Neu Gespeichertes kommt auf den ersten freien Platz; ist das Raster voll, kommt automatisch eine Zeile dazu. Lang-Druck zeigt den vollständigen Namen."},
+                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts. Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann mittig in einer grünen Kopfzeile – antippen öffnet die Auswahl wieder. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt: Beim Wechsel des Abfrage-Modus springt der Fortschritt auf den Stand dieser Art. „↺ Zurücksetzen“ in der Fortschrittszeile beginnt nach kurzer Rückfrage für die aktuelle Art eine neue Session – gelöscht wird nur, welche Vokabeln schon abgefragt wurden; Scores und Lernfortschritt bleiben. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Gespeicherte Konfigurationen, bis 100 Zeilen × 4 Spalten). „⇄ Verschieben“: Eintrag antippen und Zielplatz antippen oder direkt ziehen – auf einem belegten Platz tauschen die beiden. Neu Gespeichertes kommt auf den ersten freien Platz; ist das Raster voll, kommt automatisch eine Zeile dazu. Lang-Druck zeigt den vollständigen Namen."},
                   {k:"Neu-Chip", v:"Setzt die aktive Session zurück – Quiz startet ohne geladene Konfiguration."},
                   {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl."},

@@ -10,7 +10,7 @@ const browser = await puppeteer.launch({
 const page = await browser.newPage();
 await page.setViewport({ width: 820, height: 1200 });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
-page.on("dialog", d => d.accept());
+page.on("dialog", d => { console.log("FAIL Browser-Fenster erschienen:", d.message()); d.dismiss(); });
 let fehler = 0;
 const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FAIL", msg); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -112,6 +112,13 @@ ok(await fortschritt() === akz, "Wieder Akzente: Stand 2 / … bleibt erhalten")
 
 // Zurücksetzen löscht nur den Akzente-Fortschritt
 await page.click("[data-session-zuruecksetzen]");
+await sleep(200);
+ok(await page.$("[data-reset-frage]") && /Abgefragt-Stand löschen\?/.test(await text()) && await fortschritt() === null, "Zurücksetzen: Rückfrage in der App statt Browser-Fenster");
+await clickText("button", "Nein", true);
+ok(/^2 \/ \d+$/.test(await fortschritt() || ""), "„Nein“: Stand bleibt");
+await page.click("[data-session-zuruecksetzen]");
+await sleep(200);
+await page.click("[data-reset-ja]");
 await sleep(300);
 ok(await fortschritt() === null, "Zurücksetzen: Akzente-Fortschritt weg, neue Session");
 await clickText(".spalten-modus-btn", "Karte", true);
