@@ -78,8 +78,9 @@ for (let k = 0; k < 10; k++) {
     await setze(2, "è");
     ok((await klassen())[2] === "ok", "Richtig gesetzter Akzent wird sofort grün");
     await setze(0, "é");
-    ok(!(await text()).includes("Prüfen"), "Alle Akzente richtig → automatisch übernommen (ohne Prüfen)");
-    ok((await kartenFarbe()).includes("richtig"), "Ganze Karte wird grün");
+    ok((await text()).includes("Prüfen") && !(await text()).includes("Weiter →"), "Stufe „Schwer“: alle Akzente richtig, aber „Prüfen“ nötig");
+    await clickText("button", "Prüfen", true);
+    ok((await kartenFarbe()).includes("richtig"), "Nach Prüfen: ganze Karte grün");
   } else if (frage === "Herz" && mal === 1) {
     await tippe(0);
     ok((await klassen())[0] === "blink", "Buchstabe ohne Akzent (c) leuchtet rot auf");
@@ -92,7 +93,10 @@ for (let k = 0; k < 10; k++) {
     const nach = await kacheln();
     t = await text();
     ok(nach.map(x => x.replace("*", "")).join("") === "cœur", `œ ersetzt o + e: ${nach.join(" ")}`);
-    ok(t.includes("Fehlgriff") && !(await kartenFarbe()).includes("richtig"), "Mit Fehlgriff: zählt als nicht gewusst, Karte nicht grün");
+    await clickText("button", "Prüfen", true);
+    t = await text();
+    const fb = await page.evaluate(() => document.querySelector(".quiz-feedback")?.className || "");
+    ok(t.includes("nicht gewusst") && fb.includes("nein") && (await kartenFarbe()).includes("richtig"), "Mit Fehlgriff richtig gelöst: Karte grün, Hinweis rot (zählt als nicht gewusst)");
   } else if (frage === "Herz" && mal >= 3) {
     await setze(1, "œ");
   } else if (frage === "Herz") {
@@ -107,12 +111,15 @@ for (let k = 0; k < 10; k++) {
       "Prüfen mit Fehler: fehlender Buchstabe rot, Korrektur noch möglich");
     await setze(3, "ç");
     t = await text();
-    ok((await klassen())[3] === "ok" && t.includes("Weiter →") && !(await kartenFarbe()).includes("richtig"),
+    await clickText("button", "Prüfen", true);
+    t = await text();
+    ok((await klassen())[3] === "ok" && t.includes("Weiter →") && t.includes("nicht gewusst"),
       "Korrigiert: ç grün, Antwort übernommen, zählt aber als nicht gewusst");
   } else if (frage === "Junge") {
     await setze(3, "ç");
   }
   await sleep(150);
+  if (!(await text()).includes("Weiter →")) await clickText("button", "Prüfen", true);
   await clickText("button", "Weiter →");
   await sleep(300);
 }
@@ -158,6 +165,19 @@ await oeffneEinst();
 ok((await text()).includes("Was gilt als einfach / schwer?"), "Einstellungen zeigen die Tabelle „Was gilt als einfach / schwer?“");
 await clickText(".toggle-opt", "Einfach", true);
 ok(await starteUndZaehle() > 0, "Stufe „Einfach“: Buchstaben mit Akzent hervorgehoben");
+// Einfach: richtige Akzente werden automatisch übernommen
+await clickText("button", "Quiz starten (");
+await sleep(400);
+{
+  const tt0 = await text();
+  const loesung = { "Schüler": [[2, "è"], [0, "é"]], "Herz": [[1, "œ"]], "Junge": [[3, "ç"]] };
+  for (const [i, v] of loesung[Object.keys(loesung).find(w => tt0.includes(w))]) await setze(i, v);
+  ok((await text()).includes("Weiter →") && (await kartenFarbe()).includes("richtig"), "Stufe „Einfach“: alle Akzente richtig → automatisch übernommen");
+  await clickText("button", "Beenden", true);
+  await sleep(300);
+  if (/Zur Übersicht/.test(await text())) await clickText("button", "Zur Übersicht");
+  await sleep(300);
+}
 // Haken "hervorheben" in Spalte Einfach entfernen
 await oeffneEinst();
 await page.evaluate(() => {

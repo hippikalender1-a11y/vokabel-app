@@ -1265,8 +1265,10 @@ AKZENT-MODUS (4. Antwort-Modus "akzent", nur E-Spalten, Knopf "Akzente"):
   antippen bzw. falsche Variante wählen → Kachel leuchtet 0,6 s rot
   (akzentFehlgriff, quiz.akzent.fehler = true → Vokabel zählt wie ein
   MC-Fehlklick als nicht gewusst); richtige Variante → Kachel grün; alle
-  Akzente gesetzt → automatisch übernommen (schliesseAkzenteAb), ohne
-  Fehlgriff = richtig, ganze Antwort-Karte grün. "Prüfen" (groß, mittig;
+  Akzente gesetzt → automatisch übernommen (nur wenn Regel
+  akzentAutoUebernahme der Stufe an, sonst "Prüfen"; schliesseAkzenteAb).
+  Richtig gelöst → Antwort-Karte grün (richtigAufgedeckt), auch nach
+  Fehlgriff; dann roter Hinweis "Nicht fehlerfrei …", Wertung nicht gewusst. "Prüfen" (groß, mittig;
   Lösung/Info klein darunter). Prüfen bei fehlenden Akzenten: bleibt in der
   Eingabe, fehlende Kacheln rot (quiz.akzent.pruefFehler), Vokabel zählt
   als nicht gewusst; korrigieren (→ automatisch übernommen) oder "Lösung
@@ -1283,6 +1285,8 @@ SCHWIERIGKEITSGRAD-REGELN (Quiz-Tab → Einstellungen → Schwierigkeitsgrad):
     aufdeckenAbzug    (Einfach –, Schwer ✓) "Lösung anzeigen" −1 Punkt
     akzentHervorheben (Einfach ✓, Schwer –) Akzent-Modus: Kacheln mit Akzent
                       gelb markiert (.markiert)
+    akzentAutoUebernahme (Einfach ✓, Schwer –) alle Akzente richtig →
+                      automatisch übernommen; sonst "Prüfen" nötig
   Gespeichert in einstellungen.stufen[einfach|schwer][key]; stufenRegeln(e)
   liefert die Regeln der aktuellen Stufe. Neue Regeln: Eintrag in
   STUFEN_REGELN ergänzen und an der Wirkstelle stufenRegeln() abfragen.
