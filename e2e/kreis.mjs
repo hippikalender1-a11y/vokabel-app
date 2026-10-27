@@ -32,7 +32,7 @@ async function lade(scores) {
 const kreis = () => page.evaluate(() => {
   const svg = [...document.querySelectorAll("svg")].find(s => s.getAttribute("viewBox") === "0 0 400 230");
   if (!svg) return null;
-  return [...svg.querySelectorAll("g")].map(g => ({
+  return [...svg.querySelectorAll("g:not([data-kreismitte])")].map(g => ({
     name: g.querySelectorAll("text")[0].textContent, wert: g.querySelectorAll("text")[1].textContent,
     blass: Number((g.querySelector("path,circle")).getAttribute("opacity")) < 1,
     y: Number(g.querySelectorAll("text")[0].getAttribute("y")), rechts: g.querySelectorAll("text")[0].getAttribute("text-anchor") === "start",

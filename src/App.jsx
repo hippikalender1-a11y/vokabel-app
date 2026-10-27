@@ -399,7 +399,9 @@ const AKZENT_HINWEIS = "Richtig – achte auf die Akzente.";
 const STUFEN_REGELN = [
   { key: "akzenteTolerant", label: "Fehlende Akzente beim Tippen gelten als richtig", sub: "z. B. ete statt été", einfach: true, schwer: false },
   { key: "aufdeckenAbzug", label: "„Lösung anzeigen“ zieht 1 Punkt ab", sub: "sonst ohne Score-Einfluss", einfach: false, schwer: true },
+  { key: "akzentOhneMischen", label: "Akzent-Modus: auch Wörter ohne Akzent abfragen", sub: "dann muss man erkennen, dass nichts zu ändern ist", einfach: false, schwer: true },
   { key: "akzentHervorheben", label: "Akzent-Modus: Buchstaben mit Akzent hervorheben", sub: "zeigt, wo ein Akzent hingehört", einfach: true, schwer: false },
+  { key: "akzentZaehler", label: "Akzent-Modus: anzeigen, wie viele Akzente noch fehlen", sub: "z. B. „Akzente 2 / 3“", einfach: true, schwer: false },
   { key: "akzentAutoUebernahme", label: "Akzent-Modus: alle Akzente richtig → automatisch übernehmen", sub: "sonst muss man „Prüfen“ antippen", einfach: true, schwer: false },
 ];
 // Regeln der aktuell gewählten Stufe (gespeicherte Haken, sonst Standard)
@@ -526,6 +528,17 @@ function akzentVarianten(kacheln, i, lang) {
   return liste.length > 1 ? liste : [];
 }
 
+// ── Statistik-Art: welcher Score ausgewertet wird (Tap in die Kreismitte wechselt) ──
+const STATISTIK_ARTEN = [["uebersetzung", "Übersetzung"], ["diktat", "Diktat"], ["akzente", "Akzente"]];
+// Sicht für die Statistik: "fortschritt" ist der Score der gewählten Art; Akzente nur Vokabeln mit Akzent
+function statistikSicht(voks, art) {
+  if (art === "diktat") return voks.map(v => ({ ...v, fortschritt: v.diktatFortschritt }));
+  if (art === "akzente") return voks
+    .filter(v => v.akzentFortschritt || TYPEN.some(t => t.startsWith('E') && hatAkzente(v[t]?.wert)))
+    .map(v => ({ ...v, fortschritt: v.akzentFortschritt }));
+  return voks;
+}
+
 // ── Styling ────────────────────────────────────────────────────────────────
 const C = {
   bg:"#f7f5f0", surface:"#ffffff", border:"#e0dbd2",
@@ -615,6 +628,7 @@ const CSS = `
   .akzent-wort{--k:min(48px, calc((100cqw - (var(--n) - 1) * 4px) / var(--n)));display:flex;flex-wrap:wrap;justify-content:center;column-gap:calc(var(--k) * 0.6);row-gap:8px;margin-top:8px;}
   .akzent-wortgruppe{display:flex;gap:4px;}
   .akzent-kachel{box-sizing:border-box;width:var(--k);height:calc(var(--k) * 1.3);padding:0;border-radius:calc(var(--k) * 0.2);border:1.5px solid #c9c2b6;background:#fff;font-family:inherit;font-size:calc(var(--k) * 0.68);font-weight:700;color:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,border-color .15s;}
+  .akzent-zaehler{text-align:center;font-size:0.85rem;font-weight:700;color:#6b6560;margin-top:2px;}
   .akzent-kachel.markiert{background:#fff4d6;border-color:#e0a800;}
   .akzent-kachel.aktiv{border:2.5px solid #3b3832;background:#f0ede8;}
   .akzent-kachel.ok{background:#c8e6c9;border-color:#2d6a4f;color:#1b5e20;}
@@ -739,8 +753,6 @@ export default function VokabelApp() {
   const [quizAntwortTypenGeordnet, setQuizAntwortTypenGeordnet] = useState(["E1"]);
   const [quizInfoTypenSession, setQuizInfoTypenSession] = useState([]);
   const [quizSpalteModus, setQuizSpalteModus] = useState({ E1: "karte" });
-  // Akzent-Modus: auch Wörter ohne Akzent abfragen (sonst nur Wörter mit Akzent/Sonderzeichen)
-  const [quizAkzentMischen, setQuizAkzentMischen] = useState(false);
   const [quizZeigeInfo, setQuizZeigeInfo] = useState({ i1: true, i2: true });
   const [quizModus, setQuizModus] = useState("sequenziell");
   const [quizModusInfoAufgeklappt, setQuizModusInfoAufgeklappt] = useState(false);
@@ -766,6 +778,7 @@ export default function VokabelApp() {
   const [exportAuswahlModus, setExportAuswahlModus] = useState(false);
   const [exportAusgewaehlt, setExportAusgewaehlt] = useState(new Set());
   const [statistikSort, setStatistikSort] = useState("score-asc");
+  const [statistikArt, setStatistikArt] = useState("uebersetzung");   // uebersetzung / diktat / akzente
   const [statistikFilter, setStatistikFilter] = useState(new Set(['negativ', 'nie', 'arbeit', 'gelernt'])); // Gruppen: negativ / nie / arbeit / gelernt
   const [statistikListenIds, setStatistikListenIds] = useState(null); // null = alle
   const [statistikListenAufgeklappt, setStatistikListenAufgeklappt] = useState(false);
@@ -1877,8 +1890,6 @@ export default function VokabelApp() {
       quizModus, quizBereichTyp,
       quizReihenfolge, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst,
       quizDiktatSpalte, quizDiktatUebersetzung,
-      // nur wenn eingeschaltet – ältere Einträge bleiben so unverändert vergleichbar
-      ...(quizAkzentMischen ? { quizAkzentMischen } : {}),
     };
   }
 
@@ -1908,7 +1919,6 @@ export default function VokabelApp() {
     setQuizUnbeantwortetZuerst(ubz != null && typeof ubz === "object" ? ubz : { zufall: !!ubz, schlechteste: false, listennr: !!ubz });
     setQuizDiktatSpalte(k.quizDiktatSpalte || "E1");
     setQuizDiktatUebersetzung(k.quizDiktatUebersetzung !== undefined ? k.quizDiktatUebersetzung : "D1");
-    setQuizAkzentMischen(!!k.quizAkzentMischen);
   }
 
   function ladeSlot(typ, id) {
@@ -2115,7 +2125,6 @@ export default function VokabelApp() {
     setAbfrageZielModus(STANDARD_ABFRAGE_ZIEL);
     setAbfrageZielAnzahl(1);
     setAbfrageZielWiederholung(1);
-    setQuizAkzentMischen(false);
     setAbfrageZielScore(0);
     setAbfrageZielScoreTyp("global");
     setQuizGelerntEinschliessen(false);
@@ -2311,7 +2320,7 @@ export default function VokabelApp() {
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
     const gruppe = v => !v.fortschritt ? "nie" : v.fortschritt.score < 0 ? "negativ"
       : (schwelle > 0 && v.fortschritt.score >= schwelle) ? "gelernt" : "arbeit";
-    const voks = statistikGefilterteVoks.filter(v => statistikFilter.has(gruppe(v)));
+    const voks = statistikSicht(statistikGefilterteVoks, statistikArt).filter(v => statistikFilter.has(gruppe(v)));
     const anzahl = { gelernt: 0, arbeit: 0, nie: 0, negativ: 0 };
     voks.forEach(v => { anzahl[gruppe(v)]++; });
     const abgefragt = voks.filter(v => v.fortschritt);
@@ -2429,6 +2438,7 @@ export default function VokabelApp() {
     setStatistikVollbild(false);
     setStatistikSlotGeleert(false);
     setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']));
+    setStatistikArt(q?.modus === "diktat" ? "diktat" : q?.scoreFeld === "akzentFortschritt" ? "akzente" : "uebersetzung");
     if (q?.istSessionModus && aktiverSlot && getSlotEintrag(aktiverSlot.typ, aktiverSlot.id)) {
       ladeSlotStatistik(aktiverSlot.typ, aktiverSlot.id);
     } else {
@@ -2570,7 +2580,7 @@ export default function VokabelApp() {
     // Akzent-Spalten: Wörter ohne Akzent nur auf Wunsch; reine Akzent-Abfrage nutzt den eigenen Akzent-Score
     const akzentSpalten = (quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet)
       .filter(t => t.startsWith('E') && quizSpalteModus[t] === "akzent");
-    if (akzentSpalten.length > 0 && !quizAkzentMischen)
+    if (akzentSpalten.length > 0 && !stufenRegeln(einstellungen).akzentOhneMischen)
       voks = voks.filter(v => akzentSpalten.some(t => hatAkzente(v[t]?.wert)));
     const scoreFeld = quizModus !== "rotierend" && quizAntwortTypenGeordnet.length > 0
       && quizAntwortTypenGeordnet.every(t => quizSpalteModus[t] === "akzent") ? "akzentFortschritt" : "fortschritt";
@@ -3692,9 +3702,17 @@ export default function VokabelApp() {
                         akz.kacheln.forEach((k, i) => { if (k.basis === " ") woerter.push([]); else woerter[woerter.length - 1].push(i); });
                         const sichtbar = w => w.filter(i => akz.wahl[i] !== "").length;
                         const n = Math.max(12, ...woerter.map(sichtbar));
-                        const hervorheben = stufenRegeln(einstellungen).akzentHervorheben;
+                        const regeln = stufenRegeln(einstellungen);
+                        const hervorheben = regeln.akzentHervorheben;
+                        const mitAkzent = akz.kacheln.map((k, i) => i).filter(i => kachelMitAkzent(akz.kacheln[i]));
+                        const gefunden = mitAkzent.filter(i => akz.wahl[i] === akz.kacheln[i].richtig).length;
                         return (
                         <div className="akzent-rahmen" onClick={e => e.stopPropagation()}>
+                          {regeln.akzentZaehler && quiz.phase === "eingabe" && (
+                            <div className="akzent-zaehler" {...tt("Richtig gesetzte Akzente / Akzente im Wort")}>
+                              Akzente {gefunden} / {mitAkzent.length}
+                            </div>
+                          )}
                           <div className="akzent-wort" style={{"--n": n}}>
                             {woerter.filter(w => w.length > 0).map((w, wi) => (
                               <span key={wi} className="akzent-wortgruppe">
@@ -4405,7 +4423,7 @@ export default function VokabelApp() {
             .filter(t => t.startsWith('E') && quizSpalteModus[t] === "akzent");
           const nurAkzent = quizModus === "sequenziell" && quizAntwortTypenGeordnet.length > 0
             && quizAntwortTypenGeordnet.every(t => quizSpalteModus[t] === "akzent");
-          const akzentVoks = akzentSpalten.length > 0 && !quizAkzentMischen
+          const akzentVoks = akzentSpalten.length > 0 && !stufenRegeln(einstellungen).akzentOhneMischen
             ? gefilterteVoks.filter(v => akzentSpalten.some(t => hatAkzente(v[t]?.wert))) : gefilterteVoks;
           // Score-Filter (nur schlechteste-Modus) → Basis für Reihenfolge-Header
           let reihenfolgeVoks = akzentVoks;
@@ -4820,18 +4838,6 @@ export default function VokabelApp() {
                             );
                           })}
                         </div>
-                        {(quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet).some(t => t.startsWith('E') && quizSpalteModus[t] === "akzent") && (
-                          <div className="karte" style={{marginBottom:16}}>
-                            <div {...tt("Aus: nur Wörter mit Akzent oder Sonderzeichen (é, ç, œ …). An: auch Wörter ohne – dann muss man erkennen, dass nichts zu ändern ist")}
-                              className="quiz-setup-check" style={{padding:"10px 16px"}} onClick={() => setQuizAkzentMischen(v => !v)}>
-                              <div className={`checkbox${quizAkzentMischen?" checked":""}`}>{quizAkzentMischen?"✓":""}</div>
-                              <div>
-                                <div style={{fontWeight:600, fontSize:"0.9rem"}}>Akzente: auch Wörter ohne Akzent</div>
-                                <div style={{fontSize:"0.75rem", color:"#6b6560"}}>{quizAkzentMischen ? "Alle Wörter werden abgefragt" : "Nur Wörter mit Akzent oder Sonderzeichen"}</div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
                         {infoSpalten.length > 0 && (
                           <>
                             <div className="sektion-label" style={{marginBottom:8}}>Info-Spalten anzeigen</div>
@@ -5703,7 +5709,9 @@ export default function VokabelApp() {
         {tab === "statistik" && (() => {
           const schwelleS = einstellungen.gelerntSchwelle ?? 0;
           // Kennzahlen immer über alle Vokabeln; der Gelernt-Knopf blendet nur Graph + Liste aus
-          const alleVoks = statistikGefilterteVoks;
+          const alleVoks = statistikSicht(statistikGefilterteVoks, statistikArt);
+          const artName = STATISTIK_ARTEN.find(([a]) => a === statistikArt)[1];
+          const naechsteArt = () => setStatistikArt(a => STATISTIK_ARTEN[(STATISTIK_ARTEN.findIndex(([x]) => x === a) + 1) % STATISTIK_ARTEN.length][0]);
           const istGelerntS = v => schwelleS > 0 && (v.fortschritt?.score ?? -Infinity) >= schwelleS;
           // Drei Bewertungsgruppen + nie abgefragt; Score 0 zählt als "in Arbeit"
           const gruppeVon = v => !v.fortschritt ? "nie" : v.fortschritt.score < 0 ? "negativ" : istGelerntS(v) ? "gelernt" : "arbeit";
@@ -5717,8 +5725,15 @@ export default function VokabelApp() {
                   ? "Keine Liste ausgewählt."
                   : statistikBereichTyp === "bereich" && statistikCheckboxAuswahl.size === 0
                   ? "Keine Vokabeln ausgewählt."
+                  : statistikArt === "akzente" ? "Keine Vokabeln mit Akzent vorhanden."
                   : "Keine Vokabeln vorhanden."}
               </div></div>
+              {statistikArt !== "uebersetzung" && (
+                <div style={{textAlign:"center"}}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setStatistikArt("uebersetzung")}
+                    {...tt("Statistik wieder für die Übersetzung anzeigen")}>Zur Übersetzungs-Statistik</button>
+                </div>
+              )}
             </div>
           );
 
@@ -5727,12 +5742,8 @@ export default function VokabelApp() {
           const kopfAnzahl = { negativ: 0, nie: 0, arbeit: 0, gelernt: 0 };
           kopfVoks.forEach(v => { kopfAnzahl[gruppeVon(v)]++; });
           const abgefragt = kopfVoks.filter(v => v.fortschritt);
-          const diktatAbgefragt = kopfVoks.filter(v => v.diktatFortschritt);
           const avgScore = abgefragt.length > 0
             ? abgefragt.reduce((s, v) => s + v.fortschritt.score, 0) / abgefragt.length
-            : null;
-          const avgDiktatScore = diktatAbgefragt.length > 0
-            ? diktatAbgefragt.reduce((s, v) => s + v.diktatFortschritt.score, 0) / diktatAbgefragt.length
             : null;
 
           // Lernfortschritt: jede Vokabel zählt anteilig bis zur Gelernt-Schwelle (0…100 %),
@@ -5740,13 +5751,6 @@ export default function VokabelApp() {
           const anteil = score => schwelleS > 0 ? Math.min(1, Math.max(0, (score ?? 0) / schwelleS)) : 0;
           const prozent = (voks, scoreVon) => voks.length > 0 ? voks.reduce((s, v) => s + anteil(scoreVon(v)), 0) / voks.length * 100 : 0;
           const lernFortschritt = prozent(kopfVoks, v => v.fortschritt?.score);
-          const diktatFortschrittProzent = prozent(kopfVoks, v => v.diktatFortschritt?.score);
-          // Akzent-Fortschritt: bezogen auf Vokabeln mit Akzent (bzw. schon im Akzent-Modus geübte)
-          const akzentAbgefragt = kopfVoks.filter(v => v.akzentFortschritt);
-          const akzentBasis = kopfVoks.filter(v => v.akzentFortschritt || TYPEN.some(t => t.startsWith('E') && hatAkzente(v[t]?.wert)));
-          const akzentFortschrittProzent = prozent(akzentBasis, v => v.akzentFortschritt?.score);
-          const avgAkzentScore = akzentAbgefragt.length > 0
-            ? akzentAbgefragt.reduce((s, v) => s + v.akzentFortschritt.score, 0) / akzentAbgefragt.length : null;
           const gelerntAnzahl = kopfVoks.filter(istGelerntS).length;
 
 
@@ -5775,17 +5779,12 @@ export default function VokabelApp() {
             <div style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
               <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2, flexShrink:0}}>
                 <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>{schwelleS > 0 ? "Lernfortschritt" : "Ø Score"}</span>
+                <span style={{fontSize:"0.72rem", fontWeight:700, color:"#6b6560"}} {...tt("Ausgewertet wird dieser Score – Tap in die Kreismitte wechselt")}>{artName}</span>
               </div>
               {schwelleS > 0 && (
                 <div style={{display:"flex", flexDirection:"column", alignItems:"center", flex:1, minWidth:0}}>
                   <div style={{display:"flex", alignItems:"baseline", gap:6}}>
                     <span style={{fontWeight:800, fontSize:"1.25rem", color:"#2d6a4f"}}>{Math.round(lernFortschritt)} %</span>
-                    {diktatAbgefragt.length > 0 && (
-                      <span style={{fontWeight:700, fontSize:"0.8rem", color:"#e67e22"}} {...tt("Lernfortschritt im Diktat")}>Diktat {Math.round(diktatFortschrittProzent)} %</span>
-                    )}
-                    {akzentAbgefragt.length > 0 && (
-                      <span style={{fontWeight:700, fontSize:"0.8rem", color:"#7b4fa0"}} {...tt("Lernfortschritt im Akzent-Modus (Vokabeln mit Akzent)")}>Akzente {Math.round(akzentFortschrittProzent)} %</span>
-                    )}
                   </div>
                   <div style={{display:"flex", width:"min(180px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"#f0ede8", margin:"3px 0 2px"}}
                     {...tt(`Gelernt ${kopfAnzahl.gelernt} · In Arbeit ${kopfAnzahl.arbeit} · Nie abgefragt ${kopfAnzahl.nie} · Negativ ${kopfAnzahl.negativ}`)}>
@@ -5809,19 +5808,6 @@ export default function VokabelApp() {
                     </span>
                   ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>}
                 </div>
-                {diktatAbgefragt.length > 0 && (
-                  <div style={{display:"flex", alignItems:"center", gap:4}}>
-                    <svg width="14" height="3" viewBox="0 0 14 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="#e67e22" strokeWidth="2.5" strokeDasharray="4 2"/></svg>
-                    {avgDiktatScore !== null ? (
-                      <span style={{fontWeight:700, fontSize:"0.88rem", color: avgDiktatScore > 0 ? "#2d6a4f" : avgDiktatScore < 0 ? "#c0392b" : "#6b6560"}}>
-                        {avgDiktatScore > 0 ? "+" : ""}{avgDiktatScore.toFixed(1)}
-                      </span>
-                    ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>}
-                  </div>
-                )}
-                {avgAkzentScore !== null && (
-                  <span style={{fontWeight:700, fontSize:"0.8rem", color:"#7b4fa0"}} {...tt("Ø Akzent-Score")}>Akzente {avgAkzentScore > 0 ? "+" : ""}{avgAkzentScore.toFixed(1)}</span>
-                )}
               </div>
               )}
               <button className="btn btn-ghost btn-sm" style={{flexShrink:0}} onClick={() => window.scrollTo({top:0, behavior:"smooth"})} {...tt("Zum Seitenanfang scrollen")}>nach oben</button>
@@ -5862,7 +5848,8 @@ export default function VokabelApp() {
                   return (
                     <div style={{background:"#fafaf8", padding:"8px 6px 10px"}}>
                       {teile.length === 0 ? (
-                        <div style={{textAlign:"center", color:"#9b9590", fontSize:"0.85rem", padding:"40px 0"}}>Alle Gruppen ausgeblendet</div>
+                        <div style={{textAlign:"center", color:"#9b9590", fontSize:"0.85rem", padding:"40px 0"}}>Alle Gruppen ausgeblendet
+                          <div><button className="btn btn-ghost btn-sm" style={{marginTop:8}} onClick={naechsteArt} {...tt("Zwischen Übersetzung, Diktat und Akzenten wechseln")}>{artName} ⇄</button></div></div>
                       ) : (
                       <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%", maxHeight:260, display:"block", userSelect:"none"}}>
                         {teile.map(t => {
@@ -5882,6 +5869,12 @@ export default function VokabelApp() {
                             </g>
                           );
                         })}
+                        {/* Kreismitte: Tap wechselt Übersetzung → Diktat → Akzente */}
+                        <g {...tt("Antippen: zwischen Übersetzung, Diktat und Akzenten wechseln")} style={{cursor:"pointer"}} onClick={naechsteArt} data-kreismitte="1">
+                          <circle cx={cx} cy={cy} r={36} fill="#fff" stroke="#e0dbd2" strokeWidth="1.5"/>
+                          <text x={cx} y={cy + 1} textAnchor="middle" fontSize={artName.length > 8 ? 11 : 13} fontWeight="800" fill="#3b3832">{artName}</text>
+                          <text x={cx} y={cy + 16} textAnchor="middle" fontSize="13" fill="#9b9590">⇄</text>
+                        </g>
                       </svg>
                       )}
                       {/* Legende: alle vorhandenen Gruppen; ausgeblendete blass – antippen blendet ein/aus */}
@@ -6098,9 +6091,9 @@ export default function VokabelApp() {
                   {k:"Vokabel-Auswahl [Alle]", v:"Alle Vokabeln der gewählten Listen werden abgefragt."},
                   {k:"Vokabel-Auswahl [Bereich]", v:"Öffnet eine Checkbox-Liste. Einzelne Vokabeln an-/abwählen. [Von–Bis] ermöglicht Bereichsauswahl per 2 Klicks."},
                   {k:"Abfrage-Modus", v:"Frage–Antwort: Karte aufdecken. Wechselnd: Frage- und Antwortspalten wechseln sich ab. Diktat: Antwort wird vorgelesen, du tippst die Lösung."},
-                  {k:"Akzente", v:"Antwort-Modus für Fremdsprachen-Spalten: Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Standardmäßig nur Wörter mit Akzent; „auch Wörter ohne Akzent“ mischt die übrigen bei."},
+                  {k:"Akzente", v:"Antwort-Modus für Fremdsprachen-Spalten: Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Ob auch Wörter ohne Akzent abgefragt werden, legst du beim Schwierigkeitsgrad fest."},
                   {k:"Reihenfolge", v:"Zufällig / Schlechteste (nach Score sortiert) / Listen-Nr. (Originalreihenfolge). Score-Filter: nur Vokabeln bis zu einem bestimmten Score zeigen. Unbeantwortete zuerst: noch nie abgefragte Vokabeln werden vorgezogen."},
-                  {k:"Einstellungen", v:"Lautsprache: Auto-Play und welche Spalten vorgelesen werden. Schwierigkeitsgrad: Einfach oder Schwer. Darunter legst du per Haken fest, was in welcher Stufe gilt: fehlende Akzente beim Tippen als richtig werten, Punktabzug bei „Lösung anzeigen“, im Akzent-Modus Buchstaben mit Akzent hervorheben und richtige Antworten automatisch übernehmen (sonst „Prüfen“)."},
+                  {k:"Einstellungen", v:"Lautsprache: Auto-Play und welche Spalten vorgelesen werden. Schwierigkeitsgrad: Einfach oder Schwer. Darunter legst du per Haken fest, was in welcher Stufe gilt: fehlende Akzente beim Tippen als richtig werten, Punktabzug bei „Lösung anzeigen“, im Akzent-Modus auch Wörter ohne Akzent abfragen, Buchstaben mit Akzent hervorheben, die Zahl der noch fehlenden Akzente anzeigen (z. B. 2 / 3) und richtige Antworten automatisch übernehmen (sonst „Prüfen“)."},
                   {k:"Session [Alle]", v:"Alle verfügbaren Vokabeln in einem Durchgang abfragen."},
                   {k:"Session [Pakete]", v:"Vokabeln in kleinere Pakete aufteilen (5–50 Stück). Nach jedem Paket kannst du pausieren oder weitermachen. Abgefragte Vokabeln werden beim nächsten Paket übersprungen."},
                   {k:"Abfrage-Ziel", v:"Anzahl: jede Vokabel 1×/2×/3× pro Durchgang abfragen. Mit Wiederholung: Vokabeln so lange einreihen, bis jede 1×/2×/3× richtig beantwortet wurde. Score: Vokabeln so lange abfragen, bis ihr Score das Ziel erreicht."},
@@ -6120,8 +6113,7 @@ export default function VokabelApp() {
                   {k:"Vokabel-Auswahl", v:"Alle Vokabeln oder einen bestimmten Bereich filtern."},
                   {k:"Filter-Boxen", v:"Gesamt / Nie abgefragt / Score positiv / Score negativ. Alle sind standardmäßig aktiv. Antippen deaktiviert eine Kategorie – sie erscheint dann weder in der Liste noch im Graphen. 'Gesamt' stellt alle wieder her."},
                   {k:"Kreisdiagramm", v:"Anteil der Gruppen Gelernt, In Arbeit, Nie abgefragt und Negativ mit Anzahl und Prozent. Segment antippen blendet die Gruppe in der Liste aus/ein, 'Gesamt' zeigt wieder alle. Symbol oben rechts: Vollbild."},
-                  {k:"Diktat", v:"Sobald Diktat-Ergebnisse vorhanden sind, zeigt die Kopfzeile zusätzlich den Lernfortschritt im Diktat."},
-                  {k:"Akzente", v:"Sobald im Akzent-Modus geübt wurde, zeigt die Kopfzeile zusätzlich den Akzent-Fortschritt (bezogen auf Vokabeln mit Akzent)."},
+                  {k:"Übersetzung / Diktat / Akzente", v:"Tap in die Mitte des Kreisdiagramms wechselt, welcher Score ausgewertet wird: Übersetzung (normaler Quiz-Score), Diktat oder Akzente (nur Vokabeln mit Akzent). Kreis, Gruppen, Kopfzeile und Vokabelliste richten sich danach."},
                   {k:"Lernfortschritt", v:"Wie weit die Vokabelgruppe gelernt ist (0–100 %). Jede Vokabel zählt anteilig bis zur Gelernt-Schwelle – bei +3 z. B. Score +1 = 33 %, +2 = 67 %, ab +3 = 100 %. 100 % = alle Vokabeln gelernt. Darunter: Anzahl gelernter Vokabeln und Ø Score. Ohne Gelernt-Schwelle wird nur der Ø Score angezeigt."},
                   {k:"Gruppen", v:"Jede Vokabel gehört zu einer Gruppe: Negativ (Score unter 0, rot hinterlegt), Nie abgefragt, In Arbeit (Score 0 bis unter der Gelernt-Schwelle) und ✓ Gelernt (ab der Schwelle, grün hinterlegt). Das Kreisdiagramm (Standard-Ansicht) zeigt Anzahl und Anteil jeder Gruppe; ein Segment antippen blendet die Gruppe in Graph und Liste aus oder wieder ein, 'Gesamt' zeigt wieder alle. Lernfortschritt, Gruppen-Balken und Zähler beziehen sich auf die eingeblendeten Gruppen. Das Symbol oben rechts im Kreis öffnet die Statistik im Vollbild. Der farbige Balken unter dem Lernfortschritt zeigt die Verteilung."},
                   {k:"Score-Balken", v:"Null ist in allen Zeilen an derselben Stelle. Nach links bis −5 (tiefer = voller roter Balken), nach rechts bis zur Gelernt-Schwelle. Gelernte Vokabeln: ganzer Balken dunkelgrün."},

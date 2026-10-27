@@ -1278,13 +1278,28 @@ AKZENT-MODUS (4. Antwort-Modus "akzent", nur E-Spalten, Knopf "Akzente"):
   per Container-Einheit: --k = min(48px, (100cqw − Lücken) / n), n = max(12,
   längstes Wort) → mindestens 12 Zeichen nebeneinander.
 
+STATISTIK: ÜBERSETZUNG / DIKTAT / AKZENTE
+  Tap in die Kreismitte (weißer Kreis, data-kreismitte) wechselt
+  statistikArt uebersetzung → diktat → akzente. statistikSicht(voks, art)
+  liefert Kopien, in denen "fortschritt" = Score der Art ist (Akzente: nur
+  Vokabeln mit Akzent bzw. mit akzentFortschritt) → Kreis, Gruppen, Legende,
+  Kopf (+ Name der Art), Vollbild-Kopf, Liste, Sortierung folgen automatisch.
+  Die früheren Zusatzzahlen "Diktat x %" / "Akzente x %" im Kopf entfallen.
+  "Zur Statistik" nach einer Runde wählt die passende Art (Diktat bzw. reine
+  Akzent-Abfrage). Leere Akzent-Sicht → Knopf "Zur Übersetzungs-Statistik".
+
 SCHWIERIGKEITSGRAD-REGELN (Quiz-Tab → Einstellungen → Schwierigkeitsgrad):
   Tabelle "Was gilt als einfach / schwer?" mit je einem Haken pro Stufe.
   STUFEN_REGELN (Modul-Konstante, Standardwerte = bisheriges Verhalten):
     akzenteTolerant   (Einfach ✓, Schwer –) fehlende Akzente beim Tippen ok
     aufdeckenAbzug    (Einfach –, Schwer ✓) "Lösung anzeigen" −1 Punkt
+    akzentOhneMischen (Einfach –, Schwer ✓) Akzent-Modus: auch Wörter ohne
+                      Akzent abfragen (ersetzt den früheren Quiz-Schalter
+                      quizAkzentMischen; wirkt in starteQuiz + Zähler im Quiz-Tab)
     akzentHervorheben (Einfach ✓, Schwer –) Akzent-Modus: Kacheln mit Akzent
                       gelb markiert (.markiert)
+    akzentZaehler     (Einfach ✓, Schwer –) Akzent-Modus: Zähler "Akzente 1 / 3"
+                      (richtig gesetzt / im Wort) über den Kacheln
     akzentAutoUebernahme (Einfach ✓, Schwer –) alle Akzente richtig →
                       automatisch übernommen; sonst "Prüfen" nötig
   Gespeichert in einstellungen.stufen[einfach|schwer][key]; stufenRegeln(e)
