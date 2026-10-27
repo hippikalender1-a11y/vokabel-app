@@ -1249,7 +1249,9 @@ AKZENT-MODUS (4. Antwort-Modus "akzent", nur E-Spalten, Knopf "Akzente"):
   Zustand: quiz.akzent {key, wahl, aktiv, geprueft}; key = Vokabel-Id |
   Spalte | Runde | Wiederholungsdurchgang → bei neuer Vokabel automatisch
   frisch (akzentStand()). "Prüfen" → pruefeAkzente(): ein Versuch, Kacheln
-  grün/rot, Lösung darunter; "Lösung anzeigen" = aufgedeckt.
+  grün/rot, Lösung darunter; "Lösung anzeigen" = aufgedeckt;
+  dann bleiben die Kacheln stehen (akzLoesung), Akzent-Buchstaben der Lösung
+  grün auf gelb (.akzent-kachel.loesung), Lautsprecher darunter.
   EIGENER SCORE akzentFortschritt (+1 richtig, −1 falsch/aufgedeckt, über
   berechneDiktatScore, speichereAkzentScore). spaltenAbschluss(): Akzent-
   Spalten zählen nur dafür, übrige Spalten wie bisher für fortschritt;

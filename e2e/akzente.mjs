@@ -108,7 +108,13 @@ for (let k = 0; k < 10; k++) {
     await clickText("button", "Prüfen", true);   // ohne œ geprüft
     await clickText("button", "Lösung anzeigen");
     t = await text();
-    ok(t.includes("cœur") && t.includes("Weiter →"), "Nach Prüfen mit Fehler: „Lösung anzeigen“ zeigt cœur");
+    const loes = await page.evaluate(() => ({
+      wort: [...document.querySelectorAll(".akzent-kachel")].map(b => b.textContent).join(""),
+      gelb: [...document.querySelectorAll(".akzent-kachel.loesung")].map(b => b.textContent).join(""),
+    }));
+    console.log("     Lösung als Kacheln:", JSON.stringify(loes));
+    ok(loes.wort === "cœur" && loes.gelb === "œ" && t.includes("Weiter →"),
+      "Nach Prüfen mit Fehler: „Lösung anzeigen“ lässt die Kacheln stehen (cœur), œ grün auf gelb");
   } else if (frage === "Junge" && mal === 1) {
     await clickText("button", "Prüfen", true);   // ohne ç geprüft
     t = await text();

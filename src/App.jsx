@@ -633,6 +633,7 @@ const CSS = `
   .akzent-kachel.aktiv{border:2.5px solid #3b3832;background:#f0ede8;}
   .akzent-kachel.ok{background:#c8e6c9;border-color:#2d6a4f;color:#1b5e20;}
   .akzent-kachel.falsch{background:#fdecea;border-color:#c0392b;color:#c0392b;}
+  .akzent-kachel.loesung{background:#fff4d6;border-color:#e0a800;color:#2d6a4f;}
   .akzent-kachel.blink{background:#e74c3c;border-color:#c0392b;color:#fff;}
   .akzent-aktionen{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;}
   .akzent-pruefen{min-width:60%;padding:14px 28px;font-size:1.15rem;}
@@ -3563,6 +3564,7 @@ export default function VokabelApp() {
     const infoSpalten = (quiz.sitzungsInfoTypen || []).filter(t => aktVokRaw[t]?.wert);
     const akz = aktSpaltModus === "akzent" ? akzentStand(quiz) : null;
     const akzLang = vokLang(aktVok, aktAntwortTyp);
+    const akzLoesung = !!akz && quiz.phase === "aufgedeckt" && !akz.geprueft && !quiz.flash;
     const score = clampScore(akz ? aktVok?.akzentFortschritt?.score : aktVok?.fortschritt?.score);
     const isWeitere = quiz.phase === "weitere";
     const frageWert = aktVokRaw[quiz.frageTyp]?.wert || "";
@@ -3696,11 +3698,13 @@ export default function VokabelApp() {
                         />
                       )}
                       {/* Akzente: Buchstaben-Kacheln (Umbruch nur zwischen Wörtern), Varianten darunter */}
-                      {akz && !quiz.flash && (quiz.phase === "eingabe" || akz.geprueft) && (() => {
+                      {akz && !quiz.flash && (quiz.phase === "eingabe" || akz.geprueft || akzLoesung) && (() => {
                         // Wörter = Kachel-Indizes zwischen Leerzeichen; Kachelbreite so, dass ≥ 12 Zeichen nebeneinander passen
                         const woerter = [[]];
                         akz.kacheln.forEach((k, i) => { if (k.basis === " ") woerter.push([]); else woerter[woerter.length - 1].push(i); });
-                        const sichtbar = w => w.filter(i => akz.wahl[i] !== "").length;
+                        // „Lösung anzeigen“: Kacheln bleiben stehen und zeigen die richtigen Buchstaben
+                        const zeichen = i => akzLoesung ? akz.kacheln[i].richtig : akz.wahl[i];
+                        const sichtbar = w => w.filter(i => zeichen(i) !== "").length;
                         const n = Math.max(12, ...woerter.map(sichtbar));
                         const regeln = stufenRegeln(einstellungen);
                         const hervorheben = regeln.akzentHervorheben;
@@ -3718,10 +3722,11 @@ export default function VokabelApp() {
                               <span key={wi} className="akzent-wortgruppe">
                                 {w.map(i => {
                                   const k = akz.kacheln[i];
-                                  const z = akz.wahl[i];
+                                  const z = zeichen(i);
                                   if (z === "") return null;   // von einer Ligatur (œ, æ, ß) belegt
                                   const status = akz.blink === i ? " blink"
-                                    : z === k.richtig && kachelMitAkzent(k) ? " ok"
+                                    : akz.wahl[i] === k.richtig && kachelMitAkzent(k) ? " ok"
+                                    : akzLoesung ? (kachelMitAkzent(k) ? " loesung" : "")
                                     : akz.geprueft ? (z === k.richtig ? (richtigAufgedeckt ? " ok" : "") : " falsch")
                                     : akz.pruefFehler && kachelMitAkzent(k) ? " falsch"
                                     : hervorheben && kachelMitAkzent(k) ? " markiert" : "";
@@ -3742,6 +3747,12 @@ export default function VokabelApp() {
                               ))}
                             </div>
                           )}
+                          {akzLoesung && (
+                            <div style={{display:"flex", justifyContent:"center", marginTop:6}}>
+                              <button {...tt("Antwort vorlesen")} className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
+                                onClick={() => sprich(quiz.antwortTeile[0], akzLang)}><IcoSpk s={16}/></button>
+                            </div>
+                          )}
                           {quiz.phase === "eingabe" && akz.aktiv == null && (
                             <div style={{textAlign:"center", fontSize:"0.78rem", color:"#9b9590", marginTop:8}}>Buchstaben antippen und Akzent wählen</div>
                           )}
@@ -3755,7 +3766,7 @@ export default function VokabelApp() {
                         </div>
                       )}
                       {/* Lösung: Aufgedeckt */}
-                      {!quiz.flash && quiz.phase === "aufgedeckt" && (
+                      {!quiz.flash && quiz.phase === "aufgedeckt" && !akzLoesung && (
                         aktSpaltModus === "mc"
                           ? <div style={{display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginTop:8, minHeight:60}}>
                               <div className="quiz-frage-text" style={{textAlign:"center"}}>{quiz.antwortTeile.join(" / ")}</div>
