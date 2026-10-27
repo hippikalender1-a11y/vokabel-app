@@ -49,7 +49,7 @@ await page.reload(); await sleep(500);
 await clickText(".tab", "Listen");
 await clickText(".karte-zeile", "Irregular Verbs");
 await clickText("button", "Quiz starten", true);
-await clickText("button", "Frage – Antwort");
+await page.click("[data-abfragemodus]"); await sleep(300);
 await zeile("Simple Past", "__check");
 await zeile("Simple Past", "Antwort");
 ok(await aktiverModus("Infinitive") === "Karte", "Infinitive: Karte");
@@ -71,7 +71,7 @@ if (zu) await clickText("button", "Zur Übersicht");
 
 // Modus "wechselnd": alle Spalten Karte
 if (!(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "wechselnd"))))
-  await clickText("button", "Frage – Antwort");
+  await page.click("[data-abfragemodus]"); await sleep(300);
 await clickText(".toggle-opt", "wechselnd", true);
 await sleep(300);
 const modi = await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn.aktiv")].map(b => b.textContent.trim()));

@@ -54,7 +54,7 @@ async function vorbereiten(modus) {
   await clickText(".tab", "Listen");
   await clickText(".karte-zeile", "Irregular Verbs");
   await clickText("button", "Quiz starten", true);
-  await clickText("button", "Frage – Antwort");
+  await page.click("[data-abfragemodus]"); await sleep(300);
   await zeile("Simple Past", "__check"); await zeile("Simple Past", "Antwort");
   await zeile("Past Participle", "__check"); await zeile("Past Participle", "Antwort");
   for (const n of ["Infinitive", "Simple Past", "Past Participle"]) await zeile(n, modus);

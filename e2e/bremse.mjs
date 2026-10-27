@@ -82,7 +82,7 @@ if (z.offen) {
 
 // 4) Kurzer Bereich: Abfrage-Modus öffnen, Weiterscrollen klappt wie bisher sofort zu
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);
-await clickText("button", "Frage – Antwort");
+await page.click("[data-abfragemodus]"); await sleep(300);
 await sleep(600);
 const modusOffen = () => page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "wechselnd"));
 ok(await modusOffen(), "Abfrage-Modus offen");

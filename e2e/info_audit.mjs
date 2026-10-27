@@ -74,7 +74,7 @@ await page.goto(URL); await sleep(500);
 await klick(".tab", "Quiz");
 await pruefe("Quiz-Tab");
 await klick(".quiz-setup-check", "Verbs"); await pruefe("Quiz-Tab Liste");
-for (const b of ["Bereich", "Frage – Antwort", "Zufällig", "Einfach", "10 V."]) { await klick("button", b, true); await pruefe("Quiz-Bereich " + b); }
+for (const b of ["Bereich", "Frage – Antwort", "Zufällig", "Einfach", "10 V."]) { await (b === "Frage – Antwort" ? klick("[data-abfragemodus]", "") : klick("button", b, true)); await pruefe("Quiz-Bereich " + b); }
 await klick("button", "Speichern", true); await pruefe("Speichern-Modal"); await klick(".modal button", "Abbrechen"); await page.keyboard.press("Escape"); await page.mouse.click(5, 5); await sleep(200);
 
 // Quiz läuft (Karte)

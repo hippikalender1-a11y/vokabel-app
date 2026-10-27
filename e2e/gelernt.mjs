@@ -50,7 +50,7 @@ let i = await infos();
 console.log("     Frage–Antwort:", JSON.stringify(i));
 ok(/\(2 /.test(i.start) && i.hinweis === "1 gelernte ausgeblendet", "Quiz: Vokabel mit Quiz-Score 8 ausgeblendet (2 abfragbar)");
 
-await clickText("button", "Frage – Antwort");
+await page.click("[data-abfragemodus]"); await sleep(300);
 await clickText(".toggle-opt", "Diktat", true);
 await sleep(300);
 i = await infos();

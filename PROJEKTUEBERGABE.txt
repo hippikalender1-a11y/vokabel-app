@@ -1326,6 +1326,18 @@ Quiz-Auswertung ("Paket fertig" / "Durchlauf abgeschlossen" / "Auswertung"):
     Lern-Bilanz (neu gelernt / 🏆) im Kasten. Der frühere %-Balken entfällt.
   - Diktat-Auswertung unverändert.
 Akzent-Modus "Lösung anzeigen": Kacheln bleiben, Lösung grün auf gelb.
+Quiz-Tab Zeile "Abfrage-Modus": Knopf zeigt die Art der Abfrage
+  (ANTWORT_MODUS_NAMEN: Karte/MC/Tastatur/Akzente, mehrere mit " + ",
+  "wechselnd · …", "Diktat"); Knopf hat data-abfragemodus (Tests klicken
+  darüber, nicht mehr über den Text "Frage – Antwort").
+Akzent-Spalte + weitere Antwortspalten: antwortSpaltenFuer(vok, typen,
+  spalteModus, ohneAkzentAuslassen, nieLeer) (Modul). Bei Regel
+  akzentOhneMischen AUS wird je Vokabel nur die Akzent-Spalte ausgelassen
+  (Wort ohne Akzent); Vokabel fällt nur raus, wenn keine Antwortspalte
+  bleibt. quiz.basisFA (ungefilterte Frage/Antworten) + quiz.akzentOhne-
+  Auslassen; getFA() in naechsteVokabelState filtert je Vokabel. Start-
+  Knopf zählt dieselbe Menge (= größte Anzahl je Antwortspalte).
+  Test: e2e/akzent_mischen.mjs.
 
 
 ================================================================

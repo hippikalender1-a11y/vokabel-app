@@ -62,7 +62,7 @@ await clickText(".tab", "Listen");
 await clickText(".karte-zeile", "Irregular Verbs");
 await clickText("button", "Quiz starten", true);
 // Abfrage-Modus öffnen, E2 + E3 als weitere Antworten
-await clickText("button", "Frage – Antwort");
+await page.click("[data-abfragemodus]"); await sleep(300);
 await spalteAnklicken("Simple Past");
 await rolle("Simple Past", "Antwort");
 await spalteAnklicken("Past Participle");

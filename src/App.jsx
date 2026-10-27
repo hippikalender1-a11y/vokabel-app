@@ -386,6 +386,7 @@ function istRichtigeAntwort(eingabe, wert, akzentTolerant = false) {
 }
 // Antwort-Modus, wenn für eine Spalte nichts festgelegt ist (Karte aufdecken)
 const STANDARD_ANTWORT_MODUS = "karte";
+const ANTWORT_MODUS_NAMEN = { karte: "Karte", mc: "MC", tippen: "Tastatur", akzent: "Akzente" };
 // Statistik-Gruppen in Anzeige-Reihenfolge mit Farbe (Kreis, Gruppen-Balken)
 const GRUPPE_BALKEN = [["gelernt", "#2d6a4f"], ["arbeit", "#e9c46a"], ["nie", "#d6d2cb"], ["negativ", "#e57373"]];
 // Session-Standard: in Paketen abfragen
@@ -508,6 +509,12 @@ function akzentKacheln(wert) {
   return kacheln;
 }
 function hatAkzente(wert) { return akzentKacheln(wert).some(k => k.richtig !== k.basis); }
+// Antwortspalten einer Vokabel: Akzent-Spalten ohne Akzent ggf. auslassen (nieLeer: lieber ungefiltert als gar nichts)
+function antwortSpaltenFuer(vok, typen, spalteModus, ohneAkzentAuslassen, nieLeer = false) {
+  if (!ohneAkzentAuslassen || !vok) return typen;
+  const r = typen.filter(t => spalteModus?.[t] !== "akzent" || hatAkzente(vok[t]?.wert));
+  return nieLeer && r.length === 0 ? typen : r;
+}
 // Auswahl-Tasten für Kachel i (leer = nicht antippbar)
 function akzentVarianten(kacheln, i, lang) {
   const sp = (lang || "fr").split("-")[0].toLowerCase();
@@ -2604,11 +2611,11 @@ export default function VokabelApp() {
     if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
       voks = voks.filter(v => quizCheckboxAuswahl.has(v.id));
     }
-    // Akzent-Spalten: Wörter ohne Akzent nur auf Wunsch; reine Akzent-Abfrage nutzt den eigenen Akzent-Score
-    const akzentSpalten = (quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet)
-      .filter(t => t.startsWith('E') && quizSpalteModus[t] === "akzent");
-    if (akzentSpalten.length > 0 && !stufenRegeln(einstellungen).akzentOhneMischen)
-      voks = voks.filter(v => akzentSpalten.some(t => hatAkzente(v[t]?.wert)));
+    // Akzent-Spalten: Wörter ohne Akzent nur auf Wunsch – sonst wird für sie nur die Akzent-Spalte
+    // übersprungen; ganz raus nur, wenn keine andere Antwortspalte bleibt. Reine Akzent-Abfrage nutzt den Akzent-Score
+    const akzentOhneAuslassen = !stufenRegeln(einstellungen).akzentOhneMischen;
+    voks = voks.filter(v => antwortSpaltenFuer(v, quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet,
+      quizSpalteModus, akzentOhneAuslassen).length > 0);
     const scoreFeld = quizModus !== "rotierend" && quizAntwortTypenGeordnet.length > 0
       && quizAntwortTypenGeordnet.every(t => quizSpalteModus[t] === "akzent") ? "akzentFortschritt" : "fortschritt";
     const gruppeVokIds = voks.map(v => v.id);   // ganze Vokabelgruppe inkl. Gelernter (für Lern-Bilanz)
@@ -2680,7 +2687,9 @@ export default function VokabelApp() {
       return { frageTyp: quizFrageTyp, antwortTypen: quizAntwortTypenGeordnet };
     }
 
-    const { frageTyp, antwortTypen } = getFA(0);
+    const basisFA = getFA(0);   // ungefiltert; je Vokabel werden Akzent-Spalten ohne Akzent ggf. ausgelassen
+    const frageTyp = basisFA.frageTyp;
+    const antwortTypen = antwortSpaltenFuer(voks[0], basisFA.antwortTypen, quizSpalteModus, akzentOhneAuslassen, true);
     const erstesTeile = voks[0][antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
     const ersterModusTyp0 = quizSpalteModus[antwortTypen[0]] || STANDARD_ANTWORT_MODUS;
     const erstesMC = ersterModusTyp0 === "mc"
@@ -2698,7 +2707,7 @@ export default function VokabelApp() {
     setQuiz({
       sitzungsInfoTypen, modus: quizModus, spalteModus: quizSpalteModus,
       liste: kombiListe, vokabeln: voks, index: 0,
-      frageTyp, antwortTypen, antwortTypIndex: 0,
+      frageTyp, antwortTypen, antwortTypIndex: 0, basisFA, akzentOhneAuslassen,
       phase: "eingabe", eingabe: "", flash: false, infoSichtbar: false, infoSeite: 0,
       antwortTeile: erstesTeile, weitereIndices: [], weiterePos: 0,
       mcButtons: erstesMC?.buttons || [], mcRichtig: erstesMC?.richtig || [],
@@ -2734,12 +2743,14 @@ export default function VokabelApp() {
     const quizFalschAnzahl = (prev.quizFalschAnzahl || 0) + (zaehlt && !warRichtig ? 1 : 0);
 
     function getFA(voks, idx) {
+      const basis = prev.basisFA || { frageTyp: prev.frageTyp, antwortTypen: prev.antwortTypen };
+      let fa = { frageTyp: basis.frageTyp, antwortTypen: basis.antwortTypen };
       if (prev.modus === "rotierend") {
-        const alle = [...prev.antwortTypen, prev.frageTyp];
+        const alle = prev.basisFA ? [basis.frageTyp, ...basis.antwortTypen] : [...basis.antwortTypen, basis.frageTyp];   // = Reihenfolge wie beim Start
         const ft = alle[idx % alle.length];
-        return { frageTyp: ft, antwortTypen: alle.filter(t => t !== ft) };
+        fa = { frageTyp: ft, antwortTypen: alle.filter(t => t !== ft) };
       }
-      return { frageTyp: prev.frageTyp, antwortTypen: prev.antwortTypen };
+      return { frageTyp: fa.frageTyp, antwortTypen: antwortSpaltenFuer(voks[idx], fa.antwortTypen, prev.spalteModus, prev.akzentOhneAuslassen, true) };
     }
 
     // Baut den State für vokabeln[idx] innerhalb von voks auf
@@ -4450,8 +4461,10 @@ export default function VokabelApp() {
             .filter(t => t.startsWith('E') && quizSpalteModus[t] === "akzent");
           const nurAkzent = quizModus === "sequenziell" && quizAntwortTypenGeordnet.length > 0
             && quizAntwortTypenGeordnet.every(t => quizSpalteModus[t] === "akzent");
+          // Zählt Vokabeln mit mindestens einer abzufragenden Spalte (= größte Anzahl je Antwortspalte)
           const akzentVoks = akzentSpalten.length > 0 && !stufenRegeln(einstellungen).akzentOhneMischen
-            ? gefilterteVoks.filter(v => akzentSpalten.some(t => hatAkzente(v[t]?.wert))) : gefilterteVoks;
+            ? gefilterteVoks.filter(v => antwortSpaltenFuer(v, quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet,
+              quizSpalteModus, true).length > 0) : gefilterteVoks;
           // Score-Filter (nur schlechteste-Modus) → Basis für Reihenfolge-Header
           let reihenfolgeVoks = akzentVoks;
           if (quizReihenfolge === "schlechteste" && quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
@@ -4477,7 +4490,12 @@ export default function VokabelApp() {
           } else {
             verfuegbar = verfuegbarReihenfolge;
           }
-          const alleAbgefragt = sessionHatFortschritt && (sessionSlotAktiv.abgefragt || []).length >= (sessionSlotAktiv.gesamt || 0);
+          // Zeile "Abfrage-Modus": Art der Abfrage (Karte, MC, Tastatur, Akzente bzw. Diktat)
+          const antwortArten = [...new Set((quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet)
+            .map(t => ANTWORT_MODUS_NAMEN[quizSpalteModus[t] || STANDARD_ANTWORT_MODUS]))];
+          const abfrageModusName = istDiktat ? "Diktat"
+            : [quizModus === "rotierend" && "wechselnd", antwortArten.join(" + ") || (quizModus !== "rotierend" && "Frage – Antwort")].filter(Boolean).join(" · ");
+          const alleAbgefragt = sessionHatFortschritt &&(sessionSlotAktiv.abgefragt || []).length >= (sessionSlotAktiv.gesamt || 0);
           const sliderActive = quizSchlechtesteMaxScore !== "";
           const sliderVal = sliderActive ? parseInt(quizSchlechtesteMaxScore) : 0;
           const sliderPct = (sliderVal + 10) / 20;
@@ -4724,9 +4742,9 @@ export default function VokabelApp() {
                 {kombiListe && (
                   <div ref={abfrageModusRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Abfrage-Modus</span>
-                    <button className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleAbfrageModus}
-                      {...tt("Abfrage-Modus öffnen – Karte, wechselnd oder Diktat")}>
-                      {quizModus === "sequenziell" ? "Frage – Antwort" : quizModus === "rotierend" ? "wechselnd" : "Diktat"}
+                    <button className="toggle-opt aktiv" data-abfragemodus style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleAbfrageModus}
+                      {...tt("Abfrage-Modus öffnen – zeigt die Art der Abfrage (Karte, MC, Tastatur, Akzente, Diktat)")}>
+                      {abfrageModusName}
                     </button>
                   </div>
                 )}
@@ -6117,7 +6135,7 @@ export default function VokabelApp() {
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl."},
                   {k:"Vokabel-Auswahl [Alle]", v:"Alle Vokabeln der gewählten Listen werden abgefragt."},
                   {k:"Vokabel-Auswahl [Bereich]", v:"Öffnet eine Checkbox-Liste. Einzelne Vokabeln an-/abwählen. [Von–Bis] ermöglicht Bereichsauswahl per 2 Klicks."},
-                  {k:"Abfrage-Modus", v:"Frage–Antwort: Karte aufdecken. Wechselnd: Frage- und Antwortspalten wechseln sich ab. Diktat: Antwort wird vorgelesen, du tippst die Lösung."},
+                  {k:"Abfrage-Modus", v:"Frage–Antwort: Karte aufdecken. Wechselnd: Frage- und Antwortspalten wechseln sich ab. Diktat: Antwort wird vorgelesen, du tippst die Lösung. Die Zeile zeigt die gewählte Art der Abfrage (Karte, MC, Tastatur, Akzente bzw. Diktat). Bei mehreren Antwortspalten mit Akzente-Spalte werden Wörter ohne Akzent – je nach Schwierigkeitsgrad – nur in der Akzente-Spalte ausgelassen; der Start-Knopf zählt alle Vokabeln, die in mindestens einer Spalte abgefragt werden."},
                   {k:"Akzente", v:"Antwort-Modus für Fremdsprachen-Spalten: Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Ob auch Wörter ohne Akzent abgefragt werden, legst du beim Schwierigkeitsgrad fest."},
                   {k:"Reihenfolge", v:"Zufällig / Schlechteste (nach Score sortiert) / Listen-Nr. (Originalreihenfolge). Score-Filter: nur Vokabeln bis zu einem bestimmten Score zeigen. Unbeantwortete zuerst: noch nie abgefragte Vokabeln werden vorgezogen."},
                   {k:"Einstellungen", v:"Lautsprache: Auto-Play und welche Spalten vorgelesen werden. Schwierigkeitsgrad: Einfach oder Schwer. Darunter legst du per Haken fest, was in welcher Stufe gilt: fehlende Akzente beim Tippen als richtig werten, Punktabzug bei „Lösung anzeigen“, im Akzent-Modus auch Wörter ohne Akzent abfragen, Buchstaben mit Akzent hervorheben, die Zahl der noch fehlenden Akzente anzeigen (z. B. 2 / 3) und richtige Antworten automatisch übernehmen (sonst „Prüfen“)."},

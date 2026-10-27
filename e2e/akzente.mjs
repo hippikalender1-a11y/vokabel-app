@@ -46,7 +46,7 @@ await clickText(".tab", "Quiz");
 await clickText(".quiz-setup-check", "Akzente");
 // Spalten-Bereich ggf. aufklappen
 if (!(await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")].some(b => b.textContent.trim() === "Akzente"))))
-  await page.evaluate(() => [...document.querySelectorAll("button, div")].find(b => /^Frage.?–.?Antwort/.test(b.textContent.trim()) && b.onclick !== undefined)?.click());
+  await page.click("[data-abfragemodus]");
 await sleep(300);
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")].map(b => b.textContent.trim()));
 console.log("     Modus-Knöpfe:", knoepfe.join(" | "));
