@@ -1342,6 +1342,17 @@ Session-Zeile (Quiz-Tab): Mitte zeigt immer die tatsächliche Anzahl
   (span[data-sessionanzahl]): ohne laufende Session "N V." (= gefilterte
   Menge wie Start-Knopf ohne Paket-Begrenzung), mit laufender Session
   "noch N V." aus der aktuellen Filterung (nicht mehr slot.gesamt).
+  → ERSETZT durch die ANZAHL-KETTE (grau in der Zeilenmitte, je mit tt()):
+    Listen-Auswahl (alle V. der Listen) → Vokabel-Auswahl (Alle/Bereich,
+    data-anzahl="auswahl") → Abfrage-Modus "(N mit Akzent)" nur bei Akzente-
+    Spalte (data-anzahl="akzent") → Einstellungen = nach Schwierigkeits-Regel
+    (akzentVoks, data-anzahl="einstellungen") → Session = gesamte Session-Menge
+    ohne Gelernte/unter Score-Grenze (data-sessionanzahl) → Fortschritt
+    "abgefragt / Session" LIVE (Schnittmenge slot.abgefragt × aktuelle Menge,
+    nicht slot.gesamt) → Start-Knopf = nächstes Paket.
+  starteQuiz: Score-Grenze ("schlechteste") jetzt VOR sessionGesamt (wie
+  Anzeige); quiz.sessionIds = Session-Menge; "Paket fertig" zählt nur
+  abgefragte IDs aus dieser Menge.
 
 
 ================================================================

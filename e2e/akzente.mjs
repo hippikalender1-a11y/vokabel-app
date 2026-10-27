@@ -54,6 +54,7 @@ ok(knoepfe.filter(k => k === "Akzente").length === 1, "Knopf „Akzente“ nur b
 await clickText(".spalten-modus-btn", "Akzente", true);
 let t = await text();
 ok(/Quiz starten \(4 Vokabeln\)/.test(t), "Stufe „Schwer“ (Standard): auch Wörter ohne Akzent → 4 Wörter");
+ok(await page.evaluate(() => document.querySelector('[data-anzahl="einstellungen"]')?.textContent.trim()) === "(4 V.)", "Zeile Einstellungen (Schwer, mit Wörtern ohne Akzent): 4 V.");
 // Regel in der Schwierigkeits-Tabelle für "Schwer" ausschalten
 await page.evaluate(() => [...document.querySelectorAll("button.toggle-opt")].find(b => /^(Einfach|Schwer)$/.test(b.textContent.trim()) && b.closest("div[style*='sticky']"))?.click());
 await sleep(300);
@@ -63,7 +64,10 @@ await page.evaluate(() => {
 });
 await sleep(200);
 ok(/Quiz starten \(3 Vokabeln\)/.test(await text()), "Regel aus: nur 3 Wörter mit Akzent (chat fehlt)");
-ok(await page.evaluate(() => document.querySelector("[data-sessionanzahl]")?.textContent.trim()) === "3 V.", "Session-Zeile zeigt ebenfalls 3 V.");
+const kette = await page.evaluate(() => ["auswahl", "akzent", "einstellungen"].map(k => document.querySelector(`[data-anzahl="${k}"]`)?.textContent.trim())
+  .concat(document.querySelector("[data-sessionanzahl]")?.textContent.trim()));
+console.log("     Anzahl-Kette:", kette.join(" → "));
+ok(kette.join(" → ") === "(4 V.) → (3 mit Akzent) → (3 V.) → (3 V.)", "Zeilen: Auswahl 4 → mit Akzent 3 → Einstellungen 3 → Session 3");
 
 await clickText("button", "Quiz starten (");
 await sleep(400);

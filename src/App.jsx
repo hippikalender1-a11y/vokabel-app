@@ -2622,8 +2622,14 @@ export default function VokabelApp() {
     const schwelleQ = einstellungen.gelerntSchwelle ?? 0;
     if (!quizGelerntEinschliessen && schwelleQ > 0)
       voks = voks.filter(v => (v[scoreFeld]?.score ?? -Infinity) < schwelleQ);
+    // Score-Grenze (Reihenfolge "schlechteste") gehört zur Session-Menge – wie die Anzeige im Quiz-Tab
+    if (quizReihenfolge === "schlechteste" && quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
+      const threshold = parseFloat(quizSchlechtesteMaxScore);
+      voks = voks.filter(v => (v[scoreFeld]?.score ?? 0) < threshold);
+    }
 
     const sessionGesamt = isPakete ? voks.length : 0;
+    const sessionIds = isPakete ? voks.map(v => v.id) : null;
 
     if (isPakete) {
       const existingSlot = lsGet(SK.sessionAktiv);
@@ -2652,10 +2658,6 @@ export default function VokabelApp() {
     }
 
     if (quizReihenfolge === "schlechteste") {
-      if (quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
-        const threshold = parseFloat(quizSchlechtesteMaxScore);
-        voks = voks.filter(v => (v[scoreFeld]?.score ?? 0) < threshold);
-      }
       if (quizUnbeantwortetZuerst.schlechteste) {
         const unb = voks.filter(v => !v[scoreFeld]);
         const bea = [...voks.filter(v => v[scoreFeld])].sort((a, b) => (a[scoreFeld].score ?? 0) - (b[scoreFeld].score ?? 0));
@@ -2716,7 +2718,7 @@ export default function VokabelApp() {
       quizRichtigAnzahl: 0, quizFalschAnzahl: 0,
       sessionVokIds: isPakete ? voks.map(v => v.id) : null,
       istSessionModus: isPakete,
-      sessionGesamt, abfrageZiel,
+      sessionGesamt, sessionIds, abfrageZiel,
       rundeStartScores: Object.fromEntries(voks.map(v => [v.id, v[scoreFeld]?.score ?? null])),
       gruppeVokIds, scoreFeld,
     });
@@ -3444,7 +3446,9 @@ export default function VokabelApp() {
     if (quiz.phase === "fertig") {
       if (quiz.istSessionModus) {
         const aktSlot = lsGet(SK.sessionAktiv);
-        const schonAbgefragt = new Set([...((aktSlot?.abgefragt) || []), ...(quiz.sessionVokIds || [])]);
+        // nur Vokabeln der aktuellen Session-Menge zählen (Slot kann aus anderer Einstellung stammen)
+        const sessionMenge = quiz.sessionIds ? new Set(quiz.sessionIds) : null;
+        const schonAbgefragt = new Set([...((aktSlot?.abgefragt) || []), ...(quiz.sessionVokIds || [])].filter(id => !sessionMenge || sessionMenge.has(id)));
         const istLetzteBatch = schonAbgefragt.size >= (quiz.sessionGesamt || 0);
         const doBeende = (letzteRunde) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], letzteRunde); beendeQuiz(); };
         const doWeiter = (n) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], false); setQuizPaketGroesse(n); starteQuiz(); };
@@ -4481,12 +4485,16 @@ export default function VokabelApp() {
           const verfuegbarReihenfolge = reihenfolgeVoks.length;
           // Pakete/Session-Filter → nur für Quiz-Button
           let verfuegbar;
-          // Session-Zeile: tatsächliche Anzahl (mit Akzent-/Gelernt-/Score-Filter), bei laufender Session nur der Rest
-          let sessionAnzahl = verfuegbarReihenfolge;
+          // Anzahl-Kette: Vokabel-Auswahl → mit Akzent (Abfrage-Modus) → nach Schwierigkeits-Regel (Einstellungen)
+          // → Session (ohne Gelernte / Score-Grenze) → Fortschritt (davon abgefragt) → Start-Knopf (nächstes Paket)
+          const mitAkzentAnzahl = akzentSpalten.length > 0
+            ? gefilterteVoks.filter(v => akzentSpalten.some(t => hatAkzente(v[t]?.wert))).length : null;
+          const sessionAnzahl = verfuegbarReihenfolge;
+          let sessionAbgefragtAnzahl = 0;
           if (sessionHatFortschritt) {
             const bereitsAbgefragt = new Set(sessionSlotAktiv.abgefragt || []);
             const restVoks = reihenfolgeVoks.filter(v => !bereitsAbgefragt.has(v.id));
-            sessionAnzahl = restVoks.length;
+            sessionAbgefragtAnzahl = sessionAnzahl - restVoks.length;
             verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, restVoks.length) : 0;
           } else if (isPakete) {
             verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, verfuegbarReihenfolge) : 0;
@@ -4498,7 +4506,8 @@ export default function VokabelApp() {
             .map(t => ANTWORT_MODUS_NAMEN[quizSpalteModus[t] || STANDARD_ANTWORT_MODUS]))];
           const abfrageModusName = istDiktat ? "Diktat"
             : [quizModus === "rotierend" && "wechselnd", antwortArten.join(" + ") || (quizModus !== "rotierend" && "Frage – Antwort")].filter(Boolean).join(" · ");
-          const alleAbgefragt = sessionHatFortschritt &&(sessionSlotAktiv.abgefragt || []).length >= (sessionSlotAktiv.gesamt || 0);
+          const alleAbgefragt = sessionHatFortschritt && sessionAbgefragtAnzahl >= sessionAnzahl;
+          const sessionPct = sessionAnzahl > 0 ? Math.round(sessionAbgefragtAnzahl / sessionAnzahl * 100) : 0;
           const sliderActive = quizSchlechtesteMaxScore !== "";
           const sliderVal = sliderActive ? parseInt(quizSchlechtesteMaxScore) : 0;
           const sliderPct = (sliderVal + 10) / 20;
@@ -4597,7 +4606,8 @@ export default function VokabelApp() {
                       </span>
                       {/* MITTE */}
                       {n > 0 && (
-                        <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none"}}>
+                        <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", cursor:"help"}}
+                          {...tt("Anzahl aller Vokabeln in den gewählten Listen")}>
                           ({quizBasisVoks.length} V.)
                         </span>
                       )}
@@ -4678,9 +4688,8 @@ export default function VokabelApp() {
                       )}
                     </span>
                     {/* MITTE */}
-                    {quizBereichTyp === "bereich" && (
-                      <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none"}}>({quizGefilterteVoks.length} V.)</span>
-                    )}
+                    <span data-anzahl="auswahl" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", cursor:"help"}}
+                      {...tt(quizBereichTyp === "bereich" ? "Anzahl der im Bereich ausgewählten Vokabeln" : "Anzahl der Vokabeln, die zur Auswahl stehen (alle Vokabeln der Listen mit den gewählten Spalten)")}>({quizGefilterteVoks.length} V.)</span>
                     {/* RECHTS */}
                     <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                       <div className="toggle-btn">
@@ -4745,6 +4754,10 @@ export default function VokabelApp() {
                 {kombiListe && (
                   <div ref={abfrageModusRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Abfrage-Modus</span>
+                    {mitAkzentAnzahl != null && (
+                      <span data-anzahl="akzent" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", cursor:"help", whiteSpace:"nowrap"}}
+                        {...tt("Davon Vokabeln mit Akzent in der Akzente-Spalte")}>({mitAkzentAnzahl} mit Akzent)</span>
+                    )}
                     <button className="toggle-opt aktiv" data-abfragemodus style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleAbfrageModus}
                       {...tt("Abfrage-Modus öffnen – zeigt die Art der Abfrage (Karte, MC, Tastatur, Akzente, Diktat)")}>
                       {abfrageModusName}
@@ -5004,6 +5017,10 @@ export default function VokabelApp() {
                 {kombiListe && (
                   <div ref={einstellungenRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH, zIndex:5, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Einstellungen</span>
+                    <span data-anzahl="einstellungen" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", cursor:"help", whiteSpace:"nowrap"}}
+                      {...tt(mitAkzentAnzahl != null
+                        ? "Vokabeln nach dem Schwierigkeitsgrad: mit oder ohne Wörter ohne Akzent (Regel „Akzent-Modus: auch Wörter ohne Akzent abfragen“)"
+                        : "Vokabeln nach dem Schwierigkeitsgrad – hier gleich der Vokabel-Auswahl")}>({akzentVoks.length} V.)</span>
                     <button className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleEinstellungen}
                       {...tt("Einstellungen öffnen – Lautsprache und Schwierigkeitsgrad")}>
                       {einstellungen.modus === "einfach" ? "Einfach" : "Schwer"}
@@ -5098,8 +5115,9 @@ export default function VokabelApp() {
                 {kombiListe && (
                   <div ref={sessionRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, zIndex:4, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Session</span>
-                    <span data-sessionanzahl style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#6b6560", pointerEvents:"none", whiteSpace:"nowrap"}}>
-                      {sessionHatFortschritt ? `noch ${sessionAnzahl} V.` : `${sessionAnzahl} V.`}
+                    <span data-sessionanzahl style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", cursor:"help", whiteSpace:"nowrap"}}
+                      {...tt("So viele Vokabeln werden in dieser Session insgesamt abgefragt – ohne gelernte (falls ausgeblendet) und ggf. nur unter der Score-Grenze der Reihenfolge")}>
+                      ({sessionAnzahl} V.)
                     </span>
                     <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                       <div className="toggle-btn">
@@ -5203,7 +5221,7 @@ export default function VokabelApp() {
                         {sessionHatFortschritt && (
                           <div style={{padding:"0 16px 12px", display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid #e0dbd2", paddingTop:10, marginTop:2}}>
                             <span style={{fontSize:"0.78rem", color:"#6b6560"}}>
-                              {(sessionSlotAktiv.abgefragt || []).length} / {sessionSlotAktiv.gesamt || 0} abgefragt
+                              {sessionAbgefragtAnzahl} / {sessionAnzahl} abgefragt
                             </span>
                             <button {...tt("Aktuelle Session löschen – der Paket-Fortschritt wird zurückgesetzt")} style={{fontSize:"0.75rem", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:0}}
                               onClick={loescheSessionSlot}>
@@ -5223,14 +5241,14 @@ export default function VokabelApp() {
                       <div style={{marginBottom:8}}>
                         <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5, fontSize:"0.78rem"}}>
                           <span style={{color:"#6b6560"}}>Fortschritt</span>
-                          <span style={{color:"#3b3832", fontWeight:600}}>
-                            {(sessionSlotAktiv.abgefragt || []).length} / {sessionSlotAktiv.gesamt || 0}
-                            {(sessionSlotAktiv.gesamt || 0) > 0 && ` — ${Math.round((sessionSlotAktiv.abgefragt || []).length / sessionSlotAktiv.gesamt * 100)}%`}
+                          <span style={{color:"#3b3832", fontWeight:600}} {...tt("So viele Vokabeln der Session wurden schon abgefragt")}>
+                            <span data-anzahl="fortschritt">{sessionAbgefragtAnzahl} / {sessionAnzahl}</span>
+                            {sessionAnzahl > 0 && ` — ${sessionPct}%`}
                           </span>
                         </div>
                         <div style={{height:5, background:"#e0dbd2", borderRadius:3}}>
                           <div style={{
-                            width:`${(sessionSlotAktiv.gesamt || 0) > 0 ? Math.round((sessionSlotAktiv.abgefragt || []).length / sessionSlotAktiv.gesamt * 100) : 0}%`,
+                            width:`${sessionPct}%`,
                             height:"100%", background:"#2d6a4f", borderRadius:3, transition:"width 0.3s"
                           }}/>
                         </div>
@@ -5248,12 +5266,12 @@ export default function VokabelApp() {
                         <button className="btn btn-primary" style={{flex:1}}
                           onClick={() => { loescheSessionSlot(); }}
                           {...tt("Session-Fortschritt löschen und alle Vokabeln erneut abfragen")}>
-                          Neuer Durchlauf (alle {sessionSlotAktiv?.gesamt || 0} abgefragt)
+                          Neuer Durchlauf (alle {sessionAnzahl} abgefragt)
                         </button>
                       ) : (
                         <button className="btn btn-primary" style={{flex:1}}
                           onClick={() => starteQuiz()} disabled={!kannStarten || verfuegbar === 0}
-                          {...tt("Quiz mit der aktuellen Konfiguration starten")}>
+                          {...tt("Quiz starten – die Zahl nennt die Vokabeln dieser Fragerunde (bei Paketen: das nächste Paket)")}>
                           Quiz starten ({verfuegbar} Vokabeln)
                         </button>
                       )}
