@@ -1228,6 +1228,20 @@ BROWSER-TESTS (e2e/, im Repo; node_modules/Ausgaben per .gitignore aus):
 
 
 ================================================================
+SESSION 38 — ZWISCHENKARTE "WIEDERHOLUNG"
+================================================================
+Abfrage-Ziel "Mit Wiederholung" bzw. "Score": Sind alle Vokabeln einmal
+  abgefragt und werden welche neu eingereiht, erscheint statt einer Vokabel
+  die Karte "🔁 Wiederholung" (phase "wiederholungHinweis", Zähler
+  quiz.wiederholungDurchgang). Antippen/"Weiter zur Wiederholung"/Enter →
+  starteWiederholung(); "Wiederholung abbrechen" bzw. "Beenden" während der
+  Wiederholung → brecheWiederholungAb() → normale Auswertung (nicht
+  "Abgebrochen"). Kopfzeile in der Wiederholung: "🔁 Wiederholung 1 / 3".
+  brecheQuizAb() im Paket-Modus: in der Wiederholung gilt das ganze Paket
+  als abgefragt. Test: e2e/wiederholung.mjs.
+
+
+================================================================
 TODO / GEPLANTE FEATURES (noch nicht umgesetzt)
 ================================================================
 Reihenfolge = Priorität (Stand 2026-10-26). Nutzer entscheidet jeweils.
@@ -1279,6 +1293,22 @@ Reihenfolge = Priorität (Stand 2026-10-26). Nutzer entscheidet jeweils.
 5) FORTSCHRITT ZURÜCKSETZEN (Idee)
    Scores einer Liste bzw. einzelner Vokabeln auf "nie abgefragt" setzen
    (z. B. Verben mit Punkten aus der alten Zählweise je Spalte).
+
+5b) AKZENT-MODUS (Idee des Nutzers vom 27.10., noch nicht entschieden)
+   Ziel: Akzente (v. a. Französisch) üben ohne Tastatur.
+   Ablauf: Das Wort wird OHNE Akzente in großen Buchstaben-Kacheln gezeigt
+   (z. B. "E L E V E"); Antippen eines Buchstabens öffnet eine Tastenleiste
+   mit Varianten (e → e é è ê ë; a → a à â; c → c ç; i → i î ï; o → o ô;
+   u → u ù û ü; Großbuchstaben entsprechend). Danach "Prüfen" → Buchstaben
+   grün/rot, Lösung anzeigen.
+   Vorschläge: als 4. Antwort-Modus neben Tippen/MC/Karte (nur E-Spalten),
+   antippbar nur Buchstaben mit Varianten (alle Vokale + c, verrät nichts);
+   auch Wörter ohne Akzent mischen ("nichts ändern" muss möglich sein);
+   Übersetzung + Vorlesen als Hilfe; Zeichentabelle je Sprache (später
+   Spanisch ñ/á, Deutsch ä/ö/ü).
+   ENTSCHIEDEN (27.10.): Wörter ohne Akzent beimischen = OPTIONAL
+   (Schalter); EIGENER SCORE (wie Diktat, z. B. akzentFortschritt);
+   Sonderzeichen œ/æ JA (z. B. o antippen → o ô œ, ersetzt "oe").
 
 6) WEITERGABE AN ANDERE / SICHERHEIT
    App ist öffentlich (GitHub Pages), Repo public; Daten nur lokal je Gerät,

@@ -544,6 +544,8 @@ const CSS = `
   .score-neg{background:#ffebee;color:#c0392b;}
   .score-null{background:#e0dbd2;color:#6b6560;}
   .quiz-frage-box{background:#fff;border:1px solid #e0dbd2;border-radius:14px;padding:20px;margin-bottom:14px;}
+  .wiederholung-karte{background:#fdf3e7;border:2px dashed #e67e22;text-align:center;}
+  .wiederholung-marke{color:#c0640f;font-size:0.85rem;font-weight:700;}
   .quiz-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6b6560;margin-bottom:6px;}
   .quiz-frage-text{font-size:1.5rem;font-weight:700;line-height:1.3;}
   .quiz-info-text{font-size:0.85rem;color:#6b6560;margin-top:6px;}
@@ -1086,6 +1088,8 @@ export default function VokabelApp() {
     }
   }, [quizListenKey, listenIndex]);
 
+  // Nach der Zwischenkarte "Wiederholung" die erste Frage erneut vorlesen
+  const quizWiederholungHinweis = quiz?.phase === "wiederholungHinweis";
   useEffect(() => {
     if (ansicht !== "quiz" || !quiz || quiz.phase !== "eingabe" || quiz.flash) return;
     if (quiz.modus === "diktat") {
@@ -1097,10 +1101,15 @@ export default function VokabelApp() {
     if (!(einstellungen.vorlesen || ["E1"]).includes(quiz.frageTyp)) return;
     const text = quiz.vokabeln?.[quiz.index]?.[quiz.frageTyp]?.wert;
     if (text) sprich(text, vokLang(quiz.vokabeln?.[quiz.index], quiz.frageTyp));
-  }, [quiz?.index, ansicht, einstellungen.autoplay]);
+  }, [quiz?.index, quizWiederholungHinweis, ansicht, einstellungen.autoplay]);
 
   useEffect(() => {
     if (ansicht !== "quiz" || !quiz) return;
+    if (quiz.phase === "wiederholungHinweis") {
+      const weiter = (e) => { if (e.key === "Enter" || e.key === "w" || e.key === "W") { e.preventDefault(); starteWiederholung(); } };
+      document.addEventListener("keydown", weiter);
+      return () => document.removeEventListener("keydown", weiter);
+    }
     const isDiktatWeiter = quiz.modus === "diktat" && (quiz.phase === "richtig" || quiz.phase === "aufgedeckt");
     const isKarteAufgedeckt = quiz.modus !== "diktat" && quiz.phase === "aufgedeckt" &&
       (quiz.spalteModus?.[quiz.antwortTypen?.[quiz.antwortTypIndex]] || STANDARD_ANTWORT_MODUS) === "karte";
@@ -2347,7 +2356,8 @@ export default function VokabelApp() {
   function brecheQuizAb() {
     if (!quiz) { beendeQuiz(); return; }
     if (quiz.istSessionModus) {
-      const answeredIds = [...new Set(
+      // In der Wiederholung wurde das ganze Paket bereits einmal abgefragt
+      const answeredIds = quiz.wiederholungDurchgang ? (quiz.sessionVokIds || []) : [...new Set(
         (quiz.vokabeln || []).slice(0, quiz.index || 0).map(v => v.id)
       )];
       if (answeredIds.length > 0) updateSessionSlotFortschritt(answeredIds, false);
@@ -2619,6 +2629,8 @@ export default function VokabelApp() {
     if (naechsterIdx >= prev.vokabeln.length) {
       if (prev.abfrageZiel) {
         const ziel = prev.abfrageZiel;
+        // Vor jedem Wiederholungs-Durchgang eine Zwischenkarte "Wiederholung" zeigen
+        const wiederholungsStart = () => ({ phase: "wiederholungHinweis", wiederholungDurchgang: (prev.wiederholungDurchgang || 0) + 1 });
         if (ziel.modus === "anzahl" && ziel.runde < ziel.anzahl - 1) {
           const neuVoks = [...prev.vokabeln].sort(() => Math.random() - 0.5);
           return starteVokabel(neuVoks, 0, { abfrageZiel: { ...ziel, runde: ziel.runde + 1 } });
@@ -2627,7 +2639,7 @@ export default function VokabelApp() {
           const restVoks = prev.vokabeln.filter(v => (richtigMap[v.id] || 0) < ziel.wiederholung);
           if (restVoks.length > 0) {
             const neuVoks = [...restVoks].sort(() => Math.random() - 0.5);
-            return starteVokabel(neuVoks, 0);
+            return starteVokabel(neuVoks, 0, wiederholungsStart());
           }
         }
         if (ziel.modus === "score") {
@@ -2642,7 +2654,7 @@ export default function VokabelApp() {
           });
           if (restVoks.length > 0) {
             const neuVoks = [...restVoks].sort(() => Math.random() - 0.5);
-            return starteVokabel(neuVoks, 0);
+            return starteVokabel(neuVoks, 0, wiederholungsStart());
           }
         }
       }
@@ -2871,6 +2883,16 @@ export default function VokabelApp() {
     } else {
       setQuiz(prev => naechsteVokabelState(prev));
     }
+  }
+
+  // Zwischenkarte "Wiederholung": weiter zu den zu wiederholenden Vokabeln oder direkt zur Auswertung
+  function starteWiederholung() {
+    setQuiz(prev => prev?.phase === "wiederholungHinweis" ? {...prev, phase: "eingabe"} : prev);
+  }
+  function brecheWiederholungAb() {
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    setQuiz(prev => prev?.phase === "wiederholungHinweis" || prev?.wiederholungDurchgang
+      ? {...prev, phase: "fertig", flash: false} : prev);
   }
 
   function deckeKarteAuf() {
@@ -3318,6 +3340,42 @@ export default function VokabelApp() {
       }
     }
 
+    if (quiz.phase === "wiederholungHinweis") {
+      const n = quiz.vokabeln.length;
+      const grund = quiz.abfrageZiel?.modus === "score"
+        ? "haben das Score-Ziel noch nicht erreicht"
+        : quiz.abfrageZiel?.wiederholung > 1 ? `wurden noch nicht ${quiz.abfrageZiel.wiederholung}× richtig beantwortet` : "wurden falsch beantwortet";
+      return (
+        <>
+          <style>{CSS}</style>
+          <div className="app">
+            <div className="topbar">
+              <button {...tt("Wiederholung abbrechen und zur Auswertung")} className="topbar-back" onClick={brecheWiederholungAb}>Beenden</button>
+              <span className="topbar-title">Wiederholung</span>
+              <span className="quiz-fortschritt">{n} Vok.</span>
+            </div>
+            <div className="sektion">
+              <div className="quiz-frage-box wiederholung-karte" onClick={starteWiederholung} style={{cursor:"pointer", padding:"34px 16px"}}
+                {...tt("Antippen: weiter zu den Vokabeln, die wiederholt werden")}>
+                <div style={{fontSize:"2.2rem", lineHeight:1}}>🔁</div>
+                <div className="quiz-frage-text" style={{textAlign:"center", marginTop:10}}>
+                  Wiederholung{quiz.wiederholungDurchgang > 1 ? ` ${quiz.wiederholungDurchgang}` : ""}
+                </div>
+                <div style={{textAlign:"center", fontSize:"0.9rem", color:"#6b6560", marginTop:10, lineHeight:1.5}}>
+                  {quiz.wiederholungDurchgang > 1 ? "Weiter geht's" : "Alle Vokabeln wurden abgefragt"}.<br/>
+                  {n === 1 ? "1 Vokabel" : `${n} Vokabeln`} {n === 1 ? grund.replace(/^haben/, "hat").replace(/^wurden/, "wurde") : grund} und {n === 1 ? "kommt" : "kommen"} jetzt noch einmal.
+                </div>
+              </div>
+              <button className="btn btn-primary" style={{width:"100%", marginTop:14}} onClick={starteWiederholung}
+                {...tt("Weiter zu den Vokabeln, die wiederholt werden")}>Weiter zur Wiederholung</button>
+              <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={brecheWiederholungAb}
+                {...tt("Wiederholung auslassen und direkt zur Auswertung – die Wertung der Runde bleibt gleich")}>Wiederholung abbrechen</button>
+            </div>
+          </div>
+        </>
+      );
+    }
+
     const aktVokRaw = quiz.vokabeln[quiz.index];
     const aktVok = getAktVok();
     const frageLabel = quiz.liste.spalten[quiz.frageTyp]?.name || quiz.frageTyp;
@@ -3345,8 +3403,15 @@ export default function VokabelApp() {
         <style>{CSS}</style>
         <div className="app">
           <div className="topbar">
-            <button {...tt("Quiz abbrechen – bisher beantwortete Vokabeln werden ausgewertet")} className="topbar-back" onClick={() => { brecheQuizAb(); }}>Beenden</button>
-            <span className="topbar-title">{quiz.index + 1} / {quiz.vokabeln.length}</span>
+            {quiz.wiederholungDurchgang ? (
+              <button {...tt("Wiederholung abbrechen und zur Auswertung")} className="topbar-back" onClick={brecheWiederholungAb}>Beenden</button>
+            ) : (
+              <button {...tt("Quiz abbrechen – bisher beantwortete Vokabeln werden ausgewertet")} className="topbar-back" onClick={() => { brecheQuizAb(); }}>Beenden</button>
+            )}
+            <span className="topbar-title">
+              {quiz.wiederholungDurchgang ? <span className="wiederholung-marke" {...tt("Diese Vokabeln werden wiederholt, weil sie noch nicht sicher sitzen")}>🔁 Wiederholung </span> : null}
+              {quiz.index + 1} / {quiz.vokabeln.length}
+            </span>
             <span className="quiz-fortschritt">Score: {score > 0 ? "+" : ""}{score}</span>
           </div>
           <div className="sektion"

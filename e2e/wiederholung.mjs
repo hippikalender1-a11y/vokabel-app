@@ -47,9 +47,18 @@ ok(aktiv.includes("10"), "Standard: Paketgröße 10");
 await clickText("button", "Quiz starten (");
 await sleep(400);
 const gefragt = [];
-for (let k = 0; k < 6; k++) {
+let karten = 0, markiert = false;
+for (let k = 0; k < 8; k++) {
   const t = await text();
   if (/Durchlauf abgeschlossen|Auswertung|Paket fertig/.test(t)) break;
+  if (t.includes("Weiter zur Wiederholung")) {
+    karten++;
+    gefragt.push("[Wiederholung]");
+    ok(/1 Vokabel wurde falsch beantwortet/.test(t), "Zwischenkarte nennt die Anzahl: 1 Vokabel falsch");
+    await clickText("button", "Weiter zur Wiederholung");
+    markiert = /Wiederholung\s*1 \/ 1/.test(await text());
+    continue;
+  }
   const v = t.includes("gehen") ? "gehen" : "sehen";
   gefragt.push(v);
   const gewusst = v === "gehen" || gefragt.filter(x => x === "sehen").length > 1;
@@ -60,6 +69,8 @@ for (let k = 0; k < 6; k++) {
 }
 console.log("     Abfragefolge:", gefragt.join(" → "));
 ok(gefragt.filter(x => x === "sehen").length === 2 && gefragt.filter(x => x === "gehen").length === 1, "Nicht gewusste Vokabel kommt wieder, bis sie 1× gewusst wurde");
+ok(karten === 1 && gefragt[2] === "[Wiederholung]", "Zwischenkarte „Wiederholung“ steht zwischen regulären und zu wiederholenden Vokabeln");
+ok(markiert, "Während der Wiederholung zeigt die Kopfzeile „🔁 Wiederholung 1 / 1“");
 const t = await text();
 ok(/Durchlauf abgeschlossen|Auswertung/.test(t), "Danach ist die Runde fertig");
 
@@ -85,9 +96,11 @@ await sleep(300);
 await clickText("button", "Quiz starten (");
 await sleep(400);
 let schritte = 0;
+let karten2 = 0;
 for (; schritte < 10; schritte++) {
   const tt = await text();
   if (/Durchlauf abgeschlossen|Auswertung|Paket fertig/.test(tt)) break;
+  if (tt.includes("Weiter zur Wiederholung")) { karten2++; schritte--; await clickText("button", "Weiter zur Wiederholung"); continue; }
   await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click());
   await sleep(250);
   await clickText(".karte-btn", "Gewusst");
@@ -96,6 +109,32 @@ for (; schritte < 10; schritte++) {
 const sc2 = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.map(v => v.fortschritt?.score));
 console.log("     Score-Ziel +2: Schritte", schritte, "Scores", JSON.stringify(sc2));
 ok(schritte === 4 && sc2.every(x => x === 2), "Abfrage-Ziel Score: jede Antwort zählt, Runde endet bei +2");
+ok(karten2 === 1, "Score-Ziel: Zwischenkarte vor dem zweiten Durchgang");
+
+// Wiederholung abbrechen: direkt zur normalen Auswertung (nicht "Abgebrochen")
+await clickText("button", "Zur Übersicht");
+await page.evaluate(() => {
+  const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr"));
+  l.vokabeln.forEach(v => { delete v.fortschritt; });
+  localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
+});
+if (!(await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].some(b => b.textContent.trim() === "Mit Wiederholung"))))
+  await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /^(Pakete|\d+ V\.)$/.test(b.textContent.trim()))?.click());
+await sleep(300);
+await clickText(".typ-btn", "Mit Wiederholung", true);
+await clickText("button", "Quiz starten (");
+await sleep(400);
+for (let k = 0; k < 2; k++) {
+  await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click());
+  await sleep(250);
+  await clickText(".karte-btn", "Nicht gewusst");
+  await sleep(1300);
+}
+let t3 = await text();
+ok(/2 Vokabeln wurden falsch beantwortet/.test(t3), "Zwischenkarte: 2 Vokabeln falsch");
+await clickText("button", "Wiederholung abbrechen");
+t3 = await text();
+ok(/Auswertung|Durchlauf abgeschlossen|Paket fertig/.test(t3) && !/Abgebrochen/.test(t3) && /0 von 2 richtig/.test(t3), "Wiederholung abbrechen → normale Auswertung, 0 von 2 richtig");
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);
