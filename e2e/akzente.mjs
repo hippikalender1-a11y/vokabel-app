@@ -93,13 +93,22 @@ for (let k = 0; k < 10; k++) {
     t = await text();
     ok(nach.map(x => x.replace("*", "")).join("") === "cœur", `œ ersetzt o + e: ${nach.join(" ")}`);
     ok(t.includes("Fehlgriff") && !(await kartenFarbe()).includes("richtig"), "Mit Fehlgriff: zählt als nicht gewusst, Karte nicht grün");
-  } else if (frage === "Herz") {
+  } else if (frage === "Herz" && mal >= 3) {
     await setze(1, "œ");
+  } else if (frage === "Herz") {
+    await clickText("button", "Prüfen", true);   // ohne œ geprüft
+    await clickText("button", "Lösung anzeigen");
+    t = await text();
+    ok(t.includes("cœur") && t.includes("Weiter →"), "Nach Prüfen mit Fehler: „Lösung anzeigen“ zeigt cœur");
   } else if (frage === "Junge" && mal === 1) {
     await clickText("button", "Prüfen", true);   // ohne ç geprüft
     t = await text();
-    ok(await page.evaluate(() => document.querySelectorAll(".akzent-kachel.falsch").length === 1) && t.includes("garçon"),
-      "Prüfen ohne Akzent: fehlender Buchstabe rot, Lösung „garçon“ angezeigt");
+    ok(await page.evaluate(() => document.querySelectorAll(".akzent-kachel.falsch").length === 1) && t.includes("korrigieren") && !t.includes("Weiter →"),
+      "Prüfen mit Fehler: fehlender Buchstabe rot, Korrektur noch möglich");
+    await setze(3, "ç");
+    t = await text();
+    ok((await klassen())[3] === "ok" && t.includes("Weiter →") && !(await kartenFarbe()).includes("richtig"),
+      "Korrigiert: ç grün, Antwort übernommen, zählt aber als nicht gewusst");
   } else if (frage === "Junge") {
     await setze(3, "ç");
   }
@@ -108,7 +117,7 @@ for (let k = 0; k < 10; k++) {
   await sleep(300);
 }
 console.log("     Abfolge:", gesehen.join(" → "));
-ok(gesehen.includes("[W]") && gesehen.filter(x => x === "Junge").length === 2 && gesehen.filter(x => x === "Herz").length === 2, "Falsch beantwortete Wörter kommen nach der Wiederholungs-Karte erneut");
+ok(gesehen.includes("[W]") && gesehen.filter(x => x === "Junge").length === 2 && gesehen.filter(x => x === "Herz").length === 3, "Falsch beantwortete Wörter kommen nach der Wiederholungs-Karte erneut");
 t = await text();
 ok(/1 von 3 richtig/.test(t), "Auswertung: 1 von 3 richtig");
 const st = await page.evaluate(() => Object.fromEntries(JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.map(v => [v.E1.wert, [v.akzentFortschritt?.score ?? null, v.fortschritt?.score ?? null]])));

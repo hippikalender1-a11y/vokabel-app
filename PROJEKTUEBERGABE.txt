@@ -1267,7 +1267,10 @@ AKZENT-MODUS (4. Antwort-Modus "akzent", nur E-Spalten, Knopf "Akzente"):
   MC-Fehlklick als nicht gewusst); richtige Variante → Kachel grün; alle
   Akzente gesetzt → automatisch übernommen (schliesseAkzenteAb), ohne
   Fehlgriff = richtig, ganze Antwort-Karte grün. "Prüfen" (groß, mittig;
-  Lösung/Info klein darunter) für Wörter ohne Akzent bzw. zum Aufgeben.
+  Lösung/Info klein darunter). Prüfen bei fehlenden Akzenten: bleibt in der
+  Eingabe, fehlende Kacheln rot (quiz.akzent.pruefFehler), Vokabel zählt
+  als nicht gewusst; korrigieren (→ automatisch übernommen) oder "Lösung
+  anzeigen".
   Alle Kacheln sehen gleich aus. Layout: Wörter als nicht umbrechende
   Gruppen (.akzent-wortgruppe), Umbruch nur zwischen Wörtern; Kachelbreite
   per Container-Einheit: --k = min(48px, (100cqw − Lücken) / n), n = max(12,

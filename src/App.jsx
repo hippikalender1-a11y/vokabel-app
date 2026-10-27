@@ -3006,14 +3006,14 @@ export default function VokabelApp() {
     const kacheln = akzentKacheln(vok?.[typ]?.wert || "");
     const a = q.akzent?.key === key ? q.akzent : null;
     return { key, typ, kacheln, wahl: a ? a.wahl : kacheln.map(k => k.basis), aktiv: a ? a.aktiv : null,
-      geprueft: !!a?.geprueft, fehler: !!a?.fehler, blink: a ? a.blink : null };
+      geprueft: !!a?.geprueft, fehler: !!a?.fehler, blink: a ? a.blink : null, pruefFehler: !!a?.pruefFehler };
   }
   // Kachel braucht einen Akzent bzw. eine Ligatur (die von der Ligatur verbrauchte Kachel nicht)
   const kachelMitAkzent = k => k.richtig !== "" && k.richtig !== k.basis;
   // Fehlgriff: Kachel kurz rot aufleuchten lassen; zählt wie ein Fehlklick bei MC (Vokabel gilt als nicht gewusst)
   function akzentFehlgriff(s, i, extra = {}) {
     if (akzentBlinkRef.current) clearTimeout(akzentBlinkRef.current);
-    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl: s.wahl, aktiv: null, fehler: true, blink: i, ...extra }}));
+    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl: s.wahl, aktiv: null, fehler: true, blink: i, pruefFehler: s.pruefFehler, ...extra }}));
     akzentBlinkRef.current = setTimeout(() => {
       setQuiz(prev => prev?.akzent?.key === s.key ? {...prev, akzent: {...prev.akzent, blink: null}} : prev);
     }, 600);
@@ -3024,7 +3024,7 @@ export default function VokabelApp() {
     const k = s.kacheln[i];
     if (s.wahl[i] === k.richtig && kachelMitAkzent(k)) return;   // schon richtig gesetzt
     if (!kachelMitAkzent(k)) { akzentFehlgriff(s, i); return; }
-    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl: s.wahl, fehler: s.fehler, blink: null, aktiv: s.aktiv === i ? null : i }}));
+    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl: s.wahl, fehler: s.fehler, blink: null, pruefFehler: s.pruefFehler, aktiv: s.aktiv === i ? null : i }}));
   }
   function setzeAkzentVariante(v) {
     if (!quiz || quiz.phase !== "eingabe") return;
@@ -3037,7 +3037,7 @@ export default function VokabelApp() {
     if (LIGATUR_TEILE[v]) wahl[i + 1] = "";
     // Alle Akzente gefunden → automatisch als Antwort übernehmen
     if (s.kacheln.every((k, j) => wahl[j] === k.richtig)) { schliesseAkzenteAb({ ...s, wahl }); return; }
-    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl, aktiv: null, fehler: s.fehler, blink: null }}));
+    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl, aktiv: null, fehler: s.fehler, blink: null, pruefFehler: s.pruefFehler }}));
   }
   function schliesseAkzenteAb(s) {
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
@@ -3049,9 +3049,13 @@ export default function VokabelApp() {
       feedback: richtig ? "" : komplett ? "Nicht ganz – mit Fehlgriff zählt die Vokabel als nicht gewusst."
         : "Nicht ganz – rot markierte Buchstaben fehlen noch.", falschFlash: false, aktuelleFehlversuche: 0}));
   }
+  // Prüfen: vollständig → abschließen; sonst fehlende Akzente rot markieren, korrigieren oder Lösung anzeigen
   function pruefeAkzente() {
     if (!quiz || quiz.phase !== "eingabe") return;
-    schliesseAkzenteAb(akzentStand(quiz));
+    const s = akzentStand(quiz);
+    if (s.kacheln.every((k, i) => s.wahl[i] === k.richtig)) { schliesseAkzenteAb(s); return; }
+    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl: s.wahl, aktiv: null, fehler: true, blink: null, pruefFehler: true },
+      feedback: "Nicht ganz – rot markierte Buchstaben korrigieren oder „Lösung anzeigen“."}));
   }
 
   function deckeKarteAuf() {
@@ -3699,6 +3703,7 @@ export default function VokabelApp() {
                                   const status = akz.blink === i ? " blink"
                                     : z === k.richtig && kachelMitAkzent(k) ? " ok"
                                     : akz.geprueft ? (z === k.richtig ? (richtigAufgedeckt ? " ok" : "") : " falsch")
+                                    : akz.pruefFehler && kachelMitAkzent(k) ? " falsch"
                                     : hervorheben && kachelMitAkzent(k) ? " markiert" : "";
                                   return (
                                     <button key={i} className={`akzent-kachel${akz.aktiv === i ? " aktiv" : ""}${status}`}
