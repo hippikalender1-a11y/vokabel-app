@@ -4481,9 +4481,12 @@ export default function VokabelApp() {
           const verfuegbarReihenfolge = reihenfolgeVoks.length;
           // Pakete/Session-Filter → nur für Quiz-Button
           let verfuegbar;
+          // Session-Zeile: tatsächliche Anzahl (mit Akzent-/Gelernt-/Score-Filter), bei laufender Session nur der Rest
+          let sessionAnzahl = verfuegbarReihenfolge;
           if (sessionHatFortschritt) {
             const bereitsAbgefragt = new Set(sessionSlotAktiv.abgefragt || []);
             const restVoks = reihenfolgeVoks.filter(v => !bereitsAbgefragt.has(v.id));
+            sessionAnzahl = restVoks.length;
             verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, restVoks.length) : 0;
           } else if (isPakete) {
             verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, verfuegbarReihenfolge) : 0;
@@ -5095,11 +5098,9 @@ export default function VokabelApp() {
                 {kombiListe && (
                   <div ref={sessionRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, zIndex:4, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Session</span>
-                    {isPakete && sessionHatFortschritt && (
-                      <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#6b6560", pointerEvents:"none", whiteSpace:"nowrap"}}>
-                        noch {(sessionSlotAktiv.gesamt || 0) - (sessionSlotAktiv.abgefragt || []).length} V.
-                      </span>
-                    )}
+                    <span data-sessionanzahl style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#6b6560", pointerEvents:"none", whiteSpace:"nowrap"}}>
+                      {sessionHatFortschritt ? `noch ${sessionAnzahl} V.` : `${sessionAnzahl} V.`}
+                    </span>
                     <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                       <div className="toggle-btn">
                         <button className={`toggle-opt${quizSessionModus==="alle"?" aktiv":""}`}

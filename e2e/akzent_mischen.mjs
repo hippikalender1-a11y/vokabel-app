@@ -70,6 +70,7 @@ await page.evaluate(() => {
 });
 await sleep(250);
 ok(await anzahl() === "3", "Ohne Wörter ohne Akzent: trotzdem 3 – chat wird über „Plural“ abgefragt (größte Anzahl je Spalte)");
+ok(await page.evaluate(() => document.querySelector("[data-sessionanzahl]")?.textContent.trim()) === "3 V.", "Session-Zeile: 3 V.");
 
 await clickText("button", "Quiz starten (");
 await sleep(400);

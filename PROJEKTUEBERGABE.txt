@@ -1338,6 +1338,10 @@ Akzent-Spalte + weitere Antwortspalten: antwortSpaltenFuer(vok, typen,
   Auslassen; getFA() in naechsteVokabelState filtert je Vokabel. Start-
   Knopf zählt dieselbe Menge (= größte Anzahl je Antwortspalte).
   Test: e2e/akzent_mischen.mjs.
+Session-Zeile (Quiz-Tab): Mitte zeigt immer die tatsächliche Anzahl
+  (span[data-sessionanzahl]): ohne laufende Session "N V." (= gefilterte
+  Menge wie Start-Knopf ohne Paket-Begrenzung), mit laufender Session
+  "noch N V." aus der aktuellen Filterung (nicht mehr slot.gesamt).
 
 
 ================================================================

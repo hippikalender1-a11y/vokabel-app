@@ -63,6 +63,7 @@ await page.evaluate(() => {
 });
 await sleep(200);
 ok(/Quiz starten \(3 Vokabeln\)/.test(await text()), "Regel aus: nur 3 Wörter mit Akzent (chat fehlt)");
+ok(await page.evaluate(() => document.querySelector("[data-sessionanzahl]")?.textContent.trim()) === "3 V.", "Session-Zeile zeigt ebenfalls 3 V.");
 
 await clickText("button", "Quiz starten (");
 await sleep(400);
