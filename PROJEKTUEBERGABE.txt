@@ -1221,14 +1221,14 @@ BROWSER-TESTS (e2e/, im Repo; node_modules/Ausgaben per .gitignore aus):
   Skripte: sprachen, export, quiz0, score, pakete (preset|quiztab|detail),
   gelernt, statistik, fortschritt, gruppen, bilanz, slots, neu, karte,
   bremse, standard, wiederholung, kreis, vollbild, import_kodierung,
-  einfuegen, ipad_export, info; Werkzeuge: info_audit.mjs (findet klickbare
+  einfuegen, ipad_export, info, akzente; Werkzeuge: info_audit.mjs (findet klickbare
   Elemente ohne Erklärtext), installierbar.mjs (PWA-Prüfung der Live-Seite).
   Ältere Tests wählen ggf. ausdrücklich Session "Alle" bzw. Ziel "Anzahl",
   weil die Standards (Pakete 10, Wiederholung 1×) sonst Abläufe ändern.
 
 
 ================================================================
-SESSION 38 — ZWISCHENKARTE "WIEDERHOLUNG"
+SESSION 38 — ZWISCHENKARTE "WIEDERHOLUNG" + AKZENT-MODUS
 ================================================================
 Abfrage-Ziel "Mit Wiederholung" bzw. "Score": Sind alle Vokabeln einmal
   abgefragt und werden welche neu eingereiht, erscheint statt einer Vokabel
@@ -1239,6 +1239,28 @@ Abfrage-Ziel "Mit Wiederholung" bzw. "Score": Sind alle Vokabeln einmal
   "Abgebrochen"). Kopfzeile in der Wiederholung: "🔁 Wiederholung 1 / 3".
   brecheQuizAb() im Paket-Modus: in der Wiederholung gilt das ganze Paket
   als abgefragt. Test: e2e/wiederholung.mjs.
+
+AKZENT-MODUS (4. Antwort-Modus "akzent", nur E-Spalten, Knopf "Akzente"):
+  Wort steht ohne Akzente als Buchstaben-Kacheln; antippbare Kachel →
+  Variantenleiste (AKZENT_TABELLE je Sprache fr/es/de/it/pt, Ligaturen
+  AKZENT_LIGATUREN: o+e → œ, a+e → æ, de: s+s → ß; die zweite Kachel wird
+  dabei verbraucht, wahl[i+1] = ""). akzentKacheln(wert) → {basis, richtig};
+  Zeichen außerhalb der Tabelle bleiben über die Variantenliste erreichbar.
+  Zustand: quiz.akzent {key, wahl, aktiv, geprueft}; key = Vokabel-Id |
+  Spalte | Runde | Wiederholungsdurchgang → bei neuer Vokabel automatisch
+  frisch (akzentStand()). "Prüfen" → pruefeAkzente(): ein Versuch, Kacheln
+  grün/rot, Lösung darunter; "Lösung anzeigen" = aufgedeckt.
+  EIGENER SCORE akzentFortschritt (+1 richtig, −1 falsch/aufgedeckt, über
+  berechneDiktatScore, speichereAkzentScore). spaltenAbschluss(): Akzent-
+  Spalten zählen nur dafür, übrige Spalten wie bisher für fortschritt;
+  Rundenauswertung/Wiederholung über alle Spalten. Nur Akzent-Antworten
+  (Frage–Antwort) → quiz.scoreFeld = "akzentFortschritt": gelernt-Filter,
+  Reihenfolge "schlechteste", Score-Ziel, Lern-Bilanz nutzen den Akzent-Score
+  (ebenso Zähler im Quiz-Tab). Schalter "Akzente: auch Wörter ohne Akzent"
+  (quizAkzentMischen, Standard aus = nur Wörter mit Akzent/Sonderzeichen;
+  in der Konfiguration nur gespeichert, wenn an). Statistik-Kopf:
+  "Akzente x %" (Basis: Vokabeln mit Akzent). JSON-Export-Option
+  "Akzent-Fortschritt". Test: e2e/akzente.mjs.
 
 
 ================================================================
@@ -1293,22 +1315,6 @@ Reihenfolge = Priorität (Stand 2026-10-26). Nutzer entscheidet jeweils.
 5) FORTSCHRITT ZURÜCKSETZEN (Idee)
    Scores einer Liste bzw. einzelner Vokabeln auf "nie abgefragt" setzen
    (z. B. Verben mit Punkten aus der alten Zählweise je Spalte).
-
-5b) AKZENT-MODUS (Idee des Nutzers vom 27.10., noch nicht entschieden)
-   Ziel: Akzente (v. a. Französisch) üben ohne Tastatur.
-   Ablauf: Das Wort wird OHNE Akzente in großen Buchstaben-Kacheln gezeigt
-   (z. B. "E L E V E"); Antippen eines Buchstabens öffnet eine Tastenleiste
-   mit Varianten (e → e é è ê ë; a → a à â; c → c ç; i → i î ï; o → o ô;
-   u → u ù û ü; Großbuchstaben entsprechend). Danach "Prüfen" → Buchstaben
-   grün/rot, Lösung anzeigen.
-   Vorschläge: als 4. Antwort-Modus neben Tippen/MC/Karte (nur E-Spalten),
-   antippbar nur Buchstaben mit Varianten (alle Vokale + c, verrät nichts);
-   auch Wörter ohne Akzent mischen ("nichts ändern" muss möglich sein);
-   Übersetzung + Vorlesen als Hilfe; Zeichentabelle je Sprache (später
-   Spanisch ñ/á, Deutsch ä/ö/ü).
-   ENTSCHIEDEN (27.10.): Wörter ohne Akzent beimischen = OPTIONAL
-   (Schalter); EIGENER SCORE (wie Diktat, z. B. akzentFortschritt);
-   Sonderzeichen œ/æ JA (z. B. o antippen → o ô œ, ersetzt "oe").
 
 6) WEITERGABE AN ANDERE / SICHERHEIT
    App ist öffentlich (GitHub Pages), Repo public; Daten nur lokal je Gerät,
