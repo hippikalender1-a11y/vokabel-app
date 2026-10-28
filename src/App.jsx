@@ -604,6 +604,8 @@ function akzentVarianten(kacheln, i, lang) {
 
 // ── Statistik-Art: welcher Score ausgewertet wird (Tap in die Kreismitte wechselt) ──
 const STATISTIK_ARTEN = [["uebersetzung", "Übersetzung"], ["diktat", "Diktat"], ["akzente", "Akzente"]];
+// Feld des Scores je Art (an der Vokabel)
+const SCORE_FELD = { uebersetzung: "fortschritt", diktat: "diktatFortschritt", akzente: "akzentFortschritt" };
 // Sicht für die Statistik: "fortschritt" ist der Score der gewählten Art; Akzente nur Vokabeln mit Akzent
 function statistikSicht(voks, art) {
   if (art === "diktat") return voks.map(v => ({ ...v, fortschritt: v.diktatFortschritt }));
@@ -922,7 +924,8 @@ export default function VokabelApp() {
   const slotZiehenRef = useRef(null);                         // {id, x, y, aktiv, art: "liste" für das Listen-Raster}
   const [listenSortModus, setListenSortModus] = useState(false);   // "Verschieben"-Modus des Listen-Rasters
   const [listenAuswahlId, setListenAuswahlId] = useState(null);    // angetippt, wartet auf Zielplatz
-  const [listeMenueId, setListeMenueId] = useState(null);          // Liste aus dem Lang-Druck-Menü (Umbenennen, Duplizieren, Löschen)
+  const [listeMenueId, setListeMenueId] = useState(null);          // Liste aus dem Lang-Druck-Menü (Umbenennen, Duplizieren, Zurücksetzen, Löschen)
+  const [zuruecksetzenArten, setZuruecksetzenArten] = useState(new Set(Object.keys(SCORE_FELD)));
   const slotGezogenRef = useRef(false);                       // Klick nach dem Ziehen schlucken
   // Rückfrage "Abgefragt-Stand löschen?" in der Fortschrittszeile; ohne Antwort nach 6 s wieder weg
   const [sessionResetFrage, setSessionResetFrage] = useState(false);
@@ -1552,6 +1555,19 @@ export default function VokabelApp() {
     speichereIndex(listenIndex.filter(l => l.id !== id));
     setModal(null); setListeMenueId(null);
     if (id === aktiveListeId) { setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null); }
+  }
+
+  // Lernstand einer Liste zurücksetzen (gewählte Arten): Vokabeln gelten danach als nie abgefragt
+  function setzeListeZurueck() {
+    const liste = lsGet(SK.liste(listeMenueId));
+    if (liste && zuruecksetzenArten.size > 0) {
+      const felder = [...zuruecksetzenArten].map(a => SCORE_FELD[a]);
+      const neu = { ...liste, vokabeln: liste.vokabeln.map(v => { const w = { ...v }; felder.forEach(f => delete w[f]); return w; }) };
+      lsSet(SK.liste(listeMenueId), neu);
+      if (listeMenueId === aktiveListeId) setAktiveListe(neu);
+      speichereIndex(listenIndex);   // neu zeichnen (Lernfortschritt in der Übersicht)
+    }
+    setModal(null); setListeMenueId(null);
   }
 
   // Kopie mit allen Vokabeln und Spalten unter neuem Namen (erster freier Platz im Raster);
@@ -2805,6 +2821,7 @@ export default function VokabelApp() {
       { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
       { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
       ...(gefiltert ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenSortModus(true); setListenAuswahlId(l.id); } }]),
+      { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },
       { label: "🗑 Löschen", gefahr: true, fn: () => { setListeMenueId(l.id); setModal("loeschen"); } },
     ];
     const zelle = (l, key) => {
@@ -6777,7 +6794,7 @@ export default function VokabelApp() {
               </div>
               {[
                 {titel:"Listen-Tab", inhalt:[
-                  {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“ und „Löschen“. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
+                  {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
                   {k:"[+] Neue Liste", v:"Legt eine leere Liste mit eigenem Namen an."},
                   {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, JSON, TXT, Löschen. JSON = vollständige Sicherung mit Lernstand (Datei „Name - JSON.txt“), TXT = nur die Vokabeln als Text ohne Scores (Datei „Name - TXT.txt“). Auf iPad/iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, Mail, AirDrop), sonst wird die Datei heruntergeladen. Beim Import ist die Endung egal – die App erkennt den Inhalt."},
                   {k:"Stift-Button", v:"Listenname umbenennen."},
@@ -6958,6 +6975,41 @@ export default function VokabelApp() {
           </div>
         </div>
       )}
+      {modal === "liste-zuruecksetzen" && listeMenueId && (() => {
+        const liste = lsGet(SK.liste(listeMenueId));
+        const mitScore = art => (liste?.vokabeln || []).filter(v => v[SCORE_FELD[art]]).length;
+        return (
+        <div className="overlay" onClick={() => setModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} data-zuruecksetzen>
+            <div className="modal-titel">Lernstand zurücksetzen?</div>
+            <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5, marginTop:0}}>
+              Die Scores von „{liste?.name}“ werden gelöscht – alle Vokabeln gelten danach als nie abgefragt. Die Vokabeln selbst bleiben.
+            </p>
+            <div className="karte" style={{marginBottom:12}}>
+              {STATISTIK_ARTEN.map(([art, name]) => {
+                const an = zuruecksetzenArten.has(art);
+                return (
+                  <div key={art} data-zuruecksetzen-art={art} className="karte-zeile" style={{cursor:"pointer", padding:"10px 14px"}}
+                    onClick={() => setZuruecksetzenArten(prev => { const n = new Set(prev); if (n.has(art)) n.delete(art); else n.add(art); return n; })}
+                    {...tt(`${name}-Scores ${an ? "nicht " : ""}zurücksetzen`)}>
+                    <div className={`checkbox${an ? " checked" : ""}`}>{an ? "✓" : ""}</div>
+                    <div className="karte-zeile-info">
+                      <div className="karte-zeile-name">{name}</div>
+                      <div className="karte-zeile-sub">{mitScore(art)} Vokabel{mitScore(art) !== 1 ? "n" : ""} mit Score</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="modal-actions">
+              <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+              <button {...tt("Gewählte Scores dieser Liste löschen")} className="btn btn-danger" disabled={zuruecksetzenArten.size === 0}
+                onClick={setzeListeZurueck}>Zurücksetzen</button>
+            </div>
+          </div>
+        </div>
+        );
+      })()}
       {modal === "liste-duplizieren" && listeMenueId && (
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>

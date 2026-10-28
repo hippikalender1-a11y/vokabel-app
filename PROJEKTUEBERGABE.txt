@@ -1543,6 +1543,9 @@ LISTEN-RASTER (Listen-Tab): Index-Einträge haben platz {z, s} wie die
   setzeListenPlatz; belegt → tauschen). Mit Sprachfilter: sichtbare Listen
   zusammengerückt, ohne Plätze, kein Verschieben. 1 Spalte: volle Zeile wie
   bisher, ab 2 Spalten Kachel Flagge + Name + Anzahl. Test: e2e/listenraster.mjs.
+  Menü "↺ Lernstand zurücksetzen": Modal liste-zuruecksetzen (data-zuruecksetzen,
+  Arten wählbar über data-zuruecksetzen-art, Standard alle) → setzeListeZurueck()
+  löscht die Felder aus SCORE_FELD (fortschritt/diktatFortschritt/akzentFortschritt).
 GRUPPEN-QUIZ → ZURÜCK: quiz.ausStatistik (einmalige Runde via gruppe, Fallback
   per setQuiz im Start-Effekt). Auswertung (ohne Session, Quiz und Diktat):
   Hauptknopf "📊 Zurück zur Statistik" (data-zurueck-statistik) und Schließen

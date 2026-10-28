@@ -58,7 +58,7 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); const ziel = await mitte("0|0");
 await finger("touchStart", p.x, p.y); await sleep(700);
-ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|🗑 Löschen", "Lang-Druck: Menü Umbenennen, Duplizieren, Verschieben, Löschen");
+ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|↺ Lernstand zurücksetzen|🗑 Löschen", "Lang-Druck: Menü Umbenennen, Duplizieren, Verschieben, Zurücksetzen, Löschen");
 for (let i = 1; i <= 8; i++) { await finger("touchMove", p.x, p.y + (ziel.y - p.y) * i / 8); await sleep(40); }
 ok((await aktionen()).length === 0 && await page.$("[data-listen-fertig]"), "beim Ziehen: Menü weg, Verschieben-Modus");
 await finger("touchEnd"); await sleep(300);
@@ -98,6 +98,21 @@ console.log("     nach Duplizieren:", JSON.stringify(pl));
 const kopie = await page.evaluate(() => { const idx = JSON.parse(localStorage.getItem("vokabel_listen_index")); const k = idx.find(l => l.name === "Gamma (Kopie)"); const l = JSON.parse(localStorage.getItem("vokabel_liste_" + k.id)); const orig = JSON.parse(localStorage.getItem("vokabel_liste_l_c")); return { origScore: orig.vokabeln[0].fortschritt?.score, id: k.id, n: l.vokabeln.length, score: l.vokabeln[0].fortschritt?.score, sprache: l.sprache }; });
 ok(pl["Gamma (Kopie)"] === "1|0" && kopie.id !== "l_c" && kopie.n === 1 && kopie.score === undefined && kopie.sprache === "en", "Kopie auf erstem freien Platz, mit Vokabeln, Lernstand neu");
 ok(kopie.origScore === 2, "Original behält seinen Lernstand");
+
+// Lernstand zurücksetzen: nur Übersetzung, Diktat bleibt
+await page.evaluate(() => { const l = JSON.parse(localStorage.getItem("vokabel_liste_l_b")); l.vokabeln[0].diktatFortschritt = { score: 3 }; localStorage.setItem("vokabel_liste_l_b", JSON.stringify(l)); });
+await menue("Beta"); await aktion("↺ Lernstand zurücksetzen");
+const rf = await page.evaluate(() => document.querySelector("[data-zuruecksetzen]")?.innerText.replace(/\s+/g, " "));
+console.log("     Rückfrage:", rf);
+ok(/„Beta“/.test(rf || "") && /Übersetzung 1 Vokabel mit Score/.test(rf || "") && /Diktat 1 Vokabel mit Score/.test(rf || ""), "Rückfrage nennt Liste und Vokabeln mit Score je Art");
+await page.click('[data-zuruecksetzen-art="diktat"]'); await sleep(150);
+await clickText(".modal .btn-danger", "Zurücksetzen", true);
+const beta = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_liste_l_b")).vokabeln[0]);
+ok(!beta.fortschritt && beta.diktatFortschritt?.score === 3 && beta.E1.wert === "mot1", "Übersetzungs-Score gelöscht, Diktat-Score und Vokabel bleiben");
+await menue("Beta"); await aktion("↺ Lernstand zurücksetzen");
+await page.click('[data-zuruecksetzen-art="uebersetzung"]'); await page.click('[data-zuruecksetzen-art="diktat"]'); await page.click('[data-zuruecksetzen-art="akzente"]'); await sleep(150);
+ok(await page.evaluate(() => document.querySelector(".modal .btn-danger").disabled), "nichts gewählt: „Zurücksetzen“ gesperrt");
+await clickText(".modal button", "Abbrechen", true);
 
 // Löschen
 await menue("Gamma (Kopie)"); await aktion("🗑 Löschen");
