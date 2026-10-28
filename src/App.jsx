@@ -90,6 +90,19 @@ function rasterGroesse(einst, schluessel = "slotRaster") {
   return { zeilen: Math.min(RASTER_MAX_ZEILEN, Math.max(1, r.zeilen ?? 10)), spalten: Math.min(RASTER_MAX_SPALTEN, Math.max(1, spalten)) };
 }
 const nachPlatz = (a, b) => a.platz.z - b.platz.z || a.platz.s - b.platz.s;
+// Liste in Session-Gruppen aufteilen: Nummern von..bis (1-basiert) in Gruppen zu je groesse;
+// restAnhaengen: eine kleinere letzte Gruppe wird an die vorletzte angehängt
+const AUFTEILEN_GROESSEN = [10, 20, 25, 50, 75, 100];
+function aufteilenGruppen(anzahl, von, bis, groesse, restAnhaengen) {
+  von = Math.max(1, Math.min(anzahl, von)); bis = Math.max(von, Math.min(anzahl, bis));
+  if (!anzahl || !(groesse >= 1)) return [];
+  const g = [];
+  for (let a = von; a <= bis; a += groesse) g.push([a, Math.min(a + groesse - 1, bis)]);
+  if (restAnhaengen && g.length > 1 && g[g.length - 1][1] - g[g.length - 1][0] + 1 < groesse) {
+    const rest = g.pop(); g[g.length - 1][1] = rest[1];
+  }
+  return g;
+}
 // Gültige, freie Plätze bleiben; alle anderen Einträge kommen auf den ersten freien Platz (zeilenweise).
 // Reicht das Raster nicht, wächst es um Zeilen (zeilen im Ergebnis).
 function ordneRaster(gespeichert, { zeilen, spalten }) {
@@ -926,6 +939,8 @@ export default function VokabelApp() {
   const [listenAuswahlId, setListenAuswahlId] = useState(null);    // angetippt, wartet auf Zielplatz
   const [listeMenueId, setListeMenueId] = useState(null);          // Liste aus dem Lang-Druck-Menü (Umbenennen, Duplizieren, Zurücksetzen, Löschen)
   const [zuruecksetzenArten, setZuruecksetzenArten] = useState(new Set(Object.keys(SCORE_FELD)));
+  // Liste in Sessions aufteilen (Quiz-Tab): { listeId, name, groesse, von, bis, restAnhaengen }
+  const [aufteilen, setAufteilen] = useState(null);
   const slotGezogenRef = useRef(false);                       // Klick nach dem Ziehen schlucken
   // Rückfrage "Abgefragt-Stand löschen?" in der Fortschrittszeile; ohne Antwort nach 6 s wieder weg
   const [sessionResetFrage, setSessionResetFrage] = useState(false);
@@ -1090,6 +1105,11 @@ export default function VokabelApp() {
   }, [tab, slotSektionAufgeklappt, listenAuswahlAufgeklappt, quizListeAufgeklappt, quizAbfrageModusAufgeklappt, quizReihenfolgeAufgeklappt,
       quizEinstellungenAufgeklappt, quizSessionAufgeklappt, statistikListenAufgeklappt, statistikEinzelauswahlAufgeklappt, infoModus]);
 
+
+  // Aufteilen endet, sobald andere Listen oder eine gespeicherte Konfiguration gewählt werden
+  useEffect(() => {
+    if (aufteilen && (aktiverSlot || quizTabListen.length !== 1 || quizTabListen[0] !== aufteilen.listeId)) setAufteilen(null);
+  }, [aufteilen, aktiverSlot, quizTabListen]);
 
   // Alle/Bereich-Zeile Höhe messen
   useEffect(() => {
@@ -2323,6 +2343,57 @@ export default function VokabelApp() {
     setGespeicherteVokabelgruppe({ listenIds: [...quizTabListen], vokabelAuswahl: Array.from(quizCheckboxAuswahl), bereichTyp: quizBereichTyp });
   }
 
+  // ── Liste in Sessions aufteilen: Quiz-Tab mit dieser Liste, alle Einstellungen wie gewohnt,
+  // dann je Gruppe eine gespeicherte Konfiguration „Name (21 - 40)“ ──
+  function starteAufteilen(listeId) {
+    const liste = lsGet(SK.liste(listeId));
+    if (!liste) return;
+    setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); lsDel(SK.letzterSlot);
+    setQuizTabListen([listeId]);
+    setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false);
+    setQuizVonBisModus(false); setQuizVonBisErster(null);
+    setSlotSektionAufgeklappt(false); setListenAuswahlAufgeklappt(false);
+    setAufteilen({ listeId, name: liste.name, groesse: 20, von: 1, bis: liste.vokabeln.length, restAnhaengen: false });
+    setTab("quiz");
+    window.scrollTo(0, 0);
+  }
+  function aufteilenStand(a = aufteilen) {
+    const liste = a && lsGet(SK.liste(a.listeId));
+    if (!liste) return null;
+    const anzahl = liste.vokabeln.length;
+    const gruppen = aufteilenGruppen(anzahl, a.von || 1, a.bis || anzahl, a.groesse, a.restAnhaengen);
+    const vorhanden = new Set(slots.gespeichert.map(x => x.name));
+    const basis = (a.name || "").trim() || liste.name;
+    return { liste, anzahl, gruppen: gruppen.map(([v, b]) => {
+      const name = `${basis} (${v} - ${b})`;
+      return { von: v, bis: b, name, vorhanden: vorhanden.has(name) };
+    }) };
+  }
+  function legeAufteilenAn() {
+    const stand = aufteilenStand();
+    if (!stand) return;
+    const neu = stand.gruppen.filter(g => !g.vorhanden);
+    const einst = lsGet(SK.einstellungen, defaultEinstellungen());
+    const groesse = rasterGroesse(einst);
+    const data = rasterEinordnen(getSlotsData(), einst);
+    // zusammenhängend ab der nächsten freien Zeile, Raster wächst bei Bedarf
+    const ab = data.gespeichert.reduce((m, x) => Math.max(m, x.platz.z + 1), 0);
+    const zeilen = Math.max(groesse.zeilen, ab + Math.ceil(neu.length / groesse.spalten));
+    const einstNeu = zeilen !== groesse.zeilen ? { ...einst, slotRaster: { ...groesse, zeilen } } : einst;
+    if (einstNeu !== einst) speichereEinst(einstNeu);
+    const basisKonfig = aktuelleKonfiguration(false);
+    const eintraege = neu.map((g, i) => ({
+      id: neuerSlotId('g'), name: g.name, timestamp: Date.now() + i, sessionFortschritt: null,
+      platz: { z: ab + Math.floor(i / groesse.spalten), s: i % groesse.spalten },
+      konfiguration: { ...basisKonfig, listenIds: [aufteilen.listeId], bereichTyp: "bereich", quizBereichTyp: "bereich",
+        vokabelAuswahl: stand.liste.vokabeln.slice(g.von - 1, g.bis).map(v => `${aufteilen.listeId}__${v.id}`) },
+    }));
+    setSlotsData(rasterEinordnen({ ...data, gespeichert: [...data.gespeichert, ...eintraege] }, einstNeu));
+    setAufteilen(null);
+    setSlotSektionAufgeklappt(true);
+    window.scrollTo(0, 0);
+  }
+
   // Kopie einer gespeicherten Konfiguration unter neuem Namen: gleiche Einstellungen,
   // eigener (leerer) Session-Fortschritt, erster freier Platz im Raster
   function dupliziereSlot(id, name) {
@@ -2757,6 +2828,73 @@ export default function VokabelApp() {
     return name;
   }
 
+  // Kasten „In Sessions aufteilen“ im Quiz-Tab: Name, Gruppengröße, Bereich, Rest, Vorschau
+  function renderAufteilenKasten() {
+    const stand = aufteilenStand();
+    if (!stand) return null;
+    const upd = patch => setAufteilen(a => ({ ...a, ...patch }));
+    const zahl = (v, min, max) => { const n = parseInt(v, 10); return isNaN(n) ? "" : Math.max(min, Math.min(max, n)); };
+    const { gruppen, anzahl } = stand;
+    const rest = (aufteilen.bis || anzahl) - (aufteilen.von || 1) + 1;
+    const hatRest = rest > aufteilen.groesse && rest % aufteilen.groesse !== 0;
+    const vorschau = gruppen.length > 6 ? [...gruppen.slice(0, 3), null, ...gruppen.slice(-2)] : gruppen;
+    const zeile = {display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:10};
+    const label = {fontSize:"0.78rem", color:"#6b6560", minWidth:84};
+    return (
+      <div data-aufteilen style={{background:"#fff8e1", border:"1.5px solid #f0c94a", borderRadius:12, padding:"12px 14px", margin:"12px 0 4px"}}>
+        <div style={{fontWeight:700, color:"#8a6d00", marginBottom:4}}>„{stand.liste.name}“ in Sessions aufteilen</div>
+        <div style={{fontSize:"0.75rem", color:"#8a7a50", marginBottom:12}}>Unten wie gewohnt Spalten, Abfrage-Modus, Reihenfolge und Einstellungen wählen – sie gelten für alle Sessions.</div>
+        <div style={zeile}>
+          <span style={label}>Name</span>
+          <input {...ttFeld("Name der Sessions – die Nummern „(von - bis)“ werden angehängt")} data-aufteilen-name className="inp"
+            style={{flex:1, minWidth:140, padding:"6px 10px"}} value={aufteilen.name} onChange={e => upd({ name: e.target.value })}/>
+        </div>
+        <div style={zeile}>
+          <span style={label}>Gruppengröße</span>
+          {AUFTEILEN_GROESSEN.map(n => (
+            <button key={n} data-aufteilen-groesse={n} className={`toggle-opt${aufteilen.groesse === n ? " aktiv" : ""}`}
+              style={{padding:"4px 9px", border:"1.5px solid #e0dbd2", borderRadius:8}}
+              onClick={() => upd({ groesse: n })} {...tt(`Je ${n} Vokabeln pro Session`)}>{n}</button>
+          ))}
+          <input {...ttFeld("Eigene Gruppengröße")} data-aufteilen-eigene className="inp" type="number" min={1} max={anzahl}
+            style={{width:70, padding:"5px 8px"}} placeholder="eigene"
+            value={AUFTEILEN_GROESSEN.includes(aufteilen.groesse) ? "" : aufteilen.groesse}
+            onChange={e => { const n = zahl(e.target.value, 1, anzahl); if (n !== "") upd({ groesse: n }); }}/>
+        </div>
+        <div style={zeile}>
+          <span style={label}>Bereich (Nr.)</span>
+          <input {...ttFeld("Erste Vokabel-Nummer der Liste, ab der aufgeteilt wird")} data-aufteilen-von className="inp" type="number" min={1} max={anzahl}
+            style={{width:74, padding:"5px 8px"}} value={aufteilen.von} onChange={e => upd({ von: zahl(e.target.value, 1, anzahl) })}/>
+          <span style={{fontSize:"0.8rem", color:"#6b6560"}}>bis</span>
+          <input {...ttFeld("Letzte Vokabel-Nummer, bis zu der aufgeteilt wird")} data-aufteilen-bis className="inp" type="number" min={1} max={anzahl}
+            style={{width:74, padding:"5px 8px"}} value={aufteilen.bis} onChange={e => upd({ bis: zahl(e.target.value, 1, anzahl) })}/>
+          <span style={{fontSize:"0.75rem", color:"#9b9590"}}>von {anzahl}</span>
+        </div>
+        {hatRest && (
+          <div style={zeile}>
+            <span style={label}>Rest</span>
+            <div className="toggle-btn">
+              <button data-aufteilen-rest="eigen" className={`toggle-opt${!aufteilen.restAnhaengen ? " aktiv" : ""}`} onClick={() => upd({ restAnhaengen: false })}
+                {...tt("Übrige Vokabeln als eigene, kleinere Session")}>eigene Gruppe</button>
+              <button data-aufteilen-rest="anhaengen" className={`toggle-opt${aufteilen.restAnhaengen ? " aktiv" : ""}`} onClick={() => upd({ restAnhaengen: true })}
+                {...tt("Übrige Vokabeln an die letzte Session anhängen")}>an letzte anhängen</button>
+            </div>
+          </div>
+        )}
+        <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:4}}>Vorschau: {gruppen.length} Session{gruppen.length !== 1 ? "s" : ""}</div>
+        <div data-aufteilen-vorschau style={{display:"flex", flexWrap:"wrap", gap:5}}>
+          {vorschau.map((g, i) => g ? (
+            <span key={i} className="slot-chip belegt" style={{fontSize:"0.72rem", padding:"3px 9px", cursor:"default", ...(g.vorhanden ? {opacity:0.5, textDecoration:"line-through"} : {})}}
+              {...tt(g.vorhanden ? "Gibt es schon – wird übersprungen" : `Vokabeln Nr. ${g.von} bis ${g.bis}`)}>{g.name}</span>
+          ) : <span key={i} style={{fontSize:"0.8rem", color:"#9b9590", alignSelf:"center"}}>…</span>)}
+        </div>
+        {gruppen.some(g => g.vorhanden) && (
+          <div style={{fontSize:"0.72rem", color:"#9b9590", marginTop:6}}>Durchgestrichen: gibt es schon, wird nicht doppelt angelegt.</div>
+        )}
+      </div>
+    );
+  }
+
   // Einstellung der Rastergröße (gespeicherte Konfigurationen bzw. Listen)
   function rasterEinstellung(g, anzahl, setze, sub, hinweis, art) {
     const minZeilen = Math.max(1, Math.ceil(anzahl / g.spalten));
@@ -2821,6 +2959,7 @@ export default function VokabelApp() {
       { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
       { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
       ...(gefiltert ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenSortModus(true); setListenAuswahlId(l.id); } }]),
+      { label: "▦ In Sessions aufteilen", fn: () => starteAufteilen(l.id) },
       { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },
       { label: "🗑 Löschen", gefahr: true, fn: () => { setListeMenueId(l.id); setModal("loeschen"); } },
     ];
@@ -5316,6 +5455,14 @@ export default function VokabelApp() {
                 {/* Alle/Bereich – sticky direkt unter Haupt-Header */}
                 {kombiListe && (
                   <div ref={alleBereichRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                    {aufteilen ? (<>
+                      <span style={{flex:1, fontWeight:700, fontSize:"0.85rem", color:"#8a6d00"}}>▦ Aufteilen</span>
+                      <span data-anzahl="auswahl" style={{fontSize:"0.8rem", color:"#aaa"}}>({quizGefilterteVoks.length} V.)</span>
+                      <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
+                        <button data-aufteilen-abbrechen className="btn btn-ghost btn-sm" onClick={() => setAufteilen(null)}
+                          {...tt("Aufteilen beenden, ohne Sessions anzulegen")}>Abbrechen</button>
+                      </span>
+                    </>) : (<>
                     {/* LINKS */}
                     <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
                       {quizBereichTyp === "bereich" && quizListeAufgeklappt ? (
@@ -5358,8 +5505,11 @@ export default function VokabelApp() {
                         </button>
                       </div>
                     </span>
+                    </>)}
                   </div>
                 )}
+
+                {aufteilen && kombiListe && renderAufteilenKasten()}
 
                 {/* Einzelauswahl (Bereich-Modus) */}
                 {quizListeAufgeklappt && quizBereichTyp === "bereich" && kombiListe && (
@@ -5926,6 +6076,16 @@ export default function VokabelApp() {
                         </div>
                       </div>
                     )}
+                    {aufteilen ? (() => {
+                      const neu = (aufteilenStand()?.gruppen || []).filter(g => !g.vorhanden).length;
+                      return (
+                        <button data-aufteilen-anlegen className="btn btn-primary" style={{width:"100%", background:"#b8860b", borderColor:"#b8860b"}}
+                          disabled={!kannStarten || neu === 0} onClick={legeAufteilenAn}
+                          {...tt("Je Gruppe eine gespeicherte Konfiguration mit diesen Einstellungen anlegen")}>
+                          ▦ {neu} Session{neu !== 1 ? "s" : ""} anlegen
+                        </button>
+                      );
+                    })() : (
                     <div style={{display:"flex", gap:8}}>
                       {kannStarten && (
                         <button className="btn btn-ghost" style={{flexShrink:0}}
@@ -5948,6 +6108,7 @@ export default function VokabelApp() {
                         </button>
                       )}
                     </div>
+                    )}
                     {schwelle > 0 && gelernteAnzahl > 0 && (
                       <div style={{marginTop:6, fontSize:"0.78rem", color:"#6b6560",
                           display:"flex", alignItems:"center", gap:8, justifyContent:"center"}}>
@@ -6794,7 +6955,7 @@ export default function VokabelApp() {
               </div>
               {[
                 {titel:"Listen-Tab", inhalt:[
-                  {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
+                  {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „In Sessions aufteilen“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. „In Sessions aufteilen“ öffnet den Quiz-Tab mit dieser Liste und einem gelben Kasten: Name (vorgegeben: Listenname), Gruppengröße (10, 20, 25, 50, 75, 100 oder eigene), Bereich von–bis (Vokabel-Nummern) und bei Rest „eigene Gruppe“ oder „an letzte anhängen“; die Vorschau zeigt die Namen, z. B. „Verbes (21 - 40)“. Darunter alle Einstellungen wie gewohnt wählen, dann „Sessions anlegen“: je Gruppe eine gespeicherte Konfiguration, zusammen ab der nächsten freien Zeile im Raster. Namen, die es schon gibt, werden übersprungen. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
                   {k:"[+] Neue Liste", v:"Legt eine leere Liste mit eigenem Namen an."},
                   {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, JSON, TXT, Löschen. JSON = vollständige Sicherung mit Lernstand (Datei „Name - JSON.txt“), TXT = nur die Vokabeln als Text ohne Scores (Datei „Name - TXT.txt“). Auf iPad/iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, Mail, AirDrop), sonst wird die Datei heruntergeladen. Beim Import ist die Endung egal – die App erkennt den Inhalt."},
                   {k:"Stift-Button", v:"Listenname umbenennen."},

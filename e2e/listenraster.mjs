@@ -58,7 +58,7 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); const ziel = await mitte("0|0");
 await finger("touchStart", p.x, p.y); await sleep(700);
-ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|↺ Lernstand zurücksetzen|🗑 Löschen", "Lang-Druck: Menü Umbenennen, Duplizieren, Verschieben, Zurücksetzen, Löschen");
+ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|▦ In Sessions aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen", "Lang-Druck: Menü Umbenennen, Duplizieren, Verschieben, Zurücksetzen, Löschen");
 for (let i = 1; i <= 8; i++) { await finger("touchMove", p.x, p.y + (ziel.y - p.y) * i / 8); await sleep(40); }
 ok((await aktionen()).length === 0 && await page.$("[data-listen-fertig]"), "beim Ziehen: Menü weg, Verschieben-Modus");
 await finger("touchEnd"); await sleep(300);

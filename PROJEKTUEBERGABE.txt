@@ -1546,6 +1546,18 @@ LISTEN-RASTER (Listen-Tab): Index-Einträge haben platz {z, s} wie die
   Menü "↺ Lernstand zurücksetzen": Modal liste-zuruecksetzen (data-zuruecksetzen,
   Arten wählbar über data-zuruecksetzen-art, Standard alle) → setzeListeZurueck()
   löscht die Felder aus SCORE_FELD (fortschritt/diktatFortschritt/akzentFortschritt).
+IN SESSIONS AUFTEILEN: Listen-Menü "▦ In Sessions aufteilen" → starteAufteilen(id):
+  Quiz-Tab mit nur dieser Liste, aktive Konfiguration gelöst, State aufteilen
+  {listeId, name, groesse, von, bis, restAnhaengen}. Statt der Vokabel-Auswahl-
+  Zeile "▦ Aufteilen" + Abbrechen, darunter gelber Kasten renderAufteilenKasten()
+  (data-aufteilen, -name, -groesse = AUFTEILEN_GROESSEN 10/20/25/50/75/100,
+  -eigene, -von, -bis, -rest, -vorschau). Statt Speichern/Quiz starten:
+  "▦ n Sessions anlegen" (data-aufteilen-anlegen) → legeAufteilenAn(): je Gruppe
+  (aufteilenGruppen) eine gespeicherte Konfiguration "Name (von - bis)" mit
+  aktuelleKonfiguration(false) + bereich = Vokabel-IDs "listeId__id", Plätze
+  zusammenhängend ab der nächsten freien Zeile (Raster wächst). Vorhandene Namen
+  werden übersprungen. Andere Liste/Konfiguration gewählt → Aufteilen endet.
+  Test: e2e/aufteilen.mjs.
 GRUPPEN-QUIZ → ZURÜCK: quiz.ausStatistik (einmalige Runde via gruppe, Fallback
   per setQuiz im Start-Effekt). Auswertung (ohne Session, Quiz und Diktat):
   Hauptknopf "📊 Zurück zur Statistik" (data-zurueck-statistik) und Schließen
