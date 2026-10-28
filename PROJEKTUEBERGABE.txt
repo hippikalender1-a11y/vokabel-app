@@ -1442,6 +1442,11 @@ EINHEITLICHE RECHTE SPALTE (Quiz- und Statistik-Kopfzeilen): CSS-Klasse
   Knopf (nur aufgeklappt; zugeklappt mittig wie bisher), Listen-Auswahl,
   Alle/Bereich, Abfrage-Modus, Reihenfolge, Einstellungen, Session; lange
   Texte mit "…". .toggle-btn.zeile-rechts: Optionen teilen sich die Breite.
+KOPFZEILE zugeklappt: Auswahl-Knopf größer (0.95rem, min. 160 px) und
+  abgerundet (12 px). UNTERER BEREICH (Fortschritt + Start): mehr Abstand
+  (padding 14 px, Balken 6 px mit 12 px Abstand, 16 px zu den Knöpfen).
+  Die Fortschrittszahl ist jetzt der Knopf data-session-zuruecksetzen
+  (hellgrün, rechtsbündig, min. 124 px) → Rückfrage; "↺ Zurücksetzen" entfällt.
 
 
 ================================================================
