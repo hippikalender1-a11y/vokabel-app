@@ -95,8 +95,9 @@ ok(await page.evaluate(() => document.querySelector(".modal input").value) === "
 await clickText(".modal button", "Duplizieren", true);
 pl = await plaetze();
 console.log("     nach Duplizieren:", JSON.stringify(pl));
-const kopie = await page.evaluate(() => { const idx = JSON.parse(localStorage.getItem("vokabel_listen_index")); const k = idx.find(l => l.name === "Gamma (Kopie)"); const l = JSON.parse(localStorage.getItem("vokabel_liste_" + k.id)); return { id: k.id, n: l.vokabeln.length, score: l.vokabeln[0].fortschritt?.score, sprache: l.sprache }; });
-ok(pl["Gamma (Kopie)"] === "1|0" && kopie.id !== "l_c" && kopie.n === 1 && kopie.score === 2 && kopie.sprache === "en", "Kopie auf erstem freien Platz, mit Vokabeln und Lernstand");
+const kopie = await page.evaluate(() => { const idx = JSON.parse(localStorage.getItem("vokabel_listen_index")); const k = idx.find(l => l.name === "Gamma (Kopie)"); const l = JSON.parse(localStorage.getItem("vokabel_liste_" + k.id)); const orig = JSON.parse(localStorage.getItem("vokabel_liste_l_c")); return { origScore: orig.vokabeln[0].fortschritt?.score, id: k.id, n: l.vokabeln.length, score: l.vokabeln[0].fortschritt?.score, sprache: l.sprache }; });
+ok(pl["Gamma (Kopie)"] === "1|0" && kopie.id !== "l_c" && kopie.n === 1 && kopie.score === undefined && kopie.sprache === "en", "Kopie auf erstem freien Platz, mit Vokabeln, Lernstand neu");
+ok(kopie.origScore === 2, "Original behält seinen Lernstand");
 
 // Löschen
 await menue("Gamma (Kopie)"); await aktion("🗑 Löschen");

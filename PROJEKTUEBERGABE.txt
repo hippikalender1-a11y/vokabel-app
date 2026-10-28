@@ -1535,7 +1535,7 @@ LISTEN-RASTER (Listen-Tab): Index-Einträge haben platz {z, s} wie die
   rasterEinstellung(), data-listen-raster-*). speichereIndex() ordnet ein
   (ordneRaster, wächst um Zeilen) und sortiert den Index nach Platz → die
   Reihenfolge gilt in Quiz- und Statistik-Tab. renderListenRaster(): Lang-Druck
-  → Menü Umbenennen / Duplizieren (dupliziereListe, Kopie mit Lernständen) /
+  → Menü Umbenennen / Duplizieren (dupliziereListe, Kopie ohne fortschritt/diktatFortschritt/akzentFortschritt) /
   Verschieben / Löschen (listeMenueId; umbenennen()/loeschen() gelten ihr, sonst
   der geöffneten Liste). Lang-Druck + Ziehen bzw. Verschieben-Modus
   (listenSortModus, listenAuswahlId, "Fertig" = data-listen-fertig) teilen sich

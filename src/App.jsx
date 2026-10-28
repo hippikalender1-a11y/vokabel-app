@@ -1554,7 +1554,8 @@ export default function VokabelApp() {
     if (id === aktiveListeId) { setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null); }
   }
 
-  // Kopie mit allen Vokabeln, Spalten und Lernständen unter neuem Namen (erster freier Platz im Raster)
+  // Kopie mit allen Vokabeln und Spalten unter neuem Namen (erster freier Platz im Raster);
+  // Lernstände starten neu – die Kopie ist eine eigene Liste mit eigenen Vokabeln
   function dupliziereListe() {
     const quelle = lsGet(SK.liste(listeMenueId));
     const name = modalInput.trim();
@@ -1563,7 +1564,8 @@ export default function VokabelApp() {
     if (listenIndex.some(l => l.name.toLowerCase() === name.toLowerCase())) { setModalFehler("Name bereits vorhanden."); return; }
     const id = "liste_" + Date.now();
     const sprache = listeSprache(quelle);
-    lsSet(SK.liste(id), { ...quelle, id, name, sprache });
+    const vokabeln = quelle.vokabeln.map(({ fortschritt, diktatFortschritt, akzentFortschritt, ...v }) => v);   // eslint-disable-line no-unused-vars
+    lsSet(SK.liste(id), { ...quelle, id, name, sprache, vokabeln });
     speichereIndex([...listenIndex, { id, name, sprache }]);
     setModal(null); setModalInput(""); setModalFehler(""); setListeMenueId(null);
   }
@@ -6775,7 +6777,7 @@ export default function VokabelApp() {
               </div>
               {[
                 {titel:"Listen-Tab", inhalt:[
-                  {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln und Lernständen), „Verschieben“ und „Löschen“. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
+                  {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“ und „Löschen“. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
                   {k:"[+] Neue Liste", v:"Legt eine leere Liste mit eigenem Namen an."},
                   {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, JSON, TXT, Löschen. JSON = vollständige Sicherung mit Lernstand (Datei „Name - JSON.txt“), TXT = nur die Vokabeln als Text ohne Scores (Datei „Name - TXT.txt“). Auf iPad/iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, Mail, AirDrop), sonst wird die Datei heruntergeladen. Beim Import ist die Endung egal – die App erkennt den Inhalt."},
                   {k:"Stift-Button", v:"Listenname umbenennen."},
@@ -6964,7 +6966,7 @@ export default function VokabelApp() {
             <input {...ttFeld("Name der neuen Liste")} className="inp" value={modalInput} autoFocus
               onChange={e => { setModalInput(e.target.value); setModalFehler(""); }}
               onKeyDown={e => e.key === "Enter" && dupliziereListe()} />
-            <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:6}}>Die Kopie enthält alle Vokabeln, Spalten und Lernstände.</div>
+            <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:6}}>Die Kopie enthält alle Vokabeln und Spalten – die Lernstände beginnen neu.</div>
             {modalFehler && <div className="fehler">{modalFehler}</div>}
             <div className="modal-actions">
               <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
