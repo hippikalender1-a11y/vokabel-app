@@ -1522,6 +1522,13 @@ ANTWORT-STAPEL: quiz.vorigeAntworten (früher vorigeRichtig) sammelt jede
   der nächsten Vokabel (mitVerzoegerung: flash 1000 ms / karteNeinFlash 800 ms)
   endet beim Antippen der .sektion (beendeVerzoegerung, flashWeiterRef).
   Test: e2e/antwortstapel.mjs.
+LANG-DRUCK iPad: InfoTafel merkt, ob die Tafel bei aufliegendem Finger aufging
+  (haltenRef, Finger-Zähler per touchstart/touchend in der Capture-Phase). Bis
+  zum Loslassen und 400 ms danach (sperreBisRef) werden Klicks verschluckt –
+  der Nachzügler-Klick von iOS schließt das Menü nicht mehr bzw. löst keinen
+  Menü-Knopf unter dem Finger aus. tt(): onTouchMove setzt tooltipShown nicht
+  mehr zurück (Finger-Zittern). Tests mit Tipp direkt nach dem Loslassen warten
+  jetzt 500 ms. Test: e2e/langdruck_ipad.mjs.
 GRUPPEN-QUIZ → ZURÜCK: quiz.ausStatistik (einmalige Runde via gruppe, Fallback
   per setQuiz im Start-Effekt). Auswertung (ohne Session, Quiz und Diktat):
   Hauptknopf "📊 Zurück zur Statistik" (data-zurueck-statistik) und Schließen

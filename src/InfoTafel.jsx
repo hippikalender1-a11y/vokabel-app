@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { schalteInfoModus } from "./infoEreignisse.js";
 
 // Erklär-Tafel: zeigt Erklärtexte (data-info) als Sprechblase an der Stelle des Fingers,
@@ -7,9 +7,33 @@ import { schalteInfoModus } from "./infoEreignisse.js";
 export default function InfoTafel() {
   const [info, setInfo] = useState(null);
   const [modus, setModus] = useState(false);
+  // Lang-Druck (iPad): Der Finger liegt noch auf, wenn die Tafel aufgeht. Beim Loslassen schickt iOS
+  // oft noch einen Klick hinterher – der darf die Tafel nicht gleich wieder schließen.
+  const fingerAufRef = useRef(0);          // aktuell aufliegende Finger
+  const haltenRef = useRef(false);         // Tafel ging bei aufliegendem Finger auf
+  const sperreBisRef = useRef(0);          // Klicks bis dahin ignorieren (nach dem Loslassen)
 
   useEffect(() => {
-    const zeigen = e => setInfo(e.detail);
+    const runter = e => { fingerAufRef.current = e.touches.length; };
+    const hoch = e => {
+      fingerAufRef.current = e.touches.length;
+      if (haltenRef.current && e.touches.length === 0) { haltenRef.current = false; sperreBisRef.current = Date.now() + 400; }
+    };
+    document.addEventListener("touchstart", runter, true);
+    document.addEventListener("touchend", hoch, true);
+    document.addEventListener("touchcancel", hoch, true);
+    return () => {
+      document.removeEventListener("touchstart", runter, true);
+      document.removeEventListener("touchend", hoch, true);
+      document.removeEventListener("touchcancel", hoch, true);
+    };
+  }, []);
+
+  useEffect(() => {
+    const zeigen = e => {
+      if (fingerAufRef.current > 0) haltenRef.current = true;
+      setInfo(e.detail);
+    };
     const umschalten = () => setModus(m => !m);
     const schliessen = () => setInfo(null);
     window.addEventListener("vokabel-info", zeigen);
@@ -31,6 +55,8 @@ export default function InfoTafel() {
   useEffect(() => {
     if (!info && !modus) return;
     const klick = e => {
+      // Nachzügler-Klick vom Loslassen des Lang-Drucks: verschlucken, Tafel bleibt offen
+      if (info && (haltenRef.current || Date.now() < sperreBisRef.current)) { e.preventDefault(); e.stopPropagation(); return; }
       if (e.target.closest("[data-info-schalter]") || e.target.closest("[data-info-aktion]")) return;
       const el = modus ? e.target.closest("[data-info]") : null;
       if (el) {

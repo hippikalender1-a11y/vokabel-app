@@ -989,7 +989,7 @@ export default function VokabelApp() {
         }, 500);
       },
       onTouchEnd(e)   { clearTimeout(tooltipTimer.current); if (tooltipShown.current) { e.preventDefault(); tooltipShown.current = false; } },
-      onTouchMove()   { clearTimeout(tooltipTimer.current); tooltipShown.current = false; },
+      onTouchMove()   { clearTimeout(tooltipTimer.current); },   // Finger zittert nach dem Aufgehen: Tafel bleibt
       onTouchCancel() { clearTimeout(tooltipTimer.current); tooltipShown.current = false; },
     };
   }

@@ -21,7 +21,7 @@ const langDruecken = async (p) => {
   await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: p.x, y: p.y }] });
   await sleep(700);
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-  await sleep(300);
+  await sleep(500);
 };
 
 await page.goto(URL);
