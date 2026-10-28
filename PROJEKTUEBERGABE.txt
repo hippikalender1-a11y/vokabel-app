@@ -1529,6 +1529,20 @@ LANG-DRUCK iPad: InfoTafel merkt, ob die Tafel bei aufliegendem Finger aufging
   Menü-Knopf unter dem Finger aus. tt(): onTouchMove setzt tooltipShown nicht
   mehr zurück (Finger-Zittern). Tests mit Tipp direkt nach dem Loslassen warten
   jetzt 500 ms. Test: e2e/langdruck_ipad.mjs.
+LISTEN-RASTER (Listen-Tab): Index-Einträge haben platz {z, s} wie die
+  gespeicherten Konfigurationen; Größe einstellungen.listenRaster (Standard
+  10 × 1, rasterGroesse(einst, "listenRaster"), Einstellungen → Listen über
+  rasterEinstellung(), data-listen-raster-*). speichereIndex() ordnet ein
+  (ordneRaster, wächst um Zeilen) und sortiert den Index nach Platz → die
+  Reihenfolge gilt in Quiz- und Statistik-Tab. renderListenRaster(): Lang-Druck
+  → Menü Umbenennen / Duplizieren (dupliziereListe, Kopie mit Lernständen) /
+  Verschieben / Löschen (listeMenueId; umbenennen()/loeschen() gelten ihr, sonst
+  der geöffneten Liste). Lang-Druck + Ziehen bzw. Verschieben-Modus
+  (listenSortModus, listenAuswahlId, "Fertig" = data-listen-fertig) teilen sich
+  die Zieh-Logik mit dem Konfigurations-Raster (slotZiehenRef.art = "liste",
+  setzeListenPlatz; belegt → tauschen). Mit Sprachfilter: sichtbare Listen
+  zusammengerückt, ohne Plätze, kein Verschieben. 1 Spalte: volle Zeile wie
+  bisher, ab 2 Spalten Kachel Flagge + Name + Anzahl. Test: e2e/listenraster.mjs.
 GRUPPEN-QUIZ → ZURÜCK: quiz.ausStatistik (einmalige Runde via gruppe, Fallback
   per setQuiz im Start-Effekt). Auswertung (ohne Session, Quiz und Diktat):
   Hauptknopf "📊 Zurück zur Statistik" (data-zurueck-statistik) und Schließen

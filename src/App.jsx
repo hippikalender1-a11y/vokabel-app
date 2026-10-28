@@ -82,12 +82,14 @@ function defaultSessionSlots() {
 }
 function defaultSlots() { return { verlauf: [], gespeichert: [] }; }
 function neuerSlotId(typ) { return `${typ}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`; }
-// ── Raster der gespeicherten Konfigurationen: jeder Eintrag hat einen Platz {z, s} ──
+// ── Raster der gespeicherten Konfigurationen und der Listen: jeder Eintrag hat einen Platz {z, s} ──
 const RASTER_MAX_SPALTEN = 4, RASTER_MAX_ZEILEN = 100;
-function rasterGroesse(einst) {
-  const r = einst?.slotRaster || {};
-  return { zeilen: Math.min(RASTER_MAX_ZEILEN, Math.max(1, r.zeilen ?? 10)), spalten: Math.min(RASTER_MAX_SPALTEN, Math.max(1, r.spalten ?? 2)) };
+function rasterGroesse(einst, schluessel = "slotRaster") {
+  const r = einst?.[schluessel] || {};
+  const spalten = r.spalten ?? (schluessel === "listenRaster" ? 1 : 2);
+  return { zeilen: Math.min(RASTER_MAX_ZEILEN, Math.max(1, r.zeilen ?? 10)), spalten: Math.min(RASTER_MAX_SPALTEN, Math.max(1, spalten)) };
 }
+const nachPlatz = (a, b) => a.platz.z - b.platz.z || a.platz.s - b.platz.s;
 // Gültige, freie Plätze bleiben; alle anderen Einträge kommen auf den ersten freien Platz (zeilenweise).
 // Reicht das Raster nicht, wächst es um Zeilen (zeilen im Ergebnis).
 function ordneRaster(gespeichert, { zeilen, spalten }) {
@@ -705,6 +707,11 @@ const CSS = `
   .slot-chip.zuletzt{background:#fffde7;border-color:#f9a825;color:#e65100;}
   .slot-chip.leer{opacity:0.35;cursor:default;}
   .slot-raster{display:grid;gap:6px;}
+  .listen-raster{display:grid;gap:6px;margin-bottom:16px;}
+  .listen-raster .karte-zeile{background:#fff;border:1px solid #e0dbd2;border-radius:12px;min-width:0;}
+  .listen-raster .karte-zeile:last-child{border-bottom:1px solid #e0dbd2;}
+  .listen-raster.eng .karte-zeile{padding:10px 12px;gap:8px;}
+  .listen-raster .raster-leer{min-height:56px;}
   .raster-chip{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-height:44px;min-width:0;text-align:left;padding:6px 10px;}
   .raster-name{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .raster-fortschritt{font-size:0.68rem;font-weight:600;opacity:0.8;}
@@ -912,7 +919,10 @@ export default function VokabelApp() {
   const [slotDragId, setSlotDragId] = useState(null);         // wird gerade gezogen
   const [slotAuswahlId, setSlotAuswahlId] = useState(null);   // angetippt, wartet auf Zielplatz
   const [slotDragZiel, setSlotDragZiel] = useState(null);     // "z|s" unter dem Finger
-  const slotZiehenRef = useRef(null);                         // {id, x, y, aktiv}
+  const slotZiehenRef = useRef(null);                         // {id, x, y, aktiv, art: "liste" für das Listen-Raster}
+  const [listenSortModus, setListenSortModus] = useState(false);   // "Verschieben"-Modus des Listen-Rasters
+  const [listenAuswahlId, setListenAuswahlId] = useState(null);    // angetippt, wartet auf Zielplatz
+  const [listeMenueId, setListeMenueId] = useState(null);          // Liste aus dem Lang-Druck-Menü (Umbenennen, Duplizieren, Löschen)
   const slotGezogenRef = useRef(false);                       // Klick nach dem Ziehen schlucken
   // Rückfrage "Abgefragt-Stand löschen?" in der Fortschrittszeile; ohne Antwort nach 6 s wieder weg
   const [sessionResetFrage, setSessionResetFrage] = useState(false);
@@ -1206,10 +1216,8 @@ export default function VokabelApp() {
   useEffect(() => {
     // Index-Einträge ohne Sprache einmalig aus der Liste übernehmen
     const idx = lsGet(SK.listenIndex, []);
-    if (idx.some(l => !l.sprache)) {
-      const ergaenzt = idx.map(l => l.sprache ? l : { ...l, sprache: listeSprache(lsGet(SK.liste(l.id))) });
-      lsSet(SK.listenIndex, ergaenzt);
-      setListenIndex(ergaenzt);
+    if (idx.some(l => !l.sprache || !l.platz)) {
+      speichereIndex(idx.map(l => l.sprache ? l : { ...l, sprache: listeSprache(lsGet(SK.liste(l.id))) }));
     } else {
       setListenIndex(idx);
     }
@@ -1274,7 +1282,9 @@ export default function VokabelApp() {
       if (!d.aktiv && Math.hypot(t.clientX - d.x, t.clientY - d.y) > 8) {
         d.aktiv = true;
         clearTimeout(tooltipTimer.current); tooltipShown.current = false; schliesseInfo();
-        setSlotSortModus(true); setSlotAuswahlId(null); setSlotDragId(d.id);
+        if (d.art === "liste") { setListenSortModus(true); setListenAuswahlId(null); }
+        else { setSlotSortModus(true); setSlotAuswahlId(null); }
+        setSlotDragId(d.id);
       }
       if (!d.aktiv) return;
       if (e.cancelable) e.preventDefault();   // Seite nicht scrollen, solange gezogen wird
@@ -1290,7 +1300,7 @@ export default function VokabelApp() {
       const t = e.changedTouches[0];
       const ziel = e.type === "touchend" && t ? zelleUnter(t) : null;
       setSlotDragId(null); setSlotDragZiel(null);
-      if (ziel) { const [z, sp] = ziel.split("|").map(Number); setzeSlotPlatz(d.id, { z, s: sp }); }
+      if (ziel) { const [z, sp] = ziel.split("|").map(Number); (d.art === "liste" ? setzeListenPlatz : setzeSlotPlatz)(d.id, { z, s: sp }); }
     };
     window.addEventListener("touchmove", bewegen, { passive: false });
     window.addEventListener("touchend", loslassen);
@@ -1305,13 +1315,13 @@ export default function VokabelApp() {
   // Raster verschieben per Ziehen: ab 8 px Bewegung wird gezogen, beim Loslassen auf den Platz darunter
   // (belegt → tauschen). Ohne Bewegung bleibt es ein Antippen (Auswahl) bzw. Lang-Druck (Info).
   useEffect(() => {
-    if (!slotSortModus) return;
+    if (!slotSortModus && !listenSortModus) return;
     const zelleUnter = e => document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-raster-zelle]")?.dataset.rasterZelle || null;
     const bewegen = e => {
       const d = slotZiehenRef.current;
       if (!d || d.langdruck) return;   // Lang-Druck-Zug läuft über die Touch-Verfolgung
       if (!d.aktiv && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8) {
-        d.aktiv = true; setSlotDragId(d.id); setSlotAuswahlId(null);
+        d.aktiv = true; setSlotDragId(d.id); setSlotAuswahlId(null); setListenAuswahlId(null);
         clearTimeout(tooltipTimer.current); schliesseInfo();   // Lang-Druck-Erklärung weg, sobald gezogen wird
       }
       if (!d.aktiv) return;
@@ -1326,7 +1336,7 @@ export default function VokabelApp() {
       slotGezogenRef.current = true; setTimeout(() => { slotGezogenRef.current = false; }, 400);   // nur den Klick direkt danach schlucken
       const ziel = e.type === "pointerup" ? zelleUnter(e) : null;
       setSlotDragId(null); setSlotDragZiel(null);
-      if (ziel) { const [z, sp] = ziel.split("|").map(Number); setzeSlotPlatz(d.id, { z, s: sp }); }
+      if (ziel) { const [z, sp] = ziel.split("|").map(Number); (d.art === "liste" ? setzeListenPlatz : setzeSlotPlatz)(d.id, { z, s: sp }); }
     };
     window.addEventListener("pointermove", bewegen);
     window.addEventListener("pointerup", loslassen);
@@ -1336,7 +1346,7 @@ export default function VokabelApp() {
       window.removeEventListener("pointerup", loslassen);
       window.removeEventListener("pointercancel", loslassen);
     };
-  }, [slotSortModus]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [slotSortModus, listenSortModus]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const quizListenKey = quizTabListen.join(",");
   // Spalten-Konfiguration an neu gewählte Listen anpassen: Spalten, die dort fehlen,
@@ -1417,7 +1427,30 @@ export default function VokabelApp() {
   }, [quiz, ansicht]);
 
   // ── Hilfsfunktionen ───────────────────────────────────────────────────────
-  function speichereIndex(idx) { setListenIndex(idx); lsSet(SK.listenIndex, idx); }
+  // Listen liegen in einem Raster: neue bekommen den ersten freien Platz (Raster wächst bei Bedarf);
+  // die Reihenfolge des Index folgt dem Raster (zeilenweise) und gilt so in der ganzen App
+  function speichereIndex(idx, einst = lsGet(SK.einstellungen, defaultEinstellungen())) {
+    const groesse = rasterGroesse(einst, "listenRaster");
+    const r = ordneRaster(idx, groesse);
+    if (r.zeilen !== groesse.zeilen) speichereEinst({ ...einst, listenRaster: { ...groesse, zeilen: r.zeilen } });
+    const sortiert = [...r.gespeichert].sort(nachPlatz);
+    setListenIndex(sortiert); lsSet(SK.listenIndex, sortiert);
+  }
+  function setzeListenRasterGroesse(zeilen, spalten) {
+    const einst = { ...einstellungen, listenRaster: { zeilen, spalten } };
+    speichereEinst(einst);
+    speichereIndex(lsGet(SK.listenIndex, []), einst);
+  }
+  function setzeListenPlatz(id, ziel) {
+    speichereIndex(platziereSlot(lsGet(SK.listenIndex, []), id, ziel));
+    setListenAuswahlId(null);
+  }
+  function listenKopieName(name) {
+    const namen = new Set(listenIndex.map(l => l.name.toLowerCase()));
+    let n = `${name} (Kopie)`, i = 2;
+    while (namen.has(n.toLowerCase())) n = `${name} (Kopie ${i++})`;
+    return n;
+  }
   function speichereEinst(e) { setEinstellungen(e); lsSet(SK.einstellungen, e); }
 
   // Vor allen frühen Render-Rückgaben berechnen: starteQuiz() nutzt den Wert auch
@@ -1501,20 +1534,38 @@ export default function VokabelApp() {
     setModal(null); setModalInput(""); setModalFehler("");
   }
 
+  // Umbenennen/Löschen gelten der Liste aus dem Lang-Druck-Menü, sonst der geöffneten Liste
   function umbenennen() {
+    const id = listeMenueId || aktiveListeId;
     const name = modalInput.trim();
     if (!name) { setModalFehler("Bitte einen Namen eingeben."); return; }
-    if (listenIndex.some(l => l.id !== aktiveListeId && l.name.toLowerCase() === name.toLowerCase())) { setModalFehler("Name bereits vorhanden."); return; }
-    speichereIndex(listenIndex.map(l => l.id === aktiveListeId ? {...l, name} : l));
-    const aktuell = lsGet(SK.liste(aktiveListeId));
-    if (aktuell) { const u = {...aktuell, name}; lsSet(SK.liste(aktiveListeId), u); setAktiveListe(u); }
-    setModal(null); setModalInput(""); setModalFehler("");
+    if (listenIndex.some(l => l.id !== id && l.name.toLowerCase() === name.toLowerCase())) { setModalFehler("Name bereits vorhanden."); return; }
+    speichereIndex(listenIndex.map(l => l.id === id ? {...l, name} : l));
+    const aktuell = lsGet(SK.liste(id));
+    if (aktuell) { const u = {...aktuell, name}; lsSet(SK.liste(id), u); if (id === aktiveListeId) setAktiveListe(u); }
+    setModal(null); setModalInput(""); setModalFehler(""); setListeMenueId(null);
   }
 
   function loeschen() {
-    localStorage.removeItem(SK.liste(aktiveListeId));
-    speichereIndex(listenIndex.filter(l => l.id !== aktiveListeId));
-    setModal(null); setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null);
+    const id = listeMenueId || aktiveListeId;
+    localStorage.removeItem(SK.liste(id));
+    speichereIndex(listenIndex.filter(l => l.id !== id));
+    setModal(null); setListeMenueId(null);
+    if (id === aktiveListeId) { setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null); }
+  }
+
+  // Kopie mit allen Vokabeln, Spalten und Lernständen unter neuem Namen (erster freier Platz im Raster)
+  function dupliziereListe() {
+    const quelle = lsGet(SK.liste(listeMenueId));
+    const name = modalInput.trim();
+    if (!quelle) { setModal(null); return; }
+    if (!name) { setModalFehler("Bitte einen Namen eingeben."); return; }
+    if (listenIndex.some(l => l.name.toLowerCase() === name.toLowerCase())) { setModalFehler("Name bereits vorhanden."); return; }
+    const id = "liste_" + Date.now();
+    const sprache = listeSprache(quelle);
+    lsSet(SK.liste(id), { ...quelle, id, name, sprache });
+    speichereIndex([...listenIndex, { id, name, sprache }]);
+    setModal(null); setModalInput(""); setModalFehler(""); setListeMenueId(null);
   }
 
   function speichereSpaltenname() {
@@ -1527,6 +1578,7 @@ export default function VokabelApp() {
   }
 
   function oeffneModal(typ, extra) {
+    setListeMenueId(null);
     if (typ === "umbenennen") setModalInput(aktiveListe?.name || "");
     else if (typ === "spalte-umbenennen" && extra) {
       setEditSpalteTyp(extra);
@@ -2685,6 +2737,173 @@ export default function VokabelApp() {
     let name = basis, n = 2;
     while (namen.has(name)) name = `${basis} (${n++})`;
     return name;
+  }
+
+  // Einstellung der Rastergröße (gespeicherte Konfigurationen bzw. Listen)
+  function rasterEinstellung(g, anzahl, setze, sub, hinweis, art) {
+    const minZeilen = Math.max(1, Math.ceil(anzahl / g.spalten));
+    const attr = (name, wert) => ({ [`data-${art ? art + "-" : ""}raster-${name}`]: wert });
+    return (
+      <div className="karte">
+        <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:8}}>
+          <div>
+            <div className="karte-zeile-name">Raster</div>
+            <div className="karte-zeile-sub">{g.zeilen} Zeilen × {g.spalten} Spalten – {sub}</div>
+          </div>
+          <div style={{display:"flex", alignItems:"center", gap:6, flexWrap:"wrap"}}>
+            <span style={{fontSize:"0.8rem", color:"#6b6560", minWidth:56}}>Spalten</span>
+            {[1, 2, 3, 4].map(n => (
+              <button key={n} {...attr("spalten", n)} className={`toggle-opt${g.spalten === n ? " aktiv" : ""}`}
+                onClick={() => setze(g.zeilen, n)}
+                {...tt(`${n} Spalte${n > 1 ? "n" : ""} nebeneinander (höchstens 4)`)}>{n}</button>
+            ))}
+          </div>
+          <div style={{display:"flex", alignItems:"center", gap:6}}>
+            <span style={{fontSize:"0.8rem", color:"#6b6560", minWidth:56}}>Zeilen</span>
+            <button className="toggle-opt" disabled={g.zeilen <= minZeilen} onClick={() => setze(g.zeilen - 1, g.spalten)}
+              {...tt("Eine Zeile weniger – nur bis alle Einträge noch Platz haben")}>−</button>
+            <span {...attr("zeilen", true)} style={{minWidth:32, textAlign:"center", fontWeight:700}}>{g.zeilen}</span>
+            <button className="toggle-opt" disabled={g.zeilen >= RASTER_MAX_ZEILEN} onClick={() => setze(g.zeilen + 1, g.spalten)}
+              {...tt("Eine Zeile mehr (höchstens 100)")}>+</button>
+            <button className="toggle-opt" disabled={g.zeilen >= RASTER_MAX_ZEILEN} onClick={() => setze(Math.min(RASTER_MAX_ZEILEN, g.zeilen + 10), g.spalten)}
+              {...tt("Zehn Zeilen mehr")}>+10</button>
+          </div>
+          <div style={{fontSize:"0.72rem", color:"#9b9590"}}>{hinweis}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Listen-Übersicht als Raster wie bei den gespeicherten Konfigurationen: Lang-Druck → Menü
+  // (Umbenennen, Duplizieren, Verschieben, Löschen), Lang-Druck und ziehen → verschieben; belegter Platz: tauschen.
+  // Mit Sprachfilter rücken die sichtbaren Listen zusammen (Verschieben dann nur unter „Alle“).
+  function renderListenRaster() {
+    const groesse = rasterGroesse(einstellungen, "listenRaster");
+    const gefiltert = sprachFilter !== "alle";
+    const sortModus = listenSortModus && !gefiltert;
+    const eng = groesse.spalten > 1;
+    const tippeImRaster = (l, platz) => {
+      if (slotGezogenRef.current) { slotGezogenRef.current = false; return; }
+      if (l && listenAuswahlId === l.id) { setListenAuswahlId(null); return; }
+      if (listenAuswahlId) { setzeListenPlatz(listenAuswahlId, platz); return; }
+      if (l) setListenAuswahlId(l.id);
+    };
+    const oeffne = l => {
+      if (exportAuswahlModus) {
+        setExportAusgewaehlt(prev => {
+          const neu = new Set(prev);
+          if (neu.has(l.id)) neu.delete(l.id); else neu.add(l.id);
+          return neu;
+        });
+      } else {
+        setAktiveListeId(l.id); setAnsicht("liste-detail"); setVokabelAufgeklappt(false); setAktionszeileAufgeklappt(false);
+      }
+    };
+    const menue = l => [
+      { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
+      { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
+      ...(gefiltert ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenSortModus(true); setListenAuswahlId(l.id); } }]),
+      { label: "🗑 Löschen", gefahr: true, fn: () => { setListeMenueId(l.id); setModal("loeschen"); } },
+    ];
+    const zelle = (l, key) => {
+      const anzahl = vokabelAnzahl(l.id);
+      const liste = lsGet(SK.liste(l.id));
+      const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
+      const ziel = slotDragZiel === key && slotDragId && slotDragId !== l.id;
+      const erklaerung = exportAuswahlModus ? tt("Liste für den Export auswählen")
+        : sortModus ? tt(`${l.name} – antippen und dann den Zielplatz antippen oder direkt ziehen; auf einem belegten Platz tauschen die beiden`)
+        : tt("Liste öffnen: Vokabeln, Spalten, Sprache, Export", menue(l), { langText: l.name,
+            // Lang-Druck und dann ziehen: Menü weg, Verschieben-Modus, Liste wandert mit
+            beimZeigen: gefiltert ? undefined : (px, py) => { slotZiehenRef.current = { art: "liste", id: l.id, x: px, y: py, aktiv: false, langdruck: true }; } });
+      return (
+        <div {...erklaerung} key={key} data-raster-zelle={gefiltert ? undefined : key} data-liste-id={l.id} className="karte-zeile"
+          style={{cursor: sortModus ? "grab" : "pointer", ...(sortModus ? {touchAction:"none"} : {}),
+            ...(listenAuswahlId === l.id && sortModus ? {outline:"3px solid #e0a800", outlineOffset:1} : {}),
+            ...(slotDragId === l.id ? {opacity:0.4, borderStyle:"dashed"} : {}),
+            ...(ziel ? {outline:"3px solid #52b788", outlineOffset:1} : {})}}
+          onPointerDown={sortModus ? (e => { slotZiehenRef.current = { art: "liste", id: l.id, x: e.clientX, y: e.clientY, aktiv: false }; }) : undefined}
+          onClick={() => sortModus ? tippeImRaster(l, l.platz) : (slotGezogenRef.current ? (slotGezogenRef.current = false) : oeffne(l))}>
+          {exportAuswahlModus && (
+            <div className={`checkbox${exportAusgewaehlt.has(l.id) ? " checked" : ""}`}>
+              {exportAusgewaehlt.has(l.id) && "✓"}
+            </div>
+          )}
+          {eng ? (
+            <div className="karte-zeile-info">
+              <div className="karte-zeile-name">{listenFlagge(l)}{l.name}</div>
+              <div className="karte-zeile-sub">{anzahl} Vokabel{anzahl !== 1 ? "n" : ""}</div>
+            </div>
+          ) : (<>
+                  <div className="karte-zeile-info">
+                    <div className="karte-zeile-name">{listenFlagge(l)}{l.name}</div>
+                    <div className="karte-zeile-sub">
+                      {anzahl} Vokabel{anzahl !== 1 ? "n" : ""}{" "}
+                      {aktSpalten.map(t => <span key={t} className="spalten-badge aktiv">{liste.spalten[t].name || t}</span>)}
+                    </div>
+                  </div>
+                  {(() => {
+                    const schwelle = einstellungen.gelerntSchwelle ?? 0;
+                    if (schwelle <= 0 || !liste?.vokabeln.length) return null;
+                    const scores = liste.vokabeln.map(v => v.fortschritt?.score);
+                    const pct = lernProzent(scores, schwelle);
+                    const gelernt = scores.filter(sc => (sc ?? -Infinity) >= schwelle).length;
+                    return (
+                      <div style={{display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3, flexShrink:0, width:64}}
+                        {...tt(`Lernfortschritt ${Math.round(pct)} % · ${gelernt} / ${scores.length} gelernt`)}>
+                        <span style={{fontSize:"0.78rem", fontWeight:700, color: pct >= 99.999 ? "#2d6a4f" : "#6b6560"}}>
+                          {pct >= 99.999 ? "🏆 " : ""}{Math.round(pct)} %
+                        </span>
+                        <div style={{width:"100%", height:5, background:"#f0ede8", borderRadius:3, overflow:"hidden"}}>
+                          <div style={{width:`${pct}%`, height:"100%", background:"#2d6a4f", borderRadius:3}}/>
+                        </div>
+                      </div>
+                    );
+                  })()}
+            {!exportAuswahlModus && !sortModus && <span style={{color:"#6b6560"}}>{">"}</span>}
+          </>)}
+        </div>
+      );
+    };
+    const zellen = [];
+    if (gefiltert) {
+      sichtbareListen.forEach(l => zellen.push(zelle(l, l.id)));
+    } else {
+      const platzMap = new Map(listenIndex.filter(l => l.platz).map(l => [`${l.platz.z}|${l.platz.s}`, l]));
+      const belegtBis = listenIndex.reduce((m, l) => Math.max(m, (l.platz?.z ?? 0) + 1), 0);
+      const zeilenAnzeige = sortModus ? Math.max(groesse.zeilen, belegtBis) : belegtBis;
+      for (let z = 0; z < zeilenAnzeige; z++) for (let sp = 0; sp < groesse.spalten; sp++) {
+        const key = `${z}|${sp}`;
+        const l = platzMap.get(key);
+        const ziel = slotDragZiel === key && slotDragId && !l;
+        if (l) zellen.push(zelle(l, key));
+        else if (sortModus) zellen.push(<div key={key} data-raster-zelle={key} className="raster-leer"
+          style={{borderStyle:"dashed", cursor: listenAuswahlId ? "pointer" : "default",
+            ...(ziel ? {borderColor:"#52b788", background:"#e8f5ee"} : {})}}
+          onClick={() => tippeImRaster(null, { z, s: sp })}
+          {...tt("Freier Platz – erst eine Liste antippen, dann hier tippen (oder eine Liste hierher ziehen)")}/>);
+        else zellen.push(<div key={key} className="raster-leer" style={{border:"none"}}/>);
+      }
+    }
+    return (<>
+      <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6, minHeight:22}}>
+        <span style={{fontSize:"0.68rem", color: sortModus ? "#6b6560" : "#9b9590"}}>
+          {sortModus
+            ? (listenAuswahlId ? "Jetzt den Zielplatz antippen – ist er belegt, tauschen die beiden." : "Liste antippen, dann Zielplatz antippen – oder direkt ziehen. Belegter Platz: die beiden tauschen.")
+            : gefiltert ? "Lang drücken: umbenennen, duplizieren oder löschen · Verschieben unter „Alle“"
+            : "Lang drücken: umbenennen, duplizieren, verschieben oder löschen"}
+        </span>
+        {sortModus && (
+          <button data-listen-fertig className="typ-btn aktiv" style={{fontSize:"0.7rem", padding:"2px 8px", marginLeft:"auto"}}
+            onClick={() => { setListenSortModus(false); setSlotDragId(null); setListenAuswahlId(null); setSlotDragZiel(null); }}
+            {...tt("Verschieben beenden")}>
+            Fertig
+          </button>
+        )}
+      </div>
+      <div className={`listen-raster${eng ? " eng" : ""}`} style={{gridTemplateColumns:`repeat(${groesse.spalten}, minmax(0, 1fr))`}}>
+        {zellen}
+      </div>
+    </>);
   }
 
   // Chips "Gespeichert" (sortierbar) und "Verlauf" (automatisch, letzte 5) – Quiz- und Statistik-Tab
@@ -5731,66 +5950,12 @@ export default function VokabelApp() {
           );
         })()}
 
-        {/* ── Listen-Übersicht ── */}
+        {/* ── Listen-Übersicht: Raster (Größe unter Einstellungen → Listen) ── */}
         {tab === "listen" && ansicht === "uebersicht" && (
           <div className="sektion">
             {sichtbareListen.length === 0 ? (
               <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.<br/>Tippe auf <strong>+</strong> um eine neue Liste anzulegen.</div></div>
-            ) : (
-              <div className="karte">
-                {sichtbareListen.map(l => {
-                  const anzahl = vokabelAnzahl(l.id);
-                  const liste = lsGet(SK.liste(l.id));
-                  const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
-                  return (
-                    <div {...tt(exportAuswahlModus ? "Liste für den Export auswählen" : "Liste öffnen: Vokabeln, Spalten, Sprache, Export")} key={l.id} className="karte-zeile" style={{cursor:"pointer"}}
-                      onClick={() => {
-                        if (exportAuswahlModus) {
-                          setExportAusgewaehlt(prev => {
-                            const neu = new Set(prev);
-                            if (neu.has(l.id)) neu.delete(l.id); else neu.add(l.id);
-                            return neu;
-                          });
-                        } else {
-                          setAktiveListeId(l.id); setAnsicht("liste-detail"); setVokabelAufgeklappt(false); setAktionszeileAufgeklappt(false);
-                        }
-                      }}>
-                      {exportAuswahlModus && (
-                        <div className={`checkbox${exportAusgewaehlt.has(l.id) ? " checked" : ""}`}>
-                          {exportAusgewaehlt.has(l.id) && "✓"}
-                        </div>
-                      )}
-                      <div className="karte-zeile-info">
-                        <div className="karte-zeile-name">{listenFlagge(l)}{l.name}</div>
-                        <div className="karte-zeile-sub">
-                          {anzahl} Vokabel{anzahl !== 1 ? "n" : ""}{" "}
-                          {aktSpalten.map(t => <span key={t} className="spalten-badge aktiv">{liste.spalten[t].name || t}</span>)}
-                        </div>
-                      </div>
-                      {(() => {
-                        const schwelle = einstellungen.gelerntSchwelle ?? 0;
-                        if (schwelle <= 0 || !liste?.vokabeln.length) return null;
-                        const scores = liste.vokabeln.map(v => v.fortschritt?.score);
-                        const pct = lernProzent(scores, schwelle);
-                        const gelernt = scores.filter(sc => (sc ?? -Infinity) >= schwelle).length;
-                        return (
-                          <div style={{display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3, flexShrink:0, width:64}}
-                            {...tt(`Lernfortschritt ${Math.round(pct)} % · ${gelernt} / ${scores.length} gelernt`)}>
-                            <span style={{fontSize:"0.78rem", fontWeight:700, color: pct >= 99.999 ? "#2d6a4f" : "#6b6560"}}>
-                              {pct >= 99.999 ? "🏆 " : ""}{Math.round(pct)} %
-                            </span>
-                            <div style={{width:"100%", height:5, background:"#f0ede8", borderRadius:3, overflow:"hidden"}}>
-                              <div style={{width:`${pct}%`, height:"100%", background:"#2d6a4f", borderRadius:3}}/>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                      {!exportAuswahlModus && <span style={{color:"#6b6560"}}>{">"}</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            ) : renderListenRaster()}
           </div>
         )}
 
@@ -6610,7 +6775,7 @@ export default function VokabelApp() {
               </div>
               {[
                 {titel:"Listen-Tab", inhalt:[
-                  {k:"Übersicht", v:"Zeigt alle Vokabellisten. Tippe eine Liste an, um sie zu öffnen."},
+                  {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln und Lernständen), „Verschieben“ und „Löschen“. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
                   {k:"[+] Neue Liste", v:"Legt eine leere Liste mit eigenem Namen an."},
                   {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, JSON, TXT, Löschen. JSON = vollständige Sicherung mit Lernstand (Datei „Name - JSON.txt“), TXT = nur die Vokabeln als Text ohne Scores (Datei „Name - TXT.txt“). Auf iPad/iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, Mail, AirDrop), sonst wird die Datei heruntergeladen. Beim Import ist die Endung egal – die App erkennt den Inhalt."},
                   {k:"Stift-Button", v:"Listenname umbenennen."},
@@ -6709,39 +6874,11 @@ export default function VokabelApp() {
               </div>
             </div>
             <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Gespeicherte Konfigurationen</div>
-            {(() => {
-              const g = rasterGroesse(einstellungen);
-              const minZeilen = Math.max(1, Math.ceil(slots.gespeichert.length / g.spalten));
-              return (
-                <div className="karte">
-                  <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:8}}>
-                    <div>
-                      <div className="karte-zeile-name">Raster</div>
-                      <div className="karte-zeile-sub">{g.zeilen} Zeilen × {g.spalten} Spalten – Plätze für gespeicherte Konfigurationen im Quiz- und Statistik-Tab</div>
-                    </div>
-                    <div style={{display:"flex", alignItems:"center", gap:6, flexWrap:"wrap"}}>
-                      <span style={{fontSize:"0.8rem", color:"#6b6560", minWidth:56}}>Spalten</span>
-                      {[1, 2, 3, 4].map(n => (
-                        <button key={n} data-raster-spalten={n} className={`toggle-opt${g.spalten === n ? " aktiv" : ""}`}
-                          onClick={() => setzeRasterGroesse(g.zeilen, n)}
-                          {...tt(`${n} Spalte${n > 1 ? "n" : ""} nebeneinander (höchstens 4)`)}>{n}</button>
-                      ))}
-                    </div>
-                    <div style={{display:"flex", alignItems:"center", gap:6}}>
-                      <span style={{fontSize:"0.8rem", color:"#6b6560", minWidth:56}}>Zeilen</span>
-                      <button className="toggle-opt" disabled={g.zeilen <= minZeilen} onClick={() => setzeRasterGroesse(g.zeilen - 1, g.spalten)}
-                        {...tt("Eine Zeile weniger – nur bis alle gespeicherten Einträge noch Platz haben")}>−</button>
-                      <span data-raster-zeilen style={{minWidth:32, textAlign:"center", fontWeight:700}}>{g.zeilen}</span>
-                      <button className="toggle-opt" disabled={g.zeilen >= RASTER_MAX_ZEILEN} onClick={() => setzeRasterGroesse(g.zeilen + 1, g.spalten)}
-                        {...tt("Eine Zeile mehr (höchstens 100)")}>+</button>
-                      <button className="toggle-opt" disabled={g.zeilen >= RASTER_MAX_ZEILEN} onClick={() => setzeRasterGroesse(Math.min(RASTER_MAX_ZEILEN, g.zeilen + 10), g.spalten)}
-                        {...tt("Zehn Zeilen mehr")}>+10</button>
-                    </div>
-                    <div style={{fontSize:"0.72rem", color:"#9b9590"}}>Ist das Raster beim Speichern voll, kommt automatisch eine Zeile dazu.</div>
-                  </div>
-                </div>
-              );
-            })()}
+            {rasterEinstellung(rasterGroesse(einstellungen), slots.gespeichert.length, setzeRasterGroesse,
+              "Plätze für gespeicherte Konfigurationen im Quiz- und Statistik-Tab", "Ist das Raster beim Speichern voll, kommt automatisch eine Zeile dazu.", "")}
+            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Listen</div>
+            {rasterEinstellung(rasterGroesse(einstellungen, "listenRaster"), listenIndex.length, setzeListenRasterGroesse,
+              "Plätze der Listen im Listen-Tab – die Reihenfolge gilt in der ganzen App", "Ist das Raster bei einer neuen Liste voll, kommt automatisch eine Zeile dazu.", "listen")}
             <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>App</div>
             <div className="karte">
               <div className="karte-zeile">
@@ -6803,7 +6940,7 @@ export default function VokabelApp() {
           </div>
         </div>
       )}
-      {modal === "umbenennen" && aktiveListe && (
+      {modal === "umbenennen" && (aktiveListe || listeMenueId) && (
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Liste umbenennen</div>
@@ -6815,6 +6952,23 @@ export default function VokabelApp() {
             <div className="modal-actions">
               <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
               <button {...tt("Neuen Namen speichern")} className="btn btn-primary" onClick={umbenennen}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {modal === "liste-duplizieren" && listeMenueId && (
+        <div className="overlay" onClick={() => setModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">Liste duplizieren</div>
+            <label className="inp-label">Name der Kopie</label>
+            <input {...ttFeld("Name der neuen Liste")} className="inp" value={modalInput} autoFocus
+              onChange={e => { setModalInput(e.target.value); setModalFehler(""); }}
+              onKeyDown={e => e.key === "Enter" && dupliziereListe()} />
+            <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:6}}>Die Kopie enthält alle Vokabeln, Spalten und Lernstände.</div>
+            {modalFehler && <div className="fehler">{modalFehler}</div>}
+            <div className="modal-actions">
+              <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+              <button {...tt("Kopie der Liste anlegen")} className="btn btn-primary" onClick={dupliziereListe}>Duplizieren</button>
             </div>
           </div>
         </div>
@@ -7082,7 +7236,7 @@ export default function VokabelApp() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Liste löschen?</div>
             <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
-              Diese Liste wird dauerhaft gelöscht. Das kann nicht rückgängig gemacht werden.
+              {listeMenueId ? <>„{listenIndex.find(l => l.id === listeMenueId)?.name}“ wird</> : "Diese Liste wird"} dauerhaft gelöscht. Das kann nicht rückgängig gemacht werden.
             </p>
             <div className="modal-actions">
               <button {...tt("Schließen, ohne etwas zu löschen")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
