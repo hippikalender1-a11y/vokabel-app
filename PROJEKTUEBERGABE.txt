@@ -1432,6 +1432,16 @@ EXPORT VEREINFACHT: nur noch zwei Knöpfe JSON und TXT (+ Kopieren in die
   → "Name - JSON.txt" / "Name - TXT.txt" (mehrere: "3 Listen - …"); Endung
   immer .txt. teileAlsDatei(): iOS → Teilen-Menü, sonst Download (text/plain).
   Import erkennt JSON am Inhalt, Endung egal.
+DUPLIZIEREN (Lang-Druck-Menü gespeicherter Konfigurationen, "⧉ Duplizieren"):
+  nutzt das Umbenennen-Fenster (slotUmbenennen.kopie = true), Vorschlag
+  kopieName() "Name (Kopie)" / "(Kopie 2)" …; dupliziereSlot(): neue Id,
+  tiefe Kopie der Konfiguration, OHNE Session-Fortschritt, erster freier
+  Rasterplatz (rasterEinordnen). Doppelte Namen abgelehnt.
+EINHEITLICHE RECHTE SPALTE (Quiz- und Statistik-Kopfzeilen): CSS-Klasse
+  .zeile-rechts = 124 × 31 px (Maß des Alle/Bereich-Schalters) für Verlauf-
+  Knopf (nur aufgeklappt; zugeklappt mittig wie bisher), Listen-Auswahl,
+  Alle/Bereich, Abfrage-Modus, Reihenfolge, Einstellungen, Session; lange
+  Texte mit "…". .toggle-btn.zeile-rechts: Optionen teilen sich die Breite.
 
 
 ================================================================

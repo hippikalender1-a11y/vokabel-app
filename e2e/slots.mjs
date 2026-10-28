@@ -106,7 +106,7 @@ await menue("1|0");
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.textContent.trim()));
 const blase = await page.evaluate(() => document.querySelector('[role="status"]')?.innerText || "");
 console.log("     Menü:", knoepfe.join(" | "));
-ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⇄ Verschieben|🗑 Löschen", "Lang-Druck: voller Name + Umbenennen / Verschieben / Löschen");
+ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|🗑 Löschen", "Lang-Druck: voller Name + Umbenennen / Duplizieren / Verschieben / Löschen");
 await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
 ok(!(await page.$('[role="status"]')) && /Jetzt den Zielplatz antippen/.test(await page.evaluate(() => document.body.innerText)),
@@ -154,6 +154,22 @@ await setzeFeld("Meine Verben"); await sleep(150);
 await page.click("[data-umbenennen-speichern]"); await sleep(250);
 pl = await plaetze();
 ok(pl["Meine Verben"] === platzN1 && !(n1 in pl), "Umbenennen: neuer Name, gleicher Platz");
+// Duplizieren: Vorschlag „… (Kopie)“, gleiche Konfiguration, kein Fortschritt, erster freier Platz
+await menue(platzN1);
+await aktion("⧉ Duplizieren");
+const vorschlag = await page.evaluate(() => document.querySelector("[data-umbenennen-feld]").value);
+ok(vorschlag === "Meine Verben (Kopie)" && /Duplizieren/.test(await page.evaluate(() => document.querySelector(".modal-titel").textContent)), `Duplizieren: Fenster mit Vorschlag „${vorschlag}“`);
+await setzeFeld("Meine Verben 2"); await sleep(150);
+await page.click("[data-umbenennen-speichern]"); await sleep(250);
+const alle = (await slots()).gespeichert;
+const orig = alle.find(x => x.name === "Meine Verben"), dup = alle.find(x => x.name === "Meine Verben 2");
+pl = await plaetze();
+console.log("     nach Duplizieren:", JSON.stringify(pl));
+ok(dup && dup.id !== orig.id && JSON.stringify(dup.konfiguration) === JSON.stringify(orig.konfiguration) && !dup.sessionFortschritte?.uebersetzung,
+  "Duplikat: eigene Kennung, gleiche Konfiguration, ohne Fortschritt");
+ok(pl["Meine Verben 2"] === "1|0" && pl["Meine Verben"] === platzN1, "Duplikat auf dem ersten freien Platz, Original bleibt");
+// für den weiteren Ablauf wieder entfernen
+await menue("1|0"); await aktion("🗑 Löschen"); await clickText(".modal .btn-danger", "Löschen", true);
 
 // Einstellungen: 3 Spalten, Zeilen verkleinern → Einträge rücken nach, voll → beim Speichern automatisch eine Zeile mehr
 await clickText(".tab", "Einstellungen");

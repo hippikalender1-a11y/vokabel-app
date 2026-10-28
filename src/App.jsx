@@ -661,6 +661,10 @@ const CSS = `
   .toggle-btn{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid #e0dbd2;}
   .toggle-opt{padding:6px 14px;font-size:0.82rem;font-weight:600;background:none;border:none;cursor:pointer;color:#6b6560;font-family:inherit;}
   .toggle-opt.aktiv{background:#2d6a4f;color:#fff;}
+  /* Rechte Spalte der Kopfzeilen (Quiz/Statistik): alle Knöpfe so breit und hoch wie der Alle/Bereich-Schalter */
+  .zeile-rechts{width:124px;height:31px;box-sizing:border-box;flex-shrink:0;}
+  button.zeile-rechts{display:inline-block;padding:0 8px;line-height:31px;font-size:0.82rem;border-radius:8px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .toggle-btn.zeile-rechts .toggle-opt{flex:1 1 0;padding:0 4px;min-width:0;}
   .meldung-info{background:#e8f4fd;color:#1565c0;border:1px solid #bbdefb;padding:12px 16px;border-radius:10px;font-size:0.85rem;margin-bottom:16px;line-height:1.6;}
   .fehler{color:#c0392b;font-size:0.82rem;margin-top:8px;margin-bottom:8px;}
   .fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:28px;background:#2d6a4f;color:#fff;font-size:1.6rem;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:20;}
@@ -871,7 +875,7 @@ export default function VokabelApp() {
   const [sessionUeberschreibenModal, setSessionUeberschreibenModal] = useState(false);
   const [loescheSlotNr, setLoescheSlotNr] = useState(null);
   const [slotSektionAufgeklappt, setSlotSektionAufgeklappt] = useState(true);
-  const [slotUmbenennen, setSlotUmbenennen] = useState(null);   // {id, name} – Fenster "Umbenennen"
+  const [slotUmbenennen, setSlotUmbenennen] = useState(null);   // {id, name, kopie} – Fenster "Umbenennen" bzw. "Duplizieren"
   const [quizGelerntEinschliessen, setQuizGelerntEinschliessen] = useState(false);
   const [listenGelerntAusblenden, setListenGelerntAusblenden] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
@@ -2144,6 +2148,23 @@ export default function VokabelApp() {
     setGespeicherteVokabelgruppe({ listenIds: [...quizTabListen], vokabelAuswahl: Array.from(quizCheckboxAuswahl), bereichTyp: quizBereichTyp });
   }
 
+  // Kopie einer gespeicherten Konfiguration unter neuem Namen: gleiche Einstellungen,
+  // eigener (leerer) Session-Fortschritt, erster freier Platz im Raster
+  function dupliziereSlot(id, name) {
+    const data = getSlotsData();
+    const quelle = data.gespeichert.find(x => x.id === id);
+    if (!quelle) return;
+    const kopie = { id: neuerSlotId('g'), name, timestamp: Date.now(), konfiguration: JSON.parse(JSON.stringify(quelle.konfiguration)), sessionFortschritt: null };
+    setSlotsData(rasterEinordnen({ ...data, gespeichert: [...rasterEinordnen(data).gespeichert, kopie] }));
+  }
+  // freier Name "Name (Kopie)", "Name (Kopie 2)" …
+  function kopieName(name) {
+    const namen = new Set(slots.gespeichert.map(x => x.name));
+    let n = `${name} (Kopie)`, i = 2;
+    while (namen.has(n)) n = `${name} (Kopie ${i++})`;
+    return n;
+  }
+
   function benenneSlotUm(id, name) {
     const data = getSlotsData();
     setSlotsData({ ...data, gespeichert: data.gespeichert.map(x => x.id === id ? { ...x, name } : x) });
@@ -2606,6 +2627,7 @@ export default function VokabelApp() {
             onClick={() => onLaden('gespeichert', x.id)}
             {...tt(`${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`, [
               { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
+              { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: x.id, name: kopieName(x.name), kopie: true }) },
               { label: "⇄ Verschieben", fn: () => { setSlotSortModus(true); setSlotAuswahlId(x.id); } },
               { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
             ], { langText: x.name,
@@ -4756,8 +4778,8 @@ export default function VokabelApp() {
                         </>)}
                         <button
                           onClick={toggleSlotSektion}
-                          className="toggle-opt aktiv"
-                          style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth: zu ? "60%" : "50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                          className={`toggle-opt aktiv${zu ? "" : " zeile-rechts"}`}
+                          style={{cursor:"pointer", ...(zu ? {padding:"3px 10px", fontSize:"0.75rem", maxWidth:"60%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"} : {}),
                             ...(gruen ? {fontSize:"0.85rem", border:"1.5px solid rgba(255,255,255,0.7)"} : {}),
                             ...(vokabelgruppeGeaendert ? {background:"#c0392b", color:"#fff"} : {})}}
                           {...tt(aktiverSlot?.typ === 'gespeichert' ? "Gespeicherte Konfiguration – Verlauf und Gespeichert anzeigen" : "Verlauf und Gespeichert anzeigen")}>
@@ -4826,8 +4848,7 @@ export default function VokabelApp() {
                       {/* RECHTS */}
                       <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                         <button
-                          className="toggle-opt aktiv"
-                          style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"55%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}
+                          className="toggle-opt aktiv zeile-rechts"
                           onClick={toggleListenAuswahl}
                           {...tt("Listen für das Quiz auswählen")}>
                           {chipText}
@@ -4904,7 +4925,7 @@ export default function VokabelApp() {
                       {...tt(quizBereichTyp === "bereich" ? "Anzahl der im Bereich ausgewählten Vokabeln" : "Anzahl der Vokabeln, die zur Auswahl stehen (alle Vokabeln der Listen mit den gewählten Spalten)")}>({quizGefilterteVoks.length} V.)</span>
                     {/* RECHTS */}
                     <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
-                      <div className="toggle-btn">
+                      <div className="toggle-btn zeile-rechts">
                         <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
                           onClick={() => { setQuizBereichTyp("alle"); setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}
                           {...tt("Alle Vokabeln der gewählten Listen abfragen")}>
@@ -4970,7 +4991,7 @@ export default function VokabelApp() {
                       <span data-anzahl="akzent" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", cursor:"help", whiteSpace:"nowrap"}}
                         {...tt("Davon Vokabeln mit Akzent in der Akzente-Spalte")}>({mitAkzentAnzahl} mit Akzent)</span>
                     )}
-                    <button className="toggle-opt aktiv" data-abfragemodus style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleAbfrageModus}
+                    <button className="toggle-opt aktiv zeile-rechts" data-abfragemodus onClick={toggleAbfrageModus}
                       {...tt("Abfrage-Modus öffnen – zeigt die Art der Abfrage (Karte, MC, Tastatur, Akzente, Diktat)")}>
                       {abfrageModusName}
                     </button>
@@ -5144,7 +5165,7 @@ export default function VokabelApp() {
                       </span>
                     )}
                     <span style={{display:"flex", justifyContent:"flex-end"}}>
-                      <button className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleReihenfolge}
+                      <button className="toggle-opt aktiv zeile-rechts" onClick={toggleReihenfolge}
                       {...tt("Reihenfolge öffnen – Zufällig, Schlechteste oder Listen-Nr.")}>
                         {quizReihenfolge === "zufall" ? "Zufällig" : quizReihenfolge === "schlechteste" ? "Schlechteste" : "Listen-Nr."}
                       </button>
@@ -5233,7 +5254,7 @@ export default function VokabelApp() {
                       {...tt(mitAkzentAnzahl != null
                         ? "Vokabeln nach dem Schwierigkeitsgrad: mit oder ohne Wörter ohne Akzent (Regel „Akzent-Modus: auch Wörter ohne Akzent abfragen“)"
                         : "Vokabeln nach dem Schwierigkeitsgrad – hier gleich der Vokabel-Auswahl")}>({akzentVoks.length} V.)</span>
-                    <button className="toggle-opt aktiv" style={{padding:"3px 8px", fontSize:"0.75rem", cursor:"pointer"}} onClick={toggleEinstellungen}
+                    <button className="toggle-opt aktiv zeile-rechts" onClick={toggleEinstellungen}
                       {...tt("Einstellungen öffnen – Lautsprache und Schwierigkeitsgrad")}>
                       {einstellungen.modus === "einfach" ? "Einfach" : "Schwer"}
                     </button>
@@ -5332,7 +5353,7 @@ export default function VokabelApp() {
                       ({sessionAnzahl} V.)
                     </span>
                     <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
-                      <div className="toggle-btn">
+                      <div className="toggle-btn zeile-rechts">
                         <button className={`toggle-opt${quizSessionModus==="alle"?" aktiv":""}`}
                           onClick={() => { if (quizSessionModus === "alle") setQuizSessionAufgeklappt(v => !v); else { setQuizSessionModus("alle"); setQuizSessionAufgeklappt(true); } }}
                           {...tt("Alle verfügbaren Vokabeln in einem Durchgang abfragen")}>
@@ -5786,8 +5807,7 @@ export default function VokabelApp() {
                 </span>
                 <button {...tt("Verlauf und Gespeichert anzeigen")}
                   onClick={toggleSlotSektion}
-                  className="toggle-opt aktiv"
-                  style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", maxWidth:"50%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
+                  className="toggle-opt aktiv zeile-rechts">
                   {statistikAktiverSlot?.typ === 'gespeichert'
                     ? (getSlotEintrag('gespeichert', statistikAktiverSlot.id)?.name || statistikAktiverSlot.id)
                     : statistikSlotGeleert ? "Leer" : "Neu"}
@@ -5860,8 +5880,7 @@ export default function VokabelApp() {
               {/* RECHTS */}
               <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                 <button
-                  className="toggle-opt aktiv"
-                  style={{padding:"3px 8px", fontSize:"0.75rem", maxWidth:"55%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}
+                  className="toggle-opt aktiv zeile-rechts"
                   onClick={toggleStatistikListenAuswahl}
                   {...tt("Listen für die Statistik auswählen")}>
                   {chipText}
@@ -5930,7 +5949,7 @@ export default function VokabelApp() {
               )}
               {/* RECHTS */}
               <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
-                <div className="toggle-btn">
+                <div className="toggle-btn zeile-rechts">
                   <button className={`toggle-opt${!istBereich?" aktiv":""}`}
                     onClick={() => { setStatistikBereichTyp("alle"); setStatistikEinzelauswahlAufgeklappt(false); setStatistikVonBisModus(false); setStatistikVonBisErster(null); }}
                     {...tt("Alle Vokabeln der gewählten Listen anzeigen")}>
@@ -6372,7 +6391,7 @@ export default function VokabelApp() {
                   {k:"Import", v:"Vokabeln aus einer TXT-Datei oder JSON-Datei importieren."},
                 ]},
                 {titel:"Quiz-Tab", inhalt:[
-                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts. Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann mittig in einer grünen Kopfzeile – antippen öffnet die Auswahl wieder. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt: Beim Wechsel des Abfrage-Modus springt der Fortschritt auf den Stand dieser Art. „↺ Zurücksetzen“ in der Fortschrittszeile beginnt nach kurzer Rückfrage für die aktuelle Art eine neue Session – gelöscht wird nur, welche Vokabeln schon abgefragt wurden; Scores und Lernfortschritt bleiben. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Gespeicherte Konfigurationen, bis 100 Zeilen × 4 Spalten). Lang drücken auf einen Eintrag zeigt den vollständigen Namen und darunter „Umbenennen“, „Verschieben“ und „Löschen“ (Verlauf-Einträge: „Löschen“). „Verschieben“: Zielplatz antippen oder direkt ziehen – auf einem belegten Platz tauschen die beiden; „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt auf den ersten freien Platz; ist das Raster voll, kommt automatisch eine Zeile dazu."},
+                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts. Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann mittig in einer grünen Kopfzeile – antippen öffnet die Auswahl wieder. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt: Beim Wechsel des Abfrage-Modus springt der Fortschritt auf den Stand dieser Art. „↺ Zurücksetzen“ in der Fortschrittszeile beginnt nach kurzer Rückfrage für die aktuelle Art eine neue Session – gelöscht wird nur, welche Vokabeln schon abgefragt wurden; Scores und Lernfortschritt bleiben. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Gespeicherte Konfigurationen, bis 100 Zeilen × 4 Spalten). Lang drücken auf einen Eintrag zeigt den vollständigen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie unter neuem Namen, mit eigenem Fortschritt), „Verschieben“ und „Löschen“ (Verlauf-Einträge: „Löschen“). „Verschieben“: Zielplatz antippen oder direkt ziehen – auf einem belegten Platz tauschen die beiden; „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt auf den ersten freien Platz; ist das Raster voll, kommt automatisch eine Zeile dazu."},
                   {k:"Neu-Chip", v:"Setzt die aktive Session zurück – Quiz startet ohne geladene Konfiguration."},
                   {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl."},
@@ -6714,22 +6733,29 @@ export default function VokabelApp() {
       {slotUmbenennen && (() => {
         const schliessen = () => setSlotUmbenennen(null);
         const name = slotUmbenennen.name.trim();
-        const doppelt = name && slots.gespeichert.some(x => x.id !== slotUmbenennen.id && x.name === name);
-        const speichern = () => { if (name && !doppelt) { benenneSlotUm(slotUmbenennen.id, name); schliessen(); } };
+        const kopie = !!slotUmbenennen.kopie;
+        const doppelt = name && slots.gespeichert.some(x => (kopie || x.id !== slotUmbenennen.id) && x.name === name);
+        const speichern = () => {
+          if (!name || doppelt) return;
+          if (kopie) dupliziereSlot(slotUmbenennen.id, name); else benenneSlotUm(slotUmbenennen.id, name);
+          schliessen();
+        };
         return (
           <div className="overlay" onClick={schliessen}>
             <div className="modal" onClick={e => e.stopPropagation()}>
-              <div className="modal-titel">Umbenennen</div>
-              <label className="inp-label">Name</label>
-              <input {...ttFeld("Neuer Name für den gespeicherten Eintrag")} data-umbenennen-feld className="inp" value={slotUmbenennen.name} autoFocus
+              <div className="modal-titel">{kopie ? "Duplizieren" : "Umbenennen"}</div>
+              <label className="inp-label">{kopie ? "Name der Kopie" : "Name"}</label>
+              <input {...ttFeld(kopie ? "Name für die Kopie" : "Neuer Name für den gespeicherten Eintrag")} data-umbenennen-feld className="inp" value={slotUmbenennen.name} autoFocus
                 onChange={e => setSlotUmbenennen(u => ({ ...u, name: e.target.value }))}
                 onFocus={e => e.target.select()}
                 onKeyDown={e => e.key === "Enter" && speichern()} />
               {doppelt && <div style={{fontSize:"0.78rem", color:"#c0392b", marginTop:6}}>Diesen Namen gibt es schon.</div>}
-              <div style={{fontSize:"0.75rem", color:"#9b9590", marginTop:8}}>Platz im Raster, Einstellungen und Fortschritt bleiben erhalten.</div>
+              <div style={{fontSize:"0.75rem", color:"#9b9590", marginTop:8}}>{kopie
+                ? "Die Kopie übernimmt alle Einstellungen, beginnt aber mit einem eigenen Paket-Fortschritt. Sie kommt auf den ersten freien Platz im Raster."
+                : "Platz im Raster, Einstellungen und Fortschritt bleiben erhalten."}</div>
               <div className="modal-actions">
-                <button {...tt("Schließen, ohne umzubenennen")} className="btn btn-ghost" onClick={schliessen}>Abbrechen</button>
-                <button {...tt("Neuen Namen speichern")} data-umbenennen-speichern className="btn btn-primary" disabled={!name || doppelt} onClick={speichern}>Speichern</button>
+                <button {...tt(kopie ? "Schließen, ohne zu duplizieren" : "Schließen, ohne umzubenennen")} className="btn btn-ghost" onClick={schliessen}>Abbrechen</button>
+                <button {...tt(kopie ? "Kopie unter diesem Namen anlegen" : "Neuen Namen speichern")} data-umbenennen-speichern className="btn btn-primary" disabled={!name || doppelt} onClick={speichern}>Speichern</button>
               </div>
             </div>
           </div>
