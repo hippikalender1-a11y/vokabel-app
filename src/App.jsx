@@ -1731,6 +1731,7 @@ export default function VokabelApp() {
     if (gruppenQuizStartRef.current === 0 || tab !== "quiz") return;
     if (--gruppenQuizStartRef.current > 0) { setGruppenQuizTick(t => t + 1); return; }
     starteQuiz(true);
+    setQuiz(q => q && { ...q, ausStatistik: true });
   }, [gruppenQuizTick]);
 
   function toggleStatistikListe(id) {
@@ -2787,8 +2788,16 @@ export default function VokabelApp() {
 
   // Nach dem Quiz direkt zur Statistik: mit Session → deren Eintrag (ganze Vokabelgruppe),
   // sonst genau die Vokabeln dieser Runde
+  // Nach einer Gruppen-Runde aus der Statistik: zurück in genau diese Statistik (Auswahl, Art, Filter unverändert)
+  function zurueckZurStatistik() {
+    setQuiz(null);
+    setAnsicht("uebersicht");
+    setTab("statistik");
+  }
+
   function zurRundenStatistik(abschluss) {
     const q = quiz;
+    if (q?.ausStatistik) { zurueckZurStatistik(); return; }
     abschluss();
     setStatistikListenAufgeklappt(false);
     setStatistikEinzelauswahlAufgeklappt(false);
@@ -2912,6 +2921,7 @@ export default function VokabelApp() {
       diktatAufgedeckt: 0, diktatErgebnisse: [], feedback: "",
       sessionVokIds: isPakete ? voks.map(v => v.id) : null,
       istSessionModus: isPakete,
+      ausStatistik: !!gruppe,   // Gruppen-Runde aus der Statistik: danach dorthin zurück
       sessionGesamt,
     });
     setAnsicht("quiz");
@@ -3053,6 +3063,7 @@ export default function VokabelApp() {
       quizRichtigAnzahl: 0, quizFalschAnzahl: 0,
       sessionVokIds: isPakete ? voks.map(v => v.id) : null,
       istSessionModus: isPakete,
+      ausStatistik: !!gruppe,   // Gruppen-Runde aus der Statistik: danach dorthin zurück
       sessionGesamt, sessionIds, abfrageZiel,
       rundeStartScores: Object.fromEntries(voks.map(v => [v.id, v[scoreFeld]?.score ?? null])),
       gruppeVokIds, scoreFeld,
@@ -3649,7 +3660,7 @@ export default function VokabelApp() {
           <style>{CSS}</style>
           <div className="app">
             <div className="topbar">
-              <button {...tt("Diktat schließen und zur Übersicht")} className="topbar-back" onClick={() => { beendeQuiz(); }}>Schließen</button>
+              <button {...tt(quiz.ausStatistik ? "Diktat schließen und zurück zur Statistik" : "Diktat schließen und zur Übersicht")} className="topbar-back" onClick={() => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); }}>Schließen</button>
               <span className="topbar-title">Diktat abgeschlossen</span>
               <span className="quiz-fortschritt">{richtig} / {quiz.diktatErgebnisse.length} ✓</span>
             </div>
@@ -3658,7 +3669,7 @@ export default function VokabelApp() {
                 onClick={() => { beendeQuiz(); }}>
                 Zurück zur Liste
               </button>
-              <div style={{marginBottom:16}}><button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></div>
+              <div style={{marginBottom:16}}><button data-zurueck-statistik={quiz.ausStatistik ? "" : undefined} className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt(quiz.ausStatistik ? "Zurück zur Statistik, aus der diese Runde gestartet wurde" : "Statistik zu dieser Abfragerunde öffnen")}>📊 {quiz.ausStatistik ? "Zurück zur Statistik" : "Zur Statistik"}</button></div>
               <div className="karte">
                 <div {...tt("Liste der Diktat-Ergebnisse auf- oder zuklappen")} style={{padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer"}}
                   onClick={() => setDiktatListeAufgeklappt(v => !v)}>
@@ -3880,7 +3891,7 @@ export default function VokabelApp() {
             <style>{CSS}</style>
             <div className="app">
               <div className="topbar">
-                <button {...tt("Auswertung schließen und zur Quiz-Übersicht")} className="topbar-back" onClick={() => { beendeQuiz(); }}>Schließen</button>
+                <button {...tt(quiz.ausStatistik ? "Auswertung schließen und zurück zur Statistik" : "Auswertung schließen und zur Quiz-Übersicht")} className="topbar-back" onClick={() => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); }}>Schließen</button>
                 <span className="topbar-title">{quiz.abgebrochen ? "Abgebrochen" : "Auswertung"}</span>
                 <span className="quiz-fortschritt">{r}/{ges}</span>
               </div>
@@ -3892,10 +3903,15 @@ export default function VokabelApp() {
                     „{feedback}"
                   </div>
                 )}
+                {quiz.ausStatistik ? (<>
+                  <button data-zurueck-statistik {...tt("Zurück zur Statistik, aus der diese Runde gestartet wurde")} className="btn btn-primary" style={{width:"100%"}} onClick={zurueckZurStatistik}>📊 Zurück zur Statistik</button>
+                  <button {...tt("Zur Quiz-Übersicht")} className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => { beendeQuiz(); }}>Zur Übersicht</button>
+                </>) : (<>
                 <button {...tt("Zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => { beendeQuiz(); }}>
                   Zur Übersicht
                 </button>
                 <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button>
+                </>)}
               </div>
             </div>
           </>
@@ -6229,6 +6245,20 @@ export default function VokabelApp() {
           const gruppenAnzahl = { negativ: 0, nie: 0, arbeit: 0, gelernt: 0 };
           alleVoks.forEach(v => { gruppenAnzahl[gruppeVon(v)]++; });
 
+          // Akzente-Sicht ohne Wörter mit Akzent: in der Statistik bleiben – Hinweis statt Kreis, Mitte zum Weiterschalten
+          if (alleVoks.length === 0 && statistikArt === "akzente" && statistikGefilterteVoks.length > 0) return (
+            <div className="sektion" style={{paddingTop:12}}>
+              <div data-keine-akzente style={{borderRadius:12, border:"1px solid #e0dbd2", background:"#fafaf8", padding:"28px 16px 32px", textAlign:"center"}}>
+                <div style={{fontSize:"0.95rem", color:"#3b3832", fontWeight:600, marginBottom:20}}>Für diese Session sind keine Akzente vorhanden.</div>
+                <button onClick={naechsteArt} data-kreismitte="1" {...tt("Antippen: zwischen Übersetzung, Diktat und Akzenten wechseln")}
+                  style={{width:72, height:72, borderRadius:"50%", background:"#fff", border:"1.5px solid #e0dbd2", cursor:"pointer", fontFamily:"inherit",
+                    display:"inline-flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, padding:0}}>
+                  <span style={{fontSize:"0.82rem", fontWeight:800, color:"#3b3832"}}>{artName}</span>
+                  <span style={{fontSize:"0.82rem", color:"#9b9590"}}>⇄</span>
+                </button>
+              </div>
+            </div>
+          );
           if (alleVoks.length === 0) return (
             <div className="sektion">
               <div className="leer"><div className="leer-text">

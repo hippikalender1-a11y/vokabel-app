@@ -1502,6 +1502,16 @@ DURCHLAUF GESCHAFFT (Session, letztes Paket, Quiz und Diktat): unter dem
   Durchlauf gemerkt (jubelText) – mit Pop-Animation; Knopf "🔁 Nochmal!"
   (data-nochmal): updateSessionSlotFortschritt(…, true) und starteQuiz(true)
   bzw. starteDiktat(true) → Session sofort von vorn. Test: e2e/jubel.mjs.
+STATISTIK AKZENTE OHNE AKZENT-WÖRTER: kein Sprung mehr zur Übersetzung –
+  Kasten (data-keine-akzente) "Für diese Session sind keine Akzente
+  vorhanden." mit runder Mitte "Akzente ⇄" (data-kreismitte, schaltet weiter).
+  Test: e2e/keineakzente.mjs.
+GRUPPEN-QUIZ → ZURÜCK: quiz.ausStatistik (einmalige Runde via gruppe, Fallback
+  per setQuiz im Start-Effekt). Auswertung (ohne Session, Quiz und Diktat):
+  Hauptknopf "📊 Zurück zur Statistik" (data-zurueck-statistik) und Schließen
+  → zurueckZurStatistik(): nur setTab("statistik") – Auswahl, Art und Filter
+  der Statistik bleiben wie vor der Runde (kein handleTabWechsel, keine
+  Runden-Statistik).
 
 
 ================================================================

@@ -81,7 +81,7 @@ ok(gefragt.length === 3 && ["gehen","kommen","Katze"].every(w => gefragt.include
 ok(gefragt[0] === "Katze", "schlechteste zuerst (Katze −3)");
 
 // Gelernt (Score 4 > Standard-Grenze 3) lässt sich trotzdem abfragen
-await clickText("button", "Zur Statistik"); await sleep(400);
+await page.click("[data-zurueck-statistik]"); await sleep(400);
 await clickText(".toggle-btn.zeile-rechts .toggle-opt", "Alle", true); await sleep(300);   // Statistik zeigt danach die Quiz-Auswahl → wieder alle
 await menue('[data-kreis-gruppe="gelernt"]');
 await page.evaluate(() => document.querySelector('[data-info-aktion="▶ Quiz mit 1 Vokabel"]').click()); await sleep(250);
@@ -130,6 +130,24 @@ const kopf = await page.evaluate(() => { const k = document.querySelector("[data
 console.log("     Quiz danach:", kopf, "| Session:", await fortschritt());
 ok(kopf === "gruen Mein Paket", "Konfiguration „Mein Paket“ bleibt gewählt");
 ok(vorher && await fortschritt() === vorher, `Session-Fortschritt unverändert (${vorher})`);
+
+// ── Nach der Runde zurück in genau die Statistik, aus der man kam ──
+await clickText(".tab", "Statistik"); await sleep(400);
+const legendeAus = () => page.evaluate(() => [...document.querySelectorAll("[data-legende]")].filter(b => b.style.textDecoration.includes("line-through")).map(b => b.dataset.legende).join(","));
+const vorStat = await page.evaluate(() => document.querySelector("[data-slot-kopf]").dataset.slotKopf + " " + document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv").textContent.trim());
+await page.click('[data-legende="arbeit"]'); await sleep(300);   // Filter setzen: „In Arbeit“ ausblenden
+const vorAus = await legendeAus();
+await menue('[data-kreis-gruppe="negativ"]');
+await page.evaluate(() => document.querySelector("[data-info-aktion]").click()); await sleep(250);
+await clickText("[data-gruppen-quiz] button", "Starten", true); await sleep(600);
+await durchlaufen();
+ok(await page.$("[data-zurueck-statistik]"), "Auswertung: Knopf „Zurück zur Statistik“");
+await page.click("[data-zurueck-statistik]"); await sleep(500);
+const nachStat = await page.evaluate(() => ({ tab: document.querySelector(".tab.aktiv")?.textContent.trim(),
+  kopf: document.querySelector("[data-slot-kopf]").dataset.slotKopf + " " + document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv").textContent.trim() }));
+console.log("     zurück:", JSON.stringify(nachStat), "| ausgeblendet:", await legendeAus());
+ok(nachStat.tab === "Statistik" && nachStat.kopf === vorStat, `zurück in der Statistik mit „${vorStat}“`);
+ok(vorAus === "arbeit" && await legendeAus() === vorAus, "Filter (In Arbeit ausgeblendet) unverändert");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
