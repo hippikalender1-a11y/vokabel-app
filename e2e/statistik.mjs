@@ -44,7 +44,13 @@ const seed = async () => {
   await clickText(".tab", "Quiz");
   await clickText(".quiz-setup-check", "Vocabulaire");
 };
-const statistikInfo = () => page.evaluate(() => ({
+// Auswahlbereich ist nach dem Laden zugeklappt → zum Prüfen der Chips öffnen
+const statistikInfo = async () => {
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv")?.click(); });
+  await sleep(300);
+  return statistikInfoRoh();
+};
+const statistikInfoRoh = () => page.evaluate(() => ({
   tabAktiv: document.querySelector(".tab.aktiv")?.textContent,
   anzahl: [...document.querySelectorAll("span")].map(s => s.textContent).filter(t => /^\(\d+ V\.\)$/.test(t)),
   chipAktiv: [...document.querySelectorAll(".slot-chip")].filter(c => c.style.borderColor === "rgb(45, 106, 79)").map(c => c.textContent.trim()),

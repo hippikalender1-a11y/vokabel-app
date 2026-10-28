@@ -131,6 +131,19 @@ await clickText(".tab", "Quiz");
 await sleep(300);
 ok(await kopf() === "gruen" && (await text()).includes("Mein Paket") && await fortschritt() === "10 / 14",
   "Nach Neuladen: gespeicherte Session automatisch geladen (grüne Kopfzeile, Übersetzung 10 / 14)");
+// Statistik: Kopfzeile verhält sich wie im Quiz
+await clickText(".tab", "Statistik");
+await sleep(400);
+ok(await kopf() === "gruen" && !(await text()).includes("Verlauf & Gespeichert"), "Statistik: gespeicherte Konfiguration → Kopfzeile grün, ohne Überschrift");
+await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
+await sleep(300);
+ok(await kopf() === "offen" && (await text()).includes("Verlauf & Gespeichert"), "Statistik: Antippen öffnet die Auswahl");
+await clickText(".slot-chip", "Mein Paket");
+await sleep(300);
+ok(await kopf() === "gruen" && !(await page.$(".slot-raster")), "Statistik: nach Auswahl wieder zu und grün");
+await page.screenshot({ path: "statistik_kopf.png", clip: { x: 0, y: 0, width: 820, height: 300 } });
+await clickText(".tab", "Quiz");
+await sleep(300);
 // „Neu“ → beim nächsten Start nichts automatisch laden
 await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);

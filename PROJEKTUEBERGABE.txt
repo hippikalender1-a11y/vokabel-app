@@ -1447,6 +1447,9 @@ KOPFZEILE zugeklappt: Auswahl-Knopf größer (0.95rem, min. 160 px) und
   (padding 14 px, Balken 6 px mit 12 px Abstand, 16 px zu den Knöpfen).
   Die Fortschrittszahl ist jetzt der Knopf data-session-zuruecksetzen
   (hellgrün, rechtsbündig, min. 124 px) → Rückfrage; "↺ Zurücksetzen" entfällt.
+STATISTIK-KOPFZEILE "Verlauf & Gespeichert" jetzt wie im Quiz: zugeklappt
+  ohne Überschrift, Knopf mittig, bei gespeicherter Konfiguration ganze Zeile
+  grün (data-slot-kopf); ladeSlotStatistik() und "Neu" klappen den Bereich zu.
 
 
 ================================================================

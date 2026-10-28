@@ -2099,6 +2099,7 @@ export default function VokabelApp() {
     setStatistikEinzelauswahlAufgeklappt(false);
     setStatistikAktiverSlot({ typ, id });
     setStatistikSlotGeleert(false);
+    setSlotSektionAufgeklappt(false);   // nach der Auswahl nur noch die Kopfzeile zeigen (wie im Quiz)
   }
 
   // Abfrage ohne Pakete im Verlauf festhalten (mit Start-Scores für die Statistik).
@@ -5797,15 +5798,22 @@ export default function VokabelApp() {
         {/* ── Statistik: Verlauf & Gespeichert Header ── */}
         {tab === "statistik" && (() => {
           if (statistikVollbild) return null;
+          // wie im Quiz: zugeklappt ohne Überschrift, Knopf mittig; gespeicherte Konfiguration → ganze Zeile grün
+          const zu = !slotSektionAufgeklappt;
+          const gruen = zu && statistikAktiverSlot?.typ === 'gespeichert';
           return (
             <>
-              <div ref={slotSektionRef} style={{position:"sticky", top:headerH, zIndex:9, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
-                <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832", display:"flex", alignItems:"center", gap:8}}>
-                  Verlauf &amp; Gespeichert
-                </span>
+              <div ref={slotSektionRef} data-slot-kopf={gruen ? "gruen" : zu ? "zu" : "offen"} style={{position:"sticky", top:headerH, zIndex:9, background: gruen ? "#2d6a4f" : "#fff", borderBottom:`1px solid ${gruen ? "#2d6a4f" : "#e0dbd2"}`, padding:"10px 16px", display:"flex", alignItems:"center", justifyContent: zu ? "center" : undefined, gap:8}}>
+                {!zu && (
+                  <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832", display:"flex", alignItems:"center", gap:8}}>
+                    Verlauf &amp; Gespeichert
+                  </span>
+                )}
                 <button {...tt("Verlauf und Gespeichert anzeigen")}
                   onClick={toggleSlotSektion}
-                  className="toggle-opt aktiv zeile-rechts">
+                  className={`toggle-opt aktiv${zu ? "" : " zeile-rechts"}`}
+                  style={zu ? {cursor:"pointer", padding:"7px 22px", fontSize:"0.95rem", borderRadius:12, minWidth:160, maxWidth:"80%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                    ...(gruen ? {border:"1.5px solid rgba(255,255,255,0.75)"} : {})} : undefined}>
                   {statistikAktiverSlot?.typ === 'gespeichert'
                     ? (getSlotEintrag('gespeichert', statistikAktiverSlot.id)?.name || statistikAktiverSlot.id)
                     : statistikSlotGeleert ? "Leer" : "Neu"}
@@ -5819,7 +5827,8 @@ export default function VokabelApp() {
                         ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
                         : {color:"#9b9590"}}
                       onClick={() => {
-                        setStatistikAktiverSlot(null); setStatistikSlotGeleert(false);                        setStatistikListenIds(null); setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
+                        setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setSlotSektionAufgeklappt(false);
+                        setStatistikListenIds(null); setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
                         setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']));
                       }}
                       {...tt("Neu – alle Listen und Vokabeln anzeigen")}>

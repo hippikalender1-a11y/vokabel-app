@@ -84,6 +84,9 @@ await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c =>
 await sleep(300);
 let t = await page.evaluate(() => document.body.innerText);
 ok(/\(2 V\.\)/.test(t), "Statistik: Preset zeigt 2 Vokabeln");
+// nach dem Laden ist der Bereich zu → wieder öffnen
+await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
+await sleep(300);
 await clickText(".slot-chip", "Neu", true);
 await sleep(300);
 t = await page.evaluate(() => document.body.innerText);
