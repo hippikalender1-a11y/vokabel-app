@@ -762,6 +762,8 @@ const CSS = `
   .spalten-modus-btn.aktiv{background:#52b788;color:#fff;border-color:#52b788;}
   .quiz-vorig{background:#f0f7f0;border:1px solid #c8e6c9;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:0.88rem;color:#2d6a4f;}
   .quiz-vorig-label{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#40916c;margin-bottom:3px;}
+  .quiz-vorig.nicht{background:#fdf0ef;border-color:#f3c7c3;color:#9b2c22;}
+  .quiz-vorig.nicht .quiz-vorig-label{color:#c0392b;}
   .quiz-setup-check{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e0dbd2;cursor:pointer;}
   .quiz-setup-check:last-child{border-bottom:none;}
   .checkbox{width:20px;height:20px;border-radius:5px;border:2px solid #e0dbd2;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#f7f5f0;}
@@ -937,6 +939,7 @@ export default function VokabelApp() {
   const [listenAuswahlAufgeklappt, setListenAuswahlAufgeklappt] = useState(true);
   const eingabeRef = useRef(null);
   const flashTimerRef = useRef(null);
+  const flashWeiterRef = useRef(null);   // was nach der Verzögerung passiert (Antippen beendet sie sofort)
   const akzentBlinkRef = useRef(null);
   const diktatPlayCountRef = useRef(0);
   const fileInputRef = useRef(null);
@@ -3063,7 +3066,7 @@ export default function VokabelApp() {
       phase: "eingabe", eingabe: "", flash: false, infoSichtbar: false, infoSeite: 0,
       antwortTeile: erstesTeile, weitereIndices: [], weiterePos: 0,
       mcButtons: erstesMC?.buttons || [], mcRichtig: erstesMC?.richtig || [],
-      vorigeRichtig: [], sessionFalsch: {}, feedback: "", mcWechsel: false,
+      vorigeAntworten: [], sessionFalsch: {}, feedback: "", mcWechsel: false,
       aktuelleFehlversuche: 0, falschFlash: false, richtigMap: {}, spaltenErgebnisse: {}, vokErgebnis: null, gewertet: {},
       quizRichtigAnzahl: 0, quizFalschAnzahl: 0,
       sessionVokIds: isPakete ? voks.map(v => v.id) : null,
@@ -3117,7 +3120,7 @@ export default function VokabelApp() {
         vokabeln: voks, frageTyp, antwortTypen, antwortTypIndex: 0,
         phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
         mcButtons: mc?.buttons || [], mcRichtig: mc?.richtig || [],
-        vorigeRichtig: [], infoSichtbar: false, infoSeite: 0, feedback: "",
+        vorigeAntworten: [], infoSichtbar: false, infoSeite: 0, feedback: "",
         spalteModus: sp, mcWechsel: false, aktuelleFehlversuche: 0, falschFlash: false,
         sessionFalsch: {}, ...extra };
     }
@@ -3168,17 +3171,53 @@ export default function VokabelApp() {
     return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, erstbewertung: null, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
       phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
       mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
-      vorigeRichtig: [], infoSichtbar: false, infoSeite: 0, feedback: "",
+      vorigeAntworten: [], infoSichtbar: false, infoSeite: 0, feedback: "",
       spalteModus, mcWechsel: false, aktuelleFehlversuche: 0, falschFlash: false};
   }
 
   // Setzt flash, wartet 500ms, führt dann advanceFn aus
-  function mitFlash(quizUpdates, advanceFn) {
+  // Kurze Verzögerung vor der nächsten Vokabel; zwischen mehreren Antworten derselben Frage geht es sofort weiter
+  function mitVerzoegerung(quizUpdates, advanceFn, ms) {
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    setQuiz(prev => ({...prev, ...quizUpdates, flash: true, eingabe: ""}));
-    flashTimerRef.current = setTimeout(() => {
-      setQuiz(prev => { if (!prev.flash) return prev; return advanceFn(prev); });
-    }, 1000);
+    if (sofortWeiter(quiz)) {
+      flashWeiterRef.current = null;
+      setQuiz(prev => advanceFn({...prev, ...quizUpdates, flash: false, karteNeinFlash: false}));
+      return;
+    }
+    flashWeiterRef.current = advanceFn;
+    setQuiz(prev => ({...prev, ...quizUpdates}));
+    flashTimerRef.current = setTimeout(beendeVerzoegerung, ms);
+  }
+  function mitFlash(quizUpdates, advanceFn) {
+    mitVerzoegerung({...quizUpdates, flash: true, eingabe: ""}, advanceFn, 1000);
+  }
+  // Antippen während der Verzögerung: sofort weiter
+  function beendeVerzoegerung() {
+    const fn = flashWeiterRef.current;
+    if (!fn) return;
+    flashWeiterRef.current = null;
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    setQuiz(prev => prev && (prev.flash || prev.karteNeinFlash) ? fn({...prev, flash: false, karteNeinFlash: false}) : prev);
+  }
+  // Weitere Antworten derselben Frage offen → ohne Verzögerung weiterfragen
+  const sofortWeiter = q => q.antwortTypIndex < q.antwortTypen.length - 1;
+
+  // Aktuelle Spalte abschließen: Antwort (gewusst oder nicht) bleibt oben stehen, dann nächste Spalte bzw. Vokabel
+  function weiterNachSpalte(prev, richtig) {
+    const typ = prev.antwortTypen[prev.antwortTypIndex];
+    const vorigeAntworten = [...prev.vorigeAntworten, {
+      typ, wert: prev.antwortTeile.join(" / "), label: prev.liste.spalten[typ]?.name || typ, richtig,
+    }];
+    const naechsterIdx = prev.antwortTypIndex + 1;
+    if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, vorigeAntworten, richtigAufgedeckt: false});
+    const nt = prev.antwortTypen[naechsterIdx];
+    const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
+    const ntModus = prev.mcWechsel ? "mc" : (prev.spalteModus?.[nt] || STANDARD_ANTWORT_MODUS);
+    const mc = ntModus === "mc" ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt) : null;
+    return {...prev, flash: false, karteNeinFlash: false, phase: "eingabe", eingabe: "", antwortTypIndex: naechsterIdx,
+      antwortTeile: teile, mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
+      weitereIndices: [], weiterePos: 0, infoSichtbar: false, richtigAufgedeckt: false,
+      aktuelleFehlversuche: 0, falschFlash: false, feedback: "", vorigeAntworten};
   }
 
   // Score einmal pro Vokabel: Ergebnis je Antwort-Spalte sammeln, nach der letzten
@@ -3223,6 +3262,7 @@ export default function VokabelApp() {
 
     function setzeRichtigAufgedeckt(updates) {
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+      if (sofortWeiter(quiz) && !akzentHinweis) { setQuiz(prev => weiterNachSpalte({...prev, ...updates}, true)); return; }
       setQuiz(prev => ({...prev, eingabe: "", phase: "aufgedeckt", flash: false,
         richtigAufgedeckt: true, feedback: akzentHinweis ? AKZENT_HINWEIS : "", falschFlash: false, aktuelleFehlversuche: 0, ...updates}));
     }
@@ -3296,6 +3336,7 @@ export default function VokabelApp() {
         // Nach einem Fehlklick darf weitergesucht werden – die Spalte zählt aber als nicht gewusst
         const fehlklick = quiz.spaltenErgebnisse?.[quiz.antwortTypIndex] === "falsch";
         const abschluss = spaltenAbschluss(fehlklick ? "falsch" : "richtig");
+        if (!fehlklick && sofortWeiter(quiz)) { setQuiz(prev => weiterNachSpalte({...prev, ...abschluss, mcButtons: neueButtons}, true)); return; }
         setQuiz(prev => ({
           ...prev, ...abschluss, mcButtons: neueButtons,
           phase: "aufgedeckt", flash: false, richtigAufgedeckt: !fehlklick,
@@ -3331,19 +3372,7 @@ export default function VokabelApp() {
   function ueberspringeWeitere() {
     const naechstePos = quiz.weiterePos + 1;
     if (naechstePos >= quiz.weitereIndices.length) {
-      mitFlash({}, prev => {
-        const vorigeRichtig = [...prev.vorigeRichtig, {
-          typ: prev.antwortTypen[prev.antwortTypIndex],
-          wert: prev.antwortTeile.join(" / "),
-          label: prev.liste.spalten[prev.antwortTypen[prev.antwortTypIndex]]?.name || prev.antwortTypen[prev.antwortTypIndex],
-        }];
-        const naechsterIdx = prev.antwortTypIndex + 1;
-        if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, vorigeRichtig});
-        const nt = prev.antwortTypen[naechsterIdx];
-        const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
-        return {...prev, flash: false, phase: "eingabe", antwortTypIndex: naechsterIdx,
-          antwortTeile: teile, weitereIndices: [], weiterePos: 0, vorigeRichtig, infoSichtbar: false};
-      });
+      mitFlash({}, prev => weiterNachSpalte(prev, true));
     } else {
       setQuiz(prev => ({...prev, eingabe: "", weiterePos: naechstePos, feedback: ""}));
     }
@@ -3366,25 +3395,9 @@ export default function VokabelApp() {
     if (!quiz) return;
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     // Auch nach falscher/aufgedeckter Spalte die restlichen Spalten abfragen
+    flashWeiterRef.current = null;
     if (quiz.phase === "aufgedeckt") {
-      setQuiz(prev => {
-        const naechsterIdx = prev.antwortTypIndex + 1;
-        if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, richtigAufgedeckt: false});
-        const currentTyp = prev.antwortTypen[prev.antwortTypIndex];
-        const vorigeRichtig = prev.richtigAufgedeckt ? [...prev.vorigeRichtig, {
-          typ: currentTyp, wert: prev.antwortTeile.join(" / "),
-          label: prev.liste.spalten[currentTyp]?.name || currentTyp,
-        }] : prev.vorigeRichtig;
-        const nt = prev.antwortTypen[naechsterIdx];
-        const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
-        const ntModus = prev.mcWechsel ? "mc" : (prev.spalteModus?.[nt] || STANDARD_ANTWORT_MODUS);
-        const mc = ntModus === "mc" ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt) : null;
-        return {...prev, flash: false, phase: "eingabe", antwortTypIndex: naechsterIdx,
-          antwortTeile: teile, mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
-          weitereIndices: [], weiterePos: 0, infoSichtbar: false, richtigAufgedeckt: false,
-          aktuelleFehlversuche: 0, falschFlash: false, feedback: "",
-          vorigeRichtig};
-      });
+      setQuiz(prev => weiterNachSpalte(prev, !!prev.richtigAufgedeckt));
     } else {
       setQuiz(prev => naechsteVokabelState(prev));
     }
@@ -3447,6 +3460,7 @@ export default function VokabelApp() {
     const komplett = s.kacheln.every((k, i) => s.wahl[i] === k.richtig);
     const richtig = komplett && !s.fehler;
     const abschluss = spaltenAbschluss(richtig ? "richtig" : "falsch");
+    if (richtig && sofortWeiter(quiz)) { setQuiz(prev => weiterNachSpalte({...prev, ...abschluss}, true)); return; }
     setQuiz(prev => ({...prev, ...abschluss, akzent: { key: s.key, wahl: s.wahl, aktiv: null, geprueft: true, fehler: s.fehler, blink: null },
       // richtig gelöst → Karte grün, auch nach Fehlgriff (zählt dann trotzdem als nicht gewusst, Hinweis rot)
       eingabe: "", phase: "aufgedeckt", flash: false, richtigAufgedeckt: komplett,
@@ -3474,36 +3488,8 @@ export default function VokabelApp() {
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     const abschluss = spaltenAbschluss(gewusst ? "richtig" : "falsch");
 
-    function naechsteSpalteOderVokabel(prev, vorigeRichtig) {
-      const naechsterIdx = prev.antwortTypIndex + 1;
-      if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, vorigeRichtig});
-      const nt = prev.antwortTypen[naechsterIdx];
-      const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
-      const ntModus = prev.spalteModus?.[nt] || STANDARD_ANTWORT_MODUS;
-      const mc = ntModus === "mc" ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt) : null;
-      return {...prev, flash: false, phase: "eingabe", antwortTypIndex: naechsterIdx,
-        antwortTeile: teile, weitereIndices: [], weiterePos: 0, vorigeRichtig, infoSichtbar: false,
-        mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig};
-    }
-
-    if (gewusst) {
-      mitFlash(abschluss, prev => {
-        const vorigeRichtig = [...prev.vorigeRichtig, {
-          typ: prev.antwortTypen[prev.antwortTypIndex],
-          wert: prev.antwortTeile.join(" / "),
-          label: prev.liste.spalten[prev.antwortTypen[prev.antwortTypIndex]]?.name || prev.antwortTypen[prev.antwortTypIndex],
-        }];
-        return naechsteSpalteOderVokabel(prev, vorigeRichtig);
-      });
-    } else {
-      setQuiz(prev => ({...prev, ...abschluss, karteNeinFlash: true}));
-      flashTimerRef.current = setTimeout(() => {
-        setQuiz(prev => {
-          if (!prev.karteNeinFlash) return prev;
-          return naechsteSpalteOderVokabel({...prev, karteNeinFlash: false}, prev.vorigeRichtig);
-        });
-      }, 800);
-    }
+    if (gewusst) mitFlash(abschluss, prev => weiterNachSpalte(prev, true));
+    else mitVerzoegerung({...abschluss, karteNeinFlash: true}, prev => weiterNachSpalte(prev, false), 800);
   }
 
   function pruefeDiktatAntwort() {
@@ -3589,7 +3575,7 @@ export default function VokabelApp() {
         ...prev, flash: false, phase: "eingabe", eingabe: "",
         antwortTypIndex: naechsterIdx, antwortTeile: teile,
         weitereIndices: [], weiterePos: 0,
-        vorigeRichtig: prev.vorigeRichtig.slice(0, -1),
+        vorigeAntworten: prev.vorigeAntworten.slice(0, -1),
         mcButtons: mc?.buttons || prev.mcButtons,
         mcRichtig: mc?.richtig || prev.mcRichtig,
         feedback: "",
@@ -4015,8 +4001,9 @@ export default function VokabelApp() {
             <span className="quiz-fortschritt" {...tt(akz ? "Eigener Akzent-Score dieser Vokabel" : "Score dieser Vokabel")}>{akz ? "Akzente" : "Score"}: {score > 0 ? "+" : ""}{score}</span>
           </div>
           <div className="sektion"
-            onClick={isKarteEingabe ? deckeKarteAuf : richtigAufgedeckt ? naechsteVokabel : undefined}
-            style={(isKarteEingabe || richtigAufgedeckt) ? {cursor:"pointer", minHeight: isKarteEingabe ? "70vh" : undefined} : undefined}>
+            onClick={(quiz.flash || quiz.karteNeinFlash) ? beendeVerzoegerung : isKarteEingabe ? deckeKarteAuf : richtigAufgedeckt ? naechsteVokabel : undefined}
+            style={(quiz.flash || quiz.karteNeinFlash) ? {cursor:"pointer", minHeight:"70vh"}
+              : (isKarteEingabe || richtigAufgedeckt) ? {cursor:"pointer", minHeight: isKarteEingabe ? "70vh" : undefined} : undefined}>
 
             {/* Haupt-Layout: linke Spalte (Frage + Antwort) | rechte Spalte (Info) */}
             {(() => {
@@ -4051,9 +4038,9 @@ export default function VokabelApp() {
                       </div>
                     </div>
 
-                    {quiz.vorigeRichtig.map((v, i) => (
-                      <div key={i} className="quiz-vorig">
-                        <div className="quiz-vorig-label">✓ {v.label}</div>
+                    {quiz.vorigeAntworten.map((v, i) => (
+                      <div key={i} className={`quiz-vorig${v.richtig ? "" : " nicht"}`} data-vorig={v.richtig ? "richtig" : "falsch"}>
+                        <div className="quiz-vorig-label">{v.richtig ? "✓" : "✗"} {v.label}</div>
                         <div style={{textAlign:"center", fontSize:"1rem", display:"flex", alignItems:"center", justifyContent:"center", gap:6}}>
                           <strong>{v.wert}</strong>
                           {v.typ.startsWith('E') && (

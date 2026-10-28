@@ -1513,6 +1513,15 @@ ANTWORT-REIHENFOLGE: mehrere Antworten einer Frage-Runde werden immer in
   gewählt und in jedem Modus – nachSpaltenReihenfolge() in antwortSpaltenFuer,
   beim Hinzufügen einer Antwort-Spalte und für die Nummern in der Spaltenwahl.
   Test: e2e/antwortreihenfolge.mjs.
+ANTWORT-STAPEL: quiz.vorigeAntworten (früher vorigeRichtig) sammelt jede
+  beantwortete Spalte der Frage mit richtig true/false – gewusst grün "✓",
+  nicht gewusst rot "✗" (.quiz-vorig.nicht, data-vorig). weiterNachSpalte(prev,
+  richtig) schließt die Spalte ab (Karte, Tippen, MC, Akzente, Weiter). Zwischen
+  mehreren Antworten derselben Frage keine Pause: Karte sofort weiter, Tippen/
+  MC/Akzente bei richtig ohne Hinweis sofort weiter (sofortWeiter). Pause vor
+  der nächsten Vokabel (mitVerzoegerung: flash 1000 ms / karteNeinFlash 800 ms)
+  endet beim Antippen der .sektion (beendeVerzoegerung, flashWeiterRef).
+  Test: e2e/antwortstapel.mjs.
 GRUPPEN-QUIZ → ZURÜCK: quiz.ausStatistik (einmalige Runde via gruppe, Fallback
   per setQuiz im Start-Effekt). Auswertung (ohne Session, Quiz und Diktat):
   Hauptknopf "📊 Zurück zur Statistik" (data-zurueck-statistik) und Schließen

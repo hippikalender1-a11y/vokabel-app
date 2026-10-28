@@ -103,7 +103,8 @@ for (let schritt = 0; schritt < 6; schritt++) {
     await page.type("input.inp", antworten[v][i]); await clickText("button", "Prüfen", true);
   }
   await sleep(300);
-  await clickText("button", "Weiter");
+  // zwischen mehreren Antworten geht es nach richtiger Antwort sofort weiter, sonst „Weiter“
+  await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("Weiter"))?.click());
   await sleep(400);
 }
 sc = await scores();
@@ -133,7 +134,7 @@ for (let schritt = 0; schritt < 6; schritt++) {
   if (v === "gehen" && i === 1) await klickMC(anderes);   // Fehlklick
   await klickMC(mcAntw[v][i]);
   if (v === "gehen" && i === 1) hinweisGesehen = (await text()).includes("Nicht auf Anhieb");
-  await clickText("button", "Weiter");
+  await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("Weiter"))?.click());
   await sleep(400);
 }
 sc = await scores();
