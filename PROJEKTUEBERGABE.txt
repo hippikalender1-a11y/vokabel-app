@@ -1482,8 +1482,17 @@ KARTEN-INFO: im Karten-Modus gelber Kasten (data-karte-info) unter der
   Eingeklappt eine Zeile "Info", Antippen klappt auf (quiz.infoSichtbar, je
   Karte). Pinnadel (data-karte-info-pin) → einstellungen.karteInfoPin: immer
   offen. "i" in der Kopfzeile neben Beenden (data-karte-info-schalter) →
-  einstellungen.karteInfo: Kasten aus/an. Nur wenn die Vokabel Info-Text hat.
+  einstellungen.karteInfo: Kasten aus/an. Kasten und "i" nur, wenn die Session
+  eine Info-Spalte hat; Vokabel ohne Info-Text → "Keine Zusatzinfo vorhanden".
   Rechte Info-Spalte bleibt für die anderen Modi. Test: e2e/karteninfo.mjs.
+GRUPPEN-QUIZ aus der Statistik: Lang-Druck/Rechtsklick auf Segment bzw.
+  Beschriftung (data-kreis-gruppe) oder Legende (data-legende) → Menü
+  "▶ Quiz mit n Vokabeln" → Rückfrage (gruppenQuiz, data-gruppen-quiz) →
+  starteGruppenQuiz: Quiz-Tab auf Bereich = diese Vokabeln, Schlechteste ohne
+  Score-Grenze, Gelernte erlaubt, Session "alle", Konfiguration gelöst;
+  Statistik-Art Diktat → quizModus diktat. Start nach zwei Render-Durchgängen
+  (gruppenQuizStartRef/-Tick), damit die Spalten zu den Listen passen.
+  Test: e2e/gruppenquiz.mjs.
 
 
 ================================================================

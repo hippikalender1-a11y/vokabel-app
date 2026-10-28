@@ -99,6 +99,32 @@ ok((await kasten())?.zustand === "offen", "„i“ an: Kasten wieder da, Pinnade
 await page.click("[data-karte-info-pin]"); await sleep(200);
 ok((await einst()).karteInfoPin === false && (await kasten())?.zustand === "offen", "Pinnadel gelöst: bleibt für diese Karte offen");
 
+// Vokabeln ohne Info-Text: Kasten bleibt, Hinweis „Keine Zusatzinfo vorhanden“
+await clickText(".topbar-back", "Beenden"); await sleep(500);
+await page.evaluate(() => {
+  const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr"));
+  l.vokabeln.forEach(v => { delete v.i1; });
+  localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
+});
+await page.reload(); await sleep(500);
+await starte();
+k = await kasten();
+console.log("     ohne Info-Text:", JSON.stringify(k));
+ok(await schalter() === "an" && k?.zustand === "zu", "ohne Info-Text: „i“ und eingeklappter Kasten da");
+await page.click("[data-karte-info]"); await sleep(200);
+ok(/Keine Zusatzinfo vorhanden/.test((await kasten())?.text || ""), "aufgeklappt: „Keine Zusatzinfo vorhanden“");
+
+// Liste ohne Info-Spalte: kein „i“, kein Kasten
+await clickText(".topbar-back", "Beenden"); await sleep(500);
+await page.evaluate(() => {
+  const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr"));
+  l.spalten.i1.aktiv = false;
+  localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
+});
+await page.reload(); await sleep(500);
+await starte();
+ok(!(await schalter()) && !(await kasten()), "ohne Info-Spalte: kein „i“, kein Kasten");
+
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);

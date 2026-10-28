@@ -883,6 +883,8 @@ export default function VokabelApp() {
   const [slotSektionAufgeklappt, setSlotSektionAufgeklappt] = useState(true);
   const [slotUmbenennen, setSlotUmbenennen] = useState(null);   // {id, name, kopie} – Fenster "Umbenennen" bzw. "Duplizieren"
   const [quizGelerntEinschliessen, setQuizGelerntEinschliessen] = useState(false);
+  const [gruppenQuiz, setGruppenQuiz] = useState(null);   // {name, art, ids, listenIds} – Rückfrage "Quiz mit dieser Gruppe starten?"
+  const gruppenQuizStartRef = useRef(0);                 // >0: nach dem Tab-Wechsel automatisch starten
   const [listenGelerntAusblenden, setListenGelerntAusblenden] = useState(false);
   const [updateStatus, setUpdateStatus] = useState(null);
   const [sprachMenuOffen, setSprachMenuOffen] = useState(false);
@@ -1669,6 +1671,42 @@ export default function VokabelApp() {
     setExportAusgewaehlt(new Set());
     setStatistikVollbild(false);
   }
+
+  // Statistik: Quiz direkt mit den Vokabeln einer Gruppe (z. B. Negativ) starten.
+  // Quiz-Tab wird darauf eingestellt (Bereich = diese Vokabeln, ohne Score-Grenze, Gelernte erlaubt,
+  // ohne Session-Pakete, gespeicherte Konfiguration gelöst); Spalten/Abfrage-Modus bleiben wie im Quiz-Tab.
+  function starteGruppenQuiz(g) {
+    setGruppenQuiz(null);
+    setSessionUeberschreibenModal(false);
+    setGruppenAenderungsDialog(false);
+    setAktiverSlot(null);
+    setSlotGeaendert(false);
+    setGespeicherteVokabelgruppe(null);
+    lsDel(SK.letzterSlot);
+    lsDel(SK.sessionAktiv);
+    setSessionSlotAktiv(null);
+    setQuizSessionModus("alle");
+    setQuizTabListen(g.listenIds);
+    setQuizBereichTyp("bereich");
+    setQuizCheckboxAuswahl(new Set(g.ids));
+    setQuizReihenfolge("schlechteste");
+    setQuizSchlechtesteMaxScore("");
+    setQuizGelerntEinschliessen(true);
+    if (g.art === "diktat") setQuizModus("diktat");
+    else if (quizModus === "diktat") setQuizModus("sequenziell");
+    setSlotSektionAufgeklappt(false);
+    setQuiz(null);
+    setStatistikVollbild(false);
+    setTab("quiz");
+    gruppenQuizStartRef.current = 2;   // erst nach dem Angleichen der Spalten an die Listen starten
+    setGruppenQuizTick(t => t + 1);
+  }
+  const [gruppenQuizTick, setGruppenQuizTick] = useState(0);
+  useEffect(() => {
+    if (gruppenQuizStartRef.current === 0 || tab !== "quiz") return;
+    if (--gruppenQuizStartRef.current > 0) { setGruppenQuizTick(t => t + 1); return; }
+    starteQuiz(true);
+  }, [gruppenQuizTick]);
 
   function toggleStatistikListe(id) {
     if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); }
@@ -3854,7 +3892,8 @@ export default function VokabelApp() {
     const richtigAufgedeckt = !!quiz.richtigAufgedeckt && quiz.phase === "aufgedeckt";
     const infoSpalten = (quiz.sitzungsInfoTypen || []).filter(t => aktVokRaw[t]?.wert);
     // Karten-Modus: Info-Kasten unter der Antwort ("i" in der Kopfzeile schaltet ihn dauerhaft, Pinnadel hält ihn offen)
-    const karteMitInfo = aktSpaltModus === "karte" && infoSpalten.length > 0;
+    // Kasten und "i" gibt es, sobald die Session eine Info-Spalte hat – auch für Vokabeln ohne Info-Text
+    const karteMitInfo = aktSpaltModus === "karte" && (quiz.sitzungsInfoTypen || []).length > 0;
     const karteInfoAn = einstellungen.karteInfo !== false;
     const karteInfoPin = !!einstellungen.karteInfoPin;
     const karteInfoOffen = karteInfoPin || quiz.infoSichtbar;
@@ -4139,6 +4178,9 @@ export default function VokabelApp() {
                     <span style={{fontSize:"0.75rem", color:"#f9a825"}}>▼</span>
                   )}
                 </div>
+                {karteInfoOffen && infoSpalten.length === 0 && (
+                  <div style={{marginTop:6, fontSize:"0.85rem", color:"#9b9590", fontStyle:"italic"}}>Keine Zusatzinfo vorhanden</div>
+                )}
                 {karteInfoOffen && infoSpalten.map(typ => (
                   <div key={typ} style={{marginTop:6}}>
                     {infoSpalten.length > 1 && <div style={{fontSize:"0.68rem", fontWeight:700, color:"#f9a825"}}>{quiz.liste.spalten[typ]?.name || typ}</div>}
@@ -6256,6 +6298,12 @@ export default function VokabelApp() {
                     return `M${cx},${cy} L${x0},${y0} A${r},${r} 0 ${t.a1 - t.a0 > Math.PI ? 1 : 0} 1 ${x1},${y1} Z`;
                   };
                   const umschalten = g => setStatistikFilter(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
+                  // Lang-Druck: Menü "Quiz mit dieser Gruppe" (mit Rückfrage)
+                  const quizMenue = g => {
+                    const gv = alleVoks.filter(v => gruppeVon(v) === g);
+                    return [{ label: `▶ Quiz mit ${gv.length} Vokabel${gv.length !== 1 ? "n" : ""}`, fn: () => setGruppenQuiz({
+                      name: NAME[g], art: statistikArt, ids: gv.map(v => v.id), listenIds: [...new Set(gv.map(v => v._listeId))] }) }];
+                  };
                   return (
                     <div style={{background:"#fafaf8", padding:"8px 6px 10px"}}>
                       {teile.length === 0 ? (
@@ -6267,7 +6315,7 @@ export default function VokabelApp() {
                           const [ax, ay] = punkt(t.mitte, r + 2), [bx, by] = punkt(t.mitte, r + 14);
                           const tx = t.rechts ? cx + r + 34 : cx - r - 34;
                           return (
-                            <g {...tt(`${NAME[t.g]}: antippen blendet die Gruppe aus`)} key={t.g} style={{cursor:"pointer"}} onClick={() => umschalten(t.g)}>
+                            <g {...tt(`${NAME[t.g]}: antippen blendet die Gruppe aus – lange drücken: Quiz mit diesen Vokabeln`, quizMenue(t.g))} key={t.g} data-kreis-gruppe={t.g} style={{cursor:"pointer"}} onClick={() => umschalten(t.g)}>
                               {teile.length === 1
                                 ? <circle cx={cx} cy={cy} r={r} fill={t.farbe}/>
                                 : <path d={pfad(t)} fill={t.farbe} stroke="#fafaf8" strokeWidth="2"/>}
@@ -6294,7 +6342,7 @@ export default function VokabelApp() {
                           const an = statistikFilter.has(g);
                           return (
                             <button key={g} onClick={() => umschalten(g)} data-legende={g}
-                              {...tt(an ? `${NAME[g]} ausblenden` : `${NAME[g]} wieder einblenden`)}
+                              {...tt(`${an ? `${NAME[g]} ausblenden` : `${NAME[g]} wieder einblenden`} – lange drücken: Quiz mit diesen Vokabeln`, quizMenue(g))}
                               style={{display:"inline-flex", alignItems:"center", gap:5, padding:"3px 9px", borderRadius:12, cursor:"pointer",
                                 fontFamily:"inherit", fontSize:"0.72rem", fontWeight:600, background:"#fff",
                                 border:`1.5px solid ${an ? farbe : "#e0dbd2"}`, color: an ? TEXTFARBE[g] : "#b5b0aa",
@@ -6733,6 +6781,22 @@ export default function VokabelApp() {
             <div className="modal-actions">
               <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => { setModal(null); setBearbeiteVokabel(null); }}>Abbrechen</button>
               <button {...tt("Änderungen an der Vokabel speichern")} className="btn btn-primary" onClick={speichereVokabelBearbeitung}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {gruppenQuiz && (
+        <div className="overlay" onClick={() => setGruppenQuiz(null)}>
+          <div className="modal" data-gruppen-quiz onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">Quiz starten?</div>
+            <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
+              {gruppenQuiz.ids.length} Vokabel{gruppenQuiz.ids.length !== 1 ? "n" : ""} aus „{gruppenQuiz.name}“
+              ({STATISTIK_ARTEN.find(([a]) => a === gruppenQuiz.art)?.[1]}), schlechteste zuerst.
+              Spalten und Abfrage-Modus wie im Quiz eingestellt{aktiverSlot ? "; die gewählte Konfiguration wird dafür gelöst" : ""}.
+            </p>
+            <div className="modal-actions">
+              <button {...tt("Schließen, ohne ein Quiz zu starten")} className="btn btn-ghost" onClick={() => setGruppenQuiz(null)}>Abbrechen</button>
+              <button {...tt("Quiz mit diesen Vokabeln starten")} className="btn btn-primary" onClick={() => starteGruppenQuiz(gruppenQuiz)}>Starten</button>
             </div>
           </div>
         </div>
