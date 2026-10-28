@@ -1508,6 +1508,11 @@ STATISTIK AKZENTE OHNE AKZENT-WÖRTER (keineAkzente): kein Sprung mehr zur
   SVG-Text (data-keine-akzente) "Für diese Session sind keine Akzente
   vorhanden."; Legende, Sortierung und Vokabelliste entfallen.
   Test: e2e/keineakzente.mjs.
+ANTWORT-REIHENFOLGE: mehrere Antworten einer Frage-Runde werden immer in
+  Spalten-Reihenfolge abgefragt (E1, E2, E3, D1, …), egal in welcher Reihenfolge
+  gewählt und in jedem Modus – nachSpaltenReihenfolge() in antwortSpaltenFuer,
+  beim Hinzufügen einer Antwort-Spalte und für die Nummern in der Spaltenwahl.
+  Test: e2e/antwortreihenfolge.mjs.
 GRUPPEN-QUIZ → ZURÜCK: quiz.ausStatistik (einmalige Runde via gruppe, Fallback
   per setQuiz im Start-Effekt). Auswertung (ohne Session, Quiz und Diktat):
   Hauptknopf "📊 Zurück zur Statistik" (data-zurueck-statistik) und Schließen

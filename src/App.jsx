@@ -570,7 +570,12 @@ function akzentKacheln(wert) {
 }
 function hatAkzente(wert) { return akzentKacheln(wert).some(k => k.richtig !== k.basis); }
 // Antwortspalten einer Vokabel: Akzent-Spalten ohne Akzent ggf. auslassen (nieLeer: lieber ungefiltert als gar nichts)
+// Mehrere Antworten einer Frage-Runde immer in Spalten-Reihenfolge abfragen: E1, E2, E3, D1, …
+function nachSpaltenReihenfolge(typen) {
+  return [...typen].sort((a, b) => TYPEN.indexOf(a) - TYPEN.indexOf(b));
+}
 function antwortSpaltenFuer(vok, typen, spalteModus, ohneAkzentAuslassen, nieLeer = false) {
+  typen = nachSpaltenReihenfolge(typen);
   if (!ohneAkzentAuslassen || !vok) return typen;
   const r = typen.filter(t => spalteModus?.[t] !== "akzent" || hatAkzente(vok[t]?.wert));
   return nieLeer && r.length === 0 ? typen : r;
@@ -2046,7 +2051,7 @@ export default function VokabelApp() {
       } else {
         if (quizFrageTyp === typ) setQuizFrageTyp("");
         setQuizInfoTypenSession(p => p.filter(t => t !== typ));
-        setQuizAntwortTypenGeordnet(p => [...p, typ]);
+        setQuizAntwortTypenGeordnet(p => nachSpaltenReihenfolge([...p, typ]));
         setQuizSpalteModus(p => ({...p, [typ]: p[typ] || STANDARD_ANTWORT_MODUS}));
       }
     } else if (rolle === "info") {
@@ -5254,7 +5259,7 @@ export default function VokabelApp() {
                           {abfragbar.map(typ => {
                             const checked = quizAusgewaehlt.includes(typ);
                             const isFrage = quizFrageTyp === typ;
-                            const antwortNr = quizAntwortTypenGeordnet.indexOf(typ);
+                            const antwortNr = nachSpaltenReihenfolge(quizAntwortTypenGeordnet).indexOf(typ);
                             const isAntwort = antwortNr >= 0;
                             const isInfo = quizInfoTypenSession.includes(typ);
                             const hatFrage = quizFrageTyp !== "";
