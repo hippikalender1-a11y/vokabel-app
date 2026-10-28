@@ -1466,6 +1466,23 @@ SPALTEN-ANSICHT (Listen-Detail): Zeile "Anzeigen:" über der Vokabelliste,
 STATISTIK-VOKABELLISTE einklappbar: Kopf "n Vokabeln" + Pfeil
   (data-statistik-liste-kopf), Zustand in SK.statistikListeZu.
   Test: e2e/spaltenansicht.mjs.
+STANDARDS (neu): gelerntSchwelle 3 (defaultEinstellungen); Reihenfolge
+  STANDARD_REIHENFOLGE "schlechteste", STANDARD_MAX_SCORE "3",
+  STANDARD_UNBEANTWORTET_ZUERST alle an (useState + setzeQuizEinstellungenZurueck);
+  STUFEN_REGELN-Haken wie Screenshot (Einfach: alle außer "auch ohne Akzent";
+  Schwer: alle außer "Akzente tolerant" und "auch ohne Akzent");
+  Statistik-Vokabelliste anfangs eingeklappt; Listenansicht anfangs nur
+  erste Spalte (SK.ansichtSpalten = angezeigte Spalten je Liste).
+  Gespeicherte Einstellungen der Nutzer bleiben unverändert.
+  Tests mit alten Annahmen geben sie ausdrücklich mit (akzente, akzent_mischen:
+  stufen; fortschritt/gruppen/kreis: vokabel_statistik_liste_zu=false).
+KARTEN-INFO: im Karten-Modus gelber Kasten (data-karte-info) unter der
+  Antwort, über Gewusst/Nicht gewusst, auch vor dem Aufdecken als Hilfe.
+  Eingeklappt eine Zeile "Info", Antippen klappt auf (quiz.infoSichtbar, je
+  Karte). Pinnadel (data-karte-info-pin) → einstellungen.karteInfoPin: immer
+  offen. "i" in der Kopfzeile neben Beenden (data-karte-info-schalter) →
+  einstellungen.karteInfo: Kasten aus/an. Nur wenn die Vokabel Info-Text hat.
+  Rechte Info-Spalte bleibt für die anderen Modi. Test: e2e/karteninfo.mjs.
 
 
 ================================================================

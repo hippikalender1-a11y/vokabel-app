@@ -28,6 +28,9 @@ const anzahl = async () => (await text()).match(/Quiz starten \((\d+) Vokabeln\)
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
+  // frühere Standard-Haken der Stufen (Test prüft sie ausdrücklich)
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", autoplay:false, vorlesen:["E1"], gelerntSchwelle:0, sprache:"alle",
+    stufen: { schwer: { akzenteTolerant:false, aufdeckenAbzug:true, akzentOhneMischen:true, akzentHervorheben:false, akzentZaehler:false, akzentAutoUebernahme:false } } }));
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",E2:"Plural",D1:"Deutsch"}[t] || "", aktiv: ["E1","E2","D1"].includes(t) }]));
   const l = { id:"l_fr", name:"Mischen", sprache:"fr", spalten: sp, naechste_id:4, vokabeln: [
     { id:1, E1:{wert:"élève",falsch:[]}, E2:{wert:"élèves",falsch:[]}, D1:{wert:"Schüler",falsch:[]} },

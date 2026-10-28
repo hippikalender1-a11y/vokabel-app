@@ -44,36 +44,37 @@ await page.reload(); await sleep(500);
 
 await oeffneListe();
 let t = await text();
-ok(/gehen/.test(t) && /unregelmäßig/.test(t), "Listenansicht: alle Spalten sichtbar");
-ok(await knopf("E1") && await knopf("D1") && await knopf("i1"), "Anzeigen-Knöpfe: alle aktiv");
-
-await page.click('[data-ansicht-spalte="i1"]'); await sleep(200);
-await page.click('[data-ansicht-spalte="D1"]'); await sleep(200);
-t = await text();
-ok(/aller/.test(t) && !/gehen/.test(t) && !/unregelmäßig/.test(t), "Deutsch und Notiz ausgeblendet");
+ok(/aller/.test(t) && !/gehen/.test(t) && !/unregelmäßig/.test(t), "Listenansicht Standard: nur die erste Spalte");
+ok(await knopf("E1") && !await knopf("D1") && !await knopf("i1"), "Anzeigen-Knöpfe: nur Französisch aktiv");
 await page.screenshot({ path: "spaltenansicht.png" });
 
 await page.click('[data-ansicht-spalte="E1"]'); await sleep(200);
 ok(await knopf("E1") && /aller/.test(await text()), "letzte sichtbare Spalte lässt sich nicht ausblenden");
 
+await page.click('[data-ansicht-spalte="i1"]'); await sleep(200);
+t = await text();
+ok(/aller/.test(t) && !/gehen/.test(t) && /unregelmäßig/.test(t), "Notiz eingeblendet");
+
 await page.reload(); await sleep(500);
 await oeffneListe();
 t = await text();
-ok(/aller/.test(t) && !/gehen/.test(t) && !await knopf("i1"), "Auswahl bleibt nach Neuladen gemerkt");
+ok(/unregelmäßig/.test(t) && !/gehen/.test(t) && await knopf("i1"), "Auswahl bleibt nach Neuladen gemerkt");
+await page.click('[data-ansicht-spalte="E1"]'); await sleep(200);
 await page.click('[data-ansicht-spalte="D1"]'); await sleep(200);
-ok(/gehen/.test(await text()), "Deutsch wieder eingeblendet");
+t = await text();
+ok(/gehen/.test(t) && !/aller/.test(t), "Französisch aus-, Deutsch eingeblendet");
 
-// Statistik: Vokabelliste einklappen
+// Statistik: Vokabelliste standardmäßig eingeklappt
 await clickText(".tab", "Statistik"); await sleep(300);
 const zeile = () => page.evaluate(() => /aller – gehen/.test(document.body.innerText));
-ok(await zeile(), "Statistik: Vokabelliste offen");
+ok(!await zeile() && /2 Vokabeln/i.test(await text()), "Statistik: Vokabelliste eingeklappt, Anzahl sichtbar");
 await page.click("[data-statistik-liste-kopf]"); await sleep(200);
-ok(!await zeile() && /2 Vokabeln/i.test(await text()), "Statistik: Vokabelliste eingeklappt, Anzahl bleibt sichtbar");
+ok(await zeile(), "Statistik: ausgeklappt");
 await page.reload(); await sleep(500);
 await clickText(".tab", "Statistik"); await sleep(300);
-ok(!await zeile(), "Eingeklappt bleibt nach Neuladen");
+ok(await zeile(), "Ausgeklappt bleibt nach Neuladen");
 await page.click("[data-statistik-liste-kopf]"); await sleep(200);
-ok(await zeile(), "Statistik: wieder ausgeklappt");
+ok(!await zeile(), "Statistik: wieder eingeklappt");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

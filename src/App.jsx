@@ -9,7 +9,7 @@ const SK = {
   sessionAktiv:  "vokabel_session_aktiv",
   slots:         "vokabel_slots",
   letzterSlot:   "vokabel_letzter_slot",   // zuletzt gewählte gespeicherte Konfiguration → beim Start wieder laden
-  ansichtSpalten: "vokabel_ansicht_spalten", // Listenansicht: ausgeblendete Spalten je Liste {listeId: ["i1", …]}
+  ansichtSpalten: "vokabel_ansicht_spalten_an", // Listenansicht: angezeigte Spalten je Liste {listeId: ["E1", …]}; ohne Eintrag nur die erste
   statistikListeZu: "vokabel_statistik_liste_zu", // Statistik: Vokabelliste eingeklappt
   liste: (id)  => `vokabel_liste_${id}`,
 };
@@ -68,7 +68,7 @@ function getQuizFeedback(richtig, gesamt) {
 }
 
 // ── Defaults ───────────────────────────────────────────────────────────────
-function defaultEinstellungen() { return { modus: "schwer", autoplay: false, vorlesen: ["E1"], gelerntSchwelle: 0, sprache: "alle" }; }
+function defaultEinstellungen() { return { modus: "schwer", autoplay: false, vorlesen: ["E1"], gelerntSchwelle: 3, sprache: "alle" }; }
 function defaultSessionSlots() {
   return [{ slot: 6, name: "Zuletzt verwendet", konfiguration: null, fortschritt: null }];
 }
@@ -439,6 +439,10 @@ function slotKonfigArt(eintrag) {
 const GRUPPE_BALKEN = [["gelernt", "#2d6a4f"], ["arbeit", "#e9c46a"], ["nie", "#d6d2cb"], ["negativ", "#e57373"]];
 // Session-Standard: in Paketen abfragen
 const STANDARD_SESSION_MODUS = "pakete";
+// Standard-Reihenfolge: schlechteste zuerst, nur Score ≤ 3, unbeantwortete zuerst
+const STANDARD_REIHENFOLGE = "schlechteste";
+const STANDARD_MAX_SCORE = "3";
+const STANDARD_UNBEANTWORTET_ZUERST = { zufall: true, schlechteste: true, listennr: true };
 const STANDARD_PAKET_GROESSE = 10;
 // Abfrage-Ziel-Standard: jede Vokabel wird wiederholt, bis sie 1× richtig war
 const STANDARD_ABFRAGE_ZIEL = "wiederholung";
@@ -447,11 +451,11 @@ const AKZENT_HINWEIS = "Richtig – achte auf die Akzente.";
 // Schwierigkeitsgrad: welche Regel in "Einfach" bzw. "Schwer" gilt (in den Einstellungen per Haken änderbar)
 const STUFEN_REGELN = [
   { key: "akzenteTolerant", label: "Fehlende Akzente beim Tippen gelten als richtig", sub: "z. B. ete statt été", einfach: true, schwer: false },
-  { key: "aufdeckenAbzug", label: "„Lösung anzeigen“ zieht 1 Punkt ab", sub: "sonst ohne Score-Einfluss", einfach: false, schwer: true },
-  { key: "akzentOhneMischen", label: "Akzent-Modus: auch Wörter ohne Akzent abfragen", sub: "dann muss man erkennen, dass nichts zu ändern ist", einfach: false, schwer: true },
-  { key: "akzentHervorheben", label: "Akzent-Modus: Buchstaben mit Akzent hervorheben", sub: "zeigt, wo ein Akzent hingehört; Tippen auf andere Buchstaben zählt dann nicht als Fehler", einfach: true, schwer: false },
-  { key: "akzentZaehler", label: "Akzent-Modus: anzeigen, wie viele Akzente noch fehlen", sub: "z. B. „Akzente 2 / 3“", einfach: true, schwer: false },
-  { key: "akzentAutoUebernahme", label: "Akzent-Modus: alle Akzente richtig → automatisch übernehmen", sub: "sonst muss man „Prüfen“ antippen", einfach: true, schwer: false },
+  { key: "aufdeckenAbzug", label: "„Lösung anzeigen“ zieht 1 Punkt ab", sub: "sonst ohne Score-Einfluss", einfach: true, schwer: true },
+  { key: "akzentOhneMischen", label: "Akzent-Modus: auch Wörter ohne Akzent abfragen", sub: "dann muss man erkennen, dass nichts zu ändern ist", einfach: false, schwer: false },
+  { key: "akzentHervorheben", label: "Akzent-Modus: Buchstaben mit Akzent hervorheben", sub: "zeigt, wo ein Akzent hingehört; Tippen auf andere Buchstaben zählt dann nicht als Fehler", einfach: true, schwer: true },
+  { key: "akzentZaehler", label: "Akzent-Modus: anzeigen, wie viele Akzente noch fehlen", sub: "z. B. „Akzente 2 / 3“", einfach: true, schwer: true },
+  { key: "akzentAutoUebernahme", label: "Akzent-Modus: alle Akzente richtig → automatisch übernehmen", sub: "sonst muss man „Prüfen“ antippen", einfach: true, schwer: true },
 ];
 // Regeln der aktuell gewählten Stufe (gespeicherte Haken, sonst Standard)
 function stufenRegeln(einst) {
@@ -899,14 +903,14 @@ export default function VokabelApp() {
   const [gespeicherteVokabelgruppe, setGespeicherteVokabelgruppe] = useState(null);
   const [gruppenAenderungsDialog, setGruppenAenderungsDialog] = useState(false);
   const [quizBereichTyp, setQuizBereichTyp] = useState("alle");
-  const [quizReihenfolge, setQuizReihenfolge] = useState("zufall");
-  const [quizSchlechtesteMaxScore, setQuizSchlechtesteMaxScore] = useState("");
-  const [quizUnbeantwortetZuerst, setQuizUnbeantwortetZuerst] = useState({ zufall: true, schlechteste: false, listennr: true });
+  const [quizReihenfolge, setQuizReihenfolge] = useState(STANDARD_REIHENFOLGE);
+  const [quizSchlechtesteMaxScore, setQuizSchlechtesteMaxScore] = useState(STANDARD_MAX_SCORE);
+  const [quizUnbeantwortetZuerst, setQuizUnbeantwortetZuerst] = useState(STANDARD_UNBEANTWORTET_ZUERST);
   const [quiz, setQuiz] = useState(null);
   const [diktatListeAufgeklappt, setDiktatListeAufgeklappt] = useState(false);
   const [vokabelAufgeklappt, setVokabelAufgeklappt] = useState(false);
-  const [ansichtSpaltenAus, setAnsichtSpaltenAus] = useState(() => lsGet(SK.ansichtSpalten, {}));
-  const [statistikListeZu, setStatistikListeZu] = useState(() => !!lsGet(SK.statistikListeZu, false));
+  const [ansichtSpaltenAn, setAnsichtSpaltenAn] = useState(() => lsGet(SK.ansichtSpalten, {}));
+  const [statistikListeZu, setStatistikListeZu] = useState(() => lsGet(SK.statistikListeZu, true) !== false);
   const [aktionszeileAufgeklappt, setAktionszeileAufgeklappt] = useState(false);
   const [diktatManualPlays, setDiktatManualPlays] = useState(0);
   const [quizTabListen, setQuizTabListen] = useState([]);
@@ -2317,9 +2321,9 @@ export default function VokabelApp() {
   function setzeQuizEinstellungenZurueck() {
     setQuizModus('sequenziell');
     setQuizBereichTyp('alle');
-    setQuizReihenfolge('zufall');
-    setQuizSchlechtesteMaxScore('');
-    setQuizUnbeantwortetZuerst({ zufall: true, schlechteste: false, listennr: true });
+    setQuizReihenfolge(STANDARD_REIHENFOLGE);
+    setQuizSchlechtesteMaxScore(STANDARD_MAX_SCORE);
+    setQuizUnbeantwortetZuerst(STANDARD_UNBEANTWORTET_ZUERST);
     setQuizCheckboxAuswahl(new Set());
     setQuizListeAufgeklappt(false);
     setQuizVonBisModus(false);
@@ -3849,6 +3853,11 @@ export default function VokabelApp() {
     const isKarteAufgedeckt = aktSpaltModus === "karte" && quiz.phase === "aufgedeckt" && !quiz.karteNeinFlash;
     const richtigAufgedeckt = !!quiz.richtigAufgedeckt && quiz.phase === "aufgedeckt";
     const infoSpalten = (quiz.sitzungsInfoTypen || []).filter(t => aktVokRaw[t]?.wert);
+    // Karten-Modus: Info-Kasten unter der Antwort ("i" in der Kopfzeile schaltet ihn dauerhaft, Pinnadel hält ihn offen)
+    const karteMitInfo = aktSpaltModus === "karte" && infoSpalten.length > 0;
+    const karteInfoAn = einstellungen.karteInfo !== false;
+    const karteInfoPin = !!einstellungen.karteInfoPin;
+    const karteInfoOffen = karteInfoPin || quiz.infoSichtbar;
     const akz = aktSpaltModus === "akzent" ? akzentStand(quiz) : null;
     const akzLang = vokLang(aktVok, aktAntwortTyp);
     const akzLoesung = !!akz && quiz.phase === "aufgedeckt" && !akz.geprueft && !quiz.flash;
@@ -3873,6 +3882,13 @@ export default function VokabelApp() {
               <button {...tt("Wiederholung abbrechen und zur Auswertung")} className="topbar-back" onClick={brecheWiederholungAb}>Beenden</button>
             ) : (
               <button {...tt("Quiz abbrechen – bisher beantwortete Vokabeln werden ausgewertet")} className="topbar-back" onClick={() => { brecheQuizAb(); }}>Beenden</button>
+            )}
+            {karteMitInfo && (
+              <button data-karte-info-schalter={karteInfoAn ? "an" : "aus"} className="topbar-back"
+                style={{width:36, height:36, padding:0, borderRadius:"50%", fontWeight:800, fontFamily:"Georgia, serif", fontSize:"1.05rem",
+                  ...(karteInfoAn ? {} : {background:"#fff", color:"#2d6a4f", border:"1.5px solid #2d6a4f"})}}
+                onClick={() => speichereEinst({...einstellungen, karteInfo: !karteInfoAn})}
+                {...tt(karteInfoAn ? "Info-Kasten ausblenden (gilt dauerhaft)" : "Info-Kasten einblenden (gilt dauerhaft)")}>i</button>
             )}
             <span className="topbar-title">
               {quiz.wiederholungDurchgang ? <span className="wiederholung-marke" {...tt("Diese Vokabeln werden wiederholt, weil sie noch nicht sicher sitzen")}>🔁 Wiederholung </span> : null}
@@ -4080,7 +4096,7 @@ export default function VokabelApp() {
                   </div>
 
                   {/* Rechte Spalte: Info-Box */}
-                  {quiz.infoSichtbar && aktInfoSeite && (
+                  {quiz.infoSichtbar && aktInfoSeite && aktSpaltModus !== "karte" && (
                     <div {...tt("Nächste Info-Seite anzeigen")} onClick={() => setQuiz(prev => ({...prev, infoSeite: ((prev.infoSeite || 0) + 1) % infoSeitenAnzahl}))}
                       style={{
                         width:150, flexShrink:0, background:"#fffde7",
@@ -4105,6 +4121,32 @@ export default function VokabelApp() {
                 </div>
               );
             })()}
+
+            {/* Karten-Modus: Info-Kasten (eingeklappt eine Zeile „Info“) */}
+            {karteMitInfo && karteInfoAn && !quiz.flash && (
+              <div data-karte-info={karteInfoOffen ? "offen" : "zu"} onClick={e => { e.stopPropagation(); if (!karteInfoPin) setQuiz(prev => ({...prev, infoSichtbar: !prev.infoSichtbar})); }}
+                {...tt(karteInfoPin ? "Info-Text (angeheftet)" : karteInfoOffen ? "Info einklappen" : "Info aufklappen")}
+                style={{background:"#fffde7", border:"1px solid #ffe082", borderRadius:12, padding: karteInfoOffen ? "10px 12px" : "7px 12px", marginBottom:14, cursor: karteInfoPin ? "default" : "pointer"}}>
+                <div style={{display:"flex", alignItems:"center", gap:8}}>
+                  <span style={{flex:1, fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"#f57f17"}}>Info</span>
+                  {karteInfoOffen ? (
+                    <button data-karte-info-pin={karteInfoPin ? "an" : "aus"}
+                      onClick={e => { e.stopPropagation(); speichereEinst({...einstellungen, karteInfoPin: !karteInfoPin}); if (karteInfoPin) setQuiz(prev => ({...prev, infoSichtbar: true})); }}
+                      {...tt(karteInfoPin ? "Lösen – der Info-Kasten kommt wieder eingeklappt" : "Anheften – der Info-Kasten bleibt dauerhaft aufgeklappt")}
+                      style={{background: karteInfoPin ? "#ffe082" : "none", border:"none", borderRadius:6, padding:"2px 6px", cursor:"pointer", fontSize:"0.95rem", lineHeight:1,
+                        opacity: karteInfoPin ? 1 : 0.45, transform: karteInfoPin ? "none" : "rotate(45deg)"}}>📌</button>
+                  ) : (
+                    <span style={{fontSize:"0.75rem", color:"#f9a825"}}>▼</span>
+                  )}
+                </div>
+                {karteInfoOffen && infoSpalten.map(typ => (
+                  <div key={typ} style={{marginTop:6}}>
+                    {infoSpalten.length > 1 && <div style={{fontSize:"0.68rem", fontWeight:700, color:"#f9a825"}}>{quiz.liste.spalten[typ]?.name || typ}</div>}
+                    <div style={{fontSize:"0.88rem", lineHeight:1.45, whiteSpace:"pre-wrap"}}>{aktVokRaw[typ].wert}</div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Noch kommende Spalten */}
             {!quiz.flash && quiz.antwortTypen.length > 1 && (quiz.phase === "eingabe" || quiz.phase === "falsch" || isWeitere) && (
@@ -5654,18 +5696,16 @@ export default function VokabelApp() {
           const anzeigeVoks = listenGelerntAusblenden && schwelleL > 0
             ? aktiveListe.vokabeln.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleL)
             : aktiveListe.vokabeln;
-          // In der Vokabelliste angezeigte Spalten (je Liste gemerkt); mindestens eine bleibt sichtbar
-          const spaltenAus = new Set(ansichtSpaltenAus[aktiveListeId] || []);
-          const sichtbareSpalten = aktiveSpalten.filter(t => !spaltenAus.has(t));
-          const anzeigeSpalten = sichtbareSpalten.length > 0 ? sichtbareSpalten : aktiveSpalten;
+          // In der Vokabelliste angezeigte Spalten (je Liste gemerkt, Standard: nur die erste); mindestens eine bleibt sichtbar
+          const gemerkt = aktiveSpalten.filter(t => (ansichtSpaltenAn[aktiveListeId] || []).includes(t));
+          const anzeigeSpalten = gemerkt.length > 0 ? gemerkt : aktiveSpalten.slice(0, 1);
           const schalteSpalte = typ => {
-            const aus = new Set(spaltenAus);
-            if (aus.has(typ)) aus.delete(typ);
-            else if (anzeigeSpalten.filter(t => t !== typ).length > 0) aus.add(typ);
-            else return;
-            const neu = { ...ansichtSpaltenAus, [aktiveListeId]: [...aus] };
-            if (aus.size === 0) delete neu[aktiveListeId];
-            setAnsichtSpaltenAus(neu);
+            const an = anzeigeSpalten.includes(typ)
+              ? anzeigeSpalten.filter(t => t !== typ)
+              : aktiveSpalten.filter(t => t === typ || anzeigeSpalten.includes(t));
+            if (an.length === 0) return;
+            const neu = { ...ansichtSpaltenAn, [aktiveListeId]: an };
+            setAnsichtSpaltenAn(neu);
             lsSet(SK.ansichtSpalten, neu);
           };
           return (
@@ -6315,7 +6355,7 @@ export default function VokabelApp() {
               {/* Vokabelliste – ein-/ausklappbar */}
               <div data-statistik-liste-kopf={statistikListeZu ? "zu" : "offen"} {...tt(statistikListeZu ? "Vokabelliste ausklappen" : "Vokabelliste einklappen")}
                 style={{display:"flex", alignItems:"center", gap:8, cursor:"pointer", marginBottom:8}}
-                onClick={() => { const zu = !statistikListeZu; setStatistikListeZu(zu); lsSet(SK.statistikListeZu, zu); }}>
+                onClick={() => { const zu = !statistikListeZu; setStatistikListeZu(zu); lsSet(SK.statistikListeZu, zu ? 1 : false); }}>
                 <div className="sektion-label" style={{marginBottom:0}}>{voks.length} Vokabel{voks.length!==1?"n":""}</div>
                 <span className="btn-toggle" style={{padding:"3px 6px"}}>
                   {statistikListeZu ? <IcoUp s={10}/> : <IcoDown s={10}/>}

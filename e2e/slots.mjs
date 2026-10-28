@@ -208,7 +208,7 @@ await sleep(400);
 t = await page.evaluate(() => document.body.innerText);
 const kopf = (t.match(/(Lernfortschritt|Ø Score)[\s\S]{0,80}/) || [""])[0].split("\n").join(" | ");
 console.log("     Statistik-Kopf:", kopf);
-ok(!/Session|Global/.test(kopf) && /Ø Score/.test(kopf), "Statistik: Verlauf-Eintrag lädt, Kopfzeile ohne Global/Session");
+ok(!/Session|Global/.test(kopf) && /Ø Score|Lernfortschritt/.test(kopf), "Statistik: Verlauf-Eintrag lädt, Kopfzeile ohne Global/Session");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

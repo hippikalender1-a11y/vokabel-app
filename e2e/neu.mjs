@@ -44,18 +44,18 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz");
 await clickText(".quiz-setup-check", "Verbes");
-// Bereich: 2 Vokabeln, Reihenfolge Schlechteste, speichern
+// Bereich: 2 Vokabeln, Reihenfolge Zufällig (Standard: Schlechteste), speichern
 await clickText("button", "Bereich", true);
 await page.evaluate(() => [...document.querySelectorAll(".vok-nr")].slice(0, 2).forEach(z => z.parentElement.click()));
 await sleep(300);
-await clickText("button", "Zufällig", true);
-await clickText(".toggle-opt", "Schlechteste", true);
+await clickText("button", "Schlechteste", true);
+await clickText(".toggle-opt", "Zufällig", true);
 await clickText("button", "Speichern", true);
 await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].pop()?.click());
 await sleep(400);
 let z = await zustand();
 console.log("     Preset aktiv:", JSON.stringify(z));
-ok(/\(2 /.test(z.start) && z.reihenfolge === "Schlechteste", "Preset: 2 Vokabeln, Schlechteste");
+ok(/\(2 /.test(z.start) && z.reihenfolge === "Zufällig", "Preset: 2 Vokabeln, Zufällig");
 
 // Neu
 await page.evaluate(() => window.scrollTo(0, 0));
@@ -72,7 +72,7 @@ ok(sa === null, "Neu: keine aktive Session");
 await clickText(".quiz-setup-check", "Verbes");
 z = await zustand();
 ok(/\(3 /.test(z.start), `Liste neu gewählt: alle 3 Vokabeln (${z.start})`);
-ok(z.reihenfolge === "Zufällig", `Neu: Reihenfolge zurück auf Zufällig (${z.reihenfolge})`);
+ok(z.reihenfolge === "Schlechteste", `Neu: Reihenfolge zurück auf Schlechteste (${z.reihenfolge})`);
 
 // Statistik: Preset laden, dann Neu
 await clickText(".tab", "Statistik");
