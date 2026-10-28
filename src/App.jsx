@@ -6245,21 +6245,9 @@ export default function VokabelApp() {
           const gruppenAnzahl = { negativ: 0, nie: 0, arbeit: 0, gelernt: 0 };
           alleVoks.forEach(v => { gruppenAnzahl[gruppeVon(v)]++; });
 
-          // Akzente-Sicht ohne Wörter mit Akzent: in der Statistik bleiben – Hinweis statt Kreis, Mitte zum Weiterschalten
-          if (alleVoks.length === 0 && statistikArt === "akzente" && statistikGefilterteVoks.length > 0) return (
-            <div className="sektion" style={{paddingTop:12}}>
-              <div data-keine-akzente style={{borderRadius:12, border:"1px solid #e0dbd2", background:"#fafaf8", padding:"28px 16px 32px", textAlign:"center"}}>
-                <div style={{fontSize:"0.95rem", color:"#3b3832", fontWeight:600, marginBottom:20}}>Für diese Session sind keine Akzente vorhanden.</div>
-                <button onClick={naechsteArt} data-kreismitte="1" {...tt("Antippen: zwischen Übersetzung, Diktat und Akzenten wechseln")}
-                  style={{width:72, height:72, borderRadius:"50%", background:"#fff", border:"1.5px solid #e0dbd2", cursor:"pointer", fontFamily:"inherit",
-                    display:"inline-flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, padding:0}}>
-                  <span style={{fontSize:"0.82rem", fontWeight:800, color:"#3b3832"}}>{artName}</span>
-                  <span style={{fontSize:"0.82rem", color:"#9b9590"}}>⇄</span>
-                </button>
-              </div>
-            </div>
-          );
-          if (alleVoks.length === 0) return (
+          // Akzente-Sicht ohne Wörter mit Akzent: gleiches Layout (Kopfzeile, Kreis-Mitte an derselben Stelle), Hinweis statt Segmenten
+          const keineAkzente = alleVoks.length === 0 && statistikArt === "akzente" && statistikGefilterteVoks.length > 0;
+          if (alleVoks.length === 0 && !keineAkzente) return (
             <div className="sektion">
               <div className="leer"><div className="leer-text">
                 {(statistikListenIds !== null && statistikListenIds.size === 0)
@@ -6325,7 +6313,7 @@ export default function VokabelApp() {
               {schwelleS > 0 && (
                 <div style={{display:"flex", flexDirection:"column", alignItems:"center", flex:1, minWidth:0}}>
                   <div style={{display:"flex", alignItems:"baseline", gap:6}}>
-                    <span style={{fontWeight:800, fontSize:"1.25rem", color:"#2d6a4f"}}>{Math.round(lernFortschritt)} %</span>
+                    <span style={{fontWeight:800, fontSize:"1.25rem", color: keineAkzente ? "#b5b0aa" : "#2d6a4f"}}>{keineAkzente ? "–" : `${Math.round(lernFortschritt)} %`}</span>
                   </div>
                   <div style={{display:"flex", width:"min(180px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"#f0ede8", margin:"3px 0 2px"}}
                     {...tt(`Gelernt ${kopfAnzahl.gelernt} · In Arbeit ${kopfAnzahl.arbeit} · Nie abgefragt ${kopfAnzahl.nie} · Negativ ${kopfAnzahl.negativ}`)}>
@@ -6334,7 +6322,7 @@ export default function VokabelApp() {
                     ))}
                   </div>
                   <div style={{fontSize:"0.7rem", color:"#6b6560", whiteSpace:"nowrap"}}>
-                    {gelerntAnzahl} / {kopfVoks.length} gelernt
+                    {keineAkzente ? "keine Akzente" : <>{gelerntAnzahl} / {kopfVoks.length} gelernt</>}
                     {avgScore !== null && <> · Ø {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}</>}
                   </div>
                 </div>
@@ -6394,11 +6382,14 @@ export default function VokabelApp() {
                   };
                   return (
                     <div style={{background:"#fafaf8", padding:"8px 6px 10px"}}>
-                      {teile.length === 0 ? (
+                      {teile.length === 0 && !keineAkzente ? (
                         <div style={{textAlign:"center", color:"#9b9590", fontSize:"0.85rem", padding:"40px 0"}}>Alle Gruppen ausgeblendet
                           <div><button className="btn btn-ghost btn-sm" style={{marginTop:8}} onClick={naechsteArt} {...tt("Zwischen Übersetzung, Diktat und Akzenten wechseln")}>{artName} ⇄</button></div></div>
                       ) : (
                       <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%", maxHeight:260, display:"block", userSelect:"none"}}>
+                        {keineAkzente && (
+                          <text data-keine-akzente x={cx} y={cy - 58} textAnchor="middle" fontSize="15" fontWeight="600" fill="#3b3832">Für diese Session sind keine Akzente vorhanden.</text>
+                        )}
                         {teile.map(t => {
                           const [ax, ay] = punkt(t.mitte, r + 2), [bx, by] = punkt(t.mitte, r + 14);
                           const tx = t.rechts ? cx + r + 34 : cx - r - 34;
@@ -6441,12 +6432,12 @@ export default function VokabelApp() {
                           );
                         })}
                       </div>
-                      <div style={{display:"flex", justifyContent:"center", alignItems:"center", gap:10, marginTop:6}}>
+                      {!keineAkzente && <div style={{display:"flex", justifyContent:"center", alignItems:"center", gap:10, marginTop:6}}>
                         <button className={`typ-btn${alleFilterAktiv ? " aktiv" : ""}`} style={{fontSize:"0.72rem", padding:"3px 12px"}}
                           onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
                           {...tt("Alle Gruppen einblenden")}>Gesamt {alleVoks.length}</button>
                         <span style={{fontSize:"0.65rem", color:"#9b9590"}}>Segment oder Legende antippen: aus-/einblenden</span>
-                      </div>
+                      </div>}
                     </div>
                   );
                 };
@@ -6464,6 +6455,7 @@ export default function VokabelApp() {
                 );
               })()}
 
+              {!keineAkzente && (<>
               {/* Sortierung */}
               <div className="sektion-label" style={{marginBottom:8}}>Sortierung</div>
               <div style={{display:"flex", gap:6, flexWrap:"wrap", alignItems:"center", marginBottom:16}}>
@@ -6556,6 +6548,7 @@ export default function VokabelApp() {
                 })}
               </div>
               )}
+              </>)}
             </div>
           </>);
         })()}
