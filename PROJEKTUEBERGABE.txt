@@ -1423,6 +1423,15 @@ LANG-DRUCK-MENÜ (ersetzt "⇄ Verschieben"-Knopf und ✕-Lösch-Modus, der ganz
 ALLE FENSTER (.overlay) jetzt OBEN statt unten (align-items:flex-start,
   .modal margin-top 4vh), damit die Bildschirmtastatur sie nicht verdeckt.
   Test: e2e/langdruck.mjs (echte Touch-Ereignisse über page.touchscreen).
+EXPORT VEREINFACHT: nur noch zwei Knöpfe JSON und TXT (+ Kopieren in die
+  Zwischenablage), in der Export-Leiste (Listen-Tab → Exportieren) und in der
+  Aktionszeile einer Liste. Separater "📤 Teilen"/Teilen-Symbol, "📄 Datei",
+  "💾 JSON" und der Zustand jsonExportTeilen sind entfernt (auch ungenutzte
+  Handler teileListeHandler, exportiereAusgewaehlteTeilenHandler,
+  teileListeAlsJsonHandler, IcoShare). exportDateiname(ids, "JSON"|"TXT")
+  → "Name - JSON.txt" / "Name - TXT.txt" (mehrere: "3 Listen - …"); Endung
+  immer .txt. teileAlsDatei(): iOS → Teilen-Menü, sonst Download (text/plain).
+  Import erkennt JSON am Inhalt, Endung egal.
 
 
 ================================================================

@@ -775,7 +775,6 @@ const IcoPencil= ({s=15}) => <svg viewBox="0 0 16 16" width={s} height={s} style
 const IcoSpk   = ({s=18}) => <svg viewBox="0 0 20 20" width={s} height={s} style={{display:"block"}}><polygon points="2,7 2,13 6,13 12,18 12,2 6,7" fill="currentColor"/></svg>;
 const IcoSpkOn = ({s=20}) => <svg viewBox="0 0 26 20" width={s} height={s*.77} style={{display:"block"}}><polygon points="2,7 2,13 6,13 12,18 12,2 6,7" fill="currentColor"/><path d="M15,7 Q17,10 15,13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M18,4 Q22,10 18,16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
 const IcoPlus  = ({s=15}) => <svg viewBox="0 0 14 14" width={s} height={s} style={{display:"block"}}><line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>;
-const IcoShare = ({s=15}) => <svg viewBox="0 0 16 18" width={s} height={s*1.1} style={{display:"block"}}><path d="M8,1 L8,12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><path d="M4,5 L8,1 L12,5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M3,9 L3,16 L13,16 L13,9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 const IcoCopy    = ({s=15}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><rect x="5" y="1" width="10" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="2"/><rect x="1" y="4" width="10" height="11" rx="2" fill="#fff" stroke="currentColor" strokeWidth="2"/></svg>;
 const IcoExpand  = ({s=16}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><polyline points="1,6 1,1 6,1" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="1" y1="1" x2="6.5" y2="6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="10,1 15,1 15,6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="15" y1="1" x2="9.5" y2="6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="1,10 1,15 6,15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="1" y1="15" x2="6.5" y2="9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="15,10 15,15 10,15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="15" y1="15" x2="9.5" y2="9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
 const IcoCollapse= ({s=16}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><polyline points="1,6 6,6 6,1" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="6" y1="6" x2="0.5" y2="0.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="15,6 10,6 10,1" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="10" y1="6" x2="15.5" y2="0.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="1,10 6,10 6,15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="6" y1="10" x2="0.5" y2="15.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="15,10 10,10 10,15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="10" y1="10" x2="15.5" y2="15.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
@@ -793,7 +792,6 @@ export default function VokabelApp() {
   const [modalMitVokabeln, setModalMitVokabeln] = useState(false);
   const [modalFehler, setModalFehler] = useState("");
   const [jsonExportIds, setJsonExportIds] = useState(null);
-  const [jsonExportTeilen, setJsonExportTeilen] = useState(false);
   const [jsonExportOptionen, setJsonExportOptionen] = useState({ fortschritt: true, diktatFortschritt: true, akzentFortschritt: true, falsch: true });
   const [editSpalteTyp, setEditSpalteTyp] = useState(null);
 
@@ -1557,11 +1555,6 @@ export default function VokabelApp() {
   }
 
   // ── Export-Aktionen ───────────────────────────────────────────────────────
-  async function teileListeHandler() {
-    if (!aktiveListe || !navigator.share) return;
-    const text = generiereExportText(aktiveListe);
-    try { await navigator.share({ title: aktiveListe.name, text }); } catch {}
-  }
   async function kopiereListeHandler() {
     if (!aktiveListe) return;
     const text = generiereExportText(aktiveListe);
@@ -1575,14 +1568,6 @@ export default function VokabelApp() {
     return ids.map(id => { const l = lsGet(SK.liste(id)); return l ? generiereExportText(l) : null; })
       .filter(Boolean).join('\n\n');
   }
-  async function exportiereAusgewaehlteTeilenHandler() {
-    if (exportAusgewaehlt.size === 0 || !navigator.share) return;
-    const text = generiereKombiniertenExport([...exportAusgewaehlt]);
-    const title = exportAusgewaehlt.size === 1
-      ? listenIndex.find(l => l.id === [...exportAusgewaehlt][0])?.name || 'Vokabeln'
-      : `${exportAusgewaehlt.size} Vokabellisten`;
-    try { await navigator.share({ title, text }); } catch {}
-  }
   async function exportiereAusgewaehlteKopierenHandler() {
     if (exportAusgewaehlt.size === 0) return;
     const text = generiereKombiniertenExport([...exportAusgewaehlt]);
@@ -1593,6 +1578,11 @@ export default function VokabelApp() {
     } catch {}
   }
 
+  // Export-Dateien: Endung immer .txt (nimmt jedes Ziel an), Inhalt steht im Namen: "Name - JSON.txt" / "Name - TXT.txt"
+  function exportDateiname(ids, art) {
+    const basis = ids.length === 1 ? (listenIndex.find(l => l.id === ids[0])?.name || 'Vokabeln') : `${ids.length} Listen`;
+    return `${basis} - ${art}.txt`;
+  }
   function teileAlsDatei(text, dateiname) {
     // iPad/iPhone: Downloads aus der Home-Bildschirm-App kommen oft leer an → Teilen-Menü
     // ("In Dateien sichern", Mail, AirDrop). Als .txt/text/plain, damit alle Ziele die Datei annehmen.
@@ -1617,30 +1607,12 @@ export default function VokabelApp() {
   }
   async function teileListeAlsDateiHandler() {
     if (!aktiveListe) return;
-    await teileAlsDatei(generiereExportText(aktiveListe), `${aktiveListe.name}.txt`);
-  }
-  async function teileListeAlsJsonHandler() {
-    if (!aktiveListe) return;
-    const liste = lsGet(SK.liste(aktiveListeId));
-    if (!liste) return;
-    const text = JSON.stringify([liste], null, 2);
-    const dateiname = `${aktiveListe.name}.json`;
-    if (navigator.canShare) {
-      const file = new File([text], dateiname, { type: 'application/json' });
-      if (navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: aktiveListe.name }); return; } catch {}
-      }
-    }
-    teileAlsDatei(text, dateiname);
+    await teileAlsDatei(generiereExportText(aktiveListe), exportDateiname([aktiveListeId], "TXT"));
   }
   async function exportiereAusgewaehlteAlsDateiHandler() {
     if (exportAusgewaehlt.size === 0) return;
     const ids = [...exportAusgewaehlt];
-    const text = generiereKombiniertenExport(ids);
-    const name = ids.length === 1
-      ? listenIndex.find(l => l.id === ids[0])?.name || 'Vokabeln'
-      : `${ids.length}_Listen`;
-    await teileAlsDatei(text, `${name}.txt`);
+    await teileAlsDatei(generiereKombiniertenExport(ids), exportDateiname(ids, "TXT"));
   }
 
   const tabReihenfolge = ["listen", "quiz", "statistik", "einstellungen"];
@@ -1843,13 +1815,6 @@ export default function VokabelApp() {
 
   function exportiereAlsJson(ids) {
     setJsonExportIds(ids);
-    setJsonExportTeilen(false);
-    setModal("json-export");
-  }
-
-  function exportiereAlsJsonZumTeilen(ids) {
-    setJsonExportIds(ids);
-    setJsonExportTeilen(true);
     setModal("json-export");
   }
 
@@ -1870,27 +1835,9 @@ export default function VokabelApp() {
       return l;
     });
     const text = JSON.stringify(gefiltert, null, 2);
-    const name = jsonExportIds.length === 1
-      ? (gefiltert[0]?.name || 'Liste') + '.json'
-      : jsonExportIds.length + '_Listen_Backup.json';
-    const title = jsonExportIds.length === 1
-      ? (gefiltert[0]?.name || 'Liste')
-      : `${jsonExportIds.length} Vokabellisten`;
-    const shouldShare = jsonExportTeilen;
-    setModal(null); setJsonExportIds(null); setJsonExportTeilen(false);
-    if (shouldShare && navigator.share) {
-      const shareName = name.replace(/\.json$/, '.txt');
-      const file = new File([text], shareName, { type: 'text/plain' });
-      try {
-        navigator.share({ files: [file], title }).catch(e => {
-          if (e?.name !== 'AbortError') teileAlsDatei(text, name);
-        });
-      } catch {
-        teileAlsDatei(text, name);
-      }
-    } else {
-      teileAlsDatei(text, name);
-    }
+    const name = exportDateiname(jsonExportIds, "JSON");
+    setModal(null); setJsonExportIds(null);
+    teileAlsDatei(text, name);
   }
 
   function setzeMapping(colIndex, typ) {
@@ -5666,11 +5613,8 @@ export default function VokabelApp() {
               <div style={{background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", gap:6, flexWrap:"wrap"}}>
                 <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import"); }} {...tt("Vokabeln in diese Liste importieren")}><IcoPlus/></button>
                 <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={kopiereListeHandler} {...tt("Liste als Text in die Zwischenablage kopieren")}>{exportKopiert ? "✓" : <IcoCopy/>}</button>
-                <button className="btn btn-ghost btn-sm" onClick={teileListeAlsDateiHandler} {...tt("Liste als TXT-Datei exportieren")}>TXT</button>
-                {navigator.share && (
-                  <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => exportiereAlsJsonZumTeilen([aktiveListeId])} {...tt("Liste als JSON-Datei teilen")}><IcoShare/></button>
-                )}
-                <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])} {...tt("Liste als JSON-Datei exportieren")}>JSON</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])} {...tt("JSON: vollständige Sicherung mit Lernstand (Scores) – Datei „Name - JSON.txt“, zum Wiederherstellen oder für ein anderes Gerät")}>JSON</button>
+                <button className="btn btn-ghost btn-sm" onClick={teileListeAlsDateiHandler} {...tt("TXT: nur die Vokabeln als Text, ohne Scores – Datei „Name - TXT.txt“, zum Weitergeben oder Bearbeiten")}>TXT</button>
                 <button className="btn btn-danger btn-sm" style={{padding:"6px 10px", marginLeft:"auto"}} onClick={() => oeffneModal("loeschen")} {...tt("Liste löschen")}><IcoX/></button>
               </div>
             )}
@@ -6415,7 +6359,7 @@ export default function VokabelApp() {
                 {titel:"Listen-Tab", inhalt:[
                   {k:"Übersicht", v:"Zeigt alle Vokabellisten. Tippe eine Liste an, um sie zu öffnen."},
                   {k:"[+] Neue Liste", v:"Legt eine leere Liste mit eigenem Namen an."},
-                  {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, TXT-Export, JSON-Export, Teilen, Löschen."},
+                  {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, JSON, TXT, Löschen. JSON = vollständige Sicherung mit Lernstand (Datei „Name - JSON.txt“), TXT = nur die Vokabeln als Text ohne Scores (Datei „Name - TXT.txt“). Auf iPad/iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, Mail, AirDrop), sonst wird die Datei heruntergeladen. Beim Import ist die Endung egal – die App erkennt den Inhalt."},
                   {k:"Stift-Button", v:"Listenname umbenennen."},
                   {k:"Vokabeln [+]", v:"Neue Vokabel am Ende der Liste hinzufügen."},
                   {k:"Stift an Vokabel", v:"Vokabel bearbeiten oder löschen."},
@@ -6580,14 +6524,11 @@ export default function VokabelApp() {
         </>)}
         {tab === "listen" && ansicht === "uebersicht" && exportAuswahlModus && exportAusgewaehlt.size > 0 && (
           <div className="quiz-action-bar">
-            {navigator.share && (
-              <button {...tt("Ausgewählte Listen als Datei teilen (Mail, WhatsApp, Dateien …)")} className="btn btn-primary" onClick={() => exportiereAlsJsonZumTeilen([...exportAusgewaehlt])}>📤 Teilen</button>
-            )}
-            <button {...tt("Ausgewählte Listen als Text kopieren (ohne Scores)")} className="btn btn-ghost" onClick={exportiereAusgewaehlteKopierenHandler}>
+            <button {...tt("JSON: vollständige Sicherung mit Lernstand (Scores) – Datei „Name - JSON.txt“, zum Wiederherstellen oder für ein anderes Gerät")} className="btn btn-primary" onClick={() => exportiereAlsJson([...exportAusgewaehlt])}>JSON</button>
+            <button {...tt("TXT: nur die Vokabeln als Text, ohne Scores – Datei „Name - TXT.txt“, zum Weitergeben oder Bearbeiten")} className="btn btn-primary" onClick={exportiereAusgewaehlteAlsDateiHandler}>TXT</button>
+            <button {...tt("Ausgewählte Listen als Text in die Zwischenablage kopieren (ohne Scores)")} className="btn btn-ghost" onClick={exportiereAusgewaehlteKopierenHandler}>
               {exportKopiert ? "✓ Kopiert!" : "📋 Kopieren"}
             </button>
-            <button {...tt("Ausgewählte Listen als Textdatei speichern")} className="btn btn-ghost" onClick={exportiereAusgewaehlteAlsDateiHandler}>📄 Datei</button>
-            <button {...tt("Ausgewählte Listen als JSON-Backup speichern (mit Scores)")} className="btn btn-ghost" onClick={() => exportiereAlsJson([...exportAusgewaehlt])}>💾 JSON</button>
           </div>
         )}
       </div>
@@ -6875,7 +6816,7 @@ export default function VokabelApp() {
       {modal === "json-export" && jsonExportIds && (
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-titel">{jsonExportTeilen ? "JSON teilen" : "JSON exportieren"}</div>
+            <div className="modal-titel">JSON exportieren</div>
             <p style={{fontSize:"0.85rem", color:"#6b6560", marginBottom:14}}>
               {jsonExportIds.length === 1 ? "1 Liste" : `${jsonExportIds.length} Listen`} — was soll enthalten sein?
             </p>
@@ -6896,7 +6837,7 @@ export default function VokabelApp() {
             ))}
             <div className="modal-actions">
               <button {...tt("Schließen, ohne zu exportieren")} className="btn btn-ghost" onClick={() => { setModal(null); setJsonExportIds(null); }}>Abbrechen</button>
-              <button {...tt("Export mit diesen Optionen erstellen")} className="btn btn-primary" onClick={exportiereAlsJsonBestaetigt}>{jsonExportTeilen ? "Teilen" : "Exportieren"}</button>
+              <button {...tt("Export mit diesen Optionen erstellen")} className="btn btn-primary" onClick={exportiereAlsJsonBestaetigt}>Exportieren</button>
             </div>
           </div>
         </div>

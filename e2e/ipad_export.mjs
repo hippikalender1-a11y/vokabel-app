@@ -40,12 +40,12 @@ await clickText(".tab", "Listen");
 await clickText(".karte-zeile", "Englisch Buch 5. Klasse");
 await page.evaluate(() => [...document.querySelectorAll(".btn-toggle")].find(b => /Aktionen/.test(b.getAttribute("title") || ""))?.click());
 await sleep(300);
-await clickText("button", "JSON", true);           // "💾 JSON"-Weg (bisher Download)
+await clickText("button", "JSON", true);
 await clickText(".modal button", "Exportieren", true);
 await sleep(500);
 const g = await page.evaluate(() => window.__geteilt);
 console.log("     geteilt:", JSON.stringify(g.map(x => ({ name: x.name, typ: x.typ, bytes: x.inhalt.length }))));
-ok(g.length === 1 && g[0].name === "Englisch Buch 5. Klasse.txt", "iPad: JSON-Export öffnet das Teilen-Menü statt Download (Name ohne „.json.txt“)");
+ok(g.length === 1 && g[0].name === "Englisch Buch 5. Klasse - JSON.txt", "iPad: JSON-Export öffnet das Teilen-Menü statt Download (Name „… - JSON.txt“)");
 ok(g[0] && JSON.parse(g[0].inhalt)[0].vokabeln.length === 2, "Geteilte Datei enthält die vollständige Liste");
 
 await browser.close();

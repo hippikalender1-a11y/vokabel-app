@@ -68,23 +68,25 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Listen");
 
-// ── Export 1: alle drei als TXT (📄 Datei) ──
+// ── Export 1: alle drei als TXT ──
 await clickText("button", "Exportieren", true);
 for (const n of ["Irregular Verbs", "Unité 1", "Unidad 1"]) await clickText(".karte-zeile", n);
 let vorher = fs.readdirSync(DL);
-await clickText("button", "📄 Datei");
-const txtAlle = await warteAufDatei(".txt", vorher);
-ok(!!txtAlle, `TXT (alle) heruntergeladen: ${txtAlle && path.basename(txtAlle)}`);
+await clickText(".quiz-action-bar button", "TXT", true);
+const txtAlle = await warteAufDatei(" - TXT.txt", vorher);
+ok(!!txtAlle && path.basename(txtAlle) === "3 Listen - TXT.txt", `TXT (alle) heruntergeladen: ${txtAlle && path.basename(txtAlle)}`);
 const txtInhalt = txtAlle ? fs.readFileSync(txtAlle, "utf8") : "";
 console.log("---- TXT-Inhalt ----\n" + txtInhalt + "\n--------------------");
 ok(txtInhalt.includes("# Unité 1 {fr}") && txtInhalt.includes("# Unidad 1 {es}") && txtInhalt.includes("# Irregular Verbs\n"), "TXT enthält Sprach-Kennungen");
 
 // ── Export 2: alle drei als JSON ──
 vorher = fs.readdirSync(DL);
-await clickText("button", "💾 JSON");
+ok(await page.evaluate(() => [...document.querySelectorAll(".quiz-action-bar button")].map(b => b.textContent.trim()).join("|")) === "JSON|TXT|📋 Kopieren",
+  "Export-Leiste: JSON · TXT · Kopieren");
+await clickText(".quiz-action-bar button", "JSON", true);
 await clickText(".modal button", "Exportieren", true);
-const jsonAlle = await warteAufDatei(".json", vorher);
-ok(!!jsonAlle, `JSON (alle) heruntergeladen: ${jsonAlle && path.basename(jsonAlle)}`);
+const jsonAlle = await warteAufDatei(" - JSON.txt", vorher);
+ok(!!jsonAlle && path.basename(jsonAlle) === "3 Listen - JSON.txt", `JSON (alle) heruntergeladen: ${jsonAlle && path.basename(jsonAlle)}`);
 const jsonDaten = jsonAlle ? JSON.parse(fs.readFileSync(jsonAlle, "utf8")) : [];
 ok(jsonDaten.map(l => l.sprache).join(",") === "en,fr,es", `JSON enthält Sprachen: ${jsonDaten.map(l => l.sprache)}`);
 
@@ -96,8 +98,8 @@ await page.evaluate(() => [...document.querySelectorAll(".btn-toggle")].find(b =
 await sleep(300);
 vorher = fs.readdirSync(DL);
 await clickText("button", "TXT", true);
-const txtFr = await warteAufDatei(".txt", vorher);
-ok(!!txtFr, `TXT (Unité 1) heruntergeladen`);
+const txtFr = await warteAufDatei(" - TXT.txt", vorher);
+ok(!!txtFr && path.basename(txtFr) === "Unité 1 - TXT.txt", `TXT (Unité 1) heruntergeladen: ${txtFr && path.basename(txtFr)}`);
 
 // ── Import A: TXT mit allen drei Listen ──
 await leeren();
