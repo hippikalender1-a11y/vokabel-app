@@ -9,6 +9,8 @@ const SK = {
   sessionAktiv:  "vokabel_session_aktiv",
   slots:         "vokabel_slots",
   letzterSlot:   "vokabel_letzter_slot",   // zuletzt gewählte gespeicherte Konfiguration → beim Start wieder laden
+  ansichtSpalten: "vokabel_ansicht_spalten", // Listenansicht: ausgeblendete Spalten je Liste {listeId: ["i1", …]}
+  statistikListeZu: "vokabel_statistik_liste_zu", // Statistik: Vokabelliste eingeklappt
   liste: (id)  => `vokabel_liste_${id}`,
 };
 function lsGet(key, fallback = null) {
@@ -903,6 +905,8 @@ export default function VokabelApp() {
   const [quiz, setQuiz] = useState(null);
   const [diktatListeAufgeklappt, setDiktatListeAufgeklappt] = useState(false);
   const [vokabelAufgeklappt, setVokabelAufgeklappt] = useState(false);
+  const [ansichtSpaltenAus, setAnsichtSpaltenAus] = useState(() => lsGet(SK.ansichtSpalten, {}));
+  const [statistikListeZu, setStatistikListeZu] = useState(() => !!lsGet(SK.statistikListeZu, false));
   const [aktionszeileAufgeklappt, setAktionszeileAufgeklappt] = useState(false);
   const [diktatManualPlays, setDiktatManualPlays] = useState(0);
   const [quizTabListen, setQuizTabListen] = useState([]);
@@ -1621,7 +1625,16 @@ export default function VokabelApp() {
 
   const tabReihenfolge = ["listen", "quiz", "statistik", "einstellungen"];
 
+  // Stand der Statistik-Auswahl beim Betreten (aus dem Quiz übernommen) – zum Erkennen eigener Änderungen
+  const statistikStartRef = useRef(null);
+  const statistikStandKey = (listenIds, bereich, auswahl, slot) =>
+    JSON.stringify([listenIds === null ? null : [...listenIds].sort(), bereich, bereich === "bereich" ? [...auswahl].sort() : [], slot ? `${slot.typ}|${slot.id}` : null]);
+
   function handleTabWechsel(neuerTab) {
+    if (neuerTab === "statistik" && tab !== "statistik") {
+      const listenIds = quizTabListen.length > 0 ? new Set(quizTabListen) : null;
+      statistikStartRef.current = statistikStandKey(listenIds, quizBereichTyp, quizCheckboxAuswahl, aktiverSlot);
+    }
     if (neuerTab === "statistik") {
       setStatistikListenIds(quizTabListen.length > 0 ? new Set(quizTabListen) : null);
       setStatistikBereichTyp(quizBereichTyp);
@@ -1630,6 +1643,21 @@ export default function VokabelApp() {
       setStatistikEinzelauswahlAufgeklappt(false);
       setStatistikAktiverSlot(aktiverSlot);
       setStatistikSlotGeleert(false);
+    }
+    // Statistik → Quiz: nur was in der Statistik geändert wurde, ins Quiz übernehmen
+    if (neuerTab === "quiz" && tab === "statistik"
+        && statistikStandKey(statistikListenIds, statistikBereichTyp, statistikCheckboxAuswahl, statistikAktiverSlot) !== statistikStartRef.current) {
+      const s = statistikAktiverSlot;
+      if (s && getSlotEintrag(s.typ, s.id)) {
+        if (!(aktiverSlot?.typ === s.typ && aktiverSlot?.id === s.id)) ladeSlot(s.typ, s.id);
+      } else {
+        // keine Konfiguration mehr ("Neu" oder Liste geändert) → im Quiz lösen, Session ebenfalls
+        // (ihr Fortschritt bleibt im gespeicherten Eintrag); Listen-/Vokabelauswahl übernehmen
+        if (aktiverSlot) { setAktiverSlot(null); setGespeicherteVokabelgruppe(null); lsDel(SK.letzterSlot); lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); }
+        setQuizTabListen(statistikListenIds === null ? sichtbareListen.map(l => l.id) : [...statistikListenIds]);
+        setQuizBereichTyp(statistikBereichTyp);
+        setQuizCheckboxAuswahl(new Set(statistikBereichTyp === "bereich" ? statistikCheckboxAuswahl : []));
+      }
     }
     if (neuerTab === "listen") setAnsicht("uebersicht");
     setTab(neuerTab);
@@ -5626,6 +5654,20 @@ export default function VokabelApp() {
           const anzeigeVoks = listenGelerntAusblenden && schwelleL > 0
             ? aktiveListe.vokabeln.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleL)
             : aktiveListe.vokabeln;
+          // In der Vokabelliste angezeigte Spalten (je Liste gemerkt); mindestens eine bleibt sichtbar
+          const spaltenAus = new Set(ansichtSpaltenAus[aktiveListeId] || []);
+          const sichtbareSpalten = aktiveSpalten.filter(t => !spaltenAus.has(t));
+          const anzeigeSpalten = sichtbareSpalten.length > 0 ? sichtbareSpalten : aktiveSpalten;
+          const schalteSpalte = typ => {
+            const aus = new Set(spaltenAus);
+            if (aus.has(typ)) aus.delete(typ);
+            else if (anzeigeSpalten.filter(t => t !== typ).length > 0) aus.add(typ);
+            else return;
+            const neu = { ...ansichtSpaltenAus, [aktiveListeId]: [...aus] };
+            if (aus.size === 0) delete neu[aktiveListeId];
+            setAnsichtSpaltenAus(neu);
+            lsSet(SK.ansichtSpalten, neu);
+          };
           return (
             <>
             {/* Aktionszeile */}
@@ -5741,7 +5783,22 @@ export default function VokabelApp() {
               {vokabelAufgeklappt && (
                 aktiveListe.vokabeln.length === 0 ? (
                   <div className="leer"><div className="leer-text">Noch keine Vokabeln.<br/>Klicke auf + um zu importieren.</div></div>
-                ) : (
+                ) : (<>
+                  {aktiveSpalten.length > 1 && (
+                    <div data-ansicht-spalten style={{display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:8}}>
+                      <span style={{fontSize:"0.75rem", color:"#6b6560"}}>Anzeigen:</span>
+                      {aktiveSpalten.map(typ => {
+                        const an = anzeigeSpalten.includes(typ);
+                        return (
+                          <button key={typ} data-ansicht-spalte={typ} className={`typ-btn${an ? " aktiv" : ""}`} style={{fontSize:"0.72rem", padding:"3px 10px"}}
+                            onClick={() => schalteSpalte(typ)}
+                            {...tt(an ? `Spalte „${aktiveListe.spalten[typ].name || typ}“ in der Vokabelliste ausblenden` : `Spalte „${aktiveListe.spalten[typ].name || typ}“ wieder anzeigen`)}>
+                            {aktiveListe.spalten[typ].name || typ}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                   <div className="karte">
                     {anzeigeVoks.map(vok => {
                       const score = vok.fortschritt != null ? clampScore(vok.fortschritt.score) : null;
@@ -5750,7 +5807,7 @@ export default function VokabelApp() {
                         <div key={vok.id} className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
                           <div style={{display:"flex", width:"100%", justifyContent:"space-between", alignItems:"flex-start"}}>
                             <div style={{display:"flex", flexDirection:"column", gap:3, flex:1}}>
-                              {aktiveSpalten.map(typ => vok[typ] ? (
+                              {anzeigeSpalten.map(typ => vok[typ] ? (
                                 <div key={typ} style={{display:"flex", alignItems:"baseline", gap:6}}>
                                   <span className="spalten-badge aktiv">{aktiveListe.spalten[typ].name || typ}</span>
                                   <span style={{fontSize:"0.88rem"}}>{vok[typ].wert}</span>
@@ -5789,7 +5846,7 @@ export default function VokabelApp() {
                       );
                     })}
                   </div>
-                )
+                </>)
               )}
             </div>
             </>
@@ -6255,8 +6312,16 @@ export default function VokabelApp() {
                 })}
               </div>
 
-              {/* Vokabelliste */}
-              <div className="sektion-label" style={{marginBottom:8}}>{voks.length} Vokabel{voks.length!==1?"n":""}</div>
+              {/* Vokabelliste – ein-/ausklappbar */}
+              <div data-statistik-liste-kopf={statistikListeZu ? "zu" : "offen"} {...tt(statistikListeZu ? "Vokabelliste ausklappen" : "Vokabelliste einklappen")}
+                style={{display:"flex", alignItems:"center", gap:8, cursor:"pointer", marginBottom:8}}
+                onClick={() => { const zu = !statistikListeZu; setStatistikListeZu(zu); lsSet(SK.statistikListeZu, zu); }}>
+                <div className="sektion-label" style={{marginBottom:0}}>{voks.length} Vokabel{voks.length!==1?"n":""}</div>
+                <span className="btn-toggle" style={{padding:"3px 6px"}}>
+                  {statistikListeZu ? <IcoUp s={10}/> : <IcoDown s={10}/>}
+                </span>
+              </div>
+              {!statistikListeZu && (
               <div className="karte">
                 {voks.length === 0 ? (
                   <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln in diesem Filter.</div>
@@ -6314,6 +6379,7 @@ export default function VokabelApp() {
                   );
                 })}
               </div>
+              )}
             </div>
           </>);
         })()}

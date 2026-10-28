@@ -1450,6 +1450,22 @@ KOPFZEILE zugeklappt: Auswahl-Knopf größer (0.95rem, min. 160 px) und
 STATISTIK-KOPFZEILE "Verlauf & Gespeichert" jetzt wie im Quiz: zugeklappt
   ohne Überschrift, Knopf mittig, bei gespeicherter Konfiguration ganze Zeile
   grün (data-slot-kopf); ladeSlotStatistik() und "Neu" klappen den Bereich zu.
+TAB-WECHSEL Quiz ↔ Statistik: Auswahl bleibt in beide Richtungen.
+  Quiz → Statistik (wie bisher): Listen, Bereich, Auswahl, aktiverSlot.
+  Statistik → Quiz (neu, handleTabWechsel): nur wenn sich die Statistik-
+  Auswahl seit dem Betreten geändert hat (statistikStartRef + statistikStandKey,
+  denn "alle Listen" = null ist auch der Standard). Dann: Konfiguration
+  gewählt → ladeSlot(); keine Konfiguration → aktiverSlot + Session lösen
+  (Fortschritt bleibt im Eintrag) und Listen/Bereich/Auswahl übernehmen
+  (null = alle sichtbaren Listen).
+  Test: e2e/tabwechsel.mjs.
+SPALTEN-ANSICHT (Listen-Detail): Zeile "Anzeigen:" über der Vokabelliste,
+  ein Knopf je aktiver Spalte (data-ansicht-spalte) blendet sie aus/ein;
+  mindestens eine bleibt sichtbar. Gemerkt je Liste in SK.ansichtSpalten
+  ({listeId: [ausgeblendete Typen]}), nur Ansicht – Liste/Export unberührt.
+STATISTIK-VOKABELLISTE einklappbar: Kopf "n Vokabeln" + Pfeil
+  (data-statistik-liste-kopf), Zustand in SK.statistikListeZu.
+  Test: e2e/spaltenansicht.mjs.
 
 
 ================================================================
