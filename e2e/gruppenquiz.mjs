@@ -88,6 +88,49 @@ await page.evaluate(() => document.querySelector('[data-info-aktion="▶ Quiz mi
 await clickText("[data-gruppen-quiz] button", "Starten", true); await sleep(600);
 ok(await titel() === "1 / 1" && await frage() === "abfahren", `Gelernt-Gruppe: Quiz mit „abfahren“ (${await titel()} ${await frage()})`);
 
+// ── Gewählte Konfiguration mit Session: bleibt erhalten, Runde zählt nicht zum Session-Fortschritt ──
+await page.evaluate(() => {
+  const k = { listenIds:["l_a","l_b"], vokabelAuswahl:[], bereichTyp:"alle", quizAusgewaehlt:["D1","E1"], quizFrageTyp:"D1", quizAntwortTypenGeordnet:["E1"],
+    quizInfoTypenSession:[], quizSpalteModus:{E1:"karte"}, quizZeigeInfo:{}, quizModus:"sequenziell", quizReihenfolge:"listennr" };
+  localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g_1", name:"Mein Paket", timestamp:1, konfiguration:k, sessionFortschritt:null, platz:{z:0,s:0} }] }));
+  localStorage.removeItem("vokabel_letzter_slot"); localStorage.removeItem("vokabel_session_aktiv");
+});
+await page.reload(); await sleep(500);
+await clickText(".tab", "Quiz");
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
+await clickText(".slot-chip", "Mein Paket");
+await clickText("button", "Quiz starten (");
+for (let i = 0; i < 2; i++) {
+  await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(250);
+  await clickText(".karte-btn-ja", "Gewusst"); await sleep(1200);
+}
+await clickText(".topbar-back", "Beenden"); await sleep(500);
+if (/Zur Übersicht/.test(await page.evaluate(() => document.body.innerText))) await clickText("button", "Zur Übersicht");
+await sleep(400);
+const fortschritt = () => page.evaluate(() => document.querySelector('[data-anzahl="fortschritt"]')?.textContent.trim());
+const vorher = await fortschritt();
+console.log("     Session vorher:", vorher);
+
+await clickText(".tab", "Statistik"); await sleep(400);
+const menueLabel = await page.evaluate(() => {
+  const el = document.querySelector('[data-kreis-gruppe="negativ"]'); const r = el.getBoundingClientRect();
+  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 }));
+  return null;
+});
+await sleep(250);
+await page.evaluate(() => document.querySelector("[data-info-aktion]").click()); await sleep(250);
+const rf2 = await page.evaluate(() => document.querySelector("[data-gruppen-quiz]")?.innerText.replace(/\s+/g, " "));
+console.log("     Rückfrage:", rf2);
+ok(/Einmalige Runde/.test(rf2 || "") && /Mein Paket/.test(rf2 || ""), "Rückfrage: einmalige Runde, „Mein Paket“ bleibt");
+await clickText("[data-gruppen-quiz] button", "Starten", true); await sleep(600);
+ok(/^1 \/ \d+$/.test(await titel() || ""), `Gruppen-Quiz läuft (${await titel()})`);
+await durchlaufen();
+await clickText("button", "Zur Übersicht"); await sleep(500);
+const kopf = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); return k?.dataset.slotKopf + " " + k?.querySelector("button.toggle-opt.aktiv")?.textContent.trim(); });
+console.log("     Quiz danach:", kopf, "| Session:", await fortschritt());
+ok(kopf === "gruen Mein Paket", "Konfiguration „Mein Paket“ bleibt gewählt");
+ok(vorher && await fortschritt() === vorher, `Session-Fortschritt unverändert (${vorher})`);
+
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);

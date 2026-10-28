@@ -1488,7 +1488,11 @@ KARTEN-INFO: im Karten-Modus gelber Kasten (data-karte-info) unter der
 GRUPPEN-QUIZ aus der Statistik: Lang-Druck/Rechtsklick auf Segment bzw.
   Beschriftung (data-kreis-gruppe) oder Legende (data-legende) → Menü
   "▶ Quiz mit n Vokabeln" → Rückfrage (gruppenQuiz, data-gruppen-quiz) →
-  starteGruppenQuiz: Quiz-Tab auf Bereich = diese Vokabeln, Schlechteste ohne
+  starteGruppenQuiz. Passt die Gruppe (gruppenQuizPasst: gleiche Abfrageart,
+  Listen in der Quiz-Auswahl): einmalige Runde starteQuiz(true, null, Set der
+  IDs) bzw. starteDiktat(…, gruppe) – keine Pakete, kein Verlauf-Eintrag,
+  Auswahl/Konfiguration/Session-Fortschritt bleiben, nur Scores ändern sich.
+  Sonst (Fallback): Quiz-Tab auf Bereich = diese Vokabeln, Schlechteste ohne
   Score-Grenze, Gelernte erlaubt, Session "alle", Konfiguration gelöst;
   Statistik-Art Diktat → quizModus diktat. Start nach zwei Render-Durchgängen
   (gruppenQuizStartRef/-Tick), damit die Spalten zu den Listen passen.

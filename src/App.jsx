@@ -1675,8 +1675,20 @@ export default function VokabelApp() {
   // Statistik: Quiz direkt mit den Vokabeln einer Gruppe (z. B. Negativ) starten.
   // Quiz-Tab wird darauf eingestellt (Bereich = diese Vokabeln, ohne Score-Grenze, Gelernte erlaubt,
   // ohne Session-Pakete, gespeicherte Konfiguration gelöst); Spalten/Abfrage-Modus bleiben wie im Quiz-Tab.
+  // Passt die Gruppe zur Quiz-Auswahl (gleiche Abfrageart, Listen enthalten), läuft eine einmalige Runde,
+  // die Auswahl, Konfiguration und Session unberührt lässt – sonst wird der Quiz-Tab umgestellt.
+  function gruppenQuizPasst(g) {
+    const listen = quizTabListen.length > 0 ? quizTabListen : (aktiveListeId ? [aktiveListeId] : []);
+    return g.art === quizAbfrageArt && g.listenIds.every(id => listen.includes(id));
+  }
   function starteGruppenQuiz(g) {
     setGruppenQuiz(null);
+    if (gruppenQuizPasst(g)) {
+      setStatistikVollbild(false);
+      setTab("quiz");
+      starteQuiz(true, null, new Set(g.ids));
+      return;
+    }
     setSessionUeberschreibenModal(false);
     setGruppenAenderungsDialog(false);
     setAktiverSlot(null);
@@ -2800,21 +2812,27 @@ export default function VokabelApp() {
     }
   }
 
-  function starteDiktat(force = false, overrideSlot = null) {
+  function starteDiktat(force = false, overrideSlot = null, gruppe = null) {
+    // gruppe (Set von Vokabel-IDs, Quiz aus der Statistik): einmalige Runde nur mit diesen Vokabeln –
+    // Auswahl, Konfiguration und Session-Fortschritt bleiben unberührt; schlechteste zuerst, ohne Score-Grenze
+    const reihenfolgeQ = gruppe ? "schlechteste" : quizReihenfolge;
+    const maxScoreQ = gruppe ? "" : quizSchlechtesteMaxScore;
+    const unbeantwortetQ = gruppe ? { schlechteste: true } : quizUnbeantwortetZuerst;
     const kombiListe = quizTabListen.length > 0 ? getKombinierteListe(quizTabListen) : aktiveListe;
     if (!kombiListe) return;
-    const isPakete = quizSessionModus === "pakete";
+    const isPakete = !gruppe && quizSessionModus === "pakete";
     if (isPakete && quizPaketGroesse == null) return;
     const effSlot = overrideSlot !== null ? overrideSlot : aktiverSlot;
     if (!force && isPakete && sessionSlotAktiv && sessionSlotKonflikt() && effSlot?.typ !== 'gespeichert') {
       setSessionUeberschreibenModal(true); return;
     }
     let voks = kombiListe.vokabeln.filter(v => v[quizDiktatSpalte]);
-    if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
+    if (gruppe) voks = voks.filter(v => gruppe.has(v.id));
+    else if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
       voks = voks.filter(v => quizCheckboxAuswahl.has(v.id));
     }
     const schwelleDiktat = einstellungen.gelerntSchwelle ?? 0;
-    if (!quizGelerntEinschliessen && schwelleDiktat > 0)
+    if (!gruppe && !quizGelerntEinschliessen && schwelleDiktat > 0)
       voks = voks.filter(v => gelerntScore(v, true) < schwelleDiktat);
     const sessionGesamt = isPakete ? voks.length : 0;
     if (isPakete) {
@@ -2842,32 +2860,32 @@ export default function VokabelApp() {
         }
       }
     }
-    if (quizReihenfolge === "schlechteste") {
-      if (quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
-        const threshold = parseFloat(quizSchlechtesteMaxScore);
+    if (reihenfolgeQ === "schlechteste") {
+      if (maxScoreQ !== "" && !isNaN(parseFloat(maxScoreQ))) {
+        const threshold = parseFloat(maxScoreQ);
         voks = voks.filter(v => (v.diktatFortschritt?.score ?? 0) < threshold);
       }
-      if (quizUnbeantwortetZuerst.schlechteste) {
+      if (unbeantwortetQ.schlechteste) {
         const unb = voks.filter(v => !v.diktatFortschritt);
         const bea = [...voks.filter(v => v.diktatFortschritt)].sort((a, b) => (a.diktatFortschritt.score ?? 0) - (b.diktatFortschritt.score ?? 0));
         voks = [...unb, ...bea];
       } else {
         voks = [...voks].sort((a, b) => (a.diktatFortschritt?.score ?? 0) - (b.diktatFortschritt?.score ?? 0));
       }
-    } else if (quizUnbeantwortetZuerst[quizReihenfolge]) {
+    } else if (unbeantwortetQ[reihenfolgeQ]) {
       const unb = voks.filter(v => !v.diktatFortschritt);
       const bea = voks.filter(v => v.diktatFortschritt);
-      if (quizReihenfolge === "listennr") {
+      if (reihenfolgeQ === "listennr") {
         voks = [...unb, ...bea];
       } else {
         voks = [...[...unb].sort(() => Math.random() - 0.5), ...[...bea].sort(() => Math.random() - 0.5)];
       }
-    } else if (quizReihenfolge !== "listennr") {
+    } else if (reihenfolgeQ !== "listennr") {
       voks = [...voks].sort(() => Math.random() - 0.5);
     }
     if (isPakete) voks = voks.slice(0, quizPaketGroesse);
     if (voks.length === 0) return;
-    if (!isPakete) merkeRundeImVerlauf(effSlot, Object.fromEntries(voks.map(v => [v.id, v.fortschritt?.score ?? null])));
+    if (!isPakete && !gruppe) merkeRundeImVerlauf(effSlot, Object.fromEntries(voks.map(v => [v.id, v.fortschritt?.score ?? null])));
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     setDiktatListeAufgeklappt(false);
     setDiktatManualPlays(0);
@@ -2886,11 +2904,16 @@ export default function VokabelApp() {
     setAnsicht("quiz");
   }
 
-  function starteQuiz(force = false, overrideSlot = null) {
-    if (quizModus === "diktat") { starteDiktat(force, overrideSlot); return; }
+  function starteQuiz(force = false, overrideSlot = null, gruppe = null) {
+    // gruppe (Set von Vokabel-IDs, Quiz aus der Statistik): einmalige Runde nur mit diesen Vokabeln –
+    // Auswahl, Konfiguration und Session-Fortschritt bleiben unberührt; schlechteste zuerst, ohne Score-Grenze
+    const reihenfolgeQ = gruppe ? "schlechteste" : quizReihenfolge;
+    const maxScoreQ = gruppe ? "" : quizSchlechtesteMaxScore;
+    const unbeantwortetQ = gruppe ? { schlechteste: true } : quizUnbeantwortetZuerst;
+    if (quizModus === "diktat") { starteDiktat(force, overrideSlot, gruppe); return; }
     const kombiListe = quizTabListen.length > 0 ? getKombinierteListe(quizTabListen) : aktiveListe;
     if (!kombiListe) return;
-    const isPakete = quizSessionModus === "pakete";
+    const isPakete = !gruppe && quizSessionModus === "pakete";
     if (isPakete && quizPaketGroesse == null) return;
     const effSlot = overrideSlot !== null ? overrideSlot : aktiverSlot;
     if (!force && isPakete && sessionSlotAktiv && sessionSlotKonflikt() && effSlot?.typ !== 'gespeichert') {
@@ -2906,7 +2929,8 @@ export default function VokabelApp() {
 
     let voks = kombiListe.vokabeln.filter(v => alleAbfragbar.every(t => v[t]));
 
-    if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
+    if (gruppe) voks = voks.filter(v => gruppe.has(v.id));
+    else if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
       voks = voks.filter(v => quizCheckboxAuswahl.has(v.id));
     }
     // Akzent-Spalten: Wörter ohne Akzent nur auf Wunsch – sonst wird für sie nur die Akzent-Spalte
@@ -2918,11 +2942,11 @@ export default function VokabelApp() {
       && quizAntwortTypenGeordnet.every(t => quizSpalteModus[t] === "akzent") ? "akzentFortschritt" : "fortschritt";
     const gruppeVokIds = voks.map(v => v.id);   // ganze Vokabelgruppe inkl. Gelernter (für Lern-Bilanz)
     const schwelleQ = einstellungen.gelerntSchwelle ?? 0;
-    if (!quizGelerntEinschliessen && schwelleQ > 0)
+    if (!gruppe && !quizGelerntEinschliessen && schwelleQ > 0)
       voks = voks.filter(v => (v[scoreFeld]?.score ?? -Infinity) < schwelleQ);
     // Score-Grenze (Reihenfolge "schlechteste") gehört zur Session-Menge – wie die Anzeige im Quiz-Tab
-    if (quizReihenfolge === "schlechteste" && quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
-      const threshold = parseFloat(quizSchlechtesteMaxScore);
+    if (reihenfolgeQ === "schlechteste" && maxScoreQ !== "" && !isNaN(parseFloat(maxScoreQ))) {
+      const threshold = parseFloat(maxScoreQ);
       voks = voks.filter(v => (v[scoreFeld]?.score ?? 0) < threshold);
     }
 
@@ -2955,29 +2979,29 @@ export default function VokabelApp() {
       }
     }
 
-    if (quizReihenfolge === "schlechteste") {
-      if (quizUnbeantwortetZuerst.schlechteste) {
+    if (reihenfolgeQ === "schlechteste") {
+      if (unbeantwortetQ.schlechteste) {
         const unb = voks.filter(v => !v[scoreFeld]);
         const bea = [...voks.filter(v => v[scoreFeld])].sort((a, b) => (a[scoreFeld].score ?? 0) - (b[scoreFeld].score ?? 0));
         voks = [...unb, ...bea];
       } else {
         voks = [...voks].sort((a, b) => (a[scoreFeld]?.score ?? 0) - (b[scoreFeld]?.score ?? 0));
       }
-    } else if (quizUnbeantwortetZuerst[quizReihenfolge]) {
+    } else if (unbeantwortetQ[reihenfolgeQ]) {
       const unb = voks.filter(v => !v[scoreFeld]);
       const bea = voks.filter(v => v[scoreFeld]);
-      if (quizReihenfolge === "listennr") {
+      if (reihenfolgeQ === "listennr") {
         voks = [...unb, ...bea];
       } else {
         voks = [...[...unb].sort(() => Math.random() - 0.5), ...[...bea].sort(() => Math.random() - 0.5)];
       }
-    } else if (quizReihenfolge !== "listennr") {
+    } else if (reihenfolgeQ !== "listennr") {
       voks = [...voks].sort(() => Math.random() - 0.5);
     }
 
     if (isPakete) voks = voks.slice(0, quizPaketGroesse);
     if (voks.length === 0) return;
-    if (!isPakete) merkeRundeImVerlauf(effSlot, Object.fromEntries(voks.map(v => [v.id, v[scoreFeld]?.score ?? null])));
+    if (!isPakete && !gruppe) merkeRundeImVerlauf(effSlot, Object.fromEntries(voks.map(v => [v.id, v[scoreFeld]?.score ?? null])));
 
     function getFA(idx) {
       if (quizModus === "rotierend") {
@@ -6792,7 +6816,9 @@ export default function VokabelApp() {
             <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
               {gruppenQuiz.ids.length} Vokabel{gruppenQuiz.ids.length !== 1 ? "n" : ""} aus „{gruppenQuiz.name}“
               ({STATISTIK_ARTEN.find(([a]) => a === gruppenQuiz.art)?.[1]}), schlechteste zuerst.
-              Spalten und Abfrage-Modus wie im Quiz eingestellt{aktiverSlot ? "; die gewählte Konfiguration wird dafür gelöst" : ""}.
+              {gruppenQuizPasst(gruppenQuiz)
+                ? <> Einmalige Runde: {aktiverSlot ? <>„{getSlotEintrag(aktiverSlot.typ, aktiverSlot.id)?.name || "Auswahl"}“</> : "deine Quiz-Auswahl"} und der Session-Fortschritt bleiben erhalten, die Scores verbessern sich.</>
+                : <> Spalten und Abfrage-Modus wie im Quiz eingestellt; {quizAbfrageArt !== gruppenQuiz.art ? "Abfrageart und Quiz-Auswahl werden" : "die Quiz-Auswahl wird"} dafür umgestellt{aktiverSlot ? ", die gewählte Konfiguration wird gelöst" : ""}.</>}
             </p>
             <div className="modal-actions">
               <button {...tt("Schließen, ohne ein Quiz zu starten")} className="btn btn-ghost" onClick={() => setGruppenQuiz(null)}>Abbrechen</button>
