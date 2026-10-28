@@ -1477,7 +1477,8 @@ STANDARDS (neu): gelerntSchwelle 3 (defaultEinstellungen); Reihenfolge
   Tests mit alten Annahmen geben sie ausdrücklich mit (akzente, akzent_mischen:
   stufen; fortschritt/gruppen/kreis: vokabel_statistik_liste_zu=false).
 KARTEN-INFO: im Karten-Modus gelber Kasten (data-karte-info) unter der
-  Antwort, über Gewusst/Nicht gewusst, auch vor dem Aufdecken als Hilfe.
+  Antwort, nur vor dem Aufdecken (als Hilfe); nach dem Aufdecken stehen dort
+  Gewusst/Nicht gewusst und der Kasten ist weg.
   Eingeklappt eine Zeile "Info", Antippen klappt auf (quiz.infoSichtbar, je
   Karte). Pinnadel (data-karte-info-pin) → einstellungen.karteInfoPin: immer
   offen. "i" in der Kopfzeile neben Beenden (data-karte-info-schalter) →

@@ -4122,8 +4122,8 @@ export default function VokabelApp() {
               );
             })()}
 
-            {/* Karten-Modus: Info-Kasten (eingeklappt eine Zeile „Info“) */}
-            {karteMitInfo && karteInfoAn && !quiz.flash && (
+            {/* Karten-Modus: Info-Kasten (eingeklappt eine Zeile „Info“) – nur vor dem Aufdecken, danach stehen hier die Bewertungs-Knöpfe */}
+            {karteMitInfo && karteInfoAn && !quiz.flash && quiz.phase === "eingabe" && (
               <div data-karte-info={karteInfoOffen ? "offen" : "zu"} onClick={e => { e.stopPropagation(); if (!karteInfoPin) setQuiz(prev => ({...prev, infoSichtbar: !prev.infoSichtbar})); }}
                 {...tt(karteInfoPin ? "Info-Text (angeheftet)" : karteInfoOffen ? "Info einklappen" : "Info aufklappen")}
                 style={{background:"#fffde7", border:"1px solid #ffe082", borderRadius:12, padding: karteInfoOffen ? "10px 12px" : "7px 12px", marginBottom:14, cursor: karteInfoPin ? "default" : "pointer"}}>

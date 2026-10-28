@@ -68,15 +68,12 @@ await page.screenshot({ path: "karteninfo_offen.png" });
 await page.click("[data-karte-info]"); await sleep(200);
 ok((await kasten())?.zustand === "zu", "nochmal antippen: wieder eingeklappt");
 
-// Aufdecken: Kasten zwischen Antwort und Bewertungs-Knöpfen
+// Aufdecken: Kasten verschwindet, Bewertungs-Knöpfe stehen an seiner Stelle
+const vorher = await page.evaluate(() => document.querySelector("[data-karte-info]").getBoundingClientRect().top);
 await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(300);
-const lage = await page.evaluate(() => {
-  const k = document.querySelector("[data-karte-info]").getBoundingClientRect();
-  const a = document.querySelector(".quiz-antwort-box").getBoundingClientRect();
-  const b = document.querySelector(".karte-bewertung").getBoundingClientRect();
-  return a.bottom <= k.top && k.bottom <= b.top;
-});
-ok(lage, "aufgedeckt: Kasten unter der Antwort, über Gewusst/Nicht gewusst");
+const lage = await page.evaluate(() => ({ kasten: !!document.querySelector("[data-karte-info]"), knoepfe: document.querySelector(".karte-bewertung")?.getBoundingClientRect().top }));
+console.log("     Kasten oben vorher:", Math.round(vorher), "Knöpfe oben:", Math.round(lage.knoepfe));
+ok(!lage.kasten && Math.abs(lage.knoepfe - vorher) < 12, "aufgedeckt: Kasten weg, Gewusst/Nicht gewusst an seiner Stelle");
 await page.screenshot({ path: "karteninfo_aufgedeckt.png" });
 await clickText(".karte-btn-ja", "Gewusst"); await sleep(1200);
 ok((await kasten())?.zustand === "zu", "nächste Karte: Kasten wieder eingeklappt");
