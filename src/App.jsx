@@ -30,6 +30,14 @@ function lsDel(key) {
 }
 
 // ── Quiz-Feedback ───────────────────────────────────────────────────────────
+// Session-Durchlauf geschafft: große Überschrift (zufällig, bleibt für denselben Durchlauf gleich)
+const JUBEL = ["Geschafft!", "Super gemacht!", "Session gemeistert!", "Stark!", "Ziel erreicht!", "Bravo!", "Klasse!", "Alles durch!"];
+const jubelGemerkt = { key: null, text: "" };
+function jubelText(key) {
+  if (jubelGemerkt.key !== key) { jubelGemerkt.key = key; jubelGemerkt.text = JUBEL[Math.floor(Math.random() * JUBEL.length)]; }
+  return jubelGemerkt.text;
+}
+
 function getQuizFeedback(richtig, gesamt) {
   if (gesamt === 0) return "";
   const pct = richtig / gesamt;
@@ -656,6 +664,11 @@ const CSS = `
   .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
   .leer{text-align:center;padding:48px 24px;color:#6b6560;}
   .leer-text{font-size:0.9rem;line-height:1.5;margin-top:8px;}
+  .jubel{text-align:center;padding:4px 0 18px;}
+  .jubel-titel{font-size:2rem;font-weight:800;color:#2d6a4f;line-height:1.2;animation:jubelPop .55s cubic-bezier(.2,1.6,.4,1) both;}
+  .jubel-emoji{font-size:2.2rem;display:block;animation:jubelPop .55s .1s cubic-bezier(.2,1.6,.4,1) both;}
+  .jubel-sub{font-size:0.9rem;color:#6b6560;margin-top:4px;}
+  @keyframes jubelPop{0%{transform:scale(.3);opacity:0;}100%{transform:scale(1);opacity:1;}}
   .spalten-badge{font-size:0.68rem;font-weight:700;padding:1px 6px;border-radius:4px;background:#ece9e4;color:#b0aba5;margin-right:3px;}
   .spalten-badge.aktiv{background:#e8f5e9;color:#2d6a4f;}
   .typ-btn{font-size:0.78rem;font-weight:600;padding:5px 10px;border-radius:6px;border:1.5px solid #e0dbd2;background:#f7f5f0;color:#6b6560;cursor:pointer;font-family:inherit;}
@@ -3588,15 +3601,26 @@ export default function VokabelApp() {
                 <span className="quiz-fortschritt">{richtig}/{quiz.diktatErgebnisse.length} ✓</span>
               </div>
               <div className="sektion">
+                {istLetzteBatch ? (
+                  <div className="jubel" data-jubel style={{paddingTop:24}}>
+                    <span className="jubel-emoji">🎉</span>
+                    <div className="jubel-titel">{jubelText((quiz.sessionVokIds || []).join())}</div>
+                    <div className="jubel-sub">Alle {quiz.sessionGesamt} Vokabeln dieser Session abgefragt</div>
+                  </div>
+                ) : (
                 <div className="leer">
-                  <div style={{fontSize:"2.5rem"}}>{istLetzteBatch ? "🎉" : "✓"}</div>
-                  <div className="leer-text">{istLetzteBatch ? `Alle ${quiz.sessionGesamt} Vokabeln abgefragt!` : "Paket abgeschlossen!"}</div>
+                  <div style={{fontSize:"2.5rem"}}>✓</div>
+                  <div className="leer-text">Paket abgeschlossen!</div>
                   <div style={{fontSize:"0.85rem", color:"#6b6560", marginTop:4}}>
                     {schonAbgefragt.size} / {quiz.sessionGesamt} ({Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100)}%)
                   </div>
                 </div>
+                )}
                 {istLetzteBatch ? (
-                  <><button {...tt("Durchlauf beenden und zur Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
+                  <>
+                  <button data-nochmal {...tt("Session gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}}
+                    onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteDiktat(true); }}>🔁 Nochmal!</button>
+                  <button {...tt("Durchlauf beenden und zur Übersicht")} className="btn btn-ghost-filled" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
                   <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
                 ) : (
                   <>
@@ -3799,6 +3823,13 @@ export default function VokabelApp() {
                     <div style={{width:`${sessionPct}%`, height:"100%", background:"#2d6a4f", borderRadius:8}}/>
                   </div>
                 </div>
+                {istLetzteBatch && !quiz.abgebrochen && (
+                  <div className="jubel" data-jubel>
+                    <span className="jubel-emoji">🎉</span>
+                    <div className="jubel-titel">{jubelText((quiz.sessionVokIds || []).join())}</div>
+                    <div className="jubel-sub">Alle {quiz.sessionGesamt} Vokabeln dieser Session abgefragt</div>
+                  </div>
+                )}
                 {/* Paket-Auswertung */}
                 {ges > 0 && (<>
                   {renderRundenErgebnis(quiz, r, f, quiz.abgebrochen ? "Bis zum Abbruch" : istLetzteBatch ? "Letztes Paket" : "Dieses Paket")}
@@ -3812,7 +3843,10 @@ export default function VokabelApp() {
                   <><button {...tt("Zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => beendeQuiz()}>Zur Übersicht</button>
                   <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
                 ) : istLetzteBatch ? (
-                  <><button {...tt("Durchlauf beenden und zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
+                  <>
+                  <button data-nochmal {...tt("Session gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}}
+                    onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteQuiz(true); }}>🔁 Nochmal!</button>
+                  <button {...tt("Durchlauf beenden und zur Quiz-Übersicht")} className="btn btn-ghost-filled" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
                   <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
                 ) : (
                   <>

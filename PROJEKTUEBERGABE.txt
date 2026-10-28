@@ -1497,6 +1497,11 @@ GRUPPEN-QUIZ aus der Statistik: Lang-Druck/Rechtsklick auf Segment bzw.
   Statistik-Art Diktat → quizModus diktat. Start nach zwei Render-Durchgängen
   (gruppenQuizStartRef/-Tick), damit die Spalten zu den Listen passen.
   Test: e2e/gruppenquiz.mjs.
+DURCHLAUF GESCHAFFT (Session, letztes Paket, Quiz und Diktat): unter dem
+  Balken große Überschrift (.jubel, data-jubel) aus JUBEL – zufällig, je
+  Durchlauf gemerkt (jubelText) – mit Pop-Animation; Knopf "🔁 Nochmal!"
+  (data-nochmal): updateSessionSlotFortschritt(…, true) und starteQuiz(true)
+  bzw. starteDiktat(true) → Session sofort von vorn. Test: e2e/jubel.mjs.
 
 
 ================================================================
