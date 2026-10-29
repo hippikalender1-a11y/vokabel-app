@@ -1558,6 +1558,10 @@ IN SESSIONS AUFTEILEN: Listen-Menü "▦ In Sessions aufteilen" → starteAuftei
   zusammenhängend ab der nächsten freien Zeile (Raster wächst). Vorhandene Namen
   werden übersprungen. Andere Liste/Konfiguration gewählt → Aufteilen endet.
   Test: e2e/aufteilen.mjs.
+LISTENAUSWAHL IN QUIZ UND STATISTIK im selben Raster wie der Listen-Tab:
+  listenRasterPlaetze() (Spalten aus listenRaster, leere Plätze frei, mit
+  Sprachfilter zusammengerückt), Container .listen-raster.auswahl (.eng ab 2
+  Spalten: ohne Spalten-Badges). Test: e2e/listenraster.mjs.
 GRUPPEN-QUIZ → ZURÜCK: quiz.ausStatistik (einmalige Runde via gruppe, Fallback
   per setQuiz im Start-Effekt). Auswertung (ohne Session, Quiz und Diktat):
   Hauptknopf "📊 Zurück zur Statistik" (data-zurueck-statistik) und Schließen

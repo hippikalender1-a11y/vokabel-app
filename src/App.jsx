@@ -727,6 +727,11 @@ const CSS = `
   .listen-raster .karte-zeile:last-child{border-bottom:1px solid #e0dbd2;}
   .listen-raster.eng .karte-zeile{padding:10px 12px;gap:8px;}
   .listen-raster .raster-leer{min-height:56px;}
+  .listen-raster.auswahl .quiz-setup-check{background:#fff;border:1px solid #e0dbd2;border-radius:12px;min-width:0;}
+  .listen-raster.auswahl .quiz-setup-check:last-child{border-bottom:1px solid #e0dbd2;}
+  .listen-raster.auswahl.eng .quiz-setup-check{padding:8px 10px !important;gap:8px;}
+  .listen-raster.auswahl .quiz-setup-check > div:last-child{min-width:0;}
+  .listen-raster.auswahl .raster-leer{min-height:0;}
   .raster-chip{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-height:44px;min-width:0;text-align:left;padding:6px 10px;}
   .raster-name{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .raster-fortschritt{font-size:0.68rem;font-weight:600;opacity:0.8;}
@@ -2928,6 +2933,18 @@ export default function VokabelApp() {
         </div>
       </div>
     );
+  }
+
+  // Plätze des Listen-Rasters für die Listenauswahl in Quiz und Statistik: gleiche Spalten und Plätze
+  // wie im Listen-Tab (leere Plätze bleiben frei); mit Sprachfilter zusammengerückt
+  function listenRasterPlaetze() {
+    const { spalten } = rasterGroesse(einstellungen, "listenRaster");
+    if (sprachFilter !== "alle") return { spalten, plaetze: sichtbareListen.map(l => ({ key: l.id, l })) };
+    const platzMap = new Map(listenIndex.filter(l => l.platz).map(l => [`${l.platz.z}|${l.platz.s}`, l]));
+    const zeilen = listenIndex.reduce((m, l) => Math.max(m, (l.platz?.z ?? 0) + 1), 0);
+    const plaetze = [];
+    for (let z = 0; z < zeilen; z++) for (let sp = 0; sp < spalten; sp++) plaetze.push({ key: `${z}|${sp}`, l: platzMap.get(`${z}|${sp}`) || null });
+    return { spalten, plaetze };
   }
 
   // Listen-Übersicht als Raster wie bei den gespeicherten Konfigurationen: Lang-Druck → Menü
@@ -5418,8 +5435,10 @@ export default function VokabelApp() {
                   {listenAuswahlAufgeklappt && (<>
                     {sichtbareListen.length === 0
                       ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
-                      : <div className="karte" style={{marginBottom:16}}>
-                        {sichtbareListen.map(l => {
+                      : (() => { const { spalten, plaetze } = listenRasterPlaetze(); const eng = spalten > 1; return (
+                      <div className={`listen-raster auswahl${eng ? " eng" : ""}`} style={{gridTemplateColumns:`repeat(${spalten}, minmax(0, 1fr))`}}>
+                        {plaetze.map(({ key: pk, l }) => {
+                          if (!l) return <div key={pk} className="raster-leer" style={{border:"none"}}/>;
                           const ll = lsGet(SK.liste(l.id));
                           const lAbfragbar = ll ? TYPEN.filter(t => !t.startsWith('i') && ll.spalten[t].aktiv) : [];
                           const lInfo = ll ? TYPEN.filter(t => t.startsWith('i') && ll.spalten[t].aktiv) : [];
@@ -5433,14 +5452,15 @@ export default function VokabelApp() {
                                 <div style={{fontWeight:600, fontSize:"0.9rem"}}>{listenFlagge(l)}{l.name}</div>
                                 <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:2}}>
                                   {anzahl} Vokabel{anzahl!==1?"n":""}
-                                  {ll && lAbfragbar.map(t => <span key={t} className="spalten-badge aktiv" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
-                                  {ll && lInfo.map(t => <span key={t} className="spalten-badge" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
+                                  {ll && !eng && lAbfragbar.map(t => <span key={t} className="spalten-badge aktiv" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
+                                  {ll && !eng && lInfo.map(t => <span key={t} className="spalten-badge" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
                                 </div>
                               </div>
                             </div>
                           );
                         })}
                       </div>
+                      ); })()
                     }
                   </>)}
                 </div>
@@ -6446,10 +6466,11 @@ export default function VokabelApp() {
             </div>
             {statistikListenAufgeklappt && (
               <div ref={statistikListenContainerRef} style={{background:"#f7f5f0", borderBottom:"1px solid #e0dbd2", padding:"8px 16px"}}>
-                <div className="karte" style={{marginBottom:0}}>
+                <div className={`listen-raster auswahl${listenRasterPlaetze().spalten > 1 ? " eng" : ""}`} style={{marginBottom:0, gridTemplateColumns:`repeat(${listenRasterPlaetze().spalten}, minmax(0, 1fr))`}}>
                   {sichtbareListen.length === 0
                     ? <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.85rem"}}>Keine Listen vorhanden.</div>
-                    : sichtbareListen.map(l => {
+                    : listenRasterPlaetze().plaetze.map(({ key: pk, l }) => {
+                        if (!l) return <div key={pk} className="raster-leer" style={{border:"none"}}/>;
                         const ll = statistikAlleListenObjekte.find(x => x.id === l.id);
                         const anzahl = ll ? ll.vokabeln.length : 0;
                         const gewaehlt = statistikListenIds === null || statistikListenIds.has(l.id);

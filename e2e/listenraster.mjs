@@ -138,6 +138,26 @@ console.log("     2 Spalten:", JSON.stringify(pl));
 ok(spalten === 2 && pl.Gamma === "0|0", "Raster mit 2 Spalten, Plätze bleiben");
 ok(await page.evaluate(() => /1 Vokabel$/.test(document.querySelector("[data-liste-id] .karte-zeile-sub").textContent.trim())), "Kachel: Flagge, Name, Anzahl");
 
+// Quiz und Statistik: gleiches Raster wie der Listen-Tab (Plätze inkl. Lücken)
+const auswahlRaster = () => page.evaluate(() => {
+  const r = [...document.querySelectorAll(".listen-raster.auswahl")].find(x => x.offsetParent);
+  if (!r) return null;
+  const n = getComputedStyle(r).gridTemplateColumns.split(" ").length;
+  return n + ":" + [...r.children].map((c, i) => c.classList.contains("quiz-setup-check") ? `${Math.floor(i / n)}|${i % n}=${c.children[1].children[0].textContent.trim().replace(/^[^\p{L}]+/u, "")}` : null).filter(Boolean).join(",");
+});
+const erwartet = "2:" + Object.entries(pl).sort((a, b) => a[1].localeCompare(b[1])).map(([n, p]) => `${p}=${n}`).join(",");
+await clickText(".tab", "Quiz"); await sleep(300);
+let qr = await auswahlRaster();
+if (!qr) { await clickText("span, div", "Listen-Auswahl", true); qr = await auswahlRaster(); }
+console.log("     Quiz-Raster:", qr, "| erwartet:", erwartet);
+ok(qr === erwartet, "Quiz-Tab: Listenauswahl im gleichen Raster");
+await clickText(".tab", "Statistik"); await sleep(300);
+let sr = await auswahlRaster();
+if (!sr) { await page.evaluate(() => [...document.querySelectorAll("button.zeile-rechts")].find(b => b.title === "Listen für die Statistik auswählen")?.click()); await sleep(400); sr = await auswahlRaster(); }
+console.log("     Statistik-Raster:", sr);
+ok(sr === erwartet, "Statistik: Listenauswahl im gleichen Raster");
+await clickText(".tab", "Listen");
+
 // Sprachfilter: rückt zusammen, kein Verschieben
 await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"); e.sprache = "fr"; localStorage.setItem("vokabel_einstellungen", JSON.stringify(e)); });
 await page.reload(); await sleep(500);
