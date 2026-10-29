@@ -1608,6 +1608,13 @@ SESSION-AUSWERTUNG: Ende eines Durchlaufs (Session, letztes Paket) bzw. einer Ru
   Starten() füllt sie beim nächsten Durchlauf neu. Runden ohne Session:
   rundeStartScores/rundeStartZeit im Quiz (Diktat jetzt auch). Tests: e2e-Helfer
   clickText drückt bei Bedarf erst "Weiter →"; e2e/sessionauswertung.mjs.
+AKZENTE OHNE AKZENT BEGRENZT: Regel "auch Wörter ohne Akzent" hat je Stufe
+  akzentOhneAnteil (¼, ½, 1, 2, "alle"; Standard 1 = noch einmal so viele wie mit
+  Akzent; Auswahl data-akzent-ohne-anteil in der Regel-Tabelle). begrenzeOhneAkzent()
+  (nach Gelernt-/Score-Filter; bevorzugt schwächsten/keinen Akzent-Score; laufende
+  Session: feste Auswahl = startScores) im Quiz-Start und im Quiz-Tab, Anzeige
+  "(x mit Akzent + y ohne)"; verteileOhneAkzent() mischt gleichmäßig vor dem
+  Paket-Schnitt. Test: e2e/akzentbegrenzung.mjs.
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).

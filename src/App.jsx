@@ -529,6 +529,13 @@ const STUFEN_REGELN = [
   { key: "akzentZaehler", label: "Akzent-Modus: anzeigen, wie viele Akzente noch fehlen", sub: "z. B. „Akzente 2 / 3“", einfach: true, schwer: true },
   { key: "akzentAutoUebernahme", label: "Akzent-Modus: alle Akzente richtig → automatisch übernehmen", sub: "sonst muss man „Prüfen“ antippen", einfach: true, schwer: true },
 ];
+// Akzent-Modus mit Wörtern ohne Akzent: höchstens so viele (Faktor × Wörter mit Akzent) – je Stufe; "alle" = unbegrenzt
+const AKZENT_OHNE_ANTEILE = [[0.25, "¼×"], [0.5, "½×"], [1, "1×"], [2, "2×"], ["alle", "∞"]];
+function akzentOhneAnteil(einst) {
+  const stufe = einst?.modus === "einfach" ? "einfach" : "schwer";
+  const w = einst?.stufen?.[stufe]?.akzentOhneAnteil ?? 1;
+  return w === "alle" ? null : w;
+}
 // Regeln der aktuell gewählten Stufe (gespeicherte Haken, sonst Standard)
 function stufenRegeln(einst) {
   const stufe = einst?.modus === "einfach" ? "einfach" : "schwer";
@@ -3655,6 +3662,12 @@ export default function VokabelApp() {
       const threshold = parseFloat(maxScoreQ);
       voks = voks.filter(v => (v[scoreFeld]?.score ?? 0) < threshold);
     }
+    const nurAkzentQ = scoreFeld === "akzentFortschritt";
+    if (nurAkzentQ && !gruppe) {
+      const laufend = isPakete ? lsGet(SK.sessionAktiv) : null;
+      const festeIds = laufend && !sessionSlotKonflikt() && Object.keys(laufend.startScores || {}).length > 0 ? new Set(Object.keys(laufend.startScores)) : null;
+      voks = begrenzeOhneAkzent(voks, quizAntwortTypenGeordnet, festeIds);
+    }
 
     const sessionGesamt = isPakete ? voks.length : 0;
     const sessionIds = isPakete ? voks.map(v => v.id) : null;
@@ -3705,6 +3718,7 @@ export default function VokabelApp() {
       voks = [...voks].sort(() => Math.random() - 0.5);
     }
 
+    if (nurAkzentQ && stufenRegeln(einstellungen).akzentOhneMischen) voks = verteileOhneAkzent(voks, quizAntwortTypenGeordnet);
     if (isPakete) voks = voks.slice(0, quizPaketGroesse);
     if (voks.length === 0) return;
     if (!isPakete && !gruppe) merkeRundeImVerlauf(effSlot, Object.fromEntries(voks.map(v => [v.id, v[scoreFeld]?.score ?? null])));
@@ -3932,6 +3946,35 @@ export default function VokabelApp() {
       if (erreicht(aktVok.akzentFortschritt, neu)) gelerntBlitz = blitzKey(quiz);
     }
     return { spaltenErgebnisse, vokErgebnis, erstbewertung, gewertet, liste, sessionFalsch, ...(gelerntBlitz ? { gelerntBlitz } : {}) };
+  }
+
+  // Akzent-Abfrage mit Wörtern ohne Akzent: nur so viele ohne Akzent wie eingestellt (Faktor × mit Akzent);
+  // bevorzugt die mit schwächstem bzw. noch keinem Akzent-Score, bei Gleichstand zufällig.
+  // festeIds: laufende Session – dann bleiben genau die Wörter ohne Akzent vom Session-Start
+  function begrenzeOhneAkzent(voks, antwortTypen, festeIds = null) {
+    const anteil = akzentOhneAnteil(einstellungen);
+    if (!stufenRegeln(einstellungen).akzentOhneMischen || anteil == null) return voks;
+    const mitAkz = v => antwortTypen.some(t => hatAkzente(v[t]?.wert));
+    const mit = voks.filter(mitAkz);
+    const ohne = voks.filter(v => !mitAkz(v));
+    const max = Math.round(mit.length * anteil);
+    const kandidaten = festeIds ? ohne.filter(v => festeIds.has(v.id))
+      : ohne.map(v => [v, Math.random()]).sort((a, b) => ((a[0].akzentFortschritt?.score ?? -Infinity) - (b[0].akzentFortschritt?.score ?? -Infinity)) || a[1] - b[1]).map(x => x[0]);
+    const behalten = new Set(kandidaten.slice(0, max).map(v => v.id));
+    return voks.filter(v => mitAkz(v) || behalten.has(v.id));
+  }
+  // Wörter ohne Akzent gleichmäßig zwischen die mit Akzent verteilen (Reihenfolge innerhalb bleibt)
+  function verteileOhneAkzent(voks, antwortTypen) {
+    const mitAkz = v => antwortTypen.some(t => hatAkzente(v[t]?.wert));
+    const mit = voks.filter(mitAkz), ohne = voks.filter(v => !mitAkz(v));
+    if (!mit.length || !ohne.length) return voks;
+    const n = voks.length, erg = [];
+    let a = 0, b = 0;
+    for (let i = 0; i < n; i++) {
+      if (b < ohne.length && (a >= mit.length || b < Math.round((i + 1) * ohne.length / n))) erg.push(ohne[b++]);
+      else erg.push(mit[a++]);
+    }
+    return erg;
   }
 
   // Kennung der aktuellen Frage für das Gelernt-Aufleuchten (gilt nur für diese Karte)
@@ -5585,6 +5628,13 @@ export default function VokabelApp() {
             ? akzentVoks.filter(v => startScore(v) >= schwelle).length : 0;
           if (!quizGelerntEinschliessen && schwelle > 0)
             reihenfolgeVoks = reihenfolgeVoks.filter(v => startScore(v) < schwelle);
+          if (nurAkzent) {
+            const laufend = isPakete && sessionSlotAktiv && !sessionSlotKonflikt() ? sessionSlotAktiv : null;
+            reihenfolgeVoks = begrenzeOhneAkzent(reihenfolgeVoks, quizAntwortTypenGeordnet,
+              laufend && Object.keys(laufend.startScores || {}).length > 0 ? new Set(Object.keys(laufend.startScores)) : null);
+          }
+          const ohneAkzentAnzahl = nurAkzent && stufenRegeln(einstellungen).akzentOhneMischen
+            ? reihenfolgeVoks.filter(v => !quizAntwortTypenGeordnet.some(t => hatAkzente(v[t]?.wert))).length : null;
           const verfuegbarReihenfolge = reihenfolgeVoks.length;
           // Pakete/Session-Filter → nur für Quiz-Button
           let verfuegbar;
@@ -5885,7 +5935,7 @@ export default function VokabelApp() {
                     <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Abfrage-Modus</span>
                     {mitAkzentAnzahl != null && (
                       <span data-anzahl="akzent" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", cursor:"help", whiteSpace:"nowrap"}}
-                        {...tt("Davon Vokabeln mit Akzent in der Akzente-Spalte")}>({mitAkzentAnzahl} mit Akzent)</span>
+                        {...tt(ohneAkzentAnzahl != null ? "Vokabeln mit Akzent in der Akzente-Spalte und dazu genommene Wörter ohne Akzent (Anzahl begrenzt, siehe Einstellungen)" : "Davon Vokabeln mit Akzent in der Akzente-Spalte")}>({mitAkzentAnzahl} mit Akzent{ohneAkzentAnzahl != null ? ` + ${ohneAkzentAnzahl} ohne` : ""})</span>
                     )}
                     <button className="toggle-opt aktiv zeile-rechts" data-abfragemodus onClick={toggleAbfrageModus}
                       {...tt("Abfrage-Modus öffnen – zeigt die Art der Abfrage (Karte, MC, Tastatur, Akzente, Diktat)")}>
@@ -6228,6 +6278,27 @@ export default function VokabelApp() {
                                   </div>
                                 );
                               })}
+                              {r.key === "akzentOhneMischen" && (<>
+                                <div style={{paddingLeft:12}}>
+                                  <div style={{fontSize:"0.8rem", fontWeight:600, color:"#3b3832"}}>… davon höchstens</div>
+                                  <div style={{fontSize:"0.72rem", color:"#6b6560"}}>Wörter ohne Akzent im Verhältnis zu den Wörtern mit Akzent (1× = noch einmal so viele)</div>
+                                </div>
+                                {["einfach", "schwer"].map(st => {
+                                  const regelAn = einstellungen.stufen?.[st]?.akzentOhneMischen ?? r[st];
+                                  const wert = einstellungen.stufen?.[st]?.akzentOhneAnteil ?? 1;
+                                  return (
+                                    <div key={st} style={{display:"flex", justifyContent:"center"}}>
+                                      <select data-akzent-ohne-anteil={st} value={String(wert)} disabled={!regelAn}
+                                        style={{fontFamily:"inherit", fontSize:"0.8rem", padding:"3px 2px", borderRadius:6, border:"1.5px solid #e0dbd2", background:"#fff", opacity: regelAn ? 1 : 0.4, width:52}}
+                                        onChange={e => { const v = e.target.value === "alle" ? "alle" : parseFloat(e.target.value);
+                                          speichereEinst({...einstellungen, stufen: {...(einstellungen.stufen || {}), [st]: {...(einstellungen.stufen?.[st] || {}), akzentOhneAnteil: v}}}); }}
+                                        {...ttFeld(`Stufe „${st === "einfach" ? "Einfach" : "Schwer"}“: höchstens so viele Wörter ohne Akzent (∞ = alle)`)}>
+                                        {AKZENT_OHNE_ANTEILE.map(([w, t]) => <option key={t} value={String(w)}>{t}</option>)}
+                                      </select>
+                                    </div>
+                                  );
+                                })}
+                              </>)}
                             </Fragment>))}
                           </div>
                         </div>
