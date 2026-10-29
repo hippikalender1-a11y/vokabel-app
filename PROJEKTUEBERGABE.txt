@@ -2,7 +2,7 @@
 VOKABEL-APP – PROJEKTÜBERGABE
 ================================================================
 Stand: 2026-10-26  (Session 37 — Standards, Score-Regel, Kreisdiagramm, Info-Modus)
-Letzter Commit: 84c0701
+Letzter Commit: 403e563
 
 DATEIPFADE
 ----------
@@ -1695,7 +1695,7 @@ Bitte lies zuerst PROJEKTUEBERGABE.txt vollständig, dann App.jsx
 Nach Änderungen: Browser-Tests in e2e/ laufen lassen (Abschnitt "BROWSER-TESTS");
 neue interaktive Elemente bekommen einen Erklärtext ({...tt("…")}).
 
-Letzter Commit: 84c0701 (Session 38 — Zwischenkarte Wiederholung, Akzent-Modus, Schwierigkeits-Regeln, Statistik-Umschalter, Auswertung neu, Abfrage-Modus-Anzeige, Anzahl-Kette Quiz-Tab, kein Text-Markieren, Fortschritt je Abfrageart, Raster gespeicherter Konfigurationen, Rückfrage Zurücksetzen, Info beim Ziehen, Lang-Druck-Menü, Fenster oben, schwebendes Menü, Export JSON/TXT, Duplizieren, einheitliche Spalte, Fortschritt-Knopf, Statistik-Kopfzeile, Tabwechsel-Auswahl, Spalten-Ansicht, Statistik-Liste einklappbar, neue Standards, Karten-Info, Gruppen-Quiz, Jubel + Nochmal, keine Akzente, zurück zur Statistik, Antwort-Reihenfolge E1→E2→E3, Antwort-Stapel ✓/✗ ohne Pause, Lang-Druck iPad, Listen-Raster, Kopie ohne Lernstand, Lernstand zurücksetzen, In Sessions aufteilen, Listenauswahl im Raster, Ü|D|A getrennt, Mini-Kreise, Mehrfach-Verschieben, untereinander)
+Letzter Commit: 403e563 (Session 38 — Zwischenkarte Wiederholung, Akzent-Modus, Schwierigkeits-Regeln, Statistik-Umschalter, Auswertung neu, Abfrage-Modus-Anzeige, Anzahl-Kette Quiz-Tab, kein Text-Markieren, Fortschritt je Abfrageart, Raster gespeicherter Konfigurationen, Rückfrage Zurücksetzen, Info beim Ziehen, Lang-Druck-Menü, Fenster oben, schwebendes Menü, Export JSON/TXT, Duplizieren, einheitliche Spalte, Fortschritt-Knopf, Statistik-Kopfzeile, Tabwechsel-Auswahl, Spalten-Ansicht, Statistik-Liste einklappbar, neue Standards, Karten-Info, Gruppen-Quiz, Jubel + Nochmal, keine Akzente, zurück zur Statistik, Antwort-Reihenfolge E1→E2→E3, Antwort-Stapel ✓/✗ ohne Pause, Lang-Druck iPad, Listen-Raster, Kopie ohne Lernstand, Lernstand zurücksetzen, In Sessions aufteilen, Listenauswahl im Raster, Ü|D|A getrennt, Mini-Kreise, Mehrfach-Verschieben, untereinander, Ü|D|A-Kreise in der Kopfzeile)
 
 Offene Punkte: siehe Abschnitt "TODO / GEPLANTE FEATURES" (nach Priorität;
 als Nächstes: Datei-Übertragung iPad → Android).
