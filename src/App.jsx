@@ -550,6 +550,13 @@ function MiniKreis({ pct, buchstabe, aktiv, aus, groesse = 24, aufGruen = false 
   const f = aufGruen
     ? { fill: aktiv ? "#fff" : "transparent", grund: "rgba(255,255,255,0.3)", ring: aktiv ? "#52b788" : "#95d5b2", text: aktiv ? "#2d6a4f" : "#fff" }
     : { fill: aktiv ? "#2d6a4f" : "#fff", grund: "#e0dbd2", ring: aktiv ? "#95d5b2" : "#52b788", text: aktiv ? "#fff" : "#2d6a4f" };
+  // 100 % gelernt: Kreis komplett grün gefüllt (gewählte Art zusätzlich mit äußerem Ring)
+  if (!aus && pct >= 99.999) return (
+    <svg width={groesse} height={groesse} viewBox="0 0 24 24" style={{display:"block"}}>
+      <circle cx="12" cy="12" r="10.5" fill="#52b788" stroke={aktiv ? (aufGruen ? "#fff" : "#2d6a4f") : "#52b788"} strokeWidth={aktiv ? 2.5 : 0}/>
+      <text x="12" y="12.5" textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="800" fill="#fff">{buchstabe}</text>
+    </svg>
+  );
   return (
     <svg width={groesse} height={groesse} viewBox="0 0 24 24" style={{display:"block", opacity: aus ? 0.35 : 1}}>
       <circle cx="12" cy="12" r={r} fill={f.fill} stroke={f.grund} strokeWidth="3"/>
@@ -787,6 +794,8 @@ const CSS = `
   .slot-chip.zuletzt{background:#fffde7;border-color:#f9a825;color:#e65100;}
   .slot-chip.leer{opacity:0.35;cursor:default;}
   .slot-raster{display:grid;gap:6px;}
+  .gelernt-blitz{animation:gelerntBlitz 1s ease-out;}
+  @keyframes gelerntBlitz{0%,35%{background:#fff3a0;border-color:#f5d000;box-shadow:0 0 0 4px #fff3a0,0 0 22px #ffe45c;}100%{box-shadow:0 0 0 0 transparent;}}
   .auswahl-nr{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;border-radius:10px;background:#e0a800;color:#fff;font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;z-index:2;}
   .listen-raster{display:grid;gap:6px;margin-bottom:16px;}
   .listen-raster .karte-zeile{background:#fff;border:1px solid #e0dbd2;border-radius:12px;min-width:0;}
@@ -3769,18 +3778,28 @@ export default function VokabelApp() {
     const erstbewertung = !(aktVok.id in (quiz.gewertet || {}));
     const gewertet = erstbewertung ? { ...(quiz.gewertet || {}), [aktVok.id]: vokErgebnis } : quiz.gewertet;
     if (!erstbewertung && quiz.abfrageZiel?.modus !== "score") return { spaltenErgebnisse, vokErgebnis, erstbewertung, gewertet };
-    let liste = quiz.liste, sessionFalsch = quiz.sessionFalsch;
+    let liste = quiz.liste, sessionFalsch = quiz.sessionFalsch, gelerntBlitz = null;
+    // Vokabel erreicht mit dieser Antwort die Gelernt-Schwelle → Karte leuchtet kurz hellgelb
+    const schwelle = einstellungen.gelerntSchwelle ?? 0;
+    const erreicht = (vorher, nachher) => schwelle > 0 && (vorher?.score ?? -Infinity) < schwelle && (nachher?.score ?? -Infinity) >= schwelle;
     if (normal.length > 0) {
       const erg = gesamt(normal);
       const neuerCount = erg === "falsch" ? (quiz.sessionFalsch[aktVok.id] || 0) + 1 : 0;
-      liste = speichereScore(liste, aktVok.id, berechneNeuenScore(aktVok.fortschritt, erg, neuerCount, stufenRegeln(einstellungen).aufdeckenAbzug ? "schwer" : "einfach"));
+      const neu = berechneNeuenScore(aktVok.fortschritt, erg, neuerCount, stufenRegeln(einstellungen).aufdeckenAbzug ? "schwer" : "einfach");
+      liste = speichereScore(liste, aktVok.id, neu);
+      if (erreicht(aktVok.fortschritt, neu)) gelerntBlitz = blitzKey(quiz);
       if (erg === "falsch") sessionFalsch = { ...quiz.sessionFalsch, [aktVok.id]: neuerCount };
     }
     if (akzent.length > 0) {
-      liste = speichereAkzentScore(liste, aktVok.id, berechneDiktatScore(aktVok.akzentFortschritt, gesamt(akzent) === "richtig" ? "richtig" : "aufgedeckt"));
+      const neu = berechneDiktatScore(aktVok.akzentFortschritt, gesamt(akzent) === "richtig" ? "richtig" : "aufgedeckt");
+      liste = speichereAkzentScore(liste, aktVok.id, neu);
+      if (erreicht(aktVok.akzentFortschritt, neu)) gelerntBlitz = blitzKey(quiz);
     }
-    return { spaltenErgebnisse, vokErgebnis, erstbewertung, gewertet, liste, sessionFalsch };
+    return { spaltenErgebnisse, vokErgebnis, erstbewertung, gewertet, liste, sessionFalsch, ...(gelerntBlitz ? { gelerntBlitz } : {}) };
   }
+
+  // Kennung der aktuellen Frage für das Gelernt-Aufleuchten (gilt nur für diese Karte)
+  const blitzKey = q => `${q.wiederholungDurchgang || 0}|${q.index}|${q.vokabeln[q.index]?.id}`;
 
   function pruefeAntwort() {
     if (!quiz || !quiz.eingabe.trim()) return;
@@ -4030,9 +4049,11 @@ export default function VokabelApp() {
     if (treffer) {
       const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "richtig");
       const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
+      const schwelle = einstellungen.gelerntSchwelle ?? 0;
+      const gelerntBlitz = schwelle > 0 && (aktVok.diktatFortschritt?.score ?? -Infinity) < schwelle && neuFortschritt.score >= schwelle ? blitzKey(quiz) : null;
       const ergebnis = { vokId: aktVok.id, wort, uebersetzung: aktVok[quiz.diktatUeberspalte]?.wert, richtig: true };
       setQuiz(prev => ({
-        ...prev, liste: neueListe, eingabe: "", phase: "richtig", flash: false,
+        ...prev, liste: neueListe, eingabe: "", phase: "richtig", flash: false, ...(gelerntBlitz ? { gelerntBlitz } : {}),
         diktatErgebnisse: [...prev.diktatErgebnisse, ergebnis], feedback: treffer === "akzent" ? AKZENT_HINWEIS : "",
       }));
     } else {
@@ -4226,6 +4247,7 @@ export default function VokabelApp() {
     const diktatWeiter = quiz.phase === "richtig" || quiz.phase === "aufgedeckt";
     let antwortBoxKlasse = "quiz-antwort-box";
     if (quiz.phase === "richtig") antwortBoxKlasse += " richtig";
+    if (quiz.gelerntBlitz && quiz.gelerntBlitz === blitzKey(quiz)) antwortBoxKlasse += " gelernt-blitz";
     else if (quiz.phase === "aufgedeckt") antwortBoxKlasse += " aufgedeckt";
     else if (quiz.feedback) antwortBoxKlasse += " falsch";
 
@@ -4501,6 +4523,7 @@ export default function VokabelApp() {
 
     let antwortBoxKlasse = "quiz-antwort-box";
     if (quiz.flash) antwortBoxKlasse += " richtig";
+    if (quiz.gelerntBlitz && quiz.gelerntBlitz === blitzKey(quiz)) antwortBoxKlasse += " gelernt-blitz";
     else if (richtigAufgedeckt) antwortBoxKlasse += " richtig";
     else if (quiz.karteNeinFlash) antwortBoxKlasse += " falsch";
     else if (quiz.falschFlash) antwortBoxKlasse += " falsch";

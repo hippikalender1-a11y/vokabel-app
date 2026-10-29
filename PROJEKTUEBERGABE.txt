@@ -1592,6 +1592,11 @@ RASTER (Konfigurationen + Listen): neue Einträge ohne Platz kommen in ordneRast
   Lernfortschritt der aktuellen Auswahl je Art (lernstandJeArt, renderMiniKreise,
   MiniKreis groesse/aufGruen). Abfrage-Modus-Zeile wieder beschriftet. Listen-
   Kacheln im Listen-Tab: Kreise statt Lernfortschritt-Balken (data-listen-kreise).
+MINI-KREIS 100 %: komplett hellgrün (#52b788) gefüllt, gewählte Art mit Außenring.
+GELERNT-AUFLEUCHTEN: erreicht eine Vokabel mit der Antwort die Gelernt-Schwelle
+  (spaltenAbschluss: Übersetzung/Akzente, pruefeDiktatAntwort: Diktat), setzt
+  quiz.gelerntBlitz = blitzKey(quiz) → Antwort-Box Klasse .gelernt-blitz (1 s
+  hellgelb). Test: e2e/gelerntblitz.mjs.
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).
