@@ -28,6 +28,12 @@ const infos = () => page.evaluate(() => {
   };
 });
 
+// Ü|D|A sitzt in der zugeklappten Kopfzeile der Session-Auswahl
+const artWaehlen = async a => {
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") k.querySelector("button.zeile-rechts")?.click(); });
+  await new Promise(r => setTimeout(r, 300));
+  await page.click(`[data-quiz-art="${a}"]`);
+};
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
@@ -50,7 +56,7 @@ let i = await infos();
 console.log("     Frage–Antwort:", JSON.stringify(i));
 ok(/\(2 /.test(i.start) && i.hinweis === "1 gelernte ausgeblendet", "Quiz: Vokabel mit Quiz-Score 8 ausgeblendet (2 abfragbar)");
 
-await page.click('[data-quiz-art="diktat"]');
+await artWaehlen("diktat");
 await sleep(300);
 i = await infos();
 console.log("     Diktat:", JSON.stringify(i));

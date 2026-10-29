@@ -28,6 +28,12 @@ const fortschritt = () => page.evaluate(() => document.querySelector('[data-anza
 const kopf = () => page.evaluate(() => document.querySelector("[data-slot-kopf]")?.getAttribute("data-slot-kopf"));
 const anzahl = async () => (await text()).match(/Quiz starten \((\d+) Vokabeln\)/)?.[1];
 
+// Ü|D|A sitzt in der zugeklappten Kopfzeile der Session-Auswahl
+const artWaehlen = async a => {
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") k.querySelector("button.zeile-rechts")?.click(); });
+  await new Promise(r => setTimeout(r, 300));
+  await page.click(`[data-quiz-art="${a}"]`);
+};
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
@@ -75,7 +81,7 @@ ok(await fortschritt() === "10 / 14", "Übersetzung: Fortschritt 10 / 14");
 ok((await text()).includes("Fortschritt Übersetzung"), "Fortschrittszeile nennt die Abfrageart");
 
 // Wechsel zu Akzente: eigener (noch leerer) Fortschritt
-await page.click('[data-quiz-art="akzente"]');
+await artWaehlen("akzente");
 await sleep(300);
 console.log("     Akzente:", await fortschritt(), "| Start:", await anzahl());
 ok(await fortschritt() === null, "Akzente: kein Fortschritt vom Übersetzungs-Stand übernommen");
@@ -98,11 +104,11 @@ console.log("     Akzente nach Abbruch:", akz);
 ok(/^2 \/ \d+$/.test(akz || ""), "Akzente: eigener Fortschritt 2 / …");
 
 // zurück zu Übersetzung → alter Stand wieder da
-await page.click('[data-quiz-art="uebersetzung"]');
+await artWaehlen("uebersetzung");
 await sleep(300);
 ok(await fortschritt() === "10 / 14", "Zurück zu Übersetzung: wieder 10 / 14");
 // und wieder Akzente → 2 / …
-await page.click('[data-quiz-art="akzente"]');
+await artWaehlen("akzente");
 await sleep(300);
 ok(await fortschritt() === akz, "Wieder Akzente: Stand 2 / … bleibt erhalten");
 
@@ -117,7 +123,7 @@ await sleep(200);
 await page.click("[data-reset-ja]");
 await sleep(300);
 ok(await fortschritt() === null, "Zurücksetzen: Akzente-Fortschritt weg, neue Session");
-await page.click('[data-quiz-art="uebersetzung"]');
+await artWaehlen("uebersetzung");
 await sleep(300);
 ok(await fortschritt() === "10 / 14", "Übersetzungs-Fortschritt bleibt nach dem Zurücksetzen von Akzente");
 

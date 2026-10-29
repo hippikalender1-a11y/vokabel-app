@@ -76,8 +76,9 @@ await page.screenshot({ path: "bilanz.png" });
 await clickText("button", "Zur Übersicht");
 await clickText(".tab", "Listen");
 await sleep(300);
-t = await text();
-ok(/🏆 100 %/.test(t), "Listen-Übersicht: „🏆 100 %“ bei Verbes");
+const kr = await page.evaluate(() => [...document.querySelectorAll("[data-liste-id]")].filter(d => d.textContent.includes("Verbes")).map(d => [...d.querySelectorAll("[data-listen-kreise] [data-mini-kreis]")].map(k => k.dataset.miniKreis + ":" + k.dataset.pct).join(",")).join());
+console.log("     Listen-Kreise:", kr);
+ok(/^uebersetzung:100,/.test(kr), "Listen-Übersicht: Kreis Ü bei Verbes 100 %");
 await page.screenshot({ path: "listen_fortschritt.png" });
 
 await browser.close();

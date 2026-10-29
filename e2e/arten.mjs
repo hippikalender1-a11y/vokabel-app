@@ -25,9 +25,15 @@ const clickText = async (sel, text, exact = false) => {
 const art = () => page.evaluate(() => document.querySelector("[data-quiz-art].aktiv")?.dataset.quizArt);
 const modusName = () => page.evaluate(() => document.querySelector("[data-abfragemodus]")?.textContent.trim());
 const reihenfolge = () => page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv, button.aktiv")].map(b => b.textContent.trim()).find(x => ["Zufällig", "Schlechteste", "Listen-Nr."].includes(x)));
-const waehleArt = async a => { await page.click(`[data-quiz-art="${a}"]`); await sleep(300); };
+const waehleArt = async a => { await artWaehlen(a); await sleep(300); };
 const gespeichert = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots") || "{}").gespeichert || []);
 
+// Ü|D|A sitzt in der zugeklappten Kopfzeile der Session-Auswahl
+const artWaehlen = async a => {
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") k.querySelector("button.zeile-rechts")?.click(); });
+  await new Promise(r => setTimeout(r, 300));
+  await page.click(`[data-quiz-art="${a}"]`);
+};
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();

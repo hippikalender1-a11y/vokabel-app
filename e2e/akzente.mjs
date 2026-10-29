@@ -29,6 +29,12 @@ const setze = async (i, v) => {
   await clickText(".akzent-variante", v, true);
 };
 
+// Ü|D|A sitzt in der zugeklappten Kopfzeile der Session-Auswahl
+const artWaehlen = async a => {
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") k.querySelector("button.zeile-rechts")?.click(); });
+  await new Promise(r => setTimeout(r, 300));
+  await page.click(`[data-quiz-art="${a}"]`);
+};
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
@@ -53,7 +59,7 @@ await sleep(300);
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")].map(b => b.textContent.trim()));
 console.log("     Modus-Knöpfe Ü:", knoepfe.join(" | "));
 ok(!knoepfe.includes("Akzente"), "Übersetzung: kein Akzente-Modus in den Spalten (eigene Art)");
-await page.click('[data-quiz-art="akzente"]'); await sleep(300);
+await artWaehlen("akzente"); await sleep(300);
 const knoepfeA = await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")].map(b => b.textContent.trim()));
 console.log("     Modus Akzente:", knoepfeA.join(" | "));
 ok(knoepfeA.join("|") === "Akzente", "Akzente (A): Antwortspalte fest auf Akzente, keine anderen Modi");

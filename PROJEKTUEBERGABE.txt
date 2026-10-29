@@ -1587,6 +1587,11 @@ RASTER (Konfigurationen + Listen): neue Einträge ohne Platz kommen in ordneRast
   rasterAuswahlRef). Achtung: Kacheln in Normal- und Verschieben-Modus brauchen die
   gleiche Kind-Struktur ({inhalt}{…}), sonst baut React den Inhalt neu und ein
   laufendes Touch-Ziehen verliert sein Ziel (touchend kommt nicht mehr an).
+Ü|D|A-UMSCHALTER jetzt als Mini-Kreise rechts in der zugeklappten Kopfzeile der
+  Session-Auswahl (Quiz-Tab, data-quiz-arten / data-quiz-art, Klasse aktiv):
+  Lernfortschritt der aktuellen Auswahl je Art (lernstandJeArt, renderMiniKreise,
+  MiniKreis groesse/aufGruen). Abfrage-Modus-Zeile wieder beschriftet. Listen-
+  Kacheln im Listen-Tab: Kreise statt Lernfortschritt-Balken (data-listen-kreise).
 GRUPPEN-QUIZ → ZURÜCK: quiz.ausStatistik (einmalige Runde via gruppe, Fallback
   per setQuiz im Start-Effekt). Auswertung (ohne Session, Quiz und Diktat):
   Hauptknopf "📊 Zurück zur Statistik" (data-zurueck-statistik) und Schließen
