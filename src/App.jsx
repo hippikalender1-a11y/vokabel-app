@@ -5703,7 +5703,9 @@ export default function VokabelApp() {
                         <button
                           onClick={toggleSlotSektion}
                           className={`toggle-opt aktiv${zu ? "" : " zeile-rechts"}`}
-                          style={{cursor:"pointer", ...(zu ? {padding:"7px 22px", fontSize:"0.95rem", borderRadius:12, minWidth:120, maxWidth:"calc(100% - 250px)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"} : {}),
+                          style={{cursor:"pointer", ...(zu ? {padding:"7px 22px", fontSize:"0.95rem", borderRadius:12, minWidth:120, maxWidth:"80%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"} : {}),
+                            // mit Ü/D/A-Kreisen: Name nutzt die ganze Breite links bis kurz vor die Kreise
+                            ...(zu && quizKombiListe ? {flex:1, maxWidth:"none", minWidth:0, padding:"7px 12px", marginRight:118, marginLeft: vokabelgruppeGeaendert ? 112 : 0} : {}),
                             ...(gruen ? {border:"1.5px solid rgba(255,255,255,0.75)"} : {}),
                             ...(vokabelgruppeGeaendert ? {background:"#c0392b", color:"#fff"} : {})}}
                           {...tt(aktiverSlot?.typ === 'gespeichert' ? "Gespeicherte Konfiguration – Verlauf und Gespeichert anzeigen" : "Verlauf und Gespeichert anzeigen")}>

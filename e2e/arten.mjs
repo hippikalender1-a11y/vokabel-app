@@ -55,6 +55,7 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 await clickText(".slot-chip", "Alt gemischt");
 
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-quiz-art]")].map(b => b.textContent.trim()).join("|")) === "Ü|D|A", "Umschalter Ü | D | A im Quiz-Tab");
+if (process.env.SHOT) { await page.evaluate(() => { const b = document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv"); b.textContent = "Unregelmäßige Verben Kapitel 3 – Wiederholung (21 - 40)"; }); await page.screenshot({ path: "lang_shot.png", clip: { x: 0, y: 0, width: 390, height: 160 } }); }
 ok(await art() === "uebersetzung", "alte gemischte Konfiguration lädt als Übersetzung");
 console.log("     Modus Ü:", await modusName());
 ok(!/Akzente/.test(await modusName()), "Übersetzung ohne Akzente-Modus (gemischte Akzent-Spalte → Karte)");
