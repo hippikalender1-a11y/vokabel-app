@@ -1618,6 +1618,19 @@ AKZENTE OHNE AKZENT BEGRENZT: Regel "auch Wörter ohne Akzent" hat je Stufe
 AKZENTE ZÄHLEN NUR WÖRTER MIT AKZENT: hatAkzentWort(); statistikSicht("akzente"),
   Session-Auswertung (ids gefiltert, ohneAkzent = nur geübt) und Lern-Bilanz
   beziehen sich nur auf Wörter mit Akzent (100 % = alle Wörter mit Akzent).
+FARBSCHEMATA: alle festen Farben sind Farbrollen (CSS-Variablen var(--haupt) usw.).
+  Zwischen /* FARBSCHEMATA-START */ und -ENDE: FARB_ROLLEN (bearbeitbare Grund-
+  farben), FARB_VORLAGEN (Natur = bisherige Farben, Freudig, Pastelle, Mädchen,
+  Jungs, Dunkel), mische(), farbenAus() (Abstufungen: -zart, -flaeche, -dunkel,
+  text4, flaeche-hell). Beim Rendern: F = farbenAus(schemaVon(einstellungen)),
+  CSS = farbVariablen(F) + CSS_BASIS (setzt :root-Variablen + color-scheme).
+  SVG-Attribute (fill/stroke) kennen kein var() → fv() setzt die Farbe ein.
+  NEUE FARBEN NUR ALS var(--rolle) (in SVG-Attributen fv("var(--rolle)")).
+  Einstellungen: einstellungen.farbschema (id), eigeneSchemata [{id, name, basis,
+  dunkel, farben}]. renderFarbschemata(): Kacheln (data-farbschema), Lang-Druck:
+  Vorlagen nur Duplizieren, eigene Bearbeiten/Duplizieren/Umbenennen/Löschen;
+  Editor data-schema-editor mit Farbwähler je Rolle (data-farbrolle), live.
+  Test: e2e/farbschema.mjs.
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).

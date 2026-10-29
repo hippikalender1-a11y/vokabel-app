@@ -35,16 +35,16 @@ export default function UpdateHinweis() {
 
   const boxStil = {
     position: "fixed", left: 16, right: 16, bottom: 16, zIndex: 10000,
-    background: "#fff", border: "1.5px solid #2d6a4f", borderRadius: 12,
+    background: "var(--karte)", border: "1.5px solid var(--haupt)", borderRadius: 12,
     boxShadow: "0 4px 16px rgba(0,0,0,0.15)", padding: "12px 14px",
     display: "flex", alignItems: "center", gap: 10, fontFamily: "system-ui,sans-serif",
   };
-  const textStil = { flex: 1, fontSize: "0.88rem", color: "#1a1a1a" };
+  const textStil = { flex: 1, fontSize: "0.88rem", color: "var(--text-stark)" };
 
   if (erfolg) {
     return (
       <div style={boxStil} onClick={() => setErfolg(false)}>
-        <span style={{ ...textStil, color: "#2d6a4f", fontWeight: 600 }}>✓ App wurde aktualisiert</span>
+        <span style={{ ...textStil, color: "var(--haupt)", fontWeight: 600 }}>✓ App wurde aktualisiert</span>
       </div>
     );
   }
@@ -56,11 +56,11 @@ export default function UpdateHinweis() {
       <span style={textStil}>{laeuft ? "Wird aktualisiert…" : "Neue Version verfügbar"}</span>
       {!laeuft && (<>
         <button onClick={() => setNeueVersion(false)} style={{
-          background: "transparent", border: "1.5px solid #2d6a4f", color: "#2d6a4f",
+          background: "transparent", border: "1.5px solid var(--haupt)", color: "var(--haupt)",
           borderRadius: 10, padding: "6px 12px", fontSize: "0.8rem", fontFamily: "inherit", cursor: "pointer",
         }}>Später</button>
         <button onClick={aktualisieren} style={{
-          background: "#2d6a4f", border: "1.5px solid #2d6a4f", color: "#fff", fontWeight: 600,
+          background: "var(--haupt)", border: "1.5px solid var(--haupt)", color: "var(--auf-haupt)", fontWeight: 600,
           borderRadius: 10, padding: "6px 12px", fontSize: "0.8rem", fontFamily: "inherit", cursor: "pointer",
         }}>Aktualisieren</button>
       </>)}

@@ -55,7 +55,7 @@ const statistikInfo = async () => {
 const statistikInfoRoh = () => page.evaluate(() => ({
   tabAktiv: document.querySelector(".tab.aktiv")?.textContent,
   anzahl: [...document.querySelectorAll("span")].map(s => s.textContent).filter(t => /^\(\d+ V\.\)$/.test(t)),
-  chipAktiv: [...document.querySelectorAll(".slot-chip")].filter(c => c.style.borderColor === "rgb(45, 106, 79)").map(c => c.textContent.trim()),
+  chipAktiv: [...document.querySelectorAll(".slot-chip")].filter(c => c.style.borderColor === "var(--haupt)").map(c => c.textContent.trim()),
 }));
 
 // ── A: normale Runde, Bereich mit 3 Vokabeln ──

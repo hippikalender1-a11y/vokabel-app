@@ -508,7 +508,7 @@ function artBereinigt(art, k, spalten) {
   return { ...k, quizModus: k.quizModus === "diktat" || !k.quizModus ? "sequenziell" : k.quizModus, quizSpalteModus: sm };
 }
 // Statistik-Gruppen in Anzeige-Reihenfolge mit Farbe (Kreis, Gruppen-Balken)
-const GRUPPE_BALKEN = [["gelernt", "#2d6a4f"], ["arbeit", "#e9c46a"], ["nie", "#d6d2cb"], ["negativ", "#e57373"]];
+const GRUPPE_BALKEN = [["gelernt", "var(--gelernt)"], ["arbeit", "var(--arbeit)"], ["nie", "var(--nie)"], ["negativ", "var(--negativ)"]];
 // Session-Standard: in Paketen abfragen
 const STANDARD_SESSION_MODUS = "pakete";
 // Standard-Reihenfolge: schlechteste zuerst, nur Score ≤ 3, unbeantwortete zuerst
@@ -555,21 +555,21 @@ function lernProzent(scores, schwelle) {
 function MiniKreis({ pct, buchstabe, aktiv, aus, groesse = 24, aufGruen = false }) {
   const r = 9, u = 2 * Math.PI * r;
   const f = aufGruen
-    ? { fill: aktiv ? "#fff" : "transparent", grund: "rgba(255,255,255,0.3)", ring: aktiv ? "#52b788" : "#95d5b2", text: aktiv ? "#2d6a4f" : "#fff" }
-    : { fill: aktiv ? "#2d6a4f" : "#fff", grund: "#e0dbd2", ring: aktiv ? "#95d5b2" : "#52b788", text: aktiv ? "#fff" : "#2d6a4f" };
+    ? { fill: aktiv ? "var(--karte)" : "transparent", grund: "rgba(255,255,255,0.3)", ring: aktiv ? "var(--haupt-hell)" : "var(--haupt-zart)", text: aktiv ? "var(--haupt)" : "var(--auf-haupt)" }
+    : { fill: aktiv ? "var(--haupt)" : "var(--karte)", grund: "var(--rahmen)", ring: aktiv ? "var(--haupt-zart)" : "var(--haupt-hell)", text: aktiv ? "var(--auf-haupt)" : "var(--haupt)" };
   // 100 % gelernt: Kreis komplett grün gefüllt (gewählte Art zusätzlich mit äußerem Ring)
   if (!aus && pct >= 99.999) return (
     <svg width={groesse} height={groesse} viewBox="0 0 24 24" style={{display:"block"}}>
-      <circle cx="12" cy="12" r="10.5" fill="#52b788" stroke={aktiv ? (aufGruen ? "#fff" : "#2d6a4f") : "#52b788"} strokeWidth={aktiv ? 2.5 : 0}/>
-      <text x="12" y="12.5" textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="800" fill="#fff">{buchstabe}</text>
+      <circle cx="12" cy="12" r="10.5" fill={fv("var(--haupt-hell)")} stroke={fv(aktiv ? (aufGruen ? "var(--auf-haupt)" : "var(--haupt)") : "var(--haupt-hell)")} strokeWidth={aktiv ? 2.5 : 0}/>
+      <text x="12" y="12.5" textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="800" fill={fv("var(--karte)")}>{buchstabe}</text>
     </svg>
   );
   return (
     <svg width={groesse} height={groesse} viewBox="0 0 24 24" style={{display:"block", opacity: aus ? 0.35 : 1}}>
-      <circle cx="12" cy="12" r={r} fill={f.fill} stroke={f.grund} strokeWidth="3"/>
-      {!aus && pct > 0 && <circle cx="12" cy="12" r={r} fill="none" stroke={f.ring} strokeWidth="3"
+      <circle cx="12" cy="12" r={r} fill={fv(f.fill)} stroke={fv(f.grund)} strokeWidth="3"/>
+      {!aus && pct > 0 && <circle cx="12" cy="12" r={r} fill="none" stroke={fv(f.ring)} strokeWidth="3"
         strokeDasharray={`${u * Math.min(100, pct) / 100} ${u}`} transform="rotate(-90 12 12)" strokeLinecap={pct >= 100 ? "butt" : "round"}/>}
-      <text x="12" y="12.5" textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="800" fill={f.text}>{buchstabe}</text>
+      <text x="12" y="12.5" textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="800" fill={fv(f.text)}>{buchstabe}</text>
     </svg>
   );
 }
@@ -710,108 +710,180 @@ function statistikSicht(voks, art) {
 
 // ── Styling ────────────────────────────────────────────────────────────────
 const C = {
-  bg:"#f7f5f0", surface:"#ffffff", border:"#e0dbd2",
-  accent:"#2d6a4f", accentHi:"#40916c", danger:"#c0392b",
-  text:"#1a1a1a", muted:"#6b6560", tag:"#e8f5e9", tagText:"#2d6a4f",
+  bg:"var(--hintergrund)", surface:"var(--karte)", border:"var(--rahmen)",
+  accent:"var(--haupt)", accentHi:"var(--haupt)", danger:"var(--falsch)",
+  text:"var(--text-stark)", muted:"var(--text2)", tag:"var(--haupt-flaeche)", tagText:"var(--haupt)",
 };
 
-const CSS = `
+/* FARBSCHEMATA-START */
+// ── Farbschemata: Grundfarben je Rolle; Abstufungen (zart, Fläche, dunkel) werden daraus gemischt ──
+const FARB_ROLLEN = [
+  ["haupt", "Hauptfarbe", "Knöpfe, Kopfzeilen, aktive Auswahl"], ["haupt-hell", "Hauptfarbe hell", "Fortschrittsringe, Balken"],
+  ["auf-haupt", "Schrift auf Hauptfarbe", "Text auf Knöpfen"],
+  ["hintergrund", "Hintergrund", "Seitenhintergrund"], ["karte", "Karten", "Flächen von Karten und Feldern"], ["flaeche", "Fläche grau", "leichte Hinterlegungen"],
+  ["text-stark", "Text kräftig", "Überschriften, Eingaben"], ["text", "Text", "normaler Text"], ["text2", "Text leise", "Untertitel, Hinweise"], ["text3", "Text sehr leise", "Zahlen in Klammern"],
+  ["rahmen", "Rahmen", "Linien und Ränder"],
+  ["richtig", "Richtig", "gewusst / richtig beantwortet"], ["falsch", "Falsch", "nicht gewusst, Löschen"],
+  ["gelb", "Hervorhebung", "Markierung, Aufleuchten"], ["orange", "Warnung", "Hinweise"], ["info", "Info", "weitere Antwort, Info-Spalten"],
+  ["gelernt", "Statistik: Gelernt", ""], ["arbeit", "Statistik: In Arbeit", ""], ["nie", "Statistik: Nie abgefragt", ""], ["negativ", "Statistik: Negativ", ""],
+];
+const FARB_VORLAGEN = [
+  { id: "natur", name: "Natur", farben: { "haupt": "#2d6a4f", "haupt-hell": "#52b788", "auf-haupt": "#fff", "hintergrund": "#f7f5f0", "karte": "#fff", "flaeche": "#f0ede8",
+    "text-stark": "#1a1a1a", "text": "#3b3832", "text2": "#6b6560", "text3": "#9b9590", "rahmen": "#e0dbd2", "richtig": "#2d6a4f", "falsch": "#c0392b",
+    "gelb": "#f9a825", "orange": "#e67e22", "info": "#6a1b9a", "gelernt": "#2d6a4f", "arbeit": "#e9c46a", "nie": "#d6d2cb", "negativ": "#e57373" } },
+  { id: "freudig", name: "Freudig", farben: { "haupt": "#e8590c", "haupt-hell": "#ff922b", "auf-haupt": "#fff", "hintergrund": "#fff8f0", "karte": "#fff", "flaeche": "#fff0e0",
+    "text-stark": "#2a1a10", "text": "#3d2c22", "text2": "#7a6152", "text3": "#a8917f", "rahmen": "#f3dcc8", "richtig": "#2b9348", "falsch": "#d62828",
+    "gelb": "#fcbf49", "orange": "#f77f00", "info": "#7b2cbf", "gelernt": "#2b9348", "arbeit": "#fcbf49", "nie": "#e9dccf", "negativ": "#ef476f" } },
+  { id: "pastelle", name: "Pastelle", farben: { "haupt": "#7d9d8c", "haupt-hell": "#a8c5b5", "auf-haupt": "#fff", "hintergrund": "#faf7fb", "karte": "#fff", "flaeche": "#f2eef6",
+    "text-stark": "#2f2a3a", "text": "#4a4458", "text2": "#7d768a", "text3": "#a8a2b3", "rahmen": "#e6e0ec", "richtig": "#6fae8e", "falsch": "#d97a7a",
+    "gelb": "#f4c97a", "orange": "#f2a679", "info": "#a48cc8", "gelernt": "#8fc1a5", "arbeit": "#f6d79a", "nie": "#e3dde8", "negativ": "#eea2a2" } },
+  { id: "maedchen", name: "Mädchen", farben: { "haupt": "#c2185b", "haupt-hell": "#f06292", "auf-haupt": "#fff", "hintergrund": "#fff5f9", "karte": "#fff", "flaeche": "#fce4ec",
+    "text-stark": "#2e1422", "text": "#4a2639", "text2": "#8a5a72", "text3": "#b48ea0", "rahmen": "#f6d3e1", "richtig": "#2e9e6b", "falsch": "#d32f2f",
+    "gelb": "#ffb300", "orange": "#ff7043", "info": "#8e24aa", "gelernt": "#ab47bc", "arbeit": "#ffca6b", "nie": "#ead7e0", "negativ": "#ef5350" } },
+  { id: "jungs", name: "Jungs", farben: { "haupt": "#1d5f8a", "haupt-hell": "#3a9bd5", "auf-haupt": "#fff", "hintergrund": "#f3f7fa", "karte": "#fff", "flaeche": "#e6eef4",
+    "text-stark": "#111c26", "text": "#22313f", "text2": "#566778", "text3": "#8a9aa8", "rahmen": "#d5e0e9", "richtig": "#2e8b57", "falsch": "#c62828",
+    "gelb": "#ff9f1c", "orange": "#f3722c", "info": "#5e35b1", "gelernt": "#2e8b57", "arbeit": "#ffbf47", "nie": "#d5dee6", "negativ": "#e5604d" } },
+  { id: "dunkel", name: "Dunkel", farben: { "haupt": "#52b788", "haupt-hell": "#74c69d", "auf-haupt": "#10241a", "hintergrund": "#161816", "karte": "#222522", "flaeche": "#2c302c",
+    "text-stark": "#f2f0eb", "text": "#e3e0da", "text2": "#b4b0a8", "text3": "#8a867f", "rahmen": "#3a3e3a", "richtig": "#52b788", "falsch": "#ef6f61",
+    "gelb": "#f4c542", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#52b788", "arbeit": "#d9b44a", "nie": "#4a4f4a", "negativ": "#e06c6c" }, dunkel: true },
+];
+function hexZuRgb(h) {
+  h = (h || "#000").replace("#", "");
+  if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) || 0);
+}
+// a nach b mischen: t = Anteil von b (0 … 1)
+function mische(a, b, t) {
+  const x = hexZuRgb(a), y = hexZuRgb(b);
+  return "#" + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, "0")).join("");
+}
+function farbenAus(f) {
+  const k = f.karte;
+  return { ...f,
+    "haupt-zart": mische(f["haupt-hell"], k, 0.5), "haupt-flaeche": mische(f["haupt-hell"], k, 0.88),
+    "richtig-dunkel": mische(f.richtig, f["text-stark"], 0.35), "richtig-flaeche": mische(f.richtig, k, 0.9),
+    "text4": mische(f.text3, k, 0.35), "flaeche-hell": mische(f.flaeche, k, 0.7),
+    "falsch-dunkel": mische(f.falsch, f["text-stark"], 0.2), "falsch-zart": mische(f.falsch, k, 0.55), "falsch-flaeche": mische(f.falsch, k, 0.92),
+    "gelb-dunkel": mische(f.gelb, f["text-stark"], 0.45), "gelb-zart": mische(f.gelb, k, 0.5), "gelb-flaeche": mische(f.gelb, k, 0.9),
+    "info-flaeche": mische(f.info, k, 0.9),
+  };
+}
+/* FARBSCHEMATA-ENDE */
+// aktuelle Farben (beim Rendern gesetzt); SVG-Attribute kennen kein var() → fv() setzt die Farbe ein
+let F = farbenAus(FARB_VORLAGEN[0].farben);
+const fv = v => typeof v === "string" && v.includes("var(--") ? v.replace(/var\(--([\w-]+)\)/g, (_, k) => F[k] ?? "#000") : v;
+const farbVariablen = (f, dunkel) => `:root{${Object.entries(f).map(([k, v]) => `--${k}:${v};`).join("")}color-scheme:${dunkel ? "dark" : "light"};}`;
+// gewähltes Schema: Vorlage oder eigenes (einstellungen.eigeneSchemata)
+function schemaVon(einst) {
+  const id = einst?.farbschema || "natur";
+  return (einst?.eigeneSchemata || []).find(x => x.id === id) || FARB_VORLAGEN.find(x => x.id === id) || FARB_VORLAGEN[0];
+}
+let CSS = "";
+const CSS_BASIS = `
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-  body{background:#f7f5f0;font-family:system-ui,sans-serif;color:#1a1a1a;}
+  body{background:var(--hintergrund);font-family:system-ui,sans-serif;color:var(--text-stark);}
   /* Kein Text-Markieren per Lang-Druck (kollidiert mit den Info-Texten); Eingabefelder bleiben markierbar */
   body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
   input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
   .app{max-width:600px;margin:0 auto;padding:0 0 80px;}
-  .topbar{background:#fff;border-bottom:1px solid #e0dbd2;padding:14px 16px;display:flex;align-items:center;gap:12px;}
+  .topbar{background:var(--karte);border-bottom:1px solid var(--rahmen);padding:14px 16px;display:flex;align-items:center;gap:12px;}
   .topbar-title{font-size:1.05rem;font-weight:700;flex:1;text-align:center;}
-  .info-schalter{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:1.5px solid #2d6a4f;background:#fff;color:#2d6a4f;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit;}
-  body.info-modus .info-schalter{background:#2d6a4f;color:#fff;}
-  body.info-modus [data-info]{outline:1.5px dashed #52b788 !important;outline-offset:2px;}
+  .info-schalter{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:1.5px solid var(--haupt);background:var(--karte);color:var(--haupt);font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit;}
+  body.info-modus .info-schalter{background:var(--haupt);color:var(--auf-haupt);}
+  body.info-modus [data-info]{outline:1.5px dashed var(--haupt-hell) !important;outline-offset:2px;}
   @media (max-width:480px){.sprach-chip-name{display:none;}}
-  .topbar-back{background:#2d6a4f;color:#fff;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;padding:8px 12px;border-radius:10px;font-family:inherit;transition:opacity .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;}
+  .topbar-back{background:var(--haupt);color:var(--auf-haupt);font-size:0.88rem;font-weight:600;cursor:pointer;border:none;padding:8px 12px;border-radius:10px;font-family:inherit;transition:opacity .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;}
   .topbar-back:active{opacity:.8;}
-  .tabs{display:flex;background:#fff;border-bottom:1px solid #e0dbd2;}
-  .statistik-listen-header{background:#fff;border-bottom:1px solid #e0dbd2;padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;z-index:8;}
-  .liste-detail-header{background:#fff;border-bottom:1px solid #e0dbd2;padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;z-index:9;}
-  .tab{flex:1;padding:12px 4px;font-size:0.82rem;font-weight:600;color:#6b6560;background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;}
-  .tab.aktiv{color:#2d6a4f;border-bottom-color:#2d6a4f;}
+  .tabs{display:flex;background:var(--karte);border-bottom:1px solid var(--rahmen);}
+  .statistik-listen-header{background:var(--karte);border-bottom:1px solid var(--rahmen);padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;z-index:8;}
+  .liste-detail-header{background:var(--karte);border-bottom:1px solid var(--rahmen);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;z-index:9;}
+  .tab{flex:1;padding:12px 4px;font-size:0.82rem;font-weight:600;color:var(--text2);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;}
+  .tab.aktiv{color:var(--haupt);border-bottom-color:var(--haupt);}
   .sektion{padding:20px 16px 0;}
   .sektion-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
-  .sektion-label{font-size:0.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#6b6560;}
-  .karte{background:#fff;border:1px solid #e0dbd2;border-radius:12px;overflow:hidden;margin-bottom:16px;}
-  .karte-zeile{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #e0dbd2;gap:12px;}
+  .sektion-label{font-size:0.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text2);}
+  .karte{background:var(--karte);border:1px solid var(--rahmen);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+  .karte-zeile{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--rahmen);gap:12px;}
   .karte-zeile:last-child{border-bottom:none;}
   .karte-zeile-info{flex:1;min-width:0;}
   .karte-zeile-name{font-weight:600;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .karte-zeile-sub{font-size:0.78rem;color:#6b6560;margin-top:2px;}
+  .karte-zeile-sub{font-size:0.78rem;color:var(--text2);margin-top:2px;}
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:10px;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s;}
   .btn:active{opacity:.8;}
-  .btn-primary{background:#2d6a4f;color:#fff;border:1.5px solid transparent;}
-  .btn-ghost{background:transparent;color:#2d6a4f;border:1.5px solid #2d6a4f;}
-  .btn-ghost-filled{background:#f7f5f0;color:#2d6a4f;border:1.5px solid #2d6a4f;}
+  .btn-primary{background:var(--haupt);color:var(--auf-haupt);border:1.5px solid transparent;}
+  .btn-ghost{background:transparent;color:var(--haupt);border:1.5px solid var(--haupt);}
+  .btn-ghost-filled{background:var(--hintergrund);color:var(--haupt);border:1.5px solid var(--haupt);}
   .btn-sm{padding:6px 12px;font-size:0.8rem;min-height:30px;}
-  .btn-danger{background:transparent;color:#c0392b;border:1.5px solid #c0392b;}
-  .btn-icon{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;color:#6b6560;font-size:0.82rem;font-weight:600;}
-  .btn-icon:hover{background:#f0ede8;}
-  .inp{width:100%;background:#f7f5f0;border:1.5px solid #e0dbd2;border-radius:10px;padding:11px 14px;font-size:0.95rem;color:#1a1a1a;outline:none;font-family:inherit;}
-  .inp:focus{border-color:#2d6a4f;background:#fff;}
-  .inp::placeholder{color:#c0bcb7;}
+  .btn-danger{background:transparent;color:var(--falsch);border:1.5px solid var(--falsch);}
+  .btn-icon{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;color:var(--text2);font-size:0.82rem;font-weight:600;}
+  .btn-icon:hover{background:var(--flaeche);}
+  .inp{width:100%;background:var(--hintergrund);border:1.5px solid var(--rahmen);border-radius:10px;padding:11px 14px;font-size:0.95rem;color:var(--text-stark);outline:none;font-family:inherit;}
+  .inp:focus{border-color:var(--haupt);background:var(--karte);}
+  .inp::placeholder{color:var(--text4);}
   textarea.inp{resize:vertical;font-family:monospace;font-size:0.82rem;line-height:1.5;}
   select.inp{cursor:pointer;}
-  .inp-label{font-size:0.8rem;font-weight:600;color:#6b6560;margin-bottom:6px;display:block;}
+  .inp-label{font-size:0.8rem;font-weight:600;color:var(--text2);margin-bottom:6px;display:block;}
   /* Fenster oben anzeigen, damit die Bildschirmtastatur sie nicht verdeckt */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-start;justify-content:center;z-index:100;padding:max(16px, env(safe-area-inset-top)) 16px 16px;overflow-y:auto;}
-  .modal{background:#fff;border-radius:16px;width:100%;max-width:500px;padding:24px;margin-top:4vh;box-sizing:border-box;}
+  .modal{background:var(--karte);border-radius:16px;width:100%;max-width:500px;padding:24px;margin-top:4vh;box-sizing:border-box;}
   .modal-titel{font-size:1.1rem;font-weight:700;margin-bottom:16px;}
   .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
-  .leer{text-align:center;padding:48px 24px;color:#6b6560;}
+  .leer{text-align:center;padding:48px 24px;color:var(--text2);}
   .leer-text{font-size:0.9rem;line-height:1.5;margin-top:8px;}
   .jubel{text-align:center;padding:4px 0 18px;}
-  .jubel-titel{font-size:2rem;font-weight:800;color:#2d6a4f;line-height:1.2;animation:jubelPop .55s cubic-bezier(.2,1.6,.4,1) both;}
+  .jubel-titel{font-size:2rem;font-weight:800;color:var(--haupt);line-height:1.2;animation:jubelPop .55s cubic-bezier(.2,1.6,.4,1) both;}
   .jubel-emoji{font-size:2.2rem;display:block;animation:jubelPop .55s .1s cubic-bezier(.2,1.6,.4,1) both;}
-  .jubel-sub{font-size:0.9rem;color:#6b6560;margin-top:4px;}
+  .jubel-sub{font-size:0.9rem;color:var(--text2);margin-top:4px;}
   @keyframes jubelPop{0%{transform:scale(.3);opacity:0;}100%{transform:scale(1);opacity:1;}}
-  .spalten-badge{font-size:0.68rem;font-weight:700;padding:1px 6px;border-radius:4px;background:#ece9e4;color:#b0aba5;margin-right:3px;}
-  .spalten-badge.aktiv{background:#e8f5e9;color:#2d6a4f;}
-  .typ-btn{font-size:0.78rem;font-weight:600;padding:5px 10px;border-radius:6px;border:1.5px solid #e0dbd2;background:#f7f5f0;color:#6b6560;cursor:pointer;font-family:inherit;}
-  .typ-btn.aktiv{background:#2d6a4f;color:#fff;border-color:#2d6a4f;}
+  .spalten-badge{font-size:0.68rem;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--flaeche);color:var(--text3);margin-right:3px;}
+  .spalten-badge.aktiv{background:var(--haupt-flaeche);color:var(--haupt);}
+  .typ-btn{font-size:0.78rem;font-weight:600;padding:5px 10px;border-radius:6px;border:1.5px solid var(--rahmen);background:var(--hintergrund);color:var(--text2);cursor:pointer;font-family:inherit;}
+  .typ-btn.aktiv{background:var(--haupt);color:var(--auf-haupt);border-color:var(--haupt);}
   .typ-btn:disabled{opacity:0.3;cursor:not-allowed;}
   .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;}
   .toggle-label{font-weight:600;font-size:0.9rem;}
-  .toggle-sub{font-size:0.78rem;color:#6b6560;margin-top:2px;}
-  .toggle-btn{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid #e0dbd2;}
-  .toggle-opt{padding:6px 14px;font-size:0.82rem;font-weight:600;background:none;border:none;cursor:pointer;color:#6b6560;font-family:inherit;}
-  .toggle-opt.aktiv{background:#2d6a4f;color:#fff;}
+  .toggle-sub{font-size:0.78rem;color:var(--text2);margin-top:2px;}
+  .toggle-btn{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid var(--rahmen);}
+  .toggle-opt{padding:6px 14px;font-size:0.82rem;font-weight:600;background:none;border:none;cursor:pointer;color:var(--text2);font-family:inherit;}
+  .toggle-opt.aktiv{background:var(--haupt);color:var(--auf-haupt);}
   /* Rechte Spalte der Kopfzeilen (Quiz/Statistik): alle Knöpfe so breit und hoch wie der Alle/Bereich-Schalter */
   .zeile-rechts{width:124px;height:31px;box-sizing:border-box;flex-shrink:0;}
   button.zeile-rechts{display:inline-block;padding:0 8px;line-height:31px;font-size:0.82rem;border-radius:8px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .toggle-btn.zeile-rechts .toggle-opt{flex:1 1 0;padding:0 4px;min-width:0;}
-  .meldung-info{background:#e8f4fd;color:#1565c0;border:1px solid #bbdefb;padding:12px 16px;border-radius:10px;font-size:0.85rem;margin-bottom:16px;line-height:1.6;}
-  .fehler{color:#c0392b;font-size:0.82rem;margin-top:8px;margin-bottom:8px;}
-  .fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:28px;background:#2d6a4f;color:#fff;font-size:1.6rem;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:20;}
-  .spalten-zuweisung{padding:14px 16px;border-bottom:1px solid #e0dbd2;}
+  .meldung-info{background:var(--info-flaeche);color:var(--info);border:1px solid var(--info-flaeche);padding:12px 16px;border-radius:10px;font-size:0.85rem;margin-bottom:16px;line-height:1.6;}
+  .fehler{color:var(--falsch);font-size:0.82rem;margin-top:8px;margin-bottom:8px;}
+  .fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:28px;background:var(--haupt);color:var(--auf-haupt);font-size:1.6rem;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:20;}
+  .spalten-zuweisung{padding:14px 16px;border-bottom:1px solid var(--rahmen);}
   .spalten-zuweisung:last-child{border-bottom:none;}
   .typ-buttons{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
   .import-kompakt{display:flex;align-items:center;gap:8px;margin-top:6px;}
-  .import-beispiel{font-size:0.78rem;color:#6b6560;margin-top:3px;}
-  .import-zaehler{font-size:0.82rem;color:#6b6560;margin-bottom:12px;}
-  .import-zaehler strong{color:#2d6a4f;}
-  .slot-chip{padding:7px 13px;border-radius:8px;border:1.5px solid #e0dbd2;background:#f7f5f0;font-size:0.78rem;font-weight:600;color:#6b6560;cursor:pointer;font-family:inherit;white-space:nowrap;}
-  .slot-chip.belegt{background:#e8f5e9;border-color:#2d6a4f;color:#2d6a4f;}
-  .slot-chip.verlauf{background:#fff;border-style:dashed;border-color:#c0bcb7;color:#6b6560;font-weight:500;}
-  .slot-chip.zuletzt{background:#fffde7;border-color:#f9a825;color:#e65100;}
+  .import-beispiel{font-size:0.78rem;color:var(--text2);margin-top:3px;}
+  .import-zaehler{font-size:0.82rem;color:var(--text2);margin-bottom:12px;}
+  .import-zaehler strong{color:var(--haupt);}
+  .slot-chip{padding:7px 13px;border-radius:8px;border:1.5px solid var(--rahmen);background:var(--hintergrund);font-size:0.78rem;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .slot-chip.belegt{background:var(--haupt-flaeche);border-color:var(--haupt);color:var(--haupt);}
+  .slot-chip.verlauf{background:var(--karte);border-style:dashed;border-color:var(--text4);color:var(--text2);font-weight:500;}
+  .slot-chip.zuletzt{background:var(--gelb-flaeche);border-color:var(--gelb);color:var(--orange);}
   .slot-chip.leer{opacity:0.35;cursor:default;}
   .slot-raster{display:grid;gap:6px;}
+  .farb-raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+  .farb-kachel{display:flex;flex-direction:column;gap:6px;padding:6px;border:1.5px solid var(--rahmen);border-radius:10px;background:var(--karte);cursor:pointer;font-family:inherit;min-width:0;}
+  .farb-kachel.aktiv{border-color:var(--haupt);box-shadow:0 0 0 2px var(--haupt);}
+  .farb-streifen{display:flex;gap:3px;padding:5px;border-radius:7px;height:30px;box-sizing:border-box;}
+  .farb-streifen > span{flex:1;border-radius:4px;border:1px solid rgba(0,0,0,0.08);}
+  .farb-name{font-size:0.78rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .farb-zeile{display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--flaeche);cursor:pointer;}
+  .farb-zeile input[type=color]{width:42px;height:32px;border:1px solid var(--rahmen);border-radius:8px;padding:2px;background:var(--karte);flex-shrink:0;}
   .gelernt-blitz{animation:gelerntBlitz 1s ease-out;}
-  @keyframes gelerntBlitz{0%,35%{background:#fff3a0;border-color:#f5d000;box-shadow:0 0 0 4px #fff3a0,0 0 22px #ffe45c;}100%{box-shadow:0 0 0 0 transparent;}}
-  .auswahl-nr{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;border-radius:10px;background:#e0a800;color:#fff;font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;z-index:2;}
+  @keyframes gelerntBlitz{0%,35%{background:var(--gelb-zart);border-color:var(--gelb);box-shadow:0 0 0 4px var(--gelb-zart),0 0 22px var(--gelb-zart);}100%{box-shadow:0 0 0 0 transparent;}}
+  .auswahl-nr{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;border-radius:10px;background:var(--gelb);color:var(--auf-haupt);font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;z-index:2;}
   .listen-raster{display:grid;gap:6px;margin-bottom:16px;}
-  .listen-raster .karte-zeile{background:#fff;border:1px solid #e0dbd2;border-radius:12px;min-width:0;}
-  .listen-raster .karte-zeile:last-child{border-bottom:1px solid #e0dbd2;}
+  .listen-raster .karte-zeile{background:var(--karte);border:1px solid var(--rahmen);border-radius:12px;min-width:0;}
+  .listen-raster .karte-zeile:last-child{border-bottom:1px solid var(--rahmen);}
   .listen-raster.eng .karte-zeile{padding:10px 12px;gap:8px;}
   .listen-raster .raster-leer{min-height:56px;}
-  .listen-raster.auswahl .quiz-setup-check{background:#fff;border:1px solid #e0dbd2;border-radius:12px;min-width:0;}
-  .listen-raster.auswahl .quiz-setup-check:last-child{border-bottom:1px solid #e0dbd2;}
+  .listen-raster.auswahl .quiz-setup-check{background:var(--karte);border:1px solid var(--rahmen);border-radius:12px;min-width:0;}
+  .listen-raster.auswahl .quiz-setup-check:last-child{border-bottom:1px solid var(--rahmen);}
   .listen-raster.auswahl.eng .quiz-setup-check{padding:8px 10px !important;gap:8px;}
   .listen-raster.auswahl .quiz-setup-check > div:last-child{min-width:0;}
   .listen-raster.auswahl .raster-leer{min-height:0;}
@@ -822,86 +894,86 @@ const CSS = `
   .mini-kreise{display:flex;gap:3px;}
   .mini-kreise > span{border-radius:50%;}
   .kopf-kreise{position:absolute;right:12px;gap:4px;}
-  .raster-leer{min-height:44px;border:1.5px solid #e0dbd2;border-radius:8px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .raster-leer{min-height:44px;border:1.5px solid var(--rahmen);border-radius:8px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
   .slot-kopf-knoepfe .slot-chip{padding:2px 9px;font-size:0.7rem;}
   .score-badge{font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:10px;}
-  .score-pos{background:#e8f5e9;color:#2d6a4f;}
-  .score-neg{background:#ffebee;color:#c0392b;}
-  .score-null{background:#e0dbd2;color:#6b6560;}
-  .quiz-frage-box{background:#fff;border:1px solid #e0dbd2;border-radius:14px;padding:20px;margin-bottom:14px;}
+  .score-pos{background:var(--haupt-flaeche);color:var(--haupt);}
+  .score-neg{background:var(--falsch-flaeche);color:var(--falsch);}
+  .score-null{background:var(--rahmen);color:var(--text2);}
+  .quiz-frage-box{background:var(--karte);border:1px solid var(--rahmen);border-radius:14px;padding:20px;margin-bottom:14px;}
   .akzent-rahmen{container-type:inline-size;}
   .akzent-wort{--k:min(48px, calc((100cqw - (var(--n) - 1) * 4px) / var(--n)));display:flex;flex-wrap:wrap;justify-content:center;column-gap:calc(var(--k) * 0.6);row-gap:8px;margin-top:8px;}
   .akzent-wortgruppe{display:flex;gap:4px;}
-  .akzent-kachel{box-sizing:border-box;width:var(--k);height:calc(var(--k) * 1.3);padding:0;border-radius:calc(var(--k) * 0.2);border:1.5px solid #c9c2b6;background:#fff;font-family:inherit;font-size:calc(var(--k) * 0.68);font-weight:700;color:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,border-color .15s;}
-  .akzent-zaehler{text-align:center;font-size:0.85rem;font-weight:700;color:#6b6560;margin-top:2px;}
-  .akzent-kachel.markiert{background:#fff4d6;border-color:#e0a800;}
-  .akzent-kachel.aktiv{border:2.5px solid #3b3832;background:#f0ede8;}
-  .akzent-kachel.ok{background:#c8e6c9;border-color:#2d6a4f;color:#1b5e20;}
-  .akzent-kachel.falsch{background:#fdecea;border-color:#c0392b;color:#c0392b;}
-  .akzent-kachel.loesung{background:#fff4d6;border-color:#e0a800;color:#2d6a4f;}
-  .akzent-kachel.blink{background:#e74c3c;border-color:#c0392b;color:#fff;}
+  .akzent-kachel{box-sizing:border-box;width:var(--k);height:calc(var(--k) * 1.3);padding:0;border-radius:calc(var(--k) * 0.2);border:1.5px solid var(--text4);background:var(--karte);font-family:inherit;font-size:calc(var(--k) * 0.68);font-weight:700;color:var(--text-stark);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,border-color .15s;}
+  .akzent-zaehler{text-align:center;font-size:0.85rem;font-weight:700;color:var(--text2);margin-top:2px;}
+  .akzent-kachel.markiert{background:var(--gelb-flaeche);border-color:var(--gelb);}
+  .akzent-kachel.aktiv{border:2.5px solid var(--text);background:var(--flaeche);}
+  .akzent-kachel.ok{background:var(--haupt-zart);border-color:var(--haupt);color:var(--richtig-dunkel);}
+  .akzent-kachel.falsch{background:var(--falsch-flaeche);border-color:var(--falsch);color:var(--falsch);}
+  .akzent-kachel.loesung{background:var(--gelb-flaeche);border-color:var(--gelb);color:var(--haupt);}
+  .akzent-kachel.blink{background:var(--falsch);border-color:var(--falsch);color:var(--auf-haupt);}
   .akzent-aktionen{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;}
   .akzent-pruefen{min-width:60%;padding:14px 28px;font-size:1.15rem;}
-  .akzent-leiste{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:12px;padding:10px 6px;background:#f0f9f4;border-radius:12px;}
-  .akzent-variante{min-width:48px;height:58px;border-radius:10px;border:1.5px solid #2d6a4f;background:#fff;font-family:inherit;font-size:1.9rem;font-weight:700;color:#1a1a1a;cursor:pointer;}
-  .wiederholung-karte{background:#fdf3e7;border:2px dashed #e67e22;text-align:center;}
-  .wiederholung-marke{color:#c0640f;font-size:0.85rem;font-weight:700;}
-  .quiz-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6b6560;margin-bottom:6px;}
+  .akzent-leiste{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:12px;padding:10px 6px;background:var(--haupt-flaeche);border-radius:12px;}
+  .akzent-variante{min-width:48px;height:58px;border-radius:10px;border:1.5px solid var(--haupt);background:var(--karte);font-family:inherit;font-size:1.9rem;font-weight:700;color:var(--text-stark);cursor:pointer;}
+  .wiederholung-karte{background:var(--gelb-flaeche);border:2px dashed var(--orange);text-align:center;}
+  .wiederholung-marke{color:var(--orange);font-size:0.85rem;font-weight:700;}
+  .quiz-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:6px;}
   .quiz-frage-text{font-size:1.5rem;font-weight:700;line-height:1.3;}
-  .quiz-info-text{font-size:0.85rem;color:#6b6560;margin-top:6px;}
-  .quiz-antwort-box{background:#fff;border:1.5px solid #e0dbd2;border-radius:14px;padding:18px;margin-bottom:14px;transition:border-color .2s,background .2s;min-height:120px;}
-  .quiz-antwort-box.richtig{border-color:#40916c;background:#e8f5e9;}
-  .quiz-antwort-box.falsch{border-color:#c0392b;background:#ffebee;}
-  .quiz-antwort-box.aufgedeckt{background:#fffde7;border-color:#f9a825;}
-  .quiz-antwort-box.weitere{border-color:#7b1fa2;background:#f3e5f5;}
-  .quiz-antwort-box.spalte-ok{border-color:#40916c;background:#e8f5e9;}
+  .quiz-info-text{font-size:0.85rem;color:var(--text2);margin-top:6px;}
+  .quiz-antwort-box{background:var(--karte);border:1.5px solid var(--rahmen);border-radius:14px;padding:18px;margin-bottom:14px;transition:border-color .2s,background .2s;min-height:120px;}
+  .quiz-antwort-box.richtig{border-color:var(--haupt);background:var(--haupt-flaeche);}
+  .quiz-antwort-box.falsch{border-color:var(--falsch);background:var(--falsch-flaeche);}
+  .quiz-antwort-box.aufgedeckt{background:var(--gelb-flaeche);border-color:var(--gelb);}
+  .quiz-antwort-box.weitere{border-color:var(--info);background:var(--info-flaeche);}
+  .quiz-antwort-box.spalte-ok{border-color:var(--haupt);background:var(--haupt-flaeche);}
   .quiz-loesung-text{font-size:1.15rem;font-weight:600;margin-top:8px;}
   .quiz-feedback{font-size:0.88rem;font-weight:600;margin-top:6px;}
-  .quiz-feedback.ok{color:#1b5e20;}
-  .quiz-feedback.nein{color:#b71c1c;}
-  .quiz-feedback.info{color:#6a1b9a;}
-  .quiz-fortschritt{font-size:0.82rem;color:#6b6560;}
+  .quiz-feedback.ok{color:var(--richtig-dunkel);}
+  .quiz-feedback.nein{color:var(--falsch-dunkel);}
+  .quiz-feedback.info{color:var(--info);}
+  .quiz-fortschritt{font-size:0.82rem;color:var(--text2);}
   .quiz-aktionen{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;}
-  .quiz-action-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;background:#fff;border-top:1px solid #e0dbd2;padding:12px 16px 20px;display:flex;gap:10px;flex-wrap:wrap;z-index:20;}
-  .quiz-liste-sticky{position:sticky;top:57px;background:#fff;border-bottom:1px solid #e0dbd2;padding:8px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:9;}
-  .vok-zeile{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid #f0ede8;cursor:pointer;}
+  .quiz-action-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;background:var(--karte);border-top:1px solid var(--rahmen);padding:12px 16px 20px;display:flex;gap:10px;flex-wrap:wrap;z-index:20;}
+  .quiz-liste-sticky{position:sticky;top:57px;background:var(--karte);border-bottom:1px solid var(--rahmen);padding:8px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:9;}
+  .vok-zeile{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--flaeche);cursor:pointer;}
   .vok-zeile:last-child{border-bottom:none;}
-  .vok-zeile:active{background:#f7f5f0;}
-  .vok-nr{font-size:0.72rem;color:#6b6560;min-width:28px;text-align:right;flex-shrink:0;}
-  .spalten-rolle-btn{font-size:0.72rem;font-weight:700;padding:4px 8px;border-radius:6px;border:1.5px solid #e0dbd2;background:#f7f5f0;color:#6b6560;cursor:pointer;font-family:inherit;}
-  .spalten-rolle-btn.frage{background:#2d6a4f;color:#fff;border-color:#2d6a4f;}
-  .spalten-rolle-btn.antwort{background:#2d6a4f;color:#fff;border-color:#2d6a4f;}
-  .spalten-rolle-btn.info{background:#f9a825;color:#fff;border-color:#f9a825;}
-  .spalten-modus-btn{font-size:0.72rem;font-weight:700;padding:4px 8px;border-radius:6px;border:1.5px solid #e0dbd2;background:#f7f5f0;color:#6b6560;cursor:pointer;font-family:inherit;}
-  .spalten-modus-btn.aktiv{background:#52b788;color:#fff;border-color:#52b788;}
-  .quiz-vorig{background:#f0f7f0;border:1px solid #c8e6c9;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:0.88rem;color:#2d6a4f;}
-  .quiz-vorig-label{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#40916c;margin-bottom:3px;}
-  .quiz-vorig.nicht{background:#fdf0ef;border-color:#f3c7c3;color:#9b2c22;}
-  .quiz-vorig.nicht .quiz-vorig-label{color:#c0392b;}
-  .quiz-setup-check{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e0dbd2;cursor:pointer;}
+  .vok-zeile:active{background:var(--hintergrund);}
+  .vok-nr{font-size:0.72rem;color:var(--text2);min-width:28px;text-align:right;flex-shrink:0;}
+  .spalten-rolle-btn{font-size:0.72rem;font-weight:700;padding:4px 8px;border-radius:6px;border:1.5px solid var(--rahmen);background:var(--hintergrund);color:var(--text2);cursor:pointer;font-family:inherit;}
+  .spalten-rolle-btn.frage{background:var(--haupt);color:var(--auf-haupt);border-color:var(--haupt);}
+  .spalten-rolle-btn.antwort{background:var(--haupt);color:var(--auf-haupt);border-color:var(--haupt);}
+  .spalten-rolle-btn.info{background:var(--gelb);color:var(--auf-haupt);border-color:var(--gelb);}
+  .spalten-modus-btn{font-size:0.72rem;font-weight:700;padding:4px 8px;border-radius:6px;border:1.5px solid var(--rahmen);background:var(--hintergrund);color:var(--text2);cursor:pointer;font-family:inherit;}
+  .spalten-modus-btn.aktiv{background:var(--haupt-hell);color:var(--auf-haupt);border-color:var(--haupt-hell);}
+  .quiz-vorig{background:var(--haupt-flaeche);border:1px solid var(--haupt-zart);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:0.88rem;color:var(--haupt);}
+  .quiz-vorig-label{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--haupt);margin-bottom:3px;}
+  .quiz-vorig.nicht{background:var(--falsch-flaeche);border-color:var(--falsch-zart);color:var(--falsch-dunkel);}
+  .quiz-vorig.nicht .quiz-vorig-label{color:var(--falsch);}
+  .quiz-setup-check{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--rahmen);cursor:pointer;}
   .quiz-setup-check:last-child{border-bottom:none;}
-  .checkbox{width:20px;height:20px;border-radius:5px;border:2px solid #e0dbd2;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#f7f5f0;}
-  .checkbox.checked{background:#2d6a4f;border-color:#2d6a4f;color:#fff;}
+  .checkbox{width:20px;height:20px;border-radius:5px;border:2px solid var(--rahmen);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--hintergrund);}
+  .checkbox.checked{background:var(--haupt);border-color:var(--haupt);color:var(--auf-haupt);}
   .liste-detail-header-name{flex:1;font-size:0.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .btn-toggle{background:#2d6a4f;color:#fff;border:none;cursor:pointer;padding:6px 9px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .btn-toggle{background:var(--haupt);color:var(--auf-haupt);border:none;cursor:pointer;padding:6px 9px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
   .btn-toggle:active{opacity:.8;}
-  .btn-toggle-ghost{background:#f7f5f0;color:#2d6a4f;border:1.5px solid #2d6a4f;cursor:pointer;padding:5px 8px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .btn-toggle-ghost{background:var(--hintergrund);color:var(--haupt);border:1.5px solid var(--haupt);cursor:pointer;padding:5px 8px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
   .btn-toggle-ghost:active{opacity:.8;}
-  .diktat-hint{font-size:1.8rem;font-weight:700;letter-spacing:0.2em;color:#2d6a4f;margin:10px 0 6px;font-family:monospace;}
-  .diktat-uebersetzung{font-size:0.85rem;color:#6b6560;margin-top:4px;}
+  .diktat-hint{font-size:1.8rem;font-weight:700;letter-spacing:0.2em;color:var(--haupt);margin:10px 0 6px;font-family:monospace;}
+  .diktat-uebersetzung{font-size:0.85rem;color:var(--text2);margin-top:4px;}
   .diktat-play-btn{background:none;border:none;font-size:3rem;cursor:pointer;display:block;margin:8px auto;line-height:1;}
-  .diktat-summary-zeile{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0ede8;}
+  .diktat-summary-zeile{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--flaeche);}
   .karte-bewertung{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
   .karte-btn{padding:22px 16px;border-radius:14px;font-size:1.05rem;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s;width:100%;}
   .karte-btn:active{opacity:.8;}
-  .karte-btn-ja{background:#2d6a4f;color:#fff;}
-  .karte-btn-nein{background:#c0392b;color:#fff;}
-  .karte-aufdecken{text-align:center;padding:20px 0;color:#b0aba5;font-size:0.9rem;font-style:italic;}
+  .karte-btn-ja{background:var(--haupt);color:var(--auf-haupt);}
+  .karte-btn-nein{background:var(--falsch);color:var(--auf-haupt);}
+  .karte-aufdecken{text-align:center;padding:20px 0;color:var(--text3);font-size:0.9rem;font-style:italic;}
   .score-slider{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;outline:none;cursor:pointer;}
-  .score-slider::-webkit-slider-runnable-track{height:4px;background:#e0dbd2;border-radius:2px;}
-  .score-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;background:#2d6a4f;border-radius:6px;cursor:pointer;margin-top:-12px;}
-  .score-slider::-moz-range-track{height:4px;background:#e0dbd2;border-radius:2px;}
-  .score-slider::-moz-range-thumb{width:28px;height:28px;background:#2d6a4f;border-radius:6px;cursor:pointer;border:none;}
+  .score-slider::-webkit-slider-runnable-track{height:4px;background:var(--rahmen);border-radius:2px;}
+  .score-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;background:var(--haupt);border-radius:6px;cursor:pointer;margin-top:-12px;}
+  .score-slider::-moz-range-track{height:4px;background:var(--rahmen);border-radius:2px;}
+  .score-slider::-moz-range-thumb{width:28px;height:28px;background:var(--haupt);border-radius:6px;cursor:pointer;border:none;}
 `;
 
 const TYPEN = ["E1","E2","E3","D1","D2","i1","i2"];
@@ -919,7 +991,7 @@ const IcoPencil= ({s=15}) => <svg viewBox="0 0 16 16" width={s} height={s} style
 const IcoSpk   = ({s=18}) => <svg viewBox="0 0 20 20" width={s} height={s} style={{display:"block"}}><polygon points="2,7 2,13 6,13 12,18 12,2 6,7" fill="currentColor"/></svg>;
 const IcoSpkOn = ({s=20}) => <svg viewBox="0 0 26 20" width={s} height={s*.77} style={{display:"block"}}><polygon points="2,7 2,13 6,13 12,18 12,2 6,7" fill="currentColor"/><path d="M15,7 Q17,10 15,13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M18,4 Q22,10 18,16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
 const IcoPlus  = ({s=15}) => <svg viewBox="0 0 14 14" width={s} height={s} style={{display:"block"}}><line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>;
-const IcoCopy    = ({s=15}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><rect x="5" y="1" width="10" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="2"/><rect x="1" y="4" width="10" height="11" rx="2" fill="#fff" stroke="currentColor" strokeWidth="2"/></svg>;
+const IcoCopy    = ({s=15}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><rect x="5" y="1" width="10" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="2"/><rect x="1" y="4" width="10" height="11" rx="2" fill={fv("var(--karte)")} stroke="currentColor" strokeWidth="2"/></svg>;
 const IcoExpand  = ({s=16}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><polyline points="1,6 1,1 6,1" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="1" y1="1" x2="6.5" y2="6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="10,1 15,1 15,6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="15" y1="1" x2="9.5" y2="6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="1,10 1,15 6,15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="1" y1="15" x2="6.5" y2="9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="15,10 15,15 10,15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="15" y1="15" x2="9.5" y2="9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
 const IcoCollapse= ({s=16}) => <svg viewBox="0 0 16 16" width={s} height={s} style={{display:"block"}}><polyline points="1,6 6,6 6,1" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="6" y1="6" x2="0.5" y2="0.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="15,6 10,6 10,1" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="10" y1="6" x2="15.5" y2="0.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="1,10 6,10 6,15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="6" y1="10" x2="0.5" y2="15.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="15,10 10,10 10,15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="10" y1="10" x2="15.5" y2="15.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
 
@@ -927,6 +999,12 @@ export default function VokabelApp() {
   const [tab, setTab] = useState("quiz");
   const [listenIndex, setListenIndex] = useState([]);
   const [einstellungen, setEinstellungen] = useState(defaultEinstellungen());
+  const [schemaBearbeiten, setSchemaBearbeiten] = useState(null);   // id des eigenen Schemas im Editor
+  const [schemaMenueId, setSchemaMenueId] = useState(null);         // Schema für Umbenennen / Löschen
+  // Farbschema: Farben je Rolle (CSS-Variablen + F für SVG); vor dem Laden der Einstellungen aus dem Speicher
+  const farbSchema = schemaVon(einstellungen.farbschema || einstellungen.eigeneSchemata ? einstellungen : lsGet(SK.einstellungen, {}));
+  F = farbenAus(farbSchema.farben);
+  CSS = farbVariablen(F, farbSchema.dunkel) + CSS_BASIS;
   const [infoModus, setInfoModus] = useState("uebersicht");
   const [ansicht, setAnsicht] = useState("uebersicht");
   const [aktiveListeId, setAktiveListeId] = useState(null);
@@ -2899,14 +2977,14 @@ export default function VokabelApp() {
       <div className="topbar-title" style={{display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"0 44px"}}
         {...tt("Lernfortschritt der eingeblendeten Gruppen")}>
         {schwelle > 0
-          ? <span style={{fontWeight:800, fontSize:"1.1rem", color:"#2d6a4f", lineHeight:1}}>{Math.round(lernProzent(voks.map(v => v.fortschritt?.score), schwelle))} %</span>
-          : <span style={{fontWeight:800, fontSize:"1.1rem", color:"#2d6a4f", lineHeight:1}}>Ø {avg === null ? "–" : `${avg > 0 ? "+" : ""}${avg.toFixed(1)}`}</span>}
-        <div style={{display:"flex", width:"min(200px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"#f0ede8"}}>
+          ? <span style={{fontWeight:800, fontSize:"1.1rem", color:"var(--haupt)", lineHeight:1}}>{Math.round(lernProzent(voks.map(v => v.fortschritt?.score), schwelle))} %</span>
+          : <span style={{fontWeight:800, fontSize:"1.1rem", color:"var(--haupt)", lineHeight:1}}>Ø {avg === null ? "–" : `${avg > 0 ? "+" : ""}${avg.toFixed(1)}`}</span>}
+        <div style={{display:"flex", width:"min(200px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"var(--flaeche)"}}>
           {voks.length > 0 && GRUPPE_BALKEN.map(([g, farbe]) => anzahl[g] > 0 && (
             <div key={g} style={{width:`${anzahl[g] / voks.length * 100}%`, background:farbe}}/>
           ))}
         </div>
-        <span style={{fontSize:"0.68rem", fontWeight:500, color:"#6b6560", lineHeight:1}}>
+        <span style={{fontSize:"0.68rem", fontWeight:500, color:"var(--text2)", lineHeight:1}}>
           {schwelle > 0 ? `${anzahl.gelernt} / ${voks.length} gelernt` : `${voks.length} Vokabeln`}
         </span>
       </div>
@@ -2917,22 +2995,22 @@ export default function VokabelApp() {
   function renderRundenErgebnis(q, r, f, titel) {
     const ges = r + f;
     const pct = ges > 0 ? Math.round(r / ges * 100) : 0;
-    const farbe = pct >= 70 ? "#2d6a4f" : pct >= 40 ? "#e67e22" : "#c0392b";
+    const farbe = pct >= 70 ? "var(--haupt)" : pct >= 40 ? "var(--orange)" : "var(--falsch)";
     const R = 40, U = 2 * Math.PI * R;
     return (
       <div className="karte" style={{padding:"14px 16px", margin:"0 0 14px"}}>
-        <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"#6b6560", marginBottom:10}}>{titel}</div>
+        <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--text2)", marginBottom:10}}>{titel}</div>
         <div style={{display:"flex", alignItems:"center", gap:18, justifyContent:"center"}}>
           <svg width="112" height="112" viewBox="0 0 112 112" data-ergebniskreis {...tt(`${r} richtig, ${f} falsch`)}>
-            <circle cx="56" cy="56" r={R} fill="none" stroke={f > 0 ? "#e8a39b" : "#f0ede8"} strokeWidth="16"/>
-            {r > 0 && <circle cx="56" cy="56" r={R} fill="none" stroke="#2d6a4f" strokeWidth="16"
+            <circle cx="56" cy="56" r={R} fill="none" stroke={fv(f > 0 ? "var(--falsch-zart)" : "var(--flaeche)")} strokeWidth="16"/>
+            {r > 0 && <circle cx="56" cy="56" r={R} fill="none" stroke={fv("var(--haupt)")} strokeWidth="16"
               strokeDasharray={`${U * r / ges} ${U}`} transform="rotate(-90 56 56)"/>}
-            <text x="56" y="62" textAnchor="middle" fontSize="20" fontWeight="800" fill={farbe}>{pct}%</text>
+            <text x="56" y="62" textAnchor="middle" fontSize="20" fontWeight="800" fill={fv(farbe)}>{pct}%</text>
           </svg>
           <div style={{lineHeight:1.6}}>
-            <div style={{fontWeight:700, fontSize:"1rem", color:"#3b3832"}}>{r} von {ges} richtig</div>
-            <div style={{fontSize:"0.85rem", color:"#2d6a4f"}}>✓ {r} gewusst</div>
-            <div style={{fontSize:"0.85rem", color:"#c0392b"}}>✗ {f} nicht gewusst</div>
+            <div style={{fontWeight:700, fontSize:"1rem", color:"var(--text)"}}>{r} von {ges} richtig</div>
+            <div style={{fontSize:"0.85rem", color:"var(--haupt)"}}>✓ {r} gewusst</div>
+            <div style={{fontSize:"0.85rem", color:"var(--falsch)"}}>✗ {f} nicht gewusst</div>
           </div>
         </div>
         {renderLernBilanz(q)}
@@ -2978,30 +3056,30 @@ export default function VokabelApp() {
     const NAMEN = { gelernt: "Gelernt", arbeit: "In Arbeit", nie: "Nie abgefragt", negativ: "Negativ" };
     const balken = (titel, z) => (
       <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8}} data-balken={titel}>
-        <span style={{width:40, fontSize:"0.78rem", fontWeight:700, color:"#6b6560"}}>{titel}</span>
-        <div style={{flex:1, display:"flex", height:26, borderRadius:8, overflow:"hidden", background:"#f0ede8"}}>
+        <span style={{width:40, fontSize:"0.78rem", fontWeight:700, color:"var(--text2)"}}>{titel}</span>
+        <div style={{flex:1, display:"flex", height:26, borderRadius:8, overflow:"hidden", background:"var(--flaeche)"}}>
           {GRUPPE_BALKEN.map(([g, farbe]) => z[g] > 0 && (
             <div key={g} data-segment={g} style={{width:`${z[g] / Math.max(1, n) * 100}%`, background:farbe, display:"flex", alignItems:"center", justifyContent:"center",
-              color: g === "gelernt" || g === "negativ" ? "#fff" : "#3b3832", fontSize:"0.75rem", fontWeight:700, overflow:"hidden"}}
+              color: g === "gelernt" || g === "negativ" ? "var(--auf-haupt)" : "var(--text)", fontSize:"0.75rem", fontWeight:700, overflow:"hidden"}}
               {...ttFeld(`${titel}: ${NAMEN[g]} ${z[g]}`)}>{z[g] / Math.max(1, n) >= 0.08 ? z[g] : ""}</div>
           ))}
         </div>
       </div>
     );
     const zeile = (k, v) => (
-      <div style={{display:"flex", justifyContent:"space-between", gap:10, padding:"5px 0", borderBottom:"1px solid #f0ede8"}}>
-        <span>{k}</span><span style={{fontWeight:600, color:"#3b3832"}}>{v}</span>
+      <div style={{display:"flex", justifyContent:"space-between", gap:10, padding:"5px 0", borderBottom:"1px solid var(--flaeche)"}}>
+        <span>{k}</span><span style={{fontWeight:600, color:"var(--text)"}}>{v}</span>
       </div>
     );
     return (
       <div data-session-auswertung>
         <div className="karte" style={{padding:"14px 16px", margin:"8px 0 14px"}}>
-          <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"#6b6560", marginBottom:12}}>
+          <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--text2)", marginBottom:12}}>
             {d.mitSession ? "Ganze Session" : "Diese Runde"} · {d.ohneAkzent != null ? `${n} ${n === 1 ? "Wort" : "Wörter"} mit Akzent` : `${n} Vokabel${n !== 1 ? "n" : ""}`}
           </div>
           {balken("Start", zv)}
           {balken("Ende", zn)}
-          <div style={{display:"flex", flexWrap:"wrap", gap:"4px 12px", marginTop:6, fontSize:"0.72rem", color:"#6b6560"}}>
+          <div style={{display:"flex", flexWrap:"wrap", gap:"4px 12px", marginTop:6, fontSize:"0.72rem", color:"var(--text2)"}}>
             {GRUPPE_BALKEN.map(([g, farbe]) => (
               <span key={g} style={{display:"inline-flex", alignItems:"center", gap:4}}>
                 <span style={{width:10, height:10, borderRadius:3, background:farbe, display:"inline-block"}}/>{NAMEN[g]} {zv[g]} → {zn[g]}
@@ -3011,17 +3089,17 @@ export default function VokabelApp() {
         </div>
         <div style={{display:"flex", gap:10, marginBottom:14}}>
           <div className="karte" style={{flex:1, padding:"12px 14px", margin:0, textAlign:"center"}} data-kennzahl="lernfortschritt">
-            <div style={{fontSize:"0.72rem", color:"#6b6560", fontWeight:600}}>Lernfortschritt</div>
-            <div style={{fontSize:"1.25rem", fontWeight:800, color:"#2d6a4f", marginTop:2}}>{Math.round(pV)} % → {Math.round(pN)} %</div>
-            <div style={{fontSize:"0.78rem", color: pN - pV >= 0 ? "#2d6a4f" : "#c0392b", fontWeight:700}}>{pN - pV >= 0 ? "+" : ""}{Math.round(pN - pV)} %</div>
+            <div style={{fontSize:"0.72rem", color:"var(--text2)", fontWeight:600}}>Lernfortschritt</div>
+            <div style={{fontSize:"1.25rem", fontWeight:800, color:"var(--haupt)", marginTop:2}}>{Math.round(pV)} % → {Math.round(pN)} %</div>
+            <div style={{fontSize:"0.78rem", color: pN - pV >= 0 ? "var(--haupt)" : "var(--falsch)", fontWeight:700}}>{pN - pV >= 0 ? "+" : ""}{Math.round(pN - pV)} %</div>
           </div>
           <div className="karte" style={{flex:1, padding:"12px 14px", margin:0, textAlign:"center"}} data-kennzahl="neu-gelernt">
-            <div style={{fontSize:"0.72rem", color:"#6b6560", fontWeight:600}}>Neu gelernt</div>
-            <div style={{fontSize:"1.25rem", fontWeight:800, color:"#2d6a4f", marginTop:2}}>{neuGelernt}</div>
-            <div style={{fontSize:"0.72rem", color:"#9b9590"}}>Score +{schwelle} erreicht</div>
+            <div style={{fontSize:"0.72rem", color:"var(--text2)", fontWeight:600}}>Neu gelernt</div>
+            <div style={{fontSize:"1.25rem", fontWeight:800, color:"var(--haupt)", marginTop:2}}>{neuGelernt}</div>
+            <div style={{fontSize:"0.72rem", color:"var(--text3)"}}>Score +{schwelle} erreicht</div>
           </div>
         </div>
-        <div data-zusatzdaten style={{fontSize:"0.8rem", color:"#9b9590", margin:"0 2px 18px"}}>
+        <div data-zusatzdaten style={{fontSize:"0.8rem", color:"var(--text3)", margin:"0 2px 18px"}}>
           {zeile(d.ohneAkzent != null ? "Wörter mit Akzent" : "Vokabeln", d.pakete ? `${n} in ${d.pakete} Paket${d.pakete !== 1 ? "en" : ""}` : n)}
           {d.ohneAkzent > 0 && zeile("Dazu geübt ohne Akzent", `${d.ohneAkzent} (zählen nicht mit)`)}
           {zeile("Ø Score", `${fmt(sV)} → ${fmt(sN)}`)}
@@ -3071,15 +3149,15 @@ export default function VokabelApp() {
     const komplett = nachherP >= 99.999 && vorherP < 99.999;
     if (!komplett && neuGelernt === 0) return null;
     return (
-      <div style={{border:"1.5px solid #a8d5be", background: komplett ? "#e8f5e9" : "#f0f9f4", borderRadius:12, padding:"10px 14px", marginTop:12, textAlign:"center"}}>
+      <div style={{border:"1.5px solid var(--haupt-zart)", background: komplett ? "var(--haupt-flaeche)" : "var(--haupt-flaeche)", borderRadius:12, padding:"10px 14px", marginTop:12, textAlign:"center"}}>
         {komplett && (<>
           <div style={{fontSize:"2rem", lineHeight:1.2}}>🏆</div>
-          <div style={{fontWeight:800, color:"#2d6a4f", fontSize:"1rem", marginBottom:4}}>Geschafft! Alle {ids.length} Vokabeln gelernt.</div>
+          <div style={{fontWeight:800, color:"var(--haupt)", fontSize:"1rem", marginBottom:4}}>Geschafft! Alle {ids.length} Vokabeln gelernt.</div>
         </>)}
         {neuGelernt > 0 && (
-          <div style={{fontWeight:700, color:"#2d6a4f", fontSize:"0.95rem"}}
+          <div style={{fontWeight:700, color:"var(--haupt)", fontSize:"0.95rem"}}
             {...tt(`Diese Vokabeln haben in dieser Runde den Score +${schwelle} erreicht und gelten jetzt als gelernt`)}>
-            ✓ +{neuGelernt} neu gelernt <span style={{fontWeight:400, fontSize:"0.8rem", color:"#6b6560"}}>(Score +{schwelle} erreicht)</span>
+            ✓ +{neuGelernt} neu gelernt <span style={{fontWeight:400, fontSize:"0.8rem", color:"var(--text2)"}}>(Score +{schwelle} erreicht)</span>
           </div>
         )}
       </div>
@@ -3107,11 +3185,11 @@ export default function VokabelApp() {
     const hatRest = rest > aufteilen.groesse && rest % aufteilen.groesse !== 0;
     const vorschau = gruppen.length > 6 ? [...gruppen.slice(0, 3), null, ...gruppen.slice(-2)] : gruppen;
     const zeile = {display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:10};
-    const label = {fontSize:"0.78rem", color:"#6b6560", minWidth:84};
+    const label = {fontSize:"0.78rem", color:"var(--text2)", minWidth:84};
     return (
-      <div data-aufteilen style={{background:"#fff8e1", border:"1.5px solid #f0c94a", borderRadius:12, padding:"12px 14px", margin:"12px 0 4px"}}>
-        <div style={{fontWeight:700, color:"#8a6d00", marginBottom:4}}>„{stand.liste.name}“ in Sessions aufteilen</div>
-        <div style={{fontSize:"0.75rem", color:"#8a7a50", marginBottom:12}}>Unten wie gewohnt Spalten, Abfrage-Modus, Reihenfolge und Einstellungen wählen – sie gelten für alle Sessions.</div>
+      <div data-aufteilen style={{background:"var(--gelb-flaeche)", border:"1.5px solid var(--gelb-zart)", borderRadius:12, padding:"12px 14px", margin:"12px 0 4px"}}>
+        <div style={{fontWeight:700, color:"var(--gelb-dunkel)", marginBottom:4}}>„{stand.liste.name}“ in Sessions aufteilen</div>
+        <div style={{fontSize:"0.75rem", color:"var(--text2)", marginBottom:12}}>Unten wie gewohnt Spalten, Abfrage-Modus, Reihenfolge und Einstellungen wählen – sie gelten für alle Sessions.</div>
         <div style={zeile}>
           <span style={label}>Name</span>
           <input {...ttFeld("Name der Sessions – die Nummern „(von - bis)“ werden angehängt")} data-aufteilen-name className="inp"
@@ -3121,7 +3199,7 @@ export default function VokabelApp() {
           <span style={label}>Gruppengröße</span>
           {AUFTEILEN_GROESSEN.map(n => (
             <button key={n} data-aufteilen-groesse={n} className={`toggle-opt${aufteilen.groesse === n ? " aktiv" : ""}`}
-              style={{padding:"4px 9px", border:"1.5px solid #e0dbd2", borderRadius:8}}
+              style={{padding:"4px 9px", border:"1.5px solid var(--rahmen)", borderRadius:8}}
               onClick={() => upd({ groesse: n })} {...tt(`Je ${n} Vokabeln pro Session`)}>{n}</button>
           ))}
           <input {...ttFeld("Eigene Gruppengröße")} data-aufteilen-eigene className="inp" type="number" min={1} max={anzahl}
@@ -3133,10 +3211,10 @@ export default function VokabelApp() {
           <span style={label}>Bereich (Nr.)</span>
           <input {...ttFeld("Erste Vokabel-Nummer der Liste, ab der aufgeteilt wird")} data-aufteilen-von className="inp" type="number" min={1} max={anzahl}
             style={{width:74, padding:"5px 8px"}} value={aufteilen.von} onChange={e => upd({ von: zahl(e.target.value, 1, anzahl) })}/>
-          <span style={{fontSize:"0.8rem", color:"#6b6560"}}>bis</span>
+          <span style={{fontSize:"0.8rem", color:"var(--text2)"}}>bis</span>
           <input {...ttFeld("Letzte Vokabel-Nummer, bis zu der aufgeteilt wird")} data-aufteilen-bis className="inp" type="number" min={1} max={anzahl}
             style={{width:74, padding:"5px 8px"}} value={aufteilen.bis} onChange={e => upd({ bis: zahl(e.target.value, 1, anzahl) })}/>
-          <span style={{fontSize:"0.75rem", color:"#9b9590"}}>von {anzahl}</span>
+          <span style={{fontSize:"0.75rem", color:"var(--text3)"}}>von {anzahl}</span>
         </div>
         {hatRest && (
           <div style={zeile}>
@@ -3149,15 +3227,96 @@ export default function VokabelApp() {
             </div>
           </div>
         )}
-        <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:4}}>Vorschau: {gruppen.length} Session{gruppen.length !== 1 ? "s" : ""}</div>
+        <div style={{fontSize:"0.78rem", color:"var(--text2)", marginBottom:4}}>Vorschau: {gruppen.length} Session{gruppen.length !== 1 ? "s" : ""}</div>
         <div data-aufteilen-vorschau style={{display:"flex", flexWrap:"wrap", gap:5}}>
           {vorschau.map((g, i) => g ? (
             <span key={i} className="slot-chip belegt" style={{fontSize:"0.72rem", padding:"3px 9px", cursor:"default", ...(g.vorhanden ? {opacity:0.5, textDecoration:"line-through"} : {})}}
               {...tt(g.vorhanden ? "Gibt es schon – wird übersprungen" : `Vokabeln Nr. ${g.von} bis ${g.bis}`)}>{g.name}</span>
-          ) : <span key={i} style={{fontSize:"0.8rem", color:"#9b9590", alignSelf:"center"}}>…</span>)}
+          ) : <span key={i} style={{fontSize:"0.8rem", color:"var(--text3)", alignSelf:"center"}}>…</span>)}
         </div>
         {gruppen.some(g => g.vorhanden) && (
-          <div style={{fontSize:"0.72rem", color:"#9b9590", marginTop:6}}>Durchgestrichen: gibt es schon, wird nicht doppelt angelegt.</div>
+          <div style={{fontSize:"0.72rem", color:"var(--text3)", marginTop:6}}>Durchgestrichen: gibt es schon, wird nicht doppelt angelegt.</div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Farbschemata: 6 Vorlagen (nur duplizierbar) + eigene (bearbeiten, umbenennen, löschen) ──
+  const eigeneSchemata = einstellungen.eigeneSchemata || [];
+  const schemaName = (name) => {
+    const namen = new Set([...FARB_VORLAGEN, ...eigeneSchemata].map(x => x.name.toLowerCase()));
+    let n = `${name} (Kopie)`, i = 2;
+    while (namen.has(n.toLowerCase())) n = `${name} (Kopie ${i++})`;
+    return n;
+  };
+  function dupliziereSchema(sch) {
+    const neu = { id: "eigen_" + Date.now(), name: schemaName(sch.name), basis: sch.basis || sch.id, dunkel: !!sch.dunkel, farben: { ...sch.farben } };
+    speichereEinst({ ...einstellungen, eigeneSchemata: [...eigeneSchemata, neu], farbschema: neu.id });
+    setSchemaBearbeiten(neu.id);
+  }
+  function aendereEigenesSchema(id, aenderung) {
+    speichereEinst({ ...einstellungen, eigeneSchemata: eigeneSchemata.map(x => x.id === id ? { ...x, ...aenderung(x) } : x) });
+  }
+  function loescheSchema(id) {
+    speichereEinst({ ...einstellungen, eigeneSchemata: eigeneSchemata.filter(x => x.id !== id), farbschema: einstellungen.farbschema === id ? "natur" : einstellungen.farbschema });
+    if (schemaBearbeiten === id) setSchemaBearbeiten(null);
+    setModal(null); setSchemaMenueId(null);
+  }
+  const vollHex = h => /^#[0-9a-f]{3}$/i.test(h) ? "#" + h.slice(1).split("").map(c => c + c).join("") : h;
+  function renderFarbschemata() {
+    const aktivId = schemaVon(einstellungen).id;
+    const alle = [...FARB_VORLAGEN, ...eigeneSchemata];
+    const bearb = eigeneSchemata.find(x => x.id === schemaBearbeiten);
+    const vorlageVon = sch => FARB_VORLAGEN.find(v => v.id === sch.basis) || FARB_VORLAGEN[0];
+    return (
+      <div className="karte" style={{padding:"12px 14px"}}>
+        <div className="farb-raster">
+          {alle.map(sch => {
+            const eigen = !FARB_VORLAGEN.includes(sch);
+            const menue = [
+              ...(eigen ? [{ label: "🎨 Bearbeiten", fn: () => { speichereEinst({ ...einstellungen, farbschema: sch.id }); setSchemaBearbeiten(sch.id); } }] : []),
+              { label: "⧉ Duplizieren", fn: () => dupliziereSchema(sch) },
+              ...(eigen ? [
+                { label: "✎ Umbenennen", fn: () => { setSchemaMenueId(sch.id); setModalInput(sch.name); setModalFehler(""); setModal("schema-umbenennen"); } },
+                { label: "🗑 Löschen", gefahr: true, fn: () => { setSchemaMenueId(sch.id); setModal("schema-loeschen"); } },
+              ] : []),
+            ];
+            return (
+              <button key={sch.id} data-farbschema={sch.id} className={`farb-kachel${aktivId === sch.id ? " aktiv" : ""}`}
+                onClick={() => { speichereEinst({ ...einstellungen, farbschema: sch.id }); if (schemaBearbeiten && schemaBearbeiten !== sch.id) setSchemaBearbeiten(null); }}
+                {...tt(`${sch.name} – antippen: dieses Farbschema verwenden${eigen ? "" : " (Vorlage: zum Anpassen duplizieren)"}`, menue, { langText: sch.name })}>
+                <span className="farb-streifen" style={{background: sch.farben.hintergrund}}>
+                  {["haupt", "haupt-hell", "gelb", "falsch", "karte"].map(r => <span key={r} style={{background: sch.farben[r]}}/>)}
+                </span>
+                <span className="farb-name">{aktivId === sch.id ? "✓ " : ""}{sch.name}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div style={{fontSize:"0.7rem", color:"var(--text3)", marginTop:8}}>Lang drücken: Vorlagen duplizieren – eigene Schemata bearbeiten, umbenennen, löschen</div>
+        {bearb && (
+          <div data-schema-editor style={{marginTop:14, borderTop:"1px solid var(--rahmen)", paddingTop:12}}>
+            <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:8}}>
+              <span style={{flex:1, fontWeight:700, color:"var(--text)"}}>🎨 {bearb.name}</span>
+              <button className="btn btn-ghost btn-sm" data-schema-zuruecksetzen onClick={() => aendereEigenesSchema(bearb.id, () => ({ farben: { ...vorlageVon(bearb).farben }, dunkel: !!vorlageVon(bearb).dunkel }))}
+                {...tt(`Alle Farben auf die Vorlage „${vorlageVon(bearb).name}“ zurücksetzen`)}>Zurücksetzen</button>
+              <button className="btn btn-primary btn-sm" data-schema-fertig onClick={() => setSchemaBearbeiten(null)} {...tt("Bearbeiten beenden – die Farben sind schon gespeichert")}>Fertig</button>
+            </div>
+            {FARB_ROLLEN.map(([rolle, name, sub]) => (
+              <label key={rolle} className="farb-zeile" {...ttFeld(`${name}${sub ? " – " + sub : ""}: antippen, um die Farbe zu wählen`)}>
+                <input type="color" data-farbrolle={rolle} value={vollHex(bearb.farben[rolle])}
+                  onChange={e => { const v = e.target.value; aendereEigenesSchema(bearb.id, x => ({ farben: { ...x.farben, [rolle]: v } })); }}/>
+                <span style={{flex:1}}>
+                  <span style={{display:"block", fontSize:"0.85rem", fontWeight:600, color:"var(--text)"}}>{name}</span>
+                  {sub && <span style={{display:"block", fontSize:"0.7rem", color:"var(--text3)"}}>{sub}</span>}
+                </span>
+              </label>
+            ))}
+            <label className="farb-zeile" {...ttFeld("Dunkles Schema: Bedienelemente des Systems (Listen, Scrollbalken) dunkel darstellen")}>
+              <input type="checkbox" data-schema-dunkel checked={!!bearb.dunkel} onChange={e => aendereEigenesSchema(bearb.id, () => ({ dunkel: e.target.checked }))} style={{width:20, height:20}}/>
+              <span style={{fontSize:"0.85rem", fontWeight:600, color:"var(--text)"}}>Dunkles Schema</span>
+            </label>
+          </div>
         )}
       </div>
     );
@@ -3175,7 +3334,7 @@ export default function VokabelApp() {
             <div className="karte-zeile-sub">{g.zeilen} Zeilen × {g.spalten} Spalten – {sub}</div>
           </div>
           <div style={{display:"flex", alignItems:"center", gap:6, flexWrap:"wrap"}}>
-            <span style={{fontSize:"0.8rem", color:"#6b6560", minWidth:56}}>Spalten</span>
+            <span style={{fontSize:"0.8rem", color:"var(--text2)", minWidth:56}}>Spalten</span>
             {[1, 2, 3, 4].map(n => (
               <button key={n} {...attr("spalten", n)} className={`toggle-opt${g.spalten === n ? " aktiv" : ""}`}
                 onClick={() => setze(g.zeilen, n)}
@@ -3183,7 +3342,7 @@ export default function VokabelApp() {
             ))}
           </div>
           <div style={{display:"flex", alignItems:"center", gap:6}}>
-            <span style={{fontSize:"0.8rem", color:"#6b6560", minWidth:56}}>Zeilen</span>
+            <span style={{fontSize:"0.8rem", color:"var(--text2)", minWidth:56}}>Zeilen</span>
             <button className="toggle-opt" disabled={g.zeilen <= minZeilen} onClick={() => setze(g.zeilen - 1, g.spalten)}
               {...tt("Eine Zeile weniger – nur bis alle Einträge noch Platz haben")}>−</button>
             <span {...attr("zeilen", true)} style={{minWidth:32, textAlign:"center", fontWeight:700}}>{g.zeilen}</span>
@@ -3192,7 +3351,7 @@ export default function VokabelApp() {
             <button className="toggle-opt" disabled={g.zeilen >= RASTER_MAX_ZEILEN} onClick={() => setze(Math.min(RASTER_MAX_ZEILEN, g.zeilen + 10), g.spalten)}
               {...tt("Zehn Zeilen mehr")}>+10</button>
           </div>
-          <div style={{fontSize:"0.72rem", color:"#9b9590"}}>{hinweis}</div>
+          <div style={{fontSize:"0.72rem", color:"var(--text3)"}}>{hinweis}</div>
         </div>
       </div>
     );
@@ -3255,9 +3414,9 @@ export default function VokabelApp() {
       return (
         <div {...erklaerung} key={key} data-raster-zelle={gefiltert ? undefined : key} data-liste-id={l.id} className="karte-zeile"
           style={{cursor: sortModus ? "grab" : "pointer", ...(sortModus ? {touchAction:"none"} : {}),
-            ...(listenAuswahl.includes(l.id) && sortModus ? {outline:"3px solid #e0a800", outlineOffset:1} : {}),
+            ...(listenAuswahl.includes(l.id) && sortModus ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {}),
             ...(slotDragId && (slotDragId === l.id || (listenAuswahl.includes(slotDragId) && listenAuswahl.includes(l.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
-            ...(ziel ? {outline:"3px solid #52b788", outlineOffset:1} : {}), position:"relative"}}
+            ...(ziel ? {outline:"3px solid var(--haupt-hell)", outlineOffset:1} : {}), position:"relative"}}
           onPointerDown={sortModus ? (e => { slotZiehenRef.current = { art: "liste", id: l.id, x: e.clientX, y: e.clientY, aktiv: false }; }) : undefined}
           onClick={() => sortModus ? tippeImRaster(l, l.platz) : (slotGezogenRef.current ? (slotGezogenRef.current = false) : oeffne(l))}>
           {sortModus && listenAuswahl.includes(l.id) && <span className="auswahl-nr" data-auswahl-nr>{listenAuswahl.indexOf(l.id) + 1}</span>}
@@ -3285,7 +3444,7 @@ export default function VokabelApp() {
                   {(einstellungen.gelerntSchwelle ?? 0) > 0 && liste?.vokabeln.length > 0 && (
                     <span className="mini-kreise" data-listen-kreise style={{flexShrink:0}}>{renderMiniKreise(lernstandJeArt(liste.vokabeln), { groesse: 26 })}</span>
                   )}
-            {!exportAuswahlModus && !sortModus && <span style={{color:"#6b6560"}}>{">"}</span>}
+            {!exportAuswahlModus && !sortModus && <span style={{color:"var(--text2)"}}>{">"}</span>}
           </>)}
         </div>
       );
@@ -3304,7 +3463,7 @@ export default function VokabelApp() {
         if (l) zellen.push(zelle(l, key));
         else if (sortModus) zellen.push(<div key={key} data-raster-zelle={key} className="raster-leer"
           style={{borderStyle:"dashed", cursor: listenAuswahl.length ? "pointer" : "default",
-            ...(ziel ? {borderColor:"#52b788", background:"#e8f5ee"} : {})}}
+            ...(ziel ? {borderColor:"var(--haupt-hell)", background:"var(--haupt-flaeche)"} : {})}}
           onClick={() => tippeImRaster(null, { z, s: sp })}
           {...tt("Freier Platz – markierte Listen hier untereinander einsetzen (oder Listen hierher ziehen)")}/>);
         else zellen.push(<div key={key} className="raster-leer" style={{border:"none"}}/>);
@@ -3312,7 +3471,7 @@ export default function VokabelApp() {
     }
     return (<>
       <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6, minHeight:22}}>
-        <span style={{fontSize:"0.68rem", color: sortModus ? "#6b6560" : "#9b9590"}}>
+        <span style={{fontSize:"0.68rem", color: sortModus ? "var(--text2)" : "var(--text3)"}}>
           {sortModus
             ? (listenAuswahl.length ? `${listenAuswahl.length} markiert – freien Platz antippen (dort untereinander) oder ziehen.` : "Listen antippen zum Markieren, dann freien Platz antippen – oder direkt ziehen. Belegter Platz: Einträge rücken auf die frei gewordenen Plätze.")
             : gefiltert ? "Lang drücken: umbenennen, duplizieren oder löschen · Verschieben unter „Alle“"
@@ -3368,7 +3527,7 @@ export default function VokabelApp() {
       return lernstandJeArt(voks);
     };
     const verlauf = slots.verlauf.filter(slotSichtbar);
-    const label = {fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em"};
+    const label = {fontSize:"0.72rem", color:"var(--text3)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em"};
     // Raster: alle Einträge (auch andere Sprache) belegen ihren Platz; sichtbar nur die der gewählten Sprache
     const groesse = rasterGroesse(einstellungen);
     const raster = ordneRaster(slots.gespeichert, groesse);
@@ -3401,10 +3560,10 @@ export default function VokabelApp() {
         zellen.push(slotSortModus ? (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} className="slot-chip belegt raster-chip"
             style={{touchAction:"none", cursor:"grab",
-              ...(slotAuswahl.includes(x.id) ? {outline:"3px solid #e0a800", outlineOffset:1} : {}),
+              ...(slotAuswahl.includes(x.id) ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {}),
               ...(slotDragId && (slotDragId === x.id || (slotAuswahl.includes(slotDragId) && slotAuswahl.includes(x.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
               position:"relative",
-              ...(ziel ? {outline:"3px solid #52b788", outlineOffset:1} : {})}}
+              ...(ziel ? {outline:"3px solid var(--haupt-hell)", outlineOffset:1} : {})}}
             onPointerDown={e => { slotZiehenRef.current = { id: x.id, x: e.clientX, y: e.clientY, aktiv: false }; }}
             onClick={() => tippeImRaster(x, x.platz)}
             {...tt(`${x.name} – antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen – markierte wandern zusammen`)}>
@@ -3429,11 +3588,11 @@ export default function VokabelApp() {
         ));
       } else if (x) {
         // Eintrag einer anderen Sprache: Platz belegt, aber hier nicht bedienbar
-        zellen.push(<div key={key} className="raster-leer" style={{opacity: slotSortModus ? 0.6 : 0, fontSize:"0.65rem", color:"#9b9590"}}>andere Sprache</div>);
+        zellen.push(<div key={key} className="raster-leer" style={{opacity: slotSortModus ? 0.6 : 0, fontSize:"0.65rem", color:"var(--text3)"}}>andere Sprache</div>);
       } else if (slotSortModus) {
         zellen.push(<div key={key} data-raster-zelle={key} className="raster-leer"
           style={{borderStyle:"dashed", cursor: slotAuswahl.length ? "pointer" : "default",
-            ...(ziel ? {borderColor:"#52b788", background:"#e8f5ee"} : {})}}
+            ...(ziel ? {borderColor:"var(--haupt-hell)", background:"var(--haupt-flaeche)"} : {})}}
           onClick={() => tippeImRaster(null, { z, s: sp })}
           {...tt("Freier Platz – markierte Pakete hier untereinander einsetzen (oder Pakete hierher ziehen)")}/>);
       } else {
@@ -3456,9 +3615,9 @@ export default function VokabelApp() {
           </span>
         </div>
         {!slotSortModus && raster.gespeichert.length > 0 && (
-          <div style={{fontSize:"0.68rem", color:"#9b9590", marginBottom:6}}>Lang drücken: umbenennen, verschieben oder löschen</div>
+          <div style={{fontSize:"0.68rem", color:"var(--text3)", marginBottom:6}}>Lang drücken: umbenennen, verschieben oder löschen</div>
         )}
-        {slotSortModus && <div style={{fontSize:"0.72rem", color:"#6b6560", marginBottom:6}}>
+        {slotSortModus && <div style={{fontSize:"0.72rem", color:"var(--text2)", marginBottom:6}}>
           {slotAuswahl.length ? `${slotAuswahl.length} markiert – freien Platz antippen (dort untereinander) oder ziehen.` : "Pakete antippen zum Markieren, dann freien Platz antippen – oder direkt ziehen. Belegter Platz: Einträge rücken auf die frei gewordenen Plätze."}
         </div>}
         {zellen.length > 0 && (
@@ -3468,7 +3627,7 @@ export default function VokabelApp() {
         )}
       </div>
       {verlauf.length > 0 && !slotSortModus && (
-        <div style={{margin:`0 ${abstand}px 14px`, paddingTop:10, borderTop:"1px dashed #d6d2cb"}}>
+        <div style={{margin:`0 ${abstand}px 14px`, paddingTop:10, borderTop:"1px dashed var(--rahmen)"}}>
           <div style={{...label, marginBottom:6}}>🕘 Verlauf · letzte Abfragen</div>
           <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
             {verlauf.map(x => renderSlotChip(x.id, slotChipLabel(x),
@@ -4354,7 +4513,7 @@ export default function VokabelApp() {
                 <div className="leer">
                   <div style={{fontSize:"2.5rem"}}>✓</div>
                   <div className="leer-text">Paket abgeschlossen!</div>
-                  <div style={{fontSize:"0.85rem", color:"#6b6560", marginTop:4}}>
+                  <div style={{fontSize:"0.85rem", color:"var(--text2)", marginTop:4}}>
                     {schonAbgefragt.size} / {quiz.sessionGesamt} ({Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100)}%)
                   </div>
                 </div>
@@ -4362,7 +4521,7 @@ export default function VokabelApp() {
                 {istLetzteBatch ? weiterZurAuswertung : (
                   <>
                     <div style={{marginBottom:10}}>
-                      <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:6}}>Nächstes Paket:</div>
+                      <div style={{fontSize:"0.78rem", color:"var(--text2)", marginBottom:6}}>Nächstes Paket:</div>
                       <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
                         {[5,10,15,20,25,30,40,50].map(n => (
                           <button {...tt(`Nächstes Paket mit ${n} Vokabeln`)} key={n} className={`typ-btn${quizPaketGroesse===n?" aktiv":""}`}
@@ -4410,12 +4569,12 @@ export default function VokabelApp() {
                 </div>
                 {diktatListeAufgeklappt && quiz.diktatErgebnisse.map((e, i) => (
                   <div key={i} className="diktat-summary-zeile" style={{padding:"10px 16px"}}>
-                    <span style={{fontSize:"1.1rem", fontWeight:700, color: e.richtig ? "#2d6a4f" : "#c0392b", minWidth:22}}>
+                    <span style={{fontSize:"1.1rem", fontWeight:700, color: e.richtig ? "var(--haupt)" : "var(--falsch)", minWidth:22}}>
                       {e.richtig ? "✓" : "✗"}
                     </span>
                     <div>
                       <div style={{fontWeight:600, fontSize:"0.95rem"}}>{e.wort}</div>
-                      {e.uebersetzung && <div style={{fontSize:"0.82rem", color:"#6b6560"}}>{e.uebersetzung}</div>}
+                      {e.uebersetzung && <div style={{fontSize:"0.82rem", color:"var(--text2)"}}>{e.uebersetzung}</div>}
                     </div>
                   </div>
                 ))}
@@ -4492,15 +4651,15 @@ export default function VokabelApp() {
                 {quiz.phase === "richtig" && (
                   <div style={{textAlign:"center", padding:"12px 0", fontSize:"1.15rem"}}>
                     <strong>{diktatWort}</strong>
-                    {uebersetzung ? <span style={{color:"#1b5e20"}}> – {uebersetzung}</span> : null}
-                    <span style={{color:"#1b5e20"}}> ✓</span>
+                    {uebersetzung ? <span style={{color:"var(--richtig-dunkel)"}}> – {uebersetzung}</span> : null}
+                    <span style={{color:"var(--richtig-dunkel)"}}> ✓</span>
                     {quiz.feedback && <div className="quiz-feedback ok" style={{marginTop:6}}>{quiz.feedback}</div>}
                   </div>
                 )}
                 {quiz.phase === "aufgedeckt" && (
                   <div style={{textAlign:"center", padding:"12px 0", fontSize:"1.15rem"}}>
                     <strong>{diktatWort}</strong>
-                    {uebersetzung ? <span style={{color:"#6b6560"}}> – {uebersetzung}</span> : null}
+                    {uebersetzung ? <span style={{color:"var(--text2)"}}> – {uebersetzung}</span> : null}
                   </div>
                 )}
                 {quiz.feedback && quiz.phase === "eingabe" && (
@@ -4564,11 +4723,11 @@ export default function VokabelApp() {
                 {/* Session-Fortschritt: wie viele Vokabeln der Vokabelgruppe schon abgefragt */}
                 <div style={{padding:"8px 0 16px"}} {...tt("So viele Vokabeln dieser Vokabelgruppe wurden in diesem Durchlauf schon abgefragt")}>
                   <div style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:6}}>
-                    <span style={{fontWeight:700, fontSize:"1.05rem", color:"#3b3832"}}>{schonAbgefragt.size} von {quiz.sessionGesamt} Vokabeln abgefragt</span>
-                    <span style={{fontSize:"0.85rem", color:"#6b6560"}}>{sessionPct} %</span>
+                    <span style={{fontWeight:700, fontSize:"1.05rem", color:"var(--text)"}}>{schonAbgefragt.size} von {quiz.sessionGesamt} Vokabeln abgefragt</span>
+                    <span style={{fontSize:"0.85rem", color:"var(--text2)"}}>{sessionPct} %</span>
                   </div>
-                  <div style={{background:"#e8e4dc", borderRadius:8, height:10, overflow:"hidden"}}>
-                    <div style={{width:`${sessionPct}%`, height:"100%", background:"#2d6a4f", borderRadius:8}}/>
+                  <div style={{background:"var(--flaeche)", borderRadius:8, height:10, overflow:"hidden"}}>
+                    <div style={{width:`${sessionPct}%`, height:"100%", background:"var(--haupt)", borderRadius:8}}/>
                   </div>
                 </div>
                 {istLetzteBatch && !quiz.abgebrochen && (
@@ -4582,7 +4741,7 @@ export default function VokabelApp() {
                 {ges > 0 && (<>
                   {renderRundenErgebnis(quiz, r, f, quiz.abgebrochen ? "Bis zum Abbruch" : istLetzteBatch ? "Letztes Paket" : "Dieses Paket")}
                   {feedback && (
-                    <div style={{background:"#f7f5f0", borderRadius:12, padding:"14px 16px", margin:"0 0 16px", fontSize:"1rem", lineHeight:1.6, color:"#3b3832", fontStyle:"italic", textAlign:"center"}}>
+                    <div style={{background:"var(--hintergrund)", borderRadius:12, padding:"14px 16px", margin:"0 0 16px", fontSize:"1rem", lineHeight:1.6, color:"var(--text)", fontStyle:"italic", textAlign:"center"}}>
                       „{feedback}"
                     </div>
                   )}
@@ -4593,7 +4752,7 @@ export default function VokabelApp() {
                 ) : istLetzteBatch ? weiterZurAuswertung : (
                   <>
                     <div style={{marginBottom:10}}>
-                      <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:6}}>Nächstes Paket:</div>
+                      <div style={{fontSize:"0.78rem", color:"var(--text2)", marginBottom:6}}>Nächstes Paket:</div>
                       <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
                         {[5,10,15,20,25,30,40,50].map(n => (
                           <button {...tt(`Nächstes Paket mit ${n} Vokabeln`)} key={n} className={`typ-btn${quizPaketGroesse===n?" aktiv":""}`}
@@ -4640,7 +4799,7 @@ export default function VokabelApp() {
                 <div style={{height:8}}/>
                 {renderRundenErgebnis(quiz, r, f, quiz.abgebrochen ? "Bis zum Abbruch" : "Diese Runde")}
                 {feedback && (
-                  <div style={{background:"#f7f5f0", borderRadius:12, padding:"14px 16px", margin:"0 0 16px", fontSize:"1rem", lineHeight:1.6, color:"#3b3832", fontStyle:"italic", textAlign:"center"}}>
+                  <div style={{background:"var(--hintergrund)", borderRadius:12, padding:"14px 16px", margin:"0 0 16px", fontSize:"1rem", lineHeight:1.6, color:"var(--text)", fontStyle:"italic", textAlign:"center"}}>
                     „{feedback}"
                   </div>
                 )}
@@ -4673,7 +4832,7 @@ export default function VokabelApp() {
                 <div className="quiz-frage-text" style={{textAlign:"center", marginTop:10}}>
                   Wiederholung{quiz.wiederholungDurchgang > 1 ? ` ${quiz.wiederholungDurchgang}` : ""}
                 </div>
-                <div style={{textAlign:"center", fontSize:"0.9rem", color:"#6b6560", marginTop:10, lineHeight:1.5}}>
+                <div style={{textAlign:"center", fontSize:"0.9rem", color:"var(--text2)", marginTop:10, lineHeight:1.5}}>
                   {quiz.wiederholungDurchgang > 1 ? "Weiter geht's" : "Alle Vokabeln wurden abgefragt"}.<br/>
                   {n === 1 ? "1 Vokabel" : `${n} Vokabeln`} {n === 1 ? grund.replace(/^haben/, "hat").replace(/^wurden/, "wurde") : grund} und {n === 1 ? "kommt" : "kommen"} jetzt noch einmal.
                 </div>
@@ -4733,7 +4892,7 @@ export default function VokabelApp() {
             {karteMitInfo && (
               <button data-karte-info-schalter={karteInfoAn ? "an" : "aus"} className="topbar-back"
                 style={{width:36, height:36, padding:0, borderRadius:"50%", fontWeight:800, fontFamily:"Georgia, serif", fontSize:"1.05rem",
-                  ...(karteInfoAn ? {} : {background:"#fff", color:"#2d6a4f", border:"1.5px solid #2d6a4f"})}}
+                  ...(karteInfoAn ? {} : {background:"var(--karte)", color:"var(--haupt)", border:"1.5px solid var(--haupt)"})}}
                 onClick={() => speichereEinst({...einstellungen, karteInfo: !karteInfoAn})}
                 {...tt(karteInfoAn ? "Info-Kasten ausblenden (gilt dauerhaft)" : "Info-Kasten einblenden (gilt dauerhaft)")}>i</button>
             )}
@@ -4796,7 +4955,7 @@ export default function VokabelApp() {
 
                     <div className={antwortBoxKlasse} style={{marginBottom:0}}>
                       <div className="quiz-label" style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-                        <span>{antwortLabel}{isWeitere && <span style={{color:"#6a1b9a", marginLeft:8}}>— weitere Antwort</span>}</span>
+                        <span>{antwortLabel}{isWeitere && <span style={{color:"var(--info)", marginLeft:8}}>— weitere Antwort</span>}</span>
                         {(isKarteEingabe || isKarteAufgedeckt || quiz.karteNeinFlash) && (
                           <span className={`score-badge ${score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null"}`} style={{fontSize:"0.88rem", padding:"2px 9px"}}>
                             {score > 0 ? "+" : ""}{score}
@@ -4818,9 +4977,9 @@ export default function VokabelApp() {
                                 fontFamily:"inherit", fontSize:"0.9rem", fontWeight:600,
                                 cursor: btn.status === "richtig" || quiz.phase === "aufgedeckt" ? "default" : "pointer",
                                 background:
-                                  btn.status === "richtig" ? "#2d6a4f" :
-                                  btn.status === "falsch"  ? "#c0392b" : "#e0dbd2",
-                                color: btn.status === "neutral" ? "#1a1a1a" : "#fff",
+                                  btn.status === "richtig" ? "var(--haupt)" :
+                                  btn.status === "falsch"  ? "var(--falsch)" : "var(--rahmen)",
+                                color: btn.status === "neutral" ? "var(--text-stark)" : "var(--auf-haupt)",
                                 transition: "background .15s",
                               }}
                             >{btn.text}</button>
@@ -4905,14 +5064,14 @@ export default function VokabelApp() {
                             </div>
                           )}
                           {quiz.phase === "eingabe" && akz.aktiv == null && (
-                            <div style={{textAlign:"center", fontSize:"0.78rem", color:"#9b9590", marginTop:8}}>Buchstaben antippen und Akzent wählen</div>
+                            <div style={{textAlign:"center", fontSize:"0.78rem", color:"var(--text3)", marginTop:8}}>Buchstaben antippen und Akzent wählen</div>
                           )}
                         </div>
                         );
                       })()}
                       {/* Lösung: Flash (richtig) */}
                       {quiz.flash && (
-                        <div className="quiz-frage-text" style={{textAlign:"center", color:"#1b5e20", minHeight:"44px", display:"flex", alignItems:"center", justifyContent:"center"}}>
+                        <div className="quiz-frage-text" style={{textAlign:"center", color:"var(--richtig-dunkel)", minHeight:"44px", display:"flex", alignItems:"center", justifyContent:"center"}}>
                           {quiz.antwortTeile.join(" / ")}{" ✓"}
                         </div>
                       )}
@@ -4947,20 +5106,20 @@ export default function VokabelApp() {
                   {quiz.infoSichtbar && aktInfoSeite && aktSpaltModus !== "karte" && (
                     <div {...tt("Nächste Info-Seite anzeigen")} onClick={() => setQuiz(prev => ({...prev, infoSeite: ((prev.infoSeite || 0) + 1) % infoSeitenAnzahl}))}
                       style={{
-                        width:150, flexShrink:0, background:"#fffde7",
-                        border:"1px solid #ffe082", borderRadius:12, padding:"12px",
+                        width:150, flexShrink:0, background:"var(--gelb-flaeche)",
+                        border:"1px solid var(--gelb-zart)", borderRadius:12, padding:"12px",
                         cursor: infoSeitenAnzahl > 1 ? "pointer" : "default",
                         display:"flex", flexDirection:"column", gap:6,
                       }}>
                       <div style={{fontSize:"0.68rem", fontWeight:700, textTransform:"uppercase",
-                        letterSpacing:".05em", color:"#f57f17"}}>
+                        letterSpacing:".05em", color:"var(--orange)"}}>
                         {aktInfoSeite.name}
                       </div>
                       <div style={{fontSize:"0.85rem", lineHeight:1.45, flex:1}}>
                         {aktInfoSeite.text}
                       </div>
                       {infoSeitenAnzahl > 1 && (
-                        <div style={{fontSize:"0.7rem", color:"#f9a825", textAlign:"right", marginTop:"auto"}}>
+                        <div style={{fontSize:"0.7rem", color:"var(--gelb)", textAlign:"right", marginTop:"auto"}}>
                           {(quiz.infoSeite || 0) % infoSeitenAnzahl + 1} / {infoSeitenAnzahl}
                         </div>
                       )}
@@ -4974,25 +5133,25 @@ export default function VokabelApp() {
             {karteMitInfo && karteInfoAn && !quiz.flash && quiz.phase === "eingabe" && (
               <div data-karte-info={karteInfoOffen ? "offen" : "zu"} onClick={e => { e.stopPropagation(); if (!karteInfoPin) setQuiz(prev => ({...prev, infoSichtbar: !prev.infoSichtbar})); }}
                 {...tt(karteInfoPin ? "Info-Text (angeheftet)" : karteInfoOffen ? "Info einklappen" : "Info aufklappen")}
-                style={{background:"#fffde7", border:"1px solid #ffe082", borderRadius:12, padding: karteInfoOffen ? "10px 12px" : "7px 12px", marginBottom:14, cursor: karteInfoPin ? "default" : "pointer"}}>
+                style={{background:"var(--gelb-flaeche)", border:"1px solid var(--gelb-zart)", borderRadius:12, padding: karteInfoOffen ? "10px 12px" : "7px 12px", marginBottom:14, cursor: karteInfoPin ? "default" : "pointer"}}>
                 <div style={{display:"flex", alignItems:"center", gap:8}}>
-                  <span style={{flex:1, fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"#f57f17"}}>Info</span>
+                  <span style={{flex:1, fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--orange)"}}>Info</span>
                   {karteInfoOffen ? (
                     <button data-karte-info-pin={karteInfoPin ? "an" : "aus"}
                       onClick={e => { e.stopPropagation(); speichereEinst({...einstellungen, karteInfoPin: !karteInfoPin}); if (karteInfoPin) setQuiz(prev => ({...prev, infoSichtbar: true})); }}
                       {...tt(karteInfoPin ? "Lösen – der Info-Kasten kommt wieder eingeklappt" : "Anheften – der Info-Kasten bleibt dauerhaft aufgeklappt")}
-                      style={{background: karteInfoPin ? "#ffe082" : "none", border:"none", borderRadius:6, padding:"2px 6px", cursor:"pointer", fontSize:"0.95rem", lineHeight:1,
+                      style={{background: karteInfoPin ? "var(--gelb-zart)" : "none", border:"none", borderRadius:6, padding:"2px 6px", cursor:"pointer", fontSize:"0.95rem", lineHeight:1,
                         opacity: karteInfoPin ? 1 : 0.45, transform: karteInfoPin ? "none" : "rotate(45deg)"}}>📌</button>
                   ) : (
-                    <span style={{fontSize:"0.75rem", color:"#f9a825"}}>▼</span>
+                    <span style={{fontSize:"0.75rem", color:"var(--gelb)"}}>▼</span>
                   )}
                 </div>
                 {karteInfoOffen && infoSpalten.length === 0 && (
-                  <div style={{marginTop:6, fontSize:"0.85rem", color:"#9b9590", fontStyle:"italic"}}>Keine Zusatzinfo vorhanden</div>
+                  <div style={{marginTop:6, fontSize:"0.85rem", color:"var(--text3)", fontStyle:"italic"}}>Keine Zusatzinfo vorhanden</div>
                 )}
                 {karteInfoOffen && infoSpalten.map(typ => (
                   <div key={typ} style={{marginTop:6}}>
-                    {infoSpalten.length > 1 && <div style={{fontSize:"0.68rem", fontWeight:700, color:"#f9a825"}}>{quiz.liste.spalten[typ]?.name || typ}</div>}
+                    {infoSpalten.length > 1 && <div style={{fontSize:"0.68rem", fontWeight:700, color:"var(--gelb)"}}>{quiz.liste.spalten[typ]?.name || typ}</div>}
                     <div style={{fontSize:"0.88rem", lineHeight:1.45, whiteSpace:"pre-wrap"}}>{aktVokRaw[typ].wert}</div>
                   </div>
                 ))}
@@ -5001,7 +5160,7 @@ export default function VokabelApp() {
 
             {/* Noch kommende Spalten */}
             {!quiz.flash && quiz.antwortTypen.length > 1 && (quiz.phase === "eingabe" || quiz.phase === "falsch" || isWeitere) && (
-              <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:10}}>
+              <div style={{fontSize:"0.78rem", color:"var(--text2)", marginBottom:10}}>
                 Noch: {quiz.antwortTypen.slice(quiz.antwortTypIndex + 1)
                   .map(t => quiz.liste.spalten[t]?.name || t).join(" → ")}
               </div>
@@ -5098,8 +5257,8 @@ export default function VokabelApp() {
     const istAktiv = slotRef?.typ === typ && slotRef?.id === id;
     const sf = Object.keys(slotSFAlle(getSlotEintrag(typ, id))).length > 0;
     return istAktiv
-      ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
-      : sf ? {background:"#f0f9f4", borderColor:"#a8d5be", color:"#2d6a4f"} : {};
+      ? {background:"var(--haupt-flaeche)", borderColor:"var(--haupt)", color:"var(--haupt)"}
+      : sf ? {background:"var(--haupt-flaeche)", borderColor:"var(--haupt-zart)", color:"var(--haupt)"} : {};
   };
   // Fortschritt der Abfrageart: beim aktiven Eintrag die gerade eingestellte, sonst die gespeicherte
   const slotChipLabel = (eintrag) => {
@@ -5141,7 +5300,7 @@ export default function VokabelApp() {
     <>
       <style>{CSS}</style>
       <div className="app">
-        <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"#fff"}}>
+        <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"var(--karte)"}}>
         <div className="topbar" style={{position:"relative"}}>
           <button className="info-schalter" data-info-schalter onClick={schalteInfoModus} title="Info-Modus: Elemente antippen, um sie erklärt zu bekommen">ⓘ</button>
           {statistikVollbild && tab === "statistik" ? renderVollbildKopf() : <span className="topbar-title">Vokabel-Trainer</span>}
@@ -5159,10 +5318,10 @@ export default function VokabelApp() {
                   {[{ code:"alle", flagge:"🌐", name:"Alle Sprachen", anzahl: listenIndex.length },
                     ...vorhandeneSprachen.map(s => ({ ...s, anzahl: listenIndex.filter(l => listeSprache(l) === s.code).length }))
                   ].map(s => (
-                    <div {...tt(s.code === "alle" ? "Listen aller Sprachen anzeigen" : `Nur Listen auf ${s.name} anzeigen`)} key={s.code} className="karte-zeile" style={{cursor:"pointer", background: sprachFilter === s.code ? "#e8f5ee" : undefined}}
+                    <div {...tt(s.code === "alle" ? "Listen aller Sprachen anzeigen" : `Nur Listen auf ${s.name} anzeigen`)} key={s.code} className="karte-zeile" style={{cursor:"pointer", background: sprachFilter === s.code ? "var(--haupt-flaeche)" : undefined}}
                       onClick={() => wechsleSprache(s.code)}>
                       <span style={{fontWeight: sprachFilter === s.code ? 700 : 500}}>{s.flagge} {s.name}</span>
-                      <span style={{marginLeft:"auto", color:"#6b6560", fontSize:"0.8rem"}}>{s.anzahl} Liste{s.anzahl !== 1 ? "n" : ""}</span>
+                      <span style={{marginLeft:"auto", color:"var(--text2)", fontSize:"0.8rem"}}>{s.anzahl} Liste{s.anzahl !== 1 ? "n" : ""}</span>
                     </div>
                   ))}
                 </div>
@@ -5173,7 +5332,7 @@ export default function VokabelApp() {
             <button onClick={() => setStatistikVollbild(false)}
               style={{position:"absolute", right:14, top:"50%", transform:"translateY(-50%)",
                 display:"flex", alignItems:"center", background:"none", border:"none",
-                cursor:"pointer", color:"#2d6a4f", padding:"6px 8px"}}
+                cursor:"pointer", color:"var(--haupt)", padding:"6px 8px"}}
               {...tt("Vollbild verlassen")}>
               <IcoCollapse s={18}/>
             </button>
@@ -5272,14 +5431,14 @@ export default function VokabelApp() {
             <div className="sektion">
               {importJsonData ? (
                 <>
-                  <div className="meldung-info" style={{background:"#e8f5e9", borderColor:"#a5d6a7"}}>
+                  <div className="meldung-info" style={{background:"var(--haupt-flaeche)", borderColor:"var(--haupt-zart)"}}>
                     <strong>JSON-Backup erkannt:</strong> {importJsonData.length} Liste{importJsonData.length !== 1 ? "n" : ""} gefunden.
                   </div>
                   <div className="karte">
                     {importJsonData.map((l, i) => (
                       <div key={i} className="karte-zeile">
                         <span style={{fontWeight:600}}>{sprachInfo(listeSprache(l)).flagge} {l.name}</span>
-                        <span style={{color:"#6b6560", fontSize:"0.85rem", marginLeft:"auto"}}>{l.vokabeln?.length || 0} Vokabeln</span>
+                        <span style={{color:"var(--text2)", fontSize:"0.85rem", marginLeft:"auto"}}>{l.vokabeln?.length || 0} Vokabeln</span>
                       </div>
                     ))}
                   </div>
@@ -5300,7 +5459,7 @@ export default function VokabelApp() {
                     {importMehrfachListen.map((s, i) => (
                       <div key={i} className="karte-zeile">
                         <span style={{fontWeight:600}}>{sprachInfo(s.sprache || importSprache).flagge} {s.name}</span>
-                        <span style={{color:"#6b6560", fontSize:"0.85rem", marginLeft:"auto"}}>{s.daten.length} Vokabeln</span>
+                        <span style={{color:"var(--text2)", fontSize:"0.85rem", marginLeft:"auto"}}>{s.daten.length} Vokabeln</span>
                       </div>
                     ))}
                   </div>
@@ -5360,7 +5519,7 @@ export default function VokabelApp() {
                     <div style={{display:"flex", alignItems:"baseline", gap:8}}>
                       <label className="inp-label" style={{marginBottom:0}}>Vokabeln einfügen</label>
                       {importText && (
-                        <button {...tt("Eingefügten Text löschen")} className="btn-icon" style={{color:"#c0392b", fontSize:"0.82rem", fontWeight:700}}
+                        <button {...tt("Eingefügten Text löschen")} className="btn-icon" style={{color:"var(--falsch)", fontSize:"0.82rem", fontWeight:700}}
                           onClick={() => { setImportText(""); setImportDateiname(""); setImportFehler(""); }}>✕</button>
                       )}
                     </div>
@@ -5375,13 +5534,13 @@ export default function VokabelApp() {
                     </div>
                   </div>
                   {importDateiname && !importText && (
-                    <div style={{fontSize:"0.82rem", color:"#888", marginBottom:6}}>Lese Datei…</div>
+                    <div style={{fontSize:"0.82rem", color:"var(--text3)", marginBottom:6}}>Lese Datei…</div>
                   )}
                   {importDateiname && importText && (
-                    <div style={{fontSize:"0.82rem", color:"#4a7c59", marginBottom:6, display:"flex", alignItems:"center", gap:6}}>
+                    <div style={{fontSize:"0.82rem", color:"var(--haupt)", marginBottom:6, display:"flex", alignItems:"center", gap:6}}>
                       <span>✓</span>
                       <span style={{fontWeight:600}}>{importDateiname}</span>
-                      <span style={{color:"#888"}}>— {importText.split('\n').filter(z => z.trim()).length} Zeilen erkannt</span>
+                      <span style={{color:"var(--text3)"}}>— {importText.split('\n').filter(z => z.trim()).length} Zeilen erkannt</span>
                     </div>
                   )}
                   <textarea {...ttFeld("Vokabeln hier einfügen oder tippen: erste Zeile = Spaltennamen, Spalten mit // trennen")} className="inp" rows={8}
@@ -5414,7 +5573,7 @@ export default function VokabelApp() {
                     {importZielTyp === "bestehend" && (
                       <div style={{padding:"0 16px 16px"}}>
                         {sichtbareListen.length === 0 ? (
-                          <div style={{color:"#6b6560", fontSize:"0.85rem"}}>Noch keine Listen vorhanden.</div>
+                          <div style={{color:"var(--text2)", fontSize:"0.85rem"}}>Noch keine Listen vorhanden.</div>
                         ) : (
                           <select {...ttFeld("Liste wählen, an die die Vokabeln angehängt werden")} className="inp" value={importBestehendId}
                             onChange={e => { setImportBestehendId(e.target.value); setImportFehler(""); }}>
@@ -5429,7 +5588,7 @@ export default function VokabelApp() {
                     <div className="sektion-label">Spalten zuweisen</div>
                     <span className="import-zaehler"><strong>{anzahlZugewiesen}</strong> / {anzahlGesamt}</span>
                   </div>
-                  <div style={{background:"#f7f5f0", border:"1px solid #e0dbd2", borderRadius:10, padding:"10px 14px", marginBottom:12, fontSize:"0.82rem", color:"#6b6560"}}>
+                  <div style={{background:"var(--hintergrund)", border:"1px solid var(--rahmen)", borderRadius:10, padding:"10px 14px", marginBottom:12, fontSize:"0.82rem", color:"var(--text2)"}}>
                     <strong>Analysiert:</strong> {importParsed.header.map(h => h.wert || "–").join(", ")}
                   </div>
                   <div className="karte">
@@ -5444,8 +5603,8 @@ export default function VokabelApp() {
                           <div key={i} className="spalten-zuweisung">
                             <div className="import-kompakt">
                               <span className="spalten-badge aktiv" style={{padding:"3px 8px", fontSize:"0.78rem"}}>{label}</span>
-                              <span style={{fontSize:"0.85rem", color:"#6b6560"}}>← {h.wert || `Spalte ${i+1}`}</span>
-                              <button {...tt("Zuordnung dieser Spalte aufheben")} className="btn-icon" style={{marginLeft:"auto", color:"#c0392b", fontSize:"0.75rem"}}
+                              <span style={{fontSize:"0.85rem", color:"var(--text2)"}}>← {h.wert || `Spalte ${i+1}`}</span>
+                              <button {...tt("Zuordnung dieser Spalte aufheben")} className="btn-icon" style={{marginLeft:"auto", color:"var(--falsch)", fontSize:"0.75rem"}}
                                 onClick={() => setImportMapping(prev => ({...prev, [i]: null}))}>✕</button>
                             </div>
                           </div>
@@ -5502,14 +5661,14 @@ export default function VokabelApp() {
                             <div key={ki} style={{display:"flex", alignItems:"baseline", gap:6}}>
                               <span className="spalten-badge aktiv">{label}</span>
                               <span style={{fontSize:"0.88rem"}}>{zelle.wert}</span>
-                              {zelle.falsch.length > 0 && <span style={{fontSize:"0.75rem", color:"#6b6560"}}>(+{zelle.falsch.length} falsch)</span>}
+                              {zelle.falsch.length > 0 && <span style={{fontSize:"0.75rem", color:"var(--text2)"}}>(+{zelle.falsch.length} falsch)</span>}
                             </div>
                           );
                         })}
                       </div>
                     ))}
                     {importParsed.daten.length > 3 && (
-                      <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.82rem"}}>… und {importParsed.daten.length - 3} weitere</div>
+                      <div className="karte-zeile" style={{color:"var(--text2)", fontSize:"0.82rem"}}>… und {importParsed.daten.length - 3} weitere</div>
                     )}
                   </div>
                   {importFehler && <div className="fehler">{importFehler}</div>}
@@ -5534,7 +5693,7 @@ export default function VokabelApp() {
               <button {...tt("Prompt, um ein Foto einer Vokabelseite umwandeln zu lassen")} className={`typ-btn${promptModus==="foto"?" aktiv":""}`}
                 onClick={() => setPromptModus("foto")}>Foto umwandeln</button>
             </div>
-            <div style={{fontSize:"0.82rem", color:"#6b6560", marginBottom:12, textAlign:"center"}}>
+            <div style={{fontSize:"0.82rem", color:"var(--text2)", marginBottom:12, textAlign:"center"}}>
               {promptModus === "generieren"
                 ? "KI erstellt neue Vokabeln zum angegebenen Thema."
                 : "KI liest Vokabeln aus einem beigefügten Foto und formatiert sie ins Import-Format."}
@@ -5579,7 +5738,7 @@ export default function VokabelApp() {
                   <button {...tt("Mit Beispielsätzen in einer Info-Spalte")} className={`toggle-opt${promptBeispiele?" aktiv":""}`} onClick={() => setPromptBeispiele(true)}>Ja</button>
                 </div>
               </div>
-              <div className="toggle-row" style={{borderTop:"1px solid #e0dbd2"}}>
+              <div className="toggle-row" style={{borderTop:"1px solid var(--rahmen)"}}>
                 <div>
                   <div className="toggle-label">Synonyme</div>
                   <div className="toggle-sub">Info-Spalte mit 2–4 Synonymen auf {sprachInfo(promptSprache).name}</div>
@@ -5681,7 +5840,7 @@ export default function VokabelApp() {
                   return (
                     <>
                       {/* Sticky Header-Zeile */}
-                      <div ref={slotSektionRef} data-slot-kopf={gruen ? "gruen" : zu ? "zu" : "offen"} style={{position:"sticky", top:headerH, zIndex:9, background: gruen ? "#2d6a4f" : "#fff", borderBottom:`1px solid ${gruen ? "#2d6a4f" : "#e0dbd2"}`, padding:"10px 16px", display:"flex", alignItems:"center", justifyContent: zu ? "center" : undefined, gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                      <div ref={slotSektionRef} data-slot-kopf={gruen ? "gruen" : zu ? "zu" : "offen"} style={{position:"sticky", top:headerH, zIndex:9, background: gruen ? "var(--haupt)" : "var(--karte)", borderBottom:`1px solid ${gruen ? "var(--haupt)" : "var(--rahmen)"}`, padding:"10px 16px", display:"flex", alignItems:"center", justifyContent: zu ? "center" : undefined, gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                         {zu && vokabelgruppeGeaendert && (
                           <button
                             onClick={() => ladeSlot(aktiverSlot.typ, aktiverSlot.id)}
@@ -5692,7 +5851,7 @@ export default function VokabelApp() {
                           </button>
                         )}
                         {!zu && (<>
-                        <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832", display:"flex", alignItems:"center", gap:8}}>
+                        <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"var(--text)", display:"flex", alignItems:"center", gap:8}}>
                           Verlauf &amp; Gespeichert
                         </span>
                         {vokabelgruppeGeaendert && (
@@ -5712,7 +5871,7 @@ export default function VokabelApp() {
                             // mit Ü/D/A-Kreisen: Name nutzt die ganze Breite links bis kurz vor die Kreise
                             ...(zu && quizKombiListe ? {flex:1, maxWidth:"none", minWidth:0, padding:"7px 12px", marginRight:104, marginLeft: vokabelgruppeGeaendert ? 112 : 0} : {}),
                             ...(gruen ? {border:"1.5px solid rgba(255,255,255,0.75)"} : {}),
-                            ...(vokabelgruppeGeaendert ? {background:"#c0392b", color:"#fff"} : {})}}
+                            ...(vokabelgruppeGeaendert ? {background:"var(--falsch)", color:"var(--auf-haupt)"} : {})}}
                           {...tt(aktiverSlot?.typ === 'gespeichert' ? "Gespeicherte Konfiguration – Verlauf und Gespeichert anzeigen" : "Verlauf und Gespeichert anzeigen")}>
                           {aktiverSlot?.typ === 'gespeichert'
                             ? (getSlotEintrag('gespeichert', aktiverSlot.id)?.name || aktiverSlot.id)
@@ -5732,8 +5891,8 @@ export default function VokabelApp() {
                         {slotSektionAufgeklappt && renderSlotBereiche(
                           <button className="slot-chip belegt"
                             style={!aktiverSlot
-                              ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
-                              : {color:"#9b9590"}}
+                              ? {background:"var(--haupt-flaeche)", borderColor:"var(--haupt)", color:"var(--haupt)"}
+                              : {color:"var(--text3)"}}
                             onClick={neueQuizKonfiguration}
                             {...tt("Neu beginnen – Listen, Vokabelauswahl und alle Einstellungen zurücksetzen")}>
                             Neu
@@ -5774,12 +5933,12 @@ export default function VokabelApp() {
                             )}
                           </>
                         ) : (
-                          <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Listen-Auswahl</span>
+                          <span style={{fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Listen-Auswahl</span>
                         )}
                       </span>
                       {/* MITTE */}
                       {n > 0 && (
-                        <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", cursor:"help"}}
+                        <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", cursor:"help"}}
                           {...tt("Anzahl aller Vokabeln in den gewählten Listen")}>
                           ({quizBasisVoks.length} V.)
                         </span>
@@ -5816,7 +5975,7 @@ export default function VokabelApp() {
                               <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
                               <div style={{flex:1}}>
                                 <div style={{fontWeight:600, fontSize:"0.9rem"}}>{listenFlagge(l)}{l.name}</div>
-                                <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:2}}>
+                                <div style={{fontSize:"0.78rem", color:"var(--text2)", marginTop:2}}>
                                   {anzahl} Vokabel{anzahl!==1?"n":""}
                                   {ll && !eng && lAbfragbar.map(t => <span key={t} className="spalten-badge aktiv" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
                                   {ll && !eng && lInfo.map(t => <span key={t} className="spalten-badge" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
@@ -5834,16 +5993,16 @@ export default function VokabelApp() {
                 {/* Platzhalter wenn keine Liste gewählt und Liste eingeklappt */}
                 {!listenAuswahlAufgeklappt && quizTabListen.length === 0 && (
                   <div style={{padding:"48px 16px", textAlign:"center"}}>
-                    <span style={{fontSize:"1.3rem", color:"#c0bcb7", fontWeight:600}}>Bitte Liste auswählen</span>
+                    <span style={{fontSize:"1.3rem", color:"var(--text4)", fontWeight:600}}>Bitte Liste auswählen</span>
                   </div>
                 )}
 
                 {/* Alle/Bereich – sticky direkt unter Haupt-Header */}
                 {kombiListe && (
-                  <div ref={alleBereichRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH, zIndex:8, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                  <div ref={alleBereichRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH, zIndex:8, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     {aufteilen ? (<>
-                      <span style={{flex:1, fontWeight:700, fontSize:"0.85rem", color:"#8a6d00"}}>▦ Aufteilen</span>
-                      <span data-anzahl="auswahl" style={{fontSize:"0.8rem", color:"#aaa"}}>({quizGefilterteVoks.length} V.)</span>
+                      <span style={{flex:1, fontWeight:700, fontSize:"0.85rem", color:"var(--gelb-dunkel)"}}>▦ Aufteilen</span>
+                      <span data-anzahl="auswahl" style={{fontSize:"0.8rem", color:"var(--text3)"}}>({quizGefilterteVoks.length} V.)</span>
                       <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                         <button data-aufteilen-abbrechen className="btn btn-ghost btn-sm" onClick={() => setAufteilen(null)}
                           {...tt("Aufteilen beenden, ohne Sessions anzulegen")}>Abbrechen</button>
@@ -5867,11 +6026,11 @@ export default function VokabelApp() {
                           )}
                         </>
                       ) : (
-                        <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Vokabel-Auswahl</span>
+                        <span style={{fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Vokabel-Auswahl</span>
                       )}
                     </span>
                     {/* MITTE */}
-                    <span data-anzahl="auswahl" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", cursor:"help"}}
+                    <span data-anzahl="auswahl" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", cursor:"help"}}
                       {...tt(quizBereichTyp === "bereich" ? "Anzahl der im Bereich ausgewählten Vokabeln" : "Anzahl der Vokabeln, die zur Auswahl stehen (alle Vokabeln der Listen mit den gewählten Spalten)")}>({quizGefilterteVoks.length} V.)</span>
                     {/* RECHTS */}
                     <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
@@ -5901,14 +6060,14 @@ export default function VokabelApp() {
                 {quizListeAufgeklappt && quizBereichTyp === "bereich" && kombiListe && (
                   <div ref={einzelauswahlRef} className="karte" style={{marginBottom:8, marginTop:8}}>
                     {basisVoks.length === 0
-                      ? <div style={{padding:"16px", color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
+                      ? <div style={{padding:"16px", color:"var(--text2)", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
                       : basisVoks.map((vok, idx) => {
                         const inChk = quizCheckboxAuswahl.has(vok.id);
                         const isVon = quizVonBisModus && vok.id === quizVonBisErster;
                         const sp1 = abfragbar[0]; const sp2 = abfragbar[1];
                         return (
                           <div {...tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs)")} key={vok.id} className="vok-zeile"
-                            style={{background: isVon ? "#fff3cd" : inChk ? "#f0f7f0" : "transparent"}}
+                            style={{background: isVon ? "var(--gelb-flaeche)" : inChk ? "var(--haupt-flaeche)" : "transparent"}}
                             onClick={() => {
                               if (!quizVonBisModus) { toggleVokCheckbox(vok.id); return; }
                               if (quizVonBisErster === null) {
@@ -5925,10 +6084,10 @@ export default function VokabelApp() {
                                 setQuizVonBisErster(null);
                               }
                             }}>
-                            <div className={`checkbox${isVon ? " checked" : inChk?" checked":""}`} style={{flexShrink:0, ...(isVon ? {background:"#f0a500", borderColor:"#f0a500"} : {})}}>{isVon?"→":inChk?"✓":""}</div>
+                            <div className={`checkbox${isVon ? " checked" : inChk?" checked":""}`} style={{flexShrink:0, ...(isVon ? {background:"var(--gelb)", borderColor:"var(--gelb)"} : {})}}>{isVon?"→":inChk?"✓":""}</div>
                             <span className="vok-nr">{idx+1}</span>
                             <span style={{fontSize:"0.88rem", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{sp1?vok[sp1]?.wert||'':''}</span>
-                            <span style={{fontSize:"0.82rem", color:"#6b6560", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textAlign:"right"}}>{sp2?vok[sp2]?.wert||'':''}</span>
+                            <span style={{fontSize:"0.82rem", color:"var(--text2)", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textAlign:"right"}}>{sp2?vok[sp2]?.wert||'':''}</span>
                           </div>
                         );
                       })
@@ -5938,10 +6097,10 @@ export default function VokabelApp() {
 
                 {/* Abfrage-Modus – sticky unter Alle/Bereich-Zeile */}
                 {kombiListe && (
-                  <div ref={abfrageModusRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
-                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Abfrage-Modus</span>
+                  <div ref={abfrageModusRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH, zIndex:7, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Abfrage-Modus</span>
                     {mitAkzentAnzahl != null && (
-                      <span data-anzahl="akzent" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", cursor:"help", whiteSpace:"nowrap"}}
+                      <span data-anzahl="akzent" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", cursor:"help", whiteSpace:"nowrap"}}
                         {...tt(ohneAkzentAnzahl != null ? "Vokabeln mit Akzent in der Akzente-Spalte und dazu genommene Wörter ohne Akzent (Anzahl begrenzt, siehe Einstellungen)" : "Davon Vokabeln mit Akzent in der Akzente-Spalte")}>({mitAkzentAnzahl} mit Akzent{ohneAkzentAnzahl != null ? ` + ${ohneAkzentAnzahl} ohne` : ""})</span>
                     )}
                     <button className="toggle-opt aktiv zeile-rechts" data-abfragemodus onClick={toggleAbfrageModus}
@@ -5969,7 +6128,7 @@ export default function VokabelApp() {
                           </button>
                         </div>
                         {quizModusInfoAufgeklappt && (
-                          <div style={{padding:"0 16px 14px", fontSize:"0.82rem", color:"#6b6560"}}>
+                          <div style={{padding:"0 16px 14px", fontSize:"0.82rem", color:"var(--text2)"}}>
                             {quizModus === "sequenziell"
                               ? "Feste Frage-Spalte, Antwort-Spalten der Reihe nach. Kartenmodus pro Spalte wählbar."
                               : quizModus === "rotierend"
@@ -5985,7 +6144,7 @@ export default function VokabelApp() {
                         <>
                           <div className="sektion-label" style={{marginBottom:8}}>Diktat-Konfiguration</div>
                           <div className="karte" style={{marginBottom:16}}>
-                            <div style={{padding:"12px 16px", borderBottom:"1px solid #e0dbd2"}}>
+                            <div style={{padding:"12px 16px", borderBottom:"1px solid var(--rahmen)"}}>
                               <div className="inp-label">Diktat-Spalte (wird vorgelesen)</div>
                               <div style={{display:"flex", gap:6, marginTop:8, flexWrap:"wrap"}}>
                                 {abfragbar.map(typ => (
@@ -6003,7 +6162,7 @@ export default function VokabelApp() {
                                   onClick={() => setQuizDiktatUebersetzung("")}>Keine</button>
                                 {abfragbar.filter(t => t !== quizDiktatSpalte).map(typ => (
                                   <button {...tt("Diese Spalte als Übersetzung/Hinweis anzeigen")} key={typ} className="typ-btn"
-                                    style={quizDiktatUebersetzung===typ ? {background:"#f9a825",color:"#fff",borderColor:"#f9a825"} : undefined}
+                                    style={quizDiktatUebersetzung===typ ? {background:"var(--gelb)",color:"var(--auf-haupt)",borderColor:"var(--gelb)"} : undefined}
                                     onClick={() => setQuizDiktatUebersetzung(typ)}>
                                     {kombiListe.spalten[typ].name || typ}
                                   </button>
@@ -6027,13 +6186,13 @@ export default function VokabelApp() {
                             const hatFrage = quizFrageTyp !== "";
                             const anzGesamt = quizAusgewaehlt.length;
                             return (
-                              <div key={typ} style={{padding:"10px 16px", borderBottom:"1px solid #e0dbd2"}}>
+                              <div key={typ} style={{padding:"10px 16px", borderBottom:"1px solid var(--rahmen)"}}>
                                 <div {...tt("Spalte für die Abfrage aus- oder abwählen")} style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer"}}
                                   onClick={() => toggleQuizSpalte(typ)}>
                                   <div className={`checkbox${checked?" checked":""}`}>{checked?"✓":""}</div>
                                   <div style={{flex:1}}>
                                     <div style={{fontWeight:600, fontSize:"0.9rem"}}>{kombiListe.spalten[typ].name||typ}</div>
-                                    <div style={{fontSize:"0.75rem", color:"#6b6560"}}>{typ}</div>
+                                    <div style={{fontSize:"0.75rem", color:"var(--text2)"}}>{typ}</div>
                                   </div>
                                 </div>
                                 {checked && quizModus === "sequenziell" && (
@@ -6092,7 +6251,7 @@ export default function VokabelApp() {
                                   <div className={`checkbox${quizZeigeInfo[typ]?" checked":""}`}>{quizZeigeInfo[typ]?"✓":""}</div>
                                   <div>
                                     <div style={{fontWeight:600, fontSize:"0.9rem"}}>{kombiListe.spalten[typ].name||typ}</div>
-                                    <div style={{fontSize:"0.75rem", color:"#6b6560"}}>{typ} — immer nur angezeigt</div>
+                                    <div style={{fontSize:"0.75rem", color:"var(--text2)"}}>{typ} — immer nur angezeigt</div>
                                   </div>
                                 </div>
                               ))}
@@ -6107,10 +6266,10 @@ export default function VokabelApp() {
 
                 {/* Reihenfolge – sticky unter Abfrage-Modus-Zeile */}
                 {kombiListe && (
-                  <div ref={reihenfolgeRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
-                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Reihenfolge</span>
+                  <div ref={reihenfolgeRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH, zIndex:6, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Reihenfolge</span>
                     {quizReihenfolge === "schlechteste" && (
-                      <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none", whiteSpace:"nowrap"}}>
+                      <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", pointerEvents:"none", whiteSpace:"nowrap"}}>
                         {sliderActive ? `Score ≤ ${sliderVal} · ${verfuegbarReihenfolge} V.` : `${verfuegbarReihenfolge} V.`}
                       </span>
                     )}
@@ -6139,7 +6298,7 @@ export default function VokabelApp() {
                           <div style={{padding:"0 16px 16px"}}>
                             {sliderActive ? (
                               <>
-                                <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:8, textAlign:"center"}}>
+                                <div style={{fontSize:"0.78rem", color:"var(--text2)", marginBottom:8, textAlign:"center"}}>
                                   {`Nur Vokabeln mit Score ≤ ${sliderVal} (${verfuegbarReihenfolge} V.)`}
                                 </div>
                                 <div style={{position:"relative", paddingTop:28}}>
@@ -6147,7 +6306,7 @@ export default function VokabelApp() {
                                     position:"absolute", top:0,
                                     left:`calc(${sliderPct} * (100% - 28px) + 14px)`,
                                     transform:"translateX(-50%)",
-                                    background:"#2d6a4f", color:"#fff",
+                                    background:"var(--haupt)", color:"var(--auf-haupt)",
                                     borderRadius:6, padding:"3px 9px",
                                     fontSize:"0.82rem", fontWeight:600,
                                     pointerEvents:"none",
@@ -6169,7 +6328,7 @@ export default function VokabelApp() {
                               </>
                             ) : (
                               <>
-                                <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:8, textAlign:"center"}}>
+                                <div style={{fontSize:"0.78rem", color:"var(--text2)", marginBottom:8, textAlign:"center"}}>
                                   Vokabeln mit dem niedrigsten Score werden abgefragt.
                                 </div>
                                 <button {...tt("Nur Vokabeln bis zu einem bestimmten Score abfragen")}
@@ -6182,7 +6341,7 @@ export default function VokabelApp() {
                             )}
                           </div>
                         )}
-                        <div className="toggle-row" style={{cursor:"pointer", padding:"12px 16px", borderTop:"1px solid #e0dbd2"}}
+                        <div className="toggle-row" style={{cursor:"pointer", padding:"12px 16px", borderTop:"1px solid var(--rahmen)"}}
                           onClick={() => setQuizUnbeantwortetZuerst(prev => ({...prev, [quizReihenfolge]: !prev[quizReihenfolge]}))}
                           {...tt("Noch nie abgefragte Vokabeln werden vorgezogen")}>
                           <div>
@@ -6198,9 +6357,9 @@ export default function VokabelApp() {
 
                 {/* Einstellungen – sticky unter Reihenfolge-Zeile */}
                 {kombiListe && (
-                  <div ref={einstellungenRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH, zIndex:5, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
-                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Einstellungen</span>
-                    <span data-anzahl="einstellungen" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", cursor:"help", whiteSpace:"nowrap"}}
+                  <div ref={einstellungenRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH, zIndex:5, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Einstellungen</span>
+                    <span data-anzahl="einstellungen" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", cursor:"help", whiteSpace:"nowrap"}}
                       {...tt(mitAkzentAnzahl != null
                         ? "Vokabeln nach dem Schwierigkeitsgrad: mit oder ohne Wörter ohne Akzent (Regel „Akzent-Modus: auch Wörter ohne Akzent abfragen“)"
                         : "Vokabeln nach dem Schwierigkeitsgrad – hier gleich der Vokabel-Auswahl")}>({akzentVoks.length} V.)</span>
@@ -6229,7 +6388,7 @@ export default function VokabelApp() {
                           </div>
                         </div>
                         {einstellungen.autoplay && (
-                          <div style={{padding:"12px 16px 16px", borderTop:"1px solid #e0dbd2"}}>
+                          <div style={{padding:"12px 16px 16px", borderTop:"1px solid var(--rahmen)"}}>
                             <div className="inp-label" style={{marginBottom:8}}>Spalten automatisch vorlesen</div>
                             <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
                               {TYPEN.map(typ => {
@@ -6243,7 +6402,7 @@ export default function VokabelApp() {
                                 );
                               })}
                             </div>
-                            <div style={{fontSize:"0.75rem", color:"#6b6560", marginTop:8}}>
+                            <div style={{fontSize:"0.75rem", color:"var(--text2)", marginTop:8}}>
                               Nur wenn Frage-Spalte ausgewählt ist, wird Auto-Play ausgelöst
                             </div>
                           </div>
@@ -6264,16 +6423,16 @@ export default function VokabelApp() {
                           </div>
                         </div>
                         {/* Was gilt als einfach / schwer: je Regel ein Haken pro Stufe */}
-                        <div style={{borderTop:"1px solid #e0dbd2", padding:"10px 16px 12px"}}>
+                        <div style={{borderTop:"1px solid var(--rahmen)", padding:"10px 16px 12px"}}>
                           <div style={{display:"grid", gridTemplateColumns:"1fr 58px 58px", alignItems:"center", rowGap:10, columnGap:6}}>
                             <div className="inp-label" style={{margin:0}}>Was gilt als einfach / schwer?</div>
                             {["einfach", "schwer"].map(st => (
-                              <div key={st} style={{textAlign:"center", fontSize:"0.75rem", fontWeight:700, color: einstellungen.modus === st ? "#2d6a4f" : "#9b9590"}}>{st === "einfach" ? "Einfach" : "Schwer"}</div>
+                              <div key={st} style={{textAlign:"center", fontSize:"0.75rem", fontWeight:700, color: einstellungen.modus === st ? "var(--haupt)" : "var(--text3)"}}>{st === "einfach" ? "Einfach" : "Schwer"}</div>
                             ))}
                             {STUFEN_REGELN.map(r => (<Fragment key={r.key}>
                               <div>
-                                <div style={{fontSize:"0.85rem", fontWeight:600, color:"#3b3832"}}>{r.label}</div>
-                                <div style={{fontSize:"0.72rem", color:"#6b6560"}}>{r.sub}</div>
+                                <div style={{fontSize:"0.85rem", fontWeight:600, color:"var(--text)"}}>{r.label}</div>
+                                <div style={{fontSize:"0.72rem", color:"var(--text2)"}}>{r.sub}</div>
                               </div>
                               {["einfach", "schwer"].map(st => {
                                 const an = einstellungen.stufen?.[st]?.[r.key] ?? r[st];
@@ -6287,8 +6446,8 @@ export default function VokabelApp() {
                               })}
                               {r.key === "akzentOhneMischen" && (<>
                                 <div style={{paddingLeft:12}}>
-                                  <div style={{fontSize:"0.8rem", fontWeight:600, color:"#3b3832"}}>… davon höchstens</div>
-                                  <div style={{fontSize:"0.72rem", color:"#6b6560"}}>Wörter ohne Akzent im Verhältnis zu den Wörtern mit Akzent (1× = noch einmal so viele)</div>
+                                  <div style={{fontSize:"0.8rem", fontWeight:600, color:"var(--text)"}}>… davon höchstens</div>
+                                  <div style={{fontSize:"0.72rem", color:"var(--text2)"}}>Wörter ohne Akzent im Verhältnis zu den Wörtern mit Akzent (1× = noch einmal so viele)</div>
                                 </div>
                                 {["einfach", "schwer"].map(st => {
                                   const regelAn = einstellungen.stufen?.[st]?.akzentOhneMischen ?? r[st];
@@ -6296,7 +6455,7 @@ export default function VokabelApp() {
                                   return (
                                     <div key={st} style={{display:"flex", justifyContent:"center"}}>
                                       <select data-akzent-ohne-anteil={st} value={String(wert)} disabled={!regelAn}
-                                        style={{fontFamily:"inherit", fontSize:"0.8rem", padding:"3px 2px", borderRadius:6, border:"1.5px solid #e0dbd2", background:"#fff", opacity: regelAn ? 1 : 0.4, width:52}}
+                                        style={{fontFamily:"inherit", fontSize:"0.8rem", padding:"3px 2px", borderRadius:6, border:"1.5px solid var(--rahmen)", background:"var(--karte)", opacity: regelAn ? 1 : 0.4, width:52}}
                                         onChange={e => { const v = e.target.value === "alle" ? "alle" : parseFloat(e.target.value);
                                           speichereEinst({...einstellungen, stufen: {...(einstellungen.stufen || {}), [st]: {...(einstellungen.stufen?.[st] || {}), akzentOhneAnteil: v}}}); }}
                                         {...ttFeld(`Stufe „${st === "einfach" ? "Einfach" : "Schwer"}“: höchstens so viele Wörter ohne Akzent (∞ = alle)`)}>
@@ -6317,9 +6476,9 @@ export default function VokabelApp() {
 
                 {/* Session-Zeile – sticky unter Einstellungen */}
                 {kombiListe && (
-                  <div ref={sessionRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, zIndex:4, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
-                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Session</span>
-                    <span data-sessionanzahl style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", cursor:"help", whiteSpace:"nowrap"}}
+                  <div ref={sessionRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, zIndex:4, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Session</span>
+                    <span data-sessionanzahl style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", cursor:"help", whiteSpace:"nowrap"}}
                       {...tt("So viele Vokabeln werden in dieser Session insgesamt abgefragt – ohne gelernte (falls ausgeblendet) und ggf. nur unter der Score-Grenze der Reihenfolge")}>
                       ({sessionAnzahl} V.)
                     </span>
@@ -6344,7 +6503,7 @@ export default function VokabelApp() {
                 {quizSessionAufgeklappt && kombiListe && (
                   <div ref={sessionContainerRef} className="karte" style={{marginBottom:8, marginTop:8}}>
                     {/* Abfrage-Ziel */}
-                    <div style={{padding:"12px 16px 8px", fontWeight:600, fontSize:"0.82rem", color:"#6b6560"}}>Abfrage-Ziel</div>
+                    <div style={{padding:"12px 16px 8px", fontWeight:600, fontSize:"0.82rem", color:"var(--text2)"}}>Abfrage-Ziel</div>
                     <div style={{display:"flex", gap:6, flexWrap:"wrap", padding:"0 16px 8px"}}>
                       {[["anzahl","Anzahl","Jede Vokabel 1–3× pro Runde abfragen"],["wiederholung","Mit Wiederholung","Vokabeln wiederholen bis jede N-mal in Folge richtig beantwortet wurde"],["score","Score","Vokabeln wiederholen bis ihr Score das Ziel erreicht"]].map(([m, label, tip]) => (
                         <button key={m} className={`typ-btn${abfrageZielModus===m?" aktiv":""}`}
@@ -6353,22 +6512,22 @@ export default function VokabelApp() {
                     </div>
                     {abfrageZielModus === "anzahl" && (
                       <div style={{display:"flex", gap:6, padding:"0 16px 12px", alignItems:"center"}}>
-                        <span style={{fontSize:"0.78rem", color:"#9b9590", marginRight:4}}>Jede Vokabel</span>
+                        <span style={{fontSize:"0.78rem", color:"var(--text3)", marginRight:4}}>Jede Vokabel</span>
                         {[1,2,3].map(n => (
                           <button key={n} className={`typ-btn${abfrageZielAnzahl===n?" aktiv":""}`}
                             onClick={() => setAbfrageZielAnzahl(n)} {...tt(`Jede Vokabel ${n}× pro Runde abfragen`)}>{n}×</button>
                         ))}
-                        <span style={{fontSize:"0.78rem", color:"#9b9590", marginLeft:4}}>abfragen</span>
+                        <span style={{fontSize:"0.78rem", color:"var(--text3)", marginLeft:4}}>abfragen</span>
                       </div>
                     )}
                     {abfrageZielModus === "wiederholung" && (
                       <div style={{display:"flex", gap:6, padding:"0 16px 12px", alignItems:"center"}}>
-                        <span style={{fontSize:"0.78rem", color:"#9b9590", marginRight:4}}>Bis</span>
+                        <span style={{fontSize:"0.78rem", color:"var(--text3)", marginRight:4}}>Bis</span>
                         {[1,2,3].map(n => (
                           <button key={n} className={`typ-btn${abfrageZielWiederholung===n?" aktiv":""}`}
                             onClick={() => setAbfrageZielWiederholung(n)} {...tt(`Jede Vokabel ${n}× in Folge richtig beantworten`)}>{n}×</button>
                         ))}
-                        <span style={{fontSize:"0.78rem", color:"#9b9590", marginLeft:4}}>richtig</span>
+                        <span style={{fontSize:"0.78rem", color:"var(--text3)", marginLeft:4}}>richtig</span>
                       </div>
                     )}
                     {abfrageZielModus === "score" && (() => {
@@ -6381,7 +6540,7 @@ export default function VokabelApp() {
                                 onClick={() => setAbfrageZielScoreTyp(t)} {...tt(tip)}>{label}</button>
                             ))}
                           </div>
-                          <div style={{fontSize:"0.75rem", color:"#9b9590", marginBottom:6}}>
+                          <div style={{fontSize:"0.75rem", color:"var(--text3)", marginBottom:6}}>
                             {abfrageZielScoreTyp === "session" ? "Session-Score-Ziel" : "Globaler Score-Ziel"}
                           </div>
                           <div style={{position:"relative", paddingTop:28}}>
@@ -6389,7 +6548,7 @@ export default function VokabelApp() {
                               position:"absolute", top:0,
                               left:`calc(${zielSliderPct} * (100% - 28px) + 14px)`,
                               transform:"translateX(-50%)",
-                              background:"#2d6a4f", color:"#fff",
+                              background:"var(--haupt)", color:"var(--auf-haupt)",
                               borderRadius:6, padding:"3px 9px",
                               fontSize:"0.82rem", fontWeight:600, pointerEvents:"none",
                             }}>{abfrageZielScore > 0 ? "+" : ""}{abfrageZielScore}</div>
@@ -6398,7 +6557,7 @@ export default function VokabelApp() {
                               position:"absolute", top:32,
                               left:`calc(0.5 * (100% - 28px) + 14px)`,
                               transform:"translateX(-50%)",
-                              width:2, height:8, background:"#c0bcb7", borderRadius:1, pointerEvents:"none",
+                              width:2, height:8, background:"var(--text4)", borderRadius:1, pointerEvents:"none",
                             }}/>
                             <input {...ttFeld("Ziel-Score: Vokabeln werden wiederholt, bis sie ihn erreichen")} type="range" min={-10} max={10} step={1}
                               value={abfrageZielScore}
@@ -6411,7 +6570,7 @@ export default function VokabelApp() {
                     {/* Pakete-spezifische Einstellungen */}
                     {quizSessionModus === "pakete" && (
                       <>
-                        <div style={{padding:"8px 16px 8px", borderTop:"1px solid #e0dbd2", fontWeight:600, fontSize:"0.82rem", color:"#6b6560"}}>Vokabeln pro Paket</div>
+                        <div style={{padding:"8px 16px 8px", borderTop:"1px solid var(--rahmen)", fontWeight:600, fontSize:"0.82rem", color:"var(--text2)"}}>Vokabeln pro Paket</div>
                         <div style={{display:"flex", gap:6, flexWrap:"wrap", padding:"0 16px 12px"}}>
                           {[5,10,15,20,25,30,40,50].map(n => (
                             <button key={n}
@@ -6423,11 +6582,11 @@ export default function VokabelApp() {
                           ))}
                         </div>
                         {sessionHatFortschritt && (
-                          <div style={{padding:"0 16px 12px", display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid #e0dbd2", paddingTop:10, marginTop:2}}>
-                            <span style={{fontSize:"0.78rem", color:"#6b6560"}}>
+                          <div style={{padding:"0 16px 12px", display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid var(--rahmen)", paddingTop:10, marginTop:2}}>
+                            <span style={{fontSize:"0.78rem", color:"var(--text2)"}}>
                               {sessionAbgefragtAnzahl} / {sessionAnzahl} abgefragt
                             </span>
-                            <button {...tt("Fortschritt dieser Abfrageart löschen – die nächste Abfrage beginnt eine neue Session")} style={{fontSize:"0.75rem", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:0}}
+                            <button {...tt("Fortschritt dieser Abfrageart löschen – die nächste Abfrage beginnt eine neue Session")} style={{fontSize:"0.75rem", color:"var(--falsch)", background:"none", border:"none", cursor:"pointer", padding:0}}
                               onClick={loescheSessionSlot}>
                               Session löschen
                             </button>
@@ -6440,31 +6599,31 @@ export default function VokabelApp() {
 
                 {/* Quiz starten Button - sticky unter Session-Zeile */}
                 {kombiListe && (
-                  <div style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH, zIndex:3, background:"#fff", padding:"14px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid #e0dbd2", boxSizing:"border-box"}}>
+                  <div style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH, zIndex:3, background:"var(--karte)", padding:"14px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid var(--rahmen)", boxSizing:"border-box"}}>
                     {isPakete && sessionHatFortschritt && (
                       <div style={{marginBottom:16}}>
                         {sessionResetFrage ? (
                           <div data-reset-frage style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", minHeight:31, fontSize:"0.82rem"}}>
-                            <span style={{color:"#3b3832", fontWeight:600}}>Abgefragt-Stand löschen?</span>
+                            <span style={{color:"var(--text)", fontWeight:600}}>Abgefragt-Stand löschen?</span>
                             <button data-reset-ja className="toggle-opt aktiv" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8}}
                               onClick={() => { setSessionResetFrage(false); loescheSessionSlot(); }}
                               {...tt("Ja: die Session beginnt von vorn – alle Vokabeln kommen wieder in die Pakete. Scores und Lernfortschritt bleiben erhalten.")}>
                               Ja, neu beginnen
                             </button>
-                            <button className="toggle-opt" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8, border:"1.5px solid #e0dbd2"}}
+                            <button className="toggle-opt" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8, border:"1.5px solid var(--rahmen)"}}
                               onClick={() => setSessionResetFrage(false)}
                               {...tt("Nein: nichts ändern")}>
                               Nein
                             </button>
-                            <span style={{color:"#9b9590", fontSize:"0.7rem"}}>(Scores bleiben)</span>
+                            <span style={{color:"var(--text3)", fontSize:"0.7rem"}}>(Scores bleiben)</span>
                           </div>
                         ) : (
                         <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, fontSize:"0.82rem"}}>
-                          <span style={{color:"#6b6560", minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
+                          <span style={{color:"var(--text2)", minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
                             Fortschritt {ABFRAGE_ART_NAMEN[quizAbfrageArt]}
                           </span>
                           <button data-session-zuruecksetzen className="toggle-opt zeile-rechts"
-                            style={{width:"auto", minWidth:124, padding:"0 12px", color:"#2d6a4f", border:"1.5px solid #a8d5be", background:"#f0f9f4"}}
+                            style={{width:"auto", minWidth:124, padding:"0 12px", color:"var(--haupt)", border:"1.5px solid var(--haupt-zart)", background:"var(--haupt-flaeche)"}}
                             onClick={() => setSessionResetFrage(true)}
                             {...tt("So viele Vokabeln dieser Session wurden schon abgefragt – antippen, um den Abgefragt-Stand zurückzusetzen (Scores, Lernfortschritt und die anderen Abfragearten bleiben erhalten)")}>
                             <span data-anzahl="fortschritt">{sessionAbgefragtAnzahl} / {sessionAnzahl}</span>
@@ -6472,10 +6631,10 @@ export default function VokabelApp() {
                           </button>
                         </div>
                         )}
-                        <div style={{height:6, background:"#e0dbd2", borderRadius:3, marginTop:12}}>
+                        <div style={{height:6, background:"var(--rahmen)", borderRadius:3, marginTop:12}}>
                           <div style={{
                             width:`${sessionPct}%`,
-                            height:"100%", background:"#2d6a4f", borderRadius:3, transition:"width 0.3s"
+                            height:"100%", background:"var(--haupt)", borderRadius:3, transition:"width 0.3s"
                           }}/>
                         </div>
                       </div>
@@ -6483,7 +6642,7 @@ export default function VokabelApp() {
                     {aufteilen ? (() => {
                       const neu = (aufteilenStand()?.gruppen || []).filter(g => !g.vorhanden).length;
                       return (
-                        <button data-aufteilen-anlegen className="btn btn-primary" style={{width:"100%", background:"#b8860b", borderColor:"#b8860b"}}
+                        <button data-aufteilen-anlegen className="btn btn-primary" style={{width:"100%", background:"var(--gelb-dunkel)", borderColor:"var(--gelb-dunkel)"}}
                           disabled={!kannStarten || neu === 0} onClick={legeAufteilenAn}
                           {...tt("Je Gruppe eine gespeicherte Konfiguration mit diesen Einstellungen anlegen")}>
                           ▦ {neu} Session{neu !== 1 ? "s" : ""} anlegen
@@ -6514,7 +6673,7 @@ export default function VokabelApp() {
                     </div>
                     )}
                     {schwelle > 0 && gelernteAnzahl > 0 && (
-                      <div style={{marginTop:6, fontSize:"0.78rem", color:"#6b6560",
+                      <div style={{marginTop:6, fontSize:"0.78rem", color:"var(--text2)",
                           display:"flex", alignItems:"center", gap:8, justifyContent:"center"}}>
                         <span>{quizGelerntEinschliessen
                           ? `${gelernteAnzahl} gelernte eingeschlossen`
@@ -6569,7 +6728,7 @@ export default function VokabelApp() {
             <>
             {/* Aktionszeile */}
             {aktionszeileAufgeklappt && (
-              <div style={{background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", gap:6, flexWrap:"wrap"}}>
+              <div style={{background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"8px 16px", display:"flex", gap:6, flexWrap:"wrap"}}>
                 <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import"); }} {...tt("Vokabeln in diese Liste importieren")}><IcoPlus/></button>
                 <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={kopiereListeHandler} {...tt("Liste als Text in die Zwischenablage kopieren")}>{exportKopiert ? "✓" : <IcoCopy/>}</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])} {...tt("JSON: vollständige Sicherung mit Lernstand (Scores) – Datei „Name - JSON.txt“, zum Wiederherstellen oder für ein anderes Gerät")}>JSON</button>
@@ -6633,7 +6792,7 @@ export default function VokabelApp() {
                     <div key={typ} className="karte-zeile">
                       <span className={`spalten-badge${s.aktiv ? " aktiv" : ""}`}>{typ}</span>
                       <div className="karte-zeile-info">
-                        <div className="karte-zeile-name" style={{color: s.aktiv ? "#1a1a1a" : "#6b6560"}}>
+                        <div className="karte-zeile-name" style={{color: s.aktiv ? "var(--text-stark)" : "var(--text2)"}}>
                           {s.aktiv ? (s.name || `Spalte ${typ}`) : "nicht belegt"}
                         </div>
                         {s.aktiv && <div className="karte-zeile-sub">{typ.startsWith("i") ? "Info (nicht abfragbar)" : "Abfragbar"}</div>}
@@ -6657,7 +6816,7 @@ export default function VokabelApp() {
                 </div>
                 <div style={{display:"flex", gap:6}}>
                   {sichtbareListen.filter(l => l.id !== aktiveListeId).length > 0 && (
-                    <button className="btn btn-ghost btn-sm" style={{background:"#fff"}}
+                    <button className="btn btn-ghost btn-sm" style={{background:"var(--karte)"}}
                       onClick={() => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); }}
                       {...tt("Vokabeln aus einer anderen Liste in diese Liste einfügen")}>
                       Zusammenführen
@@ -6665,13 +6824,13 @@ export default function VokabelApp() {
                   )}
                   {vokabelAufgeklappt && schwelleL > 0 && gelernteInListe > 0 && (
                     <button className={`btn btn-ghost btn-sm${listenGelerntAusblenden?" aktiv":""}`}
-                      style={{background:"#fff", fontSize:"0.75rem"}}
+                      style={{background:"var(--karte)", fontSize:"0.75rem"}}
                       onClick={() => setListenGelerntAusblenden(v => !v)}
                       {...tt(listenGelerntAusblenden ? "Gelernte Vokabeln wieder einblenden" : "Gelernte Vokabeln ausblenden")}>
                       {listenGelerntAusblenden ? `${gelernteInListe} ausgeblendet` : "Gelernte ausblenden"}
                     </button>
                   )}
-                  <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px", background:"#fff"}} onClick={() => {
+                  <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px", background:"var(--karte)"}} onClick={() => {
                     resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
                   }} {...tt("Neue Vokabel hinzufügen oder aus Datei importieren")}><IcoPlus s={13}/></button>
                 </div>
@@ -6683,7 +6842,7 @@ export default function VokabelApp() {
                 ) : (<>
                   {aktiveSpalten.length > 1 && (
                     <div data-ansicht-spalten style={{display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:8}}>
-                      <span style={{fontSize:"0.75rem", color:"#6b6560"}}>Anzeigen:</span>
+                      <span style={{fontSize:"0.75rem", color:"var(--text2)"}}>Anzeigen:</span>
                       {aktiveSpalten.map(typ => {
                         const an = anzeigeSpalten.includes(typ);
                         return (
@@ -6708,13 +6867,13 @@ export default function VokabelApp() {
                                 <div key={typ} style={{display:"flex", alignItems:"baseline", gap:6}}>
                                   <span className="spalten-badge aktiv">{aktiveListe.spalten[typ].name || typ}</span>
                                   <span style={{fontSize:"0.88rem"}}>{vok[typ].wert}</span>
-                                  {vok[typ].falsch?.length > 0 && <span style={{fontSize:"0.75rem", color:"#6b6560"}}>(+{vok[typ].falsch.length})</span>}
+                                  {vok[typ].falsch?.length > 0 && <span style={{fontSize:"0.75rem", color:"var(--text2)"}}>(+{vok[typ].falsch.length})</span>}
                                 </div>
                               ) : null)}
                             </div>
                             <div style={{display:"flex", alignItems:"center", gap:2, flexShrink:0, marginLeft:8}}>
                               {istGelernt && (
-                                <span style={{background:"#e8f5e9", color:"#2d6a4f", borderRadius:4,
+                                <span style={{background:"var(--haupt-flaeche)", color:"var(--haupt)", borderRadius:4,
                                   fontSize:"0.65rem", padding:"1px 5px", fontWeight:700, marginRight:2}}>✓</span>
                               )}
                               {score !== null && (
@@ -6735,7 +6894,7 @@ export default function VokabelApp() {
                                 }}><IcoSpk s={16}/></button>
                               )}
                               <button {...tt("Vokabel bearbeiten")} className="btn-icon" title="Bearbeiten" onClick={() => oeffneVokabelBearbeiten(vok)}><IcoPencil s={14}/></button>
-                              <button {...tt("Vokabel löschen")} className="btn-icon" title="Löschen" style={{color:"#c0392b"}}
+                              <button {...tt("Vokabel löschen")} className="btn-icon" title="Löschen" style={{color:"var(--falsch)"}}
                                 onClick={() => { setBearbeiteVokabel(vok); setModal('vokabel-loeschen'); }}>✕</button>
                             </div>
                           </div>
@@ -6757,9 +6916,9 @@ export default function VokabelApp() {
           const gruen = zu && statistikAktiverSlot?.typ === 'gespeichert';
           return (
             <>
-              <div ref={slotSektionRef} data-slot-kopf={gruen ? "gruen" : zu ? "zu" : "offen"} style={{position:"sticky", top:headerH, zIndex:9, background: gruen ? "#2d6a4f" : "#fff", borderBottom:`1px solid ${gruen ? "#2d6a4f" : "#e0dbd2"}`, padding:"10px 16px", display:"flex", alignItems:"center", justifyContent: zu ? "center" : undefined, gap:8}}>
+              <div ref={slotSektionRef} data-slot-kopf={gruen ? "gruen" : zu ? "zu" : "offen"} style={{position:"sticky", top:headerH, zIndex:9, background: gruen ? "var(--haupt)" : "var(--karte)", borderBottom:`1px solid ${gruen ? "var(--haupt)" : "var(--rahmen)"}`, padding:"10px 16px", display:"flex", alignItems:"center", justifyContent: zu ? "center" : undefined, gap:8}}>
                 {!zu && (
-                  <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"#3b3832", display:"flex", alignItems:"center", gap:8}}>
+                  <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"var(--text)", display:"flex", alignItems:"center", gap:8}}>
                     Verlauf &amp; Gespeichert
                   </span>
                 )}
@@ -6778,8 +6937,8 @@ export default function VokabelApp() {
                   {renderSlotBereiche(
                     <button className="slot-chip belegt"
                       style={!statistikAktiverSlot && !statistikSlotGeleert
-                        ? {background:"#e8f5ee", borderColor:"#2d6a4f", color:"#2d6a4f"}
-                        : {color:"#9b9590"}}
+                        ? {background:"var(--haupt-flaeche)", borderColor:"var(--haupt)", color:"var(--haupt)"}
+                        : {color:"var(--text3)"}}
                       onClick={() => {
                         setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setSlotSektionAufgeklappt(false);
                         setStatistikListenIds(null); setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
@@ -6829,12 +6988,12 @@ export default function VokabelApp() {
                     )}
                   </>
                 ) : (
-                  <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Listen-Auswahl</span>
+                  <span style={{fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Listen-Auswahl</span>
                 )}
               </span>
               {/* MITTE */}
               {statistikBasisVoks.length > 0 && (
-                <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none", whiteSpace:"nowrap"}}>
+                <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", pointerEvents:"none", whiteSpace:"nowrap"}}>
                   ({statistikBasisVoks.length} V.)
                 </span>
               )}
@@ -6849,10 +7008,10 @@ export default function VokabelApp() {
               </span>
             </div>
             {statistikListenAufgeklappt && (
-              <div ref={statistikListenContainerRef} style={{background:"#f7f5f0", borderBottom:"1px solid #e0dbd2", padding:"8px 16px"}}>
+              <div ref={statistikListenContainerRef} style={{background:"var(--hintergrund)", borderBottom:"1px solid var(--rahmen)", padding:"8px 16px"}}>
                 <div className={`listen-raster auswahl${listenRasterPlaetze().spalten > 1 ? " eng" : ""}`} style={{marginBottom:0, gridTemplateColumns:`repeat(${listenRasterPlaetze().spalten}, minmax(0, 1fr))`}}>
                   {sichtbareListen.length === 0
-                    ? <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.85rem"}}>Keine Listen vorhanden.</div>
+                    ? <div className="karte-zeile" style={{color:"var(--text2)", fontSize:"0.85rem"}}>Keine Listen vorhanden.</div>
                     : listenRasterPlaetze().plaetze.map(({ key: pk, l }) => {
                         if (!l) return <div key={pk} className="raster-leer" style={{border:"none"}}/>;
                         const ll = statistikAlleListenObjekte.find(x => x.id === l.id);
@@ -6864,7 +7023,7 @@ export default function VokabelApp() {
                             <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
                             <div style={{flex:1}}>
                               <div style={{fontWeight:600, fontSize:"0.9rem"}}>{listenFlagge(l)}{l.name}</div>
-                              <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:2}}>{anzahl} Vokabel{anzahl!==1?"n":""}</div>
+                              <div style={{fontSize:"0.78rem", color:"var(--text2)", marginTop:2}}>{anzahl} Vokabel{anzahl!==1?"n":""}</div>
                             </div>
                           </div>
                         );
@@ -6883,7 +7042,7 @@ export default function VokabelApp() {
           const istBereich = statistikBereichTyp === "bereich";
           const auswahlAnzahl = statistikGefilterteVoks.length;
           return (<>
-            <div ref={statistikVokauswahlRef} style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH, zIndex:7, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
+            <div ref={statistikVokauswahlRef} style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH, zIndex:7, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
               {/* LINKS */}
               <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
                 {istBereich && statistikEinzelauswahlAufgeklappt ? (
@@ -6902,12 +7061,12 @@ export default function VokabelApp() {
                     )}
                   </>
                 ) : (
-                  <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>Vokabel-Auswahl</span>
+                  <span style={{fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Vokabel-Auswahl</span>
                 )}
               </span>
               {/* MITTE */}
               {istBereich && (
-                <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"#aaa", pointerEvents:"none", whiteSpace:"nowrap"}}>({auswahlAnzahl} V.)</span>
+                <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", pointerEvents:"none", whiteSpace:"nowrap"}}>({auswahlAnzahl} V.)</span>
               )}
               {/* RECHTS */}
               <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
@@ -6933,7 +7092,7 @@ export default function VokabelApp() {
               </span>
             </div>
             {statistikEinzelauswahlAufgeklappt && istBereich && (
-              <div ref={statistikEinzelauswahlRef} style={{background:"#f7f5f0", borderBottom:"1px solid #e0dbd2", paddingBottom:8}}>
+              <div ref={statistikEinzelauswahlRef} style={{background:"var(--hintergrund)", borderBottom:"1px solid var(--rahmen)", paddingBottom:8}}>
                 <div className="karte" style={{margin:"8px 16px 0 16px"}}>
                   {statistikBasisVoks.map((vok, idx) => {
                     const gewaehlt = statistikCheckboxAuswahl.has(vok.id);
@@ -6942,7 +7101,7 @@ export default function VokabelApp() {
                     const sp2 = TYPEN.filter(t => vok._spalten[t]?.aktiv)[1];
                     return (
                       <div {...tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs)")} key={vok.id} className="vok-zeile"
-                        style={{background: isVon ? "#fff3cd" : gewaehlt ? "#f0f7f0" : "transparent"}}
+                        style={{background: isVon ? "var(--gelb-flaeche)" : gewaehlt ? "var(--haupt-flaeche)" : "transparent"}}
                         onClick={() => {
                           if (!statistikVonBisModus) {
                             setStatistikCheckboxAuswahl(prev => { const n = new Set(prev); if (n.has(vok.id)) n.delete(vok.id); else n.add(vok.id); return n; });
@@ -6958,13 +7117,13 @@ export default function VokabelApp() {
                             setStatistikVonBisErster(null);
                           }
                         }}>
-                        <div className={`checkbox${isVon ? " checked" : gewaehlt ? " checked" : ""}`} style={{flexShrink:0, ...(isVon ? {background:"#f0a500", borderColor:"#f0a500"} : {})}}>{isVon ? "→" : gewaehlt ? "✓" : ""}</div>
+                        <div className={`checkbox${isVon ? " checked" : gewaehlt ? " checked" : ""}`} style={{flexShrink:0, ...(isVon ? {background:"var(--gelb)", borderColor:"var(--gelb)"} : {})}}>{isVon ? "→" : gewaehlt ? "✓" : ""}</div>
                         <span className="vok-nr">{idx+1}</span>
                         <div style={{flex:1, minWidth:0}}>
                           {sp1 && vok[sp1] && <div style={{fontWeight:600, fontSize:"0.88rem", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp1].wert}</div>}
-                          {sp2 && vok[sp2] && <div style={{fontSize:"0.75rem", color:"#6b6560", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp2].wert}</div>}
+                          {sp2 && vok[sp2] && <div style={{fontSize:"0.75rem", color:"var(--text2)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{vok[sp2].wert}</div>}
                         </div>
-                        {statistikGewaehlteListenObjekte.length > 1 && <div style={{fontSize:"0.68rem", color:"#aaa", flexShrink:0}}>{vok._listeName}</div>}
+                        {statistikGewaehlteListenObjekte.length > 1 && <div style={{fontSize:"0.68rem", color:"var(--text3)", flexShrink:0}}>{vok._listeName}</div>}
                       </div>
                     );
                   })}
@@ -7042,28 +7201,28 @@ export default function VokabelApp() {
 
           // Filter-Boxen (Multi-Select: alle standardmäßig aktiv)
           // Farben der Gruppen (Zeilen, Gruppen-Balken)
-          const GRUPPE_BG = { negativ:"#fdecec", gelernt:"#e8f5e9" };
+          const GRUPPE_BG = { negativ:"var(--falsch-flaeche)", gelernt:"var(--haupt-flaeche)" };
 
           return (<>
             {/* Ø-Score sticky Header */}
             {!statistikVollbild && (
-            <div style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
+            <div style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
               <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2, flexShrink:0}}>
-                <span style={{fontWeight:600, fontSize:"0.85rem", color:"#3b3832"}}>{schwelleS > 0 ? "Lernfortschritt" : "Ø Score"}</span>
-                <span style={{fontSize:"0.72rem", fontWeight:700, color:"#6b6560"}} {...tt("Ausgewertet wird dieser Score – Tap in die Kreismitte wechselt")}>{artName}</span>
+                <span style={{fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>{schwelleS > 0 ? "Lernfortschritt" : "Ø Score"}</span>
+                <span style={{fontSize:"0.72rem", fontWeight:700, color:"var(--text2)"}} {...tt("Ausgewertet wird dieser Score – Tap in die Kreismitte wechselt")}>{artName}</span>
               </div>
               {schwelleS > 0 && (
                 <div style={{display:"flex", flexDirection:"column", alignItems:"center", flex:1, minWidth:0}}>
                   <div style={{display:"flex", alignItems:"baseline", gap:6}}>
-                    <span style={{fontWeight:800, fontSize:"1.25rem", color: keineAkzente ? "#b5b0aa" : "#2d6a4f"}}>{keineAkzente ? "–" : `${Math.round(lernFortschritt)} %`}</span>
+                    <span style={{fontWeight:800, fontSize:"1.25rem", color: keineAkzente ? "var(--text3)" : "var(--haupt)"}}>{keineAkzente ? "–" : `${Math.round(lernFortschritt)} %`}</span>
                   </div>
-                  <div style={{display:"flex", width:"min(180px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"#f0ede8", margin:"3px 0 2px"}}
+                  <div style={{display:"flex", width:"min(180px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"var(--flaeche)", margin:"3px 0 2px"}}
                     {...tt(`Gelernt ${kopfAnzahl.gelernt} · In Arbeit ${kopfAnzahl.arbeit} · Nie abgefragt ${kopfAnzahl.nie} · Negativ ${kopfAnzahl.negativ}`)}>
                     {kopfVoks.length > 0 && GRUPPE_BALKEN.map(([g, farbe]) => kopfAnzahl[g] > 0 && (
                       <div key={g} style={{width:`${kopfAnzahl[g] / kopfVoks.length * 100}%`, background:farbe}}/>
                     ))}
                   </div>
-                  <div style={{fontSize:"0.7rem", color:"#6b6560", whiteSpace:"nowrap"}}>
+                  <div style={{fontSize:"0.7rem", color:"var(--text2)", whiteSpace:"nowrap"}}>
                     {keineAkzente ? "keine Akzente" : <>{gelerntAnzahl} / {kopfVoks.length} gelernt</>}
                     {avgScore !== null && <> · Ø {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}</>}
                   </div>
@@ -7072,12 +7231,12 @@ export default function VokabelApp() {
               {schwelleS <= 0 && (
               <div style={{display:"flex", alignItems:"center", gap:12, flex:1, justifyContent:"center"}}>
                 <div style={{display:"flex", alignItems:"center", gap:4}}>
-                  <svg width="14" height="3" viewBox="0 0 14 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="14" y2="1.5" stroke="#2d6a4f" strokeWidth="2.5"/></svg>
+                  <svg width="14" height="3" viewBox="0 0 14 3" style={{flexShrink:0}}><line x1="0" y1="1.5" x2="14" y2="1.5" stroke={fv("var(--haupt)")} strokeWidth="2.5"/></svg>
                   {avgScore !== null ? (
-                    <span style={{fontWeight:700, fontSize:"0.88rem", color: avgScore > 0 ? "#2d6a4f" : avgScore < 0 ? "#c0392b" : "#6b6560"}}>
+                    <span style={{fontWeight:700, fontSize:"0.88rem", color: avgScore > 0 ? "var(--haupt)" : avgScore < 0 ? "var(--falsch)" : "var(--text2)"}}>
                       {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}
                     </span>
-                  ) : <span style={{color:"#aaa", fontSize:"0.8rem"}}>–</span>}
+                  ) : <span style={{color:"var(--text3)", fontSize:"0.8rem"}}>–</span>}
                 </div>
               </div>
               )}
@@ -7090,7 +7249,7 @@ export default function VokabelApp() {
                 // Kreisdiagramm der Gruppen: leere Gruppen fehlen, Segment antippen = Gruppe ein-/ausblenden
                 const renderKreis = () => {
                   const NAME = { gelernt:"✓ Gelernt", arbeit:"In Arbeit", nie:"Nie abgefragt", negativ:"Negativ" };
-                  const TEXTFARBE = { gelernt:"#2d6a4f", arbeit:"#a67c00", nie:"#6b6560", negativ:"#c0392b" };
+                  const TEXTFARBE = { gelernt:"var(--haupt)", arbeit:"var(--gelb-dunkel)", nie:"var(--text2)", negativ:"var(--falsch)" };
                   // Nur eingeblendete Gruppen teilen sich den Kreis; ausgeblendete stehen in der Legende
                   const vorhanden = GRUPPE_BALKEN.filter(([g]) => gruppenAnzahl[g] > 0);
                   const sichtbar = vorhanden.filter(([g]) => statistikFilter.has(g));
@@ -7123,14 +7282,14 @@ export default function VokabelApp() {
                       name: NAME[g], art: statistikArt, ids: gv.map(v => v.id), listenIds: [...new Set(gv.map(v => v._listeId))] }) }];
                   };
                   return (
-                    <div style={{background:"#fafaf8", padding:"8px 6px 10px"}}>
+                    <div style={{background:"var(--flaeche-hell)", padding:"8px 6px 10px"}}>
                       {teile.length === 0 && !keineAkzente ? (
-                        <div style={{textAlign:"center", color:"#9b9590", fontSize:"0.85rem", padding:"40px 0"}}>Alle Gruppen ausgeblendet
+                        <div style={{textAlign:"center", color:"var(--text3)", fontSize:"0.85rem", padding:"40px 0"}}>Alle Gruppen ausgeblendet
                           <div><button className="btn btn-ghost btn-sm" style={{marginTop:8}} onClick={naechsteArt} {...tt("Zwischen Übersetzung, Diktat und Akzenten wechseln")}>{artName} ⇄</button></div></div>
                       ) : (
                       <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%", maxHeight:260, display:"block", userSelect:"none"}}>
                         {keineAkzente && (
-                          <text data-keine-akzente x={cx} y={cy - 58} textAnchor="middle" fontSize="15" fontWeight="600" fill="#3b3832">Für diese Session sind keine Akzente vorhanden.</text>
+                          <text data-keine-akzente x={cx} y={cy - 58} textAnchor="middle" fontSize="15" fontWeight="600" fill={fv("var(--text)")}>Für diese Session sind keine Akzente vorhanden.</text>
                         )}
                         {teile.map(t => {
                           const [ax, ay] = punkt(t.mitte, r + 2), [bx, by] = punkt(t.mitte, r + 14);
@@ -7138,22 +7297,22 @@ export default function VokabelApp() {
                           return (
                             <g {...tt(`${NAME[t.g]}: antippen blendet die Gruppe aus – lange drücken: Quiz mit diesen Vokabeln`, quizMenue(t.g))} key={t.g} data-kreis-gruppe={t.g} style={{cursor:"pointer"}} onClick={() => umschalten(t.g)}>
                               {teile.length === 1
-                                ? <circle cx={cx} cy={cy} r={r} fill={t.farbe}/>
-                                : <path d={pfad(t)} fill={t.farbe} stroke="#fafaf8" strokeWidth="2"/>}
+                                ? <circle cx={cx} cy={cy} r={r} fill={fv(t.farbe)}/>
+                                : <path d={pfad(t)} fill={fv(t.farbe)} stroke={fv("var(--flaeche-hell)")} strokeWidth="2"/>}
                               <polyline points={`${ax},${ay} ${bx},${by} ${t.rechts ? tx - 4 : tx + 4},${t.y}`}
-                                fill="none" stroke="#b5b0aa" strokeWidth="1"/>
+                                fill="none" stroke={fv("var(--text3)")} strokeWidth="1"/>
                               <text x={tx} y={t.y - 2} textAnchor={t.rechts ? "start" : "end"} fontSize="13" fontWeight="700"
-                                fill={TEXTFARBE[t.g]}>{NAME[t.g]}</text>
+                                fill={fv(TEXTFARBE[t.g])}>{NAME[t.g]}</text>
                               <text x={tx} y={t.y + 13} textAnchor={t.rechts ? "start" : "end"} fontSize="12"
-                                fill="#6b6560">{t.n} · {Math.round(t.n / gesamt * 100)} %</text>
+                                fill={fv("var(--text2)")}>{t.n} · {Math.round(t.n / gesamt * 100)} %</text>
                             </g>
                           );
                         })}
                         {/* Kreismitte: Tap wechselt Übersetzung → Diktat → Akzente */}
                         <g {...tt("Antippen: zwischen Übersetzung, Diktat und Akzenten wechseln")} style={{cursor:"pointer"}} onClick={naechsteArt} data-kreismitte="1">
-                          <circle cx={cx} cy={cy} r={36} fill="#fff" stroke="#e0dbd2" strokeWidth="1.5"/>
-                          <text x={cx} y={cy + 1} textAnchor="middle" fontSize={artName.length > 8 ? 11 : 13} fontWeight="800" fill="#3b3832">{artName}</text>
-                          <text x={cx} y={cy + 16} textAnchor="middle" fontSize="13" fill="#9b9590">⇄</text>
+                          <circle cx={cx} cy={cy} r={36} fill={fv("var(--karte)")} stroke={fv("var(--rahmen)")} strokeWidth="1.5"/>
+                          <text x={cx} y={cy + 1} textAnchor="middle" fontSize={artName.length > 8 ? 11 : 13} fontWeight="800" fill={fv("var(--text)")}>{artName}</text>
+                          <text x={cx} y={cy + 16} textAnchor="middle" fontSize="13" fill={fv("var(--text3)")}>⇄</text>
                         </g>
                       </svg>
                       )}
@@ -7165,10 +7324,10 @@ export default function VokabelApp() {
                             <button key={g} onClick={() => umschalten(g)} data-legende={g}
                               {...tt(`${an ? `${NAME[g]} ausblenden` : `${NAME[g]} wieder einblenden`} – lange drücken: Quiz mit diesen Vokabeln`, quizMenue(g))}
                               style={{display:"inline-flex", alignItems:"center", gap:5, padding:"3px 9px", borderRadius:12, cursor:"pointer",
-                                fontFamily:"inherit", fontSize:"0.72rem", fontWeight:600, background:"#fff",
-                                border:`1.5px solid ${an ? farbe : "#e0dbd2"}`, color: an ? TEXTFARBE[g] : "#b5b0aa",
+                                fontFamily:"inherit", fontSize:"0.72rem", fontWeight:600, background:"var(--karte)",
+                                border:`1.5px solid ${an ? farbe : "var(--rahmen)"}`, color: an ? TEXTFARBE[g] : "var(--text3)",
                                 textDecoration: an ? "none" : "line-through", opacity: an ? 1 : 0.8}}>
-                              <span style={{width:8, height:8, borderRadius:"50%", background: an ? farbe : "#e0dbd2"}}/>
+                              <span style={{width:8, height:8, borderRadius:"50%", background: an ? farbe : "var(--rahmen)"}}/>
                               {NAME[g]} {gruppenAnzahl[g]}
                             </button>
                           );
@@ -7178,16 +7337,16 @@ export default function VokabelApp() {
                         <button className={`typ-btn${alleFilterAktiv ? " aktiv" : ""}`} style={{fontSize:"0.72rem", padding:"3px 12px"}}
                           onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
                           {...tt("Alle Gruppen einblenden")}>Gesamt {alleVoks.length}</button>
-                        <span style={{fontSize:"0.65rem", color:"#9b9590"}}>Segment oder Legende antippen: aus-/einblenden</span>
+                        <span style={{fontSize:"0.65rem", color:"var(--text3)"}}>Segment oder Legende antippen: aus-/einblenden</span>
                       </div>}
                     </div>
                   );
                 };
                 return (
-                <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid #e0dbd2", position:"relative"}}>
+                <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid var(--rahmen)", position:"relative"}}>
                   {!statistikVollbild && (
                     <button onClick={() => setStatistikVollbild(true)}
-                      style={{position:"absolute", top:6, right:8, zIndex:1, background:"none", border:"none", padding:"4px 6px", cursor:"pointer", color:"#6b6560", display:"flex", alignItems:"center"}}
+                      style={{position:"absolute", top:6, right:8, zIndex:1, background:"none", border:"none", padding:"4px 6px", cursor:"pointer", color:"var(--text2)", display:"flex", alignItems:"center"}}
                       {...tt("Statistik im Vollbild anzeigen")}>
                       <IcoExpand s={18}/>
                     </button>
@@ -7234,7 +7393,7 @@ export default function VokabelApp() {
               {!statistikListeZu && (
               <div className="karte">
                 {voks.length === 0 ? (
-                  <div className="karte-zeile" style={{color:"#6b6560", fontSize:"0.85rem"}}>Keine Vokabeln in diesem Filter.</div>
+                  <div className="karte-zeile" style={{color:"var(--text2)", fontSize:"0.85rem"}}>Keine Vokabeln in diesem Filter.</div>
                 ) : voks.map((vok, idx) => {
                   const rawScore = vok.fortschritt?.score ?? null;
                   const score = rawScore !== null ? Math.min(10, Math.max(-10, rawScore)) : null;
@@ -7242,7 +7401,7 @@ export default function VokabelApp() {
                   const isNeg = score !== null && score < 0;
                   const gruppe = gruppeVon(vok);
                   const istGel = gruppe === "gelernt";
-                  const scoreColor = istGel || isPos ? "#2d6a4f" : isNeg ? "#c0392b" : "#9b9590";
+                  const scoreColor = istGel || isPos ? "var(--haupt)" : isNeg ? "var(--falsch)" : "var(--text3)";
                   // Balken: links bis −5, rechts bis zur Gelernt-Schwelle (ohne Schwelle ±10); Null in allen Zeilen gleich
                   const links = schwelleS > 0 ? 5 : 10, rechts = schwelleS > 0 ? schwelleS : 10;
                   const nullPct = links / (links + rechts) * 100;
@@ -7255,24 +7414,24 @@ export default function VokabelApp() {
                   return (
                     <div key={`${vok._listeName}_${vok.id}_${idx}`}
                       style={{display:"flex", alignItems:"center", gap:8, padding:"7px 12px", background: GRUPPE_BG[gruppe],
-                        borderBottom: idx < voks.length-1 ? "1px solid #e0dbd2" : "none"}}>
+                        borderBottom: idx < voks.length-1 ? "1px solid var(--rahmen)" : "none"}}>
                       {/* Text */}
                       <div style={{width:"33%", minWidth:0, overflow:"hidden", textOverflow:"ellipsis",
-                        whiteSpace:"nowrap", fontSize:"0.8rem", color:"#1a1a1a", flexShrink:0}}>
-                        {displayText || <span style={{color:"#bbb"}}>–</span>}
+                        whiteSpace:"nowrap", fontSize:"0.8rem", color:"var(--text-stark)", flexShrink:0}}>
+                        {displayText || <span style={{color:"var(--text4)"}}>–</span>}
                       </div>
                       {/* Score-Balken */}
-                      <div style={{flex:1, position:"relative", height:8, background:"#f0ede8", borderRadius:4, minWidth:0}}>
+                      <div style={{flex:1, position:"relative", height:8, background:"var(--flaeche)", borderRadius:4, minWidth:0}}>
                         {istGel ? (
                           // Gelernt: ganzer Balken grün (auch der negative Bereich)
-                          <div style={{position:"absolute", top:0, bottom:0, left:0, right:0, borderRadius:4, background:"#2d6a4f"}}/>
+                          <div style={{position:"absolute", top:0, bottom:0, left:0, right:0, borderRadius:4, background:"var(--haupt)"}}/>
                         ) : score !== null && score !== 0 && (
                           <div style={{position:"absolute", top:0, bottom:0, borderRadius:4,
-                            background: isPos ? "#52b788" : "#c0392b",
+                            background: isPos ? "var(--haupt-hell)" : "var(--falsch)",
                             ...(isPos ? {left:`${nullPct}%`, width:`${barPct}%`} : {right:`${100 - nullPct}%`, width:`${barPct}%`})}}/>
                         )}
                         <div style={{position:"absolute", top:0, bottom:0, left:`${nullPct}%`,
-                          transform:"translateX(-50%)", width:1, background: istGel ? "#e8f5e9" : "#c0bcb7"}}/>
+                          transform:"translateX(-50%)", width:1, background: istGel ? "var(--haupt-flaeche)" : "var(--text4)"}}/>
                       </div>
                       {/* Score + Datum */}
                       <div style={{width:"22%", display:"flex", flexDirection:"column",
@@ -7281,7 +7440,7 @@ export default function VokabelApp() {
                           {...(istGel ? tt(`Gelernt (Schwelle +${schwelleS})`) : {})}>
                           {istGel ? "✓ " : ""}{score !== null ? (score > 0 ? "+" : "") + score : "–"}
                         </span>
-                        <span style={{fontSize:"0.62rem", color:"#9b9590"}}>
+                        <span style={{fontSize:"0.62rem", color:"var(--text3)"}}>
                           {formatDatum(vok.fortschritt?.letzteAbfrage)}
                         </span>
                       </div>
@@ -7296,8 +7455,8 @@ export default function VokabelApp() {
         })()}
         {tab === "einstellungen" && (<>
           {/* Info sticky Header */}
-          <div ref={infoHeaderRef} style={{position:"sticky", top:headerH, zIndex:9, background:"#fff", borderBottom:"1px solid #e0dbd2", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-            <span style={{fontWeight:700, fontSize:"0.88rem", color:"#3b3832"}}>Info</span>
+          <div ref={infoHeaderRef} style={{position:"sticky", top:headerH, zIndex:9, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+            <span style={{fontWeight:700, fontSize:"0.88rem", color:"var(--text)"}}>Info</span>
             <div style={{display:"flex", gap:6, alignItems:"center"}}>
               {infoModus !== "uebersicht" && (
                 <button className="btn-icon" style={{marginRight:2}} onClick={() => setInfoModus("uebersicht")} {...tt("Zurück zur Übersicht")}><IcoX s={14}/></button>
@@ -7313,7 +7472,7 @@ export default function VokabelApp() {
 
           {infoModus === "uebersicht" && (
             <div className="sektion">
-              <div style={{background:"#f7f5f0", borderRadius:12, padding:"14px 16px", fontSize:"0.85rem", lineHeight:1.65, color:"#3b3832"}}>
+              <div style={{background:"var(--hintergrund)", borderRadius:12, padding:"14px 16px", fontSize:"0.85rem", lineHeight:1.65, color:"var(--text)"}}>
                 <div style={{fontWeight:700, marginBottom:6, fontSize:"0.95rem"}}>Vokabel-Trainer</div>
                 <p style={{margin:0}}>
                   Lerne Vokabeln aus eigenen Listen – flexibel, ohne Anmeldung, direkt im Browser.
@@ -7332,7 +7491,7 @@ export default function VokabelApp() {
           {infoModus !== "uebersicht" && (
             <div ref={infoKontextContainerRef}>
               {infoModus === "konzept" ? (
-                <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.75, color:"#3b3832"}}>
+                <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.75, color:"var(--text)"}}>
                   {[
                     {titel:"Listen", text:"Alles beginnt mit einer Liste. Eine Liste ist eine Sammlung von Vokabelpaaren – zum Beispiel Deutsch und Englisch, oder Begriff und Erklärung. Jede Liste kann bis zu sieben Spalten haben (drei Fremdsprache, zwei Deutsch, zwei Info), die du frei benennen kannst – z. B. für unregelmäßige Verben: Infinitiv, Simple Past, Past Participle. Jede Liste hat eine Fremdsprache; oben rechts kannst du zwischen den Sprachen wechseln. Du kannst so viele Listen anlegen wie du möchtest, sie importieren, exportieren und teilen."},
                     {titel:"Vokabelgruppen", text:"Für das Quiz wählst du aus, welche Vokabeln abgefragt werden sollen. Das ist deine Vokabelgruppe: entweder alle Vokabeln einer oder mehrerer Listen, oder eine gezielte Auswahl einzelner Einträge per Checkbox oder Von–Bis-Bereich. Die Vokabelgruppe ist das Material für eine Abfragerunde."},
@@ -7347,15 +7506,15 @@ export default function VokabelApp() {
               ].map(abschnitt => (
                 <div key={abschnitt.titel} style={{marginBottom:20}}>
                   <div className="sektion-label" style={{marginBottom:6}}>{abschnitt.titel}</div>
-                  <div style={{background:"#f7f5f0", borderRadius:10, padding:"12px 14px", whiteSpace:"pre-line"}}>
+                  <div style={{background:"var(--hintergrund)", borderRadius:10, padding:"12px 14px", whiteSpace:"pre-line"}}>
                     {abschnitt.text}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.7, color:"#3b3832"}}>
-              <div style={{background:"#e8f5e9", borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:"0.8rem", color:"#2d6a4f", lineHeight:1.55}}>
+            <div className="sektion" style={{fontSize:"0.85rem", lineHeight:1.7, color:"var(--text)"}}>
+              <div style={{background:"var(--haupt-flaeche)", borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:"0.8rem", color:"var(--haupt)", lineHeight:1.55}}>
                 💡 <strong>Tipp:</strong> Tippe oben links auf ⓘ: Im Info-Modus sind erklärbare Elemente gestrichelt markiert – antippen zeigt die Erklärung, statt die Aktion auszuführen. Alternativ einen Knopf gedrückt halten. Die Erklärung bleibt stehen, bis du irgendwo hintippst. Am PC erscheint sie auch beim Darüberfahren.
               </div>
               {[
@@ -7414,6 +7573,7 @@ export default function VokabelApp() {
                   {k:"Vokabelliste", v:"Alle gefilterten Vokabeln mit Score-Balken (grün = positiv, rot = negativ) und letztem Abfragedatum."},
                 ]},
                 {titel:"Einstellungen-Tab", inhalt:[
+                  {k:"Farbschema", v:"Sechs Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs und Dunkel – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
                   {k:"App aktualisieren", v:"„Prüfen“ sucht nach einer neuen App-Version. Wird eine gefunden, erscheint unten der Hinweis „Neue Version verfügbar“ – mit „Aktualisieren“ wird sie aktiv. Die App funktioniert auch offline."},
                   {k:"Gespeicherte Listen", v:"Zeigt, wie viele Listen aktuell auf diesem Gerät gespeichert sind."},
                 ]},
@@ -7422,9 +7582,9 @@ export default function VokabelApp() {
                   <div className="sektion-label" style={{marginBottom:8}}>{abschnitt.titel}</div>
                   <div className="karte">
                     {abschnitt.inhalt.map((zeile, i) => (
-                      <div key={i} style={{padding:"9px 14px", borderBottom: i < abschnitt.inhalt.length-1 ? "1px solid #e0dbd2" : "none"}}>
-                        <div style={{fontWeight:600, fontSize:"0.8rem", color:"#2d6a4f", marginBottom:2}}>{zeile.k}</div>
-                        <div style={{fontSize:"0.82rem", color:"#3b3832"}}>{zeile.v}</div>
+                      <div key={i} style={{padding:"9px 14px", borderBottom: i < abschnitt.inhalt.length-1 ? "1px solid var(--rahmen)" : "none"}}>
+                        <div style={{fontWeight:600, fontSize:"0.8rem", color:"var(--haupt)", marginBottom:2}}>{zeile.k}</div>
+                        <div style={{fontSize:"0.82rem", color:"var(--text)"}}>{zeile.v}</div>
                       </div>
                     ))}
                   </div>
@@ -7459,6 +7619,8 @@ export default function VokabelApp() {
                 </div>
               </div>
             </div>
+            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Farbschema</div>
+            {renderFarbschemata()}
             <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Gespeicherte Konfigurationen</div>
             {rasterEinstellung(rasterGroesse(einstellungen), slots.gespeichert.length, setzeRasterGroesse,
               "Plätze für gespeicherte Konfigurationen im Quiz- und Statistik-Tab", "Ist das Raster beim Speichern voll, kommt automatisch eine Zeile dazu.", "")}
@@ -7549,7 +7711,7 @@ export default function VokabelApp() {
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()} data-zuruecksetzen>
             <div className="modal-titel">Lernstand zurücksetzen?</div>
-            <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5, marginTop:0}}>
+            <p style={{fontSize:"0.9rem", color:"var(--text2)", lineHeight:1.5, marginTop:0}}>
               Die Scores von „{liste?.name}“ werden gelöscht – alle Vokabeln gelten danach als nie abgefragt. Die Vokabeln selbst bleiben.
             </p>
             <div className="karte" style={{marginBottom:12}}>
@@ -7585,7 +7747,7 @@ export default function VokabelApp() {
             <input {...ttFeld("Name der neuen Liste")} className="inp" value={modalInput} autoFocus
               onChange={e => { setModalInput(e.target.value); setModalFehler(""); }}
               onKeyDown={e => e.key === "Enter" && dupliziereListe()} />
-            <div style={{fontSize:"0.78rem", color:"#6b6560", marginTop:6}}>Die Kopie enthält alle Vokabeln und Spalten – die Lernstände beginnen neu.</div>
+            <div style={{fontSize:"0.78rem", color:"var(--text2)", marginTop:6}}>Die Kopie enthält alle Vokabeln und Spalten – die Lernstände beginnen neu.</div>
             {modalFehler && <div className="fehler">{modalFehler}</div>}
             <div className="modal-actions">
               <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
@@ -7598,7 +7760,7 @@ export default function VokabelApp() {
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Spalte umbenennen</div>
-            <div style={{fontSize:"0.82rem", color:"#6b6560", marginBottom:12}}>Typ: {editSpalteTyp}</div>
+            <div style={{fontSize:"0.82rem", color:"var(--text2)", marginBottom:12}}>Typ: {editSpalteTyp}</div>
             <label className="inp-label">Name</label>
             <input {...ttFeld("Neuer Name der Spalte")} className="inp" value={modalInput} autoFocus
               onChange={e => setModalInput(e.target.value)}
@@ -7637,7 +7799,7 @@ export default function VokabelApp() {
         <div className="overlay" onClick={() => setGruppenQuiz(null)}>
           <div className="modal" data-gruppen-quiz onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Quiz starten?</div>
-            <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
+            <p style={{fontSize:"0.9rem", color:"var(--text2)", lineHeight:1.5}}>
               {gruppenQuiz.ids.length} Vokabel{gruppenQuiz.ids.length !== 1 ? "n" : ""} aus „{gruppenQuiz.name}“
               ({STATISTIK_ARTEN.find(([a]) => a === gruppenQuiz.art)?.[1]}), schlechteste zuerst.
               {gruppenQuizPasst(gruppenQuiz)
@@ -7655,7 +7817,7 @@ export default function VokabelApp() {
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Vokabel löschen?</div>
-            <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
+            <p style={{fontSize:"0.9rem", color:"var(--text2)", lineHeight:1.5}}>
               Diese Vokabel wird dauerhaft gelöscht. Der Lernfortschritt geht dabei verloren.
             </p>
             <div className="modal-actions">
@@ -7722,7 +7884,7 @@ export default function VokabelApp() {
                   onClick={doAktualisieren}>
                   Aktualisieren · „{aktuellerSlot?.name}"
                 </button>
-                <div style={{fontSize:"0.78rem", color:"#9b9590", textAlign:"center", margin:"10px 0 6px"}}>
+                <div style={{fontSize:"0.78rem", color:"var(--text3)", textAlign:"center", margin:"10px 0 6px"}}>
                   oder als neue Konfiguration speichern:
                 </div>
               </>)}
@@ -7776,8 +7938,8 @@ export default function VokabelApp() {
                 onChange={e => setSlotUmbenennen(u => ({ ...u, name: e.target.value }))}
                 onFocus={e => e.target.select()}
                 onKeyDown={e => e.key === "Enter" && speichern()} />
-              {doppelt && <div style={{fontSize:"0.78rem", color:"#c0392b", marginTop:6}}>Diesen Namen gibt es schon.</div>}
-              <div style={{fontSize:"0.75rem", color:"#9b9590", marginTop:8}}>{kopie
+              {doppelt && <div style={{fontSize:"0.78rem", color:"var(--falsch)", marginTop:6}}>Diesen Namen gibt es schon.</div>}
+              <div style={{fontSize:"0.75rem", color:"var(--text3)", marginTop:8}}>{kopie
                 ? "Die Kopie übernimmt alle Einstellungen, beginnt aber mit einem eigenen Paket-Fortschritt. Sie kommt in die erste Spalte unter den untersten Eintrag im Raster."
                 : "Platz im Raster, Einstellungen und Fortschritt bleiben erhalten."}</div>
               <div className="modal-actions">
@@ -7792,7 +7954,7 @@ export default function VokabelApp() {
         <div className="overlay" onClick={() => setLoescheSlotNr(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Slot löschen?</div>
-            <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
+            <p style={{fontSize:"0.9rem", color:"var(--text2)", lineHeight:1.5}}>
               {`"${getSlotEintrag(loescheSlotNr.typ, loescheSlotNr.id)?.name || 'Dieser Eintrag'}" wird dauerhaft gelöscht.`}
               {Object.keys(slotSFAlle(getSlotEintrag(loescheSlotNr.typ, loescheSlotNr.id))).length > 0 ? " Der Session-Fortschritt geht verloren." : ""}
             </p>
@@ -7809,7 +7971,7 @@ export default function VokabelApp() {
           <div className="overlay" onClick={() => setGruppenAenderungsDialog(false)}>
             <div className="modal" onClick={e => e.stopPropagation()}>
               <div className="modal-titel">Vokabelgruppe geändert</div>
-              <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
+              <p style={{fontSize:"0.9rem", color:"var(--text2)", lineHeight:1.5}}>
                 Die Vokabelgruppe wurde seit dem Laden von „{slotName}" geändert.
               </p>
               <div className="modal-actions" style={{flexDirection:"column", gap:8}}>
@@ -7823,16 +7985,16 @@ export default function VokabelApp() {
                   setModalInput(slotNamenVorschlag());
                   setModal("slot-speichern");
                 }}>Neu speichern</button>
-                <button {...tt("Quiz mit der geänderten Auswahl starten, ohne zu speichern")} className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#6b6560"}} onClick={() => {
+                <button {...tt("Quiz mit der geänderten Auswahl starten, ohne zu speichern")} className="btn btn-ghost" style={{fontSize:"0.82rem", color:"var(--text2)"}} onClick={() => {
                   const newId = erstelleVerlaufEintrag();
                   setGruppenAenderungsDialog(false);
                   starteQuiz(true, {typ:'verlauf', id:newId});
                 }}>Fortfahren ohne Speichern</button>
-                <button {...tt("Auswahl auf den gespeicherten Stand zurücksetzen")} className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#6b6560"}} onClick={() => {
+                <button {...tt("Auswahl auf den gespeicherten Stand zurücksetzen")} className="btn btn-ghost" style={{fontSize:"0.82rem", color:"var(--text2)"}} onClick={() => {
                   ladeSlot(aktiverSlot.typ, aktiverSlot.id);
                   setGruppenAenderungsDialog(false);
                 }}>Zurücksetzen</button>
-                <button {...tt("Schließen, ohne zu starten")} className="btn btn-ghost" style={{fontSize:"0.82rem", color:"#9b9590"}} onClick={() => setGruppenAenderungsDialog(false)}>Abbrechen</button>
+                <button {...tt("Schließen, ohne zu starten")} className="btn btn-ghost" style={{fontSize:"0.82rem", color:"var(--text3)"}} onClick={() => setGruppenAenderungsDialog(false)}>Abbrechen</button>
               </div>
             </div>
           </div>
@@ -7842,7 +8004,7 @@ export default function VokabelApp() {
         <div className="overlay" onClick={() => setSessionUeberschreibenModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Session überschreiben?</div>
-            <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
+            <p style={{fontSize:"0.9rem", color:"var(--text2)", lineHeight:1.5}}>
               Es gibt bereits eine aktive Session mit einer anderen Konfiguration. Soll diese überschrieben werden?
             </p>
             <div className="modal-actions">
@@ -7852,11 +8014,42 @@ export default function VokabelApp() {
           </div>
         </div>
       )}
+      {modal === "schema-umbenennen" && schemaMenueId && (
+        <div className="overlay" onClick={() => setModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">Farbschema umbenennen</div>
+            <input {...ttFeld("Neuer Name des Farbschemas")} className="inp" value={modalInput} autoFocus
+              onChange={e => { setModalInput(e.target.value); setModalFehler(""); }} />
+            {modalFehler && <div className="fehler">{modalFehler}</div>}
+            <div className="modal-actions">
+              <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+              <button {...tt("Neuen Namen speichern")} className="btn btn-primary" onClick={() => {
+                const name = modalInput.trim();
+                if (!name) { setModalFehler("Bitte einen Namen eingeben."); return; }
+                if ([...FARB_VORLAGEN, ...eigeneSchemata].some(x => x.id !== schemaMenueId && x.name.toLowerCase() === name.toLowerCase())) { setModalFehler("Name bereits vorhanden."); return; }
+                aendereEigenesSchema(schemaMenueId, () => ({ name })); setModal(null); setSchemaMenueId(null);
+              }}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {modal === "schema-loeschen" && schemaMenueId && (
+        <div className="overlay" onClick={() => setModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">Farbschema löschen?</div>
+            <p style={{fontSize:"0.9rem", color:"var(--text2)", lineHeight:1.5}}>„{eigeneSchemata.find(x => x.id === schemaMenueId)?.name}“ wird gelöscht. Ist es gerade gewählt, gilt danach wieder „Natur“.</p>
+            <div className="modal-actions">
+              <button {...tt("Schließen, ohne etwas zu löschen")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+              <button {...tt("Farbschema endgültig löschen")} className="btn btn-danger" onClick={() => loescheSchema(schemaMenueId)}>Löschen</button>
+            </div>
+          </div>
+        </div>
+      )}
       {modal === "loeschen" && (
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Liste löschen?</div>
-            <p style={{fontSize:"0.9rem", color:"#6b6560", lineHeight:1.5}}>
+            <p style={{fontSize:"0.9rem", color:"var(--text2)", lineHeight:1.5}}>
               {listeMenueId ? <>„{listenIndex.find(l => l.id === listeMenueId)?.name}“ wird</> : "Diese Liste wird"} dauerhaft gelöscht. Das kann nicht rückgängig gemacht werden.
             </p>
             <div className="modal-actions">
@@ -7870,7 +8063,7 @@ export default function VokabelApp() {
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-titel">JSON exportieren</div>
-            <p style={{fontSize:"0.85rem", color:"#6b6560", marginBottom:14}}>
+            <p style={{fontSize:"0.85rem", color:"var(--text2)", marginBottom:14}}>
               {jsonExportIds.length === 1 ? "1 Liste" : `${jsonExportIds.length} Listen`} — was soll enthalten sein?
             </p>
             {[
@@ -7885,7 +8078,7 @@ export default function VokabelApp() {
                   disabled={pflicht}
                   onChange={e => !pflicht && setJsonExportOptionen(prev => ({...prev, [key]: e.target.checked}))}
                   style={{width:18, height:18}} />
-                {label}{pflicht && <span style={{fontSize:"0.75rem", color:"#aaa"}}> (immer)</span>}
+                {label}{pflicht && <span style={{fontSize:"0.75rem", color:"var(--text3)"}}> (immer)</span>}
               </label>
             ))}
             <div className="modal-actions">
@@ -7899,7 +8092,7 @@ export default function VokabelApp() {
       {zuklappHinweis && !quiz && (
         <button {...tt("Bereich zuklappen")} onClick={klappeFreieZu}
           style={{position:"fixed", left:"50%", bottom:16, transform:"translateX(-50%)", zIndex:50,
-            background:"rgba(45,106,79,0.92)", color:"#fff", border:"none", borderRadius:20, padding:"7px 14px",
+            background:"var(--haupt)", color:"var(--auf-haupt)", border:"none", borderRadius:20, padding:"7px 14px",
             fontSize:"0.75rem", fontWeight:600, fontFamily:"inherit", boxShadow:"0 2px 10px rgba(0,0,0,0.2)", cursor:"pointer", whiteSpace:"nowrap"}}>
           ▲ Weiter ziehen oder hier tippen zum Zuklappen
         </button>

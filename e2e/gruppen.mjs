@@ -65,8 +65,8 @@ const zz = Object.fromEntries(z.map(r => [r.text, r]));
 console.log("     Zeilen:", z.map(r => `${r.text}:${r.rechts}`).join(" | "));
 ok(zz.aller.rechts === "✓ +3" && zz.venir.rechts === "✓ +4", "Gelernte rechts mit „✓ +3“ / „✓ +4“");
 ok(zz.partir.rechts === "+2" && zz.voir.rechts === "-2", "Andere ohne Häkchen (+2, −2)");
-ok(zz.aller.bg.includes("232, 245, 233") && zz.venir.bg.includes("232, 245, 233"), "Gelernte Zeilen hellgrün");
-ok(zz.voir.bg.includes("253, 236, 236"), "Negative Zeile hellrot");
+ok(zz.aller.bg.includes("--haupt-flaeche") && zz.venir.bg.includes("--haupt-flaeche"), "Gelernte Zeilen hellgrün (Farbrolle Haupt-Fläche)");
+ok(zz.voir.bg.includes("--falsch-flaeche"), "Negative Zeile hellrot (Farbrolle Falsch-Fläche)");
 ok(!zz.partir.bg && !zz.sortir.bg, "In Arbeit / nie: ohne Hintergrund");
 // Null bei 5/(5+3) = 62.5 %; aller voll (3/8 = 37.5 %), venir gekappt (37.5 %), partir 2/8 = 25 %, voir 2/8 links
 ok(z.every(r => r.nullLinie === "62.5%"), "Nullpunkt in allen Zeilen bei 62.5 %");

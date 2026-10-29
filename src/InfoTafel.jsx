@@ -89,18 +89,18 @@ export default function InfoTafel() {
           fontFamily: "system-ui,sans-serif",
         }}>
           <div role="status" style={{
-            background: "rgba(28,24,20,0.95)", color: "#fff", borderRadius: 14,
+            background: "rgba(28,24,20,0.95)", color: "var(--auf-haupt)", borderRadius: 14,
             padding: "12px 14px 8px", boxShadow: "0 6px 24px rgba(0,0,0,0.3)", boxSizing: "border-box",
           }}>
             <div style={{ fontSize: mitMenue ? "1.05rem" : "0.95rem", fontWeight: mitMenue ? 700 : 400, lineHeight: 1.5, overflowWrap: "anywhere" }}>{info.text}</div>
-            <div style={{ fontSize: "0.7rem", color: "#c0bcb7", textAlign: "right", marginTop: 6 }}>Antippen zum Schließen</div>
+            <div style={{ fontSize: "0.7rem", color: "var(--text4)", textAlign: "right", marginTop: 6 }}>Antippen zum Schließen</div>
           </div>
           {mitMenue && (
             <div data-info-menue style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {info.aktionen.map(a => (
                 <button key={a.label} data-info-aktion={a.label} onClick={() => { setInfo(null); a.fn(); }} style={{
-                  background: "#fff", color: a.gefahr ? "#c0392b" : "#2d6a4f", textAlign: "left", whiteSpace: "nowrap",
-                  border: `1.5px solid ${a.gefahr ? "#e8a39b" : "#a8d5be"}`, borderRadius: 22, padding: "11px 18px",
+                  background: "var(--karte)", color: a.gefahr ? "var(--falsch)" : "var(--haupt)", textAlign: "left", whiteSpace: "nowrap",
+                  border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: "11px 18px",
                   fontSize: "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: "pointer",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.22)",
                 }}>{a.label}</button>
@@ -112,7 +112,7 @@ export default function InfoTafel() {
       {modus && (
         <button data-info-schalter onClick={schalteInfoModus} style={{
           position: "fixed", left: 12, bottom: 12, zIndex: 10002,
-          background: "#2d6a4f", color: "#fff", border: "none", borderRadius: 20,
+          background: "var(--haupt)", color: "var(--auf-haupt)", border: "none", borderRadius: 20,
           padding: "8px 14px", fontSize: "0.8rem", fontWeight: 600, fontFamily: "system-ui,sans-serif",
           boxShadow: "0 2px 10px rgba(0,0,0,0.25)", cursor: "pointer",
         }}>ⓘ Info-Modus beenden</button>
