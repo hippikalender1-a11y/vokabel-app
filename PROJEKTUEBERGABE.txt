@@ -1573,6 +1573,10 @@ ABFRAGEARTEN GETRENNT (Ü|D|A): quizArt (State) = quizAbfrageArt; quizArtStash =
   bei Ü, kein Diktat-Knopf mehr, kein Akzente-Knopf in den Spalten. Mischen von
   Akzent- und normalen Antworten entfällt (Test akzent_mischen entfernt).
   Test: e2e/arten.mjs.
+MINI-KREISE Ü/D/A in den Raster-Kacheln (renderSlotBereiche → lernstand(x),
+  MiniKreis): Lernfortschritt je Art (lernProzent über statistikSicht der Vokabeln
+  der Konfiguration), data-mini-kreis/data-pct; antippen → onLaden(typ, id, art)
+  (ladeSlot bzw. ladeSlotStatistik mit Art). Aktive Art gefüllt.
 GRUPPEN-QUIZ → ZURÜCK: quiz.ausStatistik (einmalige Runde via gruppe, Fallback
   per setQuiz im Start-Effekt). Auswertung (ohne Session, Quiz und Diktat):
   Hauptknopf "📊 Zurück zur Statistik" (data-zurueck-statistik) und Schließen

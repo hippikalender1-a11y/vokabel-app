@@ -526,6 +526,18 @@ function lernProzent(scores, schwelle) {
   if (!scores.length || schwelle <= 0) return 0;
   return scores.reduce((s, sc) => s + Math.min(1, Math.max(0, (sc ?? 0) / schwelle)), 0) / scores.length * 100;
 }
+// Mini-Kreis im Raster: Lernfortschritt einer Abfrageart (Ü/D/A); aus = keine passenden Vokabeln
+function MiniKreis({ pct, buchstabe, aktiv, aus }) {
+  const r = 9, u = 2 * Math.PI * r;
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" style={{display:"block", opacity: aus ? 0.35 : 1}}>
+      <circle cx="12" cy="12" r={r} fill={aktiv ? "#2d6a4f" : "#fff"} stroke="#d6d2cb" strokeWidth="3"/>
+      {!aus && pct > 0 && <circle cx="12" cy="12" r={r} fill="none" stroke={aktiv ? "#95d5b2" : "#2d6a4f"} strokeWidth="3"
+        strokeDasharray={`${u * Math.min(100, pct) / 100} ${u}`} transform="rotate(-90 12 12)" strokeLinecap={pct >= 100 ? "butt" : "round"}/>}
+      <text x="12" y="12.5" textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="800" fill={aktiv ? "#fff" : "#2d6a4f"}>{buchstabe}</text>
+    </svg>
+  );
+}
 // Score für den Gelernt-Status: Diktat hat einen eigenen Fortschritt
 function gelerntScore(v, diktat) { return (diktat ? v.diktatFortschritt?.score : v.fortschritt?.score) ?? -Infinity; }
 
@@ -768,6 +780,9 @@ const CSS = `
   .raster-chip{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-height:44px;min-width:0;text-align:left;padding:6px 10px;}
   .raster-name{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .raster-fortschritt{font-size:0.68rem;font-weight:600;opacity:0.8;}
+  .raster-fuss{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;margin-top:3px;}
+  .mini-kreise{display:flex;gap:3px;}
+  .mini-kreise > span{cursor:pointer;border-radius:50%;}
   .raster-leer{min-height:44px;border:1.5px solid #e0dbd2;border-radius:8px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
   .slot-kopf-knoepfe .slot-chip{padding:2px 9px;font-size:0.7rem;}
   .score-badge{font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:10px;}
@@ -2344,10 +2359,11 @@ export default function VokabelApp() {
     }
   }
 
-  function ladeSlotStatistik(typ, id) {
+  function ladeSlotStatistik(typ, id, art = null) {
     const eintrag = getSlotEintrag(typ, id);
     if (!eintrag || !eintrag.konfiguration) return;
     const k = eintrag.konfiguration;
+    if (art) setStatistikArt(art);
     setStatistikListenIds(k.listenIds?.length > 0 ? new Set(k.listenIds) : null);
     setStatistikBereichTyp(k.bereichTyp || "alle");
     setStatistikCheckboxAuswahl(new Set(k.vokabelAuswahl || []));
@@ -3141,6 +3157,20 @@ export default function VokabelApp() {
 
   // Chips "Gespeichert" (sortierbar) und "Verlauf" (automatisch, letzte 5) – Quiz- und Statistik-Tab
   function renderSlotBereiche(neuChip, onLaden, slotRef, abstand = 0) {
+    // Lernfortschritt je Art für die Mini-Kreise (jede Liste nur einmal lesen)
+    const listenCache = new Map();
+    const listeVon = id => { if (!listenCache.has(id)) listenCache.set(id, lsGet(SK.liste(id))); return listenCache.get(id); };
+    const schwelle = einstellungen.gelerntSchwelle ?? 0;
+    const aktArt = tab === "statistik" ? statistikArt : quizArt;
+    const lernstand = x => {
+      const k = x.konfiguration || {};
+      let voks = (k.listenIds || []).flatMap(id => (listeVon(id)?.vokabeln || []).map(v => ({ ...v, _key: `${id}__${v.id}` })));
+      if (k.bereichTyp === "bereich" && k.vokabelAuswahl?.length) { const a = new Set(k.vokabelAuswahl); voks = voks.filter(v => a.has(v._key)); }
+      return Object.fromEntries(QUIZ_ARTEN.map(a => {
+        const sicht = statistikSicht(voks, a);
+        return [a, { pct: lernProzent(sicht.map(v => v.fortschritt?.score), schwelle), aus: sicht.length === 0 }];
+      }));
+    };
     const verlauf = slots.verlauf.filter(slotSichtbar);
     const label = {fontSize:"0.72rem", color:"#9b9590", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em"};
     // Raster: alle Einträge (auch andere Sprache) belegen ihren Platz; sichtbar nur die der gewählten Sprache
@@ -3163,9 +3193,23 @@ export default function VokabelApp() {
       const ziel = slotDragZiel === key && slotDragId && slotDragId !== x?.id;
       if (x && slotSichtbar(x)) {
         const sf = sfVon(x);
+        const ls = lernstand(x);
         const inhalt = (<>
           <span className="raster-name">{x.name}</span>
-          {sf && <span className="raster-fortschritt">▶ {(sf.abgefragt || []).length}/{sf.gesamt || 0}</span>}
+          <span className="raster-fuss">
+            <span className="mini-kreise" data-mini-kreise>
+              {QUIZ_ARTEN.map(a => {
+                const text = `${ABFRAGE_ART_NAMEN[a]}: ${ls[a].aus ? "keine passenden Vokabeln" : `${Math.round(ls[a].pct)} % gelernt`}${slotSortModus || ls[a].aus ? "" : ` – antippen: in ${ABFRAGE_ART_NAMEN[a]} öffnen`}`;
+                return (
+                  <span key={a} data-mini-kreis={a} data-pct={Math.round(ls[a].pct)} {...ttFeld(text)}
+                    onClick={slotSortModus || ls[a].aus ? undefined : e => { e.stopPropagation(); onLaden('gespeichert', x.id, a); }}>
+                    <MiniKreis pct={ls[a].pct} buchstabe={ART_KURZ[a]} aus={ls[a].aus} aktiv={slotRef?.id === x.id && aktArt === a}/>
+                  </span>
+                );
+              })}
+            </span>
+            {sf && <span className="raster-fortschritt">▶ {(sf.abgefragt || []).length}/{sf.gesamt || 0}</span>}
+          </span>
         </>);
         zellen.push(slotSortModus ? (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} className="slot-chip belegt raster-chip"
@@ -7060,7 +7104,7 @@ export default function VokabelApp() {
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl."},
                   {k:"Vokabel-Auswahl [Alle]", v:"Alle Vokabeln der gewählten Listen werden abgefragt."},
                   {k:"Vokabel-Auswahl [Bereich]", v:"Öffnet eine Checkbox-Liste. Einzelne Vokabeln an-/abwählen. [Von–Bis] ermöglicht Bereichsauswahl per 2 Klicks."},
-                  {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Rechts in der Zeile steht der Abfrage-Modus der gewählten Art – antippen öffnet die Einstellungen. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC oder Tastatur. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
+                  {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. In den Kacheln der gespeicherten Konfigurationen zeigen drei Mini-Kreise Ü, D und A den Lernfortschritt je Art (grau: keine passenden Vokabeln, gefüllt: gerade gewählte Art); antippen lädt die Konfiguration direkt in dieser Art – in der Statistik zeigt es die Statistik dieser Art. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Rechts in der Zeile steht der Abfrage-Modus der gewählten Art – antippen öffnet die Einstellungen. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC oder Tastatur. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
                   {k:"Akzente", v:"Eigene Abfrageart (A): Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Ob auch Wörter ohne Akzent abgefragt werden, legst du beim Schwierigkeitsgrad fest."},
                   {k:"Reihenfolge", v:"Zufällig / Schlechteste (nach Score sortiert) / Listen-Nr. (Originalreihenfolge). Score-Filter: nur Vokabeln bis zu einem bestimmten Score zeigen. Unbeantwortete zuerst: noch nie abgefragte Vokabeln werden vorgezogen."},
                   {k:"Einstellungen", v:"Lautsprache: Auto-Play und welche Spalten vorgelesen werden. Schwierigkeitsgrad: Einfach oder Schwer. Darunter legst du per Haken fest, was in welcher Stufe gilt: fehlende Akzente beim Tippen als richtig werten, Punktabzug bei „Lösung anzeigen“, im Akzent-Modus auch Wörter ohne Akzent abfragen, Buchstaben mit Akzent hervorheben, die Zahl der noch fehlenden Akzente anzeigen (z. B. 2 / 3) und richtige Antworten automatisch übernehmen (sonst „Prüfen“)."},
