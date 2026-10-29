@@ -29,8 +29,13 @@ const variable = n => page.evaluate(n => getComputedStyle(document.documentEleme
 const mitte = sel => page.evaluate(sel => { const r = document.querySelector(sel).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, sel);
 const rechtsklick = async (x, y) => { await page.evaluate((x, y) => document.elementFromPoint(x, y).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: x, clientY: y })), x, y); await sleep(300); };
 const feldZeilen = () => page.evaluate(() => [...document.querySelectorAll("[data-farbfeld-zeile]")].map(z => z.innerText.trim().replace(/\s+/g, " ")));
-const setzeFarbe = (rolle, wert) => page.evaluate((rolle, wert) => { const i = document.querySelector(`[data-farbfeld-rolle="${rolle}"]`);
-  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, wert); i.dispatchEvent(new Event("input", { bubbles: true })); }, rolle, wert);
+// Farbe im Farbkreis-Dialog per Hex-Feld setzen (live) und anwenden
+const farbradHex = async (wert, anwenden = true) => {
+  await page.evaluate(w => { const i = document.querySelector("[data-farbrad-hex]"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, w); i.dispatchEvent(new Event("input", { bubbles: true })); }, wert);
+  await new Promise(r => setTimeout(r, 200));
+  if (anwenden) { await page.click("[data-farbrad-anwenden]"); await new Promise(r => setTimeout(r, 300)); }
+};
+const setzeFarbe = async (rolle, wert) => { await page.evaluate(r => document.querySelector(`[data-farbfeld-zeile="${r}"]`).click(), rolle); await sleep(300); await farbradHex(wert); };
 const eigene = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}").eigeneSchemata || []);
 
 await page.goto(URL);
@@ -59,8 +64,27 @@ let zeilen = await feldZeilen();
 console.log("     Farbfeld Knopf:", zeilen.join(" | "));
 ok(zeilen.some(z => /Hintergrund · Hauptfarbe$/.test(z)) && zeilen.some(z => /Schrift · Schrift auf Hauptfarbe/.test(z)), "Knopf: Hintergrund Hauptfarbe, Schrift auf Hauptfarbe");
 ok(!(await page.$('[role="status"]')), "keine Erklärung/kein Menü im Farbmodus");
-await setzeFarbe("haupt", "#aa0000"); await sleep(200);
-ok(await variable("haupt") === "#aa0000", "Hauptfarbe geändert: sofort sichtbar");
+// Farbkreis: groß, Regler Helligkeit/Sättigung, live, Abbrechen
+await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="haupt"]').click()); await sleep(300);
+const kreisGr = await page.evaluate(() => { const c = document.querySelector("[data-farbrad-kreis]"); return c ? Math.round(c.getBoundingClientRect().width) : 0; });
+ok(kreisGr >= 280 && await page.$("[data-farbrad-hell]") && await page.$("[data-farbrad-saett]"), `Farbkreis groß (${kreisGr} px) mit Reglern Helligkeit und Sättigung`);
+const kr = await page.evaluate(() => { const r = document.querySelector("[data-farbrad-kreis]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, r: r.width / 2 }; });
+await page.mouse.move(kr.x + kr.r * 0.9, kr.y); await page.mouse.down(); await page.mouse.move(kr.x + kr.r * 0.9, kr.y + 2); await sleep(150);
+const amRand = await variable("haupt");
+await page.mouse.move(kr.x + 2, kr.y + 1); await sleep(150);
+const kreisMitte = await variable("haupt");
+await page.mouse.up();
+console.log("     Kreis Rand/Mitte:", amRand, kreisMitte);
+const satt = h => { const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); return (Math.max(r, g, b) - Math.min(r, g, b)) / Math.max(1, r, g, b); };
+ok(amRand !== "#2d6a4f" && satt(amRand) > 0.8 && satt(kreisMitte) < 0.1, "Ziehen im Kreis: App färbt sich live um, außen kräftig, Mitte kaum gesättigt");
+await page.click("[data-farbrad-abbrechen]"); await sleep(300);
+ok(await variable("haupt") === "#2d6a4f" && !(await page.$("[data-farbrad]")), "Abbrechen: alte Farbe wieder da");
+await setzeFarbe("haupt", "#aa0000");
+ok(await variable("haupt") === "#aa0000", "Anwenden: Hauptfarbe geändert");
+await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="haupt"]').click()); await sleep(300);
+ok(await page.evaluate(() => [...document.querySelectorAll("[data-farbrad-verlauf] button")].map(b => b.title).join()) === "#aa0000", "Verlauf: zuletzt verwendete Farbe");
+if (process.env.SHOT) await page.screenshot({ path: "farbrad_shot.png" });
+await page.click("[data-farbrad-abbrechen]"); await sleep(200);
 await clickText("[data-farbfeld] button", "Schließen", true);
 
 // Mini-Kreis in der Kopfzeile per Finger: Umkreis erfasst Ring und Buchstabe
@@ -74,6 +98,7 @@ if (process.env.SHOT) await page.screenshot({ path: "farbfeld_shot.png" });
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-farbfeld] .farb-zeile")].length) >= 3, "mehrere Teile im Umkreis zur Auswahl");
 await page.evaluate(() => document.querySelector("[data-farbfeld-zeile]").click()); await sleep(150);
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-farbmodus-ui] div")].some(d => d.style.border.includes("dashed"))), "gewählte Zeile: Element wird gestrichelt hervorgehoben");
+if (await page.$("[data-farbrad]")) { await page.click("[data-farbrad-abbrechen]"); await sleep(200); }
 await clickText("[data-farbfeld] button", "Schließen", true);
 
 // Zurücksetzen: verwirft und beendet

@@ -783,6 +783,95 @@ function schemaVon(einst) {
   const id = einst?.farbschema || "natur";
   return (einst?.eigeneSchemata || []).find(x => x.id === id) || FARB_VORLAGEN.find(x => x.id === id) || FARB_VORLAGEN[0];
 }
+// ── Farbwähler: großer Farbkreis (außen kräftig, zur Mitte weniger gesättigt), Helligkeitsregler,
+// Vorher/Neu, Hex-Eingabe, Verlauf der letzten Farben; beiLive(hex) beim Ziehen, Anwenden/Abbrechen ──
+function hexZuHsv(hex) {
+  const [r, g, b] = hexZuRgb(hex).map(v => v / 255);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let h = 0;
+  if (d) h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: (h * 60 + 360) % 360, s: max ? d / max : 0, v: max };
+}
+function hsvZuHex(h, s, v) {
+  const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+  return "#" + [f(5), f(3), f(1)].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
+}
+function FarbRad({ titel, start, verlauf, beiLive, beiAnwenden, beiAbbrechen }) {
+  const [hsv, setHsv] = useState(() => hexZuHsv(start));
+  const [hexText, setHexText] = useState(start);
+  const canvasRef = useRef(null);
+  const groesse = Math.min(300, (typeof window !== "undefined" ? window.innerWidth : 360) - 64);
+  const hex = hsvZuHex(hsv.h, hsv.s, hsv.v);
+  // Kreis einmal zeichnen (volle Helligkeit; Helligkeit regelt der Schieber)
+  useEffect(() => {
+    const c = canvasRef.current; if (!c) return;
+    const dpr = window.devicePixelRatio || 1, n = Math.round(groesse * dpr);
+    c.width = n; c.height = n;
+    const ctx = c.getContext("2d"), bild = ctx.createImageData(n, n), r = n / 2;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const dx = x - r, dy = y - r, dist = Math.hypot(dx, dy), i = (y * n + x) * 4;
+      if (dist > r) { bild.data[i + 3] = 0; continue; }
+      const h = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+      const [rr, gg, bb] = hexZuRgb(hsvZuHex(h, dist / r, 1));
+      bild.data[i] = rr; bild.data[i + 1] = gg; bild.data[i + 2] = bb; bild.data[i + 3] = 255;
+    }
+    ctx.putImageData(bild, 0, 0);
+  }, [groesse]);
+  const setze = (neu, live = true) => { setHsv(neu); const h = hsvZuHex(neu.h, neu.s, neu.v); setHexText(h); if (live) beiLive(h); };
+  const greife = e => {
+    const rect = canvasRef.current.getBoundingClientRect(), r = rect.width / 2;
+    const dx = e.clientX - rect.left - r, dy = e.clientY - rect.top - r;
+    setze({ ...hsv, h: (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360, s: Math.min(1, Math.hypot(dx, dy) / r) });
+  };
+  const winkel = hsv.h * Math.PI / 180, mx = groesse / 2 + Math.cos(winkel) * hsv.s * groesse / 2, my = groesse / 2 + Math.sin(winkel) * hsv.s * groesse / 2;
+  return (
+    <div className="farbfeld-hintergrund" style={{zIndex:10006, alignItems:"center"}} data-farbmodus-ui>
+      <div className="farbrad" data-farbrad onClick={e => e.stopPropagation()}>
+        <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:10}}>
+          <span style={{flex:1, fontWeight:800, color:"var(--text)", fontSize:"0.95rem"}}>{titel}</span>
+          <span title="vorher" style={{width:34, height:26, borderRadius:7, background:start, border:"1px solid var(--rahmen)"}}/>
+          <span style={{color:"var(--text3)"}}>→</span>
+          <span title="neu" data-farbrad-neu style={{width:34, height:26, borderRadius:7, background:hex, border:"1px solid var(--rahmen)"}}/>
+        </div>
+        <div style={{position:"relative", width:groesse, height:groesse, margin:"0 auto", touchAction:"none"}}>
+          <canvas ref={canvasRef} data-farbrad-kreis style={{width:groesse, height:groesse, display:"block", borderRadius:"50%", filter:`brightness(${Math.max(0.15, hsv.v)})`, cursor:"crosshair"}}
+            onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); greife(e); }}
+            onPointerMove={e => { if (e.buttons || e.pointerType === "touch") greife(e); }}/>
+          <span style={{position:"absolute", left:mx - 11, top:my - 11, width:22, height:22, borderRadius:"50%", border:"3px solid #fff", boxShadow:"0 0 0 1.5px rgba(0,0,0,0.6)", background:hex, pointerEvents:"none"}}/>
+        </div>
+        <div style={{display:"flex", alignItems:"center", gap:10, margin:"14px 0 6px"}}>
+          <span style={{fontSize:"0.75rem", color:"var(--text2)", width:62}}>Helligkeit</span>
+          <input type="range" min={0} max={100} value={Math.round(hsv.v * 100)} data-farbrad-hell
+            onChange={e => setze({ ...hsv, v: e.target.value / 100 })}
+            style={{flex:1, height:26, accentColor:hex, background:`linear-gradient(to right, #000, ${hsvZuHex(hsv.h, hsv.s, 1)})`, borderRadius:13, WebkitAppearance:"none", appearance:"none"}}/>
+        </div>
+        <div style={{display:"flex", alignItems:"center", gap:10, margin:"6px 0"}}>
+          <span style={{fontSize:"0.75rem", color:"var(--text2)", width:62}}>Sättigung</span>
+          <input type="range" min={0} max={100} value={Math.round(hsv.s * 100)} data-farbrad-saett
+            onChange={e => setze({ ...hsv, s: e.target.value / 100 })}
+            style={{flex:1, height:26, accentColor:hex, background:`linear-gradient(to right, ${hsvZuHex(hsv.h, 0, hsv.v)}, ${hsvZuHex(hsv.h, 1, hsv.v)})`, borderRadius:13, WebkitAppearance:"none", appearance:"none"}}/>
+        </div>
+        <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8}}>
+          <span style={{fontSize:"0.75rem", color:"var(--text2)", width:62}}>Hex</span>
+          <input className="inp" data-farbrad-hex value={hexText} style={{flex:1, padding:"6px 10px", fontFamily:"monospace"}}
+            onChange={e => { const t = e.target.value.trim(); setHexText(t); if (/^#?[0-9a-f]{6}$/i.test(t)) { const h = (t.startsWith("#") ? t : "#" + t).toLowerCase(); setHsv(hexZuHsv(h)); beiLive(h); } }}/>
+        </div>
+        {verlauf.length > 0 && (<>
+          <div style={{fontSize:"0.72rem", color:"var(--text2)", margin:"6px 0 4px"}}>Zuletzt verwendet</div>
+          <div style={{display:"flex", flexWrap:"wrap", gap:6, marginBottom:6}} data-farbrad-verlauf>
+            {verlauf.map(f => <button key={f} title={f} onClick={() => { setHsv(hexZuHsv(f)); setHexText(f); beiLive(f); }}
+              style={{width:30, height:30, borderRadius:8, background:f, border: f === hex ? "3px solid var(--text)" : "1px solid var(--rahmen)", cursor:"pointer", padding:0}}/>)}
+          </div>
+        </>)}
+        <div className="modal-actions" style={{marginTop:10}}>
+          <button className="btn btn-ghost" data-farbrad-abbrechen onClick={beiAbbrechen}>Abbrechen</button>
+          <button className="btn btn-primary" data-farbrad-anwenden onClick={() => beiAnwenden(hex)}>Anwenden</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 let CSS = "";
 const CSS_BASIS = `
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -881,6 +970,9 @@ const CSS_BASIS = `
   .farb-streifen > span{flex:1;border-radius:4px;border:1px solid rgba(0,0,0,0.08);}
   .farb-name{font-size:0.78rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .farb-zeile{display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--flaeche);cursor:pointer;}
+  .farb-tupfer{width:42px;height:32px;border:1px solid var(--rahmen);border-radius:8px;flex-shrink:0;box-shadow:inset 0 0 0 2px var(--karte);}
+  .farbrad{width:calc(100% - 24px);max-width:380px;max-height:92vh;overflow-y:auto;background:var(--karte);border-radius:16px;padding:14px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.3);font-family:system-ui,sans-serif;box-sizing:border-box;}
+  .farbrad input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid rgba(0,0,0,0.5);box-shadow:0 1px 4px rgba(0,0,0,0.3);}
   .farb-zeile input[type=color]{width:42px;height:32px;border:1px solid var(--rahmen);border-radius:8px;padding:2px;background:var(--karte);flex-shrink:0;}
   .gelernt-blitz{animation:gelerntBlitz 1s ease-out;}
   @keyframes gelerntBlitz{0%,35%{background:var(--gelb-zart);border-color:var(--gelb);box-shadow:0 0 0 4px var(--gelb-zart),0 0 22px var(--gelb-zart);}100%{box-shadow:0 0 0 0 transparent;}}
@@ -1015,6 +1107,7 @@ export default function VokabelApp() {
   const [farbMarke, setFarbMarke] = useState(null);                 // Rechteck des hervorgehobenen Elements
   const [farbName, setFarbName] = useState(null);                   // Name beim Übernehmen einer Vorlage
   const farbModusRef = useRef(false);
+  const [farbRad, setFarbRad] = useState(null);                     // {rolle, titel, start, basis, ziel: "vorschau"|schemaId}
   farbModusRef.current = farbModus;
   const [schemaMenueId, setSchemaMenueId] = useState(null);         // Schema für Umbenennen / Löschen
   // Farbschema: Farben je Rolle (CSS-Variablen + F für SVG); vor dem Laden der Einstellungen aus dem Speicher
@@ -3131,7 +3224,7 @@ export default function VokabelApp() {
   function sessionAuswertungSeite(q, knoepfe, schliessen) {
     return (
       <>
-        <style>{CSS}</style>{farbModusUI}
+        <style>{CSS}</style>{farbModusUI}{farbRadUI}
         <div className="app">
           <div className="topbar">
             <button {...tt("Schließen – zurück zur Übersicht")} className="topbar-back" onClick={schliessen}>Schließen</button>
@@ -3325,14 +3418,14 @@ export default function VokabelApp() {
               <button className="btn btn-primary btn-sm" data-schema-fertig onClick={() => setSchemaBearbeiten(null)} {...tt("Bearbeiten beenden – die Farben sind schon gespeichert")}>Fertig</button>
             </div>
             {FARB_ROLLEN.map(([rolle, name, sub]) => (
-              <label key={rolle} className="farb-zeile" {...ttFeld(`${name}${sub ? " – " + sub : ""}: antippen, um die Farbe zu wählen`)}>
-                <input type="color" data-farbrolle={rolle} value={vollHex(bearb.farben[rolle])}
-                  onChange={e => { const v = e.target.value; aendereEigenesSchema(bearb.id, x => ({ farben: { ...x.farben, [rolle]: v } })); }}/>
+              <div key={rolle} className="farb-zeile" data-farbrolle={rolle} onClick={() => oeffneFarbRad(rolle, name, bearb.farben, bearb.id)}
+                {...ttFeld(`${name}${sub ? " – " + sub : ""}: antippen, um die Farbe im Farbkreis zu wählen`)}>
+                <span className="farb-tupfer" style={{background: bearb.farben[rolle]}}/>
                 <span style={{flex:1}}>
                   <span style={{display:"block", fontSize:"0.85rem", fontWeight:600, color:"var(--text)"}}>{name}</span>
                   {sub && <span style={{display:"block", fontSize:"0.7rem", color:"var(--text3)"}}>{sub}</span>}
                 </span>
-              </label>
+              </div>
             ))}
             <label className="farb-zeile" {...ttFeld("Dunkles Schema: Bedienelemente des Systems (Listen, Scrollbalken) dunkel darstellen")}>
               <input type="checkbox" data-schema-dunkel checked={!!bearb.dunkel} onChange={e => aendereEigenesSchema(bearb.id, () => ({ dunkel: e.target.checked }))} style={{width:20, height:20}}/>
@@ -3343,6 +3436,30 @@ export default function VokabelApp() {
       </div>
     );
   }
+
+  // ── Farbwähler (Farbkreis): live über CSS-Variablen, ohne die App neu aufzubauen ──
+  function oeffneFarbRad(rolle, titel, basis, ziel) {
+    setFarbRad({ rolle, titel, start: vollHex(basis[rolle] || "#000000").toLowerCase(), basis, ziel });
+  }
+  const liveFarbe = hex => {
+    if (!farbRad) return;
+    const f = farbenAus({ ...farbRad.basis, [farbRad.rolle]: hex });
+    const root = document.documentElement.style;
+    Object.entries(f).forEach(([k, v]) => root.setProperty("--" + k, v));
+  };
+  const liveEntfernen = () => { const root = document.documentElement.style; Object.keys(F).forEach(k => root.removeProperty("--" + k)); };
+  function farbRadAnwenden(hex) {
+    const { rolle, ziel } = farbRad;
+    const verlauf = [hex, ...(einstellungen.farbVerlauf || []).filter(x => x !== hex)].slice(0, 10);
+    if (ziel === "vorschau") { setFarbVorschau(f => ({ ...f, [rolle]: hex })); speichereEinst({ ...einstellungen, farbVerlauf: verlauf }); }
+    else speichereEinst({ ...einstellungen, farbVerlauf: verlauf,
+      eigeneSchemata: eigeneSchemata.map(x => x.id === ziel ? { ...x, farben: { ...x.farben, [rolle]: hex } } : x) });
+    liveEntfernen(); setFarbRad(null);
+  }
+  function farbRadAbbrechen() { liveEntfernen(); setFarbRad(null); }
+  const farbRadUI = farbRad ? createPortal(
+    <FarbRad key={farbRad.rolle + farbRad.start} titel={farbRad.titel} start={farbRad.start} verlauf={einstellungen.farbVerlauf || []}
+      beiLive={liveFarbe} beiAnwenden={farbRadAnwenden} beiAbbrechen={farbRadAbbrechen}/>, document.body) : null;
 
   // ── Farbmodus ──
   function starteFarbModus() {
@@ -3470,12 +3587,13 @@ export default function VokabelApp() {
                 {g.teile.map(t => {
                   const basis = FARB_BASIS[t.rolle] || t.rolle;
                   return (
-                    <label key={t.teil + t.rolle} className="farb-zeile" data-farbfeld-zeile={basis}
-                      onPointerEnter={() => markiere(g.el)} onClick={() => markiere(g.el)} {...ttFeld(`${t.teil}: ${rollenName(t.rolle)} – antippen, um die Farbe zu ändern`)}>
-                      <input type="color" data-farbfeld-rolle={basis} value={vollHex(farbVorschau?.[basis] || F[basis] || "#000000")}
-                        onChange={e => { const v = e.target.value; setFarbVorschau(f => ({ ...f, [basis]: v })); }}/>
+                    <div key={t.teil + t.rolle} className="farb-zeile" data-farbfeld-zeile={basis}
+                      onPointerEnter={() => markiere(g.el)}
+                      onClick={() => { markiere(g.el); oeffneFarbRad(basis, `${t.teil} · ${rollenName(t.rolle)}`, farbVorschau || schemaVon(einstellungen).farben, "vorschau"); }}
+                      {...ttFeld(`${t.teil}: ${rollenName(t.rolle)} – antippen, um die Farbe im Farbkreis zu ändern`)}>
+                      <span className="farb-tupfer" style={{background: `var(--${t.rolle})`}}/>
                       <span style={{flex:1, fontSize:"0.85rem", color:"var(--text)"}}><b>{t.teil}</b> · {rollenName(t.rolle)}</span>
-                    </label>
+                    </div>
                   );
                 })}
               </div>
@@ -4676,7 +4794,7 @@ export default function VokabelApp() {
         </>), () => doBeende(true));
         return (
           <>
-            <style>{CSS}</style>{farbModusUI}
+            <style>{CSS}</style>{farbModusUI}{farbRadUI}
             <div className="app">
               <div className="topbar">
                 <button {...tt("Schließen – Fortschritt wird gespeichert, zurück zur Übersicht")} className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
@@ -4731,7 +4849,7 @@ export default function VokabelApp() {
       if (quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, diktatKnoepfe, () => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); });
       return (
         <>
-          <style>{CSS}</style>{farbModusUI}
+          <style>{CSS}</style>{farbModusUI}{farbRadUI}
           <div className="app">
             <div className="topbar">
               <button {...tt(quiz.ausStatistik ? "Diktat schließen und zurück zur Statistik" : "Diktat schließen und zur Übersicht")} className="topbar-back" onClick={() => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); }}>Schließen</button>
@@ -4781,7 +4899,7 @@ export default function VokabelApp() {
 
     return (
       <>
-        <style>{CSS}</style>{farbModusUI}
+        <style>{CSS}</style>{farbModusUI}{farbRadUI}
         <div className="app">
           <div className="topbar">
             <button {...tt("Diktat abbrechen – bisherige Ergebnisse werden ausgewertet")} className="topbar-back" onClick={() => { beendeQuiz(); }}>Beenden</button>
@@ -4893,7 +5011,7 @@ export default function VokabelApp() {
         </>), () => doBeende(true));
         return (
           <>
-            <style>{CSS}</style>{farbModusUI}
+            <style>{CSS}</style>{farbModusUI}{farbRadUI}
             <div className="app">
               <div className="topbar">
                 <button {...tt("Schließen – Fortschritt wird gespeichert, zurück zur Übersicht")} className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
@@ -4969,7 +5087,7 @@ export default function VokabelApp() {
         if (quiz.sessionAuswertung && !quiz.abgebrochen) return sessionAuswertungSeite(quiz, rundenKnoepfe, () => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); });
         return (
           <>
-            <style>{CSS}</style>{farbModusUI}
+            <style>{CSS}</style>{farbModusUI}{farbRadUI}
             <div className="app">
               <div className="topbar">
                 <button {...tt(quiz.ausStatistik ? "Auswertung schließen und zurück zur Statistik" : "Auswertung schließen und zur Quiz-Übersicht")} className="topbar-back" onClick={() => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); }}>Schließen</button>
@@ -4999,7 +5117,7 @@ export default function VokabelApp() {
         : quiz.abfrageZiel?.wiederholung > 1 ? `wurden noch nicht ${quiz.abfrageZiel.wiederholung}× richtig beantwortet` : "wurden falsch beantwortet";
       return (
         <>
-          <style>{CSS}</style>{farbModusUI}
+          <style>{CSS}</style>{farbModusUI}{farbRadUI}
           <div className="app">
             <div className="topbar">
               <button {...tt("Wiederholung abbrechen und zur Auswertung")} className="topbar-back" onClick={brecheWiederholungAb}>Beenden</button>
@@ -5062,7 +5180,7 @@ export default function VokabelApp() {
 
     return (
       <>
-        <style>{CSS}</style>{farbModusUI}
+        <style>{CSS}</style>{farbModusUI}{farbRadUI}
         <div className="app">
           <div className="topbar">
             {quiz.wiederholungDurchgang ? (
@@ -5479,7 +5597,7 @@ export default function VokabelApp() {
   // ── Render: Haupt (Tabs immer sichtbar) ──────────────────────────────────
   return (
     <>
-      <style>{CSS}</style>{farbModusUI}
+      <style>{CSS}</style>{farbModusUI}{farbRadUI}
       <div className="app">
         <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"var(--karte)"}}>
         <div className="topbar" style={{position:"relative"}}>
@@ -7754,7 +7872,7 @@ export default function VokabelApp() {
                   {k:"Vokabelliste", v:"Alle gefilterten Vokabeln mit Score-Balken (grün = positiv, rot = negativ) und letztem Abfragedatum."},
                 ]},
                 {titel:"Einstellungen-Tab", inhalt:[
-                  {k:"Farbschema", v:"Sechs Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs und Dunkel – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler, die App färbt sich sofort um. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
+                  {k:"Farbschema", v:"Sechs Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs und Dunkel – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler: großer Farbkreis (außen kräftig, zur Mitte weniger gesättigt), Regler für Helligkeit und Sättigung, Hex-Feld, „Zuletzt verwendet“ (10 Farben); die App färbt sich beim Ziehen sofort um, „Anwenden“ übernimmt, „Abbrechen“ stellt die alte Farbe wieder her. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
                   {k:"App aktualisieren", v:"„Prüfen“ sucht nach einer neuen App-Version. Wird eine gefunden, erscheint unten der Hinweis „Neue Version verfügbar“ – mit „Aktualisieren“ wird sie aktiv. Die App funktioniert auch offline."},
                   {k:"Gespeicherte Listen", v:"Zeigt, wie viele Listen aktuell auf diesem Gerät gespeichert sind."},
                 ]},

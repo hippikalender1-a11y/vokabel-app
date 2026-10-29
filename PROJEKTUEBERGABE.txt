@@ -1643,6 +1643,12 @@ FARBMODUS: Einstellungen → Farbschema → "🎨 Farbmodus starten" (data-farbm
   (FARB_BASIS). Farbfeld (data-farbfeld, Zeilen data-farbfeld-zeile/-rolle) mit
   Farbwähler; Antippen hebt das Element gestrichelt hervor. {farbModusUI} hängt
   hinter jedem <style>{CSS}</style>. Test: e2e/farbmodus.mjs.
+FARBWÄHLER (FarbRad, Modulebene): Canvas-Farbkreis (Farbton = Winkel, Sättigung =
+  Abstand zur Mitte, Helligkeit per Regler, zusätzlich Sättigungsregler), Vorher/
+  Neu, Hex-Feld (data-farbrad-hex), Verlauf (einstellungen.farbVerlauf, 10).
+  Live: liveFarbe() setzt die CSS-Variablen direkt am <html> (kein Neuaufbau);
+  Anwenden/Abbrechen entfernt sie wieder. Öffnen: oeffneFarbRad(rolle, titel,
+  basis, ziel) – ziel "vorschau" (Farbmodus) oder Schema-id (Editor).
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).

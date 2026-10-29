@@ -33,6 +33,12 @@ const aktionen = () => page.evaluate(() => [...document.querySelectorAll("[data-
 const aktion = async l => { await page.evaluate(l => document.querySelector(`[data-info-aktion="${l}"]`).click(), l); await sleep(300); };
 const eigene = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}").eigeneSchemata || []);
 
+// Farbe im Farbkreis-Dialog per Hex-Feld setzen (live) und anwenden
+const farbradHex = async (wert, anwenden = true) => {
+  await page.evaluate(w => { const i = document.querySelector("[data-farbrad-hex]"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, w); i.dispatchEvent(new Event("input", { bubbles: true })); }, wert);
+  await new Promise(r => setTimeout(r, 200));
+  if (anwenden) { await page.click("[data-farbrad-anwenden]"); await new Promise(r => setTimeout(r, 300)); }
+};
 await page.goto(URL);
 await page.evaluate(() => localStorage.clear());
 await page.reload(); await sleep(500);
@@ -61,8 +67,10 @@ ok(eig.length === 1 && eig[0].name === "Natur (Kopie)" && await page.$("[data-sc
 ok(await variable("haupt") === "#2d6a4f" && await bodyBg() === "rgb(247, 245, 240)", "Duplikat aktiv: Farben von Natur");
 
 // Farbe ändern: live
-await page.evaluate(() => { const i = document.querySelector('[data-farbrolle="haupt"]'); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(i, "#1d5f8a"); i.dispatchEvent(new Event("input", { bubbles: true })); });
-await sleep(300);
+await page.click('[data-farbrolle="haupt"]'); await sleep(300);
+await farbradHex("#1d5f8a", false);
+ok(await variable("haupt") === "#1d5f8a" && (await eigene())[0].farben.haupt === "#2d6a4f", "Farbkreis: Vorschau live, noch nicht gespeichert");
+await page.click("[data-farbrad-anwenden]"); await sleep(300);
 ok(await variable("haupt") === "#1d5f8a" && (await eigene())[0].farben.haupt === "#1d5f8a", "Hauptfarbe geändert: sofort sichtbar und gespeichert");
 await page.click("[data-schema-zuruecksetzen]"); await sleep(300);
 ok(await variable("haupt") === "#2d6a4f", "Zurücksetzen: wieder Farben der Vorlage");
