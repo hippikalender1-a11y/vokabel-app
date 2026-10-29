@@ -59,9 +59,10 @@ await sleep(300);
 const t0 = await text();
 ok(await kopf() === "gruen" && !t0.includes("Verlauf & Gespeichert") && !t0.includes("📌 Gespeichert"),
   "Nach Auswahl: Liste zu, Überschrift weg, Kopfzeile grün");
-ok(await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); const b = k.querySelector("button.toggle-opt.aktiv");
-  const r = k.getBoundingClientRect(), rb = b.getBoundingClientRect(); return Math.abs((rb.left + rb.right) / 2 - (r.left + r.right) / 2) < 3; }),
-  "Knopf mit dem Namen sitzt mittig");
+ok(await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); const b = k.querySelector("button.toggle-opt.aktiv"); const kr = k.querySelector("[data-quiz-arten]");
+  const r = k.getBoundingClientRect(), rb = b.getBoundingClientRect(), rk = kr.getBoundingClientRect(); const abstand = rk.left - rb.right;
+  return rb.left - r.left <= 20 && abstand > 0 && abstand <= 14; }),
+  "Knopf mit dem Namen: von links bis kurz vor die Ü/D/A-Kreise");
 
 // Paket mit 10 Vokabeln (Übersetzung, Karte), alles gewusst
 if (!(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "10 V." && b.classList.contains("aktiv")))))
