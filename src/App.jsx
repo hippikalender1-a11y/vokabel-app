@@ -548,8 +548,8 @@ function lernProzent(scores, schwelle) {
 function MiniKreis({ pct, buchstabe, aktiv, aus, groesse = 24, aufGruen = false }) {
   const r = 9, u = 2 * Math.PI * r;
   const f = aufGruen
-    ? { fill: aktiv ? "#fff" : "transparent", grund: "rgba(255,255,255,0.35)", ring: aktiv ? "#2d6a4f" : "#fff", text: aktiv ? "#2d6a4f" : "#fff" }
-    : { fill: aktiv ? "#2d6a4f" : "#fff", grund: "#d6d2cb", ring: aktiv ? "#95d5b2" : "#2d6a4f", text: aktiv ? "#fff" : "#2d6a4f" };
+    ? { fill: aktiv ? "#fff" : "transparent", grund: "rgba(255,255,255,0.3)", ring: aktiv ? "#52b788" : "#95d5b2", text: aktiv ? "#2d6a4f" : "#fff" }
+    : { fill: aktiv ? "#2d6a4f" : "#fff", grund: "#e0dbd2", ring: aktiv ? "#95d5b2" : "#52b788", text: aktiv ? "#fff" : "#2d6a4f" };
   return (
     <svg width={groesse} height={groesse} viewBox="0 0 24 24" style={{display:"block", opacity: aus ? 0.35 : 1}}>
       <circle cx="12" cy="12" r={r} fill={f.fill} stroke={f.grund} strokeWidth="3"/>
