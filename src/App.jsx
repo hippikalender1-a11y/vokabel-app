@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useRef, Fragment } from "react";
+import { createPortal } from "react-dom";
 import { zeigeInfo, schliesseInfo, schalteInfoModus } from "./infoEreignisse.js";
 
 // ── Storage ────────────────────────────────────────────────────────────────
@@ -768,6 +769,10 @@ function farbenAus(f) {
     "info-flaeche": mische(f.info, k, 0.9),
   };
 }
+// abgestufte Rollen werden über ihre Grundfarbe geändert
+const FARB_BASIS = { "haupt-zart": "haupt-hell", "haupt-flaeche": "haupt-hell", "richtig-dunkel": "richtig", "richtig-flaeche": "richtig",
+  "text4": "text3", "flaeche-hell": "flaeche", "falsch-dunkel": "falsch", "falsch-zart": "falsch", "falsch-flaeche": "falsch",
+  "gelb-dunkel": "gelb", "gelb-zart": "gelb", "gelb-flaeche": "gelb", "info-flaeche": "info" };
 /* FARBSCHEMATA-ENDE */
 // aktuelle Farben (beim Rendern gesetzt); SVG-Attribute kennen kein var() → fv() setzt die Farbe ein
 let F = farbenAus(FARB_VORLAGEN[0].farben);
@@ -866,6 +871,9 @@ const CSS_BASIS = `
   .slot-chip.zuletzt{background:var(--gelb-flaeche);border-color:var(--gelb);color:var(--orange);}
   .slot-chip.leer{opacity:0.35;cursor:default;}
   .slot-raster{display:grid;gap:6px;}
+  .farbmodus-leiste{position:fixed;right:12px;bottom:12px;z-index:10002;display:flex;gap:6px;padding:6px 8px;background:var(--karte);border:1.5px solid var(--rahmen);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.2);font-family:system-ui,sans-serif;}
+  .farbfeld-hintergrund{position:fixed;inset:0;z-index:10003;background:rgba(0,0,0,0.15);display:flex;align-items:flex-end;justify-content:center;}
+  .farbfeld{width:100%;max-width:520px;max-height:60vh;overflow-y:auto;background:var(--karte);border-radius:16px 16px 0 0;padding:14px 16px 70px;box-shadow:0 -6px 24px rgba(0,0,0,0.25);font-family:system-ui,sans-serif;box-sizing:border-box;}
   .farb-raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
   .farb-kachel{display:flex;flex-direction:column;gap:6px;padding:6px;border:1.5px solid var(--rahmen);border-radius:10px;background:var(--karte);cursor:pointer;font-family:inherit;min-width:0;}
   .farb-kachel.aktiv{border-color:var(--haupt);box-shadow:0 0 0 2px var(--haupt);}
@@ -1000,10 +1008,18 @@ export default function VokabelApp() {
   const [listenIndex, setListenIndex] = useState([]);
   const [einstellungen, setEinstellungen] = useState(defaultEinstellungen());
   const [schemaBearbeiten, setSchemaBearbeiten] = useState(null);   // id des eigenen Schemas im Editor
+  // Farbmodus: Farben direkt am Element ändern (Vorschau bis „Farben übernehmen“)
+  const [farbModus, setFarbModus] = useState(false);
+  const [farbVorschau, setFarbVorschau] = useState(null);           // Grundfarben während des Farbmodus
+  const [farbFeld, setFarbFeld] = useState(null);                   // {gruppen, zeit} nach langem Druck
+  const [farbMarke, setFarbMarke] = useState(null);                 // Rechteck des hervorgehobenen Elements
+  const [farbName, setFarbName] = useState(null);                   // Name beim Übernehmen einer Vorlage
+  const farbModusRef = useRef(false);
+  farbModusRef.current = farbModus;
   const [schemaMenueId, setSchemaMenueId] = useState(null);         // Schema für Umbenennen / Löschen
   // Farbschema: Farben je Rolle (CSS-Variablen + F für SVG); vor dem Laden der Einstellungen aus dem Speicher
   const farbSchema = schemaVon(einstellungen.farbschema || einstellungen.eigeneSchemata ? einstellungen : lsGet(SK.einstellungen, {}));
-  F = farbenAus(farbSchema.farben);
+  F = farbenAus(farbModus && farbVorschau ? farbVorschau : farbSchema.farben);
   CSS = farbVariablen(F, farbSchema.dunkel) + CSS_BASIS;
   const [infoModus, setInfoModus] = useState("uebersicht");
   const [ansicht, setAnsicht] = useState("uebersicht");
@@ -1186,6 +1202,7 @@ export default function VokabelApp() {
         tooltipShown.current = false;
         tooltipTimer.current = setTimeout(() => {
           if (slotZiehenRef.current?.aktiv) return;   // beim Verschieben im Raster keine Erklärung einblenden
+          if (farbModusRef.current) return;            // Farbmodus: langer Druck öffnet das Farbfeld
           tooltipShown.current = true; zeigeInfo(langText, t.clientX, t.clientY, aktionen);
           opts.beimZeigen?.(t.clientX, t.clientY);
         }, 500);
@@ -3114,7 +3131,7 @@ export default function VokabelApp() {
   function sessionAuswertungSeite(q, knoepfe, schliessen) {
     return (
       <>
-        <style>{CSS}</style>
+        <style>{CSS}</style>{farbModusUI}
         <div className="app">
           <div className="topbar">
             <button {...tt("Schließen – zurück zur Übersicht")} className="topbar-back" onClick={schliessen}>Schließen</button>
@@ -3294,6 +3311,11 @@ export default function VokabelApp() {
           })}
         </div>
         <div style={{fontSize:"0.7rem", color:"var(--text3)", marginTop:8}}>Lang drücken: Vorlagen duplizieren – eigene Schemata bearbeiten, umbenennen, löschen</div>
+        <button data-farbmodus-start className={`btn ${farbModus ? "btn-ghost-filled" : "btn-ghost"}`} style={{width:"100%", marginTop:10}}
+          onClick={() => farbModus ? beendeFarbModus() : starteFarbModus()}
+          {...tt("Farbmodus: durch die App gehen und per langem Druck auf ein Element dessen Farben ändern – unten rechts übernehmen oder zurücksetzen")}>
+          {farbModus ? "🎨 Farbmodus aktiv – beenden" : "🎨 Farbmodus starten"}
+        </button>
         {bearb && (
           <div data-schema-editor style={{marginTop:14, borderTop:"1px solid var(--rahmen)", paddingTop:12}}>
             <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:8}}>
@@ -3321,6 +3343,165 @@ export default function VokabelApp() {
       </div>
     );
   }
+
+  // ── Farbmodus ──
+  function starteFarbModus() {
+    setFarbVorschau({ ...schemaVon(einstellungen).farben });
+    setFarbModus(true); setSchemaBearbeiten(null);
+  }
+  function beendeFarbModus() { setFarbModus(false); setFarbVorschau(null); setFarbFeld(null); setFarbMarke(null); setFarbName(null); }
+  function uebernehmeFarben(name = null) {
+    const sch = schemaVon(einstellungen);
+    if (FARB_VORLAGEN.includes(sch)) {
+      if (name === null) { setFarbName(schemaName(sch.name)); setFarbFeld(null); return; }   // Vorlage: erst Namen für die Kopie
+      const neu = { id: "eigen_" + Date.now(), name: name.trim() || schemaName(sch.name), basis: sch.id, dunkel: !!sch.dunkel, farben: { ...farbVorschau } };
+      speichereEinst({ ...einstellungen, eigeneSchemata: [...eigeneSchemata, neu], farbschema: neu.id });
+    } else {
+      aendereEigenesSchema(sch.id, () => ({ farben: { ...farbVorschau } }));
+    }
+    beendeFarbModus();
+  }
+  // Farbrollen der Elemente im Umkreis von (x, y): je Element Hintergrund, Schrift, Rahmen bzw. bei Grafik Füllung, Linie
+  function farbRollenBei(x, y) {
+    const zuHex = c => { const m = c && c.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?/); if (!m || (m[4] !== undefined && +m[4] < 0.05)) return null;
+      return "#" + [m[1], m[2], m[3]].map(v => Math.round(+v).toString(16).padStart(2, "0")).join(""); };
+    // gleiche Farbe in mehreren Rollen (z. B. Weiß = Karten und Schrift auf Hauptfarbe): je nach Teil die naheliegende Rolle
+    const VORZUG = { Schrift: ["auf-haupt", "text-stark", "text", "text2", "text3", "haupt", "falsch", "richtig"],
+      Hintergrund: ["karte", "hintergrund", "flaeche", "haupt", "falsch", "gelb"], Füllung: ["karte", "haupt", "haupt-hell", "gelernt", "arbeit", "nie", "negativ"],
+      "Ring/Linie": ["haupt-hell", "rahmen", "haupt"], Linie: ["rahmen", "text3", "haupt"], Rahmen: ["rahmen", "haupt", "falsch"] };
+    const nachWert = (h, teil) => { if (!h) return null; const alle = Object.keys(F).filter(k => vollHex(F[k]).toLowerCase() === h);
+      return (VORZUG[teil] || []).find(k => alle.includes(k)) || alle[0]; };
+    const regeln = [];
+    for (const sh of document.styleSheets) { try { regeln.push(...[...sh.cssRules].filter(r => r.selectorText)); } catch { /* fremdes Stylesheet */ } }
+    const deklariert = (el, props) => {
+      const st = el.getAttribute?.("style") || "";
+      for (const p of props) { const m = st.match(new RegExp(`(?:^|;)\\s*${p}\\s*:[^;]*var\\(--([\\w-]+)\\)`)); if (m) return m[1]; }
+      let gef = null;
+      regeln.forEach(r => { let passt = false; try { passt = el.matches(r.selectorText); } catch { /* */ }
+        if (passt) props.forEach(p => { const m = r.style.getPropertyValue(p).match(/var\(--([\w-]+)\)/); if (m) gef = m[1]; }); });
+      return gef;
+    };
+    const elemente = new Set();
+    for (const [dx, dy] of [[0, 0], [-14, 0], [14, 0], [0, -14], [0, 14], [-10, -10], [10, 10], [-10, 10], [10, -10]])
+      document.elementsFromPoint(x + dx, y + dy).forEach(el => { if (!el.closest("[data-farbmodus-ui]") && el !== document.documentElement) elemente.add(el); });
+    // kleine Grafiken (Mini-Kreise …): alle Teile mitnehmen – dünne Ringe trifft der Finger sonst kaum
+    [...elemente].forEach(el => { const svg = el instanceof SVGElement ? el.ownerSVGElement || el : null;
+      if (svg && svg.getBoundingClientRect().width <= 60) svg.querySelectorAll("circle, path, rect, line, polyline, text").forEach(t => elemente.add(t)); });
+    const name = el => {
+      const eigenerText = [...el.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent.trim()).join(" ").trim();
+      const t = el.tagName.toLowerCase();
+      const info = el.closest("[data-info]")?.getAttribute("data-info");
+      if (t === "body") return "Seite";
+      if (["circle", "path", "rect", "line", "polyline", "text"].includes(t)) return `Grafik${info ? " · " + info.split(/[–:]/)[0].trim() : ""}`;
+      return (eigenerText || info || el.textContent.trim() || t).slice(0, 34);
+    };
+    const gruppen = [];
+    [...elemente].map(el => ({ el, r: el.getBoundingClientRect() })).sort((a, b) => a.r.width * a.r.height - b.r.width * b.r.height).forEach(({ el, r }) => {
+      const cs = getComputedStyle(el), teile = [];
+      const svg = el instanceof SVGElement && el.tagName.toLowerCase() !== "svg";
+      const dazu = (teil, wert, props) => { const h = zuHex(wert); if (!h) return; const rolle = (props && deklariert(el, props)) || nachWert(h, teil); if (rolle && F[rolle] !== undefined && !teile.some(t => t.rolle === rolle && t.teil === teil)) teile.push({ teil, rolle }); };
+      if (svg) {
+        if (cs.fill && cs.fill !== "none") dazu(el.tagName.toLowerCase() === "text" ? "Schrift" : "Füllung", cs.fill);
+        if (cs.stroke && cs.stroke !== "none") dazu(el.tagName.toLowerCase() === "line" || el.tagName.toLowerCase() === "path" && cs.fill === "none" ? "Linie" : "Ring/Linie", cs.stroke);
+      } else {
+        dazu("Hintergrund", cs.backgroundColor, ["background", "background-color"]);
+        if ([...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) dazu("Schrift", cs.color, ["color"]);
+        const seite = ["Top", "Right", "Bottom", "Left"].find(sd => parseFloat(cs[`border${sd}Width`]) > 0 && cs[`border${sd}Style`] !== "none");
+        if (seite) dazu("Rahmen", cs[`border${seite}Color`], ["border", "border-color", `border-${seite.toLowerCase()}`, `border-${seite.toLowerCase()}-color`]);
+      }
+      if (teile.length && gruppen.length < 7) gruppen.push({ name: name(el), el, teile });
+    });
+    return gruppen;
+  }
+  // langer Druck / Rechtsklick im Farbmodus → Farbfeld; Klicks direkt danach (Loslassen) werden verschluckt
+  useEffect(() => {
+    if (!farbModus) return;
+    let timer = null, start = null, offenZeit = 0;
+    const oeffne = (x, y) => { offenZeit = Date.now(); setFarbFeld({ gruppen: farbRollenBei(x, y), zeit: offenZeit }); setFarbMarke(null); };
+    const ui = e => e.target.closest?.("[data-farbmodus-ui]");
+    const runter = e => { if (ui(e)) return; const t = e.touches[0]; start = { x: t.clientX, y: t.clientY }; clearTimeout(timer); timer = setTimeout(() => oeffne(start.x, start.y), 500); };
+    const bewegt = e => { const t = e.touches[0]; if (start && Math.hypot(t.clientX - start.x, t.clientY - start.y) > 10) clearTimeout(timer); };
+    const hoch = e => { clearTimeout(timer); if (Date.now() - offenZeit < 600 && !ui(e)) e.preventDefault(); };
+    const klick = e => { if (!ui(e) && Date.now() - offenZeit < 600) { e.preventDefault(); e.stopPropagation(); } };
+    const kontext = e => { if (ui(e)) return; e.preventDefault(); e.stopPropagation(); oeffne(e.clientX, e.clientY); };
+    document.addEventListener("touchstart", runter, true);
+    document.addEventListener("touchmove", bewegt, true);
+    document.addEventListener("touchend", hoch, { capture: true, passive: false });
+    document.addEventListener("click", klick, true);
+    document.addEventListener("contextmenu", kontext, true);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("touchstart", runter, true);
+      document.removeEventListener("touchmove", bewegt, true);
+      document.removeEventListener("touchend", hoch, { capture: true, passive: false });
+      document.removeEventListener("click", klick, true);
+      document.removeEventListener("contextmenu", kontext, true);
+    };
+  }, [farbModus]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const markiere = el => {
+    const r = el.getBoundingClientRect();
+    setFarbMarke({ x: r.left, y: r.top, w: Math.max(r.width, 6), h: Math.max(r.height, 6), zeit: Date.now() });
+  };
+  useEffect(() => {
+    if (!farbMarke) return;
+    const t = setTimeout(() => setFarbMarke(null), 1400);
+    return () => clearTimeout(t);
+  }, [farbMarke]);
+  const rollenName = rolle => {
+    const basis = FARB_BASIS[rolle] || rolle;
+    const n = FARB_ROLLEN.find(([k]) => k === basis)?.[1] || basis;
+    return FARB_BASIS[rolle] ? `${n} (abgestuft)` : n;
+  };
+  const farbModusUI = farbModus ? createPortal(
+    <div data-farbmodus-ui>
+      {farbMarke && <div style={{position:"fixed", left: farbMarke.x - 3, top: farbMarke.y - 3, width: farbMarke.w + 6, height: farbMarke.h + 6,
+        border:"2.5px dashed var(--falsch)", borderRadius:6, zIndex:10004, pointerEvents:"none", boxShadow:"0 0 0 2px var(--karte)"}}/>}
+      {farbFeld && (
+        <div className="farbfeld-hintergrund" onClick={() => { if (Date.now() - farbFeld.zeit > 600) setFarbFeld(null); }}>
+          <div className="farbfeld" data-farbfeld onClick={e => e.stopPropagation()}>
+            <div style={{display:"flex", alignItems:"center", marginBottom:6}}>
+              <span style={{flex:1, fontWeight:800, color:"var(--text)"}}>🎨 Farben hier</span>
+              <button className="btn btn-ghost btn-sm" onClick={() => setFarbFeld(null)} {...ttFeld("Farbfeld schließen")}>Schließen</button>
+            </div>
+            {farbFeld.gruppen.length === 0 && <div style={{fontSize:"0.85rem", color:"var(--text2)"}}>Hier wurden keine Farben gefunden.</div>}
+            {farbFeld.gruppen.map((g, gi) => (
+              <div key={gi} style={{marginBottom:8}}>
+                <div style={{fontSize:"0.75rem", fontWeight:700, color:"var(--text2)", margin:"4px 0 2px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"}}>{g.name}</div>
+                {g.teile.map(t => {
+                  const basis = FARB_BASIS[t.rolle] || t.rolle;
+                  return (
+                    <label key={t.teil + t.rolle} className="farb-zeile" data-farbfeld-zeile={basis}
+                      onPointerEnter={() => markiere(g.el)} onClick={() => markiere(g.el)} {...ttFeld(`${t.teil}: ${rollenName(t.rolle)} – antippen, um die Farbe zu ändern`)}>
+                      <input type="color" data-farbfeld-rolle={basis} value={vollHex(farbVorschau?.[basis] || F[basis] || "#000000")}
+                        onChange={e => { const v = e.target.value; setFarbVorschau(f => ({ ...f, [basis]: v })); }}/>
+                      <span style={{flex:1, fontSize:"0.85rem", color:"var(--text)"}}><b>{t.teil}</b> · {rollenName(t.rolle)}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {farbName !== null && (
+        <div className="farbfeld-hintergrund">
+          <div className="farbfeld" data-farb-name onClick={e => e.stopPropagation()}>
+            <div style={{fontWeight:800, color:"var(--text)", marginBottom:6}}>Als eigenes Farbschema speichern</div>
+            <div style={{fontSize:"0.8rem", color:"var(--text2)", marginBottom:8}}>Vorlagen bleiben unverändert – deine Farben kommen in eine Kopie.</div>
+            <input {...ttFeld("Name des neuen Farbschemas")} className="inp" value={farbName} autoFocus onChange={e => setFarbName(e.target.value)}/>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setFarbName(null)} {...tt("Zurück zum Farbmodus")}>Abbrechen</button>
+              <button className="btn btn-primary" data-farb-name-speichern onClick={() => uebernehmeFarben(farbName)} {...tt("Farben als neues Schema speichern und den Farbmodus beenden")}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="farbmodus-leiste">
+        <span style={{fontSize:"1rem", alignSelf:"center"}} {...ttFeld("Farbmodus: langer Druck auf ein Element ändert seine Farben")}>🎨</span>
+        <button className="btn btn-ghost btn-sm" data-farbmodus-zuruecksetzen onClick={beendeFarbModus} {...ttFeld("Alle Änderungen verwerfen und den Farbmodus beenden")}>Zurücksetzen</button>
+        <button className="btn btn-primary btn-sm" data-farbmodus-uebernehmen onClick={() => uebernehmeFarben()} {...ttFeld("Farben speichern und den Farbmodus beenden")}>Farben übernehmen</button>
+      </div>
+    </div>, document.body) : null;
 
   // Einstellung der Rastergröße (gespeicherte Konfigurationen bzw. Listen)
   function rasterEinstellung(g, anzahl, setze, sub, hinweis, art) {
@@ -4495,7 +4676,7 @@ export default function VokabelApp() {
         </>), () => doBeende(true));
         return (
           <>
-            <style>{CSS}</style>
+            <style>{CSS}</style>{farbModusUI}
             <div className="app">
               <div className="topbar">
                 <button {...tt("Schließen – Fortschritt wird gespeichert, zurück zur Übersicht")} className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
@@ -4550,7 +4731,7 @@ export default function VokabelApp() {
       if (quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, diktatKnoepfe, () => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); });
       return (
         <>
-          <style>{CSS}</style>
+          <style>{CSS}</style>{farbModusUI}
           <div className="app">
             <div className="topbar">
               <button {...tt(quiz.ausStatistik ? "Diktat schließen und zurück zur Statistik" : "Diktat schließen und zur Übersicht")} className="topbar-back" onClick={() => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); }}>Schließen</button>
@@ -4600,7 +4781,7 @@ export default function VokabelApp() {
 
     return (
       <>
-        <style>{CSS}</style>
+        <style>{CSS}</style>{farbModusUI}
         <div className="app">
           <div className="topbar">
             <button {...tt("Diktat abbrechen – bisherige Ergebnisse werden ausgewertet")} className="topbar-back" onClick={() => { beendeQuiz(); }}>Beenden</button>
@@ -4712,7 +4893,7 @@ export default function VokabelApp() {
         </>), () => doBeende(true));
         return (
           <>
-            <style>{CSS}</style>
+            <style>{CSS}</style>{farbModusUI}
             <div className="app">
               <div className="topbar">
                 <button {...tt("Schließen – Fortschritt wird gespeichert, zurück zur Übersicht")} className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
@@ -4788,7 +4969,7 @@ export default function VokabelApp() {
         if (quiz.sessionAuswertung && !quiz.abgebrochen) return sessionAuswertungSeite(quiz, rundenKnoepfe, () => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); });
         return (
           <>
-            <style>{CSS}</style>
+            <style>{CSS}</style>{farbModusUI}
             <div className="app">
               <div className="topbar">
                 <button {...tt(quiz.ausStatistik ? "Auswertung schließen und zurück zur Statistik" : "Auswertung schließen und zur Quiz-Übersicht")} className="topbar-back" onClick={() => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); }}>Schließen</button>
@@ -4818,7 +4999,7 @@ export default function VokabelApp() {
         : quiz.abfrageZiel?.wiederholung > 1 ? `wurden noch nicht ${quiz.abfrageZiel.wiederholung}× richtig beantwortet` : "wurden falsch beantwortet";
       return (
         <>
-          <style>{CSS}</style>
+          <style>{CSS}</style>{farbModusUI}
           <div className="app">
             <div className="topbar">
               <button {...tt("Wiederholung abbrechen und zur Auswertung")} className="topbar-back" onClick={brecheWiederholungAb}>Beenden</button>
@@ -4881,7 +5062,7 @@ export default function VokabelApp() {
 
     return (
       <>
-        <style>{CSS}</style>
+        <style>{CSS}</style>{farbModusUI}
         <div className="app">
           <div className="topbar">
             {quiz.wiederholungDurchgang ? (
@@ -5298,7 +5479,7 @@ export default function VokabelApp() {
   // ── Render: Haupt (Tabs immer sichtbar) ──────────────────────────────────
   return (
     <>
-      <style>{CSS}</style>
+      <style>{CSS}</style>{farbModusUI}
       <div className="app">
         <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"var(--karte)"}}>
         <div className="topbar" style={{position:"relative"}}>
@@ -7573,7 +7754,7 @@ export default function VokabelApp() {
                   {k:"Vokabelliste", v:"Alle gefilterten Vokabeln mit Score-Balken (grün = positiv, rot = negativ) und letztem Abfragedatum."},
                 ]},
                 {titel:"Einstellungen-Tab", inhalt:[
-                  {k:"Farbschema", v:"Sechs Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs und Dunkel – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
+                  {k:"Farbschema", v:"Sechs Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs und Dunkel – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler, die App färbt sich sofort um. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
                   {k:"App aktualisieren", v:"„Prüfen“ sucht nach einer neuen App-Version. Wird eine gefunden, erscheint unten der Hinweis „Neue Version verfügbar“ – mit „Aktualisieren“ wird sie aktiv. Die App funktioniert auch offline."},
                   {k:"Gespeicherte Listen", v:"Zeigt, wie viele Listen aktuell auf diesem Gerät gespeichert sind."},
                 ]},

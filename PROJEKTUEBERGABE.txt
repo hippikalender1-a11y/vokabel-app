@@ -1631,6 +1631,18 @@ FARBSCHEMATA: alle festen Farben sind Farbrollen (CSS-Variablen var(--haupt) usw
   Vorlagen nur Duplizieren, eigene Bearbeiten/Duplizieren/Umbenennen/Löschen;
   Editor data-schema-editor mit Farbwähler je Rolle (data-farbrolle), live.
   Test: e2e/farbschema.mjs.
+FARBMODUS: Einstellungen → Farbschema → "🎨 Farbmodus starten" (data-farbmodus-
+  start). farbVorschau = Kopie der Grundfarben, F rechnet damit (live). Leiste
+  unten rechts (Portal, data-farbmodus-ui): "Zurücksetzen" (verwerfen + beenden),
+  "Farben übernehmen" (eigenes Schema speichern; Vorlage → Name abfragen, neue
+  Kopie). Langer Druck/Rechtsklick (Dokument-Listener, tt-Erklärung im Farbmodus
+  aus, Klick nach dem Loslassen verschluckt) → farbRollenBei(x, y): Elemente im
+  Umkreis (9 Messpunkte, kleine SVG komplett), je Element Hintergrund/Schrift/
+  Rahmen bzw. Füllung/Ring; Rolle aus Inline-Style/CSS-Regel (var(--…)), sonst
+  über den Farbwert mit Vorzug je Teil. Abgestufte Rollen → Grundrolle
+  (FARB_BASIS). Farbfeld (data-farbfeld, Zeilen data-farbfeld-zeile/-rolle) mit
+  Farbwähler; Antippen hebt das Element gestrichelt hervor. {farbModusUI} hängt
+  hinter jedem <style>{CSS}</style>. Test: e2e/farbmodus.mjs.
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).
