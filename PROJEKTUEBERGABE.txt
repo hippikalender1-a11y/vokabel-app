@@ -1577,6 +1577,16 @@ MINI-KREISE Ü/D/A in den Raster-Kacheln (renderSlotBereiche → lernstand(x),
   MiniKreis): Lernfortschritt je Art (lernProzent über statistikSicht der Vokabeln
   der Konfiguration), data-mini-kreis/data-pct; antippen → onLaden(typ, id, art)
   (ladeSlot bzw. ladeSlotStatistik mit Art). Aktive Art gefüllt.
+RASTER (Konfigurationen + Listen): neue Einträge ohne Platz kommen in ordneRaster
+  untereinander in Spalte 0 unter den untersten Eintrag im Raster (Raster wächst);
+  ungültige Plätze weiter auf den ersten freien. Verschieben-Modus: Antippen
+  markiert (slotAuswahl / listenAuswahl, Nummer .auswahl-nr), freier Platz setzt
+  die Markierten untereinander ein (setzeSlotPlaetze / setzeListenPlaetze →
+  platziereGruppe: Einträge im Weg rücken auf frei gewordene Plätze, einzeln =
+  tauschen). Ziehen eines markierten Eintrags nimmt die Gruppe mit (setzeGezogen,
+  rasterAuswahlRef). Achtung: Kacheln in Normal- und Verschieben-Modus brauchen die
+  gleiche Kind-Struktur ({inhalt}{…}), sonst baut React den Inhalt neu und ein
+  laufendes Touch-Ziehen verliert sein Ziel (touchend kommt nicht mehr an).
 GRUPPEN-QUIZ → ZURÜCK: quiz.ausStatistik (einmalige Runde via gruppe, Fallback
   per setQuiz im Start-Effekt). Auswertung (ohne Session, Quiz und Diktat):
   Hauptknopf "📊 Zurück zur Statistik" (data-zurueck-statistik) und Schließen

@@ -91,7 +91,7 @@ const plaetze = async () => Object.fromEntries((await slots()).gespeichert.map(x
 const [n1, n2, n3] = [v1, v2, `Französisch ${heute} (3)`];
 let pl = await plaetze();
 console.log("     Plätze:", JSON.stringify(pl));
-ok(pl[n1] === "0|0" && pl[n2] === "0|1" && pl[n3] === "1|0", "Neue Einträge zeilenweise auf freie Plätze (Raster 10 × 2)");
+ok(pl[n1] === "0|0" && pl[n2] === "1|0" && pl[n3] === "2|0", "Neue Einträge untereinander in der ersten Spalte (Raster 10 × 2)");
 ok(await page.evaluate(() => getComputedStyle(document.querySelector(".slot-raster")).gridTemplateColumns.split(" ").length === 2), "Raster mit 2 Spalten");
 ok(await page.evaluate(() => { const neu = [...document.querySelectorAll(".slot-kopf-knoepfe .slot-chip")].find(b => b.textContent.trim() === "Neu"); return !!neu && !neu.closest(".slot-raster"); }),
   "„Neu“ klein oben, nicht im Raster");
@@ -102,24 +102,41 @@ ok(!t.includes("⇄ Verschieben") && /Lang drücken: umbenennen, verschieben ode
 const menue = async key => { await page.evaluate(k => { const el = document.querySelector(`[data-raster-zelle="${k}"]`); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, key); await sleep(200); };
 const aktion = async label => { await page.evaluate(l => document.querySelector(`[data-info-aktion="${l}"]`).click(), label); await sleep(250); };
-await menue("1|0");
+await menue("2|0");
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.textContent.trim()));
 const blase = await page.evaluate(() => document.querySelector('[role="status"]')?.innerText || "");
 console.log("     Menü:", knoepfe.join(" | "));
 ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|🗑 Löschen", "Lang-Druck: voller Name + Umbenennen / Duplizieren / Verschieben / Löschen");
 await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
-ok(!(await page.$('[role="status"]')) && /Jetzt den Zielplatz antippen/.test(await page.evaluate(() => document.body.innerText)),
-  "„Verschieben“: Menü zu, Verschieben-Modus mit diesem Paket ausgewählt");
+ok(!(await page.$('[role="status"]')) && /1 markiert – freien Platz antippen/.test(await page.evaluate(() => document.body.innerText)),
+  "„Verschieben“: Menü zu, Verschieben-Modus mit diesem Paket markiert");
 await tippZelle("3|1"); await sleep(250);
 pl = await plaetze();
-ok(pl[n3] === "3|1", "Zielplatz antippen: verschoben");
-await tippZelle("0|0"); await sleep(150); await tippZelle("0|1"); await sleep(250);
+ok(pl[n3] === "3|1", "freien Platz antippen: verschoben");
+// mehrere markieren (Nummern 1, 2) → freier Platz: untereinander eingesetzt
+await tippZelle("0|0"); await sleep(150); await tippZelle("1|0"); await sleep(200);
+ok(await page.evaluate(() => [...document.querySelectorAll("[data-auswahl-nr]")].map(n => n.textContent).join(",")) === "1,2", "zwei markiert: Nummern 1 und 2");
+await tippZelle("5|1"); await sleep(250);
 pl = await plaetze();
-ok(pl[n1] === "0|1" && pl[n2] === "0|0", "Antippen → belegten Platz antippen: die beiden tauschen");
-// Ziehen: n3 (3|1) auf n2 (0|0) → Tausch
+console.log("     Gruppe:", JSON.stringify(pl));
+ok(pl[n1] === "5|1" && pl[n2] === "6|1", "markierte Gruppe auf freien Platz: untereinander (5|1, 6|1)");
+ok(!(await page.$("[data-auswahl-nr]")), "danach keine Markierung mehr");
+// Ziehen einer markierten Gruppe: n1 + n2 markieren, n2 auf 0|0 ziehen → n1 0|0, n2 1|0
+await tippZelle("5|1"); await sleep(150); await tippZelle("6|1"); await sleep(200);
+{
+  const b = k => page.evaluate(k => { const r = document.querySelector(`[data-raster-zelle="${k}"]`).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, k);
+  const v = await b("6|1"), n = await b("0|0");
+  await page.mouse.move(v.x, v.y); await page.mouse.down();
+  for (let i = 1; i <= 10; i++) { await page.mouse.move(v.x + (n.x - v.x) * i / 10, v.y + (n.y - v.y) * i / 10); await sleep(40); }
+  await page.mouse.up(); await sleep(300);
+}
+pl = await plaetze();
+console.log("     Gruppe gezogen:", JSON.stringify(pl));
+ok(pl[n1] === "0|0" && pl[n2] === "1|0" && pl[n3] === "3|1", "markierte Gruppe gezogen: wandert zusammen (0|0, 1|0)");
+// Ziehen (einzeln): n3 (3|1) auf n2 (1|0) → Tausch
 const box = k => page.evaluate(k => { const r = document.querySelector(`[data-raster-zelle="${k}"]`).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, k);
-const von = await box("3|1"), nach = await box("0|0");
+const von = await box("3|1"), nach = await box("1|0");
 await page.mouse.move(von.x, von.y); await page.mouse.down();
 // wie nach einem Lang-Druck: Erklärung offen – sie muss beim Ziehen sofort verschwinden
 await page.evaluate(() => window.dispatchEvent(new CustomEvent("vokabel-info", { detail: { text: "Test-Erklärung", x: 100, y: 300 } })));
@@ -131,7 +148,7 @@ for (let i = 2; i <= 10; i++) { await page.mouse.move(von.x + (nach.x - von.x) *
 await page.mouse.up(); await sleep(300);
 pl = await plaetze();
 console.log("     nach Ziehen:", JSON.stringify(pl));
-ok(pl[n3] === "0|0" && pl[n2] === "3|1", "Ziehen auf belegten Platz: tauschen");
+ok(pl[n3] === "1|0" && pl[n2] === "3|1", "Ziehen auf belegten Platz: tauschen");
 await page.screenshot({ path: "slots_raster.png" });
 await clickText("button", "Fertig", true);
 const lang = await page.evaluate(n => document.querySelector(`[data-slot-id] [class="raster-name"]`) && [...document.querySelectorAll("[data-slot-id]")].find(b => b.textContent.includes(n))?.getAttribute("data-info"), n3);
@@ -154,7 +171,7 @@ await setzeFeld("Meine Verben"); await sleep(150);
 await page.click("[data-umbenennen-speichern]"); await sleep(250);
 pl = await plaetze();
 ok(pl["Meine Verben"] === platzN1 && !(n1 in pl), "Umbenennen: neuer Name, gleicher Platz");
-// Duplizieren: Vorschlag „… (Kopie)“, gleiche Konfiguration, kein Fortschritt, erster freier Platz
+// Duplizieren: Vorschlag „… (Kopie)“, gleiche Konfiguration, kein Fortschritt, untereinander unten
 await menue(platzN1);
 await aktion("⧉ Duplizieren");
 const vorschlag = await page.evaluate(() => document.querySelector("[data-umbenennen-feld]").value);
@@ -167,9 +184,9 @@ pl = await plaetze();
 console.log("     nach Duplizieren:", JSON.stringify(pl));
 ok(dup && dup.id !== orig.id && JSON.stringify(dup.konfiguration) === JSON.stringify(orig.konfiguration) && !dup.sessionFortschritte?.uebersetzung,
   "Duplikat: eigene Kennung, gleiche Konfiguration, ohne Fortschritt");
-ok(pl["Meine Verben 2"] === "1|0" && pl["Meine Verben"] === platzN1, "Duplikat auf dem ersten freien Platz, Original bleibt");
+ok(pl["Meine Verben 2"] === "4|0" && pl["Meine Verben"] === platzN1, `Duplikat untereinander unter dem untersten Eintrag (4|0), Original bleibt (${pl["Meine Verben 2"]})`);
 // für den weiteren Ablauf wieder entfernen
-await menue("1|0"); await aktion("🗑 Löschen"); await clickText(".modal .btn-danger", "Löschen", true);
+await menue("4|0"); await aktion("🗑 Löschen"); await clickText(".modal .btn-danger", "Löschen", true);
 
 // Einstellungen: 3 Spalten, Zeilen verkleinern → Einträge rücken nach, voll → beim Speichern automatisch eine Zeile mehr
 await clickText(".tab", "Einstellungen");

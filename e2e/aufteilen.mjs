@@ -84,7 +84,7 @@ ok(g.length === 4 && g.map(x => x.name).join(",") === "Verben Teil 2 (21 - 30),V
 const k = g[1].konfiguration;
 ok(k.listenIds.join() === "l_fr" && k.bereichTyp === "bereich" && k.vokabelAuswahl.length === 10 && k.vokabelAuswahl[0] === "l_fr__31" && k.vokabelAuswahl[9] === "l_fr__40", "zweite Gruppe: Vokabeln Nr. 31–40");
 ok(k.quizReihenfolge === "zufall", `Einstellungen übernommen (Reihenfolge ${k.quizReihenfolge})`);
-ok(g[0].platz.z === 0 && g[0].platz.s === 0 && g[1].platz.s === 1 && g[2].platz.z === 1, "zusammen im Raster, zeilenweise");
+ok(g.every((x, i) => x.platz.z === i && x.platz.s === 0), "zusammen im Raster, untereinander in der ersten Spalte");
 ok(!(await page.$("[data-aufteilen]")), "Kasten nach dem Anlegen weg");
 
 // Laden einer Gruppe: Quiz mit genau diesen 10

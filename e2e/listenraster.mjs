@@ -96,7 +96,7 @@ await clickText(".modal button", "Duplizieren", true);
 pl = await plaetze();
 console.log("     nach Duplizieren:", JSON.stringify(pl));
 const kopie = await page.evaluate(() => { const idx = JSON.parse(localStorage.getItem("vokabel_listen_index")); const k = idx.find(l => l.name === "Gamma (Kopie)"); const l = JSON.parse(localStorage.getItem("vokabel_liste_" + k.id)); const orig = JSON.parse(localStorage.getItem("vokabel_liste_l_c")); return { origScore: orig.vokabeln[0].fortschritt?.score, id: k.id, n: l.vokabeln.length, score: l.vokabeln[0].fortschritt?.score, sprache: l.sprache }; });
-ok(pl["Gamma (Kopie)"] === "1|0" && kopie.id !== "l_c" && kopie.n === 1 && kopie.score === undefined && kopie.sprache === "en", "Kopie auf erstem freien Platz, mit Vokabeln, Lernstand neu");
+ok(pl["Gamma (Kopie)"] === "6|0" && kopie.id !== "l_c" && kopie.n === 1 && kopie.score === undefined && kopie.sprache === "en", "Kopie untereinander unter der untersten Liste (6|0), mit Vokabeln, Lernstand neu");
 ok(kopie.origScore === 2, "Original behält seinen Lernstand");
 
 // Lernstand zurücksetzen: nur Übersetzung, Diktat bleibt
@@ -138,6 +138,16 @@ console.log("     2 Spalten:", JSON.stringify(pl));
 ok(spalten === 2 && pl.Gamma === "0|0", "Raster mit 2 Spalten, Plätze bleiben");
 ok(await page.evaluate(() => /1 Vokabel$/.test(document.querySelector("[data-liste-id] .karte-zeile-sub").textContent.trim())), "Kachel: Flagge, Name, Anzahl");
 
+// Mehrere Listen markieren und auf einen freien Platz setzen (untereinander)
+await menue("Gamma"); await aktion("⇄ Verschieben");
+await page.evaluate(() => [...document.querySelectorAll("[data-liste-id]")].find(d => d.textContent.includes("Beta")).click()); await sleep(200);
+ok(await page.evaluate(() => [...document.querySelectorAll("[data-auswahl-nr]")].map(n => n.textContent).join(",")) === "1,2", "Listen: zwei markiert (Gamma 1, Beta 2)");
+await page.evaluate(() => document.querySelector('[data-raster-zelle="0|1"]').click()); await sleep(300);
+pl = await plaetze();
+console.log("     Gruppe:", JSON.stringify(pl));
+ok(pl.Gamma === "0|1" && pl.Beta === "1|1" && pl["Alpha neu"] === "2|0", "markierte Listen auf freien Platz: untereinander (0|1, 1|1)");
+await page.click("[data-listen-fertig]"); await sleep(300);
+
 // Quiz und Statistik: gleiches Raster wie der Listen-Tab (Plätze inkl. Lücken)
 const auswahlRaster = () => page.evaluate(() => {
   const r = [...document.querySelectorAll(".listen-raster.auswahl")].find(x => x.offsetParent);
@@ -164,7 +174,7 @@ await page.reload(); await sleep(500);
 await clickText(".tab", "Listen");
 pl = await plaetze();
 console.log("     Filter fr:", JSON.stringify(pl));
-ok(Object.keys(pl).join(",") === "Alpha neu,Beta" && Object.values(pl).every(v => v === "-"), "Sprachfilter: nur französische Listen, zusammengerückt");
+ok(Object.keys(pl).join(",") === "Beta,Alpha neu" && Object.values(pl).every(v => v === "-"), "Sprachfilter: nur französische Listen, zusammengerückt");
 await menue("Beta");
 ok(!(await aktionen()).includes("⇄ Verschieben"), "mit Sprachfilter kein „Verschieben“ im Menü");
 

@@ -103,18 +103,23 @@ function aufteilenGruppen(anzahl, von, bis, groesse, restAnhaengen) {
   }
   return g;
 }
-// Gültige, freie Plätze bleiben; alle anderen Einträge kommen auf den ersten freien Platz (zeilenweise).
-// Reicht das Raster nicht, wächst es um Zeilen (zeilen im Ergebnis).
+// Neue Einträge (ohne Platz) kommen untereinander in die erste Spalte, ab der Zeile unter dem untersten
+// belegten Platz. Gültige, freie Plätze bleiben; ungültige (z. B. nach Verkleinern) kommen auf den ersten
+// freien Platz (zeilenweise). Reicht das Raster nicht, wächst es um Zeilen (zeilen im Ergebnis).
 function ordneRaster(gespeichert, { zeilen, spalten }) {
   const belegt = new Set();
   const key = p => `${p.z}|${p.s}`;
-  let z = zeilen;
+  const imRaster = p => p && p.z < zeilen && p.s < spalten;
+  let ab = gespeichert.reduce((m, e) => imRaster(e.platz) ? Math.max(m, e.platz.z + 1) : m, 0);
+  const ohnePlatz = gespeichert.some(e => !e.platz);
+  gespeichert = gespeichert.map(e => e.platz ? e : { ...e, platz: { z: ab++, s: 0 } });
+  let z = Math.max(zeilen, ab);
   const gueltig = p => p && Number.isInteger(p.z) && Number.isInteger(p.s) && p.z >= 0 && p.s >= 0 && p.s < spalten && p.z < z;
   const behalten = gespeichert.map(e => {
     if (gueltig(e.platz) && !belegt.has(key(e.platz))) { belegt.add(key(e.platz)); return true; }
     return false;
   });
-  let geaendert = false;
+  let geaendert = ohnePlatz;
   const neu = gespeichert.map((e, i) => {
     if (behalten[i]) return e;
     geaendert = true;
@@ -128,13 +133,25 @@ function ordneRaster(gespeichert, { zeilen, spalten }) {
   });
   return { gespeichert: neu, zeilen: z, geaendert };
 }
-// Eintrag auf Platz ziel setzen; ist der Platz belegt, tauschen die beiden
-function platziereSlot(gespeichert, id, ziel) {
-  const quelle = gespeichert.find(e => e.id === id);
-  if (!quelle) return gespeichert;
-  const besetzer = gespeichert.find(e => e.id !== id && e.platz?.z === ziel.z && e.platz?.s === ziel.s);
-  return gespeichert.map(e => e.id === id ? { ...e, platz: ziel }
-    : besetzer && e.id === besetzer.id ? { ...e, platz: quelle.platz } : e);
+// Gruppe (ids in Reihenfolge) untereinander ab Platz ziel setzen; Einträge im Weg rücken auf die
+// frei gewordenen Plätze der Gruppe (ein einzelner Eintrag: die beiden tauschen)
+function platziereGruppe(eintraege, ids, ziel) {
+  const gruppe = ids.map(id => eintraege.find(e => e.id === id)).filter(Boolean);
+  if (gruppe.length === 0) return eintraege;
+  const key = p => `${p.z}|${p.s}`;
+  const ziele = gruppe.map((_, i) => ({ z: ziel.z + i, s: ziel.s }));
+  const zielKeys = new Set(ziele.map(key));
+  const gruppenIds = new Set(gruppe.map(e => e.id));
+  const frei = gruppe.map(e => e.platz).filter(p => p && !zielKeys.has(key(p)));
+  const neu = new Map(gruppe.map((e, i) => [e.id, ziele[i]]));
+  eintraege.forEach(e => { if (!gruppenIds.has(e.id) && e.platz && zielKeys.has(key(e.platz))) neu.set(e.id, frei.shift() || null); });
+  return eintraege.map(e => {
+    if (!neu.has(e.id)) return e;
+    const p = neu.get(e.id);
+    if (p) return { ...e, platz: p };
+    const { platz: _p, ...ohne } = e;   // eslint-disable-line no-unused-vars
+    return ohne;
+  });
 }
 function formatSlotDatum() {
   const n = new Date();
@@ -766,6 +783,7 @@ const CSS = `
   .slot-chip.zuletzt{background:#fffde7;border-color:#f9a825;color:#e65100;}
   .slot-chip.leer{opacity:0.35;cursor:default;}
   .slot-raster{display:grid;gap:6px;}
+  .auswahl-nr{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;border-radius:10px;background:#e0a800;color:#fff;font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;z-index:2;}
   .art-umschalter .toggle-opt{min-width:34px;padding:5px 9px;font-weight:700;}
   .listen-raster{display:grid;gap:6px;margin-bottom:16px;}
   .listen-raster .karte-zeile{background:#fff;border:1px solid #e0dbd2;border-radius:12px;min-width:0;}
@@ -987,11 +1005,13 @@ export default function VokabelApp() {
   const [sprachMenuOffen, setSprachMenuOffen] = useState(false);
   const [slotSortModus, setSlotSortModus] = useState(false);   // "Verschieben"-Modus des Rasters
   const [slotDragId, setSlotDragId] = useState(null);         // wird gerade gezogen
-  const [slotAuswahlId, setSlotAuswahlId] = useState(null);   // angetippt, wartet auf Zielplatz
+  const [slotAuswahl, setSlotAuswahl] = useState([]);         // im Verschieben-Modus markiert (Reihenfolge = Nummern)
   const [slotDragZiel, setSlotDragZiel] = useState(null);     // "z|s" unter dem Finger
   const slotZiehenRef = useRef(null);                         // {id, x, y, aktiv, art: "liste" für das Listen-Raster}
   const [listenSortModus, setListenSortModus] = useState(false);   // "Verschieben"-Modus des Listen-Rasters
-  const [listenAuswahlId, setListenAuswahlId] = useState(null);    // angetippt, wartet auf Zielplatz
+  const [listenAuswahl, setListenAuswahl] = useState([]);          // im Verschieben-Modus markiert
+  const rasterAuswahlRef = useRef({ slot: [], liste: [] });          // für die Zieh-Logik (Effekte ohne Abhängigkeiten)
+  rasterAuswahlRef.current = { slot: slotAuswahl, liste: listenAuswahl };
   const [listeMenueId, setListeMenueId] = useState(null);          // Liste aus dem Lang-Druck-Menü (Umbenennen, Duplizieren, Zurücksetzen, Löschen)
   const [zuruecksetzenArten, setZuruecksetzenArten] = useState(new Set(Object.keys(SCORE_FELD)));
   // Liste in Sessions aufteilen (Quiz-Tab): { listeId, name, groesse, von, bis, restAnhaengen }
@@ -1360,8 +1380,8 @@ export default function VokabelApp() {
       if (!d.aktiv && Math.hypot(t.clientX - d.x, t.clientY - d.y) > 8) {
         d.aktiv = true;
         clearTimeout(tooltipTimer.current); tooltipShown.current = false; schliesseInfo();
-        if (d.art === "liste") { setListenSortModus(true); setListenAuswahlId(null); }
-        else { setSlotSortModus(true); setSlotAuswahlId(null); }
+        if (d.art === "liste") { setListenSortModus(true); if (!rasterAuswahlRef.current.liste.includes(d.id)) setListenAuswahl([]); }
+        else { setSlotSortModus(true); if (!rasterAuswahlRef.current.slot.includes(d.id)) setSlotAuswahl([]); }
         setSlotDragId(d.id);
       }
       if (!d.aktiv) return;
@@ -1378,7 +1398,7 @@ export default function VokabelApp() {
       const t = e.changedTouches[0];
       const ziel = e.type === "touchend" && t ? zelleUnter(t) : null;
       setSlotDragId(null); setSlotDragZiel(null);
-      if (ziel) { const [z, sp] = ziel.split("|").map(Number); (d.art === "liste" ? setzeListenPlatz : setzeSlotPlatz)(d.id, { z, s: sp }); }
+      if (ziel) { const [z, sp] = ziel.split("|").map(Number); setzeGezogen(d, { z, s: sp }); }
     };
     window.addEventListener("touchmove", bewegen, { passive: false });
     window.addEventListener("touchend", loslassen);
@@ -1399,7 +1419,9 @@ export default function VokabelApp() {
       const d = slotZiehenRef.current;
       if (!d || d.langdruck) return;   // Lang-Druck-Zug läuft über die Touch-Verfolgung
       if (!d.aktiv && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8) {
-        d.aktiv = true; setSlotDragId(d.id); setSlotAuswahlId(null); setListenAuswahlId(null);
+        d.aktiv = true; setSlotDragId(d.id);
+        const ausw = rasterAuswahlRef.current[d.art === "liste" ? "liste" : "slot"];
+        if (!ausw.includes(d.id)) { setSlotAuswahl([]); setListenAuswahl([]); }
         clearTimeout(tooltipTimer.current); schliesseInfo();   // Lang-Druck-Erklärung weg, sobald gezogen wird
       }
       if (!d.aktiv) return;
@@ -1414,7 +1436,7 @@ export default function VokabelApp() {
       slotGezogenRef.current = true; setTimeout(() => { slotGezogenRef.current = false; }, 400);   // nur den Klick direkt danach schlucken
       const ziel = e.type === "pointerup" ? zelleUnter(e) : null;
       setSlotDragId(null); setSlotDragZiel(null);
-      if (ziel) { const [z, sp] = ziel.split("|").map(Number); (d.art === "liste" ? setzeListenPlatz : setzeSlotPlatz)(d.id, { z, s: sp }); }
+      if (ziel) { const [z, sp] = ziel.split("|").map(Number); setzeGezogen(d, { z, s: sp }); }
     };
     window.addEventListener("pointermove", bewegen);
     window.addEventListener("pointerup", loslassen);
@@ -1519,9 +1541,20 @@ export default function VokabelApp() {
     speichereEinst(einst);
     speichereIndex(lsGet(SK.listenIndex, []), einst);
   }
-  function setzeListenPlatz(id, ziel) {
-    speichereIndex(platziereSlot(lsGet(SK.listenIndex, []), id, ziel));
-    setListenAuswahlId(null);
+  // Listen (ids) untereinander ab Platz ziel; Raster wächst bei Bedarf
+  function setzeListenPlaetze(ids, ziel) {
+    const einst = lsGet(SK.einstellungen, defaultEinstellungen());
+    const g = rasterGroesse(einst, "listenRaster");
+    const einstNeu = ziel.z + ids.length > g.zeilen ? { ...einst, listenRaster: { ...g, zeilen: ziel.z + ids.length } } : einst;
+    if (einstNeu !== einst) speichereEinst(einstNeu);
+    speichereIndex(platziereGruppe(lsGet(SK.listenIndex, []), ids, ziel), einstNeu);
+    setListenAuswahl([]);
+  }
+  // Gezogener Eintrag: ist er markiert, wandert die ganze markierte Gruppe mit
+  function setzeGezogen(d, ziel) {
+    const ausw = rasterAuswahlRef.current[d.art === "liste" ? "liste" : "slot"];
+    const ids = ausw.includes(d.id) ? ausw : [d.id];
+    (d.art === "liste" ? setzeListenPlaetze : setzeSlotPlaetze)(ids, ziel);
   }
   function listenKopieName(name) {
     const namen = new Set(listenIndex.map(l => l.name.toLowerCase()));
@@ -2244,10 +2277,14 @@ export default function VokabelApp() {
     speichereEinst(einst);
     setSlotsData(rasterEinordnen(getSlotsData(), einst));
   }
-  function setzeSlotPlatz(id, ziel) {
-    const data = rasterEinordnen(getSlotsData());
-    setSlotsData({ ...data, gespeichert: platziereSlot(data.gespeichert, id, ziel) });
-    setSlotAuswahlId(null);
+  function setzeSlotPlaetze(ids, ziel) {
+    const einst = lsGet(SK.einstellungen, defaultEinstellungen());
+    const g = rasterGroesse(einst);
+    const einstNeu = ziel.z + ids.length > g.zeilen ? { ...einst, slotRaster: { ...g, zeilen: ziel.z + ids.length } } : einst;
+    if (einstNeu !== einst) speichereEinst(einstNeu);
+    const data = rasterEinordnen(getSlotsData(), einstNeu);
+    setSlotsData(rasterEinordnen({ ...data, gespeichert: platziereGruppe(data.gespeichert, ids, ziel) }, einstNeu));
+    setSlotAuswahl([]);
   }
 
   function getSlotEintrag(typ, id) {
@@ -2451,22 +2488,14 @@ export default function VokabelApp() {
     const stand = aufteilenStand();
     if (!stand) return;
     const neu = stand.gruppen.filter(g => !g.vorhanden);
-    const einst = lsGet(SK.einstellungen, defaultEinstellungen());
-    const groesse = rasterGroesse(einst);
-    const data = rasterEinordnen(getSlotsData(), einst);
-    // zusammenhängend ab der nächsten freien Zeile, Raster wächst bei Bedarf
-    const ab = data.gespeichert.reduce((m, x) => Math.max(m, x.platz.z + 1), 0);
-    const zeilen = Math.max(groesse.zeilen, ab + Math.ceil(neu.length / groesse.spalten));
-    const einstNeu = zeilen !== groesse.zeilen ? { ...einst, slotRaster: { ...groesse, zeilen } } : einst;
-    if (einstNeu !== einst) speichereEinst(einstNeu);
+    const data = rasterEinordnen(getSlotsData());
     const basisKonfig = aktuelleKonfiguration(false);
     const eintraege = neu.map((g, i) => ({
-      id: neuerSlotId('g'), name: g.name, timestamp: Date.now() + i, sessionFortschritt: null,
-      platz: { z: ab + Math.floor(i / groesse.spalten), s: i % groesse.spalten },
+      id: neuerSlotId('g'), name: g.name, timestamp: Date.now() + i, sessionFortschritt: null,   // Platz: untereinander (Raster)
       konfiguration: { ...basisKonfig, listenIds: [aufteilen.listeId], bereichTyp: "bereich", quizBereichTyp: "bereich",
         vokabelAuswahl: stand.liste.vokabeln.slice(g.von - 1, g.bis).map(v => `${aufteilen.listeId}__${v.id}`) },
     }));
-    setSlotsData(rasterEinordnen({ ...data, gespeichert: [...data.gespeichert, ...eintraege] }, einstNeu));
+    setSlotsData(rasterEinordnen({ ...data, gespeichert: [...data.gespeichert, ...eintraege] }));
     setAufteilen(null);
     setSlotSektionAufgeklappt(true);
     window.scrollTo(0, 0);
@@ -2757,7 +2786,7 @@ export default function VokabelApp() {
   function toggleSlotSektion() {
     const opening = !slotSektionAufgeklappt;
     setSlotSektionAufgeklappt(v => !v);
-    setSlotSortModus(false); setSlotAuswahlId(null);
+    setSlotSortModus(false); setSlotAuswahl([]);
     if (opening) {
       dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -3031,9 +3060,8 @@ export default function VokabelApp() {
     const eng = groesse.spalten > 1;
     const tippeImRaster = (l, platz) => {
       if (slotGezogenRef.current) { slotGezogenRef.current = false; return; }
-      if (l && listenAuswahlId === l.id) { setListenAuswahlId(null); return; }
-      if (listenAuswahlId) { setzeListenPlatz(listenAuswahlId, platz); return; }
-      if (l) setListenAuswahlId(l.id);
+      if (l) { setListenAuswahl(a => a.includes(l.id) ? a.filter(x => x !== l.id) : [...a, l.id]); return; }
+      if (listenAuswahl.length) setzeListenPlaetze(listenAuswahl, platz);
     };
     const oeffne = l => {
       if (exportAuswahlModus) {
@@ -3049,7 +3077,7 @@ export default function VokabelApp() {
     const menue = l => [
       { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
       { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
-      ...(gefiltert ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenSortModus(true); setListenAuswahlId(l.id); } }]),
+      ...(gefiltert ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenSortModus(true); setListenAuswahl([l.id]); } }]),
       { label: "▦ In Sessions aufteilen", fn: () => starteAufteilen(l.id) },
       { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },
       { label: "🗑 Löschen", gefahr: true, fn: () => { setListeMenueId(l.id); setModal("loeschen"); } },
@@ -3060,18 +3088,19 @@ export default function VokabelApp() {
       const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
       const ziel = slotDragZiel === key && slotDragId && slotDragId !== l.id;
       const erklaerung = exportAuswahlModus ? tt("Liste für den Export auswählen")
-        : sortModus ? tt(`${l.name} – antippen und dann den Zielplatz antippen oder direkt ziehen; auf einem belegten Platz tauschen die beiden`)
+        : sortModus ? tt(`${l.name} – antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen – markierte wandern zusammen`)
         : tt("Liste öffnen: Vokabeln, Spalten, Sprache, Export", menue(l), { langText: l.name,
             // Lang-Druck und dann ziehen: Menü weg, Verschieben-Modus, Liste wandert mit
             beimZeigen: gefiltert ? undefined : (px, py) => { slotZiehenRef.current = { art: "liste", id: l.id, x: px, y: py, aktiv: false, langdruck: true }; } });
       return (
         <div {...erklaerung} key={key} data-raster-zelle={gefiltert ? undefined : key} data-liste-id={l.id} className="karte-zeile"
           style={{cursor: sortModus ? "grab" : "pointer", ...(sortModus ? {touchAction:"none"} : {}),
-            ...(listenAuswahlId === l.id && sortModus ? {outline:"3px solid #e0a800", outlineOffset:1} : {}),
-            ...(slotDragId === l.id ? {opacity:0.4, borderStyle:"dashed"} : {}),
-            ...(ziel ? {outline:"3px solid #52b788", outlineOffset:1} : {})}}
+            ...(listenAuswahl.includes(l.id) && sortModus ? {outline:"3px solid #e0a800", outlineOffset:1} : {}),
+            ...(slotDragId && (slotDragId === l.id || (listenAuswahl.includes(slotDragId) && listenAuswahl.includes(l.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
+            ...(ziel ? {outline:"3px solid #52b788", outlineOffset:1} : {}), position:"relative"}}
           onPointerDown={sortModus ? (e => { slotZiehenRef.current = { art: "liste", id: l.id, x: e.clientX, y: e.clientY, aktiv: false }; }) : undefined}
           onClick={() => sortModus ? tippeImRaster(l, l.platz) : (slotGezogenRef.current ? (slotGezogenRef.current = false) : oeffne(l))}>
+          {sortModus && listenAuswahl.includes(l.id) && <span className="auswahl-nr" data-auswahl-nr>{listenAuswahl.indexOf(l.id) + 1}</span>}
           {exportAuswahlModus && (
             <div className={`checkbox${exportAusgewaehlt.has(l.id) ? " checked" : ""}`}>
               {exportAusgewaehlt.has(l.id) && "✓"}
@@ -3126,10 +3155,10 @@ export default function VokabelApp() {
         const ziel = slotDragZiel === key && slotDragId && !l;
         if (l) zellen.push(zelle(l, key));
         else if (sortModus) zellen.push(<div key={key} data-raster-zelle={key} className="raster-leer"
-          style={{borderStyle:"dashed", cursor: listenAuswahlId ? "pointer" : "default",
+          style={{borderStyle:"dashed", cursor: listenAuswahl.length ? "pointer" : "default",
             ...(ziel ? {borderColor:"#52b788", background:"#e8f5ee"} : {})}}
           onClick={() => tippeImRaster(null, { z, s: sp })}
-          {...tt("Freier Platz – erst eine Liste antippen, dann hier tippen (oder eine Liste hierher ziehen)")}/>);
+          {...tt("Freier Platz – markierte Listen hier untereinander einsetzen (oder Listen hierher ziehen)")}/>);
         else zellen.push(<div key={key} className="raster-leer" style={{border:"none"}}/>);
       }
     }
@@ -3137,13 +3166,13 @@ export default function VokabelApp() {
       <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6, minHeight:22}}>
         <span style={{fontSize:"0.68rem", color: sortModus ? "#6b6560" : "#9b9590"}}>
           {sortModus
-            ? (listenAuswahlId ? "Jetzt den Zielplatz antippen – ist er belegt, tauschen die beiden." : "Liste antippen, dann Zielplatz antippen – oder direkt ziehen. Belegter Platz: die beiden tauschen.")
+            ? (listenAuswahl.length ? `${listenAuswahl.length} markiert – freien Platz antippen (dort untereinander) oder ziehen.` : "Listen antippen zum Markieren, dann freien Platz antippen – oder direkt ziehen. Belegter Platz: Einträge rücken auf die frei gewordenen Plätze.")
             : gefiltert ? "Lang drücken: umbenennen, duplizieren oder löschen · Verschieben unter „Alle“"
             : "Lang drücken: umbenennen, duplizieren, verschieben oder löschen"}
         </span>
         {sortModus && (
           <button data-listen-fertig className="typ-btn aktiv" style={{fontSize:"0.7rem", padding:"2px 8px", marginLeft:"auto"}}
-            onClick={() => { setListenSortModus(false); setSlotDragId(null); setListenAuswahlId(null); setSlotDragZiel(null); }}
+            onClick={() => { setListenSortModus(false); setSlotDragId(null); setListenAuswahl([]); setSlotDragZiel(null); }}
             {...tt("Verschieben beenden")}>
             Fertig
           </button>
@@ -3182,9 +3211,8 @@ export default function VokabelApp() {
     const sfVon = x => slotSFAlle(x)[aktiverSlot?.id === x.id ? quizAbfrageArt : slotKonfigArt(x)];
     const tippeImRaster = (x, platz) => {
       if (slotGezogenRef.current) { slotGezogenRef.current = false; return; }
-      if (x && slotAuswahlId === x.id) { setSlotAuswahlId(null); return; }
-      if (slotAuswahlId) { setzeSlotPlatz(slotAuswahlId, platz); return; }
-      if (x) setSlotAuswahlId(x.id);
+      if (x) { setSlotAuswahl(a => a.includes(x.id) ? a.filter(v => v !== x.id) : [...a, x.id]); return; }
+      if (slotAuswahl.length) setzeSlotPlaetze(slotAuswahl, platz);
     };
     const zellen = [];
     for (let z = 0; z < zeilenAnzeige; z++) for (let sp = 0; sp < groesse.spalten; sp++) {
@@ -3214,13 +3242,15 @@ export default function VokabelApp() {
         zellen.push(slotSortModus ? (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} className="slot-chip belegt raster-chip"
             style={{touchAction:"none", cursor:"grab",
-              ...(slotAuswahlId === x.id ? {outline:"3px solid #e0a800", outlineOffset:1} : {}),
-              ...(slotDragId === x.id ? {opacity:0.4, borderStyle:"dashed"} : {}),
+              ...(slotAuswahl.includes(x.id) ? {outline:"3px solid #e0a800", outlineOffset:1} : {}),
+              ...(slotDragId && (slotDragId === x.id || (slotAuswahl.includes(slotDragId) && slotAuswahl.includes(x.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
+              position:"relative",
               ...(ziel ? {outline:"3px solid #52b788", outlineOffset:1} : {})}}
             onPointerDown={e => { slotZiehenRef.current = { id: x.id, x: e.clientX, y: e.clientY, aktiv: false }; }}
             onClick={() => tippeImRaster(x, x.platz)}
-            {...tt(`${x.name} – antippen und dann den Zielplatz antippen oder direkt ziehen; auf einem belegten Platz tauschen die beiden`)}>
+            {...tt(`${x.name} – antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen – markierte wandern zusammen`)}>
             {inhalt}
+            {slotAuswahl.includes(x.id) && <span className="auswahl-nr" data-auswahl-nr>{slotAuswahl.indexOf(x.id) + 1}</span>}
           </button>
         ) : (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} className="slot-chip belegt raster-chip"
@@ -3229,12 +3259,13 @@ export default function VokabelApp() {
             {...tt(`${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`, [
               { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
               { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: x.id, name: kopieName(x.name), kopie: true }) },
-              { label: "⇄ Verschieben", fn: () => { setSlotSortModus(true); setSlotAuswahlId(x.id); } },
+              { label: "⇄ Verschieben", fn: () => { setSlotSortModus(true); setSlotAuswahl([x.id]); } },
               { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
             ], { langText: x.name,
                  // Lang-Druck und dann ziehen: Menü weg, Verschieben-Modus, Eintrag wandert mit
                  beimZeigen: (px, py) => { slotZiehenRef.current = { id: x.id, x: px, y: py, aktiv: false, langdruck: true }; } })}>
             {inhalt}
+            {null /* gleiche Kind-Struktur wie im Verschieben-Modus (Markierungsnummer) – sonst baut React den Inhalt neu auf und ein laufendes Ziehen verliert den Finger */}
           </button>
         ));
       } else if (x) {
@@ -3242,10 +3273,10 @@ export default function VokabelApp() {
         zellen.push(<div key={key} className="raster-leer" style={{opacity: slotSortModus ? 0.6 : 0, fontSize:"0.65rem", color:"#9b9590"}}>andere Sprache</div>);
       } else if (slotSortModus) {
         zellen.push(<div key={key} data-raster-zelle={key} className="raster-leer"
-          style={{borderStyle:"dashed", cursor: slotAuswahlId ? "pointer" : "default",
+          style={{borderStyle:"dashed", cursor: slotAuswahl.length ? "pointer" : "default",
             ...(ziel ? {borderColor:"#52b788", background:"#e8f5ee"} : {})}}
           onClick={() => tippeImRaster(null, { z, s: sp })}
-          {...tt("Freier Platz – erst ein Paket antippen, dann hier tippen (oder ein Paket hierher ziehen)")}/>);
+          {...tt("Freier Platz – markierte Pakete hier untereinander einsetzen (oder Pakete hierher ziehen)")}/>);
       } else {
         zellen.push(<div key={key} className="raster-leer" style={{border:"none"}}/>);
       }
@@ -3258,7 +3289,7 @@ export default function VokabelApp() {
             {!slotSortModus && neuChip}
             {slotSortModus && (
               <button className="typ-btn aktiv" style={{fontSize:"0.7rem", padding:"2px 8px"}}
-                onClick={() => { setSlotSortModus(false); setSlotDragId(null); setSlotAuswahlId(null); setSlotDragZiel(null); }}
+                onClick={() => { setSlotSortModus(false); setSlotDragId(null); setSlotAuswahl([]); setSlotDragZiel(null); }}
                 {...tt("Verschieben beenden")}>
                 Fertig
               </button>
@@ -3269,7 +3300,7 @@ export default function VokabelApp() {
           <div style={{fontSize:"0.68rem", color:"#9b9590", marginBottom:6}}>Lang drücken: umbenennen, verschieben oder löschen</div>
         )}
         {slotSortModus && <div style={{fontSize:"0.72rem", color:"#6b6560", marginBottom:6}}>
-          {slotAuswahlId ? "Jetzt den Zielplatz antippen – ist er belegt, tauschen die beiden." : "Paket antippen, dann Zielplatz antippen – oder direkt ziehen. Belegter Platz: die beiden tauschen."}
+          {slotAuswahl.length ? `${slotAuswahl.length} markiert – freien Platz antippen (dort untereinander) oder ziehen.` : "Pakete antippen zum Markieren, dann freien Platz antippen – oder direkt ziehen. Belegter Platz: Einträge rücken auf die frei gewordenen Plätze."}
         </div>}
         {zellen.length > 0 && (
           <div className="slot-raster" style={{gridTemplateColumns:`repeat(${groesse.spalten}, minmax(0, 1fr))`}}>
@@ -7083,7 +7114,7 @@ export default function VokabelApp() {
               </div>
               {[
                 {titel:"Listen-Tab", inhalt:[
-                  {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „In Sessions aufteilen“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. „In Sessions aufteilen“ öffnet den Quiz-Tab mit dieser Liste und einem gelben Kasten: Name (vorgegeben: Listenname), Gruppengröße (10, 20, 25, 50, 75, 100 oder eigene), Bereich von–bis (Vokabel-Nummern) und bei Rest „eigene Gruppe“ oder „an letzte anhängen“; die Vorschau zeigt die Namen, z. B. „Verbes (21 - 40)“. Darunter alle Einstellungen wie gewohnt wählen, dann „Sessions anlegen“: je Gruppe eine gespeicherte Konfiguration, zusammen ab der nächsten freien Zeile im Raster. Namen, die es schon gibt, werden übersprungen. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
+                  {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „In Sessions aufteilen“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. „In Sessions aufteilen“ öffnet den Quiz-Tab mit dieser Liste und einem gelben Kasten: Name (vorgegeben: Listenname), Gruppengröße (10, 20, 25, 50, 75, 100 oder eigene), Bereich von–bis (Vokabel-Nummern) und bei Rest „eigene Gruppe“ oder „an letzte anhängen“; die Vorschau zeigt die Namen, z. B. „Verbes (21 - 40)“. Darunter alle Einstellungen wie gewohnt wählen, dann „Sessions anlegen“: je Gruppe eine gespeicherte Konfiguration, untereinander in der ersten Spalte unter dem untersten Eintrag. Namen, die es schon gibt, werden übersprungen. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Im Verschieben-Modus lassen sich mehrere Listen markieren und gemeinsam verschieben. Neue Listen (auch per Import) kommen untereinander in die erste Spalte. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
                   {k:"[+] Neue Liste", v:"Legt eine leere Liste mit eigenem Namen an."},
                   {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, JSON, TXT, Löschen. JSON = vollständige Sicherung mit Lernstand (Datei „Name - JSON.txt“), TXT = nur die Vokabeln als Text ohne Scores (Datei „Name - TXT.txt“). Auf iPad/iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, Mail, AirDrop), sonst wird die Datei heruntergeladen. Beim Import ist die Endung egal – die App erkennt den Inhalt."},
                   {k:"Stift-Button", v:"Listenname umbenennen."},
@@ -7098,7 +7129,7 @@ export default function VokabelApp() {
                   {k:"Import", v:"Vokabeln aus einer TXT-Datei oder JSON-Datei importieren."},
                 ]},
                 {titel:"Quiz-Tab", inhalt:[
-                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts. Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann mittig in einer grünen Kopfzeile – antippen öffnet die Auswahl wieder. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt: Beim Wechsel des Abfrage-Modus springt der Fortschritt auf den Stand dieser Art. Ein Tipp auf die Fortschrittszahl (z. B. „10 / 14 — 71%“) beginnt nach kurzer Rückfrage für die aktuelle Art eine neue Session – gelöscht wird nur, welche Vokabeln schon abgefragt wurden; Scores und Lernfortschritt bleiben. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Gespeicherte Konfigurationen, bis 100 Zeilen × 4 Spalten). Lang drücken auf einen Eintrag zeigt den vollständigen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie unter neuem Namen, mit eigenem Fortschritt), „Verschieben“ und „Löschen“ (Verlauf-Einträge: „Löschen“). „Verschieben“: Zielplatz antippen oder direkt ziehen – auf einem belegten Platz tauschen die beiden; „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt auf den ersten freien Platz; ist das Raster voll, kommt automatisch eine Zeile dazu."},
+                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts. Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann mittig in einer grünen Kopfzeile – antippen öffnet die Auswahl wieder. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt: Beim Wechsel des Abfrage-Modus springt der Fortschritt auf den Stand dieser Art. Ein Tipp auf die Fortschrittszahl (z. B. „10 / 14 — 71%“) beginnt nach kurzer Rückfrage für die aktuelle Art eine neue Session – gelöscht wird nur, welche Vokabeln schon abgefragt wurden; Scores und Lernfortschritt bleiben. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Gespeicherte Konfigurationen, bis 100 Zeilen × 4 Spalten). Lang drücken auf einen Eintrag zeigt den vollständigen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie unter neuem Namen, mit eigenem Fortschritt), „Verschieben“ und „Löschen“ (Verlauf-Einträge: „Löschen“). „Verschieben“: Einträge antippen markiert sie (nummeriert, mehrere möglich), ein freier Platz setzt die markierten dort untereinander ein; oder direkt ziehen – ein markierter Eintrag nimmt alle markierten mit, auf einem belegten Platz rücken die Einträge auf die frei gewordenen Plätze (einzeln: die beiden tauschen); „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt untereinander in die erste Spalte unter den untersten Eintrag; das Raster wächst bei Bedarf."},
                   {k:"Neu-Chip", v:"Setzt die aktive Session zurück – Quiz startet ohne geladene Konfiguration."},
                   {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl."},
@@ -7500,7 +7531,7 @@ export default function VokabelApp() {
                 onKeyDown={e => e.key === "Enter" && speichern()} />
               {doppelt && <div style={{fontSize:"0.78rem", color:"#c0392b", marginTop:6}}>Diesen Namen gibt es schon.</div>}
               <div style={{fontSize:"0.75rem", color:"#9b9590", marginTop:8}}>{kopie
-                ? "Die Kopie übernimmt alle Einstellungen, beginnt aber mit einem eigenen Paket-Fortschritt. Sie kommt auf den ersten freien Platz im Raster."
+                ? "Die Kopie übernimmt alle Einstellungen, beginnt aber mit einem eigenen Paket-Fortschritt. Sie kommt in die erste Spalte unter den untersten Eintrag im Raster."
                 : "Platz im Raster, Einstellungen und Fortschritt bleiben erhalten."}</div>
               <div className="modal-actions">
                 <button {...tt(kopie ? "Schließen, ohne zu duplizieren" : "Schließen, ohne umzubenennen")} className="btn btn-ghost" onClick={schliessen}>Abbrechen</button>
