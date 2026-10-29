@@ -87,6 +87,16 @@ let maxFolge = 0, lauf = 0;
 folge.forEach(f => { lauf = /^o\d+$/.test(f) ? lauf + 1 : 0; maxFolge = Math.max(maxFolge, lauf); });
 ok(maxFolge <= 1, `gleichmäßig verteilt: nie zwei ohne Akzent hintereinander (${maxFolge})`);
 
+// Auswertung: bezieht sich nur auf die Wörter mit Akzent (100 % = alle Wörter mit Akzent)
+// „Lösung anzeigen“ = nicht gewusst → Wiederholung; die hier überspringen
+if (await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.includes("Wiederholung abbrechen")))) await clickText("button", "Wiederholung abbrechen");
+await page.evaluate(() => document.querySelector("[data-zur-auswertung]")?.click()); await sleep(400);
+const ausw = await page.evaluate(() => document.querySelector("[data-session-auswertung]")?.innerText.replace(/\s+/g, " ") || "");
+console.log("     Auswertung:", ausw);
+ok(/4 Wörter mit Akzent/i.test(ausw) && /Dazu geübt ohne Akzent 4 \(zählen nicht mit\)/.test(ausw), "Auswertung: 4 Wörter mit Akzent, 4 ohne nur geübt");
+const segStart = await page.evaluate(() => [...document.querySelectorAll('[data-balken="Start"] [data-segment]')].map(x => x.dataset.segment + ":" + x.textContent.trim()).join(","));
+ok(segStart === "nie:4", `Balken Start: nur die 4 Wörter mit Akzent (${segStart})`);
+
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);

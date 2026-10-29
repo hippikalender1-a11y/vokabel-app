@@ -699,11 +699,12 @@ const STATISTIK_ARTEN = [["uebersetzung", "Übersetzung"], ["diktat", "Diktat"],
 // Feld des Scores je Art (an der Vokabel)
 const SCORE_FELD = { uebersetzung: "fortschritt", diktat: "diktatFortschritt", akzente: "akzentFortschritt" };
 // Sicht für die Statistik: "fortschritt" ist der Score der gewählten Art; Akzente nur Vokabeln mit Akzent
+// Akzente: es zählen nur Wörter mit Akzent (100 % = alle Wörter mit Akzent); dazugenommene Wörter
+// ohne Akzent sind reine Übung und fließen nicht in Statistik, Lernfortschritt und Auswertung ein
+const hatAkzentWort = v => TYPEN.some(t => t.startsWith('E') && hatAkzente(v?.[t]?.wert));
 function statistikSicht(voks, art) {
   if (art === "diktat") return voks.map(v => ({ ...v, fortschritt: v.diktatFortschritt }));
-  if (art === "akzente") return voks
-    .filter(v => v.akzentFortschritt || TYPEN.some(t => t.startsWith('E') && hatAkzente(v[t]?.wert)))
-    .map(v => ({ ...v, fortschritt: v.akzentFortschritt }));
+  if (art === "akzente") return voks.filter(hatAkzentWort).map(v => ({ ...v, fortschritt: v.akzentFortschritt }));
   return voks;
 }
 
@@ -2946,12 +2947,14 @@ export default function VokabelApp() {
     const feld = q.scoreFeld || (q.modus === "diktat" ? "diktatFortschritt" : "fortschritt");
     const mitSession = !!(slot?.startScores && Object.keys(slot.startScores).length > 0);
     const start = mitSession ? slot.startScores : (q.rundeStartScores || {});
-    const ids = Object.keys(start);
+    const vokMap = new Map(q.liste.vokabeln.map(v => [v.id, v]));
+    const ids = Object.keys(start).filter(id => feld !== "akzentFortschritt" || hatAkzentWort(vokMap.get(id)));
     const jetztMap = new Map(q.liste.vokabeln.map(v => [v.id, v[feld]?.score ?? null]));
     const jetzt = Object.fromEntries(ids.map(id => [id, jetztMap.has(id) ? jetztMap.get(id) : start[id]]));
     const erstRunde = erstAusQuiz(q);
     const erst = mitSession ? (slot.erst ? { ...slot.erst, ...erstRunde } : null) : erstRunde;
-    return { ids, start, jetzt, erst, startZeit: mitSession ? slot.startZeit : q.rundeStartZeit,
+    const ohneAkzent = feld === "akzentFortschritt" ? Object.keys(start).length - ids.length : null;
+    return { ids, start, jetzt, erst, ohneAkzent, startZeit: mitSession ? slot.startZeit : q.rundeStartZeit,
       pakete: mitSession ? (slot.pakete != null ? slot.pakete + 1 : null) : 1, mitSession };
   }
   function renderSessionAuswertung(d) {
@@ -2994,7 +2997,7 @@ export default function VokabelApp() {
       <div data-session-auswertung>
         <div className="karte" style={{padding:"14px 16px", margin:"8px 0 14px"}}>
           <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"#6b6560", marginBottom:12}}>
-            {d.mitSession ? "Ganze Session" : "Diese Runde"} · {n} Vokabel{n !== 1 ? "n" : ""}
+            {d.mitSession ? "Ganze Session" : "Diese Runde"} · {d.ohneAkzent != null ? `${n} ${n === 1 ? "Wort" : "Wörter"} mit Akzent` : `${n} Vokabel${n !== 1 ? "n" : ""}`}
           </div>
           {balken("Start", zv)}
           {balken("Ende", zn)}
@@ -3019,7 +3022,8 @@ export default function VokabelApp() {
           </div>
         </div>
         <div data-zusatzdaten style={{fontSize:"0.8rem", color:"#9b9590", margin:"0 2px 18px"}}>
-          {zeile("Vokabeln", d.pakete ? `${n} in ${d.pakete} Paket${d.pakete !== 1 ? "en" : ""}` : n)}
+          {zeile(d.ohneAkzent != null ? "Wörter mit Akzent" : "Vokabeln", d.pakete ? `${n} in ${d.pakete} Paket${d.pakete !== 1 ? "en" : ""}` : n)}
+          {d.ohneAkzent > 0 && zeile("Dazu geübt ohne Akzent", `${d.ohneAkzent} (zählen nicht mit)`)}
           {zeile("Ø Score", `${fmt(sV)} → ${fmt(sN)}`)}
           {zeile("Verbessert · gleich · verschlechtert", `${besser} · ${gleich} · ${schlechter}`)}
           {erstIds.length > 0 && zeile("Auf Anhieb gewusst", `${anhieb} von ${erstIds.length} (${Math.round(anhieb / erstIds.length * 100)} %)`)}
@@ -3058,7 +3062,8 @@ export default function VokabelApp() {
     if (schwelle <= 0 || !q?.rundeStartScores || !q.gruppeVokIds?.length) return null;
     const start = q.rundeStartScores;
     const jetztMap = new Map(q.liste.vokabeln.map(v => [v.id, v[q.scoreFeld || "fortschritt"]?.score ?? null]));
-    const ids = q.gruppeVokIds;
+    const vokMap = new Map(q.liste.vokabeln.map(v => [v.id, v]));
+    const ids = q.scoreFeld === "akzentFortschritt" ? q.gruppeVokIds.filter(id => hatAkzentWort(vokMap.get(id))) : q.gruppeVokIds;
     const vorher = ids.map(id => id in start ? start[id] : jetztMap.get(id));
     const nachher = ids.map(id => jetztMap.get(id));
     const vorherP = lernProzent(vorher, schwelle), nachherP = lernProzent(nachher, schwelle);

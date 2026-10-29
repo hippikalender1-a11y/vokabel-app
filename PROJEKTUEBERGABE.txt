@@ -1615,6 +1615,9 @@ AKZENTE OHNE AKZENT BEGRENZT: Regel "auch Wörter ohne Akzent" hat je Stufe
   Session: feste Auswahl = startScores) im Quiz-Start und im Quiz-Tab, Anzeige
   "(x mit Akzent + y ohne)"; verteileOhneAkzent() mischt gleichmäßig vor dem
   Paket-Schnitt. Test: e2e/akzentbegrenzung.mjs.
+AKZENTE ZÄHLEN NUR WÖRTER MIT AKZENT: hatAkzentWort(); statistikSicht("akzente"),
+  Session-Auswertung (ids gefiltert, ohneAkzent = nur geübt) und Lern-Bilanz
+  beziehen sich nur auf Wörter mit Akzent (100 % = alle Wörter mit Akzent).
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).
