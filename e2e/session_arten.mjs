@@ -75,9 +75,7 @@ ok(await fortschritt() === "10 / 14", "Übersetzung: Fortschritt 10 / 14");
 ok((await text()).includes("Fortschritt Übersetzung"), "Fortschrittszeile nennt die Abfrageart");
 
 // Wechsel zu Akzente: eigener (noch leerer) Fortschritt
-if (!(await page.$(".spalten-modus-btn"))) await page.click("[data-abfragemodus]");
-await sleep(300);
-await clickText(".spalten-modus-btn", "Akzente", true);
+await page.click('[data-quiz-art="akzente"]');
 await sleep(300);
 console.log("     Akzente:", await fortschritt(), "| Start:", await anzahl());
 ok(await fortschritt() === null, "Akzente: kein Fortschritt vom Übersetzungs-Stand übernommen");
@@ -100,13 +98,11 @@ console.log("     Akzente nach Abbruch:", akz);
 ok(/^2 \/ \d+$/.test(akz || ""), "Akzente: eigener Fortschritt 2 / …");
 
 // zurück zu Übersetzung → alter Stand wieder da
-if (!(await page.$(".spalten-modus-btn"))) await page.click("[data-abfragemodus]");
-await sleep(300);
-await clickText(".spalten-modus-btn", "Karte", true);
+await page.click('[data-quiz-art="uebersetzung"]');
 await sleep(300);
 ok(await fortschritt() === "10 / 14", "Zurück zu Übersetzung: wieder 10 / 14");
 // und wieder Akzente → 2 / …
-await clickText(".spalten-modus-btn", "Akzente", true);
+await page.click('[data-quiz-art="akzente"]');
 await sleep(300);
 ok(await fortschritt() === akz, "Wieder Akzente: Stand 2 / … bleibt erhalten");
 
@@ -121,7 +117,7 @@ await sleep(200);
 await page.click("[data-reset-ja]");
 await sleep(300);
 ok(await fortschritt() === null, "Zurücksetzen: Akzente-Fortschritt weg, neue Session");
-await clickText(".spalten-modus-btn", "Karte", true);
+await page.click('[data-quiz-art="uebersetzung"]');
 await sleep(300);
 ok(await fortschritt() === "10 / 14", "Übersetzungs-Fortschritt bleibt nach dem Zurücksetzen von Akzente");
 

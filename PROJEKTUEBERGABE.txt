@@ -1562,6 +1562,17 @@ LISTENAUSWAHL IN QUIZ UND STATISTIK im selben Raster wie der Listen-Tab:
   listenRasterPlaetze() (Spalten aus listenRaster, leere Plätze frei, mit
   Sprachfilter zusammengerückt), Container .listen-raster.auswahl (.eng ab 2
   Spalten: ohne Spalten-Badges). Test: e2e/listenraster.mjs.
+ABFRAGEARTEN GETRENNT (Ü|D|A): quizArt (State) = quizAbfrageArt; quizArtStash =
+  Einstellungen der nicht gewählten Arten. Konfiguration: oberste Ebene = gewählte
+  Art + art, dazu arten {uebersetzung, diktat, akzente} (ART_FELDER). artVonKonfig()
+  (alte Einträge: aus den Einstellungen), standardArtEinstellungen(), artBereinigt()
+  (Akzente nur als eigene Art: Ü wandelt "akzent" → Karte, A nur E-Spalten fest
+  "akzent", D quizModus "diktat"). wechsleQuizArt(neu) merkt die alte Art im Stash.
+  applyKonfiguration(k, art) / ladeSlot(typ, id, art) laden direkt in einer Art.
+  UI: Abfrage-Modus-Zeile links data-quiz-art Ü/D/A; Frage–Antwort/wechselnd nur
+  bei Ü, kein Diktat-Knopf mehr, kein Akzente-Knopf in den Spalten. Mischen von
+  Akzent- und normalen Antworten entfällt (Test akzent_mischen entfernt).
+  Test: e2e/arten.mjs.
 GRUPPEN-QUIZ → ZURÜCK: quiz.ausStatistik (einmalige Runde via gruppe, Fallback
   per setQuiz im Start-Effekt). Auswertung (ohne Session, Quiz und Diktat):
   Hauptknopf "📊 Zurück zur Statistik" (data-zurueck-statistik) und Schließen

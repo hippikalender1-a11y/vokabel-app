@@ -48,13 +48,15 @@ await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz");
 await clickText(".quiz-setup-check", "Akzente");
 // Spalten-Bereich ggf. aufklappen
-if (!(await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")].some(b => b.textContent.trim() === "Akzente"))))
-  await page.click("[data-abfragemodus]");
+if (!(await page.$(".spalten-modus-btn"))) await page.click("[data-abfragemodus]");
 await sleep(300);
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")].map(b => b.textContent.trim()));
-console.log("     Modus-Knöpfe:", knoepfe.join(" | "));
-ok(knoepfe.filter(k => k === "Akzente").length === 1, "Knopf „Akzente“ nur bei der Fremdsprachen-Antwortspalte");
-await clickText(".spalten-modus-btn", "Akzente", true);
+console.log("     Modus-Knöpfe Ü:", knoepfe.join(" | "));
+ok(!knoepfe.includes("Akzente"), "Übersetzung: kein Akzente-Modus in den Spalten (eigene Art)");
+await page.click('[data-quiz-art="akzente"]'); await sleep(300);
+const knoepfeA = await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")].map(b => b.textContent.trim()));
+console.log("     Modus Akzente:", knoepfeA.join(" | "));
+ok(knoepfeA.join("|") === "Akzente", "Akzente (A): Antwortspalte fest auf Akzente, keine anderen Modi");
 let t = await text();
 ok(/Quiz starten \(4 Vokabeln\)/.test(t), "Stufe „Schwer“ (Standard): auch Wörter ohne Akzent → 4 Wörter");
 ok(await page.evaluate(() => document.querySelector('[data-anzahl="einstellungen"]')?.textContent.trim()) === "(4 V.)", "Zeile Einstellungen (Schwer, mit Wörtern ohne Akzent): 4 V.");
