@@ -18,6 +18,8 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };
@@ -45,6 +47,7 @@ const durchlaufen = async () => {
   return gefragt;
 };
 
+const weiterZurAuswertung = async () => { if (await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); } };
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
@@ -81,7 +84,7 @@ ok(gefragt.length === 3 && ["gehen","kommen","Katze"].every(w => gefragt.include
 ok(gefragt[0] === "Katze", "schlechteste zuerst (Katze −3)");
 
 // Gelernt (Score 4 > Standard-Grenze 3) lässt sich trotzdem abfragen
-await page.click("[data-zurueck-statistik]"); await sleep(400);
+await weiterZurAuswertung(); await page.click("[data-zurueck-statistik]"); await sleep(400);
 await clickText(".toggle-btn.zeile-rechts .toggle-opt", "Alle", true); await sleep(300);   // Statistik zeigt danach die Quiz-Auswahl → wieder alle
 await menue('[data-kreis-gruppe="gelernt"]');
 await page.evaluate(() => document.querySelector('[data-info-aktion="▶ Quiz mit 1 Vokabel"]').click()); await sleep(250);
@@ -141,7 +144,9 @@ await menue('[data-kreis-gruppe="negativ"]');
 await page.evaluate(() => document.querySelector("[data-info-aktion]").click()); await sleep(250);
 await clickText("[data-gruppen-quiz] button", "Starten", true); await sleep(600);
 await durchlaufen();
-ok(await page.$("[data-zurueck-statistik]"), "Auswertung: Knopf „Zurück zur Statistik“");
+ok(await page.$("[data-zur-auswertung]") && !(await page.$("[data-zurueck-statistik]")), "Ende der Runde: nur „Weiter →“");
+await weiterZurAuswertung();
+ok(await page.$("[data-session-auswertung]") && await page.$("[data-zurueck-statistik]"), "Auswertung: Balken und Knopf „Zurück zur Statistik“");
 await page.click("[data-zurueck-statistik]"); await sleep(500);
 const nachStat = await page.evaluate(() => ({ tab: document.querySelector(".tab.aktiv")?.textContent.trim(),
   kopf: document.querySelector("[data-slot-kopf]").dataset.slotKopf + " " + document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv").textContent.trim() }));

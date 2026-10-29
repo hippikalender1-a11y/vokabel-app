@@ -18,6 +18,8 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };
@@ -30,6 +32,7 @@ const alleGewusst = async () => {
   }
 };
 
+const weiterZurAuswertung = async () => { if (await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); } };
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
@@ -63,6 +66,15 @@ ok(/Alle 4 Vokabeln/.test(jubel?.sub || ""), "Unterzeile: alle 4 Vokabeln");
 await sleep(600);
 await page.screenshot({ path: "jubel.png" });
 
+ok(await page.$("[data-zur-auswertung]") && !(await page.$("[data-nochmal]")), "erster Bildschirm: nur „Weiter →“, kein „Nochmal!“");
+await weiterZurAuswertung();
+const ausw = await page.evaluate(() => ({ titel: document.querySelector(".topbar-title")?.textContent.trim(), text: document.querySelector("[data-session-auswertung]")?.innerText.replace(/\s+/g, " ") || "",
+  balken: [...document.querySelectorAll("[data-balken]")].map(b => b.dataset.balken).join(",") }));
+console.log("     Auswertung:", ausw.text.slice(0, 260));
+ok(ausw.titel === "Session-Auswertung" && ausw.balken === "Start,Ende", "„Weiter →“: Session-Auswertung mit Balken Start/Ende");
+ok(/Ganze Session · 4 Vokabeln/i.test(ausw.text) && /Neu gelernt/.test(ausw.text) && /Lernfortschritt 0 % → 33 %/.test(ausw.text), "Kennzahlen: ganze Session, Lernfortschritt 0 % → 33 %");
+ok(/Auf Anhieb gewusst 4 von 4/.test(ausw.text) && /Vokabeln 4 in 1 Paket/.test(ausw.text) && /Dauer/.test(ausw.text), "Zusatzdaten: auf Anhieb 4 von 4, 1 Paket, Dauer");
+ok(await page.$("[data-nochmal]"), "darunter die gewohnten Knöpfe (Nochmal!)");
 await page.click("[data-nochmal]"); await sleep(600);
 ok(await titel() === "1 / 4", `„Nochmal!“: Session startet neu mit 4 Vokabeln (${await titel()})`);
 await alleGewusst();

@@ -2398,7 +2398,8 @@ export default function VokabelApp() {
     const sf = slotSFAlle(eintrag)[art];
     if (sf) {
       const k = eintrag.konfiguration || {};
-      const sessionObj = { slotTyp: typ, slotId: id, art, listenIds: k.listenIds || [], vokabelAuswahl: k.vokabelAuswahl || [], bereichTyp: k.bereichTyp || "alle", abgefragt: sf.abgefragt || [], gesamt: sf.gesamt || 0, paketGroesse: sf.paketGroesse || STANDARD_PAKET_GROESSE, startScores: sf.startScores || {} };
+      const sessionObj = { slotTyp: typ, slotId: id, art, listenIds: k.listenIds || [], vokabelAuswahl: k.vokabelAuswahl || [], bereichTyp: k.bereichTyp || "alle", abgefragt: sf.abgefragt || [], gesamt: sf.gesamt || 0, paketGroesse: sf.paketGroesse || STANDARD_PAKET_GROESSE, startScores: sf.startScores || {},
+        startZeit: sf.startZeit, erst: sf.erst, pakete: sf.pakete };
       lsSet(SK.sessionAktiv, sessionObj);
       setSessionSlotAktiv(sessionObj);
       setQuizSessionModus("pakete");
@@ -2582,26 +2583,47 @@ export default function VokabelApp() {
     const slotTyp = forceTyp ?? aktiverSlot?.typ ?? null;
     const slotId = forceId ?? aktiverSlot?.id ?? null;
     const art = quizAbfrageArt;
-    const sessionObj = { slotTyp, slotId, art, listenIds: [...quizTabListen], vokabelAuswahl: Array.from(quizCheckboxAuswahl), bereichTyp: quizBereichTyp, abgefragt: [], gesamt: gesamtVoks, paketGroesse, startScores };
+    const sessionObj = { slotTyp, slotId, art, listenIds: [...quizTabListen], vokabelAuswahl: Array.from(quizCheckboxAuswahl), bereichTyp: quizBereichTyp, abgefragt: [], gesamt: gesamtVoks, paketGroesse, startScores,
+      startZeit: Date.now(), erst: {}, pakete: 0 };
     lsSet(SK.sessionAktiv, sessionObj);
     setSessionSlotAktiv(sessionObj);
-    if (slotTyp && slotId) {
-      updateSlotSF(slotTyp, slotId, { abgefragt: [], gesamt: gesamtVoks, paketGroesse, startScores }, art);
-    }
+    if (slotTyp && slotId) updateSlotSF(slotTyp, slotId, sessionSF(sessionObj), art);
     return sessionObj;
+  }
+  // Teil des Session-Objekts, der im Slot-Eintrag je Abfrageart gespeichert wird
+  const sessionSF = x => ({ abgefragt: x.abgefragt, gesamt: x.gesamt, paketGroesse: x.paketGroesse, startScores: x.startScores, startZeit: x.startZeit, erst: x.erst, pakete: x.pakete });
+  // Neuer Durchlauf einer bestehenden Session (nach „Nochmal“ / Durchlauf-Ende): Start-Scores, Startzeit,
+  // erste Bewertungen und Paketzahl neu beginnen – für die Session-Auswertung am Ende
+  function sessionDurchlaufStarten(slot, voks, feld) {
+    if (slot.startScores && Object.keys(slot.startScores).length > 0) { setSessionSlotAktiv(slot); return; }
+    const neu = { ...slot, startScores: Object.fromEntries(voks.map(v => [v.id, v[feld]?.score ?? null])), startZeit: Date.now(), erst: {}, pakete: 0 };
+    lsSet(SK.sessionAktiv, neu);
+    setSessionSlotAktiv(neu);
+    if (neu.slotTyp && neu.slotId) updateSlotSF(neu.slotTyp, neu.slotId, sessionSF(neu), neu.art || "uebersetzung");
+  }
+  // Erste Bewertung je Vokabel in dieser Runde: "richtig" | "falsch" | "aufgedeckt"
+  function erstAusQuiz(q) {
+    if (!q) return {};
+    if (q.modus !== "diktat") return q.gewertet || {};
+    const erst = {};
+    (q.diktatErgebnisse || []).forEach(e => { if (!(e.vokId in erst)) erst[e.vokId] = e.richtig ? "richtig" : "falsch"; });
+    return erst;
   }
 
   function updateSessionSlotFortschritt(neueIds, isDurchlaufEnde) {
     const slot = lsGet(SK.sessionAktiv);
     if (!slot) return;
     const neuAbgefragt = isDurchlaufEnde ? [] : [...new Set([...(slot.abgefragt || []), ...neueIds])];
-    const updated = { ...slot, abgefragt: neuAbgefragt };
+    // Durchlauf-Ende: Auswertungsdaten zurücksetzen (der nächste Durchlauf beginnt mit neuen Start-Scores)
+    const updated = isDurchlaufEnde
+      ? { ...slot, abgefragt: [], startScores: {}, startZeit: null, erst: {}, pakete: 0 }
+      : { ...slot, abgefragt: neuAbgefragt,
+          ...(slot.erst ? { erst: { ...slot.erst, ...erstAusQuiz(quiz) } } : {}),
+          ...(slot.pakete != null ? { pakete: slot.pakete + 1 } : {}) };
     lsSet(SK.sessionAktiv, updated);
     setSessionSlotAktiv(updated);
     const { slotTyp, slotId } = slot;
-    if (slotTyp && slotId) {
-      updateSlotSF(slotTyp, slotId, { abgefragt: neuAbgefragt, gesamt: updated.gesamt, paketGroesse: updated.paketGroesse, startScores: updated.startScores }, slot.art || "uebersetzung");
-    }
+    if (slotTyp && slotId) updateSlotSF(slotTyp, slotId, sessionSF(updated), slot.art || "uebersetzung");
   }
 
   // Löscht nur den Fortschritt der aktuellen Abfrageart; die anderen Arten bleiben im Slot erhalten
@@ -2909,6 +2931,119 @@ export default function VokabelApp() {
       </div>
     );
   }
+
+  // ── Session-Auswertung (zweiter Bildschirm nach „Weiter →“) ──
+  // Session mit Paketen: alle Vokabeln der Session seit Durchlauf-Start; sonst: diese Runde
+  function sessionAuswertungDaten(q) {
+    const slot = q.istSessionModus ? lsGet(SK.sessionAktiv) : null;
+    const feld = q.scoreFeld || (q.modus === "diktat" ? "diktatFortschritt" : "fortschritt");
+    const mitSession = !!(slot?.startScores && Object.keys(slot.startScores).length > 0);
+    const start = mitSession ? slot.startScores : (q.rundeStartScores || {});
+    const ids = Object.keys(start);
+    const jetztMap = new Map(q.liste.vokabeln.map(v => [v.id, v[feld]?.score ?? null]));
+    const jetzt = Object.fromEntries(ids.map(id => [id, jetztMap.has(id) ? jetztMap.get(id) : start[id]]));
+    const erstRunde = erstAusQuiz(q);
+    const erst = mitSession ? (slot.erst ? { ...slot.erst, ...erstRunde } : null) : erstRunde;
+    return { ids, start, jetzt, erst, startZeit: mitSession ? slot.startZeit : q.rundeStartZeit,
+      pakete: mitSession ? (slot.pakete != null ? slot.pakete + 1 : null) : 1, mitSession };
+  }
+  function renderSessionAuswertung(d) {
+    const schwelle = einstellungen.gelerntSchwelle ?? 0;
+    const gruppe = sc => sc == null ? "nie" : sc < 0 ? "negativ" : schwelle > 0 && sc >= schwelle ? "gelernt" : "arbeit";
+    const zaehle = werte => { const z = { gelernt: 0, arbeit: 0, nie: 0, negativ: 0 }; werte.forEach(sc => z[gruppe(sc)]++); return z; };
+    const vorher = d.ids.map(id => d.start[id]), nachher = d.ids.map(id => d.jetzt[id]);
+    const zv = zaehle(vorher), zn = zaehle(nachher), n = d.ids.length;
+    const pV = lernProzent(vorher, schwelle), pN = lernProzent(nachher, schwelle);
+    const neuGelernt = schwelle > 0 ? d.ids.filter(id => (d.start[id] ?? -Infinity) < schwelle && (d.jetzt[id] ?? -Infinity) >= schwelle).length : 0;
+    const schnitt = w => { const x = w.filter(sc => sc != null); return x.length ? x.reduce((a, b) => a + b, 0) / x.length : null; };
+    const sV = schnitt(vorher), sN = schnitt(nachher);
+    const fmt = x => x == null ? "–" : `${x > 0 ? "+" : ""}${x.toFixed(1)}`;
+    let besser = 0, gleich = 0, schlechter = 0;
+    d.ids.forEach(id => { const a = d.start[id] ?? 0, b = d.jetzt[id] ?? 0; if (b > a) besser++; else if (b < a) schlechter++; else gleich++; });
+    const erstIds = d.erst ? d.ids.filter(id => id in d.erst) : [];
+    const anhieb = erstIds.filter(id => d.erst[id] === "richtig").length;
+    const dauer = d.startZeit ? Date.now() - d.startZeit : null;
+    const dauerText = dauer == null ? null : dauer < 60000 ? "unter 1 Minute" : dauer < 3600000 ? `${Math.round(dauer / 60000)} Minuten`
+      : dauer < 86400000 ? `${Math.floor(dauer / 3600000)} Std. ${Math.round((dauer % 3600000) / 60000)} Min.` : `${Math.round(dauer / 86400000)} Tage`;
+    const NAMEN = { gelernt: "Gelernt", arbeit: "In Arbeit", nie: "Nie abgefragt", negativ: "Negativ" };
+    const balken = (titel, z) => (
+      <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8}} data-balken={titel}>
+        <span style={{width:40, fontSize:"0.78rem", fontWeight:700, color:"#6b6560"}}>{titel}</span>
+        <div style={{flex:1, display:"flex", height:26, borderRadius:8, overflow:"hidden", background:"#f0ede8"}}>
+          {GRUPPE_BALKEN.map(([g, farbe]) => z[g] > 0 && (
+            <div key={g} data-segment={g} style={{width:`${z[g] / Math.max(1, n) * 100}%`, background:farbe, display:"flex", alignItems:"center", justifyContent:"center",
+              color: g === "gelernt" || g === "negativ" ? "#fff" : "#3b3832", fontSize:"0.75rem", fontWeight:700, overflow:"hidden"}}
+              {...ttFeld(`${titel}: ${NAMEN[g]} ${z[g]}`)}>{z[g] / Math.max(1, n) >= 0.08 ? z[g] : ""}</div>
+          ))}
+        </div>
+      </div>
+    );
+    const zeile = (k, v) => (
+      <div style={{display:"flex", justifyContent:"space-between", gap:10, padding:"5px 0", borderBottom:"1px solid #f0ede8"}}>
+        <span>{k}</span><span style={{fontWeight:600, color:"#3b3832"}}>{v}</span>
+      </div>
+    );
+    return (
+      <div data-session-auswertung>
+        <div className="karte" style={{padding:"14px 16px", margin:"8px 0 14px"}}>
+          <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"#6b6560", marginBottom:12}}>
+            {d.mitSession ? "Ganze Session" : "Diese Runde"} · {n} Vokabel{n !== 1 ? "n" : ""}
+          </div>
+          {balken("Start", zv)}
+          {balken("Ende", zn)}
+          <div style={{display:"flex", flexWrap:"wrap", gap:"4px 12px", marginTop:6, fontSize:"0.72rem", color:"#6b6560"}}>
+            {GRUPPE_BALKEN.map(([g, farbe]) => (
+              <span key={g} style={{display:"inline-flex", alignItems:"center", gap:4}}>
+                <span style={{width:10, height:10, borderRadius:3, background:farbe, display:"inline-block"}}/>{NAMEN[g]} {zv[g]} → {zn[g]}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div style={{display:"flex", gap:10, marginBottom:14}}>
+          <div className="karte" style={{flex:1, padding:"12px 14px", margin:0, textAlign:"center"}} data-kennzahl="lernfortschritt">
+            <div style={{fontSize:"0.72rem", color:"#6b6560", fontWeight:600}}>Lernfortschritt</div>
+            <div style={{fontSize:"1.25rem", fontWeight:800, color:"#2d6a4f", marginTop:2}}>{Math.round(pV)} % → {Math.round(pN)} %</div>
+            <div style={{fontSize:"0.78rem", color: pN - pV >= 0 ? "#2d6a4f" : "#c0392b", fontWeight:700}}>{pN - pV >= 0 ? "+" : ""}{Math.round(pN - pV)} %</div>
+          </div>
+          <div className="karte" style={{flex:1, padding:"12px 14px", margin:0, textAlign:"center"}} data-kennzahl="neu-gelernt">
+            <div style={{fontSize:"0.72rem", color:"#6b6560", fontWeight:600}}>Neu gelernt</div>
+            <div style={{fontSize:"1.25rem", fontWeight:800, color:"#2d6a4f", marginTop:2}}>{neuGelernt}</div>
+            <div style={{fontSize:"0.72rem", color:"#9b9590"}}>Score +{schwelle} erreicht</div>
+          </div>
+        </div>
+        <div data-zusatzdaten style={{fontSize:"0.8rem", color:"#9b9590", margin:"0 2px 18px"}}>
+          {zeile("Vokabeln", d.pakete ? `${n} in ${d.pakete} Paket${d.pakete !== 1 ? "en" : ""}` : n)}
+          {zeile("Ø Score", `${fmt(sV)} → ${fmt(sN)}`)}
+          {zeile("Verbessert · gleich · verschlechtert", `${besser} · ${gleich} · ${schlechter}`)}
+          {erstIds.length > 0 && zeile("Auf Anhieb gewusst", `${anhieb} von ${erstIds.length} (${Math.round(anhieb / erstIds.length * 100)} %)`)}
+          {dauerText && zeile("Dauer", dauerText)}
+        </div>
+      </div>
+    );
+  }
+  // ganze Seite der Session-Auswertung mit den gewohnten Knöpfen darunter
+  function sessionAuswertungSeite(q, knoepfe, schliessen) {
+    return (
+      <>
+        <style>{CSS}</style>
+        <div className="app">
+          <div className="topbar">
+            <button {...tt("Schließen – zurück zur Übersicht")} className="topbar-back" onClick={schliessen}>Schließen</button>
+            <span className="topbar-title">Session-Auswertung</span>
+            <span className="quiz-fortschritt"/>
+          </div>
+          <div className="sektion">
+            {renderSessionAuswertung(sessionAuswertungDaten(q))}
+            {knoepfe}
+          </div>
+        </div>
+      </>
+    );
+  }
+  const weiterZurAuswertung = (
+    <button data-zur-auswertung {...tt("Weiter zur Auswertung der ganzen Session: Start und Ende im Vergleich")} className="btn btn-primary" style={{width:"100%", fontSize:"1.05rem"}}
+      onClick={() => { setQuiz(q => q && { ...q, sessionAuswertung: true }); window.scrollTo(0, 0); }}>Weiter →</button>
+  );
 
   // Lern-Bilanz am Rundenende: neu gelernte Vokabeln (Gelernt-Schwelle erreicht) bzw. Gratulation
   function renderLernBilanz(q) {
@@ -3415,7 +3550,7 @@ export default function VokabelApp() {
           speichereSessionSlotNeu(quizPaketGroesse, voks.length, startScores, 'gespeichert', effSlot.id);
         } else {
           voks = voks.filter(v => !new Set(existingSlot.abgefragt || []).has(v.id));
-          setSessionSlotAktiv(existingSlot);
+          sessionDurchlaufStarten(existingSlot, voks, "diktatFortschritt");
         }
       } else {
         if (!existingSlot || konflikt || !effSlot || overrideSlot !== null) {
@@ -3425,7 +3560,7 @@ export default function VokabelApp() {
           speichereSessionSlotNeu(quizPaketGroesse, voks.length, startScores, 'verlauf', verlaufId);
         } else {
           voks = voks.filter(v => !new Set(existingSlot.abgefragt || []).has(v.id));
-          setSessionSlotAktiv(existingSlot);
+          sessionDurchlaufStarten(existingSlot, voks, "diktatFortschritt");
         }
       }
     }
@@ -3469,7 +3604,8 @@ export default function VokabelApp() {
       sessionVokIds: isPakete ? voks.map(v => v.id) : null,
       istSessionModus: isPakete,
       ausStatistik: !!gruppe,   // Gruppen-Runde aus der Statistik: danach dorthin zurück
-      sessionGesamt,
+      sessionGesamt, scoreFeld: "diktatFortschritt", rundeStartZeit: Date.now(),
+      rundeStartScores: Object.fromEntries(voks.map(v => [v.id, v.diktatFortschritt?.score ?? null])),
     });
     setAnsicht("quiz");
   }
@@ -3534,7 +3670,7 @@ export default function VokabelApp() {
           speichereSessionSlotNeu(quizPaketGroesse, voks.length, startScores, 'gespeichert', effSlot.id);
         } else {
           voks = voks.filter(v => !new Set(existingSlot.abgefragt || []).has(v.id));
-          setSessionSlotAktiv(existingSlot);
+          sessionDurchlaufStarten(existingSlot, voks, scoreFeld);
         }
       } else {
         if (!existingSlot || konflikt || !effSlot || overrideSlot !== null) {
@@ -3544,7 +3680,7 @@ export default function VokabelApp() {
           speichereSessionSlotNeu(quizPaketGroesse, voks.length, startScores, 'verlauf', verlaufId);
         } else {
           voks = voks.filter(v => !new Set(existingSlot.abgefragt || []).has(v.id));
-          setSessionSlotAktiv(existingSlot);
+          sessionDurchlaufStarten(existingSlot, voks, scoreFeld);
         }
       }
     }
@@ -3612,7 +3748,7 @@ export default function VokabelApp() {
       istSessionModus: isPakete,
       ausStatistik: !!gruppe,   // Gruppen-Runde aus der Statistik: danach dorthin zurück
       sessionGesamt, sessionIds, abfrageZiel,
-      rundeStartScores: Object.fromEntries(voks.map(v => [v.id, v[scoreFeld]?.score ?? null])),
+      rundeStartScores: Object.fromEntries(voks.map(v => [v.id, v[scoreFeld]?.score ?? null])), rundeStartZeit: Date.now(),
       gruppeVokIds, scoreFeld,
     });
     setAnsicht("quiz");
@@ -4144,6 +4280,12 @@ export default function VokabelApp() {
         const istLetzteBatch = schonAbgefragt.size >= (quiz.sessionGesamt || 0);
         const doBeende = (letzteRunde) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], letzteRunde); beendeQuiz(); };
         const doWeiter = (n) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], false); setQuizPaketGroesse(n); starteDiktat(); };
+        if (istLetzteBatch && quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, (<>
+          <button data-nochmal {...tt("Session gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}}
+            onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteDiktat(true); }}>🔁 Nochmal!</button>
+          <button {...tt("Durchlauf beenden und zur Übersicht")} className="btn btn-ghost-filled" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
+          <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button>
+        </>), () => doBeende(true));
         return (
           <>
             <style>{CSS}</style>
@@ -4169,13 +4311,7 @@ export default function VokabelApp() {
                   </div>
                 </div>
                 )}
-                {istLetzteBatch ? (
-                  <>
-                  <button data-nochmal {...tt("Session gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}}
-                    onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteDiktat(true); }}>🔁 Nochmal!</button>
-                  <button {...tt("Durchlauf beenden und zur Übersicht")} className="btn btn-ghost-filled" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
-                  <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
-                ) : (
+                {istLetzteBatch ? weiterZurAuswertung : (
                   <>
                     <div style={{marginBottom:10}}>
                       <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:6}}>Nächstes Paket:</div>
@@ -4197,6 +4333,14 @@ export default function VokabelApp() {
           </>
         );
       }
+      const diktatKnoepfe = (<>
+        <button {...tt("Diktat beenden und zur Übersicht")} className="btn btn-primary" style={{width:"100%"}}
+          onClick={() => { beendeQuiz(); }}>
+          Zurück zur Liste
+        </button>
+        <div style={{marginBottom:16}}><button data-zurueck-statistik={quiz.ausStatistik ? "" : undefined} className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt(quiz.ausStatistik ? "Zurück zur Statistik, aus der diese Runde gestartet wurde" : "Statistik zu dieser Abfragerunde öffnen")}>📊 {quiz.ausStatistik ? "Zurück zur Statistik" : "Zur Statistik"}</button></div>
+      </>);
+      if (quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, diktatKnoepfe, () => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); });
       return (
         <>
           <style>{CSS}</style>
@@ -4207,11 +4351,7 @@ export default function VokabelApp() {
               <span className="quiz-fortschritt">{richtig} / {quiz.diktatErgebnisse.length} ✓</span>
             </div>
             <div className="sektion">
-              <button {...tt("Diktat beenden und zur Übersicht")} className="btn btn-primary" style={{width:"100%"}}
-                onClick={() => { beendeQuiz(); }}>
-                Zurück zur Liste
-              </button>
-              <div style={{marginBottom:16}}><button data-zurueck-statistik={quiz.ausStatistik ? "" : undefined} className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt(quiz.ausStatistik ? "Zurück zur Statistik, aus der diese Runde gestartet wurde" : "Statistik zu dieser Abfragerunde öffnen")}>📊 {quiz.ausStatistik ? "Zurück zur Statistik" : "Zur Statistik"}</button></div>
+              <div style={{marginBottom:16}}>{weiterZurAuswertung}</div>
               <div className="karte">
                 <div {...tt("Liste der Diktat-Ergebnisse auf- oder zuklappen")} style={{padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer"}}
                   onClick={() => setDiktatListeAufgeklappt(v => !v)}>
@@ -4357,6 +4497,12 @@ export default function VokabelApp() {
         const ges = r + f;
         const feedback = getQuizFeedback(r, ges);
         const sessionPct = Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100);
+        if (istLetzteBatch && !quiz.abgebrochen && quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, (<>
+          <button data-nochmal {...tt("Session gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}}
+            onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteQuiz(true); }}>🔁 Nochmal!</button>
+          <button {...tt("Durchlauf beenden und zur Quiz-Übersicht")} className="btn btn-ghost-filled" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
+          <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button>
+        </>), () => doBeende(true));
         return (
           <>
             <style>{CSS}</style>
@@ -4396,13 +4542,7 @@ export default function VokabelApp() {
                 {quiz.abgebrochen ? (
                   <><button {...tt("Zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => beendeQuiz()}>Zur Übersicht</button>
                   <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
-                ) : istLetzteBatch ? (
-                  <>
-                  <button data-nochmal {...tt("Session gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}}
-                    onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteQuiz(true); }}>🔁 Nochmal!</button>
-                  <button {...tt("Durchlauf beenden und zur Quiz-Übersicht")} className="btn btn-ghost-filled" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
-                  <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
-                ) : (
+                ) : istLetzteBatch ? weiterZurAuswertung : (
                   <>
                     <div style={{marginBottom:10}}>
                       <div style={{fontSize:"0.78rem", color:"#6b6560", marginBottom:6}}>Nächstes Paket:</div>
@@ -4429,6 +4569,16 @@ export default function VokabelApp() {
         const f = quiz.quizFalschAnzahl || 0;
         const ges = r + f;
         const feedback = getQuizFeedback(r, ges);
+        const rundenKnoepfe = quiz.ausStatistik ? (<>
+          <button data-zurueck-statistik {...tt("Zurück zur Statistik, aus der diese Runde gestartet wurde")} className="btn btn-primary" style={{width:"100%"}} onClick={zurueckZurStatistik}>📊 Zurück zur Statistik</button>
+          <button {...tt("Zur Quiz-Übersicht")} className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => { beendeQuiz(); }}>Zur Übersicht</button>
+        </>) : (<>
+          <button {...tt("Zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => { beendeQuiz(); }}>
+            Zur Übersicht
+          </button>
+          <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button>
+        </>);
+        if (quiz.sessionAuswertung && !quiz.abgebrochen) return sessionAuswertungSeite(quiz, rundenKnoepfe, () => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); });
         return (
           <>
             <style>{CSS}</style>
@@ -4446,15 +4596,7 @@ export default function VokabelApp() {
                     „{feedback}"
                   </div>
                 )}
-                {quiz.ausStatistik ? (<>
-                  <button data-zurueck-statistik {...tt("Zurück zur Statistik, aus der diese Runde gestartet wurde")} className="btn btn-primary" style={{width:"100%"}} onClick={zurueckZurStatistik}>📊 Zurück zur Statistik</button>
-                  <button {...tt("Zur Quiz-Übersicht")} className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => { beendeQuiz(); }}>Zur Übersicht</button>
-                </>) : (<>
-                <button {...tt("Zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => { beendeQuiz(); }}>
-                  Zur Übersicht
-                </button>
-                <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button>
-                </>)}
+                {quiz.abgebrochen ? rundenKnoepfe : weiterZurAuswertung}
               </div>
             </div>
           </>
@@ -7177,6 +7319,7 @@ export default function VokabelApp() {
                   {k:"Diktat", v:"Großer Lautsprecher: Wort nochmals vorlesen. Kleiner Lautsprecher: langsamer/erneut. Antwort eintippen."},
                   {k:"Scoring", v:"Richtig: +1 Punkt, Streak +1. Ab Streak 3: mindestens +2 Punkte. Falsch: Streak auf 0, Punktabzug je nach Fehlerzahl. Aufgedeckt: kein Punkt, kein Streak. Mehrere Antwort-Spalten zählen zusammen als eine Bewertung: alle gewusst = richtig, sonst falsch. Multiple Choice: nur ein Treffer ohne Fehlklick gilt als gewusst – nach einem Fehlklick darf man weitersuchen, die Spalte zählt aber als nicht gewusst."},
                   {k:"Aufdecken", v:"Zeigt die Antwort ohne Wertung."},
+                  {k:"Session-Auswertung", v:"Am Ende eines Durchlaufs (bzw. einer Runde ohne Pakete) zeigt der erste Bildschirm das letzte Paket, „Weiter →“ führt zur Auswertung der ganzen Session: zwei Balken Start und Ende (Gelernt, In Arbeit, Nie abgefragt, Negativ), Lernfortschritt vorher → nachher, neu gelernte Vokabeln und darunter Zusatzdaten (Vokabeln und Pakete, Ø Score, verbessert/gleich/verschlechtert, auf Anhieb gewusst, Dauer). Darunter: Nochmal!, Zur Übersicht, Zur Statistik."},
                   {k:"Schließen", v:"Pausiert das Quiz – beim nächsten Start über 'Pakete' weitermachen."},
                 ]},
                 {titel:"Statistik-Tab", inhalt:[

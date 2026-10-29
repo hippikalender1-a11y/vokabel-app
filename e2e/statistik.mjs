@@ -17,6 +17,8 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };
@@ -66,7 +68,10 @@ await clickText("button", "Quiz starten (");
 await sleep(400);
 await karteGewusst(3);
 let t = await text();
-ok(t.includes("Zur Übersicht") && t.includes("Zur Statistik"), "Runde fertig: beide Buttons sichtbar");
+ok(t.includes("Weiter →") && !t.includes("Zur Statistik"), "Runde fertig: nur „Weiter →“");
+await clickText("button", "Weiter →", true);
+t = await text();
+ok(t.includes("Session-Auswertung") && t.includes("Zur Übersicht") && t.includes("Zur Statistik"), "Auswertung: beide Buttons sichtbar");
 await clickText("button", "Zur Statistik");
 await sleep(500);
 let si = await statistikInfo();
@@ -88,7 +93,10 @@ await clickText("button", "Nächste 10 Vokabeln");
 await sleep(400);
 await karteGewusst(2);
 t = await text();
-ok(t.includes("Durchlauf abgeschlossen") && t.includes("Zur Statistik"), "Durchlauf abgeschlossen: Button sichtbar");
+ok(t.includes("Durchlauf abgeschlossen") && t.includes("Weiter →"), "Durchlauf abgeschlossen: „Weiter →“");
+await clickText("button", "Weiter →", true);
+t = await text();
+ok(t.includes("Session-Auswertung") && t.includes("Zur Statistik"), "Session-Auswertung: Button „Zur Statistik“ sichtbar");
 await clickText("button", "Zur Statistik");
 await sleep(500);
 si = await statistikInfo();

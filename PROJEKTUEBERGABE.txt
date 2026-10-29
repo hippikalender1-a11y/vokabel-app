@@ -1597,6 +1597,17 @@ GELERNT-AUFLEUCHTEN: erreicht eine Vokabel mit der Antwort die Gelernt-Schwelle
   (spaltenAbschluss: Übersetzung/Akzente, pruefeDiktatAntwort: Diktat), setzt
   quiz.gelerntBlitz = blitzKey(quiz) → Antwort-Box Klasse .gelernt-blitz (1 s
   hellgelb). Test: e2e/gelerntblitz.mjs.
+SESSION-AUSWERTUNG: Ende eines Durchlaufs (Session, letztes Paket) bzw. einer Runde
+  ohne Pakete: erster Bildschirm nur "Weiter →" (data-zur-auswertung) → quiz.
+  sessionAuswertung → sessionAuswertungSeite(q, knoepfe, schliessen) mit
+  renderSessionAuswertung(sessionAuswertungDaten(q)): Balken Start/Ende
+  (data-balken, data-segment), Lernfortschritt, neu gelernt, Zusatzdaten
+  (data-zusatzdaten). Daten: Session-Objekt hat startScores (Durchlauf-Start),
+  startZeit, erst (erste Bewertung je Vokabel, erstAusQuiz), pakete; gespeichert
+  über sessionSF() im Slot. Durchlauf-Ende setzt sie zurück, sessionDurchlauf-
+  Starten() füllt sie beim nächsten Durchlauf neu. Runden ohne Session:
+  rundeStartScores/rundeStartZeit im Quiz (Diktat jetzt auch). Tests: e2e-Helfer
+  clickText drückt bei Bedarf erst "Weiter →"; e2e/sessionauswertung.mjs.
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).
