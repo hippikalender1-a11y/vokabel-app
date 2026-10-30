@@ -1652,6 +1652,11 @@ FARBWÄHLER (FarbRad, Modulebene): Canvas-Farbkreis (Farbton = Winkel, Sättigun
   Kompakte Leiste (Kreis ~170 px links, Regler/Hex/Verlauf rechts, ohne
   Abdunkeln) auf der freien Seite: liegt das Element unten → oben (data-farbrad-
   seite). Farbfeld ist währenddessen ausgeblendet, das Element bleibt markiert.
+APP-LEISTE (System): Farbrolle "leiste" (fehlt sie, = Hauptfarbe; Dunkel: #161816),
+  setzeSystemLeiste() setzt <meta name="theme-color"> bei jedem Rendern und live im
+  Farbwähler. Im Farbfeld feste Zeile "App-Leiste" am Ende. Einstellungen: Knopf
+  "🎨 Farben bearbeiten" (data-farben-bearbeiten) öffnet den Editor – bei einer
+  Vorlage vorher Kopie. manifest theme_color (vite.config.js) bleibt fest (Start).
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).

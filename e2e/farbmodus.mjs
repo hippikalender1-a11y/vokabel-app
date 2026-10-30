@@ -49,7 +49,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await clickText(".tab", "Einstellungen");
-await page.click("[data-farbmodus-start]"); await sleep(300);
+await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
 ok(await page.$("[data-farbmodus-zuruecksetzen]") && await page.$("[data-farbmodus-uebernehmen]"), "Farbmodus an: unten rechts „Zurücksetzen“ und „Farben übernehmen“");
 
 // normal navigieren
@@ -114,7 +114,7 @@ ok(await variable("haupt") === "#2d6a4f" && !(await page.$("[data-farbmodus-uebe
 
 // erneut: ändern und übernehmen (Vorlage Natur → Kopie mit Namen)
 await clickText(".tab", "Einstellungen");
-await page.click("[data-farbmodus-start]"); await sleep(300);
+await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
 const sektion = await page.evaluate(() => { const r = [...document.querySelectorAll(".tab")].find(t => t.textContent === "Einstellungen").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await rechtsklick(sektion.x, sektion.y);
 console.log("     Farbfeld Tab:", (await feldZeilen()).join(" | "));

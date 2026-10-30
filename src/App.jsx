@@ -719,6 +719,7 @@ const C = {
 /* FARBSCHEMATA-START */
 // ── Farbschemata: Grundfarben je Rolle; Abstufungen (zart, Fläche, dunkel) werden daraus gemischt ──
 const FARB_ROLLEN = [
+  ["leiste", "App-Leiste (System)", "Leiste ganz oben (Uhrzeit, Akku) und unten"],
   ["haupt", "Hauptfarbe", "Knöpfe, Kopfzeilen, aktive Auswahl"], ["haupt-hell", "Hauptfarbe hell", "Fortschrittsringe, Balken"],
   ["auf-haupt", "Schrift auf Hauptfarbe", "Text auf Knöpfen"],
   ["hintergrund", "Hintergrund", "Seitenhintergrund"], ["karte", "Karten", "Flächen von Karten und Feldern"], ["flaeche", "Fläche grau", "leichte Hinterlegungen"],
@@ -744,7 +745,7 @@ const FARB_VORLAGEN = [
   { id: "jungs", name: "Jungs", farben: { "haupt": "#1d5f8a", "haupt-hell": "#3a9bd5", "auf-haupt": "#fff", "hintergrund": "#f3f7fa", "karte": "#fff", "flaeche": "#e6eef4",
     "text-stark": "#111c26", "text": "#22313f", "text2": "#566778", "text3": "#8a9aa8", "rahmen": "#d5e0e9", "richtig": "#2e8b57", "falsch": "#c62828",
     "gelb": "#ff9f1c", "orange": "#f3722c", "info": "#5e35b1", "gelernt": "#2e8b57", "arbeit": "#ffbf47", "nie": "#d5dee6", "negativ": "#e5604d" } },
-  { id: "dunkel", name: "Dunkel", farben: { "haupt": "#52b788", "haupt-hell": "#74c69d", "auf-haupt": "#10241a", "hintergrund": "#161816", "karte": "#222522", "flaeche": "#2c302c",
+  { id: "dunkel", name: "Dunkel", farben: { "leiste": "#161816", "haupt": "#52b788", "haupt-hell": "#74c69d", "auf-haupt": "#10241a", "hintergrund": "#161816", "karte": "#222522", "flaeche": "#2c302c",
     "text-stark": "#f2f0eb", "text": "#e3e0da", "text2": "#b4b0a8", "text3": "#8a867f", "rahmen": "#3a3e3a", "richtig": "#52b788", "falsch": "#ef6f61",
     "gelb": "#f4c542", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#52b788", "arbeit": "#d9b44a", "nie": "#4a4f4a", "negativ": "#e06c6c" }, dunkel: true },
 ];
@@ -760,7 +761,7 @@ function mische(a, b, t) {
 }
 function farbenAus(f) {
   const k = f.karte;
-  return { ...f,
+  return { ...f, "leiste": f.leiste || f.haupt,
     "haupt-zart": mische(f["haupt-hell"], k, 0.5), "haupt-flaeche": mische(f["haupt-hell"], k, 0.88),
     "richtig-dunkel": mische(f.richtig, f["text-stark"], 0.35), "richtig-flaeche": mische(f.richtig, k, 0.9),
     "text4": mische(f.text3, k, 0.35), "flaeche-hell": mische(f.flaeche, k, 0.7),
@@ -777,6 +778,12 @@ const FARB_BASIS = { "haupt-zart": "haupt-hell", "haupt-flaeche": "haupt-hell", 
 // aktuelle Farben (beim Rendern gesetzt); SVG-Attribute kennen kein var() → fv() setzt die Farbe ein
 let F = farbenAus(FARB_VORLAGEN[0].farben);
 const fv = v => typeof v === "string" && v.includes("var(--") ? v.replace(/var\(--([\w-]+)\)/g, (_, k) => F[k] ?? "#000") : v;
+function setzeSystemLeiste(farbe) {
+  if (typeof document === "undefined") return;
+  let m = document.querySelector('meta[name="theme-color"]');
+  if (!m) { m = document.createElement("meta"); m.name = "theme-color"; document.head.appendChild(m); }
+  if (m.getAttribute("content") !== farbe) m.setAttribute("content", farbe);
+}
 const farbVariablen = (f, dunkel) => `:root{${Object.entries(f).map(([k, v]) => `--${k}:${v};`).join("")}color-scheme:${dunkel ? "dark" : "light"};}`;
 // gewähltes Schema: Vorlage oder eigenes (einstellungen.eigeneSchemata)
 function schemaVon(einst) {
@@ -1116,6 +1123,7 @@ export default function VokabelApp() {
   const farbSchema = schemaVon(einstellungen.farbschema || einstellungen.eigeneSchemata ? einstellungen : lsGet(SK.einstellungen, {}));
   F = farbenAus(farbModus && farbVorschau ? farbVorschau : farbSchema.farben);
   CSS = farbVariablen(F, farbSchema.dunkel) + CSS_BASIS;
+  useEffect(() => { setzeSystemLeiste(F.leiste); });
   const [infoModus, setInfoModus] = useState("uebersicht");
   const [ansicht, setAnsicht] = useState("uebersicht");
   const [aktiveListeId, setAktiveListeId] = useState(null);
@@ -3406,6 +3414,13 @@ export default function VokabelApp() {
           })}
         </div>
         <div style={{fontSize:"0.7rem", color:"var(--text3)", marginTop:8}}>Lang drücken: Vorlagen duplizieren – eigene Schemata bearbeiten, umbenennen, löschen</div>
+        {!bearb && (
+          <button data-farben-bearbeiten className="btn btn-ghost" style={{width:"100%", marginTop:10}}
+            onClick={() => { const sch = schemaVon(einstellungen); if (FARB_VORLAGEN.includes(sch)) dupliziereSchema(sch); else setSchemaBearbeiten(sch.id); }}
+            {...tt("Alle Farben des gewählten Schemas einzeln einstellen – bei einer Vorlage wird vorher eine Kopie angelegt")}>
+            🎨 Farben bearbeiten{FARB_VORLAGEN.includes(schemaVon(einstellungen)) ? " (als Kopie)" : ""}
+          </button>
+        )}
         <button data-farbmodus-start className={`btn ${farbModus ? "btn-ghost-filled" : "btn-ghost"}`} style={{width:"100%", marginTop:10}}
           onClick={() => farbModus ? beendeFarbModus() : starteFarbModus()}
           {...tt("Farbmodus: durch die App gehen und per langem Druck auf ein Element dessen Farben ändern – unten rechts übernehmen oder zurücksetzen")}>
@@ -3422,7 +3437,7 @@ export default function VokabelApp() {
             {FARB_ROLLEN.map(([rolle, name, sub]) => (
               <div key={rolle} className="farb-zeile" data-farbrolle={rolle} onClick={() => oeffneFarbRad(rolle, name, bearb.farben, bearb.id)}
                 {...ttFeld(`${name}${sub ? " – " + sub : ""}: antippen, um die Farbe im Farbkreis zu wählen`)}>
-                <span className="farb-tupfer" style={{background: bearb.farben[rolle]}}/>
+                <span className="farb-tupfer" style={{background: bearb.farben[rolle] || farbenAus(bearb.farben)[rolle]}}/>
                 <span style={{flex:1}}>
                   <span style={{display:"block", fontSize:"0.85rem", fontWeight:600, color:"var(--text)"}}>{name}</span>
                   {sub && <span style={{display:"block", fontSize:"0.7rem", color:"var(--text3)"}}>{sub}</span>}
@@ -3442,7 +3457,7 @@ export default function VokabelApp() {
   // ── Farbwähler (Farbkreis): live über CSS-Variablen, ohne die App neu aufzubauen ──
   function oeffneFarbRad(rolle, titel, basis, ziel, el = null) {
     const r = el?.getBoundingClientRect();
-    setFarbRad({ rolle, titel, start: vollHex(basis[rolle] || "#000000").toLowerCase(), basis, ziel,
+    setFarbRad({ rolle, titel, start: vollHex(basis[rolle] || farbenAus(basis)[rolle] || "#000000").toLowerCase(), basis, ziel,
       rect: r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null,
       oben: !!r && r.top + r.height / 2 > window.innerHeight / 2 });
   }
@@ -3451,8 +3466,9 @@ export default function VokabelApp() {
     const f = farbenAus({ ...farbRad.basis, [farbRad.rolle]: hex });
     const root = document.documentElement.style;
     Object.entries(f).forEach(([k, v]) => root.setProperty("--" + k, v));
+    setzeSystemLeiste(f.leiste);
   };
-  const liveEntfernen = () => { const root = document.documentElement.style; Object.keys(F).forEach(k => root.removeProperty("--" + k)); };
+  const liveEntfernen = () => { const root = document.documentElement.style; Object.keys(F).forEach(k => root.removeProperty("--" + k)); setzeSystemLeiste(F.leiste); };
   function farbRadAnwenden(hex) {
     const { rolle, ziel } = farbRad;
     const verlauf = [hex, ...(einstellungen.farbVerlauf || []).filter(x => x !== hex)].slice(0, 10);
@@ -3607,6 +3623,12 @@ export default function VokabelApp() {
                 })}
               </div>
             ))}
+            <div style={{fontSize:"0.75rem", fontWeight:700, color:"var(--text2)", margin:"4px 0 2px"}}>System</div>
+            <div className="farb-zeile" data-farbfeld-zeile="leiste" onClick={() => oeffneFarbRad("leiste", "App-Leiste (System)", farbVorschau || schemaVon(einstellungen).farben, "vorschau")}
+              {...ttFeld("Leiste ganz oben (Uhrzeit, Akku) und unten – antippen, um die Farbe zu ändern")}>
+              <span className="farb-tupfer" style={{background:"var(--leiste)"}}/>
+              <span style={{flex:1, fontSize:"0.85rem", color:"var(--text)"}}><b>App-Leiste</b> · oben und unten (System)</span>
+            </div>
           </div>
         </div>
       )}

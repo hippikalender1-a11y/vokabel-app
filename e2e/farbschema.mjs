@@ -57,6 +57,22 @@ ok(await bodyBg() === "rgb(22, 24, 22)" && await variable("text") === "#e3e0da",
 await page.reload(); await sleep(500);
 ok(await bodyBg() === "rgb(22, 24, 22)", "Auswahl bleibt nach Neuladen erhalten");
 
+const leiste = () => page.evaluate(() => document.querySelector('meta[name="theme-color"]')?.getAttribute("content"));
+ok(await leiste() === "#161816", `Systemleiste folgt dem Schema (Dunkel: ${await leiste()})`);
+// „Farben bearbeiten“: bei einer Vorlage erst Kopie, dann Liste aller Farbrollen inkl. App-Leiste
+await clickText(".tab", "Einstellungen");
+await page.click('[data-farbschema="jungs"]'); await sleep(200);
+ok(await leiste() === "#1d5f8a", "Jungs: Systemleiste = Hauptfarbe");
+await page.click("[data-farben-bearbeiten]"); await sleep(300);
+let eigNeu = await eigene();
+ok(eigNeu.length === 1 && eigNeu[0].name === "Jungs (Kopie)" && await page.$('[data-schema-editor] [data-farbrolle="leiste"]'), "„Farben bearbeiten“: Kopie „Jungs (Kopie)“, Editor mit „App-Leiste (System)“");
+await page.click('[data-farbrolle="leiste"]'); await sleep(300);
+await farbradHex("#ff00aa");
+ok(await leiste() === "#ff00aa" && (await eigene())[0].farben.leiste === "#ff00aa", "App-Leiste eingestellt: Systemleiste #ff00aa");
+await page.click("[data-schema-fertig]"); await sleep(200);
+await menue(eigNeu[0].id); await aktion("🗑 Löschen"); await clickText(".modal .btn-danger", "Löschen", true);
+await page.click('[data-farbschema="dunkel"]'); await sleep(200);
+
 // Vorlage: nur Duplizieren
 await clickText(".tab", "Einstellungen");
 await menue("natur");
