@@ -796,11 +796,12 @@ function hsvZuHex(h, s, v) {
   const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
   return "#" + [f(5), f(3), f(1)].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
 }
-function FarbRad({ titel, start, verlauf, beiLive, beiAnwenden, beiAbbrechen }) {
+// oben: Leiste am oberen Rand (Element liegt unten), sonst am unteren Rand – das Element bleibt sichtbar
+function FarbRad({ titel, start, verlauf, beiLive, beiAnwenden, beiAbbrechen, oben = false }) {
   const [hsv, setHsv] = useState(() => hexZuHsv(start));
   const [hexText, setHexText] = useState(start);
   const canvasRef = useRef(null);
-  const groesse = Math.min(300, (typeof window !== "undefined" ? window.innerWidth : 360) - 64);
+  const groesse = Math.max(130, Math.min(170, ((typeof window !== "undefined" ? window.innerWidth : 360) - 40) * 0.46));
   const hex = hsvZuHex(hsv.h, hsv.s, hsv.v);
   // Kreis einmal zeichnen (volle Helligkeit; Helligkeit regelt der Schieber)
   useEffect(() => {
@@ -824,48 +825,46 @@ function FarbRad({ titel, start, verlauf, beiLive, beiAnwenden, beiAbbrechen }) 
     setze({ ...hsv, h: (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360, s: Math.min(1, Math.hypot(dx, dy) / r) });
   };
   const winkel = hsv.h * Math.PI / 180, mx = groesse / 2 + Math.cos(winkel) * hsv.s * groesse / 2, my = groesse / 2 + Math.sin(winkel) * hsv.s * groesse / 2;
+  const regler = (name, attr, wert, aendern, verlaufCss) => (
+    <div style={{marginBottom:6}}>
+      <div style={{fontSize:"0.68rem", color:"var(--text2)", marginBottom:2}}>{name}</div>
+      <input type="range" min={0} max={100} value={Math.round(wert * 100)} {...{ [attr]: true }}
+        onChange={e => aendern(e.target.value / 100)}
+        style={{width:"100%", height:22, accentColor:hex, background:verlaufCss, borderRadius:11, WebkitAppearance:"none", appearance:"none", display:"block"}}/>
+    </div>
+  );
   return (
-    <div className="farbfeld-hintergrund" style={{zIndex:10006, alignItems:"center"}} data-farbmodus-ui>
-      <div className="farbrad" data-farbrad onClick={e => e.stopPropagation()}>
-        <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:10}}>
-          <span style={{flex:1, fontWeight:800, color:"var(--text)", fontSize:"0.95rem"}}>{titel}</span>
-          <span title="vorher" style={{width:34, height:26, borderRadius:7, background:start, border:"1px solid var(--rahmen)"}}/>
-          <span style={{color:"var(--text3)"}}>→</span>
-          <span title="neu" data-farbrad-neu style={{width:34, height:26, borderRadius:7, background:hex, border:"1px solid var(--rahmen)"}}/>
+    <div className={`farbrad-rahmen${oben ? " oben" : ""}`} data-farbmodus-ui>
+      <div className="farbrad" data-farbrad data-farbrad-seite={oben ? "oben" : "unten"} onClick={e => e.stopPropagation()}>
+        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:8}}>
+          <span style={{flex:1, minWidth:0, fontWeight:800, color:"var(--text)", fontSize:"0.85rem", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"}}>{titel}</span>
+          <span title="vorher" style={{width:28, height:22, borderRadius:6, background:start, border:"1px solid var(--rahmen)", flexShrink:0}}/>
+          <span style={{color:"var(--text3)", fontSize:"0.8rem"}}>→</span>
+          <span title="neu" data-farbrad-neu style={{width:28, height:22, borderRadius:6, background:hex, border:"1px solid var(--rahmen)", flexShrink:0}}/>
         </div>
-        <div style={{position:"relative", width:groesse, height:groesse, margin:"0 auto", touchAction:"none"}}>
-          <canvas ref={canvasRef} data-farbrad-kreis style={{width:groesse, height:groesse, display:"block", borderRadius:"50%", filter:`brightness(${Math.max(0.15, hsv.v)})`, cursor:"crosshair"}}
-            onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); greife(e); }}
-            onPointerMove={e => { if (e.buttons || e.pointerType === "touch") greife(e); }}/>
-          <span style={{position:"absolute", left:mx - 11, top:my - 11, width:22, height:22, borderRadius:"50%", border:"3px solid #fff", boxShadow:"0 0 0 1.5px rgba(0,0,0,0.6)", background:hex, pointerEvents:"none"}}/>
-        </div>
-        <div style={{display:"flex", alignItems:"center", gap:10, margin:"14px 0 6px"}}>
-          <span style={{fontSize:"0.75rem", color:"var(--text2)", width:62}}>Helligkeit</span>
-          <input type="range" min={0} max={100} value={Math.round(hsv.v * 100)} data-farbrad-hell
-            onChange={e => setze({ ...hsv, v: e.target.value / 100 })}
-            style={{flex:1, height:26, accentColor:hex, background:`linear-gradient(to right, #000, ${hsvZuHex(hsv.h, hsv.s, 1)})`, borderRadius:13, WebkitAppearance:"none", appearance:"none"}}/>
-        </div>
-        <div style={{display:"flex", alignItems:"center", gap:10, margin:"6px 0"}}>
-          <span style={{fontSize:"0.75rem", color:"var(--text2)", width:62}}>Sättigung</span>
-          <input type="range" min={0} max={100} value={Math.round(hsv.s * 100)} data-farbrad-saett
-            onChange={e => setze({ ...hsv, s: e.target.value / 100 })}
-            style={{flex:1, height:26, accentColor:hex, background:`linear-gradient(to right, ${hsvZuHex(hsv.h, 0, hsv.v)}, ${hsvZuHex(hsv.h, 1, hsv.v)})`, borderRadius:13, WebkitAppearance:"none", appearance:"none"}}/>
-        </div>
-        <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8}}>
-          <span style={{fontSize:"0.75rem", color:"var(--text2)", width:62}}>Hex</span>
-          <input className="inp" data-farbrad-hex value={hexText} style={{flex:1, padding:"6px 10px", fontFamily:"monospace"}}
-            onChange={e => { const t = e.target.value.trim(); setHexText(t); if (/^#?[0-9a-f]{6}$/i.test(t)) { const h = (t.startsWith("#") ? t : "#" + t).toLowerCase(); setHsv(hexZuHsv(h)); beiLive(h); } }}/>
-        </div>
-        {verlauf.length > 0 && (<>
-          <div style={{fontSize:"0.72rem", color:"var(--text2)", margin:"6px 0 4px"}}>Zuletzt verwendet</div>
-          <div style={{display:"flex", flexWrap:"wrap", gap:6, marginBottom:6}} data-farbrad-verlauf>
-            {verlauf.map(f => <button key={f} title={f} onClick={() => { setHsv(hexZuHsv(f)); setHexText(f); beiLive(f); }}
-              style={{width:30, height:30, borderRadius:8, background:f, border: f === hex ? "3px solid var(--text)" : "1px solid var(--rahmen)", cursor:"pointer", padding:0}}/>)}
+        <div style={{display:"flex", gap:12, alignItems:"flex-start"}}>
+          <div style={{position:"relative", width:groesse, height:groesse, flexShrink:0, touchAction:"none"}}>
+            <canvas ref={canvasRef} data-farbrad-kreis style={{width:groesse, height:groesse, display:"block", borderRadius:"50%", filter:`brightness(${Math.max(0.15, hsv.v)})`, cursor:"crosshair"}}
+              onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); greife(e); }}
+              onPointerMove={e => { if (e.buttons || e.pointerType === "touch") greife(e); }}/>
+            <span style={{position:"absolute", left:mx - 10, top:my - 10, width:20, height:20, borderRadius:"50%", border:"3px solid #fff", boxShadow:"0 0 0 1.5px rgba(0,0,0,0.6)", background:hex, pointerEvents:"none"}}/>
           </div>
-        </>)}
-        <div className="modal-actions" style={{marginTop:10}}>
-          <button className="btn btn-ghost" data-farbrad-abbrechen onClick={beiAbbrechen}>Abbrechen</button>
-          <button className="btn btn-primary" data-farbrad-anwenden onClick={() => beiAnwenden(hex)}>Anwenden</button>
+          <div style={{flex:1, minWidth:0}}>
+            {regler("Helligkeit", "data-farbrad-hell", hsv.v, v => setze({ ...hsv, v }), `linear-gradient(to right, #000, ${hsvZuHex(hsv.h, hsv.s, 1)})`)}
+            {regler("Sättigung", "data-farbrad-saett", hsv.s, v => setze({ ...hsv, s: v }), `linear-gradient(to right, ${hsvZuHex(hsv.h, 0, hsv.v)}, ${hsvZuHex(hsv.h, 1, hsv.v)})`)}
+            <input className="inp" data-farbrad-hex value={hexText} style={{width:"100%", padding:"4px 8px", fontFamily:"monospace", fontSize:"0.85rem", marginBottom:6}}
+              onChange={e => { const t = e.target.value.trim(); setHexText(t); if (/^#?[0-9a-f]{6}$/i.test(t)) { const h = (t.startsWith("#") ? t : "#" + t).toLowerCase(); setHsv(hexZuHsv(h)); beiLive(h); } }}/>
+            {verlauf.length > 0 && (
+              <div style={{display:"flex", flexWrap:"wrap", gap:4}} data-farbrad-verlauf>
+                {verlauf.map(f => <button key={f} title={f} onClick={() => { setHsv(hexZuHsv(f)); setHexText(f); beiLive(f); }}
+                  style={{width:22, height:22, borderRadius:6, background:f, border: f === hex ? "2.5px solid var(--text)" : "1px solid var(--rahmen)", cursor:"pointer", padding:0}}/>)}
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{display:"flex", gap:8, marginTop:10}}>
+          <button className="btn btn-ghost" style={{flex:1, padding:"8px"}} data-farbrad-abbrechen onClick={beiAbbrechen}>Abbrechen</button>
+          <button className="btn btn-primary" style={{flex:1, padding:"8px"}} data-farbrad-anwenden onClick={() => beiAnwenden(hex)}>Anwenden</button>
         </div>
       </div>
     </div>
@@ -971,8 +970,11 @@ const CSS_BASIS = `
   .farb-name{font-size:0.78rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .farb-zeile{display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--flaeche);cursor:pointer;}
   .farb-tupfer{width:42px;height:32px;border:1px solid var(--rahmen);border-radius:8px;flex-shrink:0;box-shadow:inset 0 0 0 2px var(--karte);}
-  .farbrad{width:calc(100% - 24px);max-width:380px;max-height:92vh;overflow-y:auto;background:var(--karte);border-radius:16px;padding:14px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.3);font-family:system-ui,sans-serif;box-sizing:border-box;}
-  .farbrad input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid rgba(0,0,0,0.5);box-shadow:0 1px 4px rgba(0,0,0,0.3);}
+  .farbrad-rahmen{position:fixed;left:0;right:0;bottom:0;z-index:10006;display:flex;justify-content:center;pointer-events:none;}
+  .farbrad-rahmen.oben{bottom:auto;top:0;}
+  .farbrad{pointer-events:auto;width:100%;max-width:520px;background:var(--karte);border-radius:16px 16px 0 0;padding:10px 14px 12px;box-shadow:0 -4px 22px rgba(0,0,0,0.28);font-family:system-ui,sans-serif;box-sizing:border-box;}
+  .farbrad-rahmen.oben .farbrad{border-radius:0 0 16px 16px;box-shadow:0 4px 22px rgba(0,0,0,0.28);}
+  .farbrad input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid rgba(0,0,0,0.5);box-shadow:0 1px 4px rgba(0,0,0,0.3);}
   .farb-zeile input[type=color]{width:42px;height:32px;border:1px solid var(--rahmen);border-radius:8px;padding:2px;background:var(--karte);flex-shrink:0;}
   .gelernt-blitz{animation:gelerntBlitz 1s ease-out;}
   @keyframes gelerntBlitz{0%,35%{background:var(--gelb-zart);border-color:var(--gelb);box-shadow:0 0 0 4px var(--gelb-zart),0 0 22px var(--gelb-zart);}100%{box-shadow:0 0 0 0 transparent;}}
@@ -3438,8 +3440,11 @@ export default function VokabelApp() {
   }
 
   // ── Farbwähler (Farbkreis): live über CSS-Variablen, ohne die App neu aufzubauen ──
-  function oeffneFarbRad(rolle, titel, basis, ziel) {
-    setFarbRad({ rolle, titel, start: vollHex(basis[rolle] || "#000000").toLowerCase(), basis, ziel });
+  function oeffneFarbRad(rolle, titel, basis, ziel, el = null) {
+    const r = el?.getBoundingClientRect();
+    setFarbRad({ rolle, titel, start: vollHex(basis[rolle] || "#000000").toLowerCase(), basis, ziel,
+      rect: r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null,
+      oben: !!r && r.top + r.height / 2 > window.innerHeight / 2 });
   }
   const liveFarbe = hex => {
     if (!farbRad) return;
@@ -3458,8 +3463,12 @@ export default function VokabelApp() {
   }
   function farbRadAbbrechen() { liveEntfernen(); setFarbRad(null); }
   const farbRadUI = farbRad ? createPortal(
-    <FarbRad key={farbRad.rolle + farbRad.start} titel={farbRad.titel} start={farbRad.start} verlauf={einstellungen.farbVerlauf || []}
-      beiLive={liveFarbe} beiAnwenden={farbRadAnwenden} beiAbbrechen={farbRadAbbrechen}/>, document.body) : null;
+    <>
+      {farbRad.rect && <div data-farbmodus-ui style={{position:"fixed", left: farbRad.rect.x - 3, top: farbRad.rect.y - 3, width: Math.max(farbRad.rect.w, 6) + 6, height: Math.max(farbRad.rect.h, 6) + 6,
+        border:"2.5px dashed var(--falsch)", borderRadius:6, zIndex:10005, pointerEvents:"none", boxShadow:"0 0 0 2px var(--karte)"}}/>}
+      <FarbRad key={farbRad.rolle + farbRad.start} titel={farbRad.titel} start={farbRad.start} verlauf={einstellungen.farbVerlauf || []} oben={farbRad.oben}
+        beiLive={liveFarbe} beiAnwenden={farbRadAnwenden} beiAbbrechen={farbRadAbbrechen}/>
+    </>, document.body) : null;
 
   // ── Farbmodus ──
   function starteFarbModus() {
@@ -3571,9 +3580,9 @@ export default function VokabelApp() {
   };
   const farbModusUI = farbModus ? createPortal(
     <div data-farbmodus-ui>
-      {farbMarke && <div style={{position:"fixed", left: farbMarke.x - 3, top: farbMarke.y - 3, width: farbMarke.w + 6, height: farbMarke.h + 6,
+      {farbMarke && !farbRad && <div style={{position:"fixed", left: farbMarke.x - 3, top: farbMarke.y - 3, width: farbMarke.w + 6, height: farbMarke.h + 6,
         border:"2.5px dashed var(--falsch)", borderRadius:6, zIndex:10004, pointerEvents:"none", boxShadow:"0 0 0 2px var(--karte)"}}/>}
-      {farbFeld && (
+      {farbFeld && !farbRad && (
         <div className="farbfeld-hintergrund" onClick={() => { if (Date.now() - farbFeld.zeit > 600) setFarbFeld(null); }}>
           <div className="farbfeld" data-farbfeld onClick={e => e.stopPropagation()}>
             <div style={{display:"flex", alignItems:"center", marginBottom:6}}>
@@ -3589,7 +3598,7 @@ export default function VokabelApp() {
                   return (
                     <div key={t.teil + t.rolle} className="farb-zeile" data-farbfeld-zeile={basis}
                       onPointerEnter={() => markiere(g.el)}
-                      onClick={() => { markiere(g.el); oeffneFarbRad(basis, `${t.teil} · ${rollenName(t.rolle)}`, farbVorschau || schemaVon(einstellungen).farben, "vorschau"); }}
+                      onClick={() => { setFarbMarke(null); oeffneFarbRad(basis, `${t.teil} · ${rollenName(t.rolle)}`, farbVorschau || schemaVon(einstellungen).farben, "vorschau", g.el); }}
                       {...ttFeld(`${t.teil}: ${rollenName(t.rolle)} – antippen, um die Farbe im Farbkreis zu ändern`)}>
                       <span className="farb-tupfer" style={{background: `var(--${t.rolle})`}}/>
                       <span style={{flex:1, fontSize:"0.85rem", color:"var(--text)"}}><b>{t.teil}</b> · {rollenName(t.rolle)}</span>

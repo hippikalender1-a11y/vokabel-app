@@ -1648,7 +1648,10 @@ FARBWÄHLER (FarbRad, Modulebene): Canvas-Farbkreis (Farbton = Winkel, Sättigun
   Neu, Hex-Feld (data-farbrad-hex), Verlauf (einstellungen.farbVerlauf, 10).
   Live: liveFarbe() setzt die CSS-Variablen direkt am <html> (kein Neuaufbau);
   Anwenden/Abbrechen entfernt sie wieder. Öffnen: oeffneFarbRad(rolle, titel,
-  basis, ziel) – ziel "vorschau" (Farbmodus) oder Schema-id (Editor).
+  basis, ziel, el) – ziel "vorschau" (Farbmodus) oder Schema-id (Editor).
+  Kompakte Leiste (Kreis ~170 px links, Regler/Hex/Verlauf rechts, ohne
+  Abdunkeln) auf der freien Seite: liegt das Element unten → oben (data-farbrad-
+  seite). Farbfeld ist währenddessen ausgeblendet, das Element bleibt markiert.
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).
