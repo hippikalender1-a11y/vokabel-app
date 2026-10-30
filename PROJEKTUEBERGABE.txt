@@ -1735,7 +1735,19 @@ Reihenfolge = Priorität (Stand 2026-10-26). Nutzer entscheidet jeweils.
      - Nur bei öffentlicher Verbreitung an Fremde: Impressum + kurze
        Datenschutzerklärung prüfen; Urheberrecht bei Schulbuch-Listen.
 
-7) FOTO → KI → VOKABELLISTE (ganz hinten; zweifelhaft, ob es je kommt)
+7) ANDROID-NAVIGATIONSLEISTE UNTEN EINFÄRBEN (vorerst zurückgestellt, 30.10.2026)
+   Befund: Farbrolle "App-Leiste (System)" setzt <meta name="theme-color"> –
+   die Leiste OBEN färbt sich mit, die Navigationsleiste UNTEN bleibt grün
+   (#2d6a4f). Vermutlich nimmt Android dafür die theme_color aus dem Manifest
+   (vite.config.js), die beim Installieren festgelegt wird.
+   Ideen: (a) Edge-to-Edge: <meta viewport … viewport-fit=cover> + Abstände mit
+   env(safe-area-inset-*), dann scheint die App-Farbe unten durch – muss auf
+   Android UND iPad getestet werden (Notch/Home-Balken). (b) Manifest-
+   theme_color neutral (z. B. Beige/Weiß) – wirkt erst nach Neuinstallation
+   (vorher JSON-Backup). (c) theme_color = Wunschfarbe (gilt für alle Geräte).
+   Vorschlag an Nutzer: erst (a) versuchen, sonst (b).
+
+8) FOTO → KI → VOKABELLISTE (ganz hinten; zweifelhaft, ob es je kommt)
    Ziel: Vokabelseite fotografieren, KI wandelt direkt in Liste um.
    Ablauf: Listen → + Neu → [📷 Foto] → Bild verkleinern → Claude-API
    (Vision) mit Foto-Prompt aus generierePrompt(..., "foto") → Antwort in
