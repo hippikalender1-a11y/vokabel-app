@@ -1737,6 +1737,11 @@ LERNEN (Schritt 4): einstellungen.lernen = { aktiv, zuerst "fremd"|"deutsch",
   Text da, lernInfoZeigen). Wartezeit je Abschnitt: Vorlesen (bis speaking aus)
   bzw. lernLesezeit(text) (~14 Zeichen/s, min. 0,6 s) + Pause: nach Wort und vor
   der Zusatzinfo LERNEN_KURZ = 1 s, sonst halte. Antippen = sofort weiter.
+  Karte: Teile .lernen-teil (opacity 0 → .sichtbar, 0,5 s), Platz für Übersetzung
+  und Zusatzinfo immer reserviert (data-lernen-teil, data-sichtbar); Inhalt je
+  Vokabel neu (key), Wort blendet ein (.lernen-ein). Zusatzinfo: dünne Linie,
+  Titel eigene Zeile. Vorlesen-Schalter Wort/Übersetzung/Info auf dem Bildschirm
+  (vorlesen1–3); Info-Sprache infoSprache "fremd"|"deutsch" im Modal.
   Stufen-Knopf: Lernen → Leicht → Schwer (lernen.aktiv; modus bleibt einfach/
   schwer, damit stufenRegeln gültig bleibt; Regeln-Modal Leicht/Schwer setzt
   aktiv=false). Lang-Druck bei Lernen: "🎬 Lernen einstellen" (Modal lernen-einst).
@@ -1752,8 +1757,10 @@ LERNEN (Schritt 4): einstellungen.lernen = { aktiv, zuerst "fremd"|"deutsch",
   Paket-Ende: "Quiz mit diesen N Vokabeln" (starteLernQuiz: Gruppen-Runde mit
   starteQuiz(true, null, ids, "lernen"), quiz.ausLernen, lernen.imQuiz; einmal je
   Paket: quizGemacht) und "Weiter lernen: nächste N" (naechstesLernPaket); kein
-  "Nochmal". quizStufeRef "lernen" → quizRegeln(): Regeln "Leicht" ohne
-  falschAbzug/aufdeckenAbzug (nur Verbesserung). Ausgänge der Runde über
+  "Nochmal". quizStufeRef "lernen" → quizRegeln(): lernen.quizStufe "ohne"
+  (Standard: Schwer-Regeln ohne akzentHervorheben/akzentZaehler/akzenteTolerant)
+  | "einfach" | "schwer" (Modal "Lernen einstellen"), immer ohne falschAbzug/
+  aufdeckenAbzug (nur Verbesserung). Test: e2e/lernen_akzente.mjs. Ausgänge der Runde über
   verlasseRunde()/zurueckZumLernen() → nächstes Paket; Endknöpfe "🎬 Weiter
   lernen" (data-weiter-lernen), kein Statistik-Knopf.
 Start-Bereich: Überschrift data-start-titel "Quiz/Lernen mit N Vokabeln".

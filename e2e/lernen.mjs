@@ -26,8 +26,9 @@ const stand = () => page.evaluate(() => ({
   stand: document.querySelector("[data-lernen-stand]")?.textContent.trim(),
   phase: document.querySelector("[data-lernen-karte]")?.dataset.lernenPhase,
   wort: document.querySelector("[data-lernen-wort] .lernen-wort")?.textContent.trim(),
-  uebersetzung: document.querySelector("[data-lernen-uebersetzung] .lernen-wort")?.textContent.trim() || null,
-  info: document.querySelector("[data-lernen-info]")?.textContent.trim() || null,
+  uebersetzung: document.querySelector('[data-lernen-teil="uebersetzung"][data-sichtbar] .lernen-wort')?.textContent.trim() || null,
+  info: document.querySelector('[data-lernen-teil="info"][data-sichtbar] [data-lernen-info]')?.textContent.trim() || null,
+  wortOben: Math.round(document.querySelector("[data-lernen-wort]")?.getBoundingClientRect().top ?? -1),
 }));
 // wartet, bis die Bedingung gilt; gibt die verstrichene Zeit in ms zurück (oder -1)
 const warteAuf = async (fn, max = 6000) => { const t0 = Date.now(); while (Date.now() - t0 < max) { if (await fn()) return Date.now() - t0; await sleep(50); } return -1; };
@@ -82,6 +83,9 @@ await page.click("[data-start-knopf]"); await sleep(250);
 let z = await stand();
 console.log("     Start:", JSON.stringify(z));
 ok(z.stand === "1 / 7" && z.phase === "0" && z.wort === "aller" && z.uebersetzung === null, "erst nur das Wort (aller), noch keine Übersetzung");
+const oben0 = z.wortOben;
+const platz = await page.evaluate(() => ({ ue: !!document.querySelector('[data-lernen-teil="uebersetzung"]'), info: !!document.querySelector('[data-lernen-teil="info"]') }));
+ok(platz.ue && platz.info, "Platz für Übersetzung und Zusatzinfo schon reserviert (unsichtbar)");
 const g = await page.evaluate(() => window.__gesprochen);
 ok(g.some(x => x.text === "aller" && x.lang.startsWith("fr")), "Wort wird französisch vorgelesen");
 // Wort vorgelesen → 1 s Ruhe → Übersetzung
@@ -95,6 +99,9 @@ ms = await warteAuf(async () => (await stand()).phase === "2");
 z = await stand();
 console.log("     Zusatzinfo nach", ms, "ms");
 ok(/unregelmäßig/.test(z.info || "") && ms > 1300 && ms < 2600, `danach versetzt die Zusatzinfo (${ms} ms)`);
+ok(z.wortOben === oben0, `nichts verrutscht: Wort bleibt an seiner Stelle (${oben0} → ${z.wortOben})`);
+const infoAufbau = await page.evaluate(() => { const i = document.querySelector("[data-lernen-info]"); return { linie: !!i.querySelector(".lernen-trenner"), titelEigeneZeile: getComputedStyle(i.querySelector(".lernen-label")).display === "block" }; });
+ok(infoAufbau.linie && infoAufbau.titelEigeneZeile, "Zusatzinfo: dünne Linie, Titel in eigener Zeile");
 // Zusatzinfo: Lesezeit + Pause (1 s) → nächste Vokabel
 ms = await warteAuf(async () => (await stand()).stand === "2 / 7");
 z = await stand();
@@ -127,6 +134,24 @@ await page.click("[data-lernen-karte]"); await sleep(150);
 z = await stand();
 ok(z.stand === "2 / 7" && z.info === null, `Zusatzinfo aus: nach der Übersetzung gleich die nächste Vokabel (${z.stand})`);
 await page.click('[data-lernen-info-schalter="an"]'); await sleep(150);
+// Vorlesen: Übersetzung und Info einschalten
+const schalter = () => page.evaluate(() => [...document.querySelectorAll("[data-lernen-vorlesen-schalter]")].map(b => `${b.textContent.trim()}:${b.classList.contains("aktiv") ? 1 : 0}`).join(","));
+ok(await schalter() === "Wort:1,Übersetzung:0,Info:0", `Vorlesen-Schalter: Wort an, Übersetzung/Info aus (${await schalter()})`);
+await page.click('[data-lernen-vorlesen-schalter="vorlesen2"]'); await sleep(100);
+await page.click('[data-lernen-vorlesen-schalter="vorlesen3"]'); await sleep(100);
+await page.click("[data-lernen-zurueck]"); await sleep(150);
+await page.click("[data-lernen-pause]"); await sleep(100);   // laufen lassen: „aller“ mit Übersetzung und Info
+await page.evaluate(() => { window.__gesprochen = []; });
+await warteAuf(async () => (await stand()).phase === "2", 8000);
+await sleep(500);
+const gespr = await page.evaluate(() => window.__gesprochen);
+console.log("     gesprochen:", JSON.stringify(gespr));
+ok(gespr.some(x => x.text === "gehen" && x.lang.startsWith("de")) && gespr.some(x => x.text === "unregelmäßig" && x.lang.startsWith("fr")), "Übersetzung (deutsch) und Info (Fremdsprache) werden vorgelesen");
+await page.click("[data-lernen-pause]"); await sleep(100);
+await page.click('[data-lernen-vorlesen-schalter="vorlesen2"]'); await sleep(100);
+await page.click('[data-lernen-vorlesen-schalter="vorlesen3"]'); await sleep(100);
+await page.click("[data-lernen-pause]"); await sleep(100);
+
 // Regler „Pause“
 await page.evaluate(() => { const r = document.querySelector("[data-lernen-halte]"); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(r, "4.5"); r.dispatchEvent(new Event("input", { bubbles: true })); });
 await sleep(150);
