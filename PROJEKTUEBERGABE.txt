@@ -1699,6 +1699,35 @@ QUIZ-TAB NEU (Schritt 2, A1–A5):
   (data-session-zuruecksetzen, Rückfrage data-reset-frage/-ja), rechts
   .start-knopf data-start-knopf data-start-anzahl ("Quiz starten" / "N Vokabeln").
   "Lernen" als dritte Stufe folgt mit Schritt C.
+  Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
+  data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
+  Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),
+  Breite nach Inhalt (flex 0 0 auto).
+  Abfrage-Modus "wechselnd": Knopf zweizeilig (.zweizeilig, .zeile1/.zeile2).
+  Nur ein Bereich offen: schliesseQuizBereiche(ausser) in allen toggle*-Funktionen
+  (Kopfzeile, Listen, Einzelauswahl, Modus, Reihenfolge, Einstellungen) und
+  toggleSessionBereich("umfang"|"ziel"); Stufe- und Gelernte-Knopf schließen
+  alles (ausser = null). Test: e2e/einbereich.mjs.
+  Kachel antippen (Quiz + Statistik): Auswahl klappt erst nach
+  SLOT_ZU_VERZOEGERUNG = 400 ms zu (schliesseSlotsVerzoegert, slotZuTimerRef;
+  toggleSlotSektion bricht den Timer ab) – die neue Kachel ist kurz markiert.
+  Abfrage-Ziel Score (global): Knopf "Score < +3"; nur Vokabeln mit Score unter
+  dem Ziel kommen in die Session (starteQuiz + Zählung im Quiz-Tab), EIN Durchgang
+  ohne Wiederholung. Session-Score ("Session +2") wiederholt weiter bis zum Ziel.
+MULTIQUIZ (Schritt 3): Kachel-Lang-Druck "🧩 Multiquiz" (nur Quiz-Tab) →
+  multiAuswahl (Ids, Reihenfolge = Nummern data-multi-nr); Antippen schaltet
+  Kacheln an/aus; Leiste .multi-leiste (data-multi-leiste, data-multi-starten).
+  multiZusammenstellung(ids): Listen vereinigt, vokabelAuswahl = Vereinigung
+  (Teil mit "alle" → alle Vokabeln seiner Listen), bereichTyp "bereich",
+  übrige Einstellungen von Nr. 1. starteMultiquiz legt einen Verlauf-Eintrag
+  mit multi: [{id,name}] an, lädt ihn und setzt multiStart; ein Effekt legt
+  dann aktuelleKonfiguration() im Eintrag ab und ruft starteQuiz(false,
+  {typ:'verlauf', id}) – sonst entstünde ein zweiter Verlauf-Eintrag.
+  multiVonSlot(slot): Kopfzeile "Multiquiz" + Info "🧩 A + B · n Vokabeln",
+  Verlauf-Chip/Kachel mit 🧩; speichereAlsGespeichert nimmt multi mit,
+  slotNamenVorschlag "Multiquiz: A + B". Statistik: gemeinsame Auswahl.
+  Gemischte Sprachen: Vorlesesprache je Vokabel über _listeId; im Raster
+  sichtbar nur unter Sprachfilter "Alle". Test: e2e/multiquiz.mjs.
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).

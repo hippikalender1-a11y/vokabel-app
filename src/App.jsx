@@ -81,6 +81,7 @@ function defaultEinstellungen() { return { modus: "schwer", autoplay: false, vor
 function defaultSessionSlots() {
   return [{ slot: 6, name: "Zuletzt verwendet", konfiguration: null, fortschritt: null }];
 }
+const SLOT_ZU_VERZOEGERUNG = 400;   // ms: gewählte Kachel kurz sichtbar, dann klappt die Auswahl zu
 function defaultSlots() { return { verlauf: [], gespeichert: [] }; }
 function neuerSlotId(typ) { return `${typ}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`; }
 // ── Raster der gespeicherten Konfigurationen und der Listen: jeder Eintrag hat einen Platz {z, s} ──
@@ -1017,9 +1018,12 @@ const CSS_BASIS = `
   .slot-raster{display:grid;gap:6px;}
   .quiz-zeile{position:sticky;z-index:7;display:flex;gap:8px;background:var(--karte);border-bottom:1px solid var(--rahmen);padding:10px 16px;margin:0 -16px;}
   .quiz-zeile-knopf{flex:1;min-width:0;padding:9px 6px;border-radius:10px;border:1.5px solid var(--haupt);background:var(--haupt);color:var(--auf-haupt);font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .quiz-zeile-knopf.zweizeilig{padding:4px 6px;line-height:1.2;}
+  .quiz-zeile-knopf .zeile1,.quiz-zeile-knopf .zeile2{display:block;overflow:hidden;text-overflow:ellipsis;}
+  .quiz-zeile-knopf .zeile2{font-size:0.72rem;font-weight:600;opacity:0.85;}
   .quiz-zeile-knopf.offen{background:var(--karte);color:var(--haupt);}
-  .quiz-zeile-knopf[data-gelernte]{background:var(--karte);color:var(--text2);border-color:var(--rahmen);flex:0.8;}
-  .quiz-zeile-knopf[data-gelernte].an{background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);}
+  .quiz-zeile-knopf[data-gelernte]{background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);flex:0 0 auto;padding-left:12px;padding-right:12px;}
+  .quiz-zeile-knopf[data-gelernte].an{background:var(--haupt);color:var(--auf-haupt);}
   .quiz-zeile-hinweis{font-size:0.75rem;color:var(--text3);text-align:center;padding:6px 0 0;}
   .umfang-raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px;}
   .umfang-raster .typ-btn{min-height:48px;font-size:1.1rem;font-weight:800;}
@@ -1054,6 +1058,8 @@ const CSS_BASIS = `
   .farb-zeile input[type=color]{width:42px;height:32px;border:1px solid var(--rahmen);border-radius:8px;padding:2px;background:var(--karte);flex-shrink:0;}
   .gelernt-blitz{animation:gelerntBlitz 1s ease-out;}
   @keyframes gelerntBlitz{0%,35%{background:var(--gelb-zart);border-color:var(--gelb);box-shadow:0 0 0 4px var(--gelb-zart),0 0 22px var(--gelb-zart);}100%{box-shadow:0 0 0 0 transparent;}}
+  .multi-leiste{position:fixed;left:12px;right:12px;bottom:12px;z-index:900;max-width:640px;margin:0 auto;display:flex;gap:8px;padding:8px;background:var(--karte);border:1.5px solid var(--rahmen);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.2);}
+  .multi-leiste .btn-primary{flex:1;}
   .auswahl-nr{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;border-radius:10px;background:var(--gelb);color:var(--auf-haupt);font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;z-index:2;}
   .listen-raster{display:grid;gap:6px;margin-bottom:16px;}
   .listen-raster .karte-zeile{background:var(--karte);border:1px solid var(--rahmen);border-radius:12px;min-width:0;}
@@ -1281,6 +1287,9 @@ export default function VokabelApp() {
   const [quizSessionAufgeklappt, setQuizSessionAufgeklappt] = useState(false);
   // Gespeicherte Konfiguration geladen: Listen-/Vokabel-Auswahl ausgeblendet – außer nach „Listen/Vokabeln ändern“
   const [listenAendern, setListenAendern] = useState(false);
+  const [multiAuswahl, setMultiAuswahl] = useState(null);   // Multiquiz: gewählte Kacheln (Reihenfolge = Nummern), null = aus
+  const [multiStart, setMultiStart] = useState(null);
+  const slotZuTimerRef = useRef(null);   // Auswahl klappt nach dem Laden kurz verzögert zu (neue Kachel sichtbar markiert)       // Verlauf-Id des eben gebildeten Multiquiz – startet nach dem Laden
   const [abfrageZielModus, setAbfrageZielModus] = useState(STANDARD_ABFRAGE_ZIEL);
   const [abfrageZielAnzahl, setAbfrageZielAnzahl] = useState(1);
   const [abfrageZielWiederholung, setAbfrageZielWiederholung] = useState(1);
@@ -1493,6 +1502,15 @@ export default function VokabelApp() {
     setAlleBereichH(el.offsetHeight);
     return () => obs.disconnect();
   }, [quizTabListen.length, aktiverSlot, listenAendern, tab]);
+  // Multiquiz: erst laden (Einstellungen stehen dann im State), dann starten
+  useEffect(() => {
+    if (!multiStart || aktiverSlot?.id !== multiStart) return;
+    setMultiStart(null);
+    // Konfiguration so ablegen, wie der Quiz-Tab sie bildet – sonst legt die Runde einen weiteren Verlauf-Eintrag an
+    const data = getSlotsData();
+    setSlotsData({ ...data, verlauf: data.verlauf.map(v => v.id === multiStart ? { ...v, konfiguration: aktuelleKonfiguration() } : v) });
+    starteQuiz(false, { typ: 'verlauf', id: multiStart });
+  }, [multiStart, aktiverSlot]);
 
   // App-Start: zuletzt gewählte gespeicherte Konfiguration wieder laden (sobald die Listen bekannt sind)
   const letzterSlotGeladenRef = useRef(false);
@@ -2656,6 +2674,12 @@ export default function VokabelApp() {
     setQuizArt(ziel);
   }
 
+  // Nach dem Antippen einer Kachel bleibt die Auswahl einen Moment offen, damit man die neu markierte Kachel sieht
+  function schliesseSlotsVerzoegert() {
+    clearTimeout(slotZuTimerRef.current);
+    slotZuTimerRef.current = setTimeout(() => setSlotSektionAufgeklappt(false), SLOT_ZU_VERZOEGERUNG);
+  }
+
   function ladeSlot(typ, id, art = null) {
     const eintrag = getSlotEintrag(typ, id);
     if (!eintrag || !eintrag.konfiguration) return;
@@ -2675,7 +2699,7 @@ export default function VokabelApp() {
     setAktiverSlot({ typ, id });
     setSlotGeaendert(false);
     if (typ === 'gespeichert') lsSet(SK.letzterSlot, id); else lsDel(SK.letzterSlot);
-    setSlotSektionAufgeklappt(false);   // nach der Auswahl nur noch die Kopfzeile zeigen
+    schliesseSlotsVerzoegert();   // nach der Auswahl nur noch die Kopfzeile zeigen
     aktiviereSlotFortschritt(eintrag, typ, id, art || slotKonfigArt(eintrag));
   }
 
@@ -2709,7 +2733,7 @@ export default function VokabelApp() {
     setStatistikEinzelauswahlAufgeklappt(false);
     setStatistikAktiverSlot({ typ, id });
     setStatistikSlotGeleert(false);
-    setSlotSektionAufgeklappt(false);   // nach der Auswahl nur noch die Kopfzeile zeigen (wie im Quiz)
+    schliesseSlotsVerzoegert();   // nach der Auswahl nur noch die Kopfzeile zeigen (wie im Quiz)
   }
 
   // Abfrage ohne Pakete im Verlauf festhalten (mit Start-Scores für die Statistik).
@@ -2739,15 +2763,47 @@ export default function VokabelApp() {
     return id;
   }
 
+  // Multiquiz: Vokabeln mehrerer gespeicherter Konfigurationen zusammen, Einstellungen von der ersten
+  function multiZusammenstellung(ids) {
+    const data = getSlotsData();
+    const teile = ids.map(id => data.gespeichert.find(x => x.id === id)).filter(Boolean);
+    if (!teile.length) return null;
+    const listenIds = [], keys = new Set(), vorhanden = new Set();
+    for (const t of teile) {
+      const k = t.konfiguration || {};
+      const ids2 = (k.listenIds || []).filter(id => listenIndex.some(l => l.id === id));
+      for (const id of ids2) {
+        if (!listenIds.includes(id)) { listenIds.push(id); (lsGet(SK.liste(id))?.vokabeln || []).forEach(v => vorhanden.add(`${id}__${v.id}`)); }
+      }
+      if (k.bereichTyp === "bereich" && k.vokabelAuswahl?.length) k.vokabelAuswahl.forEach(v => keys.add(v));
+      else ids2.forEach(id => (lsGet(SK.liste(id))?.vokabeln || []).forEach(v => keys.add(`${id}__${v.id}`)));
+    }
+    const vokabelAuswahl = [...keys].filter(k => vorhanden.has(k));
+    return { konfiguration: { ...teile[0].konfiguration, listenIds, vokabelAuswahl, bereichTyp: "bereich", quizBereichTyp: "bereich" },
+      anzahl: vokabelAuswahl.length, teile: teile.map(t => ({ id: t.id, name: t.name })) };
+  }
+  function starteMultiquiz() {
+    const m = multiZusammenstellung(multiAuswahl || []);
+    setMultiAuswahl(null);
+    if (!m || !m.anzahl) return;
+    const id = neuerSlotId('v');
+    const data = getSlotsData();
+    setSlotsData({ ...data, verlauf: [{ id, name: formatSlotDatum(), timestamp: Date.now(), konfiguration: m.konfiguration, sessionFortschritt: null, multi: m.teile }, ...data.verlauf].slice(0, 5) });
+    ladeSlot('verlauf', id);
+    setMultiStart(id);
+  }
+  const multiVonSlot = slot => (slot ? getSlotEintrag(slot.typ, slot.id)?.multi : null) || null;
+
   function speichereAlsGespeichert(id, name) {
     const data = getSlotsData();
     const konfiguration = aktuelleKonfiguration();
+    const multi = multiVonSlot(aktiverSlot);
     let updated;
     if (id) {
-      updated = { ...data, gespeichert: data.gespeichert.map(s => s.id === id ? { ...s, name, konfiguration } : s) };
+      updated = { ...data, gespeichert: data.gespeichert.map(s => s.id === id ? (({ multi: _m, ...rest }) => ({ ...rest, name, konfiguration, ...(multi ? { multi } : {}) }))(s) : s) };
     } else {
       const newId = neuerSlotId('g');
-      const neuerEintrag = { id: newId, name, timestamp: Date.now(), konfiguration, sessionFortschritt: null };
+      const neuerEintrag = { id: newId, name, timestamp: Date.now(), konfiguration, sessionFortschritt: null, ...(multi ? { multi } : {}) };
       // bestehende Plätze festhalten, der neue Eintrag kommt auf den ersten freien Platz (Raster wächst automatisch)
       updated = rasterEinordnen({ ...data, gespeichert: [...rasterEinordnen(data).gespeichert, neuerEintrag] });
       id = newId;
@@ -3018,8 +3074,24 @@ export default function VokabelApp() {
     });
   }
 
+  // Quiz-Tab: immer nur ein Bereich offen – wer einen öffnet, schließt alle anderen
+  function schliesseQuizBereiche(ausser) {
+    if (ausser !== "slots") { setSlotSektionAufgeklappt(false); setMultiAuswahl(null); }
+    if (ausser !== "listen") setListenAuswahlAufgeklappt(false);
+    if (ausser !== "einzel") setQuizListeAufgeklappt(false);
+    if (ausser !== "modus") setQuizAbfrageModusAufgeklappt(false);
+    if (ausser !== "reihenfolge") setQuizReihenfolgeAufgeklappt(false);
+    if (ausser !== "einstellungen") setQuizEinstellungenAufgeklappt(false);
+    if (ausser !== "session") setQuizSessionAufgeklappt(false);
+  }
+  function toggleSessionBereich(art) {
+    if (quizSessionAufgeklappt !== art) schliesseQuizBereiche("session");
+    setQuizSessionAufgeklappt(v => v === art ? false : art);
+  }
+
   function toggleListenAuswahl() {
     const opening = !listenAuswahlAufgeklappt;
+    if (opening) schliesseQuizBereiche("listen");
     setListenAuswahlAufgeklappt(v => !v);
     if (opening) {
       dropdownImmuneRef.current = true;
@@ -3037,8 +3109,8 @@ export default function VokabelApp() {
 
   function toggleReihenfolge() {
     const opening = !quizReihenfolgeAufgeklappt;
+    if (opening) schliesseQuizBereiche("reihenfolge");
     setQuizReihenfolgeAufgeklappt(v => !v);
-    setQuizAbfrageModusAufgeklappt(false);
     if (opening) {
       dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -3056,6 +3128,7 @@ export default function VokabelApp() {
 
   function toggleEinstellungen() {
     const opening = !quizEinstellungenAufgeklappt;
+    if (opening) schliesseQuizBereiche("einstellungen");
     setQuizEinstellungenAufgeklappt(v => !v);
     if (opening) {
       dropdownImmuneRef.current = true;
@@ -3074,8 +3147,8 @@ export default function VokabelApp() {
 
   function toggleAbfrageModus() {
     const opening = !quizAbfrageModusAufgeklappt;
+    if (opening) schliesseQuizBereiche("modus");
     setQuizAbfrageModusAufgeklappt(v => !v);
-    setQuizReihenfolgeAufgeklappt(false);
     if (opening) {
       dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -3093,6 +3166,7 @@ export default function VokabelApp() {
 
   function toggleEinzelauswahl() {
     const opening = !quizListeAufgeklappt;
+    if (opening) schliesseQuizBereiche("einzel");
     setQuizListeAufgeklappt(v => !v);
     if (opening) {
       dropdownImmuneRef.current = true;
@@ -3111,8 +3185,10 @@ export default function VokabelApp() {
 
   function toggleSlotSektion() {
     const opening = !slotSektionAufgeklappt;
+    clearTimeout(slotZuTimerRef.current);
+    if (opening && tab === "quiz") schliesseQuizBereiche("slots");
     setSlotSektionAufgeklappt(v => !v);
-    setSlotSortModus(false); setSlotAuswahl([]);
+    setSlotSortModus(false); setSlotAuswahl([]); setMultiAuswahl(null);
     if (opening) {
       dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -3396,7 +3472,9 @@ export default function VokabelApp() {
   // Namensvorschlag für gespeicherte Konfigurationen: Sprache(n) + Datum, eindeutig
   function slotNamenVorschlag() {
     const sprachen = [...new Set(quizTabListen.map(spracheVonListe))].map(c => sprachInfo(c).name);
-    const basis = `${sprachen.length ? sprachen.join(" + ") : "Abfrage"} ${new Date().toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'})}`;
+    const multi = multiVonSlot(aktiverSlot);
+    const basis = multi ? `Multiquiz: ${multi.map(t => t.name).join(" + ")}`
+      : `${sprachen.length ? sprachen.join(" + ") : "Abfrage"} ${new Date().toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'})}`;
     const namen = new Set(slots.gespeichert.map(x => x.name));
     let name = basis, n = 2;
     while (namen.has(name)) name = `${basis} (${n++})`;
@@ -3962,7 +4040,8 @@ export default function VokabelApp() {
     const gespeichert = slot?.typ === "gespeichert";
     const geaendert = !statistik && vokabelgruppeGeaendert;
     const gruen = gespeichert && !geaendert;
-    const name = gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : statistik && statistikSlotGeleert ? "Leer" : "Neu";
+    const multi = multiVonSlot(slot);
+    const name = gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : multi ? "Multiquiz" : statistik && statistikSlotGeleert ? "Leer" : "Neu";
     // Vokabeln der Auswahl (für die Kreise) und Info-Zeile
     let voks = [], listenIds = [];
     if (statistik) {
@@ -3983,7 +4062,7 @@ export default function VokabelApp() {
       const nr = alle.map((v, i) => auswahl.has(`${listenIds[0]}__${v.id}`) ? i + 1 : null).filter(Boolean);
       bereichText = nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}–${nr[nr.length - 1]}` : "Auswahl";
     } else if (bereichAktiv) bereichText = "Auswahl";
-    const info = [listenText, bereichText, `${voks.length} Vokabel${voks.length !== 1 ? "n" : ""}`].filter(Boolean).join(" · ");
+    const info = [multi ? `🧩 ${multi.map(t => t.name).join(" + ")}` : listenText, multi ? "" : bereichText, `${voks.length} Vokabel${voks.length !== 1 ? "n" : ""}`].filter(Boolean).join(" · ");
     const aktionen = !statistik && quizKombiListe ? [{ label: "💾 Speichern", fn: () => oeffneModal("slot-speichern") }] : null;
     return (
       <div ref={slotSektionRef} data-slot-kopf={zu ? (gruen ? "gruen" : "zu") : "offen"} className={`slot-kopf${gruen ? " gruen" : ""}`}
@@ -4065,8 +4144,9 @@ export default function VokabelApp() {
       const ziel = slotDragZiel === key && slotDragId && slotDragId !== x?.id;
       if (x && slotSichtbar(x)) {
         const pct = Math.round(lernstand(x).uebersetzung.pct);
+        const multiNr = multiAuswahl ? multiAuswahl.indexOf(x.id) + 1 : 0;
         const inhalt = (<>
-          <span className="raster-name">{x.name}</span>
+          <span className="raster-name">{x.multi && <span aria-hidden="true">🧩 </span>}{x.name}</span>
           <span className="raster-fuss" data-kachel-balken={pct} {...ttFeld(`Lernfortschritt Übersetzung: ${pct} %`)}>
             <span className={`kachel-balken${pct >= 100 ? " voll" : ""}`}><span style={{width:`${pct}%`}}/></span>
             {pct >= 100 && <span className="kachel-voll" title="100 % gelernt">✓</span>}
@@ -4086,20 +4166,26 @@ export default function VokabelApp() {
             {slotAuswahl.includes(x.id) && <span className="auswahl-nr" data-auswahl-nr>{slotAuswahl.indexOf(x.id) + 1}</span>}
           </button>
         ) : (
-          <button key={key} data-raster-zelle={key} data-slot-id={x.id} className={`slot-chip belegt raster-chip${slotRef?.typ === "gespeichert" && slotRef?.id === x.id ? " aktiv-kachel" : ""}`}
-            style={chipStil('gespeichert', x.id, slotRef)}
-            onClick={() => onLaden('gespeichert', x.id)}
-            {...tt(`${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`, [
+          <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-multi-nr={multiNr || undefined}
+            className={`slot-chip belegt raster-chip${!multiAuswahl && slotRef?.typ === "gespeichert" && slotRef?.id === x.id ? " aktiv-kachel" : ""}`}
+            style={{...chipStil('gespeichert', x.id, slotRef), position:"relative", ...(multiNr ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {})}}
+            onClick={() => multiAuswahl
+              ? setMultiAuswahl(a => a.includes(x.id) ? a.filter(v => v !== x.id) : [...a, x.id])
+              : onLaden('gespeichert', x.id)}
+            {...tt(multiAuswahl
+              ? `${x.name} – antippen: zum Multiquiz hinzufügen oder wieder herausnehmen`
+              : `${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`, multiAuswahl ? null : [
               { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
               { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: x.id, name: kopieName(x.name), kopie: true }) },
-              { label: "⇄ Verschieben", fn: () => { setSlotSortModus(true); setSlotAuswahl([x.id]); } },
+              { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl([x.id]); } },
+              ...(tab === "quiz" ? [{ label: "🧩 Multiquiz", fn: () => { setSlotSortModus(false); setMultiAuswahl([x.id]); } }] : []),
               { label: "📝 Listen/Vokabeln ändern", fn: () => { if (slotRef?.id !== x.id) onLaden('gespeichert', x.id); setListenAendern(true); setSlotSektionAufgeklappt(false); } },
               { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
             ], { langText: x.name,
                  // Lang-Druck und dann ziehen: Menü weg, Verschieben-Modus, Eintrag wandert mit
                  beimZeigen: (px, py) => { slotZiehenRef.current = { id: x.id, x: px, y: py, aktiv: false, langdruck: true }; } })}>
             {inhalt}
-            {null /* gleiche Kind-Struktur wie im Verschieben-Modus (Markierungsnummer) – sonst baut React den Inhalt neu auf und ein laufendes Ziehen verliert den Finger */}
+            {multiNr ? <span className="auswahl-nr">{multiNr}</span> : null /* gleiche Kind-Struktur wie im Verschieben-Modus (Markierungsnummer) – sonst baut React den Inhalt neu auf und ein laufendes Ziehen verliert den Finger */}
           </button>
         ));
       } else if (x) {
@@ -4120,7 +4206,7 @@ export default function VokabelApp() {
         <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6, minHeight:22}}>
           <span style={label}>📌 Gespeichert</span>
           <span className="slot-kopf-knoepfe" style={{marginLeft:"auto", display:"flex", gap:6, alignItems:"center"}}>
-            {!slotSortModus && neuChip}
+            {!slotSortModus && !multiAuswahl && neuChip}
             {slotSortModus && (
               <button className="typ-btn aktiv" style={{fontSize:"0.7rem", padding:"2px 8px"}}
                 onClick={() => { setSlotSortModus(false); setSlotDragId(null); setSlotAuswahl([]); setSlotDragZiel(null); }}
@@ -4130,9 +4216,12 @@ export default function VokabelApp() {
             )}
           </span>
         </div>
-        {!slotSortModus && raster.gespeichert.length > 0 && (
-          <div style={{fontSize:"0.68rem", color:"var(--text3)", marginBottom:6}}>Lang drücken: umbenennen, verschieben oder löschen</div>
+        {!slotSortModus && !multiAuswahl && raster.gespeichert.length > 0 && (
+          <div style={{fontSize:"0.68rem", color:"var(--text3)", marginBottom:6}}>Lang drücken: umbenennen, verschieben, Multiquiz oder löschen</div>
         )}
+        {multiAuswahl && <div data-multi-hinweis style={{fontSize:"0.72rem", color:"var(--text2)", marginBottom:6}}>
+          🧩 Multiquiz: weitere Kacheln antippen (nochmal antippen nimmt sie heraus). Die Einstellungen kommen von Nr. 1.
+        </div>}
         {slotSortModus && <div style={{fontSize:"0.72rem", color:"var(--text2)", marginBottom:6}}>
           {slotAuswahl.length ? `${slotAuswahl.length} markiert – freien Platz antippen (dort untereinander) oder ziehen.` : "Pakete antippen zum Markieren, dann freien Platz antippen – oder direkt ziehen. Belegter Platz: Einträge rücken auf die frei gewordenen Plätze."}
         </div>}
@@ -4342,6 +4431,9 @@ export default function VokabelApp() {
       const threshold = parseFloat(maxScoreQ);
       voks = voks.filter(v => (v[scoreFeld]?.score ?? 0) < threshold);
     }
+    // Abfrage-Ziel Score (global): nur Vokabeln unter dem Ziel kommen in die Session
+    if (!gruppe && abfrageZielModus === "score" && abfrageZielScoreTyp !== "session")
+      voks = voks.filter(v => (v[scoreFeld]?.score ?? 0) < abfrageZielScore);
     const nurAkzentQ = scoreFeld === "akzentFortschritt";
     if (nurAkzentQ && !gruppe) {
       const laufend = isPakete ? lsGet(SK.sessionAktiv) : null;
@@ -4510,7 +4602,7 @@ export default function VokabelApp() {
             return starteVokabel(neuVoks, 0, wiederholungsStart());
           }
         }
-        if (ziel.modus === "score") {
+        if (ziel.modus === "score" && ziel.scoreTyp === "session") {
           const restVoks = prev.vokabeln.filter(v => {
             const liveVok = prev.liste.vokabeln.find(lv => lv.id === v.id);
             const score = Math.min(10, Math.max(-10, liveVok?.[prev.scoreFeld || "fortschritt"]?.score ?? 0));
@@ -5775,7 +5867,8 @@ export default function VokabelApp() {
   // Fortschritt der Abfrageart: beim aktiven Eintrag die gerade eingestellte, sonst die gespeicherte
   const slotChipLabel = (eintrag) => {
     const sf = slotSFAlle(eintrag)[aktiverSlot?.id === eintrag.id ? quizAbfrageArt : slotKonfigArt(eintrag)];
-    return sf ? `▶ ${eintrag.name} · ${(sf.abgefragt||[]).length}/${sf.gesamt||0}` : eintrag.name;
+    const name = eintrag.multi ? `🧩 ${eintrag.name}` : eintrag.name;
+    return sf ? `▶ ${name} · ${(sf.abgefragt||[]).length}/${sf.gesamt||0}` : name;
   };
 
   // ── Statistik: Berechnungen ───────────────────────────────────────────────
@@ -6304,6 +6397,8 @@ export default function VokabelApp() {
             ? akzentVoks.filter(v => startScore(v) >= schwelle).length : 0;
           if (!quizGelerntEinschliessen && schwelle > 0)
             reihenfolgeVoks = reihenfolgeVoks.filter(v => startScore(v) < schwelle);
+          if (!istDiktat && abfrageZielModus === "score" && abfrageZielScoreTyp !== "session")
+            reihenfolgeVoks = reihenfolgeVoks.filter(v => ((nurAkzent ? v.akzentFortschritt : v.fortschritt)?.score ?? 0) < abfrageZielScore);
           if (nurAkzent) {
             const laufend = isPakete && sessionSlotAktiv && !sessionSlotKonflikt() ? sessionSlotAktiv : null;
             reihenfolgeVoks = begrenzeOhneAkzent(reihenfolgeVoks, quizAntwortTypenGeordnet,
@@ -6336,6 +6431,8 @@ export default function VokabelApp() {
           const abfrageModusName = istDiktat ? "Diktat"
             : [quizModus === "rotierend" && "wechselnd", antwortArten.join(" + ") || (quizModus !== "rotierend" && "Frage – Antwort")].filter(Boolean).join(" · ");
           const alleAbgefragt = sessionHatFortschritt && sessionAbgefragtAnzahl >= sessionAnzahl;
+          // Start-Knopf: was in der laufenden Session noch übrig ist (die Paketgröße steht auf dem Umfang-Knopf)
+          const startRest = isPakete ? Math.max(0, sessionAnzahl - sessionAbgefragtAnzahl) : verfuegbar;
           const sessionPct = sessionAnzahl > 0 ? Math.round(sessionAbgefragtAnzahl / sessionAnzahl * 100) : 0;
           const sliderActive = quizSchlechtesteMaxScore !== "";
           const sliderVal = sliderActive ? parseInt(quizSchlechtesteMaxScore) : 0;
@@ -6362,6 +6459,20 @@ export default function VokabelApp() {
                           </button>,
                           ladeSlot, aktiverSlot)}
                       </div>
+                      {multiAuswahl && slotSektionAufgeklappt && (() => {
+                        const m = multiZusammenstellung(multiAuswahl);
+                        const n = m?.teile.length || 0;
+                        return (<>
+                          <div style={{height:72}}/>
+                          <div className="multi-leiste" data-multi-leiste>
+                            <button className="btn btn-ghost" onClick={() => setMultiAuswahl(null)} {...tt("Multiquiz-Auswahl beenden, nichts starten")}>Abbrechen</button>
+                            <button className="btn btn-primary" data-multi-starten disabled={!m?.anzahl} onClick={starteMultiquiz}
+                              {...tt("Die gewählten Konfigurationen zusammen abfragen – Einstellungen von Nr. 1, eigener Fortschritt im Verlauf")}>
+                              🧩 Multiquiz starten ({n} Quiz · {m?.anzahl || 0} Vokabeln)
+                            </button>
+                          </div>
+                        </>);
+                      })()}
                     </>
                   );
                 })()}
@@ -6508,7 +6619,7 @@ export default function VokabelApp() {
                         </button>
                         <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`}
                           onClick={() => {
-                            if (quizBereichTyp !== "bereich") { setQuizBereichTyp("bereich"); if (quizCheckboxAuswahl.size === 0) setQuizListeAufgeklappt(true); }
+                            if (quizBereichTyp !== "bereich") { setQuizBereichTyp("bereich"); if (quizCheckboxAuswahl.size === 0) { schliesseQuizBereiche("einzel"); setQuizListeAufgeklappt(true); } }
                             else { toggleEinzelauswahl(); }
                           }}
                           {...tt("Einzelne Vokabeln per Checkbox oder Von–Bis-Bereich auswählen")}>
@@ -6564,16 +6675,19 @@ export default function VokabelApp() {
                 {/* ZEILE 1: Abfrage-Modus | Reihenfolge | Stufe (Leicht/Schwer) – je ein Bereich klappt darunter auf */}
                 {kombiListe && (
                   <div ref={abfrageModusRef} className="quiz-zeile" style={{top:headerH + slotH + listenauswahlHeaderH + alleBereichH}}>
-                    <button className={`quiz-zeile-knopf${quizAbfrageModusAufgeklappt ? " offen" : ""}`} data-abfragemodus onClick={toggleAbfrageModus}
+                    <button className={`quiz-zeile-knopf${quizAbfrageModusAufgeklappt ? " offen" : ""}${!istDiktat && quizModus === "rotierend" ? " zweizeilig" : ""}`} data-abfragemodus onClick={toggleAbfrageModus}
                       {...tt("Abfrage-Modus: Spalten, Karte/MC/Tastatur, Frage–Antwort oder wechselnd – antippen zum Einstellen")}>
-                      {abfrageModusName}
+                      {/* wechselnd: zweizeilig, damit die Antwort-Arten Platz haben */}
+                      {!istDiktat && quizModus === "rotierend"
+                        ? <><span className="zeile1">wechselnd</span><span className="zeile2">{antwortArten.join(" – ") || "keine Spalte"}</span></>
+                        : abfrageModusName}
                     </button>
                     <button className={`quiz-zeile-knopf${quizReihenfolgeAufgeklappt ? " offen" : ""}`} data-reihenfolge onClick={toggleReihenfolge}
                       {...tt("Reihenfolge: Zufällig, Schlechteste oder Listen-Nr. – antippen zum Einstellen")}>
                       {quizReihenfolge === "zufall" ? "Zufällig" : quizReihenfolge === "schlechteste" ? "Schlechteste" : "Listen-Nr."}
                     </button>
                     <button className="quiz-zeile-knopf stufe" data-stufe={einstellungen.modus === "einfach" ? "einfach" : "schwer"}
-                      onClick={() => speichereEinst({...einstellungen, modus: einstellungen.modus === "einfach" ? "schwer" : "einfach"})}
+                      onClick={() => { schliesseQuizBereiche(null); speichereEinst({...einstellungen, modus: einstellungen.modus === "einfach" ? "schwer" : "einfach"}); }}
                       {...tt("Schwierigkeit: antippen wechselt Leicht/Schwer – lang drücken: Regeln und Vorlesen einstellen", [
                         { label: "⚙ Regeln Leicht / Schwer", fn: () => setModal("stufen-regeln") },
                         { label: "🔊 Vorlesen", fn: () => setModal("vorlesen") },
@@ -6816,19 +6930,19 @@ export default function VokabelApp() {
                 {kombiListe && (
                   <div ref={sessionRef} className="quiz-zeile" style={{top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH, zIndex:6}}>
                     <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "umfang" ? " offen" : ""}`} data-umfang
-                      onClick={() => setQuizSessionAufgeklappt(v => v === "umfang" ? false : "umfang")}
+                      onClick={() => toggleSessionBereich("umfang")}
                       {...tt("Umfang: alle Vokabeln auf einmal oder in Paketen – antippen zum Einstellen")}>
                       {isPakete && quizPaketGroesse != null ? `Je ${quizPaketGroesse} Vokabeln` : "Alle Vokabeln"}
                     </button>
                     <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "ziel" ? " offen" : ""}`} data-abfrageziel
-                      onClick={() => setQuizSessionAufgeklappt(v => v === "ziel" ? false : "ziel")}
+                      onClick={() => toggleSessionBereich("ziel")}
                       {...tt("Abfrage-Ziel: wie oft bzw. bis wann jede Vokabel abgefragt wird – antippen zum Einstellen")}>
                       {abfrageZielModus === "wiederholung" ? `${abfrageZielWiederholung}× richtig`
-                        : abfrageZielModus === "score" ? `Score ≥ ${abfrageZielScore > 0 ? "+" : ""}${abfrageZielScore}` : `${abfrageZielAnzahl}×`}
+                        : abfrageZielModus === "score" ? (abfrageZielScoreTyp === "session" ? `Session ${abfrageZielScore > 0 ? "+" : ""}${abfrageZielScore}` : `Score < ${abfrageZielScore > 0 ? "+" : ""}${abfrageZielScore}`) : `${abfrageZielAnzahl}×`}
                     </button>
                     {schwelle > 0 && gelernteAnzahl > 0 && (
                       <button className={`quiz-zeile-knopf${quizGelerntEinschliessen ? " an" : ""}`} data-gelernte={quizGelerntEinschliessen ? "an" : "aus"}
-                        onClick={() => setQuizGelerntEinschliessen(v => !v)}
+                        onClick={() => { schliesseQuizBereiche(null); setQuizGelerntEinschliessen(v => !v); }}
                         {...tt(quizGelerntEinschliessen ? `${gelernteAnzahl} gelernte Vokabeln werden mit abgefragt – antippen zum Ausblenden` : `${gelernteAnzahl} gelernte Vokabeln sind ausgeblendet – antippen zum Einschließen`)}>
                         {quizGelerntEinschliessen ? `+ ${gelernteAnzahl} gelernte` : `${gelernteAnzahl} gelernte`}
                       </button>
@@ -6881,7 +6995,7 @@ export default function VokabelApp() {
                       return (
                         <div style={{padding:"0 16px 12px"}}>
                           <div style={{display:"flex", gap:6, marginBottom:10}}>
-                            {[["global","Globaler Score","Vokabeln abfragen bis der Gesamt-Score das Ziel erreicht"],["session","Session-Score","Vokabeln abfragen bis der Fortschritt dieser Session das Ziel erreicht"]].map(([t, label, tip]) => (
+                            {[["global","Globaler Score","Nur Vokabeln mit Score unter dem Ziel abfragen, ein Durchgang (Ziel 0: nur negative)"],["session","Session-Score","Vokabeln abfragen bis der Fortschritt dieser Session das Ziel erreicht"]].map(([t, label, tip]) => (
                               <button key={t} className={`typ-btn${abfrageZielScoreTyp===t?" aktiv":""}`}
                                 onClick={() => setAbfrageZielScoreTyp(t)} {...tt(tip)}>{label}</button>
                             ))}
@@ -6965,10 +7079,10 @@ export default function VokabelApp() {
                           <b>Neuer Durchlauf</b><span>alle {sessionAnzahl} abgefragt</span>
                         </button>
                       ) : (
-                        <button className="btn btn-primary start-knopf" data-start-knopf data-start-anzahl={verfuegbar}
+                        <button className="btn btn-primary start-knopf" data-start-knopf data-start-anzahl={verfuegbar} data-start-rest={startRest}
                           onClick={() => starteQuiz()} disabled={!kannStarten || verfuegbar === 0}
-                          {...tt("Quiz starten – die Zahl nennt die Vokabeln dieser Fragerunde (bei Paketen: das nächste Paket)")}>
-                          <b>Quiz starten</b><span>{verfuegbar} Vokabel{verfuegbar !== 1 ? "n" : ""}</span>
+                          {...tt(isPakete ? `Quiz starten – in dieser Session sind noch ${startRest} Vokabeln übrig; abgefragt wird in Paketen zu ${quizPaketGroesse}` : "Quiz starten – die Zahl nennt die Vokabeln dieser Fragerunde")}>
+                          <b>Quiz starten</b><span>{startRest} Vokabel{startRest !== 1 ? "n" : ""}</span>
                         </button>
                       )}
                     </div>
@@ -7814,9 +7928,10 @@ export default function VokabelApp() {
                   {k:"Zeile 1: Modus · Reihenfolge · Stufe", v:"Erster Knopf: Abfrage-Modus der gewählten Art (z. B. „Karte“) – antippen öffnet die Spalten- und Modus-Einstellungen. Zweiter Knopf: Reihenfolge – Zufällig / Schlechteste (nach Score sortiert) / Listen-Nr. (Originalreihenfolge), dazu Score-Filter und „Unbeantwortete zuerst“. Es ist immer nur ein Bereich offen. Dritter Knopf: Stufe Leicht oder Schwer – antippen wechselt. Lang drücken: „Regeln Leicht / Schwer“ und „Vorlesen“."},
                   {k:"Regeln Leicht / Schwer", v:"Lang drücken auf den Stufen-Knopf. Per Haken legst du fest, was in welcher Stufe gilt: fehlende Akzente beim Tippen als richtig werten, Punktabzug bei „Lösung anzeigen“, „Nicht gewusst“ zieht 1 Punkt ab, im Akzent-Modus auch Wörter ohne Akzent abfragen (mit Höchstanteil), Buchstaben mit Akzent hervorheben, die Zahl der noch fehlenden Akzente anzeigen (z. B. 2 / 3) und richtige Antworten automatisch übernehmen (sonst „Prüfen“). „Vorlesen“ (ebenfalls per Lang-Druck): Auto-Play und welche Spalten vorgelesen werden."},
                   {k:"Zeile 2: Umfang · Abfrage-Ziel · Gelernte", v:"Umfang: „Alle Vokabeln“ in einem Durchgang oder „Je N Vokabeln“ – antippen zeigt große Zahlenknöpfe (Alle, 5–50). Bei Paketen kannst du nach jedem Paket pausieren oder weitermachen; abgefragte Vokabeln werden beim nächsten Paket übersprungen. Gelernte (nur wenn es welche gibt): „13 gelernte“ = ausgeblendet, „+ 13 gelernte“ = werden mit abgefragt."},
-                  {k:"Abfrage-Ziel", v:"Anzahl: jede Vokabel 1×/2×/3× pro Durchgang abfragen. Mit Wiederholung: Vokabeln so lange einreihen, bis jede 1×/2×/3× richtig beantwortet wurde. Score: Vokabeln so lange abfragen, bis ihr Score das Ziel erreicht."},
+                  {k:"Abfrage-Ziel", v:"Anzahl: jede Vokabel 1×/2×/3× pro Durchgang abfragen. Mit Wiederholung: Vokabeln so lange einreihen, bis jede 1×/2×/3× richtig beantwortet wurde. Score (global, Knopf z. B. „Score < +3“): nur Vokabeln mit Score unter dem Ziel kommen in die Session, jede einmal (ohne Wiederholung) – Ziel 0 fragt nur negative ab (nie abgefragte zählen als 0). Session-Score: alle Vokabeln, jede so lange, bis sie in dieser Session um das Ziel gestiegen ist."},
                   {k:"Konfiguration speichern", v:"Lang drücken auf den Namen in der Kopfzeile → „Speichern“. Speichert die aktuelle Auswahl und Einstellungen unter einem Namen; beim nächsten Mal per Kachel laden."},
-                  {k:"Quiz starten", v:"Unterste Sektion: Fortschrittsbalken der Session, darunter links der Stand (z. B. „15/50“) – antippen beginnt nach kurzer Rückfrage für die aktuelle Art eine neue Session (gelöscht wird nur, welche Vokabeln schon abgefragt wurden; Scores bleiben) – und rechts der Start-Knopf mit der Anzahl der Vokabeln dieses Durchgangs."},
+                  {k:"Quiz starten", v:"Unterste Sektion: Fortschrittsbalken der Session, darunter links der Stand (z. B. „15/50“) – antippen beginnt nach kurzer Rückfrage für die aktuelle Art eine neue Session (gelöscht wird nur, welche Vokabeln schon abgefragt wurden; Scores bleiben) – und rechts der Start-Knopf mit der Zahl der Vokabeln, die in der Session noch übrig sind (z. B. 10 von 25 abgefragt → „15 Vokabeln“; die Paketgröße steht auf dem Umfang-Knopf)."},
+                  {k:"Multiquiz", v:"Mehrere gespeicherte Konfigurationen zusammen abfragen: lang auf eine Kachel drücken → „🧩 Multiquiz“, dann weitere Kacheln antippen (nummeriert; nochmal antippen nimmt sie heraus). Unten „Multiquiz starten (2 Quiz · 50 Vokabeln)“ startet sofort, „Abbrechen“ beendet die Auswahl. Abgefragt werden alle Vokabeln der gewählten Konfigurationen (auch verschiedene Sprachen – vorgelesen wird jede in ihrer Sprache), die Einstellungen kommen von Nr. 1. Das Multiquiz erscheint im Verlauf (🧩) mit eigenem Fortschritt, die Kopfzeile zeigt „Multiquiz“ und in der Info-Zeile die Teile. Lang drücken auf die Kopfzeile → „Speichern“ legt es als eigene Kachel ab (Name-Vorschlag „Multiquiz: A + B“). In der Statistik zeigt es die gemeinsame Statistik; die Scores gelten wie immer je Vokabel."},
                 ]},
                 {titel:"Im Quiz", inhalt:[
                   {k:"Karte (Frage–Antwort)", v:"Tippe auf die Karte, um die Antwort aufzudecken. Dann: Richtig oder Falsch selbst einschätzen."},

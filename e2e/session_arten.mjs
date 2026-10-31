@@ -55,7 +55,8 @@ if (!(await text()).includes("Mein Paket")) await page.evaluate(() => document.q
 await sleep(300);
 ok(!(await text()).includes("Verlauf & Gespeichert") && await page.$("[data-kopf-info]"), "Aufgeklappt: keine Überschrift mehr, dafür die Info-Zeile");
 await clickText(".slot-chip", "Mein Paket");
-await sleep(300);
+ok(await kopf() === "offen" && await page.$(".aktiv-kachel"), "Kurz nach dem Antippen: Auswahl noch offen, gewählte Kachel markiert");
+await sleep(400);
 const t0 = await text();
 ok(await kopf() === "gruen" && !t0.includes("Verlauf & Gespeichert") && !t0.includes("📌 Gespeichert"),
   "Nach Auswahl: Liste zu, Überschrift weg, Kopfzeile grün");

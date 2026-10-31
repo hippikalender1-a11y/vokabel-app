@@ -81,7 +81,7 @@ console.log("     Scores:", JSON.stringify(scores));
 ok(scores.sehen === -1 && scores.gehen === 1, "Nur erste Bewertung zählt: sehen −1 (nicht 0), gehen +1");
 ok(/1 von 2 richtig/.test(t), "Auswertung zählt jede Vokabel einmal: 1 von 2 richtig");
 
-// Ausnahme Abfrage-Ziel "Score": jede Antwort zählt (sonst endet die Runde nie)
+// Abfrage-Ziel "Score < +2": nur Vokabeln unter dem Ziel, ein Durchgang ohne Wiederholung
 await clickText("button", "Zur Übersicht");
 await page.evaluate(() => {
   const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr"));
@@ -95,26 +95,36 @@ await clickText(".typ-btn", "Score", true);
 // Ziel-Score per Schieberegler auf +2
 await page.evaluate(() => { const r = [...document.querySelectorAll('input[type="range"]')].pop(); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(r, "2"); r.dispatchEvent(new Event("input", { bubbles: true })); r.dispatchEvent(new Event("change", { bubbles: true })); });
 await sleep(300);
-await clickText("[data-start-knopf]", "");
-await sleep(400);
-let schritte = 0;
-let karten2 = 0;
-for (; schritte < 10; schritte++) {
-  const tt = await text();
-  if (/Durchlauf abgeschlossen|Auswertung|Paket fertig/.test(tt)) break;
-  if (tt.includes("Weiter zur Wiederholung")) { karten2++; schritte--; await clickText("button", "Weiter zur Wiederholung"); continue; }
-  await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click());
-  await sleep(250);
-  await clickText(".karte-btn", "Gewusst");
-  await sleep(1300);
-}
-const sc2 = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.map(v => v.fortschritt?.score));
-console.log("     Score-Ziel +2: Schritte", schritte, "Scores", JSON.stringify(sc2));
-ok(schritte === 4 && sc2.every(x => x === 2), "Abfrage-Ziel Score: jede Antwort zählt, Runde endet bei +2");
-ok(karten2 === 1, "Score-Ziel: Zwischenkarte vor dem zweiten Durchgang");
-
-// Wiederholung abbrechen: direkt zur normalen Auswertung (nicht "Abgebrochen")
-await clickText("button", "Zur Übersicht");
+const zielText = await page.evaluate(() => document.querySelector("[data-abfrageziel]")?.textContent.trim());
+ok(zielText === "Score < +2", `Knopf Abfrage-Ziel: „Score < +2“ (${zielText})`);
+const scoreRunde = async () => {
+  await clickText("[data-start-knopf]", "");
+  await sleep(400);
+  let schritte = 0, karten = 0;
+  for (; schritte < 10; schritte++) {
+    const tt = await text();
+    if (/Durchlauf abgeschlossen|Auswertung|Paket fertig|Weiter →/.test(tt) && !(await page.$(".karte-btn"))) break;
+    if (tt.includes("Weiter zur Wiederholung")) { karten++; schritte--; await clickText("button", "Weiter zur Wiederholung"); continue; }
+    if (!(await page.$(".sektion[style*='pointer']"))) break;
+    await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click());
+    await sleep(250);
+    await clickText(".karte-btn", "Gewusst");
+    await sleep(1300);
+  }
+  await clickText("button", "Zur Übersicht");
+  await sleep(300);
+  return { schritte, karten, scores: await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.map(v => v.fortschritt?.score)) };
+};
+let r1 = await scoreRunde();
+console.log("     Score < +2, Runde 1:", JSON.stringify(r1));
+ok(r1.schritte === 2 && r1.karten === 0 && r1.scores.every(x => x === 1), "Score < +2: ein Durchgang ohne Wiederholung (beide +1)");
+const rest1 = await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl);
+ok(rest1 === "2", `Score 1 < 2: beide weiter abfragbar (${rest1})`);
+let r2 = await scoreRunde();
+console.log("     Score < +2, Runde 2:", JSON.stringify(r2));
+ok(r2.scores.every(x => x === 2), "zweite Runde: beide +2");
+const rest = await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl);
+ok(rest === "0", `Score < +2: Vokabeln mit Score 2 kommen nicht mehr in die Session (${rest})`);
 await page.evaluate(() => {
   const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr"));
   l.vokabeln.forEach(v => { delete v.fortschritt; });

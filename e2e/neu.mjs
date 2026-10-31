@@ -83,7 +83,7 @@ const offen = await page.evaluate(() => /📌 Gespeichert/i.test(document.body.i
 if (!offen) await page.evaluate(() => document.querySelector(".toggle-opt.aktiv")?.click());
 await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Französisch"))?.click());
-await sleep(300);
+await sleep(600)   // Auswahl klappt kurz verzögert zu;
 let t = await page.evaluate(() => document.body.innerText);
 ok(/GESAMT\s*\n?\s*2/i.test(t), "Statistik: Preset zeigt 2 Vokabeln");
 // nach dem Laden ist der Bereich zu → wieder öffnen
