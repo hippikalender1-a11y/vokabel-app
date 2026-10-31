@@ -58,7 +58,7 @@ await clickText(".quiz-setup-check", "Nomen");
 ok(await page.$("[data-farbmodus-uebernehmen]"), "Navigieren im Farbmodus: Leiste bleibt");
 
 // Rechtsklick (= langer Druck am Rechner) auf „Quiz starten“
-const knopf = await page.evaluate(() => { const b = [...document.querySelectorAll("button")].find(x => /^Quiz starten/.test(x.textContent.trim())); const r = b.getBoundingClientRect(); return { x: r.x + 30, y: r.y + r.height / 2 }; });
+const knopf = await page.evaluate(() => { const b = document.querySelector("[data-start-knopf] b"); const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await rechtsklick(knopf.x, knopf.y);
 let zeilen = await feldZeilen();
 console.log("     Farbfeld Knopf:", zeilen.join(" | "));

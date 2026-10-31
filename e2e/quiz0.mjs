@@ -23,7 +23,7 @@ const clickText = async (sel, text, exact = false) => {
   await sleep(300);
 };
 const startText = () => page.evaluate(() =>
-  [...document.querySelectorAll("button")].map(b => b.textContent.trim()).find(t => /^Quiz starten \(/.test(t)) || "(kein Start-Button)");
+  document.querySelector("[data-start-knopf]")?.dataset.startAnzahl || "(kein Start-Button)");
 // Rolle-Button in der Spaltenzeile mit diesem Namen
 const rolle = async (spaltenName, rollenText) => {
   const done = await page.evaluate((n, r) => {
@@ -76,13 +76,13 @@ await page.evaluate(() => window.scrollTo(0, 0));
 await clickText("button", "Irregular Verbs");          // Listen-Chip öffnet Auswahl
 await clickText(".quiz-setup-check", "Irregular Verbs"); // abwählen
 await clickText(".quiz-setup-check", "Vocabulaire");     // anwählen
-await page.evaluate(() => { const b = [...document.querySelectorAll(".toggle-opt")].find(x => x.textContent.trim() === "Alle" && /Pakete|V\./.test(x.nextElementSibling?.textContent || "")); b?.click(); }); await sleep(300);
+await page.evaluate(async () => { const u = document.querySelector("[data-umfang]"); if (!u) return; u.click(); await new Promise(r => setTimeout(r, 200)); document.querySelector('[data-umfang-wahl="alle"]')?.click(); }); await sleep(300);
 await sleep(400);
 const nachWechsel = await startText();
 console.log("     Französisch:", nachWechsel);
-ok(/\(195 Vokabeln\)/.test(nachWechsel), "Nach Wechsel zur französischen Liste: 195 Vokabeln abfragbar");
+ok(nachWechsel === "195", "Nach Wechsel zur französischen Liste: 195 Vokabeln abfragbar");
 
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(500);
 const frage = await page.evaluate(() => document.body.innerText);
 ok(/Wort\d+/.test(frage), "Quiz gestartet, französische Vokabel wird abgefragt");

@@ -1678,6 +1678,27 @@ KLAMMERHINWEISE: HINWEIS_RE = frei stehende ( ) bzw. [ ] (nicht „(un)lucky“)
   "( ) → Info" (data-klammern-werkzeug) → Modal mit Vorschau, schreibt in i1/i2
   (wird bei Bedarf als "Hinweis" eingeschaltet). KI-Prompt: keine Klammerzusätze,
   ggf. letzte Spalte "Hinweis". Test: e2e/klammern.mjs.
+QUIZ-TAB NEU (Schritt 2, A1–A5):
+  Kopfzeile renderSlotKopf(statistik) für Quiz UND Statistik: Name-Knopf
+  (data-slot-kopf-name, lang drücken → "💾 Speichern", nur Quiz) + Kreise Ü/D/A
+  (renderMiniKreise nurVerfuegbar: nicht verfügbare Art ausgeblendet); offen
+  zusätzlich Info-Zeile data-kopf-info ("Englisch 6 · Nr. 1–25 · 25 Vokabeln").
+  Überschrift "Verlauf & Gespeichert" und Speichern-Knopf entfernt.
+  Gespeicherte Konfiguration geladen → Listen-/Vokabel-Auswahl ausgeblendet
+  (auch Statistik); Kachel-Lang-Druck "📝 Listen/Vokabeln ändern" →
+  listenAendern = true blendet sie wieder ein (zurückgesetzt in ladeSlot,
+  ladeSlotStatistik, neueQuizKonfiguration, speichereAlsGespeichert).
+  Kacheln: unten Balken Lernfortschritt Übersetzung (data-kachel-balken, ✓ bei
+  100 %), geladene Kachel .aktiv-kachel in --haupt gefüllt; keine Kreise mehr.
+  Zeile 1 .quiz-zeile: [data-abfragemodus] [data-reihenfolge] [data-stufe]
+  (antippen Leicht/Schwer; lang: Modals "stufen-regeln" und "vorlesen");
+  nur ein Bereich offen. Zeile 2: [data-umfang] (Panel .umfang-raster,
+  data-umfang-wahl="alle"|5..50) [data-abfrageziel] [data-gelernte="an|aus"];
+  quizSessionAufgeklappt = false|"umfang"|"ziel". Zeile "Einstellungen" entfernt.
+  Start .start-bereich: Balken data-start-balken (%), links .start-fortschritt
+  (data-session-zuruecksetzen, Rückfrage data-reset-frage/-ja), rechts
+  .start-knopf data-start-knopf data-start-anzahl ("Quiz starten" / "N Vokabeln").
+  "Lernen" als dritte Stufe folgt mit Schritt C.
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).

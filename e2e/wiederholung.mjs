@@ -37,16 +37,16 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz");
 await clickText(".quiz-setup-check", "Verbes");
-// Session-Bereich öffnen und Standard prüfen
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /^(Pakete|\d+ V\.)$/.test(b.textContent.trim()))?.click());
+// Abfrage-Ziel öffnen und Standard prüfen
+await page.click("[data-abfrageziel]");
 await sleep(300);
 const aktiv = await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].map(b => b.textContent.trim()));
 console.log("     aktive Knöpfe:", aktiv.join(" | "));
 ok(aktiv.includes("Mit Wiederholung") && aktiv.includes("1×"), "Standard: Abfrage-Ziel „Mit Wiederholung“ 1×");
-ok(aktiv.includes("10"), "Standard: Paketgröße 10");
+ok(await page.evaluate(() => document.querySelector("[data-umfang]")?.textContent.trim()) === "Je 10 Vokabeln", "Standard: Paketgröße 10");
 
 // Quiz: gehen gewusst, sehen beim 1. Mal nicht, danach gewusst
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(400);
 const gefragt = [];
 let karten = 0, markiert = false;
@@ -89,13 +89,13 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
 });
 if (!(await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].some(b => b.textContent.trim() === "Score"))))
-  await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /^(Pakete|\d+ V\.)$/.test(b.textContent.trim()))?.click());
+  await page.evaluate(() => document.querySelector("[data-abfrageziel]")?.click());
 await sleep(300);
 await clickText(".typ-btn", "Score", true);
 // Ziel-Score per Schieberegler auf +2
 await page.evaluate(() => { const r = [...document.querySelectorAll('input[type="range"]')].pop(); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(r, "2"); r.dispatchEvent(new Event("input", { bubbles: true })); r.dispatchEvent(new Event("change", { bubbles: true })); });
 await sleep(300);
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(400);
 let schritte = 0;
 let karten2 = 0;
@@ -121,10 +121,10 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
 });
 if (!(await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].some(b => b.textContent.trim() === "Mit Wiederholung"))))
-  await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /^(Pakete|\d+ V\.)$/.test(b.textContent.trim()))?.click());
+  await page.evaluate(() => document.querySelector("[data-abfrageziel]")?.click());
 await sleep(300);
 await clickText(".typ-btn", "Mit Wiederholung", true);
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(400);
 for (let k = 0; k < 2; k++) {
   await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click());

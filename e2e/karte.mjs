@@ -58,7 +58,7 @@ ok(await aktiverModus("Infinitive") === "Karte", "Infinitive: Karte");
 ok(await aktiverModus("Simple Past") === "Karte", `Neu hinzugefügte Antwort-Spalte: Karte (${await aktiverModus("Simple Past")})`);
 
 // Quiz: zweite Spalte muss als Karte (Aufdecken + Gewusst/Nicht gewusst) erscheinen
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(400);
 await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click());
 await sleep(250);

@@ -43,7 +43,7 @@ await clickText(".tab", "Listen");
 await clickText(".karte-zeile", "Verbes");
 await clickText("button", "Quiz starten", true);
 await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].find(b => b.textContent.trim() === "Listen-Nr.")?.click());
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(300);
 
 const gesehen = {};

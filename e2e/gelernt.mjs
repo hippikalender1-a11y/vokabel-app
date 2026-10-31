@@ -25,8 +25,8 @@ const clickText = async (sel, text, exact = false) => {
 const infos = () => page.evaluate(() => {
   const t = document.body.innerText;
   return {
-    start: [...document.querySelectorAll("button")].map(b => b.textContent.trim()).find(x => /^(Quiz|Diktat) starten/.test(x)) || "",
-    hinweis: (t.match(/\d+ gelernte (ausgeblendet|eingeschlossen)/) || [""])[0],
+    start: document.querySelector("[data-start-knopf]")?.dataset.startAnzahl || "",
+    hinweis: (g => g ? `${g.textContent.trim()}|${g.dataset.gelernte}` : "")(document.querySelector("[data-gelernte]")),
   };
 });
 
@@ -56,20 +56,20 @@ await clickText(".quiz-setup-check", "Vocabulaire");
 await sleep(300);
 let i = await infos();
 console.log("     Frage–Antwort:", JSON.stringify(i));
-ok(/\(2 /.test(i.start) && i.hinweis === "1 gelernte ausgeblendet", "Quiz: Vokabel mit Quiz-Score 8 ausgeblendet (2 abfragbar)");
+ok(i.start === "2" && i.hinweis === "1 gelernte|aus", "Quiz: Vokabel mit Quiz-Score 8 ausgeblendet (2 abfragbar)");
 
 await artWaehlen("diktat");
 await sleep(300);
 i = await infos();
 console.log("     Diktat:", JSON.stringify(i));
-ok(/\(2 /.test(i.start) && i.hinweis === "1 gelernte ausgeblendet", "Diktat: nur Vokabel mit Diktat-Score 8 ausgeblendet (2 abfragbar)");
+ok(i.start === "2" && i.hinweis === "1 gelernte|aus", "Diktat: nur Vokabel mit Diktat-Score 8 ausgeblendet (2 abfragbar)");
 
 // Diktat starten: „deux“ (Diktat gelernt) darf nicht vorkommen, „un“ schon
 await page.evaluateOnNewDocument(() => {});
 const gesprochen = [];
 await page.exposeFunction("__sprich", t => gesprochen.push(t));
 await page.evaluate(() => { window.speechSynthesis.speak = u => window.__sprich(u.text); });
-await clickText("button", "starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(600);
 const woerter = await page.evaluate(() => {
   // Diktat-Vokabeln aus dem React-State sind nicht direkt lesbar → über Lösung-anzeigen durchklicken

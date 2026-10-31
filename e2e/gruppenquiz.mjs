@@ -102,7 +102,7 @@ await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
 await clickText(".slot-chip", "Mein Paket");
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 for (let i = 0; i < 2; i++) {
   await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(250);
   await clickText(".karte-btn-ja", "Gewusst"); await sleep(1200);

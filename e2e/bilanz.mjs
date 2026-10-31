@@ -42,10 +42,10 @@ async function runde(scores, antworten) {
   await clickText(".quiz-setup-check", "Verbes");
   // Abfrage-Ziel "Anzahl" (ein Durchgang) – dieser Test prüft die Punkte eines einzelnen Durchgangs
   if (!(await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].some(b => b.textContent.trim() === "Anzahl"))))
-    await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /^(Pakete|\d+ V\.)$/.test(b.textContent.trim()))?.click());
+    await page.evaluate(() => document.querySelector("[data-abfrageziel]")?.click());
   await sleep(300);
   await clickText(".typ-btn", "Anzahl", true);
-  await clickText("button", "Quiz starten (");
+  await clickText("[data-start-knopf]", "");
   await sleep(400);
   for (let k = 0; k < Object.keys(antworten).length; k++) {
     const t = await text();

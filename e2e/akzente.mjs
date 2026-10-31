@@ -65,24 +65,25 @@ await artWaehlen("akzente"); await sleep(300);
 const knoepfeA = await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")].map(b => b.textContent.trim()));
 console.log("     Modus Akzente:", knoepfeA.join(" | "));
 ok(knoepfeA.join("|") === "Akzente", "Akzente (A): Antwortspalte fest auf Akzente, keine anderen Modi");
+const startAnzahl = () => page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl);
 let t = await text();
-ok(/Quiz starten \(4 Vokabeln\)/.test(t), "Stufe „Schwer“ (Standard): auch Wörter ohne Akzent → 4 Wörter");
-ok(await page.evaluate(() => document.querySelector('[data-anzahl="einstellungen"]')?.textContent.trim()) === "(4 V.)", "Zeile Einstellungen (Schwer, mit Wörtern ohne Akzent): 4 V.");
-// Regel in der Schwierigkeits-Tabelle für "Schwer" ausschalten
-await page.evaluate(() => [...document.querySelectorAll("button.toggle-opt")].find(b => /^(Einfach|Schwer)$/.test(b.textContent.trim()) && b.closest("div[style*='sticky']"))?.click());
+ok(await startAnzahl() === "4", "Stufe „Schwer“ (Standard): auch Wörter ohne Akzent → 4 Wörter");
+// Regel in der Schwierigkeits-Tabelle für "Schwer" ausschalten (Lang-Druck auf Leicht/Schwer)
+await page.evaluate(() => { const el = document.querySelector("[data-stufe]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(250); await page.evaluate(() => document.querySelector('[data-info-aktion="⚙ Regeln Leicht / Schwer"]').click());
 await sleep(300);
 await page.evaluate(() => {
   const zeile = [...document.querySelectorAll("div")].find(d => d.textContent.trim() === "Akzent-Modus: auch Wörter ohne Akzent abfragen");
   zeile.parentElement.nextElementSibling.nextElementSibling.click();
 });
 await sleep(200);
-ok(/Quiz starten \(3 Vokabeln\)/.test(await text()), "Regel aus: nur 3 Wörter mit Akzent (chat fehlt)");
-const kette = await page.evaluate(() => ["auswahl", "akzent", "einstellungen"].map(k => document.querySelector(`[data-anzahl="${k}"]`)?.textContent.trim())
-  .concat(document.querySelector("[data-sessionanzahl]")?.textContent.trim()));
+await page.evaluate(() => document.querySelector("[data-stufen-regeln]")?.closest(".overlay")?.click()); await sleep(200);
+ok(await startAnzahl() === "3", "Regel aus: nur 3 Wörter mit Akzent (chat fehlt)");
+const kette = await page.evaluate(() => ["auswahl", "akzent"].map(k => document.querySelector(`[data-anzahl="${k}"]`)?.textContent.trim()));
+kette.push(await startAnzahl());
 console.log("     Anzahl-Kette:", kette.join(" → "));
-ok(kette.join(" → ") === "(4 V.) → (3 mit Akzent) → (3 V.) → (3 V.)", "Zeilen: Auswahl 4 → mit Akzent 3 → Einstellungen 3 → Session 3");
+ok(kette.join(" → ") === "(4 V.) → (3 mit Akzent) → 3", "Zeilen: Auswahl 4 → mit Akzent 3 → Start 3");
 
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(400);
 const gesehen = [];
 const klassen = () => page.evaluate(() => [...document.querySelectorAll(".akzent-kachel")].map(b => b.className.replace("akzent-kachel", "").trim()));
@@ -191,7 +192,8 @@ await sleep(300);
 const markiert = () => page.evaluate(() => document.querySelectorAll(".akzent-kachel.markiert").length);
 let zaehlerDa = null;
 const starteUndZaehle = async () => {
-  await clickText("button", "Quiz starten (");
+  await page.evaluate(() => document.querySelector("[data-stufen-regeln]")?.closest(".overlay")?.click()); await sleep(200);
+  await clickText("[data-start-knopf]", "");
   await sleep(400);
   if ((await text()).includes("Weiter zur Wiederholung")) await clickText("button", "Weiter zur Wiederholung");
   const n = await markiert();
@@ -205,15 +207,16 @@ const starteUndZaehle = async () => {
 ok(await starteUndZaehle() === 0, "Stufe „Schwer“ (Standard): Akzent-Buchstaben nicht hervorgehoben");
 ok(zaehlerDa === false, "Stufe „Schwer“: kein Akzent-Zähler");
 const oeffneEinst = async () => {
-  if (!(await text()).includes("Was gilt als einfach / schwer?")) await page.evaluate(() => [...document.querySelectorAll("button.toggle-opt")].find(b => /^(Einfach|Schwer)$/.test(b.textContent.trim()) && b.closest("div[style*='sticky']"))?.click());
+  if (!(await text()).includes("Was gilt als leicht / schwer?")) { await page.evaluate(() => { const el = document.querySelector("[data-stufe]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(250); await page.evaluate(() => document.querySelector('[data-info-aktion="⚙ Regeln Leicht / Schwer"]').click()); }
   await sleep(300);
 };
 await oeffneEinst();
-ok((await text()).includes("Was gilt als einfach / schwer?"), "Einstellungen zeigen die Tabelle „Was gilt als einfach / schwer?“");
-await clickText(".toggle-opt", "Einfach", true);
+ok((await text()).includes("Was gilt als leicht / schwer?"), "Lang-Druck auf die Stufe zeigt die Tabelle „Was gilt als leicht / schwer?“");
+await clickText("[data-stufen-regeln] .toggle-opt", "Leicht", true);
 ok(await starteUndZaehle() > 0, "Stufe „Einfach“: Buchstaben mit Akzent hervorgehoben");
 // Einfach: richtige Akzente werden automatisch übernommen
-await clickText("button", "Quiz starten (");
+await page.evaluate(() => document.querySelector("[data-stufen-regeln]")?.closest(".overlay")?.click()); await sleep(200);
+await clickText("[data-start-knopf]", "");
 await sleep(400);
 {
   const tt0 = await text();

@@ -22,10 +22,10 @@ const clickText = async (sel, text, exact = false) => {
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };
+// Umfang-Knopf („Je 10 Vokabeln“ / „Alle Vokabeln“) und Anzahl am Start-Knopf
 const info = () => page.evaluate(() => ({
-  session: (() => { const p = [...document.querySelectorAll(".toggle-opt")].find(b => /^(\d+ V\.|Pakete)$/.test(b.textContent.trim()));
-    if (!p) return null; return p.classList.contains("aktiv") ? p.textContent.trim() : (p.previousElementSibling?.classList.contains("aktiv") ? "Alle" : "?"); })(),
-  start: [...document.querySelectorAll("button")].map(b => b.textContent.trim()).find(t => /^Quiz starten/.test(t)),
+  session: document.querySelector("[data-umfang]")?.textContent.trim() || null,
+  start: Number(document.querySelector("[data-start-knopf]")?.dataset.startAnzahl),
 }));
 
 await page.goto(URL);
@@ -42,13 +42,14 @@ await clickText(".tab", "Quiz");
 await clickText(".quiz-setup-check", "Vocabulaire");
 let i = await info();
 console.log("     Start:", JSON.stringify(i));
-ok(i.session === "10 V." && i.start === "Quiz starten (10 Vokabeln)", "App-Start: Pakete mit 10 Vokabeln");
+ok(i.session === "Je 10 Vokabeln" && i.start === 10, "App-Start: Pakete mit 10 Vokabeln");
 
 // "Alle" wählen, dann "Neu" → wieder 10
-await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].find(x => x.textContent.trim() === "Alle" && /V\./.test(x.nextElementSibling?.textContent || ""))?.click());
+await page.click("[data-umfang]"); await sleep(200);
+await page.click('[data-umfang-wahl="alle"]');
 await sleep(300);
 i = await info();
-ok(i.session === "Alle" && /\(25 /.test(i.start), "„Alle“ gewählt: 25 Vokabeln");
+ok(i.session === "Alle Vokabeln" && i.start === 25, "„Alle“ gewählt: 25 Vokabeln");
 await page.evaluate(() => window.scrollTo(0, 0));
 if (!(await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].some(c => c.textContent.trim() === "Neu"))))
   await page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv")].find(b => b.textContent.trim() === "Neu")?.click());
@@ -56,14 +57,14 @@ await sleep(300);
 await clickText(".slot-chip", "Neu", true);
 await clickText(".quiz-setup-check", "Vocabulaire");
 i = await info();
-ok(i.session === "10 V." && /\(10 /.test(i.start), "Nach „Neu“: wieder Pakete mit 10");
+ok(i.session === "Je 10 Vokabeln" && i.start === 10, "Nach „Neu“: wieder Pakete mit 10");
 
 // Start aus der Liste
 await clickText(".tab", "Listen");
 await clickText(".karte-zeile", "Vocabulaire");
 await clickText("button", "Quiz starten", true);
 i = await info();
-ok(i.session === "10 V." && /\(10 /.test(i.start), "Quiz aus der Liste: Pakete mit 10");
+ok(i.session === "Je 10 Vokabeln" && i.start === 10, "Quiz aus der Liste: Pakete mit 10");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

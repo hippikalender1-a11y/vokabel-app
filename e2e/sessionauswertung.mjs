@@ -57,10 +57,10 @@ await clickText(".tab", "Listen");
 await clickText(".karte-zeile", "Verbes");
 await clickText("button", "Quiz starten", true);
 // Reihenfolge Listen-Nr., keine Score-Grenze → alle 12 in der Session, Pakete zu 10
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => ["Zufällig", "Schlechteste", "Listen-Nr."].includes(b.textContent.trim()) && b.closest("div[style*='sticky']"))?.click()); await sleep(300);
+await page.click("[data-reihenfolge]"); await sleep(300);
 await clickText(".toggle-opt", "Listen-Nr.", true);
 await page.evaluate(() => { const r = document.querySelector('input[type="range"]'); });
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(300);
 const titel1 = await page.evaluate(() => document.querySelector(".topbar-title")?.textContent.trim());
 console.log("     Paket 1:", titel1);

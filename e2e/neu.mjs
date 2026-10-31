@@ -25,9 +25,9 @@ const clickText = async (sel, text, exact = false) => {
 const zustand = () => page.evaluate(() => {
   const t = document.body.innerText;
   return {
-    start: [...document.querySelectorAll("button")].map(b => b.textContent.trim()).find(x => /^Quiz starten/.test(x)) || "(kein Start)",
+    start: document.querySelector("[data-start-knopf]")?.dataset.startAnzahl || "(kein Start)",
     kopfChip: [...document.querySelectorAll(".toggle-opt.aktiv")].map(b => b.textContent.trim())[0],
-    reihenfolge: [...document.querySelectorAll(".aktiv")].map(b => b.textContent.trim()).find(x => ["Zufällig", "Schlechteste", "Listen-Nr."].includes(x)),
+    reihenfolge: document.querySelector("[data-reihenfolge]")?.textContent.trim(),
     gewaehlt: [...document.querySelectorAll(".quiz-setup-check .checkbox.checked")].length,
   };
 });
@@ -52,12 +52,12 @@ await page.evaluate(() => [...document.querySelectorAll(".vok-nr")].slice(0, 2).
 await sleep(300);
 await clickText("button", "Schlechteste", true);
 await clickText(".toggle-opt", "Zufällig", true);
-await clickText("button", "Speichern", true);
+await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Speichern"]').click()); await new Promise(r => setTimeout(r, 300));
 await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].pop()?.click());
 await sleep(400);
 let z = await zustand();
 console.log("     Preset aktiv:", JSON.stringify(z));
-ok(/\(2 /.test(z.start) && z.reihenfolge === "Zufällig", "Preset: 2 Vokabeln, Zufällig");
+ok(z.start === "2" && z.reihenfolge === "Zufällig", "Preset: 2 Vokabeln, Zufällig");
 
 // Neu
 await page.evaluate(() => window.scrollTo(0, 0));
@@ -66,14 +66,14 @@ await clickText(".slot-chip", "Neu", true);
 await sleep(400);
 z = await zustand();
 console.log("     Nach Neu:", JSON.stringify(z));
-ok(z.gewaehlt === 0 && !/Quiz starten \(\d/.test(z.start), "Neu: keine Liste mehr ausgewählt");
+ok(z.gewaehlt === 0 && !/^[1-9]/.test(z.start), "Neu: keine Liste mehr ausgewählt");
 ok(z.kopfChip === "Neu", "Neu: kein Preset aktiv");
 const sa = await page.evaluate(() => localStorage.getItem("vokabel_session_aktiv"));
 ok(sa === null, "Neu: keine aktive Session");
 
 await clickText(".quiz-setup-check", "Verbes");
 z = await zustand();
-ok(/\(3 /.test(z.start), `Liste neu gewählt: alle 3 Vokabeln (${z.start})`);
+ok(z.start === "3", `Liste neu gewählt: alle 3 Vokabeln (${z.start})`);
 ok(z.reihenfolge === "Schlechteste", `Neu: Reihenfolge zurück auf Schlechteste (${z.reihenfolge})`);
 
 // Statistik: Preset laden, dann Neu
@@ -85,7 +85,7 @@ await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Französisch"))?.click());
 await sleep(300);
 let t = await page.evaluate(() => document.body.innerText);
-ok(/\(2 V\.\)/.test(t), "Statistik: Preset zeigt 2 Vokabeln");
+ok(/GESAMT\s*\n?\s*2/i.test(t), "Statistik: Preset zeigt 2 Vokabeln");
 // nach dem Laden ist der Bereich zu → wieder öffnen
 await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);

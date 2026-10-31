@@ -39,11 +39,11 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz");
 await clickText(".quiz-setup-check", "Verbes");
-await page.evaluate(() => { const b = [...document.querySelectorAll(".toggle-opt")].find(x => x.textContent.trim() === "Alle" && /Pakete|V\./.test(x.nextElementSibling?.textContent || "")); b?.click(); }); await sleep(300);
+await page.click("[data-umfang]"); await sleep(200); await page.click('[data-umfang-wahl="alle"]'); await sleep(300);
 
 // ── 1) Normales Quiz → Verlauf-Eintrag ──
 const quizRunde = async () => {
-  await clickText("button", "Quiz starten (");
+  await clickText("[data-start-knopf]", "");
   await sleep(400);
   for (let k = 0; k < 3; k++) {
     await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click());
@@ -63,7 +63,7 @@ ok(sl.verlauf.length === 1, `Gleiche Konfiguration nochmal: kein doppelter Eintr
 
 // ── 2) Namensvorschlag ──
 const speichern = async () => {
-  await clickText("button", "Speichern", true);
+  await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Speichern"]').click()); await new Promise(r => setTimeout(r, 300));
   const vorschlag = await page.$eval(".modal input.inp", e => e.value);
   await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].pop()?.click());
   await sleep(300);
@@ -108,7 +108,7 @@ await menue("2|0");
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.textContent.trim()));
 const blase = await page.evaluate(() => document.querySelector('[role="status"]')?.innerText || "");
 console.log("     Menü:", knoepfe.join(" | "));
-ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|🗑 Löschen", "Lang-Druck: voller Name + Umbenennen / Duplizieren / Verschieben / Löschen");
+ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📝 Listen/Vokabeln ändern|🗑 Löschen", "Lang-Druck: voller Name + Umbenennen / Duplizieren / Verschieben / Listen ändern / Löschen");
 await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
 ok(!(await page.$('[role="status"]')) && /1 markiert – freien Platz antippen/.test(await page.evaluate(() => document.body.innerText)),

@@ -70,7 +70,7 @@ ok(await page.evaluate(() => [...document.querySelectorAll(".aktiv")].some(b => 
 
 // 3) Im Quiz (bisher keine Erklärung möglich): Lang drücken unten → Tafel OBEN
 await page.evaluate(() => [...document.querySelectorAll("button")].find(x => x.textContent.trim() === "Alle" && x.getAttribute("data-info"))?.click()); await sleep(200);
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /^Quiz starten \(/.test(b.textContent.trim())).click()); await sleep(500);
+await page.evaluate(() => document.querySelector("[data-start-knopf]").click()); await sleep(500);
 await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click()); await sleep(300);
 const gewusst = await page.evaluate(() => { const b = [...document.querySelectorAll(".karte-btn")].find(x => /Gewusst/.test(x.textContent) && !/Nicht/.test(x.textContent)); const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));

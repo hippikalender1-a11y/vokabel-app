@@ -1015,6 +1015,26 @@ const CSS_BASIS = `
   .slot-chip.zuletzt{background:var(--gelb-flaeche);border-color:var(--gelb);color:var(--orange);}
   .slot-chip.leer{opacity:0.35;cursor:default;}
   .slot-raster{display:grid;gap:6px;}
+  .quiz-zeile{position:sticky;z-index:7;display:flex;gap:8px;background:var(--karte);border-bottom:1px solid var(--rahmen);padding:10px 16px;margin:0 -16px;}
+  .quiz-zeile-knopf{flex:1;min-width:0;padding:9px 6px;border-radius:10px;border:1.5px solid var(--haupt);background:var(--haupt);color:var(--auf-haupt);font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .quiz-zeile-knopf.offen{background:var(--karte);color:var(--haupt);}
+  .quiz-zeile-knopf[data-gelernte]{background:var(--karte);color:var(--text2);border-color:var(--rahmen);flex:0.8;}
+  .quiz-zeile-knopf[data-gelernte].an{background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);}
+  .quiz-zeile-hinweis{font-size:0.75rem;color:var(--text3);text-align:center;padding:6px 0 0;}
+  .umfang-raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px;}
+  .umfang-raster .typ-btn{min-height:48px;font-size:1.1rem;font-weight:800;}
+  .start-bereich{background:var(--karte);padding:14px 16px;margin:0 -16px 8px;border-bottom:1px solid var(--rahmen);}
+  .start-fortschritt{flex:0 0 auto;min-width:86px;border-radius:12px;border:1.5px solid var(--haupt-zart);background:var(--haupt-flaeche);color:var(--haupt);font-family:inherit;font-weight:800;font-size:1rem;cursor:pointer;}
+  .start-fortschritt:disabled{cursor:default;opacity:0.7;}
+  .start-knopf{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 12px;min-height:58px;}
+  .start-knopf b{font-size:1.1rem;font-weight:800;}
+  .start-knopf span{font-size:0.85rem;font-weight:400;opacity:0.95;}
+  .slot-kopf{position:sticky;z-index:9;background:var(--karte);border-bottom:1px solid var(--rahmen);padding:10px 16px;}
+  .slot-kopf.gruen{background:var(--haupt);border-bottom-color:var(--haupt);}
+  .slot-kopf-name{flex:1;min-width:0;padding:7px 12px;font-size:0.95rem;border-radius:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
+  .slot-kopf.gruen .slot-kopf-name{border:1.5px solid rgba(255,255,255,0.75);}
+  .slot-kopf-info{font-size:0.75rem;color:var(--text2);text-align:center;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .slot-kopf.gruen .slot-kopf-info{color:var(--auf-haupt);opacity:0.85;}
   .farbmodus-leiste{position:fixed;right:12px;bottom:12px;z-index:10002;display:flex;gap:6px;padding:6px 8px;background:var(--karte);border:1.5px solid var(--rahmen);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.2);font-family:system-ui,sans-serif;}
   .farbfeld-hintergrund{position:fixed;inset:0;z-index:10003;background:rgba(0,0,0,0.15);display:flex;align-items:flex-end;justify-content:center;}
   .farbfeld{width:100%;max-width:520px;max-height:60vh;overflow-y:auto;background:var(--karte);border-radius:16px 16px 0 0;padding:14px 16px 70px;box-shadow:0 -6px 24px rgba(0,0,0,0.25);font-family:system-ui,sans-serif;box-sizing:border-box;}
@@ -1048,7 +1068,14 @@ const CSS_BASIS = `
   .raster-chip{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-height:44px;min-width:0;text-align:left;padding:6px 10px;}
   .raster-name{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .raster-fortschritt{font-size:0.68rem;font-weight:600;opacity:0.8;}
-  .raster-fuss{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;margin-top:3px;}
+  .raster-fuss{display:flex;align-items:center;gap:6px;width:100%;margin-top:6px;min-height:14px;}
+  .kachel-balken{flex:1;height:6px;border-radius:3px;background:var(--rahmen);overflow:hidden;}
+  .kachel-balken > span{display:block;height:100%;background:var(--haupt-hell);border-radius:3px;}
+  .kachel-balken.voll > span{background:var(--gelernt);}
+  .kachel-voll{font-size:0.7rem;font-weight:900;color:var(--auf-haupt);background:var(--gelernt);border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .raster-chip.aktiv-kachel{background:var(--haupt) !important;border-color:var(--haupt) !important;color:var(--auf-haupt) !important;}
+  .raster-chip.aktiv-kachel .kachel-balken{background:rgba(255,255,255,0.35);}
+  .raster-chip.aktiv-kachel .kachel-balken > span{background:var(--auf-haupt);}
   .mini-kreise{display:flex;gap:3px;}
   .mini-kreise > span{border-radius:50%;}
   .kopf-kreise{position:absolute;right:12px;gap:4px;}
@@ -1252,6 +1279,8 @@ export default function VokabelApp() {
   const [quizSessionModus, setQuizSessionModus] = useState(STANDARD_SESSION_MODUS);
   const [quizPaketGroesse, setQuizPaketGroesse] = useState(STANDARD_PAKET_GROESSE);
   const [quizSessionAufgeklappt, setQuizSessionAufgeklappt] = useState(false);
+  // Gespeicherte Konfiguration geladen: Listen-/Vokabel-Auswahl ausgeblendet – außer nach „Listen/Vokabeln ändern“
+  const [listenAendern, setListenAendern] = useState(false);
   const [abfrageZielModus, setAbfrageZielModus] = useState(STANDARD_ABFRAGE_ZIEL);
   const [abfrageZielAnzahl, setAbfrageZielAnzahl] = useState(1);
   const [abfrageZielWiederholung, setAbfrageZielWiederholung] = useState(1);
@@ -1463,7 +1492,7 @@ export default function VokabelApp() {
     obs.observe(el);
     setAlleBereichH(el.offsetHeight);
     return () => obs.disconnect();
-  }, [quizTabListen.length]);
+  }, [quizTabListen.length, aktiverSlot, listenAendern, tab]);
 
   // App-Start: zuletzt gewählte gespeicherte Konfiguration wieder laden (sobald die Listen bekannt sind)
   const letzterSlotGeladenRef = useRef(false);
@@ -1542,7 +1571,7 @@ export default function VokabelApp() {
     obs.observe(el);
     setListenauswahlHeaderH(el.offsetHeight);
     return () => obs.disconnect();
-  }, [tab, quizTabListen.length]);
+  }, [tab, quizTabListen.length, aktiverSlot, listenAendern]);
 
 
   // Von-Bis-Modus beenden wenn Einzelauswahl schließt (manuell oder auto)
@@ -2630,6 +2659,7 @@ export default function VokabelApp() {
   function ladeSlot(typ, id, art = null) {
     const eintrag = getSlotEintrag(typ, id);
     if (!eintrag || !eintrag.konfiguration) return;
+    setListenAendern(false);
     applyKonfiguration(eintrag.konfiguration, art);
     if (typ === 'gespeichert') {
       setGespeicherteVokabelgruppe({ listenIds: eintrag.konfiguration.listenIds || [], vokabelAuswahl: eintrag.konfiguration.vokabelAuswahl || [], bereichTyp: eintrag.konfiguration.bereichTyp || "alle" });
@@ -2669,6 +2699,7 @@ export default function VokabelApp() {
   function ladeSlotStatistik(typ, id, art = null) {
     const eintrag = getSlotEintrag(typ, id);
     if (!eintrag || !eintrag.konfiguration) return;
+    setListenAendern(false);
     const k = eintrag.konfiguration;
     if (art) setStatistikArt(art);
     setStatistikListenIds(k.listenIds?.length > 0 ? new Set(k.listenIds) : null);
@@ -2723,6 +2754,7 @@ export default function VokabelApp() {
     }
     setSlotsData(updated);
     setAktiverSlot({ typ: 'gespeichert', id });
+    setListenAendern(false);
     lsSet(SK.letzterSlot, id);
     setSlotGeaendert(false);
     setGespeicherteVokabelgruppe({ listenIds: [...quizTabListen], vokabelAuswahl: Array.from(quizCheckboxAuswahl), bereichTyp: quizBereichTyp });
@@ -2893,6 +2925,7 @@ export default function VokabelApp() {
 
   // "Neu": komplett neu beginnen – Session, Listen-/Vokabelauswahl und alle Abfrage-Einstellungen
   function neueQuizKonfiguration() {
+    setListenAendern(false);
     setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false);
     lsDel(SK.letzterSlot);
     lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
@@ -3005,12 +3038,13 @@ export default function VokabelApp() {
   function toggleReihenfolge() {
     const opening = !quizReihenfolgeAufgeklappt;
     setQuizReihenfolgeAufgeklappt(v => !v);
+    setQuizAbfrageModusAufgeklappt(false);
     if (opening) {
       dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const el = reihenfolgeContainerRef.current;
         if (!el) return;
-        const target = headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH;
+        const target = headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH;
         const rect = el.getBoundingClientRect();
         if (rect.top < target) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
@@ -3041,6 +3075,7 @@ export default function VokabelApp() {
   function toggleAbfrageModus() {
     const opening = !quizAbfrageModusAufgeklappt;
     setQuizAbfrageModusAufgeklappt(v => !v);
+    setQuizReihenfolgeAufgeklappt(false);
     if (opening) {
       dropdownImmuneRef.current = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -3919,6 +3954,62 @@ export default function VokabelApp() {
   }
 
   // Chips "Gespeichert" (sortierbar) und "Verlauf" (automatisch, letzte 5) – Quiz- und Statistik-Tab
+  // Kopfzeile Verlauf & Gespeichert (Quiz- und Statistik-Tab): zu und auf gleich aufgebaut – Name + Ü/D/A;
+  // aufgeklappt zusätzlich eine Info-Zeile (Listen · Nr. · Anzahl). Langer Druck (Quiz): Speichern.
+  function renderSlotKopf(statistik) {
+    const zu = !slotSektionAufgeklappt;
+    const slot = statistik ? statistikAktiverSlot : aktiverSlot;
+    const gespeichert = slot?.typ === "gespeichert";
+    const geaendert = !statistik && vokabelgruppeGeaendert;
+    const gruen = gespeichert && !geaendert;
+    const name = gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : statistik && statistikSlotGeleert ? "Leer" : "Neu";
+    // Vokabeln der Auswahl (für die Kreise) und Info-Zeile
+    let voks = [], listenIds = [];
+    if (statistik) {
+      voks = statistikBasisVoks || [];
+      if (statistikBereichTyp === "bereich" && statistikCheckboxAuswahl.size > 0) voks = voks.filter(v => statistikCheckboxAuswahl.has(v.id));
+      listenIds = statistikListenIds ? [...statistikListenIds] : sichtbareListen.map(l => l.id);
+    } else if (quizKombiListe) {
+      voks = quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0 ? quizKombiListe.vokabeln.filter(v => quizCheckboxAuswahl.has(v.id)) : quizKombiListe.vokabeln;
+      listenIds = quizTabListen;
+    }
+    const ls = lernstandJeArt(voks);
+    const listenText = listenIds.map(id => listenIndex.find(l => l.id === id)?.name).filter(Boolean).join(" + ") || "keine Liste";
+    let bereichText = "";
+    const bereichAktiv = statistik ? statistikBereichTyp === "bereich" && statistikCheckboxAuswahl.size > 0 : quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0;
+    if (bereichAktiv && listenIds.length === 1) {
+      const alle = lsGet(SK.liste(listenIds[0]))?.vokabeln || [];
+      const auswahl = statistik ? statistikCheckboxAuswahl : quizCheckboxAuswahl;
+      const nr = alle.map((v, i) => auswahl.has(`${listenIds[0]}__${v.id}`) ? i + 1 : null).filter(Boolean);
+      bereichText = nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}–${nr[nr.length - 1]}` : "Auswahl";
+    } else if (bereichAktiv) bereichText = "Auswahl";
+    const info = [listenText, bereichText, `${voks.length} Vokabel${voks.length !== 1 ? "n" : ""}`].filter(Boolean).join(" · ");
+    const aktionen = !statistik && quizKombiListe ? [{ label: "💾 Speichern", fn: () => oeffneModal("slot-speichern") }] : null;
+    return (
+      <div ref={slotSektionRef} data-slot-kopf={zu ? (gruen ? "gruen" : "zu") : "offen"} className={`slot-kopf${gruen ? " gruen" : ""}`}
+        style={{top:headerH, ...(statistik ? {} : {marginLeft:"-16px", marginRight:"-16px"})}}>
+        <div style={{display:"flex", alignItems:"center", gap:8}}>
+          {geaendert && (
+            <button onClick={() => ladeSlot(aktiverSlot.typ, aktiverSlot.id)} className="toggle-opt" style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", flexShrink:0}}
+              {...tt("Auswahl auf den gespeicherten Stand zurücksetzen")}>Zurücksetzen</button>
+          )}
+          <button onClick={toggleSlotSektion} className="toggle-opt aktiv slot-kopf-name" data-slot-kopf-name
+            style={geaendert ? {background:"var(--falsch)", color:"var(--auf-haupt)"} : undefined}
+            {...tt(gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, aktionen, { langText: name })}>
+            {name}
+          </button>
+          {voks.length > 0 && (
+            <span className="mini-kreise" {...(statistik ? { "data-statistik-arten": true } : { "data-quiz-arten": true })} style={{gap:4, flexShrink:0}}>
+              {renderMiniKreise(ls, { aktiv: statistik ? statistikArt : quizArt, beiKlick: a => statistik ? setStatistikArt(a) : wechsleQuizArt(a),
+                groesse: 30, aufGruen: gruen, attr: statistik ? "data-statistik-art" : "data-quiz-art", nurVerfuegbar: true })}
+            </span>
+          )}
+        </div>
+        {!zu && <div data-kopf-info className="slot-kopf-info">{info}</div>}
+      </div>
+    );
+  }
+
   // Lernfortschritt je Art (Mini-Kreise) für eine Vokabelmenge; aus = keine passenden Vokabeln
   function lernstandJeArt(voks) {
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
@@ -3928,8 +4019,8 @@ export default function VokabelApp() {
     }));
   }
   // Mini-Kreise Ü D A (zum Anzeigen; mit beiKlick zum Umschalten)
-  function renderMiniKreise(ls, { aktiv = null, beiKlick = null, groesse = 24, aufGruen = false, attr = "data-mini-kreis" } = {}) {
-    return QUIZ_ARTEN.map(a => {
+  function renderMiniKreise(ls, { aktiv = null, beiKlick = null, groesse = 24, aufGruen = false, attr = "data-mini-kreis", nurVerfuegbar = false } = {}) {
+    return QUIZ_ARTEN.filter(a => !nurVerfuegbar || !ls[a].aus).map(a => {
       const klickbar = beiKlick && !ls[a].aus;
       const text = `${ABFRAGE_ART_NAMEN[a]}: ${ls[a].aus ? "keine passenden Vokabeln" : `${Math.round(ls[a].pct)} % gelernt`}${klickbar ? ` – antippen: ${ABFRAGE_ART_NAMEN[a]}` : ""}`;
       return (
@@ -3973,15 +4064,12 @@ export default function VokabelApp() {
       const x = platzMap.get(key);
       const ziel = slotDragZiel === key && slotDragId && slotDragId !== x?.id;
       if (x && slotSichtbar(x)) {
-        const sf = sfVon(x);
-        const ls = lernstand(x);
+        const pct = Math.round(lernstand(x).uebersetzung.pct);
         const inhalt = (<>
           <span className="raster-name">{x.name}</span>
-          <span className="raster-fuss">
-            <span className="mini-kreise" data-mini-kreise>
-              {renderMiniKreise(ls, { aktiv: slotRef?.id === x.id ? aktArt : null, beiKlick: slotSortModus ? null : a => onLaden('gespeichert', x.id, a) })}
-            </span>
-            {sf && <span className="raster-fortschritt">▶ {(sf.abgefragt || []).length}/{sf.gesamt || 0}</span>}
+          <span className="raster-fuss" data-kachel-balken={pct} {...ttFeld(`Lernfortschritt Übersetzung: ${pct} %`)}>
+            <span className={`kachel-balken${pct >= 100 ? " voll" : ""}`}><span style={{width:`${pct}%`}}/></span>
+            {pct >= 100 && <span className="kachel-voll" title="100 % gelernt">✓</span>}
           </span>
         </>);
         zellen.push(slotSortModus ? (
@@ -3998,13 +4086,14 @@ export default function VokabelApp() {
             {slotAuswahl.includes(x.id) && <span className="auswahl-nr" data-auswahl-nr>{slotAuswahl.indexOf(x.id) + 1}</span>}
           </button>
         ) : (
-          <button key={key} data-raster-zelle={key} data-slot-id={x.id} className="slot-chip belegt raster-chip"
+          <button key={key} data-raster-zelle={key} data-slot-id={x.id} className={`slot-chip belegt raster-chip${slotRef?.typ === "gespeichert" && slotRef?.id === x.id ? " aktiv-kachel" : ""}`}
             style={chipStil('gespeichert', x.id, slotRef)}
             onClick={() => onLaden('gespeichert', x.id)}
             {...tt(`${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`, [
               { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
               { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: x.id, name: kopieName(x.name), kopie: true }) },
               { label: "⇄ Verschieben", fn: () => { setSlotSortModus(true); setSlotAuswahl([x.id]); } },
+              { label: "📝 Listen/Vokabeln ändern", fn: () => { if (slotRef?.id !== x.id) onLaden('gespeichert', x.id); setListenAendern(true); setSlotSektionAufgeklappt(false); } },
               { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
             ], { langText: x.name,
                  // Lang-Druck und dann ziehen: Menü weg, Verschieben-Modus, Eintrag wandert mit
@@ -6255,60 +6344,11 @@ export default function VokabelApp() {
           return (
             <>
               <div className="sektion" style={{paddingTop:0, paddingBottom: (slotSektionAufgeklappt || listenAuswahlAufgeklappt || quizListeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt || quizEinstellungenAufgeklappt || quizSessionAufgeklappt) ? '100dvh' : 0}}>
-                {/* VERLAUF + GESPEICHERT – sticky Header; zugeklappt nur der zentrierte Auswahl-Knopf,
-                    bei gespeicherter Session ganze Zeile grün */}
+                {/* VERLAUF + GESPEICHERT – Kopfzeile (zu/auf gleich) + aufklappbares Raster */}
                 {(() => {
-                  const zu = !slotSektionAufgeklappt;
-                  const gruen = zu && aktiverSlot?.typ === 'gespeichert' && !vokabelgruppeGeaendert;
                   return (
                     <>
-                      {/* Sticky Header-Zeile */}
-                      <div ref={slotSektionRef} data-slot-kopf={gruen ? "gruen" : zu ? "zu" : "offen"} style={{position:"sticky", top:headerH, zIndex:9, background: gruen ? "var(--haupt)" : "var(--karte)", borderBottom:`1px solid ${gruen ? "var(--haupt)" : "var(--rahmen)"}`, padding:"10px 16px", display:"flex", alignItems:"center", justifyContent: zu ? "center" : undefined, gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
-                        {zu && vokabelgruppeGeaendert && (
-                          <button
-                            onClick={() => ladeSlot(aktiverSlot.typ, aktiverSlot.id)}
-                            className="toggle-opt"
-                            style={{position:"absolute", left:16, padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer"}}
-                            {...tt("Auswahl auf den gespeicherten Stand zurücksetzen")}>
-                            Zurücksetzen
-                          </button>
-                        )}
-                        {!zu && (<>
-                        <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"var(--text)", display:"flex", alignItems:"center", gap:8}}>
-                          Verlauf &amp; Gespeichert
-                        </span>
-                        {vokabelgruppeGeaendert && (
-                          <button
-                            onClick={() => ladeSlot(aktiverSlot.typ, aktiverSlot.id)}
-                            className="toggle-opt"
-                            style={{padding:"3px 10px", fontSize:"0.75rem", cursor:"pointer", flexShrink:0}}
-                            {...tt("Auswahl auf den gespeicherten Stand zurücksetzen")}>
-                            Zurücksetzen
-                          </button>
-                        )}
-                        </>)}
-                        <button
-                          onClick={toggleSlotSektion}
-                          className={`toggle-opt aktiv${zu ? "" : " zeile-rechts"}`}
-                          style={{cursor:"pointer", ...(zu ? {padding:"7px 22px", fontSize:"0.95rem", borderRadius:12, minWidth:120, maxWidth:"80%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"} : {}),
-                            // mit Ü/D/A-Kreisen: Name nutzt die ganze Breite links bis kurz vor die Kreise
-                            ...(zu && quizKombiListe ? {flex:1, maxWidth:"none", minWidth:0, padding:"7px 12px", marginRight:104, marginLeft: vokabelgruppeGeaendert ? 112 : 0} : {}),
-                            ...(gruen ? {border:"1.5px solid rgba(255,255,255,0.75)"} : {}),
-                            ...(vokabelgruppeGeaendert ? {background:"var(--falsch)", color:"var(--auf-haupt)"} : {})}}
-                          {...tt(aktiverSlot?.typ === 'gespeichert' ? "Gespeicherte Konfiguration – Verlauf und Gespeichert anzeigen" : "Verlauf und Gespeichert anzeigen")}>
-                          {aktiverSlot?.typ === 'gespeichert'
-                            ? (getSlotEintrag('gespeichert', aktiverSlot.id)?.name || aktiverSlot.id)
-                            : "Neu"}
-                        </button>
-                        {/* Ü D A: Lernfortschritt der Auswahl je Art, antippen schaltet die Abfrageart um */}
-                        {zu && quizKombiListe && (
-                          <span className="mini-kreise kopf-kreise" data-quiz-arten>
-                            {renderMiniKreise(lernstandJeArt(quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0
-                              ? quizKombiListe.vokabeln.filter(v => quizCheckboxAuswahl.has(v.id)) : quizKombiListe.vokabeln),
-                              { aktiv: quizArt, beiKlick: a => wechsleQuizArt(a), groesse: 30, aufGruen: gruen, attr: "data-quiz-art" })}
-                          </span>
-                        )}
-                      </div>
+                      {renderSlotKopf(false)}
                       {/* Aufklappbarer Chips-Bereich */}
                       <div ref={slotContainerRef} style={{overflow:'hidden', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 4 : 0}}>
                         {slotSektionAufgeklappt && renderSlotBereiche(
@@ -6326,7 +6366,8 @@ export default function VokabelApp() {
                   );
                 })()}
 
-                {/* LISTEN-AUSWAHL – sticky Header */}
+                {/* LISTEN-AUSWAHL – sticky Header (ausgeblendet bei geladener gespeicherter Konfiguration) */}
+                {!(aktiverSlot?.typ === "gespeichert" && !listenAendern) && (<>
                 {(() => {
                   const n = quizTabListen.length;
                   const chipText = n === 0
@@ -6420,8 +6461,10 @@ export default function VokabelApp() {
                   </div>
                 )}
 
+                </>)}
+
                 {/* Alle/Bereich – sticky direkt unter Haupt-Header */}
-                {kombiListe && (
+                {kombiListe && !(aktiverSlot?.typ === "gespeichert" && !listenAendern) && (
                   <div ref={alleBereichRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH, zIndex:8, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     {aufteilen ? (<>
                       <span style={{flex:1, fontWeight:700, fontSize:"0.85rem", color:"var(--gelb-dunkel)"}}>▦ Aufteilen</span>
@@ -6480,7 +6523,7 @@ export default function VokabelApp() {
                 {aufteilen && kombiListe && renderAufteilenKasten()}
 
                 {/* Einzelauswahl (Bereich-Modus) */}
-                {quizListeAufgeklappt && quizBereichTyp === "bereich" && kombiListe && (
+                {quizListeAufgeklappt && quizBereichTyp === "bereich" && kombiListe && !(aktiverSlot?.typ === "gespeichert" && !listenAendern) && (
                   <div ref={einzelauswahlRef} className="karte" style={{marginBottom:8, marginTop:8}}>
                     {basisVoks.length === 0
                       ? <div style={{padding:"16px", color:"var(--text2)", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
@@ -6518,22 +6561,33 @@ export default function VokabelApp() {
                   </div>
                 )}
 
-                {/* Abfrage-Modus – sticky unter Alle/Bereich-Zeile */}
+                {/* ZEILE 1: Abfrage-Modus | Reihenfolge | Stufe (Leicht/Schwer) – je ein Bereich klappt darunter auf */}
                 {kombiListe && (
-                  <div ref={abfrageModusRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH, zIndex:7, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
-                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Abfrage-Modus</span>
-                    {mitAkzentAnzahl != null && (
-                      <span data-anzahl="akzent" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", cursor:"help", whiteSpace:"nowrap"}}
-                        {...tt(ohneAkzentAnzahl != null ? "Vokabeln mit Akzent in der Akzente-Spalte und dazu genommene Wörter ohne Akzent (Anzahl begrenzt, siehe Einstellungen)" : "Davon Vokabeln mit Akzent in der Akzente-Spalte")}>({mitAkzentAnzahl} mit Akzent{ohneAkzentAnzahl != null ? ` + ${ohneAkzentAnzahl} ohne` : ""})</span>
-                    )}
-                    <button className="toggle-opt aktiv zeile-rechts" data-abfragemodus onClick={toggleAbfrageModus}
-                      {...tt("Abfrage-Modus öffnen – zeigt die Art der Abfrage (Karte, MC, Tastatur, Akzente, Diktat)")}>
+                  <div ref={abfrageModusRef} className="quiz-zeile" style={{top:headerH + slotH + listenauswahlHeaderH + alleBereichH}}>
+                    <button className={`quiz-zeile-knopf${quizAbfrageModusAufgeklappt ? " offen" : ""}`} data-abfragemodus onClick={toggleAbfrageModus}
+                      {...tt("Abfrage-Modus: Spalten, Karte/MC/Tastatur, Frage–Antwort oder wechselnd – antippen zum Einstellen")}>
                       {abfrageModusName}
+                    </button>
+                    <button className={`quiz-zeile-knopf${quizReihenfolgeAufgeklappt ? " offen" : ""}`} data-reihenfolge onClick={toggleReihenfolge}
+                      {...tt("Reihenfolge: Zufällig, Schlechteste oder Listen-Nr. – antippen zum Einstellen")}>
+                      {quizReihenfolge === "zufall" ? "Zufällig" : quizReihenfolge === "schlechteste" ? "Schlechteste" : "Listen-Nr."}
+                    </button>
+                    <button className="quiz-zeile-knopf stufe" data-stufe={einstellungen.modus === "einfach" ? "einfach" : "schwer"}
+                      onClick={() => speichereEinst({...einstellungen, modus: einstellungen.modus === "einfach" ? "schwer" : "einfach"})}
+                      {...tt("Schwierigkeit: antippen wechselt Leicht/Schwer – lang drücken: Regeln und Vorlesen einstellen", [
+                        { label: "⚙ Regeln Leicht / Schwer", fn: () => setModal("stufen-regeln") },
+                        { label: "🔊 Vorlesen", fn: () => setModal("vorlesen") },
+                      ])}>
+                      {einstellungen.modus === "einfach" ? "Leicht" : "Schwer"}
                     </button>
                   </div>
                 )}
-
-                {/* Abfrage-Modus Inhalt */}
+                {kombiListe && mitAkzentAnzahl != null && (
+                  <div className="quiz-zeile-hinweis" data-anzahl="akzent"
+                    {...tt(ohneAkzentAnzahl != null ? "Vokabeln mit Akzent und dazu genommene Wörter ohne Akzent (Anzahl begrenzt, siehe Regeln)" : "Davon Vokabeln mit Akzent in der Akzente-Spalte")}>
+                    ({mitAkzentAnzahl} mit Akzent{ohneAkzentAnzahl != null ? ` + ${ohneAkzentAnzahl} ohne` : ""})
+                  </div>
+                )}
                 {kombiListe && (
                   <div ref={abfrageModusContainerRef} style={{overflow:'hidden', paddingTop: quizAbfrageModusAufgeklappt ? 16 : 0}}>
                     {quizAbfrageModusAufgeklappt && (<>
@@ -6686,26 +6740,6 @@ export default function VokabelApp() {
                     </>)}
                   </div>
                 )}
-
-                {/* Reihenfolge – sticky unter Abfrage-Modus-Zeile */}
-                {kombiListe && (
-                  <div ref={reihenfolgeRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH, zIndex:6, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
-                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Reihenfolge</span>
-                    {quizReihenfolge === "schlechteste" && (
-                      <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", pointerEvents:"none", whiteSpace:"nowrap"}}>
-                        {sliderActive ? `Score ≤ ${sliderVal} · ${verfuegbarReihenfolge} V.` : `${verfuegbarReihenfolge} V.`}
-                      </span>
-                    )}
-                    <span style={{display:"flex", justifyContent:"flex-end"}}>
-                      <button className="toggle-opt aktiv zeile-rechts" onClick={toggleReihenfolge}
-                      {...tt("Reihenfolge öffnen – Zufällig, Schlechteste oder Listen-Nr.")}>
-                        {quizReihenfolge === "zufall" ? "Zufällig" : quizReihenfolge === "schlechteste" ? "Schlechteste" : "Listen-Nr."}
-                      </button>
-                    </span>
-                  </div>
-                )}
-
-                {/* Reihenfolge Inhalt */}
                 {kombiListe && (
                   <div ref={reihenfolgeContainerRef} style={{overflow:'hidden', paddingTop: quizReihenfolgeAufgeklappt ? 16 : 0}}>
                     {quizReihenfolgeAufgeklappt && (
@@ -6778,154 +6812,43 @@ export default function VokabelApp() {
                   </div>
                 )}
 
-                {/* Einstellungen – sticky unter Reihenfolge-Zeile */}
+                {/* ZEILE 2: Umfang | Abfrage-Ziel | Gelernte */}
                 {kombiListe && (
-                  <div ref={einstellungenRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH, zIndex:5, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
-                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Einstellungen</span>
-                    <span data-anzahl="einstellungen" style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", cursor:"help", whiteSpace:"nowrap"}}
-                      {...tt(mitAkzentAnzahl != null
-                        ? "Vokabeln nach dem Schwierigkeitsgrad: mit oder ohne Wörter ohne Akzent (Regel „Akzent-Modus: auch Wörter ohne Akzent abfragen“)"
-                        : "Vokabeln nach dem Schwierigkeitsgrad – hier gleich der Vokabel-Auswahl")}>({akzentVoks.length} V.)</span>
-                    <button className="toggle-opt aktiv zeile-rechts" onClick={toggleEinstellungen}
-                      {...tt("Einstellungen öffnen – Lautsprache und Schwierigkeitsgrad")}>
-                      {einstellungen.modus === "einfach" ? "Einfach" : "Schwer"}
+                  <div ref={sessionRef} className="quiz-zeile" style={{top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH, zIndex:6}}>
+                    <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "umfang" ? " offen" : ""}`} data-umfang
+                      onClick={() => setQuizSessionAufgeklappt(v => v === "umfang" ? false : "umfang")}
+                      {...tt("Umfang: alle Vokabeln auf einmal oder in Paketen – antippen zum Einstellen")}>
+                      {isPakete && quizPaketGroesse != null ? `Je ${quizPaketGroesse} Vokabeln` : "Alle Vokabeln"}
                     </button>
+                    <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "ziel" ? " offen" : ""}`} data-abfrageziel
+                      onClick={() => setQuizSessionAufgeklappt(v => v === "ziel" ? false : "ziel")}
+                      {...tt("Abfrage-Ziel: wie oft bzw. bis wann jede Vokabel abgefragt wird – antippen zum Einstellen")}>
+                      {abfrageZielModus === "wiederholung" ? `${abfrageZielWiederholung}× richtig`
+                        : abfrageZielModus === "score" ? `Score ≥ ${abfrageZielScore > 0 ? "+" : ""}${abfrageZielScore}` : `${abfrageZielAnzahl}×`}
+                    </button>
+                    {schwelle > 0 && gelernteAnzahl > 0 && (
+                      <button className={`quiz-zeile-knopf${quizGelerntEinschliessen ? " an" : ""}`} data-gelernte={quizGelerntEinschliessen ? "an" : "aus"}
+                        onClick={() => setQuizGelerntEinschliessen(v => !v)}
+                        {...tt(quizGelerntEinschliessen ? `${gelernteAnzahl} gelernte Vokabeln werden mit abgefragt – antippen zum Ausblenden` : `${gelernteAnzahl} gelernte Vokabeln sind ausgeblendet – antippen zum Einschließen`)}>
+                        {quizGelerntEinschliessen ? `+ ${gelernteAnzahl} gelernte` : `${gelernteAnzahl} gelernte`}
+                      </button>
+                    )}
                   </div>
                 )}
-
-                {/* Einstellungen Inhalt */}
-                {kombiListe && (
-                  <div ref={einstellungenContainerRef} style={{overflow:'hidden', paddingTop: quizEinstellungenAufgeklappt ? 16 : 0}}>
-                    {quizEinstellungenAufgeklappt && (<>
-                      {/* LAUTSPRACHE */}
-                      <div className="sektion-label" style={{marginBottom:8}}>Lautsprache</div>
-                      <div className="karte" style={{marginBottom:16}}>
-                        <div className="toggle-row">
-                          <div>
-                            <div className="toggle-label">Auto-Play</div>
-                            <div className="toggle-sub">Frage automatisch vorlesen wenn neue Vokabel erscheint</div>
-                          </div>
-                          <div className="toggle-btn">
-                            <button className={`toggle-opt${!einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:false})} {...tt("Kein automatisches Vorlesen")}>Aus</button>
-                            <button className={`toggle-opt${einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:true})} {...tt("Vokabeln nach dem Aufdecken automatisch vorlesen")}>An</button>
-                          </div>
-                        </div>
-                        {einstellungen.autoplay && (
-                          <div style={{padding:"12px 16px 16px", borderTop:"1px solid var(--rahmen)"}}>
-                            <div className="inp-label" style={{marginBottom:8}}>Spalten automatisch vorlesen</div>
-                            <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                              {TYPEN.map(typ => {
-                                const vorlesen = einstellungen.vorlesen || ["E1"];
-                                const aktiv = vorlesen.includes(typ);
-                                return (
-                                  <button {...tt(`Spalte ${typ} beim Abfragen automatisch vorlesen`)} key={typ} className={`typ-btn${aktiv?" aktiv":""}`}
-                                    onClick={() => speichereEinst({...einstellungen, vorlesen: aktiv ? vorlesen.filter(t=>t!==typ) : [...vorlesen,typ]})}>
-                                    {typ}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            <div style={{fontSize:"0.75rem", color:"var(--text2)", marginTop:8}}>
-                              Nur wenn Frage-Spalte ausgewählt ist, wird Auto-Play ausgelöst
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* SCHWIERIGKEITSGRAD */}
-                      <div className="sektion-label" style={{marginBottom:8}}>Schwierigkeitsgrad</div>
-                      <div className="karte" style={{marginBottom:16}}>
-                        <div className="toggle-row">
-                          <div>
-                            <div className="toggle-label">Modus</div>
-                            <div className="toggle-sub">Was jeweils gilt, legst du unten per Haken fest.</div>
-                          </div>
-                          <div className="toggle-btn">
-                            <button className={`toggle-opt${einstellungen.modus==="einfach"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"einfach"})} {...tt("Stufe „Einfach“ verwenden – es gelten die Haken in der Spalte „Einfach“")}>Einfach</button>
-                            <button className={`toggle-opt${einstellungen.modus==="schwer"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"schwer"})} {...tt("Stufe „Schwer“ verwenden – es gelten die Haken in der Spalte „Schwer“")}>Schwer</button>
-                          </div>
-                        </div>
-                        {/* Was gilt als einfach / schwer: je Regel ein Haken pro Stufe */}
-                        <div style={{borderTop:"1px solid var(--rahmen)", padding:"10px 16px 12px"}}>
-                          <div style={{display:"grid", gridTemplateColumns:"1fr 58px 58px", alignItems:"center", rowGap:10, columnGap:6}}>
-                            <div className="inp-label" style={{margin:0}}>Was gilt als einfach / schwer?</div>
-                            {["einfach", "schwer"].map(st => (
-                              <div key={st} style={{textAlign:"center", fontSize:"0.75rem", fontWeight:700, color: einstellungen.modus === st ? "var(--haupt)" : "var(--text3)"}}>{st === "einfach" ? "Einfach" : "Schwer"}</div>
-                            ))}
-                            {STUFEN_REGELN.map(r => (<Fragment key={r.key}>
-                              <div>
-                                <div style={{fontSize:"0.85rem", fontWeight:600, color:"var(--text)"}}>{r.label}</div>
-                                <div style={{fontSize:"0.72rem", color:"var(--text2)"}}>{r.sub}</div>
-                              </div>
-                              {["einfach", "schwer"].map(st => {
-                                const an = einstellungen.stufen?.[st]?.[r.key] ?? r[st];
-                                return (
-                                  <div key={st} style={{display:"flex", justifyContent:"center", cursor:"pointer"}}
-                                    onClick={() => speichereEinst({...einstellungen, stufen: {...(einstellungen.stufen || {}), [st]: {...(einstellungen.stufen?.[st] || {}), [r.key]: !an}}})}
-                                    {...tt(`${r.label} – in der Stufe „${st === "einfach" ? "Einfach" : "Schwer"}“ ${an ? "ausschalten" : "einschalten"}`)}>
-                                    <div className={`checkbox${an ? " checked" : ""}`}>{an ? "✓" : ""}</div>
-                                  </div>
-                                );
-                              })}
-                              {r.key === "akzentOhneMischen" && (<>
-                                <div style={{paddingLeft:12}}>
-                                  <div style={{fontSize:"0.8rem", fontWeight:600, color:"var(--text)"}}>… davon höchstens</div>
-                                  <div style={{fontSize:"0.72rem", color:"var(--text2)"}}>Wörter ohne Akzent im Verhältnis zu den Wörtern mit Akzent (1× = noch einmal so viele)</div>
-                                </div>
-                                {["einfach", "schwer"].map(st => {
-                                  const regelAn = einstellungen.stufen?.[st]?.akzentOhneMischen ?? r[st];
-                                  const wert = einstellungen.stufen?.[st]?.akzentOhneAnteil ?? 1;
-                                  return (
-                                    <div key={st} style={{display:"flex", justifyContent:"center"}}>
-                                      <select data-akzent-ohne-anteil={st} value={String(wert)} disabled={!regelAn}
-                                        style={{fontFamily:"inherit", fontSize:"0.8rem", padding:"3px 2px", borderRadius:6, border:"1.5px solid var(--rahmen)", background:"var(--karte)", opacity: regelAn ? 1 : 0.4, width:52}}
-                                        onChange={e => { const v = e.target.value === "alle" ? "alle" : parseFloat(e.target.value);
-                                          speichereEinst({...einstellungen, stufen: {...(einstellungen.stufen || {}), [st]: {...(einstellungen.stufen?.[st] || {}), akzentOhneAnteil: v}}}); }}
-                                        {...ttFeld(`Stufe „${st === "einfach" ? "Einfach" : "Schwer"}“: höchstens so viele Wörter ohne Akzent (∞ = alle)`)}>
-                                        {AKZENT_OHNE_ANTEILE.map(([w, t]) => <option key={t} value={String(w)}>{t}</option>)}
-                                      </select>
-                                    </div>
-                                  );
-                                })}
-                              </>)}
-                            </Fragment>))}
-                          </div>
-                        </div>
-                      </div>
-
-                    </>)}
-                  </div>
-                )}
-
-                {/* Session-Zeile – sticky unter Einstellungen */}
-                {kombiListe && (
-                  <div ref={sessionRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, zIndex:4, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
-                    <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Session</span>
-                    <span data-sessionanzahl style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", cursor:"help", whiteSpace:"nowrap"}}
-                      {...tt("So viele Vokabeln werden in dieser Session insgesamt abgefragt – ohne gelernte (falls ausgeblendet) und ggf. nur unter der Score-Grenze der Reihenfolge")}>
-                      ({sessionAnzahl} V.)
-                    </span>
-                    <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
-                      <div className="toggle-btn zeile-rechts">
-                        <button className={`toggle-opt${quizSessionModus==="alle"?" aktiv":""}`}
-                          onClick={() => { if (quizSessionModus === "alle") setQuizSessionAufgeklappt(v => !v); else { setQuizSessionModus("alle"); setQuizSessionAufgeklappt(true); } }}
-                          {...tt("Alle verfügbaren Vokabeln in einem Durchgang abfragen")}>
-                          Alle
-                        </button>
-                        <button className={`toggle-opt${quizSessionModus==="pakete"?" aktiv":""}`}
-                          onClick={() => { if (quizSessionModus === "pakete") setQuizSessionAufgeklappt(v => !v); else { setQuizSessionModus("pakete"); setQuizPaketGroesse(g => g ?? STANDARD_PAKET_GROESSE); setQuizSessionAufgeklappt(true); } }}
-                          {...tt("Vokabeln in kleinere Pakete aufteilen – Fortschritt bleibt zwischen Sitzungen erhalten")}>
-                          {quizPaketGroesse != null ? `${quizPaketGroesse} V.` : "Pakete"}
-                        </button>
-                      </div>
-                    </span>
-                  </div>
-                )}
-
-                {/* Session-Kontext */}
                 {quizSessionAufgeklappt && kombiListe && (
                   <div ref={sessionContainerRef} className="karte" style={{marginBottom:8, marginTop:8}}>
-                    {/* Abfrage-Ziel */}
+                    {quizSessionAufgeklappt === "umfang" ? (
+                      <div className="umfang-raster" data-umfang-auswahl>
+                        <button className={`typ-btn${!isPakete ? " aktiv" : ""}`} data-umfang-wahl="alle"
+                          onClick={() => { setQuizSessionModus("alle"); setQuizSessionAufgeklappt(false); }}
+                          {...tt("Alle verfügbaren Vokabeln in einem Durchgang abfragen")}>Alle</button>
+                        {[5,10,15,20,25,30,40,50].map(n => (
+                          <button key={n} className={`typ-btn${isPakete && quizPaketGroesse === n ? " aktiv" : ""}`} data-umfang-wahl={n}
+                            onClick={() => { setQuizSessionModus("pakete"); setQuizPaketGroesse(n); setQuizSessionAufgeklappt(false); }}
+                            {...tt(`Je ${n} Vokabeln pro Paket – der Fortschritt bleibt zwischen den Paketen erhalten`)}>{n}</button>
+                        ))}
+                      </div>
+                    ) : (<>
                     <div style={{padding:"12px 16px 8px", fontWeight:600, fontSize:"0.82rem", color:"var(--text2)"}}>Abfrage-Ziel</div>
                     <div style={{display:"flex", gap:6, flexWrap:"wrap", padding:"0 16px 8px"}}>
                       {[["anzahl","Anzahl","Jede Vokabel 1–3× pro Runde abfragen"],["wiederholung","Mit Wiederholung","Vokabeln wiederholen bis jede N-mal in Folge richtig beantwortet wurde"],["score","Score","Vokabeln wiederholen bis ihr Score das Ziel erreicht"]].map(([m, label, tip]) => (
@@ -6990,124 +6913,65 @@ export default function VokabelApp() {
                         </div>
                       );
                     })()}
-                    {/* Pakete-spezifische Einstellungen */}
-                    {quizSessionModus === "pakete" && (
-                      <>
-                        <div style={{padding:"8px 16px 8px", borderTop:"1px solid var(--rahmen)", fontWeight:600, fontSize:"0.82rem", color:"var(--text2)"}}>Vokabeln pro Paket</div>
-                        <div style={{display:"flex", gap:6, flexWrap:"wrap", padding:"0 16px 12px"}}>
-                          {[5,10,15,20,25,30,40,50].map(n => (
-                            <button key={n}
-                              className={`typ-btn${quizPaketGroesse === n ? " aktiv" : ""}`}
-                              onClick={() => setQuizPaketGroesse(n)}
-                              {...tt(`Paketgröße: ${n} Vokabeln pro Runde`)}>
-                              {n}
-                            </button>
-                          ))}
-                        </div>
-                        {sessionHatFortschritt && (
-                          <div style={{padding:"0 16px 12px", display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid var(--rahmen)", paddingTop:10, marginTop:2}}>
-                            <span style={{fontSize:"0.78rem", color:"var(--text2)"}}>
-                              {sessionAbgefragtAnzahl} / {sessionAnzahl} abgefragt
-                            </span>
-                            <button {...tt("Fortschritt dieser Abfrageart löschen – die nächste Abfrage beginnt eine neue Session")} style={{fontSize:"0.75rem", color:"var(--falsch)", background:"none", border:"none", cursor:"pointer", padding:0}}
-                              onClick={loescheSessionSlot}>
-                              Session löschen
-                            </button>
-                          </div>
-                        )}
-                      </>
-                    )}
+                    </>)}
                   </div>
                 )}
 
-                {/* Quiz starten Button - sticky unter Session-Zeile */}
+                {/* START-BEREICH: Session-Fortschritt + großer Start-Knopf */}
                 {kombiListe && (
-                  <div style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH, zIndex:3, background:"var(--karte)", padding:"14px 16px", marginLeft:"-16px", marginRight:"-16px", marginBottom:8, borderBottom:"1px solid var(--rahmen)", boxSizing:"border-box"}}>
-                    {isPakete && sessionHatFortschritt && (
-                      <div style={{marginBottom:16}}>
-                        {sessionResetFrage ? (
-                          <div data-reset-frage style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", minHeight:31, fontSize:"0.82rem"}}>
-                            <span style={{color:"var(--text)", fontWeight:600}}>Abgefragt-Stand löschen?</span>
-                            <button data-reset-ja className="toggle-opt aktiv" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8}}
-                              onClick={() => { setSessionResetFrage(false); loescheSessionSlot(); }}
-                              {...tt("Ja: die Session beginnt von vorn – alle Vokabeln kommen wieder in die Pakete. Scores und Lernfortschritt bleiben erhalten.")}>
-                              Ja, neu beginnen
-                            </button>
-                            <button className="toggle-opt" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8, border:"1.5px solid var(--rahmen)"}}
-                              onClick={() => setSessionResetFrage(false)}
-                              {...tt("Nein: nichts ändern")}>
-                              Nein
-                            </button>
-                            <span style={{color:"var(--text3)", fontSize:"0.7rem"}}>(Scores bleiben)</span>
-                          </div>
-                        ) : (
-                        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, fontSize:"0.82rem"}}>
-                          <span style={{color:"var(--text2)", minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
-                            Fortschritt {ABFRAGE_ART_NAMEN[quizAbfrageArt]}
-                          </span>
-                          <button data-session-zuruecksetzen className="toggle-opt zeile-rechts"
-                            style={{width:"auto", minWidth:124, padding:"0 12px", color:"var(--haupt)", border:"1.5px solid var(--haupt-zart)", background:"var(--haupt-flaeche)"}}
-                            onClick={() => setSessionResetFrage(true)}
-                            {...tt("So viele Vokabeln dieser Session wurden schon abgefragt – antippen, um den Abgefragt-Stand zurückzusetzen (Scores, Lernfortschritt und die anderen Abfragearten bleiben erhalten)")}>
-                            <span data-anzahl="fortschritt">{sessionAbgefragtAnzahl} / {sessionAnzahl}</span>
-                            {sessionAnzahl > 0 && ` — ${sessionPct}%`}
-                          </button>
-                        </div>
-                        )}
-                        <div style={{height:6, background:"var(--rahmen)", borderRadius:3, marginTop:12}}>
-                          <div style={{
-                            width:`${sessionPct}%`,
-                            height:"100%", background:"var(--haupt)", borderRadius:3, transition:"width 0.3s"
-                          }}/>
-                        </div>
+                  <div className="start-bereich">
+                    {isPakete && (
+                      <div style={{height:6, background:"var(--rahmen)", borderRadius:3, marginBottom:10}} data-start-balken={sessionPct}>
+                        <div style={{width:`${sessionPct}%`, height:"100%", background:"var(--haupt)", borderRadius:3, transition:"width 0.3s"}}/>
                       </div>
                     )}
-                    {aufteilen ? (() => {
-                      const neu = (aufteilenStand()?.gruppen || []).filter(g => !g.vorhanden).length;
-                      return (
-                        <button data-aufteilen-anlegen className="btn btn-primary" style={{width:"100%", background:"var(--gelb-dunkel)", borderColor:"var(--gelb-dunkel)"}}
-                          disabled={!kannStarten || neu === 0} onClick={legeAufteilenAn}
-                          {...tt("Je Gruppe eine gespeicherte Konfiguration mit diesen Einstellungen anlegen")}>
-                          ▦ {neu} Session{neu !== 1 ? "s" : ""} anlegen
+                    {sessionResetFrage && sessionHatFortschritt ? (
+                      <div data-reset-frage style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", minHeight:31, fontSize:"0.82rem", marginBottom:10}}>
+                        <span style={{color:"var(--text)", fontWeight:600}}>Abgefragt-Stand löschen?</span>
+                        <button data-reset-ja className="toggle-opt aktiv" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8}}
+                          onClick={() => { setSessionResetFrage(false); loescheSessionSlot(); }}
+                          {...tt("Ja: die Session beginnt von vorn – alle Vokabeln kommen wieder in die Pakete. Scores und Lernfortschritt bleiben erhalten.")}>
+                          Ja, neu beginnen
                         </button>
-                      );
-                    })() : (
-                    <div style={{display:"flex", gap:8}}>
-                      {kannStarten && (
-                        <button className="btn btn-ghost" style={{flexShrink:0}}
-                          onClick={() => oeffneModal("slot-speichern")}
-                          {...tt("Aktuelle Konfiguration unter einem Namen speichern – wiederherstellbar per Chip")}>
-                          Speichern
+                        <button className="toggle-opt" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8, border:"1.5px solid var(--rahmen)"}}
+                          onClick={() => setSessionResetFrage(false)}
+                          {...tt("Nein: nichts ändern")}>
+                          Nein
+                        </button>
+                        <span style={{color:"var(--text3)", fontSize:"0.7rem"}}>(Scores bleiben)</span>
+                      </div>
+                    ) : null}
+                    <div style={{display:"flex", gap:10, alignItems:"stretch"}}>
+                      {isPakete && (
+                        <button data-session-zuruecksetzen={sessionHatFortschritt ? "" : undefined} className="start-fortschritt" disabled={!sessionHatFortschritt}
+                          onClick={() => setSessionResetFrage(true)}
+                          {...tt(sessionHatFortschritt ? "So viele Vokabeln dieser Session wurden schon abgefragt – antippen, um den Abgefragt-Stand zurückzusetzen (Scores und Lernfortschritt bleiben)" : "Fortschritt der Session – noch nichts abgefragt")}>
+                          {sessionHatFortschritt ? <span data-anzahl="fortschritt">{sessionAbgefragtAnzahl}/{sessionAnzahl}</span> : <span>0/{sessionAnzahl}</span>}
                         </button>
                       )}
-                      {alleAbgefragt ? (
-                        <button className="btn btn-primary" style={{flex:1}}
+                      {aufteilen ? (() => {
+                        const neu = (aufteilenStand()?.gruppen || []).filter(g => !g.vorhanden).length;
+                        return (
+                          <button data-aufteilen-anlegen className="btn btn-primary" style={{flex:1, background:"var(--gelb-dunkel)", borderColor:"var(--gelb-dunkel)"}}
+                            disabled={!kannStarten || neu === 0} onClick={legeAufteilenAn}
+                            {...tt("Je Gruppe eine gespeicherte Konfiguration mit diesen Einstellungen anlegen")}>
+                            ▦ {neu} Session{neu !== 1 ? "s" : ""} anlegen
+                          </button>
+                        );
+                      })() : alleAbgefragt ? (
+                        <button className="btn btn-primary start-knopf" data-start-knopf data-start-anzahl={sessionAnzahl}
                           onClick={() => { loescheSessionSlot(); }}
                           {...tt("Session-Fortschritt löschen und alle Vokabeln erneut abfragen")}>
-                          Neuer Durchlauf (alle {sessionAnzahl} abgefragt)
+                          <b>Neuer Durchlauf</b><span>alle {sessionAnzahl} abgefragt</span>
                         </button>
                       ) : (
-                        <button className="btn btn-primary" style={{flex:1}}
+                        <button className="btn btn-primary start-knopf" data-start-knopf data-start-anzahl={verfuegbar}
                           onClick={() => starteQuiz()} disabled={!kannStarten || verfuegbar === 0}
                           {...tt("Quiz starten – die Zahl nennt die Vokabeln dieser Fragerunde (bei Paketen: das nächste Paket)")}>
-                          Quiz starten ({verfuegbar} Vokabeln)
+                          <b>Quiz starten</b><span>{verfuegbar} Vokabel{verfuegbar !== 1 ? "n" : ""}</span>
                         </button>
                       )}
                     </div>
-                    )}
-                    {schwelle > 0 && gelernteAnzahl > 0 && (
-                      <div style={{marginTop:6, fontSize:"0.78rem", color:"var(--text2)",
-                          display:"flex", alignItems:"center", gap:8, justifyContent:"center"}}>
-                        <span>{quizGelerntEinschliessen
-                          ? `${gelernteAnzahl} gelernte eingeschlossen`
-                          : `${gelernteAnzahl} gelernte ausgeblendet`}</span>
-                        <button className="toggle-opt" style={{padding:"2px 8px", fontSize:"0.72rem"}}
-                          onClick={() => setQuizGelerntEinschliessen(v => !v)}
-                          {...tt("Gelernte Vokabeln (Score ≥ Schwelle) ein- oder ausschließen")}>
-                          {quizGelerntEinschliessen ? "Ausblenden" : "Einschließen"}
-                        </button>
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -7334,27 +7198,9 @@ export default function VokabelApp() {
         {/* ── Statistik: Verlauf & Gespeichert Header ── */}
         {tab === "statistik" && (() => {
           if (statistikVollbild) return null;
-          // wie im Quiz: zugeklappt ohne Überschrift, Knopf mittig; gespeicherte Konfiguration → ganze Zeile grün
-          const zu = !slotSektionAufgeklappt;
-          const gruen = zu && statistikAktiverSlot?.typ === 'gespeichert';
           return (
             <>
-              <div ref={slotSektionRef} data-slot-kopf={gruen ? "gruen" : zu ? "zu" : "offen"} style={{position:"sticky", top:headerH, zIndex:9, background: gruen ? "var(--haupt)" : "var(--karte)", borderBottom:`1px solid ${gruen ? "var(--haupt)" : "var(--rahmen)"}`, padding:"10px 16px", display:"flex", alignItems:"center", justifyContent: zu ? "center" : undefined, gap:8}}>
-                {!zu && (
-                  <span style={{flex:1, fontWeight:600, fontSize:"0.85rem", color:"var(--text)", display:"flex", alignItems:"center", gap:8}}>
-                    Verlauf &amp; Gespeichert
-                  </span>
-                )}
-                <button {...tt("Verlauf und Gespeichert anzeigen")}
-                  onClick={toggleSlotSektion}
-                  className={`toggle-opt aktiv${zu ? "" : " zeile-rechts"}`}
-                  style={zu ? {cursor:"pointer", padding:"7px 22px", fontSize:"0.95rem", borderRadius:12, minWidth:160, maxWidth:"80%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                    ...(gruen ? {border:"1.5px solid rgba(255,255,255,0.75)"} : {})} : undefined}>
-                  {statistikAktiverSlot?.typ === 'gespeichert'
-                    ? (getSlotEintrag('gespeichert', statistikAktiverSlot.id)?.name || statistikAktiverSlot.id)
-                    : statistikSlotGeleert ? "Leer" : "Neu"}
-                </button>
-              </div>
+              {renderSlotKopf(true)}
               <div ref={slotContainerRef} style={{overflow:'hidden', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 4 : 0}}>
                 {slotSektionAufgeklappt && (<>
                   {renderSlotBereiche(
@@ -7377,9 +7223,9 @@ export default function VokabelApp() {
           );
         })()}
 
-        {/* ── Statistik: Listen-Auswahl Header ── */}
+        {/* ── Statistik: Listen-Auswahl Header (ausgeblendet bei geladener gespeicherter Konfiguration) ── */}
         {tab === "statistik" && (() => {
-          if (statistikVollbild) return null;
+          if (statistikVollbild || (statistikAktiverSlot?.typ === "gespeichert" && !listenAendern)) return null;
           const n = statistikGewaehlteListenObjekte.length;
           const chipAktiv = statistikListenIds !== null;
           const chipText = statistikListenIds === null
@@ -7460,7 +7306,7 @@ export default function VokabelApp() {
 
         {/* ── Statistik: Vokabel-Auswahl Header ── */}
         {tab === "statistik" && (() => {
-          if (statistikVollbild) return null;
+          if (statistikVollbild || (statistikAktiverSlot?.typ === "gespeichert" && !listenAendern)) return null;
           const hatVoks = statistikBasisVoks.length > 0;
           const istBereich = statistikBereichTyp === "bereich";
           const auswahlAnzahl = statistikGefilterteVoks.length;
@@ -7957,21 +7803,20 @@ export default function VokabelApp() {
                   {k:"Import", v:"Vokabeln aus einer TXT-Datei oder JSON-Datei importieren."},
                 ]},
                 {titel:"Quiz-Tab", inhalt:[
-                  {k:"Verlauf & Gespeichert", v:"Oben im Tab. Zeigt gespeicherte Konfigurationen (benannt) und automatische Verlaufs-Einträge der letzten Quiz-Starts. Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann mittig in einer grünen Kopfzeile – antippen öffnet die Auswahl wieder. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt: Beim Wechsel des Abfrage-Modus springt der Fortschritt auf den Stand dieser Art. Ein Tipp auf die Fortschrittszahl (z. B. „10 / 14 — 71%“) beginnt nach kurzer Rückfrage für die aktuelle Art eine neue Session – gelöscht wird nur, welche Vokabeln schon abgefragt wurden; Scores und Lernfortschritt bleiben. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Gespeicherte Konfigurationen, bis 100 Zeilen × 4 Spalten). Lang drücken auf einen Eintrag zeigt den vollständigen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie unter neuem Namen, mit eigenem Fortschritt), „Verschieben“ und „Löschen“ (Verlauf-Einträge: „Löschen“). „Verschieben“: Einträge antippen markiert sie (nummeriert, mehrere möglich), ein freier Platz setzt die markierten dort untereinander ein; oder direkt ziehen – ein markierter Eintrag nimmt alle markierten mit, auf einem belegten Platz rücken die Einträge auf die frei gewordenen Plätze (einzeln: die beiden tauschen); „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt untereinander in die erste Spalte unter den untersten Eintrag; das Raster wächst bei Bedarf."},
+                  {k:"Kopfzeile (Session-Auswahl)", v:"Oben im Tab: links der Name der geladenen Konfiguration („Neu“, wenn keine geladen ist), rechts die Kreise Ü, D und A. Antippen des Namens öffnet die Auswahl mit gespeicherten Konfigurationen und Verlaufs-Einträgen; aufgeklappt sieht die Kopfzeile genauso aus und zeigt zusätzlich eine Info-Zeile (z. B. „Englisch 6 · Nr. 1–25 · 25 Vokabeln“). Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann in einer grünen Kopfzeile. Lang drücken auf den Namen: „Speichern“. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Gespeicherte Konfigurationen, bis 100 Zeilen × 4 Spalten); jede Kachel zeigt unten einen Balken mit dem Lernfortschritt Übersetzung (✓ bei 100 %), die geladene Kachel ist in der Hauptfarbe gefüllt. Lang drücken auf eine Kachel zeigt den vollständigen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie unter neuem Namen, mit eigenem Fortschritt), „Verschieben“, „Listen/Vokabeln ändern“ und „Löschen“. „Verschieben“: Einträge antippen markiert sie (nummeriert, mehrere möglich), ein freier Platz setzt die markierten dort untereinander ein; oder direkt ziehen – ein markierter Eintrag nimmt alle markierten mit, auf einem belegten Platz rücken die Einträge auf die frei gewordenen Plätze (einzeln: die beiden tauschen); „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt untereinander in die erste Spalte unter den untersten Eintrag; das Raster wächst bei Bedarf."},
                   {k:"Neu-Chip", v:"Setzt die aktive Session zurück – Quiz startet ohne geladene Konfiguration."},
                   {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
-                  {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl."},
+                  {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl. Ist eine gespeicherte Konfiguration geladen, sind Listen- und Vokabel-Auswahl festgelegt und ausgeblendet – zum Ändern lang auf die Kachel drücken und „Listen/Vokabeln ändern“ wählen."},
                   {k:"Vokabel-Auswahl [Alle]", v:"Alle Vokabeln der gewählten Listen werden abgefragt."},
                   {k:"Vokabel-Auswahl [Bereich]", v:"Öffnet eine Checkbox-Liste. Einzelne Vokabeln an-/abwählen. [Von–Bis] ermöglicht Bereichsauswahl per 2 Klicks."},
-                  {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Die drei Kreise oben rechts in der (zugeklappten) Kopfzeile der Session-Auswahl zeigen den Lernfortschritt der Auswahl je Art; antippen schaltet die Art um, darunter stehen die Einstellungen dieser Art. Auch die Listen im Listen-Tab zeigen die drei Kreise. In den Kacheln der gespeicherten Konfigurationen zeigen drei Mini-Kreise Ü, D und A den Lernfortschritt je Art (grau: keine passenden Vokabeln, gefüllt: gerade gewählte Art); antippen lädt die Konfiguration direkt in dieser Art – in der Statistik zeigt es die Statistik dieser Art. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Die Zeile „Abfrage-Modus“ zeigt rechts den Modus der gewählten Art – antippen öffnet die Einstellungen. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC oder Tastatur. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
+                  {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Die Kreise rechts in der Kopfzeile der Session-Auswahl zeigen den Lernfortschritt der Auswahl je Art; antippen schaltet die Art um. Eine Art ohne passende Vokabeln wird nicht angezeigt. Auch die Listen im Listen-Tab zeigen die drei Kreise. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC oder Tastatur. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
                   {k:"Akzente", v:"Eigene Abfrageart (A): Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Ob auch Wörter ohne Akzent abgefragt werden, legst du beim Schwierigkeitsgrad fest."},
-                  {k:"Reihenfolge", v:"Zufällig / Schlechteste (nach Score sortiert) / Listen-Nr. (Originalreihenfolge). Score-Filter: nur Vokabeln bis zu einem bestimmten Score zeigen. Unbeantwortete zuerst: noch nie abgefragte Vokabeln werden vorgezogen."},
-                  {k:"Einstellungen", v:"Lautsprache: Auto-Play und welche Spalten vorgelesen werden. Schwierigkeitsgrad: Einfach oder Schwer. Darunter legst du per Haken fest, was in welcher Stufe gilt: fehlende Akzente beim Tippen als richtig werten, Punktabzug bei „Lösung anzeigen“, im Akzent-Modus auch Wörter ohne Akzent abfragen, Buchstaben mit Akzent hervorheben, die Zahl der noch fehlenden Akzente anzeigen (z. B. 2 / 3) und richtige Antworten automatisch übernehmen (sonst „Prüfen“)."},
-                  {k:"Session [Alle]", v:"Alle verfügbaren Vokabeln in einem Durchgang abfragen."},
-                  {k:"Session [Pakete]", v:"Vokabeln in kleinere Pakete aufteilen (5–50 Stück). Nach jedem Paket kannst du pausieren oder weitermachen. Abgefragte Vokabeln werden beim nächsten Paket übersprungen."},
+                  {k:"Zeile 1: Modus · Reihenfolge · Stufe", v:"Erster Knopf: Abfrage-Modus der gewählten Art (z. B. „Karte“) – antippen öffnet die Spalten- und Modus-Einstellungen. Zweiter Knopf: Reihenfolge – Zufällig / Schlechteste (nach Score sortiert) / Listen-Nr. (Originalreihenfolge), dazu Score-Filter und „Unbeantwortete zuerst“. Es ist immer nur ein Bereich offen. Dritter Knopf: Stufe Leicht oder Schwer – antippen wechselt. Lang drücken: „Regeln Leicht / Schwer“ und „Vorlesen“."},
+                  {k:"Regeln Leicht / Schwer", v:"Lang drücken auf den Stufen-Knopf. Per Haken legst du fest, was in welcher Stufe gilt: fehlende Akzente beim Tippen als richtig werten, Punktabzug bei „Lösung anzeigen“, „Nicht gewusst“ zieht 1 Punkt ab, im Akzent-Modus auch Wörter ohne Akzent abfragen (mit Höchstanteil), Buchstaben mit Akzent hervorheben, die Zahl der noch fehlenden Akzente anzeigen (z. B. 2 / 3) und richtige Antworten automatisch übernehmen (sonst „Prüfen“). „Vorlesen“ (ebenfalls per Lang-Druck): Auto-Play und welche Spalten vorgelesen werden."},
+                  {k:"Zeile 2: Umfang · Abfrage-Ziel · Gelernte", v:"Umfang: „Alle Vokabeln“ in einem Durchgang oder „Je N Vokabeln“ – antippen zeigt große Zahlenknöpfe (Alle, 5–50). Bei Paketen kannst du nach jedem Paket pausieren oder weitermachen; abgefragte Vokabeln werden beim nächsten Paket übersprungen. Gelernte (nur wenn es welche gibt): „13 gelernte“ = ausgeblendet, „+ 13 gelernte“ = werden mit abgefragt."},
                   {k:"Abfrage-Ziel", v:"Anzahl: jede Vokabel 1×/2×/3× pro Durchgang abfragen. Mit Wiederholung: Vokabeln so lange einreihen, bis jede 1×/2×/3× richtig beantwortet wurde. Score: Vokabeln so lange abfragen, bis ihr Score das Ziel erreicht."},
-                  {k:"Konfiguration speichern", v:"Speichert die aktuelle Auswahl und Einstellungen unter einem Namen. Beim nächsten Mal per Chip laden."},
-                  {k:"Quiz starten", v:"Startet das Quiz mit der aktuellen Konfiguration."},
+                  {k:"Konfiguration speichern", v:"Lang drücken auf den Namen in der Kopfzeile → „Speichern“. Speichert die aktuelle Auswahl und Einstellungen unter einem Namen; beim nächsten Mal per Kachel laden."},
+                  {k:"Quiz starten", v:"Unterste Sektion: Fortschrittsbalken der Session, darunter links der Stand (z. B. „15/50“) – antippen beginnt nach kurzer Rückfrage für die aktuelle Art eine neue Session (gelöscht wird nur, welche Vokabeln schon abgefragt wurden; Scores bleiben) – und rechts der Start-Knopf mit der Anzahl der Vokabeln dieses Durchgangs."},
                 ]},
                 {titel:"Im Quiz", inhalt:[
                   {k:"Karte (Frage–Antwort)", v:"Tippe auf die Karte, um die Antwort aufzudecken. Dann: Richtig oder Falsch selbst einschätzen."},
@@ -8434,6 +8279,113 @@ export default function VokabelApp() {
               <button {...tt("Schließen, ohne zu starten")} className="btn btn-ghost" onClick={() => setSessionUeberschreibenModal(false)}>Abbrechen</button>
               <button {...tt("Bisherige Session verwerfen und neu beginnen")} className="btn btn-primary" onClick={() => { setSessionUeberschreibenModal(false); starteQuiz(true); }}>Neu starten</button>
             </div>
+          </div>
+        </div>
+      )}
+      {modal === "stufen-regeln" && (
+        <div className="overlay" onClick={() => setModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} data-stufen-regeln style={{maxHeight:"88vh", overflowY:"auto"}}>
+            <div className="modal-titel">Regeln Leicht / Schwer</div>
+                      <div className="karte" style={{marginBottom:16}}>
+                        <div className="toggle-row">
+                          <div>
+                            <div className="toggle-label">Modus</div>
+                            <div className="toggle-sub">Was jeweils gilt, legst du unten per Haken fest.</div>
+                          </div>
+                          <div className="toggle-btn">
+                            <button className={`toggle-opt${einstellungen.modus==="einfach"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"einfach"})} {...tt("Stufe „Leicht“ verwenden – es gelten die Haken in der Spalte „Leicht“")}>Leicht</button>
+                            <button className={`toggle-opt${einstellungen.modus==="schwer"?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen,modus:"schwer"})} {...tt("Stufe „Schwer“ verwenden – es gelten die Haken in der Spalte „Schwer“")}>Schwer</button>
+                          </div>
+                        </div>
+                        {/* Was gilt als einfach / schwer: je Regel ein Haken pro Stufe */}
+                        <div style={{borderTop:"1px solid var(--rahmen)", padding:"10px 16px 12px"}}>
+                          <div style={{display:"grid", gridTemplateColumns:"1fr 58px 58px", alignItems:"center", rowGap:10, columnGap:6}}>
+                            <div className="inp-label" style={{margin:0}}>Was gilt als leicht / schwer?</div>
+                            {["einfach", "schwer"].map(st => (
+                              <div key={st} style={{textAlign:"center", fontSize:"0.75rem", fontWeight:700, color: einstellungen.modus === st ? "var(--haupt)" : "var(--text3)"}}>{st === "einfach" ? "Leicht" : "Schwer"}</div>
+                            ))}
+                            {STUFEN_REGELN.map(r => (<Fragment key={r.key}>
+                              <div>
+                                <div style={{fontSize:"0.85rem", fontWeight:600, color:"var(--text)"}}>{r.label}</div>
+                                <div style={{fontSize:"0.72rem", color:"var(--text2)"}}>{r.sub}</div>
+                              </div>
+                              {["einfach", "schwer"].map(st => {
+                                const an = einstellungen.stufen?.[st]?.[r.key] ?? r[st];
+                                return (
+                                  <div key={st} style={{display:"flex", justifyContent:"center", cursor:"pointer"}}
+                                    onClick={() => speichereEinst({...einstellungen, stufen: {...(einstellungen.stufen || {}), [st]: {...(einstellungen.stufen?.[st] || {}), [r.key]: !an}}})}
+                                    {...tt(`${r.label} – in der Stufe „${st === "einfach" ? "Einfach" : "Schwer"}“ ${an ? "ausschalten" : "einschalten"}`)}>
+                                    <div className={`checkbox${an ? " checked" : ""}`}>{an ? "✓" : ""}</div>
+                                  </div>
+                                );
+                              })}
+                              {r.key === "akzentOhneMischen" && (<>
+                                <div style={{paddingLeft:12}}>
+                                  <div style={{fontSize:"0.8rem", fontWeight:600, color:"var(--text)"}}>… davon höchstens</div>
+                                  <div style={{fontSize:"0.72rem", color:"var(--text2)"}}>Wörter ohne Akzent im Verhältnis zu den Wörtern mit Akzent (1× = noch einmal so viele)</div>
+                                </div>
+                                {["einfach", "schwer"].map(st => {
+                                  const regelAn = einstellungen.stufen?.[st]?.akzentOhneMischen ?? r[st];
+                                  const wert = einstellungen.stufen?.[st]?.akzentOhneAnteil ?? 1;
+                                  return (
+                                    <div key={st} style={{display:"flex", justifyContent:"center"}}>
+                                      <select data-akzent-ohne-anteil={st} value={String(wert)} disabled={!regelAn}
+                                        style={{fontFamily:"inherit", fontSize:"0.8rem", padding:"3px 2px", borderRadius:6, border:"1.5px solid var(--rahmen)", background:"var(--karte)", opacity: regelAn ? 1 : 0.4, width:52}}
+                                        onChange={e => { const v = e.target.value === "alle" ? "alle" : parseFloat(e.target.value);
+                                          speichereEinst({...einstellungen, stufen: {...(einstellungen.stufen || {}), [st]: {...(einstellungen.stufen?.[st] || {}), akzentOhneAnteil: v}}}); }}
+                                        {...ttFeld(`Stufe „${st === "einfach" ? "Einfach" : "Schwer"}“: höchstens so viele Wörter ohne Akzent (∞ = alle)`)}>
+                                        {AKZENT_OHNE_ANTEILE.map(([w, t]) => <option key={t} value={String(w)}>{t}</option>)}
+                                      </select>
+                                    </div>
+                                  );
+                                })}
+                              </>)}
+                            </Fragment>))}
+                          </div>
+                        </div>
+                      </div>
+            <div className="modal-actions"><button className="btn btn-primary" onClick={() => setModal(null)} {...tt("Fenster schließen – die Einstellungen sind gespeichert")}>Fertig</button></div>
+          </div>
+        </div>
+      )}
+      {modal === "vorlesen" && (
+        <div className="overlay" onClick={() => setModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} data-vorlesen-einstellungen>
+            <div className="modal-titel">Vorlesen</div>
+                      <div className="karte" style={{marginBottom:16}}>
+                        <div className="toggle-row">
+                          <div>
+                            <div className="toggle-label">Auto-Play</div>
+                            <div className="toggle-sub">Frage automatisch vorlesen wenn neue Vokabel erscheint</div>
+                          </div>
+                          <div className="toggle-btn">
+                            <button className={`toggle-opt${!einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:false})} {...tt("Kein automatisches Vorlesen")}>Aus</button>
+                            <button className={`toggle-opt${einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:true})} {...tt("Vokabeln nach dem Aufdecken automatisch vorlesen")}>An</button>
+                          </div>
+                        </div>
+                        {einstellungen.autoplay && (
+                          <div style={{padding:"12px 16px 16px", borderTop:"1px solid var(--rahmen)"}}>
+                            <div className="inp-label" style={{marginBottom:8}}>Spalten automatisch vorlesen</div>
+                            <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                              {TYPEN.map(typ => {
+                                const vorlesen = einstellungen.vorlesen || ["E1"];
+                                const aktiv = vorlesen.includes(typ);
+                                return (
+                                  <button {...tt(`Spalte ${typ} beim Abfragen automatisch vorlesen`)} key={typ} className={`typ-btn${aktiv?" aktiv":""}`}
+                                    onClick={() => speichereEinst({...einstellungen, vorlesen: aktiv ? vorlesen.filter(t=>t!==typ) : [...vorlesen,typ]})}>
+                                    {typ}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <div style={{fontSize:"0.75rem", color:"var(--text2)", marginTop:8}}>
+                              Nur wenn Frage-Spalte ausgewählt ist, wird Auto-Play ausgelöst
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+            <div className="modal-actions"><button className="btn btn-primary" onClick={() => setModal(null)} {...tt("Fenster schließen – die Einstellungen sind gespeichert")}>Fertig</button></div>
           </div>
         </div>
       )}

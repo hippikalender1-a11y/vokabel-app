@@ -39,7 +39,7 @@ const runde = async (modus, regel) => {
   await clickText(".tab", "Listen");
   await clickText(".karte-zeile", "Verbes");
   await clickText("button", "Quiz starten", true);
-  await clickText("button", "Quiz starten (");
+  await clickText("[data-start-knopf]", "");
   await sleep(300);
   // jede Vokabel mehrfach „nicht gewusst“ (auch in der Wiederholung) – früher gestaffelt −1/−2/−3
   for (let i = 0; i < 10; i++) {

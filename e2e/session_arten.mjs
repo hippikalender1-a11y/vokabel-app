@@ -28,7 +28,7 @@ const clickText = async (sel, text, exact = false) => {
 const text = () => page.evaluate(() => document.body.innerText);
 const fortschritt = () => page.evaluate(() => document.querySelector('[data-anzahl="fortschritt"]')?.textContent.trim() || null);
 const kopf = () => page.evaluate(() => document.querySelector("[data-slot-kopf]")?.getAttribute("data-slot-kopf"));
-const anzahl = async () => (await text()).match(/Quiz starten \((\d+) Vokabeln\)/)?.[1];
+const anzahl = async () => page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl);
 
 // Ü|D|A sitzt in der zugeklappten Kopfzeile der Session-Auswahl
 const artWaehlen = async a => {
@@ -53,7 +53,7 @@ await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz");
 if (!(await text()).includes("Mein Paket")) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
-ok((await text()).includes("Verlauf & Gespeichert"), "Aufgeklappt: Überschrift „Verlauf & Gespeichert“ sichtbar");
+ok(!(await text()).includes("Verlauf & Gespeichert") && await page.$("[data-kopf-info]"), "Aufgeklappt: keine Überschrift mehr, dafür die Info-Zeile");
 await clickText(".slot-chip", "Mein Paket");
 await sleep(300);
 const t0 = await text();
@@ -65,10 +65,11 @@ ok(await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf
   "Knopf mit dem Namen: von links bis kurz vor die Ü/D/A-Kreise");
 
 // Paket mit 10 Vokabeln (Übersetzung, Karte), alles gewusst
-if (!(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "10 V." && b.classList.contains("aktiv")))))
-  await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /^(Pakete|\d+ V\.)$/.test(b.textContent.trim()))?.click());
+if ((await page.evaluate(() => document.querySelector("[data-umfang]")?.textContent.trim())) !== "Je 10 Vokabeln") {
+  await page.click("[data-umfang]"); await sleep(200); await page.click('[data-umfang-wahl="10"]');
+}
 await sleep(200);
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(400);
 for (let k = 0; k < 14; k++) {
   if (/Paket fertig|Durchlauf abgeschlossen/.test(await text())) break;
@@ -80,8 +81,8 @@ for (let k = 0; k < 14; k++) {
 await clickText("button", "Pause", true);
 await sleep(400);
 console.log("     Übersetzung:", await fortschritt());
-ok(await fortschritt() === "10 / 14", "Übersetzung: Fortschritt 10 / 14");
-ok((await text()).includes("Fortschritt Übersetzung"), "Fortschrittszeile nennt die Abfrageart");
+ok(await fortschritt() === "10/14", "Übersetzung: Fortschritt 10/14");
+ok(await page.evaluate(() => document.querySelector("[data-start-balken]")?.dataset.startBalken) === "71", "Fortschrittsbalken über dem Start-Knopf (71 %)");
 
 // Wechsel zu Akzente: eigener (noch leerer) Fortschritt
 await artWaehlen("akzente");
@@ -90,7 +91,7 @@ console.log("     Akzente:", await fortschritt(), "| Start:", await anzahl());
 ok(await fortschritt() === null, "Akzente: kein Fortschritt vom Übersetzungs-Stand übernommen");
 // Akzente-Paket: 2 Wörter (Lösung anzeigen)
 await clickText(".typ-btn", "5", true).catch(() => {});
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(400);
 for (let k = 0; k < 2; k++) {
   await clickText("button", "Lösung anzeigen");
@@ -104,12 +105,12 @@ if (/Zur Übersicht/.test(await text())) await clickText("button", "Zur Übersic
 await sleep(400);
 const akz = await fortschritt();
 console.log("     Akzente nach Abbruch:", akz);
-ok(/^2 \/ \d+$/.test(akz || ""), "Akzente: eigener Fortschritt 2 / …");
+ok(/^2\/\d+$/.test(akz || ""), "Akzente: eigener Fortschritt 2 / …");
 
 // zurück zu Übersetzung → alter Stand wieder da
 await artWaehlen("uebersetzung");
 await sleep(300);
-ok(await fortschritt() === "10 / 14", "Zurück zu Übersetzung: wieder 10 / 14");
+ok(await fortschritt() === "10/14", "Zurück zu Übersetzung: wieder 10/14");
 // und wieder Akzente → 2 / …
 await artWaehlen("akzente");
 await sleep(300);
@@ -118,9 +119,9 @@ ok(await fortschritt() === akz, "Wieder Akzente: Stand 2 / … bleibt erhalten")
 // Zurücksetzen löscht nur den Akzente-Fortschritt
 await page.click("[data-session-zuruecksetzen]");
 await sleep(200);
-ok(await page.$("[data-reset-frage]") && /Abgefragt-Stand löschen\?/.test(await text()) && await fortschritt() === null, "Zurücksetzen: Rückfrage in der App statt Browser-Fenster");
+ok(await page.$("[data-reset-frage]") && /Abgefragt-Stand löschen\?/.test(await text()), "Zurücksetzen: Rückfrage in der App statt Browser-Fenster");
 await clickText("button", "Nein", true);
-ok(/^2 \/ \d+$/.test(await fortschritt() || ""), "„Nein“: Stand bleibt");
+ok(/^2\/\d+$/.test(await fortschritt() || ""), "„Nein“: Stand bleibt");
 await page.click("[data-session-zuruecksetzen]");
 await sleep(200);
 await page.click("[data-reset-ja]");
@@ -128,21 +129,21 @@ await sleep(300);
 ok(await fortschritt() === null, "Zurücksetzen: Akzente-Fortschritt weg, neue Session");
 await artWaehlen("uebersetzung");
 await sleep(300);
-ok(await fortschritt() === "10 / 14", "Übersetzungs-Fortschritt bleibt nach dem Zurücksetzen von Akzente");
+ok(await fortschritt() === "10/14", "Übersetzungs-Fortschritt bleibt nach dem Zurücksetzen von Akzente");
 
 // nach Neuladen bleibt alles erhalten
 await page.reload(); await sleep(600);
 await clickText(".tab", "Quiz");
 await sleep(300);
-ok(await kopf() === "gruen" && (await text()).includes("Mein Paket") && await fortschritt() === "10 / 14",
-  "Nach Neuladen: gespeicherte Session automatisch geladen (grüne Kopfzeile, Übersetzung 10 / 14)");
+ok(await kopf() === "gruen" && (await text()).includes("Mein Paket") && await fortschritt() === "10/14",
+  "Nach Neuladen: gespeicherte Session automatisch geladen (grüne Kopfzeile, Übersetzung 10/14)");
 // Statistik: Kopfzeile verhält sich wie im Quiz
 await clickText(".tab", "Statistik");
 await sleep(400);
 ok(await kopf() === "gruen" && !(await text()).includes("Verlauf & Gespeichert"), "Statistik: gespeicherte Konfiguration → Kopfzeile grün, ohne Überschrift");
 await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
-ok(await kopf() === "offen" && (await text()).includes("Verlauf & Gespeichert"), "Statistik: Antippen öffnet die Auswahl");
+ok(await kopf() === "offen" && await page.$("[data-kopf-info]"), "Statistik: Antippen öffnet die Auswahl (mit Info-Zeile)");
 await clickText(".slot-chip", "Mein Paket");
 await sleep(300);
 ok(await kopf() === "gruen" && !(await page.$(".slot-raster")), "Statistik: nach Auswahl wieder zu und grün");

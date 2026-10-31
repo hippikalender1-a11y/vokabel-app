@@ -91,7 +91,7 @@ ok(!(await page.$("[data-aufteilen]")), "Kasten nach dem Anlegen weg");
 
 // Laden einer Gruppe: Quiz mit genau diesen 10
 await clickText(".slot-chip", "Verben Teil 2 (31 - 40)");
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 ok(await page.evaluate(() => document.querySelector(".topbar-title")?.textContent.trim()) === "1 / 10", "geladene Gruppe: Quiz mit 10 Vokabeln");
 await clickText(".topbar-back", "Beenden"); await sleep(400);
 if (await page.evaluate(() => /Zur Übersicht/.test(document.body.innerText))) await clickText("button", "Zur Übersicht");

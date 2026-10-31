@@ -64,11 +64,11 @@ if (start === "preset") {
   });
   await sleep(300);
 }
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /^(Pakete|\d+ V\.)$/.test(b.textContent.trim()))?.click()); await sleep(300);
-await clickText(".typ-btn", "5", true);
+await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await sleep(300);
+await page.click('[data-umfang-wahl="5"]'); await sleep(300);
 await sleep(300);
 if (start === "preset") {
-  await clickText("button", "Speichern", true);
+  await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Speichern"]').click()); await new Promise(r => setTimeout(r, 300));
   await page.type(".modal input.inp", "Mein Preset");
   await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].pop()?.click());
   await sleep(400);
@@ -76,7 +76,7 @@ if (start === "preset") {
 }
 const startBtn = await page.evaluate(() => [...document.querySelectorAll("button")].map(b => b.textContent.trim()).find(t => /^Quiz starten/.test(t)));
 console.log("     Start-Button:", startBtn);
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(500);
 await paketDurchspielen(5);
 console.log("     Nach Paket 1:", await titel());

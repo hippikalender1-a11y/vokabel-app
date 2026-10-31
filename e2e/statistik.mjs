@@ -60,11 +60,11 @@ const statistikInfoRoh = () => page.evaluate(() => ({
 
 // ── A: normale Runde, Bereich mit 3 Vokabeln ──
 await seed();
-await page.evaluate(() => { const b = [...document.querySelectorAll(".toggle-opt")].find(x => x.textContent.trim() === "Alle" && /Pakete|V\./.test(x.nextElementSibling?.textContent || "")); b?.click(); }); await sleep(300);
+await page.evaluate(async () => { const u = document.querySelector("[data-umfang]"); if (!u) return; u.click(); await new Promise(r => setTimeout(r, 200)); document.querySelector('[data-umfang-wahl="alle"]')?.click(); }); await sleep(300);
 await clickText("button", "Bereich", true);
 await page.evaluate(() => [...document.querySelectorAll(".vok-nr")].slice(0, 3).forEach(z => z.parentElement.click()));
 await sleep(300);
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(400);
 await karteGewusst(3);
 let t = await text();
@@ -84,9 +84,9 @@ await page.screenshot({ path: "statistik_runde.png" });
 
 // ── B: Pakete, kompletter Durchlauf (12 Vokabeln, Pakete à 10 + 2) ──
 await seed();
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /^(Pakete|\d+ V\.)$/.test(b.textContent.trim()))?.click()); await sleep(300);
-await clickText(".typ-btn", "10", true);
-await clickText("button", "Quiz starten (");
+await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await sleep(300);
+await page.click('[data-umfang-wahl="10"]'); await sleep(300);
+await clickText("[data-start-knopf]", "");
 await sleep(400);
 await karteGewusst(10);
 await clickText("button", "Nächste 10 Vokabeln");

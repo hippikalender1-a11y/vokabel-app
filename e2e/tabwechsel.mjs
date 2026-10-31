@@ -27,7 +27,8 @@ const clickText = async (sel, text, exact = false) => {
 const stand = () => page.evaluate(() => {
   const k = document.querySelector("[data-slot-kopf]");
   const listen = [...document.querySelectorAll("button.zeile-rechts")].find(b => /Listen für/.test(b.getAttribute("title") || ""));
-  return { kopf: k?.dataset.slotKopf, name: k?.querySelector("button.toggle-opt.aktiv")?.textContent.trim(), listen: listen?.textContent.trim() };
+  // gespeicherte Konfiguration: Listen-Auswahl ausgeblendet
+  return { kopf: k?.dataset.slotKopf, name: k?.querySelector("button.toggle-opt.aktiv")?.textContent.trim(), listen: listen ? listen.textContent.trim() : "(ausgeblendet)" };
 });
 const oeffneKopf = async () => { await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300); };
 
@@ -55,7 +56,7 @@ await clickText(".tab", "Statistik");
 await sleep(300);
 let st = await stand();
 console.log("     Statistik:", JSON.stringify(st));
-ok(st.kopf === "gruen" && st.name === "Paket Tiere" && st.listen === "Tiere", "Quiz → Statistik: Paket Tiere bleibt gewählt");
+ok(st.kopf === "gruen" && st.name === "Paket Tiere" && st.listen === "(ausgeblendet)", "Quiz → Statistik: Paket Tiere bleibt gewählt (Listen-Auswahl ausgeblendet)");
 
 // Statistik: Paket Farben wählen → Quiz zeigt dasselbe
 await oeffneKopf();
@@ -64,8 +65,8 @@ await clickText(".tab", "Quiz");
 await sleep(300);
 st = await stand();
 console.log("     Quiz:", JSON.stringify(st));
-ok(st.kopf === "gruen" && st.name === "Paket Farben" && st.listen === "Farben", "Statistik → Quiz: Paket Farben übernommen");
-ok(/Quiz starten \(3 Vokabeln\)/.test(await page.evaluate(() => document.body.innerText)), "Quiz: 3 Vokabeln aus Farben");
+ok(st.kopf === "gruen" && st.name === "Paket Farben" && st.listen === "(ausgeblendet)", "Statistik → Quiz: Paket Farben übernommen (Listen-Auswahl ausgeblendet)");
+ok(await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl) === "3" && /Farben · 3 Vokabeln/.test(await page.evaluate(() => { document.querySelector("[data-slot-kopf-name]").click(); return new Promise(r => setTimeout(() => { const t = document.querySelector("[data-kopf-info]")?.textContent || ""; document.querySelector("[data-slot-kopf-name]").click(); r(t); }, 300)); })), "Quiz: 3 Vokabeln aus Farben (Info-Zeile „Farben · 3 Vokabeln“)");
 
 // Statistik: „Neu“ (alle Listen, keine Konfiguration) → Quiz ohne Konfiguration, beide Listen
 await clickText(".tab", "Statistik");

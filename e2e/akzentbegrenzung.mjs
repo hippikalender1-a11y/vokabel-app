@@ -29,10 +29,15 @@ const artWaehlen = async a => {
 };
 const anzeige = () => page.evaluate(() => ({
   akzent: document.querySelector('[data-anzahl="akzent"]')?.textContent.trim(),
-  start: [...document.querySelectorAll("button")].map(b => b.textContent.trim()).find(x => /^Quiz starten/.test(x)),
+  start: document.querySelector("[data-start-knopf]")?.dataset.startAnzahl,
 }));
 const setzeAnteil = async (st, wert) => {
-  await page.evaluate(() => { if (!document.querySelector("[data-akzent-ohne-anteil]")) [...document.querySelectorAll("button")].find(b => /^(Einfach|Schwer)$/.test(b.textContent.trim()) && b.closest("div[style*='sticky']"))?.click(); });
+  // Regeln: Lang-Druck auf die Stufe → „Regeln Leicht / Schwer“
+  if (!(await page.$("[data-akzent-ohne-anteil]"))) {
+    await page.evaluate(() => { const el = document.querySelector("[data-stufe]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); });
+    await sleep(250);
+    await page.evaluate(() => document.querySelector('[data-info-aktion="⚙ Regeln Leicht / Schwer"]').click());
+  }
   await sleep(300);
   await page.select(`[data-akzent-ohne-anteil="${st}"]`, wert); await sleep(300);
 };
@@ -58,10 +63,10 @@ await artWaehlen("akzente");
 
 let z = await anzeige();
 console.log("     1×:", JSON.stringify(z));
-ok(z.akzent === "(4 mit Akzent + 4 ohne)" && /\(8 Vokabeln\)/.test(z.start), "Standard 1×: 4 mit Akzent + 4 ohne → 8 Vokabeln");
+ok(z.akzent === "(4 mit Akzent + 4 ohne)" && z.start === "8", "Standard 1×: 4 mit Akzent + 4 ohne → 8 Vokabeln");
 await setzeAnteil("schwer", "0.5");
 z = await anzeige();
-ok(z.akzent === "(4 mit Akzent + 2 ohne)" && /\(6 Vokabeln\)/.test(z.start), `½×: + 2 ohne → 6 (${z.akzent} ${z.start})`);
+ok(z.akzent === "(4 mit Akzent + 2 ohne)" && z.start === "6", `½×: + 2 ohne → 6 (${z.akzent} ${z.start})`);
 await setzeAnteil("schwer", "alle");
 z = await anzeige();
 ok(z.akzent === "(4 mit Akzent + 6 ohne)", `∞: alle ohne Akzent, die die Reihenfolge-Grenze (Score < 3) erlaubt: 6 (${z.akzent})`);
@@ -69,7 +74,8 @@ await setzeAnteil("schwer", "1");
 ok(await page.evaluate(() => document.querySelector('[data-akzent-ohne-anteil="einfach"]').disabled), "Stufe Einfach: Regel aus → Auswahl gesperrt");
 
 // Quiz: 8 Wörter, ohne Akzent nur o7–o12 (nie abgefragt), gleichmäßig verteilt
-await clickText("button", "Quiz starten (");
+await page.evaluate(() => document.querySelector("[data-stufen-regeln]")?.closest(".overlay")?.click()); await sleep(200);
+await clickText("[data-start-knopf]", "");
 await sleep(300);
 const folge = [];
 for (let i = 0; i < 8; i++) {

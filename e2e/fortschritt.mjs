@@ -64,8 +64,8 @@ ok(/33 %/.test(t) && /0 \/ 2 gelernt/.test(t), "Lernfortschritt folgt dem Filter
 // ── Quiz-Runde: gelernte sind ausgeblendet → partir + sortir, beide gewusst ──
 await clickText(".tab", "Quiz");
 await clickText(".quiz-setup-check", "Verbes");
-await page.evaluate(() => { const b = [...document.querySelectorAll(".toggle-opt")].find(x => x.textContent.trim() === "Alle" && /Pakete|V\./.test(x.nextElementSibling?.textContent || "")); b?.click(); }); await sleep(300);
-await clickText("button", "Quiz starten (2");
+await page.evaluate(async () => { const u = document.querySelector("[data-umfang]"); if (!u) return; u.click(); await new Promise(r => setTimeout(r, 200)); document.querySelector('[data-umfang-wahl="alle"]')?.click(); }); await sleep(300);
+await clickText("[data-start-knopf]", "2 Vokabeln");
 await sleep(400);
 for (let k = 0; k < 2; k++) {
   await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click());

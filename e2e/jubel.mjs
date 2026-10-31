@@ -46,7 +46,7 @@ await page.reload(); await sleep(500);
 await clickText(".tab", "Listen");
 await clickText(".karte-zeile", "Verbes");
 await clickText("button", "Quiz starten", true);
-await clickText("button", "Quiz starten (");
+await clickText("[data-start-knopf]", "");
 await sleep(300);
 ok(await titel() === "1 / 4", `Session mit 4 Vokabeln (${await titel()})`);
 await alleGewusst();

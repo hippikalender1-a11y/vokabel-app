@@ -75,12 +75,12 @@ await klick(".tab", "Quiz");
 await pruefe("Quiz-Tab");
 await klick(".quiz-setup-check", "Verbs"); await pruefe("Quiz-Tab Liste");
 for (const b of ["Bereich", "Frage – Antwort", "Zufällig", "Einfach", "10 V."]) { await (b === "Frage – Antwort" ? klick("[data-abfragemodus]", "") : klick("button", b, true)); await pruefe("Quiz-Bereich " + b); }
-await klick("button", "Speichern", true); await pruefe("Speichern-Modal"); await klick(".modal button", "Abbrechen"); await page.keyboard.press("Escape"); await page.mouse.click(5, 5); await sleep(200);
+await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Speichern"]').click()); await new Promise(r => setTimeout(r, 300)); await pruefe("Speichern-Modal"); await klick(".modal button", "Abbrechen"); await page.keyboard.press("Escape"); await page.mouse.click(5, 5); await sleep(200);
 
 // Quiz läuft (Karte)
 await page.goto(URL); await sleep(500);
 await klick(".tab", "Quiz"); await klick(".quiz-setup-check", "Verbs");
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /^Quiz starten \(/.test(b.textContent.trim()))?.click()); await sleep(500);
+await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(500);
 await pruefe("Quiz Karte Frage");
 await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click()); await sleep(300); await pruefe("Quiz Karte aufgedeckt");
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /^Beenden$/.test(b.textContent.trim()))?.click()); await sleep(400);
