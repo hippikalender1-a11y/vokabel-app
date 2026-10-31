@@ -1595,8 +1595,10 @@ RASTER (Konfigurationen + Listen): neue Einträge ohne Platz kommen in ordneRast
 MINI-KREIS 100 %: komplett hellgrün (#52b788) gefüllt, gewählte Art mit Außenring.
 GELERNT-AUFLEUCHTEN: erreicht eine Vokabel mit der Antwort die Gelernt-Schwelle
   (spaltenAbschluss: Übersetzung/Akzente, pruefeDiktatAntwort: Diktat), setzt
-  quiz.gelerntBlitz = blitzKey(quiz) → Antwort-Box Klasse .gelernt-blitz (1 s
-  hellgelb). Test: e2e/gelerntblitz.mjs.
+  quiz.gelerntBlitz = blitzKey(quiz) → Antwort-Box Klasse .gelernt-blitz (0,4 s in
+  der eigenen Farbrolle "gelernt-effekt", Standard #fff176, Dunkel #7a6800; eigene
+  Schemata ohne die Rolle → Standard in farbenAus) + <GelerntSterne/>: 8 Sterne
+  (★/✦ in --gelb) fliegen nach außen (sternFlug .75 s). Test: e2e/gelerntblitz.mjs.
 SESSION-AUSWERTUNG: Ende eines Durchlaufs (Session, letztes Paket) bzw. einer Runde
   ohne Pakete: erster Bildschirm nur "Weiter →" (data-zur-auswertung) → quiz.
   sessionAuswertung → sessionAuswertungSeite(q, knoepfe, schliessen) mit

@@ -294,6 +294,17 @@ function ordneVokabeln(voks, scoreFeld, reihenfolge, unbeantwortet) {
 const LERNEN_STANDARD = { aktiv: false, zuerst: "fremd", pause1: 3, pause2: 3, vorlesen1: true, vorlesen2: false };
 const LERNEN_PAUSEN = [1, 2, 3, 5, 8];
 
+// Gelernt-Effekt: Sternenregen von der Antwort-Karte nach außen (8 Sterne, leicht versetzt)
+function GelerntSterne() {
+  return (
+    <span className="gelernt-sterne" data-gelernt-sterne aria-hidden="true">
+      {Array.from({ length: 8 }, (_, i) => (
+        <span key={i} className="stern" style={{ "--w": `${i * 45 + (i % 2 ? 12 : -8)}deg`, "--r": `${i % 2 ? 150 : 120}px`, "--v": `${(i % 3) * 40}ms` }}>{i % 2 ? "✦" : "★"}</span>
+      ))}
+    </span>
+  );
+}
+
 function sprich(text, lang) {
   if (!text || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
@@ -794,28 +805,29 @@ const FARB_ROLLEN = [
   ["text-stark", "Text kräftig", "Überschriften, Eingaben"], ["text", "Text", "normaler Text"], ["text2", "Text leise", "Untertitel, Hinweise"], ["text3", "Text sehr leise", "Zahlen in Klammern"],
   ["rahmen", "Rahmen", "Linien und Ränder"],
   ["richtig", "Richtig", "gewusst / richtig beantwortet"], ["falsch", "Falsch", "nicht gewusst, Löschen"],
-  ["gelb", "Hervorhebung", "Markierung, Aufleuchten"], ["orange", "Warnung", "Hinweise"], ["info", "Info", "weitere Antwort, Info-Spalten"],
+  ["gelb", "Hervorhebung", "Markierung, Sterne"], ["gelernt-effekt", "Gelernt-Effekt", "Aufleuchten, wenn eine Vokabel gelernt ist"],
+  ["orange", "Warnung", "Hinweise"], ["info", "Info", "weitere Antwort, Info-Spalten"],
   ["gelernt", "Statistik: Gelernt", ""], ["arbeit", "Statistik: In Arbeit", ""], ["nie", "Statistik: Nie abgefragt", ""], ["negativ", "Statistik: Negativ", ""],
 ];
 const FARB_VORLAGEN = [
   { id: "natur", name: "Natur", farben: { "haupt": "#2d6a4f", "haupt-hell": "#52b788", "auf-haupt": "#fff", "hintergrund": "#f7f5f0", "karte": "#fff", "flaeche": "#f0ede8",
     "text-stark": "#1a1a1a", "text": "#3b3832", "text2": "#6b6560", "text3": "#9b9590", "rahmen": "#e0dbd2", "richtig": "#2d6a4f", "falsch": "#c0392b",
-    "gelb": "#f9a825", "orange": "#e67e22", "info": "#6a1b9a", "gelernt": "#2d6a4f", "arbeit": "#e9c46a", "nie": "#d6d2cb", "negativ": "#e57373" } },
+    "gelb": "#f9a825", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a1b9a", "gelernt": "#2d6a4f", "arbeit": "#e9c46a", "nie": "#d6d2cb", "negativ": "#e57373" } },
   { id: "freudig", name: "Freudig", farben: { "haupt": "#e8590c", "haupt-hell": "#ff922b", "auf-haupt": "#fff", "hintergrund": "#fff8f0", "karte": "#fff", "flaeche": "#fff0e0",
     "text-stark": "#2a1a10", "text": "#3d2c22", "text2": "#7a6152", "text3": "#a8917f", "rahmen": "#f3dcc8", "richtig": "#2b9348", "falsch": "#d62828",
-    "gelb": "#fcbf49", "orange": "#f77f00", "info": "#7b2cbf", "gelernt": "#2b9348", "arbeit": "#fcbf49", "nie": "#e9dccf", "negativ": "#ef476f" } },
+    "gelb": "#fcbf49", "gelernt-effekt": "#fff176", "orange": "#f77f00", "info": "#7b2cbf", "gelernt": "#2b9348", "arbeit": "#fcbf49", "nie": "#e9dccf", "negativ": "#ef476f" } },
   { id: "pastelle", name: "Pastelle", farben: { "haupt": "#7d9d8c", "haupt-hell": "#a8c5b5", "auf-haupt": "#fff", "hintergrund": "#faf7fb", "karte": "#fff", "flaeche": "#f2eef6",
     "text-stark": "#2f2a3a", "text": "#4a4458", "text2": "#7d768a", "text3": "#a8a2b3", "rahmen": "#e6e0ec", "richtig": "#6fae8e", "falsch": "#d97a7a",
-    "gelb": "#f4c97a", "orange": "#f2a679", "info": "#a48cc8", "gelernt": "#8fc1a5", "arbeit": "#f6d79a", "nie": "#e3dde8", "negativ": "#eea2a2" } },
+    "gelb": "#f4c97a", "gelernt-effekt": "#fff176", "orange": "#f2a679", "info": "#a48cc8", "gelernt": "#8fc1a5", "arbeit": "#f6d79a", "nie": "#e3dde8", "negativ": "#eea2a2" } },
   { id: "maedchen", name: "Mädchen", farben: { "haupt": "#c2185b", "haupt-hell": "#f06292", "auf-haupt": "#fff", "hintergrund": "#fff5f9", "karte": "#fff", "flaeche": "#fce4ec",
     "text-stark": "#2e1422", "text": "#4a2639", "text2": "#8a5a72", "text3": "#b48ea0", "rahmen": "#f6d3e1", "richtig": "#2e9e6b", "falsch": "#d32f2f",
-    "gelb": "#ffb300", "orange": "#ff7043", "info": "#8e24aa", "gelernt": "#ab47bc", "arbeit": "#ffca6b", "nie": "#ead7e0", "negativ": "#ef5350" } },
+    "gelb": "#ffb300", "gelernt-effekt": "#fff176", "orange": "#ff7043", "info": "#8e24aa", "gelernt": "#ab47bc", "arbeit": "#ffca6b", "nie": "#ead7e0", "negativ": "#ef5350" } },
   { id: "jungs", name: "Jungs", farben: { "haupt": "#1d5f8a", "haupt-hell": "#3a9bd5", "auf-haupt": "#fff", "hintergrund": "#f3f7fa", "karte": "#fff", "flaeche": "#e6eef4",
     "text-stark": "#111c26", "text": "#22313f", "text2": "#566778", "text3": "#8a9aa8", "rahmen": "#d5e0e9", "richtig": "#2e8b57", "falsch": "#c62828",
-    "gelb": "#ff9f1c", "orange": "#f3722c", "info": "#5e35b1", "gelernt": "#2e8b57", "arbeit": "#ffbf47", "nie": "#d5dee6", "negativ": "#e5604d" } },
+    "gelb": "#ff9f1c", "gelernt-effekt": "#fff176", "orange": "#f3722c", "info": "#5e35b1", "gelernt": "#2e8b57", "arbeit": "#ffbf47", "nie": "#d5dee6", "negativ": "#e5604d" } },
   { id: "dunkel", name: "Dunkel", farben: { "leiste": "#161816", "haupt": "#52b788", "haupt-hell": "#74c69d", "auf-haupt": "#10241a", "hintergrund": "#161816", "karte": "#222522", "flaeche": "#2c302c",
     "text-stark": "#f2f0eb", "text": "#e3e0da", "text2": "#b4b0a8", "text3": "#8a867f", "rahmen": "#3a3e3a", "richtig": "#52b788", "falsch": "#ef6f61",
-    "gelb": "#f4c542", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#52b788", "arbeit": "#d9b44a", "nie": "#4a4f4a", "negativ": "#e06c6c" }, dunkel: true },
+    "gelb": "#f4c542", "gelernt-effekt": "#fff176", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#52b788", "arbeit": "#d9b44a", "nie": "#4a4f4a", "negativ": "#e06c6c" }, dunkel: true },
 ];
 function hexZuRgb(h) {
   h = (h || "#000").replace("#", "");
@@ -829,7 +841,7 @@ function mische(a, b, t) {
 }
 function farbenAus(f) {
   const k = f.karte;
-  return { ...f, "leiste": f.leiste || f.haupt,
+  return { ...f, "leiste": f.leiste || f.haupt, "gelernt-effekt": f["gelernt-effekt"] || "#fff176",
     "haupt-zart": mische(f["haupt-hell"], k, 0.5), "haupt-flaeche": mische(f["haupt-hell"], k, 0.88),
     "richtig-dunkel": mische(f.richtig, f["text-stark"], 0.35), "richtig-flaeche": mische(f.richtig, k, 0.9),
     "text4": mische(f.text3, k, 0.35), "flaeche-hell": mische(f.flaeche, k, 0.7),
@@ -1079,8 +1091,11 @@ const CSS_BASIS = `
   .farbrad-rahmen.oben .farbrad{border-radius:0 0 16px 16px;box-shadow:0 4px 22px rgba(0,0,0,0.28);}
   .farbrad input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid rgba(0,0,0,0.5);box-shadow:0 1px 4px rgba(0,0,0,0.3);}
   .farb-zeile input[type=color]{width:42px;height:32px;border:1px solid var(--rahmen);border-radius:8px;padding:2px;background:var(--karte);flex-shrink:0;}
-  .gelernt-blitz{animation:gelerntBlitz 1s ease-out;}
-  @keyframes gelerntBlitz{0%,35%{background:var(--gelb-zart);border-color:var(--gelb);box-shadow:0 0 0 4px var(--gelb-zart),0 0 22px var(--gelb-zart);}100%{box-shadow:0 0 0 0 transparent;}}
+  .gelernt-blitz{animation:gelerntBlitz .4s ease-out;position:relative;}
+  @keyframes gelerntBlitz{0%,40%{background:var(--gelernt-effekt);border-color:var(--gelernt-effekt);box-shadow:0 0 0 4px var(--gelernt-effekt),0 0 22px var(--gelernt-effekt);}100%{box-shadow:0 0 0 0 transparent;}}
+  .gelernt-sterne{position:absolute;inset:0;pointer-events:none;z-index:3;}
+  .gelernt-sterne .stern{position:absolute;left:50%;top:50%;color:var(--gelb);font-size:1.2rem;line-height:1;opacity:0;text-shadow:0 0 6px var(--gelernt-effekt);animation:sternFlug .75s ease-out forwards;animation-delay:var(--v);}
+  @keyframes sternFlug{0%{opacity:1;transform:translate(-50%,-50%) rotate(var(--w)) translateX(40px) rotate(calc(-1 * var(--w))) scale(.5);}65%{opacity:1;}100%{opacity:0;transform:translate(-50%,-50%) rotate(var(--w)) translateX(var(--r)) rotate(calc(-1 * var(--w))) scale(1.15);}}
   .lernen-karte{display:flex;flex-direction:column;justify-content:center;gap:8px;min-height:280px;padding:24px 16px;cursor:pointer;}
   .lernen-label{display:block;font-size:0.7rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;text-align:center;}
   .lernen-wort{font-size:1.9rem;font-weight:800;color:var(--text);text-align:center;line-height:1.25;overflow-wrap:anywhere;}
@@ -4744,7 +4759,7 @@ export default function VokabelApp() {
     const gewertet = erstbewertung ? { ...(quiz.gewertet || {}), [aktVok.id]: vokErgebnis } : quiz.gewertet;
     if (!erstbewertung && quiz.abfrageZiel?.modus !== "score") return { spaltenErgebnisse, vokErgebnis, erstbewertung, gewertet };
     let liste = quiz.liste, sessionFalsch = quiz.sessionFalsch, gelerntBlitz = null;
-    // Vokabel erreicht mit dieser Antwort die Gelernt-Schwelle → Karte leuchtet kurz hellgelb
+    // Vokabel erreicht mit dieser Antwort die Gelernt-Schwelle → Karte leuchtet kurz auf (Farbe „Gelernt-Effekt“) + Sternenregen
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
     const erreicht = (vorher, nachher) => schwelle > 0 && (vorher?.score ?? -Infinity) < schwelle && (nachher?.score ?? -Infinity) >= schwelle;
     if (normal.length > 0) {
@@ -5341,6 +5356,7 @@ export default function VokabelApp() {
                 gap: 10,
               }}>
               <div className={antwortBoxKlasse}>
+                {antwortBoxKlasse.includes("gelernt-blitz") && <GelerntSterne/>}
                 {quiz.phase === "eingabe" && <div className="quiz-label">Deine Eingabe</div>}
                 {quiz.phase === "eingabe" && hint && <div className="diktat-hint">{hint}</div>}
                 {quiz.phase === "eingabe" && (
@@ -5660,6 +5676,7 @@ export default function VokabelApp() {
                     ))}
 
                     <div className={antwortBoxKlasse} style={{marginBottom:0}}>
+                      {antwortBoxKlasse.includes("gelernt-blitz") && <GelerntSterne/>}
                       <div className="quiz-label" style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
                         <span>{antwortLabel}{isWeitere && <span style={{color:"var(--info)", marginLeft:8}}>— weitere Antwort</span>}</span>
                         {(isKarteEingabe || isKarteAufgedeckt || quiz.karteNeinFlash) && (
@@ -8065,6 +8082,7 @@ export default function VokabelApp() {
                   {k:"Diktat", v:"Großer Lautsprecher: Wort nochmals vorlesen. Kleiner Lautsprecher: langsamer/erneut. Antwort eintippen."},
                   {k:"Scoring", v:"Richtig: +1 Punkt, Streak +1. Ab Streak 3: mindestens +2 Punkte. Falsch: Streak auf 0 und −1 Punkt – oder kein Abzug, wenn die Regel „Nicht gewusst zieht 1 Punkt ab“ in der Stufe aus ist (Standard: Einfach ohne Abzug, Schwer −1). Die Vokabel wird in jedem Fall wiederholt. Aufgedeckt: kein Punkt, kein Streak. Mehrere Antwort-Spalten zählen zusammen als eine Bewertung: alle gewusst = richtig, sonst falsch. Multiple Choice: nur ein Treffer ohne Fehlklick gilt als gewusst – nach einem Fehlklick darf man weitersuchen, die Spalte zählt aber als nicht gewusst."},
                   {k:"Aufdecken", v:"Zeigt die Antwort ohne Wertung."},
+                  {k:"Gelernt!", v:"Erreicht eine Vokabel mit deiner Antwort die Gelernt-Schwelle (Einstellungen), leuchtet die Antwort-Karte kurz auf und ein kleiner Sternenregen fliegt heraus. Die Farbe lässt sich im Farbmodus als „Gelernt-Effekt“ ändern (Standard: kräftiges Hellgelb)."},
                   {k:"Session-Auswertung", v:"Am Ende eines Durchlaufs (bzw. einer Runde ohne Pakete) zeigt der erste Bildschirm das letzte Paket, „Weiter →“ führt zur Auswertung der ganzen Session: zwei Balken Start und Ende (Gelernt, In Arbeit, Nie abgefragt, Negativ), Lernfortschritt vorher → nachher, neu gelernte Vokabeln und darunter Zusatzdaten (Vokabeln und Pakete, Ø Score, verbessert/gleich/verschlechtert, auf Anhieb gewusst, Dauer). Darunter: Nochmal!, Zur Übersicht, Zur Statistik."},
                   {k:"Schließen", v:"Pausiert das Quiz – beim nächsten Start über 'Pakete' weitermachen."},
                 ]},
