@@ -1728,6 +1728,19 @@ MULTIQUIZ (Schritt 3): Kachel-Lang-Druck "🧩 Multiquiz" (nur Quiz-Tab) →
   slotNamenVorschlag "Multiquiz: A + B". Statistik: gemeinsame Auswahl.
   Gemischte Sprachen: Vorlesesprache je Vokabel über _listeId; im Raster
   sichtbar nur unter Sprachfilter "Alle". Test: e2e/multiquiz.mjs.
+LERNEN (Schritt 4): einstellungen.lernen = { aktiv, zuerst "fremd"|"deutsch",
+  pause1, pause2 (s, LERNEN_PAUSEN), vorlesen1, vorlesen2 } (LERNEN_STANDARD).
+  Stufen-Knopf: Lernen → Leicht → Schwer (lernen.aktiv; modus bleibt einfach/
+  schwer, damit stufenRegeln gültig bleibt; Regeln-Modal Leicht/Schwer setzt
+  aktiv=false). Lang-Druck bei Lernen: "🎬 Lernen einstellen" (Modal lernen-einst).
+  Start-Knopf data-lernen-start: lernVokabeln() = reihenfolgeVoks ohne schon
+  abgefragte, ordneVokabeln (gemeinsam mit Quiz/Diktat), Paketgröße.
+  Spalten: Frage+Antworten (rotierend: quizAusgewaehlt, Diktat: Diktat-Spalte +
+  Übersetzung), aufgeteilt E* / Rest je nach "zuerst"; Info = Sitzungs-Info.
+  State lernen {voks,index,phase,pausiert,fertig,lauf,...}; eigener Bildschirm
+  (if (lernen) vor den Quiz-Bildschirmen); Effekt liest vor (aeusserung,
+  vokLang), wartet bis speechSynthesis.speaking aus ist (max 15 s), dann Pause
+  → lernenWeiter. Kein Score, kein Session-Fortschritt. Test: e2e/lernen.mjs.
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).
