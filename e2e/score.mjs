@@ -123,12 +123,15 @@ const gefragt3 = { gehen: 0, sehen: 0 };
 let hinweisGesehen = false;
 const klickMC = async (wert) => {
   const done = await page.evaluate(w => {
-    const b = [...document.querySelectorAll("button")].find(x => x.textContent.trim() === w && x.parentElement.style.flexWrap === "wrap");
+    const b = [...document.querySelectorAll("button")].find(x => x.textContent.trim() === w && x.hasAttribute("data-mc-knopf"));
     b?.click(); return !!b;
   }, wert);
   if (!done) throw new Error("MC-Knopf fehlt: " + wert);
   await sleep(650);
 };
+const raster = await page.evaluate(() => { const r = document.querySelector("[data-mc-raster]"); return r ? { n: r.querySelectorAll("[data-mc-knopf]").length, spalten: getComputedStyle(r).gridTemplateColumns.split(" ").length, hoehe: Math.round(r.querySelector("button").getBoundingClientRect().height) } : null; });
+console.log("     MC-Raster:", JSON.stringify(raster));
+ok(raster && raster.n === 2 && raster.spalten === 2 && raster.hoehe >= 60, "Multiple Choice: große Antworten im 2-spaltigen Raster (Liste mit 2 Vokabeln → 2 Antworten)");
 for (let schritt = 0; schritt < 6; schritt++) {
   const v = await aktuelleFrage();
   const i = gefragt3[v]++;

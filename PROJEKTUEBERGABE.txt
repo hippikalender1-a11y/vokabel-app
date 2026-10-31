@@ -1657,6 +1657,14 @@ APP-LEISTE (System): Farbrolle "leiste" (fehlt sie, = Hauptfarbe; Dunkel: #16181
   Farbwähler. Im Farbfeld feste Zeile "App-Leiste" am Ende. Einstellungen: Knopf
   "🎨 Farben bearbeiten" (data-farben-bearbeiten) öffnet den Editor – bei einer
   Vorlage vorher Kopie. manifest theme_color (vite.config.js) bleibt fest (Start).
+QUIZ-KOPFZEILE: unter "1 / 5" Balken der ganzen Session (renderKopfFortschritt,
+  sessionStandImQuiz: frühere Pakete + Position; Gesamtzahl = Session-Start,
+  data-kopf-fortschritt="12/40").
+MULTIPLE CHOICE: MC_ANZAHL = 4 (alle richtigen Teile + falsche bis 4), 2×2-Raster
+  .mc-raster (data-mc-raster, Knöpfe data-mc-knopf). Test: e2e/mc.mjs.
+FALSCH-ABZUG: Regel "falschAbzug" je Stufe (Standard Einfach aus, Schwer an):
+  falsche Antwort −1 oder 0, Staffelung −2/−3 entfernt; gilt auch für Diktat/
+  Akzente (berechneDiktatScore). Test: e2e/falschabzug.mjs.
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).

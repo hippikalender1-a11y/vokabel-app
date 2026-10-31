@@ -65,10 +65,16 @@ await sleep(300);
 const titel1 = await page.evaluate(() => document.querySelector(".topbar-title")?.textContent.trim());
 console.log("     Paket 1:", titel1);
 
+const kopf = () => page.evaluate(() => document.querySelector("[data-kopf-fortschritt]")?.dataset.kopfFortschritt);
+ok(await kopf() === "0/12", `Kopfzeile: Session-Balken zu Beginn 0/12 (${await kopf()})`);
+// die ersten zwei Karten (w4, w5) mit „Nicht gewusst“ beantworten → 2/12
+for (let i = 0; i < 2; i++) { await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(150); await page.click(".karte-btn-nein"); await sleep(150); await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(250); }
+ok(await kopf() === "2/12", `nach 2 Antworten: 2/12 (${await kopf()})`);
 // Reihenfolge Listen-Nr. mit „unbeantwortete zuerst“: Paket 1 = w4 … w12, w1; Paket 2 = w2, w3
 await paket(["w4", "w5"]);
 await clickText("button", "Nächste");
 await sleep(400);
+ok(await kopf() === "10/12", `zweites Paket: Balken zählt die ganze Session weiter (${await kopf()})`);
 await paket([]);
 ok(await page.$("[data-zur-auswertung]"), "Session fertig: „Weiter →“");
 await page.click("[data-zur-auswertung]"); await sleep(400);

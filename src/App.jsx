@@ -197,18 +197,21 @@ function splitInSeiten(text, maxChars = 120) {
 }
 
 // ── MC-Buttons generieren ─────────────────────────────────────────────────
+// Multiple Choice: immer 4 Antworten (2×2-Raster) – alle richtigen Teile, mit falschen aufgefüllt
+const MC_ANZAHL = 4;
 function generiereButtons(vokabeln, aktVok, antwortTyp) {
   const richtigTeile = (aktVok[antwortTyp]?.wert || "").split('/').map(s => s.trim()).filter(Boolean);
   const richtigLower = richtigTeile.map(r => r.toLowerCase());
+  const nFalsch = Math.max(0, MC_ANZAHL - richtigTeile.length);
   const eigenesFalsch = (aktVok[antwortTyp]?.falsch || []).filter(f => !richtigLower.includes(f.toLowerCase()));
-  const gewaehltesFalsch = [...eigenesFalsch].sort(() => Math.random() - 0.5).slice(0, 3);
-  if (gewaehltesFalsch.length < 3) {
+  const gewaehltesFalsch = [...eigenesFalsch].sort(() => Math.random() - 0.5).slice(0, nFalsch);
+  if (gewaehltesFalsch.length < nFalsch) {
     const andere = vokabeln
       .filter(v => v.id !== aktVok.id && v[antwortTyp])
       .flatMap(v => (v[antwortTyp].wert || "").split('/').map(s => s.trim()))
       .filter(a => !richtigTeile.includes(a) && !gewaehltesFalsch.includes(a));
     const unique = [...new Set(andere)].sort(() => Math.random() - 0.5);
-    gewaehltesFalsch.push(...unique.slice(0, 3 - gewaehltesFalsch.length));
+    gewaehltesFalsch.push(...unique.slice(0, nFalsch - gewaehltesFalsch.length));
   }
   const alle = [
     ...richtigTeile.map(t => ({ text: t, korrekt: true, status: "neutral" })),
@@ -525,6 +528,7 @@ const AKZENT_HINWEIS = "Richtig – achte auf die Akzente.";
 const STUFEN_REGELN = [
   { key: "akzenteTolerant", label: "Fehlende Akzente beim Tippen gelten als richtig", sub: "z. B. ete statt été", einfach: true, schwer: false },
   { key: "aufdeckenAbzug", label: "„Lösung anzeigen“ zieht 1 Punkt ab", sub: "sonst ohne Score-Einfluss", einfach: true, schwer: true },
+  { key: "falschAbzug", label: "Nicht gewusst zieht 1 Punkt ab", sub: "sonst bleibt der Score gleich – die Vokabel wird trotzdem wiederholt", einfach: false, schwer: true },
   { key: "akzentOhneMischen", label: "Akzent-Modus: auch Wörter ohne Akzent abfragen", sub: "dann muss man erkennen, dass nichts zu ändern ist", einfach: false, schwer: false },
   { key: "akzentHervorheben", label: "Akzent-Modus: Buchstaben mit Akzent hervorheben", sub: "zeigt, wo ein Akzent hingehört; Tippen auf andere Buchstaben zählt dann nicht als Fehler", einfach: true, schwer: true },
   { key: "akzentZaehler", label: "Akzent-Modus: anzeigen, wie viele Akzente noch fehlen", sub: "z. B. „Akzente 2 / 3“", einfach: true, schwer: true },
@@ -578,7 +582,8 @@ function MiniKreis({ pct, buchstabe, aktiv, aus, groesse = 24, aufGruen = false 
 function gelerntScore(v, diktat) { return (diktat ? v.diktatFortschritt?.score : v.fortschritt?.score) ?? -Infinity; }
 
 // ── Scoring ────────────────────────────────────────────────────────────────
-function berechneNeuenScore(fortschritt, ereignis, sessionFalschAnzahl, modus) {
+// falschAbzug (Regel je Stufe): falsche Antwort −1, sonst bleibt der Score gleich
+function berechneNeuenScore(fortschritt, ereignis, modus, falschAbzug = true) {
   const f = fortschritt || { score:0, streak:0, aufgedecktStreak:0, letzteAbfrage:null };
   const neu = { ...f, letzteAbfrage: new Date().toISOString() };
   if (ereignis === "richtig") {
@@ -586,9 +591,7 @@ function berechneNeuenScore(fortschritt, ereignis, sessionFalschAnzahl, modus) {
     if (neu.streak >= 3) neu.score = Math.max(neu.score, 2);
   } else if (ereignis === "falsch") {
     neu.streak = 0; neu.aufgedecktStreak = 0;
-    if (sessionFalschAnzahl <= 2) neu.score -= 1;
-    else if (sessionFalschAnzahl <= 5) neu.score -= 2;
-    else neu.score -= 3;
+    if (falschAbzug) neu.score -= 1;
   } else if (ereignis === "aufgedeckt") {
     neu.streak = 0; neu.aufgedecktStreak += 1;
     if (modus === "schwer") neu.score -= 1;
@@ -612,11 +615,11 @@ function diktatHint(wort, aufgedeckt) {
   if (!aufgedeckt) return null;
   return wort.split('').map((ch, i) => i < aufgedeckt ? ch : '·').join(' ');
 }
-function berechneDiktatScore(fortschritt, ereignis) {
+function berechneDiktatScore(fortschritt, ereignis, falschAbzug = true) {
   const f = fortschritt || { score:0, letzteAbfrage:null };
   const neu = { ...f, letzteAbfrage: new Date().toISOString() };
   if (ereignis === "richtig") neu.score += 1;
-  else if (ereignis === "aufgedeckt") neu.score -= 1;
+  else if (ereignis === "aufgedeckt" && falschAbzug) neu.score -= 1;
   return neu;
 }
 function speichereDiktatScore(liste, vokId, neuFortschritt) {
@@ -888,6 +891,10 @@ const CSS_BASIS = `
   .app{max-width:600px;margin:0 auto;padding:0 0 80px;}
   .topbar{background:var(--karte);border-bottom:1px solid var(--rahmen);padding:14px 16px;display:flex;align-items:center;gap:12px;}
   .topbar-title{font-size:1.05rem;font-weight:700;flex:1;text-align:center;}
+  .mc-raster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px;}
+  .mc-raster > button{min-height:72px;width:100%;overflow-wrap:anywhere;line-height:1.25;}
+  .kopf-balken{display:block;height:5px;margin:5px auto 0;width:min(150px,80%);background:var(--flaeche);border-radius:3px;overflow:hidden;}
+  .kopf-balken > span{display:block;height:100%;background:var(--haupt-hell);border-radius:3px;transition:width .3s;}
   .info-schalter{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:1.5px solid var(--haupt);background:var(--karte);color:var(--haupt);font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit;}
   body.info-modus .info-schalter{background:var(--haupt);color:var(--auf-haupt);}
   body.info-modus [data-info]{outline:1.5px dashed var(--haupt-hell) !important;outline-offset:2px;}
@@ -3138,6 +3145,30 @@ export default function VokabelApp() {
     );
   }
 
+  // Fortschritt der ganzen Session während der Abfrage (Kopfzeile): frühere Pakete + Position im aktuellen
+  // Paket; in der Wiederholung gilt das Paket als durch. Ohne Pakete: diese Runde.
+  function sessionStandImQuiz(q) {
+    const imPaket = q.wiederholungDurchgang ? (q.sessionVokIds || q.vokabeln).length : q.index;
+    if (q.istSessionModus) {
+      const slot = lsGet(SK.sessionAktiv);
+      const vorher = (slot?.abgefragt || []).filter(id => !(q.sessionVokIds || []).includes(id)).length;
+      // Gesamtzahl vom Session-Start (später gelernte Vokabeln fallen sonst aus der Zählung)
+      const startAnzahl = Object.keys(slot?.startScores || {}).length;
+      return { erledigt: vorher + imPaket, gesamt: Math.max(startAnzahl, q.sessionGesamt || 0) };
+    }
+    const gesamt = Object.keys(q.rundeStartScores || {}).length || q.vokabeln.length;
+    return { erledigt: q.wiederholungDurchgang ? gesamt : q.index, gesamt };
+  }
+  function renderKopfFortschritt(q) {
+    const { erledigt, gesamt } = sessionStandImQuiz(q);
+    const pct = gesamt ? Math.min(100, erledigt / gesamt * 100) : 0;
+    return (
+      <span className="kopf-balken" data-kopf-fortschritt={`${erledigt}/${gesamt}`} {...tt(`Fortschritt der Session: ${erledigt} von ${gesamt} Vokabeln abgefragt`)}>
+        <span style={{width:`${pct}%`}}/>
+      </span>
+    );
+  }
+
   // ── Session-Auswertung (zweiter Bildschirm nach „Weiter →“) ──
   // Session mit Paketen: alle Vokabeln der Session seit Durchlauf-Start; sonst: diese Runde
   function sessionAuswertungDaten(q) {
@@ -4429,13 +4460,13 @@ export default function VokabelApp() {
     if (normal.length > 0) {
       const erg = gesamt(normal);
       const neuerCount = erg === "falsch" ? (quiz.sessionFalsch[aktVok.id] || 0) + 1 : 0;
-      const neu = berechneNeuenScore(aktVok.fortschritt, erg, neuerCount, stufenRegeln(einstellungen).aufdeckenAbzug ? "schwer" : "einfach");
+      const neu = berechneNeuenScore(aktVok.fortschritt, erg, stufenRegeln(einstellungen).aufdeckenAbzug ? "schwer" : "einfach", stufenRegeln(einstellungen).falschAbzug);
       liste = speichereScore(liste, aktVok.id, neu);
       if (erreicht(aktVok.fortschritt, neu)) gelerntBlitz = blitzKey(quiz);
       if (erg === "falsch") sessionFalsch = { ...quiz.sessionFalsch, [aktVok.id]: neuerCount };
     }
     if (akzent.length > 0) {
-      const neu = berechneDiktatScore(aktVok.akzentFortschritt, gesamt(akzent) === "richtig" ? "richtig" : "aufgedeckt");
+      const neu = berechneDiktatScore(aktVok.akzentFortschritt, gesamt(akzent) === "richtig" ? "richtig" : "aufgedeckt", stufenRegeln(einstellungen).falschAbzug);
       liste = speichereAkzentScore(liste, aktVok.id, neu);
       if (erreicht(aktVok.akzentFortschritt, neu)) gelerntBlitz = blitzKey(quiz);
     }
@@ -4742,7 +4773,7 @@ export default function VokabelApp() {
     if (!quiz) return;
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     const aktVok = quiz.vokabeln[quiz.index];
-    const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "aufgedeckt");
+    const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "aufgedeckt", stufenRegeln(einstellungen).falschAbzug);
     const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
     const wort = aktVok[quiz.diktatSpalte]?.wert || "";
     const ergebnis = { vokId: aktVok.id, wort, uebersetzung: aktVok[quiz.diktatUeberspalte]?.wert, richtig: false };
@@ -4934,7 +4965,7 @@ export default function VokabelApp() {
         <div className="app">
           <div className="topbar">
             <button {...tt("Diktat abbrechen – bisherige Ergebnisse werden ausgewertet")} className="topbar-back" onClick={() => { beendeQuiz(); }}>Beenden</button>
-            <span className="topbar-title">{quiz.index + 1} / {quiz.vokabeln.length}</span>
+            <span className="topbar-title"><span>{quiz.index + 1} / {quiz.vokabeln.length}</span>{renderKopfFortschritt(quiz)}</span>
             <span className="quiz-fortschritt">Score: {diktatScore > 0 ? "+" : ""}{diktatScore}</span>
           </div>
           <div className="sektion" style={{display:"flex", flexDirection:"column", paddingBottom:0}}>
@@ -5228,7 +5259,8 @@ export default function VokabelApp() {
             )}
             <span className="topbar-title">
               {quiz.wiederholungDurchgang ? <span className="wiederholung-marke" {...tt("Diese Vokabeln werden wiederholt, weil sie noch nicht sicher sitzen")}>🔁 Wiederholung </span> : null}
-              {quiz.index + 1} / {quiz.vokabeln.length}
+              <span>{quiz.index + 1} / {quiz.vokabeln.length}</span>
+              {renderKopfFortschritt(quiz)}
             </span>
             <span className="quiz-fortschritt" {...tt(akz ? "Eigener Akzent-Score dieser Vokabel" : "Score dieser Vokabel")}>{akz ? "Akzente" : "Score"}: {score > 0 ? "+" : ""}{score}</span>
           </div>
@@ -5298,13 +5330,13 @@ export default function VokabelApp() {
                       )}
                       {/* MC */}
                       {aktSpaltModus === "mc" && !quiz.flash && quiz.phase === "eingabe" && (
-                        <div style={{display:"flex", flexWrap:"wrap", gap:8, marginTop:8, justifyContent:"center"}}>
+                        <div className="mc-raster" data-mc-raster>
                           {(quiz.mcButtons || []).map((btn, idx) => (
-                            <button {...tt("Diese Antwort wählen – nur ein Treffer ohne Fehlklick zählt als gewusst")} key={idx}
+                            <button {...tt("Diese Antwort wählen – nur ein Treffer ohne Fehlklick zählt als gewusst")} key={idx} data-mc-knopf
                               onClick={e => { e.stopPropagation(); quiz.phase === "eingabe" && klickeButton(idx); }}
                               style={{
-                                padding:"9px 16px", borderRadius:10, border:"none",
-                                fontFamily:"inherit", fontSize:"0.9rem", fontWeight:600,
+                                padding:"12px 10px", borderRadius:12, border:"none",
+                                fontFamily:"inherit", fontSize:"1.05rem", fontWeight:700,
                                 cursor: btn.status === "richtig" || quiz.phase === "aufgedeckt" ? "default" : "pointer",
                                 background:
                                   btn.status === "richtig" ? "var(--haupt)" :
@@ -7884,7 +7916,7 @@ export default function VokabelApp() {
                   {k:"Karte (Frage–Antwort)", v:"Tippe auf die Karte, um die Antwort aufzudecken. Dann: Richtig oder Falsch selbst einschätzen."},
                   {k:"Tippen", v:"Antwort eintippen und bestätigen. Nach 3 Fehlversuchen wird die Lösung gezeigt. Ob fehlende Akzente als richtig gelten, hängt vom Schwierigkeitsgrad ab (Einstellungen)."},
                   {k:"Diktat", v:"Großer Lautsprecher: Wort nochmals vorlesen. Kleiner Lautsprecher: langsamer/erneut. Antwort eintippen."},
-                  {k:"Scoring", v:"Richtig: +1 Punkt, Streak +1. Ab Streak 3: mindestens +2 Punkte. Falsch: Streak auf 0, Punktabzug je nach Fehlerzahl. Aufgedeckt: kein Punkt, kein Streak. Mehrere Antwort-Spalten zählen zusammen als eine Bewertung: alle gewusst = richtig, sonst falsch. Multiple Choice: nur ein Treffer ohne Fehlklick gilt als gewusst – nach einem Fehlklick darf man weitersuchen, die Spalte zählt aber als nicht gewusst."},
+                  {k:"Scoring", v:"Richtig: +1 Punkt, Streak +1. Ab Streak 3: mindestens +2 Punkte. Falsch: Streak auf 0 und −1 Punkt – oder kein Abzug, wenn die Regel „Nicht gewusst zieht 1 Punkt ab“ in der Stufe aus ist (Standard: Einfach ohne Abzug, Schwer −1). Die Vokabel wird in jedem Fall wiederholt. Aufgedeckt: kein Punkt, kein Streak. Mehrere Antwort-Spalten zählen zusammen als eine Bewertung: alle gewusst = richtig, sonst falsch. Multiple Choice: nur ein Treffer ohne Fehlklick gilt als gewusst – nach einem Fehlklick darf man weitersuchen, die Spalte zählt aber als nicht gewusst."},
                   {k:"Aufdecken", v:"Zeigt die Antwort ohne Wertung."},
                   {k:"Session-Auswertung", v:"Am Ende eines Durchlaufs (bzw. einer Runde ohne Pakete) zeigt der erste Bildschirm das letzte Paket, „Weiter →“ führt zur Auswertung der ganzen Session: zwei Balken Start und Ende (Gelernt, In Arbeit, Nie abgefragt, Negativ), Lernfortschritt vorher → nachher, neu gelernte Vokabeln und darunter Zusatzdaten (Vokabeln und Pakete, Ø Score, verbessert/gleich/verschlechtert, auf Anhieb gewusst, Dauer). Darunter: Nochmal!, Zur Übersicht, Zur Statistik."},
                   {k:"Schließen", v:"Pausiert das Quiz – beim nächsten Start über 'Pakete' weitermachen."},
