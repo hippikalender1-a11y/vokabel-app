@@ -1665,6 +1665,19 @@ MULTIPLE CHOICE: MC_ANZAHL = 4 (alle richtigen Teile + falsche bis 4), 2×2-Rast
 FALSCH-ABZUG: Regel "falschAbzug" je Stufe (Standard Einfach aus, Schwer an):
   falsche Antwort −1 oder 0, Staffelung −2/−3 entfernt; gilt auch für Diktat/
   Akzente (berechneDiktatScore). Test: e2e/falschabzug.mjs.
+VORLESEN IN DER RICHTIGEN SPRACHE: aeusserung(text, lang, stimme) wählt per
+  stimmeFuer(lang) ausdrücklich eine Stimme der Sprache (exakt, sonst gleiche
+  Grundsprache; Standard/lokal bevorzugt; STIMMEN-Cache, voiceschanged) – Chrome/
+  Android liest sonst mit der zuletzt benutzten Stimme. Alle Ausgaben laufen über
+  aeusserung (sprich, Listen-Detail, Diktat „Andere Stimme“). Test: e2e/vorlesen.mjs
+  (Attrappe für speechSynthesis/SpeechSynthesisUtterance).
+KLAMMERHINWEISE: HINWEIS_RE = frei stehende ( ) bzw. [ ] (nicht „(un)lucky“).
+  ohneHinweis() fürs Vorlesen (in aeusserung), Diktat-Hinweisbuchstaben/-länge,
+  Akzent-Kacheln; generiereVarianten erlaubt immer auch die Form ohne Hinweis;
+  mitHinweis() zeigt sie im Quiz dezent (.klammer-hinweis). Listen-Detail: Knopf
+  "( ) → Info" (data-klammern-werkzeug) → Modal mit Vorschau, schreibt in i1/i2
+  (wird bei Bedarf als "Hinweis" eingeschaltet). KI-Prompt: keine Klammerzusätze,
+  ggf. letzte Spalte "Hinweis". Test: e2e/klammern.mjs.
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).

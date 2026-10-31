@@ -246,12 +246,34 @@ function spalteLang(typ, sprache) {
   if (typ.startsWith('D')) return 'de-DE';
   return 'de-DE';
 }
+// Stimme ausdrücklich zur Sprache wählen: Manche Systeme (Chrome/Android) ignorieren sonst lang und
+// lesen mit der zuletzt benutzten Stimme – dann klingt ein deutsches Wort französisch
+let STIMMEN = [];
+const ladeStimmen = () => { try { STIMMEN = window.speechSynthesis?.getVoices() || []; } catch { STIMMEN = []; } };
+if (typeof window !== "undefined" && window.speechSynthesis) {
+  ladeStimmen();
+  window.speechSynthesis.addEventListener?.("voiceschanged", ladeStimmen);
+}
+function stimmeFuer(lang) {
+  if (!STIMMEN.length) ladeStimmen();
+  const norm = x => (x || "").toLowerCase().replace("_", "-");
+  const l = norm(lang), basis = l.split("-")[0];
+  const exakt = STIMMEN.filter(v => norm(v.lang) === l);
+  const gleich = STIMMEN.filter(v => norm(v.lang).split("-")[0] === basis);
+  const wahl = liste => liste.find(v => v.default) || liste.find(v => v.localService) || liste[0];
+  return wahl(exakt) || wahl(gleich) || null;
+}
+function aeusserung(text, lang, stimme = null) {
+  const u = new SpeechSynthesisUtterance(ohneHinweis(text) || text);
+  u.lang = lang || "de-DE";
+  const v = stimme || stimmeFuer(u.lang);
+  if (v) u.voice = v;
+  return u;
+}
 function sprich(text, lang) {
   if (!text || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text.split('/')[0].trim());
-  u.lang = lang || 'de-DE';
-  window.speechSynthesis.speak(u);
+  window.speechSynthesis.speak(aeusserung(text.split('/')[0].trim(), lang));
 }
 
 // ── KI-Prompt-Generator ────────────────────────────────────────────────────
@@ -293,6 +315,7 @@ function generierePrompt(thema, anzahl, falsch, beispiele, synonyme, modus, spra
     f > 0 ? `- Deutsche falsche Antworten: Verwende bedeutungsverwandte Wörter gleicher Wortart (kein Schreibfehler-Varianten, sondern echte verwandte Wörter wie bei "gehen"→"laufen, fahren, rennen")` : null,
     beispiele ? `- Die Spalte „Beispielsatz" enthält je einen natürlichen Beispielsatz auf ${sprName} (keine falschen Antworten)` : null,
     synonyme ? `- Die Spalte „Synonyme" enthält 2–4 Synonyme auf ${sprName}, kommagetrennt (keine falschen Antworten)` : null,
+    `- In die Wort-Spalten NUR das Wort bzw. die Phrase schreiben – keine Klammerzusätze wie „(= Punkt)“, „(bei Zahlenangaben)“ oder Übersetzungen in Klammern. Solche Hinweise, falls wichtig, in eine zusätzliche letzte Spalte „Hinweis“ schreiben`,
     `- Keine Nummerierung, keine Erklärungen — nur den rohen Text ausgeben`,
   ].filter(Boolean).join("\n");
 
@@ -429,6 +452,24 @@ function parseKopfZeile(zeile) {
 }
 
 // ── Antwort-Varianten ──────────────────────────────────────────────────────
+// Klammerhinweise: Klammern ( ) oder [ ], die frei stehen (Leerzeichen bzw. Anfang/Ende davor und danach),
+// z. B. „point (= Punkt)“ oder „Komma (bei Zahlen)“ – werden nicht vorgelesen, nicht verlangt und dezent gezeigt.
+// Angehängte Klammern wie „(un)lucky“ gehören zum Wort.
+const HINWEIS_RE = /(^|\s)(\([^()]*\)|\[[^\[\]]*\])(?=\s|$|[,;.!?])/g;
+function ohneHinweis(t) { return (t || "").replace(HINWEIS_RE, "$1").replace(/\s{2,}/g, " ").replace(/\s+([,;.!?])/g, "$1").trim(); }
+function hinweiseAus(t) { return [...(t || "").matchAll(HINWEIS_RE)].map(m => m[2].slice(1, -1).trim()).filter(Boolean); }
+// Text mit dezent dargestellten Klammerhinweisen (für die Anzeige)
+function mitHinweis(t) {
+  const teile = []; let last = 0;
+  for (const m of (t || "").matchAll(HINWEIS_RE)) {
+    const start = m.index + m[1].length;
+    teile.push(t.slice(last, start), <span key={start} className="klammer-hinweis">{m[2]}</span>);
+    last = start + m[2].length;
+  }
+  if (!teile.length) return t;
+  teile.push(t.slice(last));
+  return teile;
+}
 function generiereVarianten(wert) {
   // (prefix)rest am Anfang, z.B. "(un)lucky"
   const matchLeading = wert.match(/^\(([^)]*?)-?\)(.*)$/);
@@ -444,9 +485,9 @@ function generiereVarianten(wert) {
   if (matchTrailing) {
     const base = matchTrailing[1].trim();
     const suffix = matchTrailing[2].trim();
-    return [wert, `${base} ${suffix}`, base].map(v => v.toLowerCase().trim());
+    return [wert, `${base} ${suffix}`, base, ohneHinweis(wert)].map(v => v.toLowerCase().trim());
   }
-  return [wert.toLowerCase().trim()];
+  return [...new Set([wert, ohneHinweis(wert)].map(v => v.toLowerCase().trim()))];
 }
 // iPad-Tastatur setzt typografische Apostrophe (l’école) → immer vereinheitlichen
 function normApostroph(s) { return s.replace(/[’‘ʼ`´]/g, "'"); }
@@ -891,6 +932,7 @@ const CSS_BASIS = `
   .app{max-width:600px;margin:0 auto;padding:0 0 80px;}
   .topbar{background:var(--karte);border-bottom:1px solid var(--rahmen);padding:14px 16px;display:flex;align-items:center;gap:12px;}
   .topbar-title{font-size:1.05rem;font-weight:700;flex:1;text-align:center;}
+  .klammer-hinweis{font-size:0.7em;font-weight:500;color:var(--text3);}
   .mc-raster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px;}
   .mc-raster > button{min-height:72px;width:100%;overflow-wrap:anywhere;line-height:1.25;}
   .kopf-balken{display:block;height:5px;margin:5px auto 0;width:min(150px,80%);background:var(--flaeche);border-radius:3px;overflow:hidden;}
@@ -1123,7 +1165,8 @@ export default function VokabelApp() {
   const [farbMarke, setFarbMarke] = useState(null);                 // Rechteck des hervorgehobenen Elements
   const [farbName, setFarbName] = useState(null);                   // Name beim Übernehmen einer Vorlage
   const farbModusRef = useRef(false);
-  const [farbRad, setFarbRad] = useState(null);                     // {rolle, titel, start, basis, ziel: "vorschau"|schemaId}
+  const [farbRad, setFarbRad] = useState(null);
+  const [klammerZiel, setKlammerZiel] = useState("i1");                // Aufräum-Werkzeug: Ziel-Info-Spalte                     // {rolle, titel, start, basis, ziel: "vorschau"|schemaId}
   farbModusRef.current = farbModus;
   const [schemaMenueId, setSchemaMenueId] = useState(null);         // Schema für Umbenennen / Löschen
   // Farbschema: Farben je Rolle (CSS-Variablen + F für SVG); vor dem Laden der Einstellungen aus dem Speicher
@@ -3485,6 +3528,29 @@ export default function VokabelApp() {
     );
   }
 
+  // ── Aufräum-Werkzeug: Klammerhinweise der Wort-Spalten in eine Info-Spalte verschieben ──
+  function klammerAenderungen(liste, ziel) {
+    const quellen = TYPEN.filter(t => !t.startsWith("i") && liste.spalten[t]?.aktiv);
+    return liste.vokabeln.map(v => {
+      const hinweise = quellen.flatMap(t => hinweiseAus(v[t]?.wert));
+      if (!hinweise.length) return null;
+      const neu = { ...v };
+      quellen.forEach(t => { if (v[t]?.wert && hinweiseAus(v[t].wert).length) neu[t] = { ...v[t], wert: ohneHinweis(v[t].wert) }; });
+      const alt = v[ziel]?.wert?.trim();
+      neu[ziel] = { wert: [alt, ...hinweise].filter(Boolean).join("; "), falsch: v[ziel]?.falsch || [] };
+      return { vorher: v, nachher: neu, hinweise };
+    }).filter(Boolean);
+  }
+  function verschiebeKlammern() {
+    const aenderungen = klammerAenderungen(aktiveListe, klammerZiel);
+    const neuMap = new Map(aenderungen.map(a => [a.vorher.id, a.nachher]));
+    const sp = aktiveListe.spalten[klammerZiel];
+    const neu = { ...aktiveListe, vokabeln: aktiveListe.vokabeln.map(v => neuMap.get(v.id) || v),
+      spalten: { ...aktiveListe.spalten, [klammerZiel]: { ...sp, aktiv: true, name: sp?.name || "Hinweis" } } };
+    lsSet(SK.liste(aktiveListe.id), neu); setAktiveListe(neu); speichereIndex(listenIndex);
+    setModal(null);
+  }
+
   // ── Farbwähler (Farbkreis): live über CSS-Variablen, ohne die App neu aufzubauen ──
   function oeffneFarbRad(rolle, titel, basis, ziel, el = null) {
     const r = el?.getBoundingClientRect();
@@ -4671,7 +4737,7 @@ export default function VokabelApp() {
     const typ = q.antwortTypen[q.antwortTypIndex];
     const vok = q.vokabeln[q.index];
     const key = `${vok?.id}|${q.antwortTypIndex}|${q.abfrageZiel?.runde || 0}|${q.wiederholungDurchgang || 0}`;
-    const kacheln = akzentKacheln(vok?.[typ]?.wert || "");
+    const kacheln = akzentKacheln(ohneHinweis(vok?.[typ]?.wert || ""));
     const a = q.akzent?.key === key ? q.akzent : null;
     return { key, typ, kacheln, wahl: a ? a.wahl : kacheln.map(k => k.basis), aktiv: a ? a.aktiv : null,
       geprueft: !!a?.geprueft, fehler: !!a?.fehler, blink: a ? a.blink : null, pruefFehler: !!a?.pruefFehler };
@@ -4763,7 +4829,7 @@ export default function VokabelApp() {
     } else {
       setQuiz(prev => ({
         ...prev, eingabe: "",
-        diktatAufgedeckt: Math.min((prev.diktatAufgedeckt || 0) + 1, wort.length),
+        diktatAufgedeckt: Math.min((prev.diktatAufgedeckt || 0) + 1, ohneHinweis(wort).length),
         feedback: "Nicht richtig – ein Buchstabe mehr aufgedeckt.",
       }));
     }
@@ -4779,7 +4845,7 @@ export default function VokabelApp() {
     const ergebnis = { vokId: aktVok.id, wort, uebersetzung: aktVok[quiz.diktatUeberspalte]?.wert, richtig: false };
     setQuiz(prev => ({
       ...prev, liste: neueListe, eingabe: "", phase: "aufgedeckt", flash: false,
-      diktatAufgedeckt: wort.length,
+      diktatAufgedeckt: ohneHinweis(wort).length,
       diktatErgebnisse: [...prev.diktatErgebnisse, ergebnis],
       feedback: "",
     }));
@@ -4807,14 +4873,9 @@ export default function VokabelApp() {
     diktatPlayCountRef.current += 1;
     setDiktatManualPlays(p => p + 1);
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text.split('/')[0].trim());
-    u.lang = lang;
-    if (voices.length > 1) {
-      // Stimme wechselt alle 2 Plays: 0,0,1,1,2,2,...
-      const voiceIdx = Math.floor(diktatPlayCountRef.current / 2) % voices.length;
-      u.voice = voices[voiceIdx];
-    }
-    window.speechSynthesis.speak(u);
+    // Stimme wechselt alle 2 Plays: 0,0,1,1,2,2,… – immer eine Stimme der richtigen Sprache
+    const stimme = voices.length > 1 ? voices[Math.floor(diktatPlayCountRef.current / 2) % voices.length] : null;
+    window.speechSynthesis.speak(aeusserung(text.split('/')[0].trim(), lang, stimme));
   }
 
   function geheZurueck() {
@@ -4949,7 +5010,7 @@ export default function VokabelApp() {
     const aktVok = quiz.vokabeln[quiz.index];
     const diktatWort = aktVok[quiz.diktatSpalte]?.wert || "";
     const uebersetzung = quiz.diktatUeberspalte ? aktVok[quiz.diktatUeberspalte]?.wert : null;
-    const hint = diktatHint(diktatWort, quiz.diktatAufgedeckt);
+    const hint = diktatHint(ohneHinweis(diktatWort), quiz.diktatAufgedeckt);
     const diktatScore = aktVok.diktatFortschritt?.score ?? 0;
 
     const diktatWeiter = quiz.phase === "richtig" || quiz.phase === "aufgedeckt";
@@ -5011,7 +5072,7 @@ export default function VokabelApp() {
                 )}
                 {quiz.phase === "richtig" && (
                   <div style={{textAlign:"center", padding:"12px 0", fontSize:"1.15rem"}}>
-                    <strong>{diktatWort}</strong>
+                    <strong>{mitHinweis(diktatWort)}</strong>
                     {uebersetzung ? <span style={{color:"var(--richtig-dunkel)"}}> – {uebersetzung}</span> : null}
                     <span style={{color:"var(--richtig-dunkel)"}}> ✓</span>
                     {quiz.feedback && <div className="quiz-feedback ok" style={{marginTop:6}}>{quiz.feedback}</div>}
@@ -5019,7 +5080,7 @@ export default function VokabelApp() {
                 )}
                 {quiz.phase === "aufgedeckt" && (
                   <div style={{textAlign:"center", padding:"12px 0", fontSize:"1.15rem"}}>
-                    <strong>{diktatWort}</strong>
+                    <strong>{mitHinweis(diktatWort)}</strong>
                     {uebersetzung ? <span style={{color:"var(--text2)"}}> – {uebersetzung}</span> : null}
                   </div>
                 )}
@@ -5294,7 +5355,7 @@ export default function VokabelApp() {
                     <div className="quiz-frage-box" style={{marginBottom:0}}>
                       <div className="quiz-label">{frageLabel}</div>
                       <div style={{display:"flex", alignItems:"baseline", gap:8, justifyContent:"center"}}>
-                        <div className="quiz-frage-text" style={{textAlign:"center"}}>{frageWert}</div>
+                        <div className="quiz-frage-text" style={{textAlign:"center"}}>{mitHinweis(frageWert)}</div>
                         {quiz.frageTyp.startsWith('E') && (
                           <button {...tt("Frage vorlesen")} className="btn-icon" style={{fontSize:"1.1rem", padding:"2px 4px"}}
                             onClick={e => { e.stopPropagation(); sprich(frageWert, vokLang(aktVok, quiz.frageTyp)); }}><IcoSpk s={16}/></button>
@@ -5306,7 +5367,7 @@ export default function VokabelApp() {
                       <div key={i} className={`quiz-vorig${v.richtig ? "" : " nicht"}`} data-vorig={v.richtig ? "richtig" : "falsch"}>
                         <div className="quiz-vorig-label">{v.richtig ? "✓" : "✗"} {v.label}</div>
                         <div style={{textAlign:"center", fontSize:"1rem", display:"flex", alignItems:"center", justifyContent:"center", gap:6}}>
-                          <strong>{v.wert}</strong>
+                          <strong>{mitHinweis(v.wert)}</strong>
                           {v.typ.startsWith('E') && (
                             <button {...tt("Diese Antwort vorlesen")} className="btn-icon" style={{fontSize:"0.95rem", padding:"2px 4px"}}
                               onClick={e => { e.stopPropagation(); sprich(v.wert, vokLang(aktVok, v.typ)); }}><IcoSpk s={16}/></button>
@@ -5434,21 +5495,21 @@ export default function VokabelApp() {
                       {/* Lösung: Flash (richtig) */}
                       {quiz.flash && (
                         <div className="quiz-frage-text" style={{textAlign:"center", color:"var(--richtig-dunkel)", minHeight:"44px", display:"flex", alignItems:"center", justifyContent:"center"}}>
-                          {quiz.antwortTeile.join(" / ")}{" ✓"}
+                          {mitHinweis(quiz.antwortTeile.join(" / "))}{" ✓"}
                         </div>
                       )}
                       {/* Lösung: Aufgedeckt */}
                       {!quiz.flash && quiz.phase === "aufgedeckt" && !akzLoesung && (
                         aktSpaltModus === "mc"
                           ? <div style={{display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginTop:8, minHeight:60}}>
-                              <div className="quiz-frage-text" style={{textAlign:"center"}}>{quiz.antwortTeile.join(" / ")}</div>
+                              <div className="quiz-frage-text" style={{textAlign:"center"}}>{mitHinweis(quiz.antwortTeile.join(" / "))}</div>
                               {aktAntwortTyp.startsWith('E') && (
                                 <button {...tt("Antwort vorlesen")} className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
                                   onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], vokLang(aktVok, aktAntwortTyp)); }}><IcoSpk s={16}/></button>
                               )}
                             </div>
                           : <div className="quiz-frage-text" style={{textAlign:"center", display:"flex", alignItems:"center", justifyContent:"center", gap:6, minHeight:"44px"}}>
-                              {quiz.antwortTeile.join(" / ")}
+                              {mitHinweis(quiz.antwortTeile.join(" / "))}
                               {!isKarteAufgedeckt && aktAntwortTyp.startsWith('E') && (
                                 <button {...tt("Antwort vorlesen")} className="btn-icon" style={{fontSize:"1rem", padding:"2px 4px"}}
                                   onClick={e => { e.stopPropagation(); sprich(quiz.antwortTeile[0], vokLang(aktVok, aktAntwortTyp)); }}><IcoSpk s={16}/></button>
@@ -7095,6 +7156,8 @@ export default function VokabelApp() {
                 <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={kopiereListeHandler} {...tt("Liste als Text in die Zwischenablage kopieren")}>{exportKopiert ? "✓" : <IcoCopy/>}</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])} {...tt("JSON: vollständige Sicherung mit Lernstand (Scores) – Datei „Name - JSON.txt“, zum Wiederherstellen oder für ein anderes Gerät")}>JSON</button>
                 <button className="btn btn-ghost btn-sm" onClick={teileListeAlsDateiHandler} {...tt("TXT: nur die Vokabeln als Text, ohne Scores – Datei „Name - TXT.txt“, zum Weitergeben oder Bearbeiten")}>TXT</button>
+                <button className="btn btn-ghost btn-sm" data-klammern-werkzeug onClick={() => { setKlammerZiel(aktiveListe.spalten.i1?.aktiv && aktiveListe.spalten.i2?.aktiv ? "i2" : "i1"); setModal("klammern"); }}
+                  {...tt("Klammerhinweise wie „(= Punkt)“ aus den Wort-Spalten in eine Info-Spalte verschieben – mit Vorschau")}>( ) → Info</button>
                 <button className="btn btn-danger btn-sm" style={{padding:"6px 10px", marginLeft:"auto"}} onClick={() => oeffneModal("loeschen")} {...tt("Liste löschen")}><IcoX/></button>
               </div>
             )}
@@ -7249,9 +7312,7 @@ export default function VokabelApp() {
                                   window.speechSynthesis.cancel();
                                   aktiveSpalten.filter(typ => typ.startsWith('E')).forEach(typ => {
                                     if (!vok[typ]?.wert) return;
-                                    const u = new SpeechSynthesisUtterance(vok[typ].wert.split('/')[0].trim());
-                                    u.lang = spalteLang(typ, listeSprache(aktiveListe));
-                                    window.speechSynthesis.speak(u);
+                                    window.speechSynthesis.speak(aeusserung(vok[typ].wert.split('/')[0].trim(), spalteLang(typ, listeSprache(aktiveListe))));
                                   });
                                 }}><IcoSpk s={16}/></button>
                               )}
@@ -8376,6 +8437,49 @@ export default function VokabelApp() {
           </div>
         </div>
       )}
+      {modal === "klammern" && aktiveListe && (() => {
+        const aenderungen = klammerAenderungen(aktiveListe, klammerZiel);
+        return (
+        <div className="overlay" onClick={() => setModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} data-klammern-modal>
+            <div className="modal-titel">Klammerhinweise verschieben</div>
+            <p style={{fontSize:"0.85rem", color:"var(--text2)", lineHeight:1.5, marginBottom:10}}>
+              Frei stehende Klammern wie „(= Punkt)“ werden aus den Wort-Spalten entfernt und in eine Info-Spalte geschrieben.
+              Angehängte Klammern wie „(un)lucky“ bleiben.
+            </p>
+            <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:10}}>
+              <span style={{fontSize:"0.85rem", color:"var(--text2)"}}>Ziel:</span>
+              {["i1", "i2"].map(t => (
+                <button key={t} data-klammer-ziel={t} className={`typ-btn${klammerZiel === t ? " aktiv" : ""}`} onClick={() => setKlammerZiel(t)}
+                  {...tt(`Hinweise in die Info-Spalte ${t} schreiben${aktiveListe.spalten[t]?.aktiv ? "" : " (wird eingeschaltet)"}`)}>
+                  {aktiveListe.spalten[t]?.aktiv ? (aktiveListe.spalten[t].name || t) : `${t} (neu)`}
+                </button>
+              ))}
+            </div>
+            <div style={{fontSize:"0.85rem", fontWeight:700, color:"var(--text)", marginBottom:6}} data-klammer-anzahl={aenderungen.length}>
+              {aenderungen.length === 0 ? "Keine Klammerhinweise gefunden." : `${aenderungen.length} Vokabel${aenderungen.length !== 1 ? "n" : ""} betroffen – Vorschau:`}
+            </div>
+            <div style={{maxHeight:"34vh", overflowY:"auto", marginBottom:8}}>
+              {aenderungen.slice(0, 8).map(a => {
+                const quelle = TYPEN.find(t => !t.startsWith("i") && hinweiseAus(a.vorher[t]?.wert).length);
+                return (
+                  <div key={a.vorher.id} style={{fontSize:"0.8rem", padding:"5px 0", borderBottom:"1px solid var(--flaeche)"}}>
+                    <span style={{color:"var(--text3)", textDecoration:"line-through"}}>{a.vorher[quelle]?.wert}</span>
+                    {" → "}<b>{a.nachher[quelle]?.wert}</b>
+                    <span style={{color:"var(--text2)"}}> · Info: {a.nachher[klammerZiel]?.wert}</span>
+                  </div>
+                );
+              })}
+              {aenderungen.length > 8 && <div style={{fontSize:"0.75rem", color:"var(--text3)", paddingTop:4}}>… und {aenderungen.length - 8} weitere</div>}
+            </div>
+            <div className="modal-actions">
+              <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => setModal(null)}>Abbrechen</button>
+              <button {...tt("Klammerhinweise jetzt verschieben")} className="btn btn-primary" data-klammer-verschieben disabled={aenderungen.length === 0} onClick={verschiebeKlammern}>Verschieben</button>
+            </div>
+          </div>
+        </div>
+        );
+      })()}
       {modal === "schema-umbenennen" && schemaMenueId && (
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
