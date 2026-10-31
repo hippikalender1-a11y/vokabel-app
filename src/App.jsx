@@ -1064,6 +1064,7 @@ const CSS_BASIS = `
   .quiz-zeile-hinweis{font-size:0.75rem;color:var(--text3);text-align:center;padding:6px 0 0;}
   .umfang-raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px;}
   .umfang-raster .typ-btn{min-height:48px;font-size:1.1rem;font-weight:800;}
+  .start-titel{font-size:1.25rem;font-weight:800;color:var(--text-stark);text-align:center;margin:0 0 10px;}
   .start-bereich{background:var(--karte);padding:14px 16px;margin:0 -16px 8px;border-bottom:1px solid var(--rahmen);}
   .start-fortschritt{flex:0 0 auto;min-width:86px;border-radius:12px;border:1.5px solid var(--haupt-zart);background:var(--haupt-flaeche);color:var(--haupt);font-family:inherit;font-weight:800;font-size:1rem;cursor:pointer;}
   .start-fortschritt:disabled{cursor:default;opacity:0.7;}
@@ -1393,7 +1394,8 @@ export default function VokabelApp() {
   const [quizSchlechtesteMaxScore, setQuizSchlechtesteMaxScore] = useState(STANDARD_MAX_SCORE);
   const [quizUnbeantwortetZuerst, setQuizUnbeantwortetZuerst] = useState(STANDARD_UNBEANTWORTET_ZUERST);
   const [quiz, setQuiz] = useState(null);
-  const [lernen, setLernen] = useState(null);   // Lernen-Film: { voks, index, phase 0|1, pausiert, fertig, lauf, zuerst, danach, info, liste }
+  const [lernen, setLernen] = useState(null);
+  const quizStufeRef = useRef(null);   // Stufe der laufenden Runde, falls abweichend ("lernen": Quiz nach dem Lernen)   // Lernen-Film: { voks, index, phase 0|1, pausiert, fertig, lauf, zuerst, danach, info, liste }
   const [diktatListeAufgeklappt, setDiktatListeAufgeklappt] = useState(false);
   const [vokabelAufgeklappt, setVokabelAufgeklappt] = useState(false);
   const [ansichtSpaltenAn, setAnsichtSpaltenAn] = useState(() => lsGet(SK.ansichtSpalten, {}));
@@ -2849,13 +2851,15 @@ export default function VokabelApp() {
   // ── Lernen: Wort zeigen (ggf. vorlesen), nach einer Pause die Übersetzung, dann die nächste Vokabel ──
   function lernEinstellungen() { return { ...LERNEN_STANDARD, ...(einstellungen.lernen || {}) }; }
   function setzeLernEinst(felder) { speichereEinst({ ...einstellungen, lernen: { ...lernEinstellungen(), ...felder } }); }
-  function starteLernen(voks, spalten, info) {
-    if (!voks.length || !spalten.length) return;
+  // alle: ganze Session in Abfrage-Reihenfolge; groesse: Paketgröße (null = alle auf einmal)
+  function starteLernen(alle, groesse, spalten, info) {
+    if (!alle.length || !spalten.length) return;
+    const g = groesse || alle.length;
     const le = lernEinstellungen();
     const fremd = spalten.filter(t => t.startsWith("E")), deutsch = spalten.filter(t => !t.startsWith("E"));
     let zuerst = le.zuerst === "deutsch" ? deutsch : fremd, danach = le.zuerst === "deutsch" ? fremd : deutsch;
     if (!zuerst.length || !danach.length) { zuerst = spalten.slice(0, 1); danach = spalten.slice(1); }
-    setLernen({ voks, index: 0, phase: 0, pausiert: false, fertig: false, lauf: 0, zuerst, danach, info, liste: quizKombiListe });
+    setLernen({ alle, groesse: g, start: 0, voks: alle.slice(0, g), index: 0, phase: 0, pausiert: false, fertig: false, lauf: 0, zuerst, danach, info, liste: quizKombiListe });
     window.scrollTo(0, 0);
   }
   // Zusatzinfo dieser Vokabel zeigen? (Schalter auf dem Lernbildschirm, nur wenn es Info-Text gibt)
@@ -2872,6 +2876,20 @@ export default function VokabelApp() {
   function lernenVor() { setLernen(l => l && (l.index + 1 >= l.voks.length ? { ...l, fertig: true } : { ...l, index: l.index + 1, phase: 0, lauf: l.lauf + 1 })); }
   function lernenZurueck() { setLernen(l => l && { ...l, index: Math.max(0, l.index - 1), phase: 0, fertig: false, lauf: l.lauf + 1 }); }
   function beendeLernen() { window.speechSynthesis?.cancel(); setLernen(null); }
+  // nächstes Paket der Session (nach dem letzten: Endbildschirm bleibt)
+  function naechstesLernPaket(l) {
+    const start = l.start + l.groesse;
+    if (start >= l.alle.length) return { ...l, imQuiz: false };
+    return { ...l, imQuiz: false, quizGemacht: false, start, voks: l.alle.slice(start, start + l.groesse), index: 0, phase: 0, fertig: false, pausiert: false, lauf: l.lauf + 1 };
+  }
+  // Quiz mit genau den eben gezeigten Vokabeln – einmal je Paket, ohne Punktabzug; danach das nächste Paket
+  function starteLernQuiz() {
+    window.speechSynthesis?.cancel();
+    const ids = new Set(lernen.voks.map(v => v.id));
+    setLernen(l => ({ ...l, imQuiz: true, quizGemacht: true }));
+    starteQuiz(true, null, ids, "lernen");
+    setQuiz(q => q && { ...q, ausStatistik: false, ausLernen: true });
+  }
 
   // Multiquiz: Vokabeln mehrerer gespeicherter Konfigurationen zusammen, Einstellungen von der ersten
   function multiZusammenstellung(ids) {
@@ -4363,6 +4381,15 @@ export default function VokabelApp() {
     setTab("statistik");
   }
 
+  // Runde verlassen: zurück ins Lernen, in die Statistik (Gruppen-Runde) oder zur Übersicht
+  function verlasseRunde() { if (quiz?.ausLernen) zurueckZumLernen(); else if (quiz?.ausStatistik) zurueckZurStatistik(); else beendeQuiz(); }
+  function zurueckZumLernen() {
+    quizStufeRef.current = null;
+    setQuiz(null);
+    setAnsicht("uebersicht");
+    setLernen(l => l && naechstesLernPaket(l));
+  }
+
   function zurRundenStatistik(abschluss) {
     const q = quiz;
     if (q?.ausStatistik) { zurueckZurStatistik(); return; }
@@ -4452,7 +4479,8 @@ export default function VokabelApp() {
     }
     if (reihenfolgeQ === "schlechteste" && maxScoreQ !== "" && !isNaN(parseFloat(maxScoreQ))) {
       const threshold = parseFloat(maxScoreQ);
-      voks = voks.filter(v => (v.diktatFortschritt?.score ?? 0) < threshold);
+      const gelerntDabei = v => !gruppe && quizGelerntEinschliessen && schwelleDiktat > 0 && gelerntScore(v, true) >= schwelleDiktat;
+      voks = voks.filter(v => gelerntDabei(v) || (v.diktatFortschritt?.score ?? 0) < threshold);
     }
     voks = ordneVokabeln(voks, "diktatFortschritt", reihenfolgeQ, unbeantwortetQ);
     if (isPakete) voks = voks.slice(0, quizPaketGroesse);
@@ -4478,7 +4506,16 @@ export default function VokabelApp() {
     setAnsicht("quiz");
   }
 
-  function starteQuiz(force = false, overrideSlot = null, gruppe = null) {
+  // Regeln der laufenden Runde: Stufe der Einstellungen; Quiz nach dem Lernen ("lernen"): Regeln „Leicht“,
+  // aber nie ein Punktabzug – eine einmalige Gelegenheit, den Score zu verbessern
+  function quizRegeln() {
+    if (quizStufeRef.current !== "lernen") return stufenRegeln(einstellungen);
+    return { ...stufenRegeln({ ...einstellungen, modus: "einfach" }), falschAbzug: false, aufdeckenAbzug: false };
+  }
+
+  // stufe (optional): "lernen" = Quiz nach dem Lernen (nur Verbesserung möglich)
+  function starteQuiz(force = false, overrideSlot = null, gruppe = null, stufe = null) {
+    quizStufeRef.current = stufe;
     // gruppe (Set von Vokabel-IDs, Quiz aus der Statistik): einmalige Runde nur mit diesen Vokabeln –
     // Auswahl, Konfiguration und Session-Fortschritt bleiben unberührt; schlechteste zuerst, ohne Score-Grenze
     const reihenfolgeQ = gruppe ? "schlechteste" : quizReihenfolge;
@@ -4509,7 +4546,7 @@ export default function VokabelApp() {
     }
     // Akzent-Spalten: Wörter ohne Akzent nur auf Wunsch – sonst wird für sie nur die Akzent-Spalte
     // übersprungen; ganz raus nur, wenn keine andere Antwortspalte bleibt. Reine Akzent-Abfrage nutzt den Akzent-Score
-    const akzentOhneAuslassen = !stufenRegeln(einstellungen).akzentOhneMischen;
+    const akzentOhneAuslassen = !quizRegeln().akzentOhneMischen;
     voks = voks.filter(v => antwortSpaltenFuer(v, quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet,
       quizSpalteModus, akzentOhneAuslassen).length > 0);
     const scoreFeld = quizModus !== "rotierend" && quizAntwortTypenGeordnet.length > 0
@@ -4519,13 +4556,15 @@ export default function VokabelApp() {
     if (!gruppe && !quizGelerntEinschliessen && schwelleQ > 0)
       voks = voks.filter(v => (v[scoreFeld]?.score ?? -Infinity) < schwelleQ);
     // Score-Grenze (Reihenfolge "schlechteste") gehört zur Session-Menge – wie die Anzeige im Quiz-Tab
+    // eingeschaltete Gelernte gehören zur Session – die Score-Grenzen gelten für sie nicht
+    const gelerntDabei = v => !gruppe && quizGelerntEinschliessen && schwelleQ > 0 && (v[scoreFeld]?.score ?? -Infinity) >= schwelleQ;
     if (reihenfolgeQ === "schlechteste" && maxScoreQ !== "" && !isNaN(parseFloat(maxScoreQ))) {
       const threshold = parseFloat(maxScoreQ);
-      voks = voks.filter(v => (v[scoreFeld]?.score ?? 0) < threshold);
+      voks = voks.filter(v => gelerntDabei(v) || (v[scoreFeld]?.score ?? 0) < threshold);
     }
     // Abfrage-Ziel Score (global): nur Vokabeln unter dem Ziel kommen in die Session
     if (!gruppe && abfrageZielModus === "score" && abfrageZielScoreTyp !== "session")
-      voks = voks.filter(v => (v[scoreFeld]?.score ?? 0) < abfrageZielScore);
+      voks = voks.filter(v => gelerntDabei(v) || (v[scoreFeld]?.score ?? 0) < abfrageZielScore);
     const nurAkzentQ = scoreFeld === "akzentFortschritt";
     if (nurAkzentQ && !gruppe) {
       const laufend = isPakete ? lsGet(SK.sessionAktiv) : null;
@@ -4564,7 +4603,7 @@ export default function VokabelApp() {
 
     voks = ordneVokabeln(voks, scoreFeld, reihenfolgeQ, unbeantwortetQ);
 
-    if (nurAkzentQ && stufenRegeln(einstellungen).akzentOhneMischen) voks = verteileOhneAkzent(voks, quizAntwortTypenGeordnet);
+    if (nurAkzentQ && quizRegeln().akzentOhneMischen) voks = verteileOhneAkzent(voks, quizAntwortTypenGeordnet);
     if (isPakete) voks = voks.slice(0, quizPaketGroesse);
     if (voks.length === 0) return;
     if (!isPakete && !gruppe) merkeRundeImVerlauf(effSlot, Object.fromEntries(voks.map(v => [v.id, v[scoreFeld]?.score ?? null])));
@@ -4781,13 +4820,13 @@ export default function VokabelApp() {
     if (normal.length > 0) {
       const erg = gesamt(normal);
       const neuerCount = erg === "falsch" ? (quiz.sessionFalsch[aktVok.id] || 0) + 1 : 0;
-      const neu = berechneNeuenScore(aktVok.fortschritt, erg, stufenRegeln(einstellungen).aufdeckenAbzug ? "schwer" : "einfach", stufenRegeln(einstellungen).falschAbzug);
+      const neu = berechneNeuenScore(aktVok.fortschritt, erg, quizRegeln().aufdeckenAbzug ? "schwer" : "einfach", quizRegeln().falschAbzug);
       liste = speichereScore(liste, aktVok.id, neu);
       if (erreicht(aktVok.fortschritt, neu)) gelerntBlitz = blitzKey(quiz);
       if (erg === "falsch") sessionFalsch = { ...quiz.sessionFalsch, [aktVok.id]: neuerCount };
     }
     if (akzent.length > 0) {
-      const neu = berechneDiktatScore(aktVok.akzentFortschritt, gesamt(akzent) === "richtig" ? "richtig" : "aufgedeckt", stufenRegeln(einstellungen).falschAbzug);
+      const neu = berechneDiktatScore(aktVok.akzentFortschritt, gesamt(akzent) === "richtig" ? "richtig" : "aufgedeckt", quizRegeln().falschAbzug);
       liste = speichereAkzentScore(liste, aktVok.id, neu);
       if (erreicht(aktVok.akzentFortschritt, neu)) gelerntBlitz = blitzKey(quiz);
     }
@@ -4799,7 +4838,7 @@ export default function VokabelApp() {
   // festeIds: laufende Session – dann bleiben genau die Wörter ohne Akzent vom Session-Start
   function begrenzeOhneAkzent(voks, antwortTypen, festeIds = null) {
     const anteil = akzentOhneAnteil(einstellungen);
-    if (!stufenRegeln(einstellungen).akzentOhneMischen || anteil == null) return voks;
+    if (!quizRegeln().akzentOhneMischen || anteil == null) return voks;
     const mitAkz = v => antwortTypen.some(t => hatAkzente(v[t]?.wert));
     const mit = voks.filter(mitAkz);
     const ohne = voks.filter(v => !mitAkz(v));
@@ -4831,7 +4870,7 @@ export default function VokabelApp() {
     const eingabe = quiz.eingabe.trim();
 
     // Modus "Einfach": fehlende/falsche Akzente zählen als richtig (mit Hinweis)
-    const tolerant = stufenRegeln(einstellungen).akzenteTolerant;
+    const tolerant = quizRegeln().akzenteTolerant;
     let akzentHinweis = false;
 
     function setzeRichtigAufgedeckt(updates) {
@@ -5013,7 +5052,7 @@ export default function VokabelApp() {
     const k = s.kacheln[i];
     if (s.wahl[i] === k.richtig && kachelMitAkzent(k)) return;   // schon richtig gesetzt
     // Akzent-Buchstaben hervorgehoben → Fehlgriff nur anzeigen, nicht als Fehler werten
-    if (!kachelMitAkzent(k)) { akzentFehlgriff(s, i, stufenRegeln(einstellungen).akzentHervorheben ? { fehler: s.fehler } : {}); return; }
+    if (!kachelMitAkzent(k)) { akzentFehlgriff(s, i, quizRegeln().akzentHervorheben ? { fehler: s.fehler } : {}); return; }
     setQuiz(prev => ({...prev, akzent: { key: s.key, wahl: s.wahl, fehler: s.fehler, blink: null, pruefFehler: s.pruefFehler, aktiv: s.aktiv === i ? null : i }}));
   }
   function setzeAkzentVariante(v) {
@@ -5026,7 +5065,7 @@ export default function VokabelApp() {
     wahl[i] = v;
     if (LIGATUR_TEILE[v]) wahl[i + 1] = "";
     // Alle Akzente gefunden → automatisch als Antwort übernehmen (falls in der Stufe eingestellt)
-    if (stufenRegeln(einstellungen).akzentAutoUebernahme && s.kacheln.every((k, j) => wahl[j] === k.richtig)) { schliesseAkzenteAb({ ...s, wahl }); return; }
+    if (quizRegeln().akzentAutoUebernahme && s.kacheln.every((k, j) => wahl[j] === k.richtig)) { schliesseAkzenteAb({ ...s, wahl }); return; }
     setQuiz(prev => ({...prev, akzent: { key: s.key, wahl, aktiv: null, fehler: s.fehler, blink: null, pruefFehler: s.pruefFehler }}));
   }
   function schliesseAkzenteAb(s) {
@@ -5070,7 +5109,7 @@ export default function VokabelApp() {
     if (!quiz || !quiz.eingabe.trim()) return;
     const aktVok = quiz.vokabeln[quiz.index];
     const wort = aktVok[quiz.diktatSpalte]?.wert || "";
-    const treffer = istRichtigeAntwort(quiz.eingabe.trim(), wort, stufenRegeln(einstellungen).akzenteTolerant);
+    const treffer = istRichtigeAntwort(quiz.eingabe.trim(), wort, quizRegeln().akzenteTolerant);
     if (treffer) {
       const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "richtig");
       const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
@@ -5094,7 +5133,7 @@ export default function VokabelApp() {
     if (!quiz) return;
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     const aktVok = quiz.vokabeln[quiz.index];
-    const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "aufgedeckt", stufenRegeln(einstellungen).falschAbzug);
+    const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "aufgedeckt", quizRegeln().falschAbzug);
     const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
     const wort = aktVok[quiz.diktatSpalte]?.wert || "";
     const ergebnis = { vokId: aktVok.id, wort, uebersetzung: aktVok[quiz.diktatUeberspalte]?.wert, richtig: false };
@@ -5155,11 +5194,14 @@ export default function VokabelApp() {
   }
 
   // ── Render: Diktat ───────────────────────────────────────────────────────
-  if (lernen) {
+  if (lernen && !lernen.imQuiz) {
     const n = lernen.voks.length;
+    const gesamt = lernen.alle.length;
+    const rest = gesamt - (lernen.start + n);
+    const paketNr = Math.floor(lernen.start / lernen.groesse) + 1, paketeGesamt = Math.ceil(gesamt / lernen.groesse);
     const v = lernen.voks[lernen.index];
     const name = t => lernen.liste?.spalten?.[t]?.name || t;
-    const pct = Math.round((lernen.fertig ? n : lernen.index + lernen.phase / 3) / n * 100);
+    const pct = Math.round((lernen.start + (lernen.fertig ? n : lernen.index + lernen.phase / 3)) / gesamt * 100);
     const seite = (spalten, art) => spalten.filter(t => v[t]?.wert).map(t => (
       <div key={t} className={`lernen-zeile${art === "danach" ? " lernen-uebersetzung" : ""}`} {...(art === "danach" ? { "data-lernen-uebersetzung": true } : { "data-lernen-wort": true })}>
         <div className="lernen-label">{name(t)}</div>
@@ -5173,20 +5215,30 @@ export default function VokabelApp() {
           <div className="topbar">
             <button className="topbar-back" data-lernen-beenden onClick={beendeLernen} {...tt("Lernen beenden – zurück zum Quiz-Tab (Scores bleiben unverändert)")}>Beenden</button>
             <span className="topbar-title">🎬 Lernen<span className="kopf-balken"><span style={{width:`${pct}%`}}/></span></span>
-            <span className="quiz-fortschritt" data-lernen-stand>{lernen.fertig ? n : lernen.index + 1} / {n}</span>
+            <span className="quiz-fortschritt" data-lernen-stand>{lernen.start + (lernen.fertig ? n : lernen.index + 1)} / {gesamt}</span>
           </div>
           <div className="sektion">
             {lernen.fertig ? (<>
               <div className="quiz-frage-box" data-lernen-fertig style={{padding:"30px 16px", textAlign:"center"}}>
                 <div style={{fontSize:"2.2rem", lineHeight:1}}>🎬</div>
-                <div className="quiz-frage-text" style={{textAlign:"center", marginTop:10}}>{n} Vokabel{n !== 1 ? "n" : ""} angesehen</div>
-                <div style={{fontSize:"0.85rem", color:"var(--text2)", marginTop:8}}>Scores und Session-Fortschritt bleiben unverändert.</div>
+                <div className="quiz-frage-text" style={{textAlign:"center", marginTop:10}}>
+                  {rest > 0 ? `${n} Vokabel${n !== 1 ? "n" : ""} angesehen` : `Alle ${gesamt} Vokabeln angesehen`}
+                </div>
+                {paketeGesamt > 1 && <div style={{fontSize:"0.85rem", color:"var(--text2)", marginTop:6}} data-lernen-paket>Paket {paketNr} von {paketeGesamt}</div>}
               </div>
-              <button className="btn btn-primary" style={{width:"100%", marginTop:14}} data-lernen-quiz
-                onClick={() => { setLernen(null); starteQuiz(); }} {...tt("Jetzt das Quiz mit diesen Einstellungen starten (Stufe Leicht bzw. Schwer)")}>Quiz starten</button>
-              <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} data-lernen-nochmal
-                onClick={() => setLernen(l => ({ ...l, index: 0, phase: 0, fertig: false, pausiert: false, lauf: l.lauf + 1 }))} {...tt("Dieselben Vokabeln noch einmal ansehen")}>Nochmal</button>
-              <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={beendeLernen} {...tt("Zurück zum Quiz-Tab")}>Zur Übersicht</button>
+              {!lernen.quizGemacht && (
+                <button className="btn btn-primary" style={{width:"100%", marginTop:14}} data-lernen-quiz onClick={starteLernQuiz}
+                  {...tt("Genau diese Vokabeln einmal abfragen – gewusste verbessern den Score, falsche kosten keinen Punkt; danach geht es mit dem nächsten Paket weiter")}>
+                  Quiz mit diesen {n} Vokabel{n !== 1 ? "n" : ""}
+                </button>
+              )}
+              {rest > 0 && (
+                <button className="btn btn-primary" style={{width:"100%", marginTop:8, background:"var(--karte)", color:"var(--haupt)"}} data-lernen-weiter
+                  onClick={() => setLernen(l => naechstesLernPaket(l))} {...tt("Ohne Quiz mit den nächsten Vokabeln weiterlernen")}>
+                  Weiter lernen: nächste {Math.min(lernen.groesse, rest)}
+                </button>
+              )}
+              <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={beendeLernen} {...tt("Lernen beenden – zurück zum Quiz-Tab")}>Zur Übersicht</button>
             </>) : (<>
               <div className="quiz-frage-box lernen-karte" data-lernen-karte data-lernen-phase={lernen.phase} onClick={lernenWeiter}
                 {...tt(lernen.phase === 0 ? "Antippen: Übersetzung sofort zeigen" : "Antippen: sofort weiter (Zusatzinfo bzw. nächste Vokabel)")}>
@@ -5296,20 +5348,22 @@ export default function VokabelApp() {
           </>
         );
       }
-      const diktatKnoepfe = (<>
+      const diktatKnoepfe = quiz.ausLernen ? (
+        <button data-weiter-lernen {...tt("Zurück ins Lernen – weiter mit dem nächsten Paket")} className="btn btn-primary" style={{width:"100%", marginBottom:16}} onClick={zurueckZumLernen}>🎬 Weiter lernen</button>
+      ) : (<>
         <button {...tt("Diktat beenden und zur Übersicht")} className="btn btn-primary" style={{width:"100%"}}
           onClick={() => { beendeQuiz(); }}>
           Zurück zur Liste
         </button>
         <div style={{marginBottom:16}}><button data-zurueck-statistik={quiz.ausStatistik ? "" : undefined} className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt(quiz.ausStatistik ? "Zurück zur Statistik, aus der diese Runde gestartet wurde" : "Statistik zu dieser Abfragerunde öffnen")}>📊 {quiz.ausStatistik ? "Zurück zur Statistik" : "Zur Statistik"}</button></div>
       </>);
-      if (quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, diktatKnoepfe, () => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); });
+      if (quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, diktatKnoepfe, () => { verlasseRunde(); });
       return (
         <>
           <style>{CSS}</style>{farbModusUI}{farbRadUI}
           <div className="app">
             <div className="topbar">
-              <button {...tt(quiz.ausStatistik ? "Diktat schließen und zurück zur Statistik" : "Diktat schließen und zur Übersicht")} className="topbar-back" onClick={() => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); }}>Schließen</button>
+              <button {...tt(quiz.ausLernen ? "Schließen und weiter lernen" : quiz.ausStatistik ? "Diktat schließen und zurück zur Statistik" : "Diktat schließen und zur Übersicht")} className="topbar-back" onClick={() => { verlasseRunde(); }}>Schließen</button>
               <span className="topbar-title">Diktat abgeschlossen</span>
               <span className="quiz-fortschritt">{richtig} / {quiz.diktatErgebnisse.length} ✓</span>
             </div>
@@ -5533,7 +5587,9 @@ export default function VokabelApp() {
         const f = quiz.quizFalschAnzahl || 0;
         const ges = r + f;
         const feedback = getQuizFeedback(r, ges);
-        const rundenKnoepfe = quiz.ausStatistik ? (<>
+        const rundenKnoepfe = quiz.ausLernen ? (
+          <button data-weiter-lernen {...tt("Zurück ins Lernen – weiter mit dem nächsten Paket")} className="btn btn-primary" style={{width:"100%"}} onClick={zurueckZumLernen}>🎬 Weiter lernen</button>
+        ) : quiz.ausStatistik ? (<>
           <button data-zurueck-statistik {...tt("Zurück zur Statistik, aus der diese Runde gestartet wurde")} className="btn btn-primary" style={{width:"100%"}} onClick={zurueckZurStatistik}>📊 Zurück zur Statistik</button>
           <button {...tt("Zur Quiz-Übersicht")} className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => { beendeQuiz(); }}>Zur Übersicht</button>
         </>) : (<>
@@ -5542,13 +5598,13 @@ export default function VokabelApp() {
           </button>
           <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button>
         </>);
-        if (quiz.sessionAuswertung && !quiz.abgebrochen) return sessionAuswertungSeite(quiz, rundenKnoepfe, () => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); });
+        if (quiz.sessionAuswertung && !quiz.abgebrochen) return sessionAuswertungSeite(quiz, rundenKnoepfe, () => { verlasseRunde(); });
         return (
           <>
             <style>{CSS}</style>{farbModusUI}{farbRadUI}
             <div className="app">
               <div className="topbar">
-                <button {...tt(quiz.ausStatistik ? "Auswertung schließen und zurück zur Statistik" : "Auswertung schließen und zur Quiz-Übersicht")} className="topbar-back" onClick={() => { quiz.ausStatistik ? zurueckZurStatistik() : beendeQuiz(); }}>Schließen</button>
+                <button {...tt(quiz.ausLernen ? "Schließen und weiter lernen" : quiz.ausStatistik ? "Auswertung schließen und zurück zur Statistik" : "Auswertung schließen und zur Quiz-Übersicht")} className="topbar-back" onClick={() => { verlasseRunde(); }}>Schließen</button>
                 <span className="topbar-title">{quiz.abgebrochen ? "Abgebrochen" : "Auswertung"}</span>
                 <span className="quiz-fortschritt">{r}/{ges}</span>
               </div>
@@ -5775,7 +5831,7 @@ export default function VokabelApp() {
                         const zeichen = i => akzLoesung ? akz.kacheln[i].richtig : akz.wahl[i];
                         const sichtbar = w => w.filter(i => zeichen(i) !== "").length;
                         const n = Math.max(12, ...woerter.map(sichtbar));
-                        const regeln = stufenRegeln(einstellungen);
+                        const regeln = quizRegeln();
                         const hervorheben = regeln.akzentHervorheben;
                         const mitAkzent = akz.kacheln.map((k, i) => i).filter(i => kachelMitAkzent(akz.kacheln[i]));
                         const gefunden = mitAkzent.filter(i => akz.wahl[i] === akz.kacheln[i].richtig).length;
@@ -6539,11 +6595,13 @@ export default function VokabelApp() {
           const akzentVoks = akzentSpalten.length > 0 && !stufenRegeln(einstellungen).akzentOhneMischen
             ? gefilterteVoks.filter(v => antwortSpaltenFuer(v, quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet,
               quizSpalteModus, true).length > 0) : gefilterteVoks;
-          // Score-Filter (nur schlechteste-Modus) → Basis für Reihenfolge-Header
+          // Score-Filter (nur schlechteste-Modus) → Basis für Reihenfolge-Header; eingeschaltete Gelernte bleiben dabei
+          const gelerntDabei = v => quizGelerntEinschliessen && (einstellungen.gelerntSchwelle ?? 0) > 0
+            && (nurAkzent ? (v.akzentFortschritt?.score ?? -Infinity) : gelerntScore(v, quizModus === "diktat")) >= einstellungen.gelerntSchwelle;
           let reihenfolgeVoks = akzentVoks;
           if (quizReihenfolge === "schlechteste" && quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
             const thr = parseFloat(quizSchlechtesteMaxScore);
-            reihenfolgeVoks = akzentVoks.filter(v => ((nurAkzent ? v.akzentFortschritt : quizModus === "diktat" ? v.diktatFortschritt : v.fortschritt)?.score ?? 0) < thr);
+            reihenfolgeVoks = akzentVoks.filter(v => gelerntDabei(v) || ((nurAkzent ? v.akzentFortschritt : quizModus === "diktat" ? v.diktatFortschritt : v.fortschritt)?.score ?? 0) < thr);
           }
           const schwelle = einstellungen.gelerntSchwelle ?? 0;
           const istDiktat = quizModus === "diktat";
@@ -6553,7 +6611,7 @@ export default function VokabelApp() {
           if (!quizGelerntEinschliessen && schwelle > 0)
             reihenfolgeVoks = reihenfolgeVoks.filter(v => startScore(v) < schwelle);
           if (!istDiktat && abfrageZielModus === "score" && abfrageZielScoreTyp !== "session")
-            reihenfolgeVoks = reihenfolgeVoks.filter(v => ((nurAkzent ? v.akzentFortschritt : v.fortschritt)?.score ?? 0) < abfrageZielScore);
+            reihenfolgeVoks = reihenfolgeVoks.filter(v => gelerntDabei(v) || ((nurAkzent ? v.akzentFortschritt : v.fortschritt)?.score ?? 0) < abfrageZielScore);
           if (nurAkzent) {
             const laufend = isPakete && sessionSlotAktiv && !sessionSlotKonflikt() ? sessionSlotAktiv : null;
             reihenfolgeVoks = begrenzeOhneAkzent(reihenfolgeVoks, quizAntwortTypenGeordnet,
@@ -6586,14 +6644,13 @@ export default function VokabelApp() {
           const abfrageModusName = istDiktat ? "Diktat"
             : [quizModus === "rotierend" && "wechselnd", antwortArten.join(" + ") || (quizModus !== "rotierend" && "Frage – Antwort")].filter(Boolean).join(" · ");
           const alleAbgefragt = sessionHatFortschritt && sessionAbgefragtAnzahl >= sessionAnzahl;
-          // Lernen: dieselben Vokabeln wie das nächste Quiz-Paket (ohne Score, ohne Session-Fortschritt)
+          // Lernen: die noch offenen Vokabeln der Session, paketweise (ohne Score, ohne Session-Fortschritt)
           const lernAktiv = !!einstellungen.lernen?.aktiv;
           const lernVokabeln = () => {
             const ab = sessionHatFortschritt ? new Set(sessionSlotAktiv.abgefragt || []) : null;
             let v = reihenfolgeVoks.filter(x => !ab?.has(x.id));
             if (!v.length) v = reihenfolgeVoks;
-            v = ordneVokabeln(v, istDiktat ? "diktatFortschritt" : nurAkzent ? "akzentFortschritt" : "fortschritt", quizReihenfolge, quizUnbeantwortetZuerst);
-            return isPakete && quizPaketGroesse != null ? v.slice(0, quizPaketGroesse) : v;
+            return ordneVokabeln(v, istDiktat ? "diktatFortschritt" : nurAkzent ? "akzentFortschritt" : "fortschritt", quizReihenfolge, quizUnbeantwortetZuerst);
           };
           const lernSpalten = (istDiktat ? [quizDiktatSpalte, quizDiktatUebersetzung] : quizModus === "rotierend" ? quizAusgewaehlt : [quizFrageTyp, ...quizAntwortTypenGeordnet]).filter(Boolean);
           const lernInfo = kombiListe ? [...quizInfoTypenSession, ...TYPEN.filter(t => t.startsWith('i') && kombiListe.spalten[t].aktiv && quizZeigeInfo[t])] : [];
@@ -7206,6 +7263,7 @@ export default function VokabelApp() {
                 {/* START-BEREICH: Session-Fortschritt + großer Start-Knopf */}
                 {kombiListe && (
                   <div className="start-bereich">
+                    <div className="start-titel" data-start-titel>{lernAktiv ? "Lernen" : "Quiz"} mit {sessionAnzahl} Vokabel{sessionAnzahl !== 1 ? "n" : ""}</div>
                     {isPakete && (
                       <div style={{height:6, background:"var(--rahmen)", borderRadius:3, marginBottom:10}} data-start-balken={sessionPct}>
                         <div style={{width:`${sessionPct}%`, height:"100%", background:"var(--haupt)", borderRadius:3, transition:"width 0.3s"}}/>
@@ -7237,7 +7295,7 @@ export default function VokabelApp() {
                       )}
                       {lernAktiv && !aufteilen ? (
                         <button className="btn btn-primary start-knopf" data-start-knopf data-lernen-start data-start-anzahl={lernAnzahl}
-                          onClick={() => starteLernen(lernVokabeln(), lernSpalten, lernInfo)} disabled={!kannStarten || lernAnzahl === 0}
+                          onClick={() => starteLernen(lernVokabeln(), isPakete ? quizPaketGroesse : null, lernSpalten, lernInfo)} disabled={!kannStarten || lernAnzahl === 0}
                           {...tt("Lernen starten: Wort zeigen, nach einer Pause die Übersetzung – ohne Score, der Session-Fortschritt bleibt")}>
                           <b>Lernen starten</b><span>{lernAnzahl} Vokabel{lernAnzahl !== 1 ? "n" : ""}</span>
                         </button>
@@ -8104,7 +8162,7 @@ export default function VokabelApp() {
                   {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Die Kreise rechts in der Kopfzeile der Session-Auswahl zeigen den Lernfortschritt der Auswahl je Art; antippen schaltet die Art um. Eine Art ohne passende Vokabeln wird nicht angezeigt. Auch die Listen im Listen-Tab zeigen die drei Kreise. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC oder Tastatur. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
                   {k:"Akzente", v:"Eigene Abfrageart (A): Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Ob auch Wörter ohne Akzent abgefragt werden, legst du beim Schwierigkeitsgrad fest."},
                   {k:"Zeile 1: Modus · Reihenfolge · Stufe", v:"Erster Knopf: Abfrage-Modus der gewählten Art (z. B. „Karte“) – antippen öffnet die Spalten- und Modus-Einstellungen. Zweiter Knopf: Reihenfolge – Zufällig / Schlechteste (nach Score sortiert) / Listen-Nr. (Originalreihenfolge), dazu Score-Filter und „Unbeantwortete zuerst“. Es ist immer nur ein Bereich offen. Dritter Knopf: Stufe Lernen, Leicht oder Schwer – antippen wechselt der Reihe nach. Lang drücken: „Regeln Leicht / Schwer“, bei Lernen „Lernen einstellen“ und „Vorlesen“."},
-                  {k:"Lernen", v:"Stufe „Lernen“ (dritter Knopf in Zeile 1): Der Start-Knopf heißt dann „Lernen starten“. Wie ein Film: erst das Wort (auf Wunsch vorgelesen), nach einer Pause die Übersetzung mit den eingeschalteten Info-Spalten, dann die nächste Vokabel. Antippen der Karte überspringt die Pause; unten ⏮ zurück, ⏸ anhalten, ⏭ vor, oben „Beenden“. Es kommen dieselben Vokabeln wie beim nächsten Quiz-Paket (Auswahl, Reihenfolge, Umfang). Lernen ändert keine Scores und nicht den Session-Fortschritt. Ablauf: Wort (vorgelesen oder Lesezeit) + 1 s, Übersetzung + 1 s, Zusatzinfo, dann die Pause (Regler auf dem Lernbildschirm, 1–10 s, Standard 3 s); ohne Zusatzinfo folgt die Pause direkt nach der Übersetzung. Ohne Vorlesen wird die Lesezeit aus der Textlänge geschätzt. „Zusatzinfo An | Aus“ steht ebenfalls auf dem Lernbildschirm. Lang drücken auf den Knopf → „Lernen einstellen“: was zuerst kommt (Fremdsprache oder Deutsch), Wort bzw. Übersetzung vorlesen. Am Ende: „Quiz starten“, „Nochmal“ oder „Zur Übersicht“."},
+                  {k:"Lernen", v:"Stufe „Lernen“ (dritter Knopf in Zeile 1): Der Start-Knopf heißt dann „Lernen starten“. Wie ein Film: erst das Wort (auf Wunsch vorgelesen), nach einer Pause die Übersetzung mit den eingeschalteten Info-Spalten, dann die nächste Vokabel. Antippen der Karte überspringt die Pause; unten ⏮ zurück, ⏸ anhalten, ⏭ vor, oben „Beenden“. Gelernt werden die noch offenen Vokabeln der Session in Quiz-Reihenfolge, paketweise (Umfang „Je 5“ → 5 pro Paket). Nach jedem Paket: „Quiz mit diesen 5 Vokabeln“ – einmal je Paket: gewusste verbessern den Score, falsche oder aufgedeckte kosten keinen Punkt (sonst Regeln der Stufe „Leicht“); danach geht es mit dem nächsten Paket weiter –, „Weiter lernen: nächste 5“ oder „Zur Übersicht“. Lernen selbst ändert keine Scores, und auch das Quiz danach nicht den Session-Fortschritt. Ablauf: Wort (vorgelesen oder Lesezeit) + 1 s, Übersetzung + 1 s, Zusatzinfo, dann die Pause (Regler auf dem Lernbildschirm, 1–10 s, Standard 3 s); ohne Zusatzinfo folgt die Pause direkt nach der Übersetzung. Ohne Vorlesen wird die Lesezeit aus der Textlänge geschätzt. „Zusatzinfo An | Aus“ steht ebenfalls auf dem Lernbildschirm. Lang drücken auf den Knopf → „Lernen einstellen“: was zuerst kommt (Fremdsprache oder Deutsch), Wort bzw. Übersetzung vorlesen. "},
                   {k:"Regeln Leicht / Schwer", v:"Lang drücken auf den Stufen-Knopf. Per Haken legst du fest, was in welcher Stufe gilt: fehlende Akzente beim Tippen als richtig werten, Punktabzug bei „Lösung anzeigen“, „Nicht gewusst“ zieht 1 Punkt ab, im Akzent-Modus auch Wörter ohne Akzent abfragen (mit Höchstanteil), Buchstaben mit Akzent hervorheben, die Zahl der noch fehlenden Akzente anzeigen (z. B. 2 / 3) und richtige Antworten automatisch übernehmen (sonst „Prüfen“). „Vorlesen“ (ebenfalls per Lang-Druck): Auto-Play und welche Spalten vorgelesen werden."},
                   {k:"Zeile 2: Umfang · Abfrage-Ziel · Gelernte", v:"Umfang: „Alle Vokabeln“ in einem Durchgang oder „Je N Vokabeln“ – antippen zeigt große Zahlenknöpfe (Alle, 5–50). Bei Paketen kannst du nach jedem Paket pausieren oder weitermachen; abgefragte Vokabeln werden beim nächsten Paket übersprungen. Gelernte (nur wenn es welche gibt): „13 gelernte“ = ausgeblendet, „+ 13 gelernte“ = werden mit abgefragt."},
                   {k:"Abfrage-Ziel", v:"Anzahl: jede Vokabel 1×/2×/3× pro Durchgang abfragen. Mit Wiederholung: Vokabeln so lange einreihen, bis jede 1×/2×/3× richtig beantwortet wurde. Score (global, Knopf z. B. „Score < +3“): nur Vokabeln mit Score unter dem Ziel kommen in die Session, jede einmal (ohne Wiederholung) – Ziel 0 fragt nur negative ab (nie abgefragte zählen als 0). Session-Score: alle Vokabeln, jede so lange, bis sie in dieser Session um das Ziel gestiegen ist."},

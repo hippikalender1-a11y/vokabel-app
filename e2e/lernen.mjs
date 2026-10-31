@@ -66,7 +66,8 @@ await page.click("[data-stufe]"); await sleep(200);
 ok(await stufe() === "schwer|Schwer", "antippen: Schwer");
 await page.click("[data-stufe]"); await sleep(200);
 const start = await page.evaluate(() => document.querySelector("[data-start-knopf]")?.textContent.trim());
-ok(start === "Lernen starten5 Vokabeln", `Start-Knopf: „Lernen starten / 5 Vokabeln“ (${start})`);
+ok(start === "Lernen starten7 Vokabeln", `Start-Knopf: „Lernen starten / 7 Vokabeln“ – ganze Session (${start})`);
+ok(await page.evaluate(() => document.querySelector("[data-start-titel]")?.textContent.trim()) === "Lernen mit 7 Vokabeln", "Überschrift: „Lernen mit 7 Vokabeln“");
 
 // Lang-Druck: „Lernen einstellen“
 await langDruck("[data-stufe]");
@@ -80,7 +81,7 @@ await page.evaluate(() => document.querySelector("[data-lernen-einst]").closest(
 await page.click("[data-start-knopf]"); await sleep(250);
 let z = await stand();
 console.log("     Start:", JSON.stringify(z));
-ok(z.stand === "1 / 5" && z.phase === "0" && z.wort === "aller" && z.uebersetzung === null, "erst nur das Wort (aller), noch keine Übersetzung");
+ok(z.stand === "1 / 7" && z.phase === "0" && z.wort === "aller" && z.uebersetzung === null, "erst nur das Wort (aller), noch keine Übersetzung");
 const g = await page.evaluate(() => window.__gesprochen);
 ok(g.some(x => x.text === "aller" && x.lang.startsWith("fr")), "Wort wird französisch vorgelesen");
 // Wort vorgelesen → 1 s Ruhe → Übersetzung
@@ -95,7 +96,7 @@ z = await stand();
 console.log("     Zusatzinfo nach", ms, "ms");
 ok(/unregelmäßig/.test(z.info || "") && ms > 1300 && ms < 2600, `danach versetzt die Zusatzinfo (${ms} ms)`);
 // Zusatzinfo: Lesezeit + Pause (1 s) → nächste Vokabel
-ms = await warteAuf(async () => (await stand()).stand === "2 / 5");
+ms = await warteAuf(async () => (await stand()).stand === "2 / 7");
 z = await stand();
 console.log("     nächste Vokabel nach", ms, "ms");
 ok(z.phase === "0" && z.wort === "venir" && ms > 1800, `dann Lesezeit + Pause → nächste Vokabel (${ms} ms)`);
@@ -104,16 +105,16 @@ await page.click("[data-lernen-karte]"); await sleep(150);
 z = await stand();
 ok(z.phase === "1" && z.uebersetzung === "kommen", "antippen: Übersetzung sofort");
 await page.click("[data-lernen-karte]"); await sleep(150);
-ok((await stand()).stand === "3 / 5", "nochmal antippen: nächste Vokabel");
+ok((await stand()).stand === "3 / 7", "nochmal antippen: nächste Vokabel");
 // Pause
 await page.click("[data-lernen-pause]"); await sleep(2500);
 z = await stand();
-ok(z.stand === "3 / 5" && z.phase === "0" && await page.$('[data-lernen-pause="an"]'), "Pause: bleibt stehen");
+ok(z.stand === "3 / 7" && z.phase === "0" && await page.$('[data-lernen-pause="an"]'), "Pause: bleibt stehen");
 await page.click("[data-lernen-pause]"); await sleep(150);
 await page.click("[data-lernen-vor]"); await sleep(150);
-ok((await stand()).stand === "4 / 5", "⏭ vor: nächste Vokabel");
+ok((await stand()).stand === "4 / 7", "⏭ vor: nächste Vokabel");
 await page.click("[data-lernen-zurueck]"); await sleep(150);
-ok((await stand()).stand === "3 / 5" && (await stand()).phase === "0", "⏮ zurück: vorige Vokabel");
+ok((await stand()).stand === "3 / 7" && (await stand()).phase === "0", "⏮ zurück: vorige Vokabel");
 // Zusatzinfo aus: nach der Übersetzung direkt die nächste Vokabel
 await page.click('[data-lernen-info-schalter="aus"]'); await sleep(150);
 await page.click("[data-lernen-zurueck]"); await sleep(150);
@@ -124,7 +125,7 @@ await page.click("[data-lernen-pause]"); await sleep(100);
 await page.click("[data-lernen-karte]"); await sleep(150);
 await page.click("[data-lernen-karte]"); await sleep(150);
 z = await stand();
-ok(z.stand === "2 / 5" && z.info === null, `Zusatzinfo aus: nach der Übersetzung gleich die nächste Vokabel (${z.stand})`);
+ok(z.stand === "2 / 7" && z.info === null, `Zusatzinfo aus: nach der Übersetzung gleich die nächste Vokabel (${z.stand})`);
 await page.click('[data-lernen-info-schalter="an"]'); await sleep(150);
 // Regler „Pause“
 await page.evaluate(() => { const r = document.querySelector("[data-lernen-halte]"); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(r, "4.5"); r.dispatchEvent(new Event("input", { bubbles: true })); });
@@ -133,14 +134,56 @@ const halte = await page.evaluate(() => ({ text: document.querySelector("[data-l
 ok(halte.text === "4,5 s" && halte.gespeichert === 4.5, `Regler „Pause“: 4,5 s, gespeichert (${JSON.stringify(halte)})`);
 await page.click("[data-lernen-pause]"); await sleep(100);
 
-// zu Ende tippen
-for (let i = 0; i < 8 && !(await page.$("[data-lernen-fertig]")); i++) { await page.click("[data-lernen-karte]"); await sleep(120); }
-ok(await page.$("[data-lernen-fertig]"), "Ende: „5 Vokabeln angesehen“");
+// Paket 1 zu Ende tippen
+const tippeBisEnde = async () => { for (let i = 0; i < 12 && !(await page.$("[data-lernen-fertig]")); i++) { await page.click("[data-lernen-karte]"); await sleep(120); } };
+await tippeBisEnde();
+let ende = await page.evaluate(() => ({ titel: document.querySelector("[data-lernen-fertig] .quiz-frage-text")?.textContent.trim(), paket: document.querySelector("[data-lernen-paket]")?.textContent.trim(),
+  quiz: document.querySelector("[data-lernen-quiz]")?.textContent.trim(), weiter: document.querySelector("[data-lernen-weiter]")?.textContent.trim(), nochmal: !!document.querySelector("[data-lernen-nochmal]") }));
+console.log("     Paket-Ende:", JSON.stringify(ende));
+ok(ende.titel === "5 Vokabeln angesehen" && ende.paket === "Paket 1 von 2", "Ende Paket 1: „5 Vokabeln angesehen“, Paket 1 von 2");
+ok(ende.quiz === "Quiz mit diesen 5 Vokabeln" && ende.weiter === "Weiter lernen: nächste 2" && !ende.nochmal, "Knöpfe: Quiz mit diesen 5, Weiter lernen: nächste 2 – kein „Nochmal“");
 const daten = await page.evaluate(() => ({ scores: JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.filter(v => v.fortschritt).length,
   session: localStorage.getItem("vokabel_session_aktiv") }));
-ok(daten.scores === 0 && !daten.session, `kein Score, kein Session-Fortschritt (${JSON.stringify(daten)})`);
-await page.click("[data-lernen-nochmal]"); await sleep(150);
-ok((await stand()).stand === "1 / 5", "Nochmal: von vorn");
+ok(daten.scores === 0 && !daten.session, `Lernen: kein Score, kein Session-Fortschritt (${JSON.stringify(daten)})`);
+
+// Quiz mit diesen 5 (eingestellte Stufe: Schwer) – „aller“ einmal nicht gewusst
+const lernQuiz = async (falsch = []) => {
+  await page.click("[data-lernen-quiz]"); await sleep(400);
+  const gefragt = [];
+  for (let k = 0; k < 20 && !(await page.$("[data-weiter-lernen]")); k++) {
+    if (await page.$("[data-zur-auswertung]")) { await page.click("[data-zur-auswertung]"); await sleep(300); continue; }
+    const t = await page.evaluate(() => document.body.innerText);
+    if (t.includes("Weiter zur Wiederholung")) { await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("Weiter zur Wiederholung")).click()); await sleep(300); continue; }
+    const f = await page.evaluate(() => document.querySelector(".quiz-frage-text")?.textContent.trim());
+    if (!f) { await sleep(200); continue; }
+    gefragt.push(f);
+    await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click()); await sleep(200);
+    const nein = falsch.includes(f) && gefragt.filter(x => x === f).length === 1;
+    await page.evaluate(nein => [...document.querySelectorAll(".karte-btn")].find(b => nein ? /Nicht gewusst/.test(b.textContent) : /Gewusst/.test(b.textContent) && !/Nicht/.test(b.textContent))?.click(), nein);
+    await sleep(1300);
+  }
+  return gefragt;
+};
+const gefragt1 = await lernQuiz(["gehen"]);
+console.log("     Quiz fragte:", gefragt1.join(", "));
+ok(["gehen","kommen","sehen","machen","sagen"].every(w => gefragt1.includes(w)) && !gefragt1.includes("nehmen"), "Quiz fragt genau die 5 gelernten Vokabeln ab");
+ok(!(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => /Statistik/.test(b.textContent)))), "Ende des Quiz: kein Statistik-Knopf");
+const sc = await page.evaluate(() => Object.fromEntries(JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.map(v => [v.D1.wert, v.fortschritt?.score ?? null])));
+console.log("     Scores:", JSON.stringify(sc));
+ok(sc.gehen === 0 && sc.kommen === 1 && sc.nehmen === null, "nicht gewusst: kein Abzug (0) trotz Stufe Schwer, gewusst: +1");
+ok(!(await page.evaluate(() => localStorage.getItem("vokabel_session_aktiv"))), "Session-Fortschritt bleibt unberührt");
+await page.click("[data-weiter-lernen]"); await sleep(300);
+z = await stand();
+ok(z.stand === "6 / 7" && z.phase === "0" && z.wort === "prendre", `„Weiter lernen“: nächstes Paket (${z.stand} ${z.wort})`);
+
+// Paket 2: letztes Paket, Quiz einmal möglich
+await page.click("[data-lernen-pause]"); await sleep(100);
+await tippeBisEnde();
+ende = await page.evaluate(() => ({ titel: document.querySelector("[data-lernen-fertig] .quiz-frage-text")?.textContent.trim(), weiter: !!document.querySelector("[data-lernen-weiter]"), quiz: !!document.querySelector("[data-lernen-quiz]") }));
+ok(ende.titel === "Alle 7 Vokabeln angesehen" && !ende.weiter && ende.quiz, "letztes Paket: „Alle 7 Vokabeln angesehen“, Quiz möglich, kein Weiter");
+await lernQuiz();
+await page.click("[data-weiter-lernen]"); await sleep(300);
+ok(await page.$("[data-lernen-fertig]") && !(await page.$("[data-lernen-quiz]")), "nach dem Quiz: kein zweites Quiz für dieses Paket");
 await page.click("[data-lernen-beenden]"); await sleep(300);
 ok(await page.$("[data-stufe]") && !(await page.$("[data-lernen-karte]")), "Beenden: zurück im Quiz-Tab");
 

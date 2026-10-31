@@ -1748,6 +1748,17 @@ LERNEN (Schritt 4): einstellungen.lernen = { aktiv, zuerst "fremd"|"deutsch",
   (if (lernen) vor den Quiz-Bildschirmen); Effekt liest vor (aeusserung,
   vokLang), wartet bis speechSynthesis.speaking aus ist (max 15 s), dann Pause
   → lernenWeiter. Kein Score, kein Session-Fortschritt. Test: e2e/lernen.mjs.
+  Paketweise: lernen.alle (offene Session-Vokabeln, ordneVokabeln), groesse, start;
+  Paket-Ende: "Quiz mit diesen N Vokabeln" (starteLernQuiz: Gruppen-Runde mit
+  starteQuiz(true, null, ids, "lernen"), quiz.ausLernen, lernen.imQuiz; einmal je
+  Paket: quizGemacht) und "Weiter lernen: nächste N" (naechstesLernPaket); kein
+  "Nochmal". quizStufeRef "lernen" → quizRegeln(): Regeln "Leicht" ohne
+  falschAbzug/aufdeckenAbzug (nur Verbesserung). Ausgänge der Runde über
+  verlasseRunde()/zurueckZumLernen() → nächstes Paket; Endknöpfe "🎬 Weiter
+  lernen" (data-weiter-lernen), kein Statistik-Knopf.
+Start-Bereich: Überschrift data-start-titel "Quiz/Lernen mit N Vokabeln".
+Gelernte eingeschaltet: Score-Grenzen ("Schlechteste", "Score < X") gelten für sie
+  nicht (gelerntDabei in starteQuiz, starteDiktat und Zählung im Quiz-Tab).
 DEPLOY-HINWEIS: Falls GitHub Pages nach "npm run deploy" lange die alte index-*.js
   ausliefert (gh-pages-Branch aber neu), Pages-Build per leerem Commit auf gh-pages
   anstoßen (git worktree auf origin/gh-pages, commit --allow-empty, push).
