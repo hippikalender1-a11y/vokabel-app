@@ -290,9 +290,11 @@ function ordneVokabeln(voks, scoreFeld, reihenfolge, unbeantwortet) {
   return reihenfolge === "listennr" ? voks : zufall(voks);
 }
 
-// Lernen: Standard-Einstellungen (Zuerst-Seite, Pausen in Sekunden, Vorlesen je Seite)
-const LERNEN_STANDARD = { aktiv: false, zuerst: "fremd", pause1: 3, pause2: 3, vorlesen1: true, vorlesen2: false };
-const LERNEN_PAUSEN = [1, 2, 3, 5, 8];
+// Lernen: Standard-Einstellungen (Zuerst-Seite, Pause am Ende in Sekunden, Zusatzinfo, Vorlesen je Seite)
+const LERNEN_STANDARD = { aktiv: false, zuerst: "fremd", halte: 3, info: true, vorlesen1: true, vorlesen2: false };
+const LERNEN_KURZ = 1000;   // ms Ruhe nach dem Wort bzw. vor der Zusatzinfo
+// geschätzte Lesezeit (ohne Vorlesen), etwa Sprechtempo: ~14 Zeichen je Sekunde
+const lernLesezeit = text => Math.max(600, 400 + (text || "").length / 14 * 1000);
 
 // Gelernt-Effekt: Sternenregen von der Antwort-Karte nach außen (8 Sterne, leicht versetzt)
 function GelerntSterne() {
@@ -1106,6 +1108,11 @@ const CSS_BASIS = `
   .lernen-warte{text-align:center;color:var(--text3);font-size:1.6rem;letter-spacing:0.2em;min-height:2.4rem;}
   .lernen-steuerung{display:flex;gap:10px;margin-top:14px;}
   .lernen-steuerung .btn{flex:1;min-height:56px;font-size:1.4rem;}
+  .lernen-regler{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
+  .lernen-regler-zeile{display:flex;align-items:center;gap:10px;font-size:0.85rem;font-weight:600;color:var(--text2);}
+  .lernen-regler-zeile > span{min-width:78px;}
+  .lernen-regler-zeile input[type=range]{flex:1;accent-color:var(--haupt);}
+  .lernen-regler-zeile b{min-width:42px;text-align:right;color:var(--haupt);}
   .multi-leiste{position:fixed;left:12px;right:12px;bottom:12px;z-index:900;max-width:640px;margin:0 auto;display:flex;gap:8px;padding:8px;background:var(--karte);border:1.5px solid var(--rahmen);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.2);}
   .multi-leiste .btn-primary{flex:1;}
   .auswahl-nr{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;border-radius:10px;background:var(--gelb);color:var(--auf-haupt);font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;z-index:2;}
@@ -1557,18 +1564,24 @@ export default function VokabelApp() {
     const v = lernen.voks[lernen.index];
     if (!v) return;
     const le = { ...LERNEN_STANDARD, ...(einstellungen.lernen || {}) };
-    const texte = (lernen.phase === 0 ? lernen.zuerst : lernen.danach).filter(t => v[t]?.wert).map(t => [v[t].wert.split('/')[0].trim(), vokLang(v, t)]);
-    const sekunden = lernen.phase === 0 ? le.pause1 : le.pause2;
+    // Abschnitte: 0 Wort, 1 Übersetzung, 2 Zusatzinfo – danach jeweils Lese-/Vorlesezeit plus Pause
+    const spalten = lernen.phase === 0 ? lernen.zuerst : lernen.phase === 1 ? lernen.danach : lernen.info;
+    const texte = spalten.filter(t => v[t]?.wert).map(t => [v[t].wert.split('/')[0].trim(), vokLang(v, t)]);
+    const infoFolgt = lernen.phase === 1 && lernInfoZeigen(lernen, v);
+    const pause = lernen.phase === 0 || infoFolgt ? LERNEN_KURZ : le.halte * 1000;
+    const vorlesen = lernen.phase === 0 ? le.vorlesen1 : lernen.phase === 1 ? le.vorlesen2 : false;
     let timer = null, aus = false;
-    const warte = () => { timer = setTimeout(() => { if (!aus) lernenWeiter(); }, sekunden * 1000); };
-    if ((lernen.phase === 0 ? le.vorlesen1 : le.vorlesen2) && texte.length && window.speechSynthesis) {
+    const warte = ms => { timer = setTimeout(() => { if (!aus) lernenWeiter(); }, ms); };
+    if (!(vorlesen && texte.length && window.speechSynthesis)) {
+      warte((texte.length ? lernLesezeit(texte.map(x => x[0]).join(" ")) : 0) + pause);
+    } else {
       window.speechSynthesis.cancel();
       texte.forEach(([t, l]) => window.speechSynthesis.speak(aeusserung(t, l)));
       // Pause erst nach dem Vorlesen (Sicherung: höchstens 15 s warten)
       const start = Date.now();
-      const pruefe = () => { if (aus) return; if (window.speechSynthesis.speaking && Date.now() - start < 15000) timer = setTimeout(pruefe, 150); else warte(); };
+      const pruefe = () => { if (aus) return; if (window.speechSynthesis.speaking && Date.now() - start < 15000) timer = setTimeout(pruefe, 150); else warte(pause); };
       timer = setTimeout(pruefe, 300);
-    } else warte();
+    }
     return () => { aus = true; clearTimeout(timer); window.speechSynthesis?.cancel(); };
   }, [lernen?.lauf, lernen?.index, lernen?.phase, lernen?.pausiert, lernen?.fertig]);
 
@@ -2845,10 +2858,13 @@ export default function VokabelApp() {
     setLernen({ voks, index: 0, phase: 0, pausiert: false, fertig: false, lauf: 0, zuerst, danach, info, liste: quizKombiListe });
     window.scrollTo(0, 0);
   }
+  // Zusatzinfo dieser Vokabel zeigen? (Schalter auf dem Lernbildschirm, nur wenn es Info-Text gibt)
+  function lernInfoZeigen(l, v) { return lernEinstellungen().info && l.info.some(t => v?.[t]?.wert); }
   function lernenWeiter() {
     setLernen(l => {
       if (!l || l.fertig) return l;
       if (l.phase === 0 && l.danach.length) return { ...l, phase: 1 };
+      if (l.phase === 1 && lernInfoZeigen(l, l.voks[l.index])) return { ...l, phase: 2 };
       if (l.index + 1 >= l.voks.length) return { ...l, fertig: true };
       return { ...l, index: l.index + 1, phase: 0 };
     });
@@ -5143,7 +5159,7 @@ export default function VokabelApp() {
     const n = lernen.voks.length;
     const v = lernen.voks[lernen.index];
     const name = t => lernen.liste?.spalten?.[t]?.name || t;
-    const pct = Math.round((lernen.fertig ? n : lernen.index + (lernen.phase === 1 ? 0.5 : 0)) / n * 100);
+    const pct = Math.round((lernen.fertig ? n : lernen.index + lernen.phase / 3) / n * 100);
     const seite = (spalten, art) => spalten.filter(t => v[t]?.wert).map(t => (
       <div key={t} className={`lernen-zeile${art === "danach" ? " lernen-uebersetzung" : ""}`} {...(art === "danach" ? { "data-lernen-uebersetzung": true } : { "data-lernen-wort": true })}>
         <div className="lernen-label">{name(t)}</div>
@@ -5173,12 +5189,12 @@ export default function VokabelApp() {
               <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={beendeLernen} {...tt("Zurück zum Quiz-Tab")}>Zur Übersicht</button>
             </>) : (<>
               <div className="quiz-frage-box lernen-karte" data-lernen-karte data-lernen-phase={lernen.phase} onClick={lernenWeiter}
-                {...tt(lernen.phase === 0 ? "Antippen: Übersetzung sofort zeigen" : "Antippen: sofort zur nächsten Vokabel")}>
+                {...tt(lernen.phase === 0 ? "Antippen: Übersetzung sofort zeigen" : "Antippen: sofort weiter (Zusatzinfo bzw. nächste Vokabel)")}>
                 {seite(lernen.zuerst, "zuerst")}
                 <div className="lernen-trenner"/>
-                {lernen.phase === 1 ? (<>
+                {lernen.phase >= 1 ? (<>
                   {seite(lernen.danach, "danach")}
-                  {lernen.info.filter(t => v[t]?.wert).map(t => (
+                  {lernen.phase === 2 && lernen.info.filter(t => v[t]?.wert).map(t => (
                     <div key={t} className="lernen-info" data-lernen-info><span className="lernen-label">{name(t)}</span> {mitHinweis(v[t].wert)}</div>
                   ))}
                 </>) : <div className="lernen-warte">{lernen.pausiert ? "⏸" : "…"}</div>}
@@ -5190,6 +5206,26 @@ export default function VokabelApp() {
                   {...tt(lernen.pausiert ? "Weiterlaufen lassen" : "Anhalten – antippen der Karte geht trotzdem weiter")}>{lernen.pausiert ? "▶" : "⏸"}</button>
                 <button className="btn btn-ghost" data-lernen-vor onClick={lernenVor}
                   {...tt("Weiter zur nächsten Vokabel")}>⏭</button>
+              </div>
+              <div className="lernen-regler">
+                {lernen.info.length > 0 && (
+                  <div className="lernen-regler-zeile">
+                    <span>Zusatzinfo</span>
+                    <div className="toggle-btn">
+                      <button className={`toggle-opt${lernEinstellungen().info ? " aktiv" : ""}`} data-lernen-info-schalter="an" onClick={() => setzeLernEinst({ info: true })}
+                        {...tt("Zusatzinfo (Info-Spalten) nach der Übersetzung einblenden")}>An</button>
+                      <button className={`toggle-opt${!lernEinstellungen().info ? " aktiv" : ""}`} data-lernen-info-schalter="aus" onClick={() => setzeLernEinst({ info: false })}
+                        {...tt("Ohne Zusatzinfo – nur Wort und Übersetzung")}>Aus</button>
+                    </div>
+                  </div>
+                )}
+                <div className="lernen-regler-zeile">
+                  <span>Pause</span>
+                  <input type="range" min="1" max="10" step="0.5" value={lernEinstellungen().halte} data-lernen-halte
+                    onChange={e => setzeLernEinst({ halte: parseFloat(e.target.value) })}
+                    {...ttFeld("Pause, bevor die nächste Vokabel kommt (zusätzlich zur Lese- bzw. Vorlesezeit)")}/>
+                  <b data-lernen-halte-wert>{String(lernEinstellungen().halte).replace(".", ",")} s</b>
+                </div>
               </div>
             </>)}
           </div>
@@ -8068,7 +8104,7 @@ export default function VokabelApp() {
                   {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Die Kreise rechts in der Kopfzeile der Session-Auswahl zeigen den Lernfortschritt der Auswahl je Art; antippen schaltet die Art um. Eine Art ohne passende Vokabeln wird nicht angezeigt. Auch die Listen im Listen-Tab zeigen die drei Kreise. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC oder Tastatur. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
                   {k:"Akzente", v:"Eigene Abfrageart (A): Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Ob auch Wörter ohne Akzent abgefragt werden, legst du beim Schwierigkeitsgrad fest."},
                   {k:"Zeile 1: Modus · Reihenfolge · Stufe", v:"Erster Knopf: Abfrage-Modus der gewählten Art (z. B. „Karte“) – antippen öffnet die Spalten- und Modus-Einstellungen. Zweiter Knopf: Reihenfolge – Zufällig / Schlechteste (nach Score sortiert) / Listen-Nr. (Originalreihenfolge), dazu Score-Filter und „Unbeantwortete zuerst“. Es ist immer nur ein Bereich offen. Dritter Knopf: Stufe Lernen, Leicht oder Schwer – antippen wechselt der Reihe nach. Lang drücken: „Regeln Leicht / Schwer“, bei Lernen „Lernen einstellen“ und „Vorlesen“."},
-                  {k:"Lernen", v:"Stufe „Lernen“ (dritter Knopf in Zeile 1): Der Start-Knopf heißt dann „Lernen starten“. Wie ein Film: erst das Wort (auf Wunsch vorgelesen), nach einer Pause die Übersetzung mit den eingeschalteten Info-Spalten, dann die nächste Vokabel. Antippen der Karte überspringt die Pause; unten ⏮ zurück, ⏸ anhalten, ⏭ vor, oben „Beenden“. Es kommen dieselben Vokabeln wie beim nächsten Quiz-Paket (Auswahl, Reihenfolge, Umfang). Lernen ändert keine Scores und nicht den Session-Fortschritt. Lang drücken auf den Knopf → „Lernen einstellen“: was zuerst kommt (Fremdsprache oder Deutsch), Pause nach dem Wort und nach der Übersetzung (1–8 s), Wort bzw. Übersetzung vorlesen. Am Ende: „Quiz starten“, „Nochmal“ oder „Zur Übersicht“."},
+                  {k:"Lernen", v:"Stufe „Lernen“ (dritter Knopf in Zeile 1): Der Start-Knopf heißt dann „Lernen starten“. Wie ein Film: erst das Wort (auf Wunsch vorgelesen), nach einer Pause die Übersetzung mit den eingeschalteten Info-Spalten, dann die nächste Vokabel. Antippen der Karte überspringt die Pause; unten ⏮ zurück, ⏸ anhalten, ⏭ vor, oben „Beenden“. Es kommen dieselben Vokabeln wie beim nächsten Quiz-Paket (Auswahl, Reihenfolge, Umfang). Lernen ändert keine Scores und nicht den Session-Fortschritt. Ablauf: Wort (vorgelesen oder Lesezeit) + 1 s, Übersetzung + 1 s, Zusatzinfo, dann die Pause (Regler auf dem Lernbildschirm, 1–10 s, Standard 3 s); ohne Zusatzinfo folgt die Pause direkt nach der Übersetzung. Ohne Vorlesen wird die Lesezeit aus der Textlänge geschätzt. „Zusatzinfo An | Aus“ steht ebenfalls auf dem Lernbildschirm. Lang drücken auf den Knopf → „Lernen einstellen“: was zuerst kommt (Fremdsprache oder Deutsch), Wort bzw. Übersetzung vorlesen. Am Ende: „Quiz starten“, „Nochmal“ oder „Zur Übersicht“."},
                   {k:"Regeln Leicht / Schwer", v:"Lang drücken auf den Stufen-Knopf. Per Haken legst du fest, was in welcher Stufe gilt: fehlende Akzente beim Tippen als richtig werten, Punktabzug bei „Lösung anzeigen“, „Nicht gewusst“ zieht 1 Punkt ab, im Akzent-Modus auch Wörter ohne Akzent abfragen (mit Höchstanteil), Buchstaben mit Akzent hervorheben, die Zahl der noch fehlenden Akzente anzeigen (z. B. 2 / 3) und richtige Antworten automatisch übernehmen (sonst „Prüfen“). „Vorlesen“ (ebenfalls per Lang-Druck): Auto-Play und welche Spalten vorgelesen werden."},
                   {k:"Zeile 2: Umfang · Abfrage-Ziel · Gelernte", v:"Umfang: „Alle Vokabeln“ in einem Durchgang oder „Je N Vokabeln“ – antippen zeigt große Zahlenknöpfe (Alle, 5–50). Bei Paketen kannst du nach jedem Paket pausieren oder weitermachen; abgefragte Vokabeln werden beim nächsten Paket übersprungen. Gelernte (nur wenn es welche gibt): „13 gelernte“ = ausgeblendet, „+ 13 gelernte“ = werden mit abgefragt."},
                   {k:"Abfrage-Ziel", v:"Anzahl: jede Vokabel 1×/2×/3× pro Durchgang abfragen. Mit Wiederholung: Vokabeln so lange einreihen, bis jede 1×/2×/3× richtig beantwortet wurde. Score (global, Knopf z. B. „Score < +3“): nur Vokabeln mit Score unter dem Ziel kommen in die Session, jede einmal (ohne Wiederholung) – Ziel 0 fragt nur negative ab (nie abgefragte zählen als 0). Session-Score: alle Vokabeln, jede so lange, bis sie in dieser Session um das Ziel gestiegen ist."},
@@ -8555,13 +8591,9 @@ export default function VokabelApp() {
           <div className="overlay" onClick={() => setModal(null)}>
             <div className="modal" onClick={e => e.stopPropagation()} data-lernen-einst style={{maxHeight:"88vh", overflowY:"auto"}}>
               <div className="modal-titel">🎬 Lernen einstellen</div>
-              <div style={{fontSize:"0.8rem", color:"var(--text2)", marginBottom:12}}>Erst das Wort, nach einer Pause die Übersetzung, dann die nächste Vokabel. Antippen der Karte geht sofort weiter. Ohne Score.</div>
+              <div style={{fontSize:"0.8rem", color:"var(--text2)", marginBottom:12}}>Erst das Wort, dann die Übersetzung, auf Wunsch die Zusatzinfo, dann die nächste Vokabel. Pause und Zusatzinfo stellst du direkt auf dem Lernbildschirm ein. Antippen der Karte geht sofort weiter. Ohne Score.</div>
               <div className="inp-label">Zuerst zeigen</div>
               {wahl("zuerst", [["fremd", "Fremdsprache"], ["deutsch", "Deutsch"]], "Zuerst zeigen")}
-              <div className="inp-label" style={{marginTop:14}}>Pause nach dem Wort</div>
-              {wahl("pause1", LERNEN_PAUSEN.map(x => [x, `${x} s`]), "Pause nach dem Wort")}
-              <div className="inp-label" style={{marginTop:14}}>Pause nach der Übersetzung</div>
-              {wahl("pause2", LERNEN_PAUSEN.map(x => [x, `${x} s`]), "Pause nach der Übersetzung")}
               <div className="inp-label" style={{marginTop:14}}>Wort vorlesen</div>
               {wahl("vorlesen1", [[true, "Ja"], [false, "Nein"]], "Wort vorlesen")}
               <div className="inp-label" style={{marginTop:14}}>Übersetzung vorlesen</div>

@@ -29,6 +29,8 @@ const stand = () => page.evaluate(() => ({
   uebersetzung: document.querySelector("[data-lernen-uebersetzung] .lernen-wort")?.textContent.trim() || null,
   info: document.querySelector("[data-lernen-info]")?.textContent.trim() || null,
 }));
+// wartet, bis die Bedingung gilt; gibt die verstrichene Zeit in ms zurück (oder -1)
+const warteAuf = async (fn, max = 6000) => { const t0 = Date.now(); while (Date.now() - t0 < max) { if (await fn()) return Date.now() - t0; await sleep(50); } return -1; };
 const stufe = () => page.evaluate(() => { const b = document.querySelector("[data-stufe]"); return `${b.dataset.stufe}|${b.textContent.trim()}`; });
 const langDruck = async sel => {
   await page.evaluate(sel => { const el = document.querySelector(sel); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, sel);
@@ -46,7 +48,7 @@ await page.evaluate(() => {
   const k = { listenIds:["l_fr"], vokabelAuswahl:[], bereichTyp:"alle", quizAusgewaehlt:["D1","E1"], quizFrageTyp:"D1", quizAntwortTypenGeordnet:["E1"],
     quizInfoTypenSession:[], quizSpalteModus:{E1:"karte"}, quizZeigeInfo:{i1:true}, quizModus:"sequenziell", quizReihenfolge:"listennr" };
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g_1", name:"Verben", timestamp:1, konfiguration:k, sessionFortschritt:null, platz:{z:0,s:0} }] }));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", gelerntSchwelle:6, sprache:"alle", lernen: { pause1: 1, pause2: 1 } }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", gelerntSchwelle:6, sprache:"alle", lernen: { halte: 1 } }));
 });
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
@@ -71,7 +73,7 @@ await langDruck("[data-stufe]");
 const menue = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
 ok(menue.includes("🎬 Lernen einstellen") && menue.includes("⚙ Regeln Leicht / Schwer") && menue.includes("🔊 Vorlesen"), `Lang-Druck: Regeln, Lernen, Vorlesen (${menue.join(" | ")})`);
 await page.evaluate(() => document.querySelector('[data-info-aktion="🎬 Lernen einstellen"]').click()); await sleep(300);
-ok(await page.$("[data-lernen-einst]") && await page.$('[data-lernen-pause1="1"].aktiv') && await page.$('[data-lernen-zuerst="fremd"].aktiv'), "Fenster „Lernen einstellen“: Pause 1 s, zuerst Fremdsprache");
+ok(await page.$("[data-lernen-einst]") && await page.$('[data-lernen-zuerst="fremd"].aktiv') && await page.$('[data-lernen-vorlesen1="true"].aktiv'), "Fenster „Lernen einstellen“: zuerst Fremdsprache, Wort vorlesen");
 await page.evaluate(() => document.querySelector("[data-lernen-einst]").closest(".overlay").click()); await sleep(200);
 
 // Lernen starten
@@ -81,13 +83,22 @@ console.log("     Start:", JSON.stringify(z));
 ok(z.stand === "1 / 5" && z.phase === "0" && z.wort === "aller" && z.uebersetzung === null, "erst nur das Wort (aller), noch keine Übersetzung");
 const g = await page.evaluate(() => window.__gesprochen);
 ok(g.some(x => x.text === "aller" && x.lang.startsWith("fr")), "Wort wird französisch vorgelesen");
-await sleep(1300);
+// Wort vorgelesen → 1 s Ruhe → Übersetzung
+let ms = await warteAuf(async () => (await stand()).phase === "1");
 z = await stand();
-ok(z.phase === "1" && z.uebersetzung === "gehen" && /unregelmäßig/.test(z.info || ""), `nach der Pause: Übersetzung + Info (${z.uebersetzung}, ${z.info})`);
+console.log("     Übersetzung nach", ms, "ms");
+ok(z.uebersetzung === "gehen" && z.info === null && ms > 900 && ms < 2200, `nach Vorlesen + 1 s: Übersetzung, noch ohne Zusatzinfo (${ms} ms)`);
 ok(!(await page.evaluate(() => window.__gesprochen)).some(x => x.text === "gehen"), "Übersetzung nicht vorgelesen (Standard)");
-await sleep(1300);
+// Übersetzung: Lesezeit + 1 s → Zusatzinfo
+ms = await warteAuf(async () => (await stand()).phase === "2");
 z = await stand();
-ok(z.stand === "2 / 5" && z.phase === "0" && z.wort === "venir", `danach automatisch die nächste Vokabel (${z.stand} ${z.wort})`);
+console.log("     Zusatzinfo nach", ms, "ms");
+ok(/unregelmäßig/.test(z.info || "") && ms > 1300 && ms < 2600, `danach versetzt die Zusatzinfo (${ms} ms)`);
+// Zusatzinfo: Lesezeit + Pause (1 s) → nächste Vokabel
+ms = await warteAuf(async () => (await stand()).stand === "2 / 5");
+z = await stand();
+console.log("     nächste Vokabel nach", ms, "ms");
+ok(z.phase === "0" && z.wort === "venir" && ms > 1800, `dann Lesezeit + Pause → nächste Vokabel (${ms} ms)`);
 // antippen überspringt die Pause
 await page.click("[data-lernen-karte]"); await sleep(150);
 z = await stand();
@@ -103,6 +114,25 @@ await page.click("[data-lernen-vor]"); await sleep(150);
 ok((await stand()).stand === "4 / 5", "⏭ vor: nächste Vokabel");
 await page.click("[data-lernen-zurueck]"); await sleep(150);
 ok((await stand()).stand === "3 / 5" && (await stand()).phase === "0", "⏮ zurück: vorige Vokabel");
+// Zusatzinfo aus: nach der Übersetzung direkt die nächste Vokabel
+await page.click('[data-lernen-info-schalter="aus"]'); await sleep(150);
+await page.click("[data-lernen-zurueck]"); await sleep(150);
+await page.click("[data-lernen-zurueck]"); await sleep(150);
+await page.click("[data-lernen-zurueck]"); await sleep(150);
+ok((await stand()).wort === "aller", "zurück zu „aller“");
+await page.click("[data-lernen-pause]"); await sleep(100);
+await page.click("[data-lernen-karte]"); await sleep(150);
+await page.click("[data-lernen-karte]"); await sleep(150);
+z = await stand();
+ok(z.stand === "2 / 5" && z.info === null, `Zusatzinfo aus: nach der Übersetzung gleich die nächste Vokabel (${z.stand})`);
+await page.click('[data-lernen-info-schalter="an"]'); await sleep(150);
+// Regler „Pause“
+await page.evaluate(() => { const r = document.querySelector("[data-lernen-halte]"); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(r, "4.5"); r.dispatchEvent(new Event("input", { bubbles: true })); });
+await sleep(150);
+const halte = await page.evaluate(() => ({ text: document.querySelector("[data-lernen-halte-wert]")?.textContent.trim(), gespeichert: JSON.parse(localStorage.getItem("vokabel_einstellungen")).lernen?.halte }));
+ok(halte.text === "4,5 s" && halte.gespeichert === 4.5, `Regler „Pause“: 4,5 s, gespeichert (${JSON.stringify(halte)})`);
+await page.click("[data-lernen-pause]"); await sleep(100);
+
 // zu Ende tippen
 for (let i = 0; i < 8 && !(await page.$("[data-lernen-fertig]")); i++) { await page.click("[data-lernen-karte]"); await sleep(120); }
 ok(await page.$("[data-lernen-fertig]"), "Ende: „5 Vokabeln angesehen“");

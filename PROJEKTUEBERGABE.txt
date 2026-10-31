@@ -1731,7 +1731,12 @@ MULTIQUIZ (Schritt 3): Kachel-Lang-Druck "🧩 Multiquiz" (nur Quiz-Tab) →
   Gemischte Sprachen: Vorlesesprache je Vokabel über _listeId; im Raster
   sichtbar nur unter Sprachfilter "Alle". Test: e2e/multiquiz.mjs.
 LERNEN (Schritt 4): einstellungen.lernen = { aktiv, zuerst "fremd"|"deutsch",
-  pause1, pause2 (s, LERNEN_PAUSEN), vorlesen1, vorlesen2 } (LERNEN_STANDARD).
+  halte (s, Regler 1–10 auf dem Lernbildschirm), info (Schalter An|Aus auf dem
+  Lernbildschirm), vorlesen1, vorlesen2 } (LERNEN_STANDARD).
+  Abschnitte phase 0 Wort → 1 Übersetzung → 2 Zusatzinfo (nur wenn info an und
+  Text da, lernInfoZeigen). Wartezeit je Abschnitt: Vorlesen (bis speaking aus)
+  bzw. lernLesezeit(text) (~14 Zeichen/s, min. 0,6 s) + Pause: nach Wort und vor
+  der Zusatzinfo LERNEN_KURZ = 1 s, sonst halte. Antippen = sofort weiter.
   Stufen-Knopf: Lernen → Leicht → Schwer (lernen.aktiv; modus bleibt einfach/
   schwer, damit stufenRegeln gültig bleibt; Regeln-Modal Leicht/Schwer setzt
   aktiv=false). Lang-Druck bei Lernen: "🎬 Lernen einstellen" (Modal lernen-einst).
