@@ -74,7 +74,7 @@ await page.goto(URL); await sleep(500);
 await klick(".tab", "Quiz");
 await pruefe("Quiz-Tab");
 await klick(".quiz-setup-check", "Verbs"); await pruefe("Quiz-Tab Liste");
-for (const b of ["Bereich", "Frage – Antwort", "Zufällig", "Einfach", "10 V."]) { await (b === "Frage – Antwort" ? klick("[data-abfragemodus]", "") : klick("button", b, true)); await pruefe("Quiz-Bereich " + b); }
+for (const [sel, b] of [["button", "Bereich"], ["[data-abfragemodus]", ""], ["[data-reihenfolge]", ""], ["[data-umfang]", ""], ["[data-abfrageziel]", ""]]) { await klick(sel, b, !!b); await pruefe("Quiz-Bereich " + (b || sel)); }
 await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Speichern"]').click()); await new Promise(r => setTimeout(r, 300)); await pruefe("Speichern-Modal"); await klick(".modal button", "Abbrechen"); await page.keyboard.press("Escape"); await page.mouse.click(5, 5); await sleep(200);
 
 // Quiz läuft (Karte)

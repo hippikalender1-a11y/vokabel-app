@@ -1058,6 +1058,7 @@ const CSS_BASIS = `
   .quiz-zeile{position:sticky;z-index:7;display:flex;gap:8px;background:var(--karte);border-bottom:1px solid var(--rahmen);padding:10px 16px;margin:0 -16px;}
   .quiz-zeile-knopf{flex:1;min-width:0;padding:9px 6px;border-radius:10px;border:1.5px solid var(--haupt);background:var(--haupt);color:var(--auf-haupt);font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .quiz-zeile-knopf.zweizeilig{padding:4px 6px;line-height:1.2;}
+  .quiz-zeile-knopf.umbruch{white-space:normal;line-height:1.2;padding:4px 6px;}
   .quiz-zeile-knopf .zeile1,.quiz-zeile-knopf .zeile2{display:block;overflow:hidden;text-overflow:ellipsis;}
   .quiz-zeile-knopf .zeile2{font-size:0.72rem;font-weight:600;opacity:0.85;}
   .quiz-zeile-knopf.offen{background:var(--karte);color:var(--haupt);}
@@ -2019,7 +2020,7 @@ export default function VokabelApp() {
     const passt = id => spracheVonListe(id) === code;
     // Quiz: Auswahl/Konfiguration mit Listen anderer Sprache zurücksetzen
     if (quizTabListen.some(id => !passt(id))) {
-      setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false);
+      setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); zurUebersetzung();
       lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
       setQuizTabListen(quizTabListen.filter(passt));
       setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set());
@@ -2274,7 +2275,7 @@ export default function VokabelApp() {
       } else {
         // keine Konfiguration mehr ("Neu" oder Liste geändert) → im Quiz lösen, Session ebenfalls
         // (ihr Fortschritt bleibt im gespeicherten Eintrag); Listen-/Vokabelauswahl übernehmen
-        if (aktiverSlot) { setAktiverSlot(null); setGespeicherteVokabelgruppe(null); lsDel(SK.letzterSlot); lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); }
+        if (aktiverSlot) { setAktiverSlot(null); setGespeicherteVokabelgruppe(null); lsDel(SK.letzterSlot); lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); zurUebersetzung(); }
         setQuizTabListen(statistikListenIds === null ? sichtbareListen.map(l => l.id) : [...statistikListenIds]);
         setQuizBereichTyp(statistikBereichTyp);
         setQuizCheckboxAuswahl(new Set(statistikBereichTyp === "bereich" ? statistikCheckboxAuswahl : []));
@@ -2743,6 +2744,8 @@ export default function VokabelApp() {
     setQuizDiktatUebersetzung(k.quizDiktatUebersetzung !== undefined ? k.quizDiktatUebersetzung : "D1");
   }
   // Ü|D|A: Einstellungen der bisherigen Art merken, die der neuen Art laden (oder Standard)
+  // neues Quiz (ohne geladene Konfiguration) beginnt immer in Übersetzung
+  function zurUebersetzung() { if (quizArt !== "uebersetzung") wechsleQuizArt("uebersetzung"); }
   function wechsleQuizArt(neu, spalten = quizKombiListe?.spalten) {
     if (neu === quizArt) return;
     const stash = { ...quizArtStash, [quizArt]: artEinstellungenJetzt() };
@@ -2975,7 +2978,7 @@ export default function VokabelApp() {
   function starteAufteilen(listeId) {
     const liste = lsGet(SK.liste(listeId));
     if (!liste) return;
-    setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); lsDel(SK.letzterSlot);
+    setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); lsDel(SK.letzterSlot); zurUebersetzung();
     setQuizTabListen([listeId]);
     setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false);
     setQuizVonBisModus(false); setQuizVonBisErster(null);
@@ -3041,7 +3044,7 @@ export default function VokabelApp() {
     setSlotsData(updated);
     if (lsGet(SK.letzterSlot) === id) lsDel(SK.letzterSlot);
     if (aktiverSlot?.typ === typ && aktiverSlot?.id === id) {
-      setAktiverSlot(null);
+      setAktiverSlot(null); zurUebersetzung();
       setSlotGeaendert(false);
       lsDel(SK.sessionAktiv);
       setSessionSlotAktiv(null);
@@ -6961,20 +6964,9 @@ export default function VokabelApp() {
                   </div>
                 )}
 
-                {/* ZEILE 1: Abfrage-Modus | Reihenfolge | Stufe (Leicht/Schwer) – je ein Bereich klappt darunter auf */}
+                {/* ZEILE 1: Stufe (Lernen/Leicht/Schwer) | Abfrage-Modus | Reihenfolge – je ein Bereich klappt darunter auf */}
                 {kombiListe && (
                   <div ref={abfrageModusRef} className="quiz-zeile" style={{top:headerH + slotH + listenauswahlHeaderH + alleBereichH}}>
-                    <button className={`quiz-zeile-knopf${quizAbfrageModusAufgeklappt ? " offen" : ""}${!istDiktat && quizModus === "rotierend" ? " zweizeilig" : ""}`} data-abfragemodus onClick={toggleAbfrageModus}
-                      {...tt("Abfrage-Modus: Spalten, Karte/MC/Tastatur, Frage–Antwort oder wechselnd – antippen zum Einstellen")}>
-                      {/* wechselnd: zweizeilig, damit die Antwort-Arten Platz haben */}
-                      {!istDiktat && quizModus === "rotierend"
-                        ? <><span className="zeile1">wechselnd</span><span className="zeile2">{antwortArten.join(" – ") || "keine Spalte"}</span></>
-                        : abfrageModusName}
-                    </button>
-                    <button className={`quiz-zeile-knopf${quizReihenfolgeAufgeklappt ? " offen" : ""}`} data-reihenfolge onClick={toggleReihenfolge}
-                      {...tt("Reihenfolge: Zufällig, Schlechteste oder Listen-Nr. – antippen zum Einstellen")}>
-                      {quizReihenfolge === "zufall" ? "Zufällig" : quizReihenfolge === "schlechteste" ? "Schlechteste" : "Listen-Nr."}
-                    </button>
                     <button className="quiz-zeile-knopf stufe" data-stufe={lernAktiv ? "lernen" : einstellungen.modus === "einfach" ? "einfach" : "schwer"}
                       onClick={() => { schliesseQuizBereiche(null);
                         // Reihenfolge: Lernen → Leicht → Schwer → Lernen
@@ -6987,6 +6979,17 @@ export default function VokabelApp() {
                         { label: "🔊 Vorlesen", fn: () => setModal("vorlesen") },
                       ])}>
                       {lernAktiv ? "Lernen" : einstellungen.modus === "einfach" ? "Leicht" : "Schwer"}
+                    </button>
+                    <button className={`quiz-zeile-knopf${quizAbfrageModusAufgeklappt ? " offen" : ""}${!istDiktat && quizModus === "rotierend" ? " zweizeilig" : ""}`} data-abfragemodus onClick={toggleAbfrageModus}
+                      {...tt("Abfrage-Modus: Spalten, Karte/MC/Tastatur, Frage–Antwort oder wechselnd – antippen zum Einstellen")}>
+                      {/* wechselnd: zweizeilig, damit die Antwort-Arten Platz haben */}
+                      {!istDiktat && quizModus === "rotierend"
+                        ? <><span className="zeile1">wechselnd</span><span className="zeile2">{antwortArten.join(" – ") || "keine Spalte"}</span></>
+                        : abfrageModusName}
+                    </button>
+                    <button className={`quiz-zeile-knopf umbruch${quizReihenfolgeAufgeklappt ? " offen" : ""}`} data-reihenfolge onClick={toggleReihenfolge}
+                      {...tt("Reihenfolge: zufällig, schlechteste zuerst oder nach Listen-Platz – antippen zum Einstellen")}>
+                      {quizReihenfolge === "zufall" ? "Zufällige Reihenfolge" : quizReihenfolge === "schlechteste" ? "Schlechteste zuerst" : "Nach Listen-Platz"}
                     </button>
                   </div>
                 )}
@@ -8226,7 +8229,7 @@ export default function VokabelApp() {
                   {k:"Vokabel-Auswahl [Bereich]", v:"Öffnet eine Checkbox-Liste. Einzelne Vokabeln an-/abwählen. [Von–Bis] ermöglicht Bereichsauswahl per 2 Klicks."},
                   {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Die Kreise rechts in der Kopfzeile der Session-Auswahl zeigen den Lernfortschritt der Auswahl je Art; antippen schaltet die Art um. Eine Art ohne passende Vokabeln wird nicht angezeigt. Auch die Listen im Listen-Tab zeigen die drei Kreise. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC oder Tastatur. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
                   {k:"Akzente", v:"Eigene Abfrageart (A): Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Ob auch Wörter ohne Akzent abgefragt werden, legst du beim Schwierigkeitsgrad fest."},
-                  {k:"Zeile 1: Modus · Reihenfolge · Stufe", v:"Erster Knopf: Abfrage-Modus der gewählten Art (z. B. „Karte“) – antippen öffnet die Spalten- und Modus-Einstellungen. Zweiter Knopf: Reihenfolge – Zufällig / Schlechteste (nach Score sortiert) / Listen-Nr. (Originalreihenfolge), dazu Score-Filter und „Unbeantwortete zuerst“. Es ist immer nur ein Bereich offen. Dritter Knopf: Stufe Lernen, Leicht oder Schwer – antippen wechselt der Reihe nach. Lang drücken: „Regeln Leicht / Schwer“, bei Lernen „Lernen einstellen“ und „Vorlesen“."},
+                  {k:"Zeile 1: Stufe · Modus · Reihenfolge", v:"Erster Knopf: Stufe Lernen, Leicht oder Schwer – antippen wechselt der Reihe nach. Zweiter Knopf: Abfrage-Modus der gewählten Art (z. B. „Karte“) – antippen öffnet die Spalten- und Modus-Einstellungen. Dritter Knopf: Reihenfolge – „Zufällige Reihenfolge“, „Schlechteste zuerst“ (nach Score sortiert) oder „Nach Listen-Platz“ (Originalreihenfolge), dazu Score-Filter und „Unbeantwortete zuerst“. Es ist immer nur ein Bereich offen. Ein neues Quiz (ohne geladene Konfiguration) beginnt immer in Übersetzung. Lang drücken: „Regeln Leicht / Schwer“, bei Lernen „Lernen einstellen“ und „Vorlesen“."},
                   {k:"Lernen", v:"Stufe „Lernen“ (dritter Knopf in Zeile 1): Der Start-Knopf heißt dann „Lernen starten“. Wie ein Film: erst das Wort (auf Wunsch vorgelesen), nach einer Pause die Übersetzung mit den eingeschalteten Info-Spalten, dann die nächste Vokabel. Antippen der Karte überspringt die Pause; unten ⏮ zurück, ⏸ anhalten, ⏭ vor, oben „Beenden“. Gelernt werden die noch offenen Vokabeln der Session in Quiz-Reihenfolge, paketweise (Umfang „Je 5“ → 5 pro Paket). Nach jedem Paket: „Quiz mit diesen 5 Vokabeln“ – einmal je Paket: gewusste verbessern den Score, falsche oder aufgedeckte kosten keinen Punkt (Hilfen unter „Lernen einstellen“: Standard „Ohne Hilfen“ – Akzente nicht hervorgehoben, kein Zähler; oder wie Leicht bzw. Schwer); danach geht es mit dem nächsten Paket weiter –, „Weiter lernen: nächste 5“ oder „Zur Übersicht“; 🔄 oben rechts zeigt das Paket nochmals (das Quiz bleibt einmalig). Lernen selbst ändert keine Scores, und auch das Quiz danach nicht den Session-Fortschritt. Ablauf: Wort, Übersetzung, Zusatzinfo – nach jedem Teil die Vorlese- bzw. Lesezeit (ohne Vorlesen aus der Textlänge geschätzt) plus eine Pause. Unter „⚙ Vorlesen & Pausen“ (aufklappbar unter den Knöpfen): Vorlesen Wort | Übersetzung | Info, Zusatzinfo An | Aus und drei Regler „Pause Wort / Übersetzung / Info“ (0–10 s, Standard 1 / 1 / 3 s; ganz rechts „Tippen“: dort wartet die App, bis du die Karte antippst). Ohne Zusatzinfo gilt nach der Übersetzung die längere der Pausen Übersetzung und Info. Übersetzung und Zusatzinfo haben ihren Platz schon vorher und blenden kurz ein. Lang drücken auf den Knopf → „Lernen einstellen“: was zuerst kommt (Fremdsprache oder Deutsch), was vorgelesen wird und in welcher Sprache die Zusatzinfo vorgelesen wird. "},
                   {k:"Regeln Leicht / Schwer", v:"Lang drücken auf den Stufen-Knopf. Per Haken legst du fest, was in welcher Stufe gilt: fehlende Akzente beim Tippen als richtig werten, Punktabzug bei „Lösung anzeigen“, „Nicht gewusst“ zieht 1 Punkt ab, im Akzent-Modus auch Wörter ohne Akzent abfragen (mit Höchstanteil), Buchstaben mit Akzent hervorheben, die Zahl der noch fehlenden Akzente anzeigen (z. B. 2 / 3) und richtige Antworten automatisch übernehmen (sonst „Prüfen“). „Vorlesen“ (ebenfalls per Lang-Druck): Auto-Play und welche Spalten vorgelesen werden."},
                   {k:"Zeile 2: Umfang · Abfrage-Ziel · Gelernte", v:"Umfang: „Alle Vokabeln“ in einem Durchgang oder „Je N Vokabeln“ – antippen zeigt große Zahlenknöpfe (Alle, 5–50). Bei Paketen kannst du nach jedem Paket pausieren oder weitermachen; abgefragte Vokabeln werden beim nächsten Paket übersprungen. Gelernte (nur wenn es welche gibt): „13 gelernte“ = ausgeblendet, „+ 13 gelernte“ = werden mit abgefragt."},

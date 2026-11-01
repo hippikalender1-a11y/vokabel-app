@@ -63,13 +63,13 @@ ok(!/Akzente/.test(await modusName()), "Übersetzung ohne Akzente-Modus (gemisch
 // Ü: Reihenfolge ändern
 await page.click("[data-reihenfolge]"); await sleep(300);
 await clickText(".toggle-opt", "Zufällig", true);
-ok(await reihenfolge() === "Zufällig", "Übersetzung: Reihenfolge auf Zufällig gestellt");
+ok(await reihenfolge() === "Zufällige Reihenfolge", "Übersetzung: Reihenfolge auf Zufällig gestellt");
 
 // D: eigene Einstellungen (Standard), Diktat-Konfiguration
 await waehleArt("diktat");
 console.log("     Modus D:", await modusName());
 ok(await art() === "diktat" && await modusName() === "Diktat", "D: Diktat");
-ok(await reihenfolge() === "Schlechteste", `D: eigene Reihenfolge (Standard Schlechteste, ist ${await reihenfolge()})`);
+ok(await reihenfolge() === "Schlechteste zuerst", `D: eigene Reihenfolge (Standard Schlechteste, ist ${await reihenfolge()})`);
 if (!(await page.evaluate(() => /Diktat-Spalte/.test(document.body.innerText)))) await page.click("[data-abfragemodus]");
 await sleep(300);
 ok(await page.evaluate(() => /Diktat-Spalte/.test(document.body.innerText) && ![...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Frage – Antwort")), "D: Diktat-Konfiguration, kein Frage–Antwort-Schalter");
@@ -84,7 +84,7 @@ ok(await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")
 
 // zurück zu Ü: Zufällig noch da
 await waehleArt("uebersetzung");
-ok(await reihenfolge() === "Zufällig", "zurück zu Ü: eigene Einstellung (Zufällig) erhalten");
+ok(await reihenfolge() === "Zufällige Reihenfolge", "zurück zu Ü: eigene Einstellung (Zufällig) erhalten");
 
 // speichern: alle drei Arten in der Konfiguration
 await waehleArt("diktat");
@@ -104,7 +104,7 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 await clickText(".slot-chip", "Drei Arten");
 ok(await art() === "diktat", "geladen: zuletzt gewählte Art (Diktat)");
 await waehleArt("uebersetzung");
-ok(await reihenfolge() === "Zufällig", "geladen → Ü: Zufällig gespeichert");
+ok(await reihenfolge() === "Zufällige Reihenfolge", "geladen → Ü: Zufällig gespeichert");
 
 // Kachel: Balken = Lernfortschritt Übersetzung; Kreise Ü/D/A in der Kopfzeile, antippen wechselt die Art
 const kreise = attr => page.evaluate(attr => [...document.querySelectorAll(`[data-slot-kopf] [${attr}]`)].map(k => `${k.getAttribute(attr)}:${k.dataset.pct}`).join(","), attr);

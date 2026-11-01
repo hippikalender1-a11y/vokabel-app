@@ -103,7 +103,7 @@ ok(info === "🧩 Teil A + Teil B · 5 Vokabeln", "Info-Zeile: Teile + Anzahl");
 const sl = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")));
 ok(sl.verlauf.length === 1 && sl.verlauf[0].multi?.map(t => t.name).join("+") === "Teil A+Teil B", "genau ein Verlauf-Eintrag mit den Teilen");
 ok(await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].some(c => c.textContent.includes("🧩"))), "Verlauf-Chip mit 🧩");
-ok(await page.evaluate(() => document.querySelector("[data-reihenfolge]")?.textContent.trim()) === "Listen-Nr.", "Reihenfolge von Teil A übernommen");
+ok(await page.evaluate(() => document.querySelector("[data-reihenfolge]")?.textContent.trim()) === "Nach Listen-Platz", "Reihenfolge von Teil A übernommen");
 
 // Speichern: Name-Vorschlag „Multiquiz: Teil A + Teil B“
 await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(300);

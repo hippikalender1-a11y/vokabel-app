@@ -1700,7 +1700,14 @@ QUIZ-TAB NEU (Schritt 2, A1–A5):
   Start .start-bereich: Balken data-start-balken (%), links .start-fortschritt
   (data-session-zuruecksetzen, Rückfrage data-reset-frage/-ja), rechts
   .start-knopf data-start-knopf data-start-anzahl ("Quiz starten" / "N Vokabeln").
-  "Lernen" als dritte Stufe folgt mit Schritt C.
+  Zeile 1 seit Session 39: [data-stufe] | [data-abfragemodus] | [data-reihenfolge];
+  Reihenfolge-Knopf "Zufällige Reihenfolge" / "Schlechteste zuerst" / "Nach
+  Listen-Platz" (.umbruch, zweizeilig bei Bedarf; die Auswahl im Bereich bleibt
+  Zufällig / Schlechteste / Listen-Nr.).
+  Neues Quiz beginnt in Übersetzung: zurUebersetzung() überall, wo die geladene
+  Konfiguration gelöst wird (Statistik → Quiz ohne Konfiguration, Sprachfilter,
+  Aufteilen, Löschen des geladenen Eintrags; "Neu" und Listen-Start setzen die
+  Art ohnehin zurück).
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

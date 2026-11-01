@@ -77,7 +77,7 @@ console.log("     Vorschau:", v.join(" | "));
 ok(v.length === 4 && v[0] === "Verben Teil 2 (21 - 30)" && v[3] === "Verben Teil 2 (51 - 60)", "Bereich 21–60 in Zehnern, eigener Name + Nummern");
 
 // Einstellung wählen (Reihenfolge Zufällig), dann anlegen
-await clickText("button", "Schlechteste", true);
+await page.click("[data-reihenfolge]"); await sleep(300);
 await clickText(".toggle-opt", "Zufällig", true);
 await page.evaluate(() => document.querySelector("[data-aufteilen-anlegen]").click()); await sleep(500);
 let g = await gespeichert();
