@@ -1731,6 +1731,17 @@ GEMISCHTE ANTWORTARTEN: quizSpalteModus[t] = Text (eine Art) oder Liste (MODI_RE
   Akzente zählen für den Übersetzungs-Score (istAkzent nur bei reiner Akzent-Spalte).
   Knopf "Gemischt" / "Karte – MC – …" (zweizeilig). artBereinigt: reine Akzent-Liste
   in Übersetzung → Karte. Test: e2e/gemischt.mjs.
+GESAMTSICHERUNG (nach Datenverlust auf Android, Browser hatte den Speicher geleert):
+  erstelleSicherung() = {vokabelAppSicherung:1, erstellt, daten:{alle vokabel_*-Schlüssel}}
+  ohne SICHERUNG_OHNE (letzte_sicherung, sicherung_basis, sicherung_spaeter). Datei
+  „Vokabel-App Sicherung JJJJ-MM-TT.txt“ über teileAlsDatei. Wiederherstellen
+  (stelleSicherungWiederHer: alle vokabel_* ersetzen, dann reload) über Einstellungen →
+  Daten & Sicherung „Laden“ (mit Nachfrage) oder Import (findeJsonListen hängt
+  .sicherung an; Knopf „Alles wiederherstellen“). Start: navigator.storage.persist();
+  Status in den Einstellungen (Knopf „Schützen“). Erinnerung im Listen-Tab
+  (data-sicherung-erinnerung), wenn letzte Sicherung bzw. erster Start älter als
+  einstellungen.sicherungErinnerung Tage (0/3/7/14/30, Standard 7); „Später“ = 1 Tag still.
+  Test: e2e/sicherung.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

@@ -12,6 +12,9 @@ const SK = {
   letzterSlot:   "vokabel_letzter_slot",   // zuletzt gewählte gespeicherte Konfiguration → beim Start wieder laden
   ansichtSpalten: "vokabel_ansicht_spalten_an", // Listenansicht: angezeigte Spalten je Liste {listeId: ["E1", …]}; ohne Eintrag nur die erste
   statistikListeZu: "vokabel_statistik_liste_zu", // Statistik: Vokabelliste eingeklappt
+  letzteSicherung: "vokabel_letzte_sicherung",   // Zeitpunkt der letzten Gesamtsicherung
+  sicherungBasis:  "vokabel_sicherung_basis",    // noch nie gesichert: ab hier zählt die Erinnerung
+  sicherungSpaeter: "vokabel_sicherung_spaeter", // Erinnerung „Später“ gedrückt (für einen Tag still)
   liste: (id)  => `vokabel_liste_${id}`,
 };
 function lsGet(key, fallback = null) {
@@ -456,7 +459,38 @@ async function leseDateiAlsText(file) {
   try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); }
   catch { return new TextDecoder("windows-1252").decode(buf); }
 }
+// Gesamtsicherung: alle Daten der App (Listen mit Lernstand, Einstellungen mit Farben, gespeicherte Quiz …)
+const SICHERUNG_OHNE = [SK.letzteSicherung, SK.sicherungBasis, SK.sicherungSpaeter];
+const SICHERUNG_TAGE = [0, 3, 7, 14, 30];   // Erinnerung: 0 = aus
+const SICHERUNG_TAG_MS = 24 * 3600 * 1000;
+function erstelleSicherung() {
+  const daten = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k?.startsWith("vokabel_") || SICHERUNG_OHNE.includes(k)) continue;
+    try { daten[k] = JSON.parse(localStorage.getItem(k)); } catch { daten[k] = localStorage.getItem(k); }
+  }
+  return { vokabelAppSicherung: 1, erstellt: Date.now(), daten };
+}
+const istSicherung = o => !!o && typeof o === "object" && o.vokabelAppSicherung && o.daten && typeof o.daten === "object";
+function listenAusSicherung(sich) {
+  const idx = Array.isArray(sich.daten[SK.listenIndex]) ? sich.daten[SK.listenIndex] : [];
+  const listen = Object.entries(sich.daten).filter(([k]) => k.startsWith("vokabel_liste_")).map(([, l]) => l).filter(l => l && l.name && l.vokabeln);
+  const pos = l => { const i = idx.findIndex(x => x.id === l.id); return i < 0 ? Infinity : i; };
+  return listen.sort((a, b) => pos(a) - pos(b));
+}
+// Ersetzt den ganzen Stand durch die Sicherung (danach neu laden)
+function stelleSicherungWiederHer(sich) {
+  const alt = [];
+  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k?.startsWith("vokabel_") && !SICHERUNG_OHNE.includes(k)) alt.push(k); }
+  alt.forEach(k => localStorage.removeItem(k));
+  Object.entries(sich.daten).forEach(([k, v]) => { if (k.startsWith("vokabel_") && !SICHERUNG_OHNE.includes(k)) localStorage.setItem(k, JSON.stringify(v)); });
+  localStorage.setItem(SK.letzteSicherung, JSON.stringify(sich.erstellt || Date.now()));
+}
+const formatTag = ts => new Date(ts).toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'});
+
 // JSON-Backup im Text finden (auch wenn davor/danach etwas steht). null = kein JSON; wirft bei kaputtem JSON.
+// Gesamtsicherung → ihre Listen, die Sicherung selbst hängt als .sicherung am Ergebnis
 function findeJsonListen(text) {
   const t = text.replace(/^[\uFEFF\u200B\s]+/, "");
   let kandidat = null;
@@ -467,6 +501,7 @@ function findeJsonListen(text) {
   }
   if (!kandidat) return null;
   let parsed = JSON.parse(kandidat.trim());
+  if (istSicherung(parsed)) return Object.assign(listenAusSicherung(parsed), { sicherung: parsed });
   if (!Array.isArray(parsed)) parsed = [parsed];
   return parsed.filter(l => l && l.name && l.vokabeln);
 }
@@ -1326,6 +1361,11 @@ export default function VokabelApp() {
   const [importParsed, setImportParsed] = useState(null);
   const [importMehrfachListen, setImportMehrfachListen] = useState(null);
   const [importJsonData, setImportJsonData] = useState(null);
+  const [speicherDauerhaft, setSpeicherDauerhaft] = useState(null);   // navigator.storage.persisted(): null = unbekannt
+  const [letzteSicherung, setLetzteSicherung] = useState(() => lsGet(SK.letzteSicherung));
+  const [sicherungLaden, setSicherungLaden] = useState(null);         // geladene Gesamtsicherung, wartet auf Bestätigung
+  const [sicherungFehler, setSicherungFehler] = useState("");
+  const [sicherungSpaeter, setSicherungSpaeter] = useState(() => lsGet(SK.sicherungSpaeter, 0));
   const [importMapping, setImportMapping] = useState({});
   const [importZielTyp, setImportZielTyp] = useState("neu");
   const [importNeuName, setImportNeuName] = useState("");
@@ -1452,6 +1492,7 @@ export default function VokabelApp() {
   const akzentBlinkRef = useRef(null);
   const diktatPlayCountRef = useRef(0);
   const fileInputRef = useRef(null);
+  const sicherungInputRef = useRef(null);
   const headerRef = useRef(null);
   const listenContainerRef = useRef(null);
   const dropdownImmuneRef = useRef(false);
@@ -1765,6 +1806,14 @@ export default function VokabelApp() {
     return () => obs.disconnect();
   }, [tab, statistikVollbild]);
 
+
+  // Browser bitten, den Speicher nicht aufzuräumen (Chrome: bei installierter App meist gewährt)
+  useEffect(() => {
+    const st = navigator.storage;
+    if (!st?.persisted) return;
+    st.persisted().then(ja => ja || !st.persist ? ja : st.persist()).then(setSpeicherDauerhaft).catch(() => {});
+    if (!lsGet(SK.letzteSicherung) && !lsGet(SK.sicherungBasis)) lsSet(SK.sicherungBasis, Date.now());
+  }, []);
 
   useEffect(() => {
     // Index-Einträge ohne Sprache einmalig aus der Liste übernehmen
@@ -2555,6 +2604,31 @@ export default function VokabelApp() {
     resetImport();
     setAnsicht("uebersicht");
   }
+
+  // Gesamtsicherung als Datei („Vokabel-App Sicherung JJJJ-MM-TT.txt“)
+  function sichereAlles() {
+    const sich = erstelleSicherung();
+    teileAlsDatei(JSON.stringify(sich), `Vokabel-App Sicherung ${new Date(sich.erstellt).toISOString().slice(0, 10)}.txt`);
+    lsSet(SK.letzteSicherung, sich.erstellt); setLetzteSicherung(sich.erstellt);
+  }
+  async function ladeSicherungsDatei(file) {
+    setSicherungFehler(""); setSicherungLaden(null);
+    let obj = null;
+    try { const t = (await leseDateiAlsText(file)).replace(/^[\uFEFF\u200B\s]+/, ""); obj = JSON.parse(t); } catch { /* unten */ }
+    if (istSicherung(obj)) { setSicherungLaden(obj); return; }
+    setSicherungFehler(`„${file.name}“ ist keine Gesamtsicherung. Einzelne Listen bitte über Listen → Import laden.`);
+  }
+  function bestaetigeWiederherstellen(sich) {
+    stelleSicherungWiederHer(sich);
+    window.location.reload();
+  }
+  const sicherungTage = einstellungen.sicherungErinnerung ?? 7;
+  const sicherungAlt = (() => {
+    if (!sicherungTage || !listenIndex.length || Date.now() - sicherungSpaeter < SICHERUNG_TAG_MS) return null;
+    const seit = letzteSicherung || lsGet(SK.sicherungBasis);
+    if (!seit || Date.now() - seit < sicherungTage * SICHERUNG_TAG_MS) return null;
+    return { tage: Math.floor((Date.now() - seit) / SICHERUNG_TAG_MS), nie: !letzteSicherung };
+  })();
 
   function exportiereAlsJson(ids) {
     setJsonExportIds(ids);
@@ -6378,7 +6452,8 @@ export default function VokabelApp() {
               {importJsonData ? (
                 <>
                   <div className="meldung-info" style={{background:"var(--haupt-flaeche)", borderColor:"var(--haupt-zart)"}}>
-                    <strong>JSON-Backup erkannt:</strong> {importJsonData.length} Liste{importJsonData.length !== 1 ? "n" : ""} gefunden.
+                    <strong>{importJsonData.sicherung ? `Gesamtsicherung vom ${formatTag(importJsonData.sicherung.erstellt)} erkannt:` : "JSON-Backup erkannt:"}</strong> {importJsonData.length} Liste{importJsonData.length !== 1 ? "n" : ""} gefunden.
+                    {importJsonData.sicherung && <> „Alles wiederherstellen“ ersetzt den aktuellen Stand (Listen, Scores, Farben, Einstellungen, gespeicherte Quiz); „Alle importieren“ legt nur die Listen zusätzlich an.</>}
                   </div>
                   <div className="karte">
                     {importJsonData.map((l, i) => (
@@ -6391,9 +6466,13 @@ export default function VokabelApp() {
                   {importFehler && <div className="fehler">{importFehler}</div>}
                   <div style={{display:"flex", gap:10, marginBottom:24}}>
                     <button {...tt("Zurück zur Eingabe")} className="btn btn-ghost" onClick={() => { setImportJsonData(null); setImportDateiname(""); }}>Zurück</button>
-                    <button {...tt("Alle Listen aus dem Backup als neue Listen anlegen")} className="btn btn-primary" onClick={importiereAusJsonDaten}>
+                    <button {...tt("Alle Listen aus dem Backup als neue Listen anlegen")} className={`btn ${importJsonData.sicherung ? "btn-ghost" : "btn-primary"}`} onClick={importiereAusJsonDaten}>
                       Alle importieren ({importJsonData.length})
                     </button>
+                    {importJsonData.sicherung && (
+                      <button {...tt("Den ganzen Stand aus der Sicherung wiederherstellen – ersetzt alle aktuellen Listen und Einstellungen")} className="btn btn-primary" data-alles-wiederherstellen
+                        onClick={() => bestaetigeWiederherstellen(importJsonData.sicherung)}>Alles wiederherstellen</button>
+                    )}
                   </div>
                 </>
               ) : importMehrfachListen ? (
@@ -7468,6 +7547,17 @@ export default function VokabelApp() {
         {/* ── Listen-Übersicht: Raster (Größe unter Einstellungen → Listen) ── */}
         {tab === "listen" && ansicht === "uebersicht" && (
           <div className="sektion">
+            {sicherungAlt && (
+              <div className="meldung-info sicherung-erinnerung" data-sicherung-erinnerung>
+                <div>💾 {sicherungAlt.nie ? "Noch keine Sicherung." : `Letzte Sicherung vor ${sicherungAlt.tage} Tagen.`} Der Browser kann gespeicherte Daten löschen – eine Sicherungsdatei schützt Listen, Scores und Farben.</div>
+                <div style={{display:"flex", gap:8, marginTop:8}}>
+                  <button className="btn btn-primary btn-sm" data-sicherung-jetzt onClick={sichereAlles}
+                    {...tt("Alles in einer Datei sichern: Listen mit Scores, Einstellungen, Farben, gespeicherte Quiz")}>Jetzt sichern</button>
+                  <button className="btn btn-ghost btn-sm" data-sicherung-spaeter onClick={() => { const t = Date.now(); lsSet(SK.sicherungSpaeter, t); setSicherungSpaeter(t); }}
+                    {...tt("Erinnerung für einen Tag ausblenden")}>Später</button>
+                </div>
+              </div>
+            )}
             {sichtbareListen.length === 0 ? (
               <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.<br/>Tippe auf <strong>+</strong> um eine neue Liste anzulegen.</div></div>
             ) : renderListenRaster()}
@@ -8277,6 +8367,7 @@ export default function VokabelApp() {
                 {titel:"Listen-Tab", inhalt:[
                   {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „In Sessions aufteilen“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. „In Sessions aufteilen“ öffnet den Quiz-Tab mit dieser Liste und einem gelben Kasten: Name (vorgegeben: Listenname), Gruppengröße (10, 20, 25, 50, 75, 100 oder eigene), Bereich von–bis (Vokabel-Nummern) und bei Rest „eigene Gruppe“ oder „an letzte anhängen“; die Vorschau zeigt die Namen, z. B. „Verbes (21 - 40)“. Darunter alle Einstellungen wie gewohnt wählen, dann „Sessions anlegen“: je Gruppe eine gespeicherte Konfiguration, untereinander in der ersten Spalte unter dem untersten Eintrag. Namen, die es schon gibt, werden übersprungen. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Im Verschieben-Modus lassen sich mehrere Listen markieren und gemeinsam verschieben. Neue Listen (auch per Import) kommen untereinander in die erste Spalte. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
                   {k:"[+] Neue Liste", v:"Legt eine leere Liste mit eigenem Namen an."},
+                  {k:"💾 Alles sichern", v:"Einstellungen → Daten & Sicherung: eine Datei „Vokabel-App Sicherung Datum.txt“ mit allem – Listen mit Scores, Einstellungen, Farben, gespeicherte Quiz. Der Browser kann gespeicherte Daten löschen (Speicher aufräumen, Browserdaten löschen); mit der Datei holst du alles zurück: „Laden“ in den Einstellungen oder als Datei im Import („Alles wiederherstellen“). Im Listen-Tab erinnert die App, wenn die letzte Sicherung älter ist als eingestellt (Standard 7 Tage)."},
                   {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, JSON, TXT, Löschen. JSON = vollständige Sicherung mit Lernstand (Datei „Name - JSON.txt“), TXT = nur die Vokabeln als Text ohne Scores (Datei „Name - TXT.txt“). Auf iPad/iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, Mail, AirDrop), sonst wird die Datei heruntergeladen. Beim Import ist die Endung egal – die App erkennt den Inhalt."},
                   {k:"Stift-Button", v:"Listenname umbenennen."},
                   {k:"Vokabeln [+]", v:"Neue Vokabel am Ende der Liste hinzufügen."},
@@ -8427,12 +8518,57 @@ export default function VokabelApp() {
                 }} {...tt("Nach neuer App-Version suchen")}>Prüfen</button>
               </div>
             </div>
-            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Daten</div>
-            <div className="karte">
+            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Daten & Sicherung</div>
+            <div className="karte" data-sicherung>
               <div className="karte-zeile">
                 <div className="karte-zeile-info">
                   <div className="karte-zeile-name">Gespeicherte Listen</div>
-                  <div className="karte-zeile-sub">{listenIndex.length} Liste{listenIndex.length!==1?"n":""}</div>
+                  <div className="karte-zeile-sub" data-speicher-dauerhaft={String(speicherDauerhaft)}>{listenIndex.length} Liste{listenIndex.length!==1?"n":""} · {
+                    speicherDauerhaft === true ? "Speicher dauerhaft geschützt" : speicherDauerhaft === false ? "Speicher nicht geschützt – der Browser darf ihn aufräumen" : "Schutz des Speichers unbekannt"}</div>
+                </div>
+                {speicherDauerhaft === false && (
+                  <button className="btn btn-ghost btn-sm" onClick={() => navigator.storage?.persist?.().then(setSpeicherDauerhaft).catch(() => {})}
+                    {...tt("Den Browser erneut bitten, den Speicher dauerhaft zu behalten (Chrome gewährt das meist, wenn die App installiert ist)")}>Schützen</button>
+                )}
+              </div>
+              <div className="karte-zeile" style={{borderTop:"1px solid var(--rahmen)"}}>
+                <div className="karte-zeile-info">
+                  <div className="karte-zeile-name">Alles sichern</div>
+                  <div className="karte-zeile-sub" data-letzte-sicherung>Listen mit Scores, Einstellungen, Farben, gespeicherte Quiz · {letzteSicherung ? `zuletzt am ${formatTag(letzteSicherung)}` : "noch nie gesichert"}</div>
+                </div>
+                <button className="btn btn-primary btn-sm" data-alles-sichern onClick={sichereAlles}
+                  {...tt("Alles in einer Datei sichern („Vokabel-App Sicherung Datum.txt“, landet in Downloads bzw. im Teilen-Menü)")}>💾 Sichern</button>
+              </div>
+              <div className="karte-zeile" style={{borderTop:"1px solid var(--rahmen)"}}>
+                <div className="karte-zeile-info">
+                  <div className="karte-zeile-name">Wiederherstellen</div>
+                  <div className="karte-zeile-sub">Sicherungsdatei laden – ersetzt den aktuellen Stand</div>
+                </div>
+                {/* bewusst ohne accept: Android-Dateiauswahlen blenden sonst passende Dateien aus */}
+                <input type="file" ref={sicherungInputRef} data-sicherung-datei style={{display:"none"}}
+                  onChange={e => { const f = e.target.files[0]; e.target.value = ""; if (f) ladeSicherungsDatei(f); }} />
+                <button className="btn btn-ghost btn-sm" onClick={() => sicherungInputRef.current?.click()}
+                  {...tt("Eine Sicherungsdatei wählen; vor dem Wiederherstellen wird nachgefragt")}>Laden</button>
+              </div>
+              {sicherungFehler && <div className="fehler" style={{margin:"0 16px 12px"}}>{sicherungFehler}</div>}
+              {sicherungLaden && (
+                <div className="karte-zeile" data-sicherung-bestaetigen style={{borderTop:"1px solid var(--rahmen)", flexDirection:"column", alignItems:"stretch", gap:8}}>
+                  <div className="karte-zeile-sub">Sicherung vom {formatTag(sicherungLaden.erstellt)}: {listenAusSicherung(sicherungLaden).length} Liste{listenAusSicherung(sicherungLaden).length !== 1 ? "n" : ""}. Wiederherstellen ersetzt alle aktuellen Listen, Scores und Einstellungen.</div>
+                  <div style={{display:"flex", gap:8, justifyContent:"flex-end"}}>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setSicherungLaden(null)} {...tt("Nicht wiederherstellen")}>Abbrechen</button>
+                    <button className="btn btn-primary btn-sm" data-wiederherstellen-ok onClick={() => bestaetigeWiederherstellen(sicherungLaden)}
+                      {...tt("Den Stand aus der Sicherung übernehmen; die App lädt danach neu")}>Wiederherstellen</button>
+                  </div>
+                </div>
+              )}
+              <div className="toggle-row" style={{borderTop:"1px solid var(--rahmen)"}}>
+                <div className="toggle-label">Erinnerung</div>
+                <div className="toggle-btn" data-sicherung-tage>
+                  {SICHERUNG_TAGE.map(t => (
+                    <button key={t} className={`toggle-opt${sicherungTage === t ? " aktiv" : ""}`} data-sicherung-tage-wahl={t}
+                      onClick={() => speichereEinst({ ...einstellungen, sicherungErinnerung: t })}
+                      {...tt(t ? `Im Listen-Tab erinnern, wenn die letzte Sicherung älter als ${t} Tage ist` : "Nicht an Sicherungen erinnern")}>{t ? `${t} T` : "Aus"}</button>
+                  ))}
                 </div>
               </div>
             </div>
