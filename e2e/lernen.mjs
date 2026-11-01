@@ -84,6 +84,7 @@ let z = await stand();
 console.log("     Start:", JSON.stringify(z));
 ok(z.stand === "1 / 7" && z.phase === "0" && z.wort === "aller" && z.uebersetzung === null, "erst nur das Wort (aller), noch keine Übersetzung");
 const oben0 = z.wortOben;
+ok(await page.$('[data-lernen-einst-knopf="zu"]') && !(await page.$("[data-lernen-pause-regler]")), "Vorlesen & Pausen: zunächst eingeklappt");
 const platz = await page.evaluate(() => ({ ue: !!document.querySelector('[data-lernen-teil="uebersetzung"]'), info: !!document.querySelector('[data-lernen-teil="info"]') }));
 ok(platz.ue && platz.info, "Platz für Übersetzung und Zusatzinfo schon reserviert (unsichtbar)");
 const g = await page.evaluate(() => window.__gesprochen);
@@ -122,6 +123,10 @@ await page.click("[data-lernen-vor]"); await sleep(150);
 ok((await stand()).stand === "4 / 7", "⏭ vor: nächste Vokabel");
 await page.click("[data-lernen-zurueck]"); await sleep(150);
 ok((await stand()).stand === "3 / 7" && (await stand()).phase === "0", "⏮ zurück: vorige Vokabel");
+// Einstellungen aufklappen
+await page.click("[data-lernen-einst-knopf]"); await sleep(150);
+const regler = await page.evaluate(() => [...document.querySelectorAll("[data-lernen-pause-regler]")].map(r => `${r.dataset.lernenPauseRegler}=${r.value}`).join(","));
+ok(regler === "pauseWort=1,pauseUeb=1,pauseInfo=1", `aufgeklappt: drei Pausen-Regler Wort/Übersetzung/Info (${regler}; Info aus früherer Einstellung 1 s)`);
 // Zusatzinfo aus: nach der Übersetzung direkt die nächste Vokabel
 await page.click('[data-lernen-info-schalter="aus"]'); await sleep(150);
 await page.click("[data-lernen-zurueck]"); await sleep(150);
@@ -152,11 +157,20 @@ await page.click('[data-lernen-vorlesen-schalter="vorlesen2"]'); await sleep(100
 await page.click('[data-lernen-vorlesen-schalter="vorlesen3"]'); await sleep(100);
 await page.click("[data-lernen-pause]"); await sleep(100);
 
-// Regler „Pause“
-await page.evaluate(() => { const r = document.querySelector("[data-lernen-halte]"); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(r, "4.5"); r.dispatchEvent(new Event("input", { bubbles: true })); });
-await sleep(150);
-const halte = await page.evaluate(() => ({ text: document.querySelector("[data-lernen-halte-wert]")?.textContent.trim(), gespeichert: JSON.parse(localStorage.getItem("vokabel_einstellungen")).lernen?.halte }));
-ok(halte.text === "4,5 s" && halte.gespeichert === 4.5, `Regler „Pause“: 4,5 s, gespeichert (${JSON.stringify(halte)})`);
+// Regler „Pause Info“
+const setzeRegler = async (k, v) => { await page.evaluate((k, v) => { const r = document.querySelector(`[data-lernen-pause-regler="${k}"]`); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(r, v); r.dispatchEvent(new Event("input", { bubbles: true })); }, k, v); await sleep(150); };
+await setzeRegler("pauseInfo", "4.5");
+const halte = await page.evaluate(() => ({ text: document.querySelector('[data-lernen-pause-wert="pauseInfo"]')?.textContent.trim(), gespeichert: JSON.parse(localStorage.getItem("vokabel_einstellungen")).lernen?.pauseInfo }));
+ok(halte.text === "4,5 s" && halte.gespeichert === 4.5, `Regler „Pause Info“: 4,5 s, gespeichert (${JSON.stringify(halte)})`);
+// Regler ganz rechts: „Tippen“ – wartet nach dem Wort, bis man antippt
+await setzeRegler("pauseWort", "10");
+ok(await page.evaluate(() => document.querySelector('[data-lernen-pause-wert="pauseWort"]')?.textContent.trim()) === "Tippen", "Regler ganz rechts zeigt „Tippen“");
+await page.click("[data-lernen-zurueck]"); await sleep(2500);
+z = await stand();
+ok(z.phase === "0" && await page.$("[data-lernen-tippen]"), `„Tippen“: bleibt nach dem Wort stehen, Hinweis „Antippen zum Weitermachen“ (Phase ${z.phase})`);
+await page.click("[data-lernen-karte]"); await sleep(150);
+ok((await stand()).phase === "1", "antippen: weiter zur Übersetzung");
+await setzeRegler("pauseWort", "1");
 await page.click("[data-lernen-pause]"); await sleep(100);
 
 // Paket 1 zu Ende tippen
@@ -166,7 +180,7 @@ let ende = await page.evaluate(() => ({ titel: document.querySelector("[data-ler
   quiz: document.querySelector("[data-lernen-quiz]")?.textContent.trim(), weiter: document.querySelector("[data-lernen-weiter]")?.textContent.trim(), nochmal: !!document.querySelector("[data-lernen-nochmal]") }));
 console.log("     Paket-Ende:", JSON.stringify(ende));
 ok(ende.titel === "5 Vokabeln angesehen" && ende.paket === "Paket 1 von 2", "Ende Paket 1: „5 Vokabeln angesehen“, Paket 1 von 2");
-ok(ende.quiz === "Quiz mit diesen 5 Vokabeln" && ende.weiter === "Weiter lernen: nächste 2" && !ende.nochmal, "Knöpfe: Quiz mit diesen 5, Weiter lernen: nächste 2 – kein „Nochmal“");
+ok(ende.quiz === "Quiz mit diesen 5 Vokabeln" && ende.weiter === "Weiter lernen: nächste 2" && ende.nochmal, "Knöpfe: Quiz mit diesen 5, Weiter lernen: nächste 2, 🔄 nochmals ansehen");
 const daten = await page.evaluate(() => ({ scores: JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.filter(v => v.fortschritt).length,
   session: localStorage.getItem("vokabel_session_aktiv") }));
 ok(daten.scores === 0 && !daten.session, `Lernen: kein Score, kein Session-Fortschritt (${JSON.stringify(daten)})`);
@@ -209,6 +223,11 @@ ok(ende.titel === "Alle 7 Vokabeln angesehen" && !ende.weiter && ende.quiz, "let
 await lernQuiz();
 await page.click("[data-weiter-lernen]"); await sleep(300);
 ok(await page.$("[data-lernen-fertig]") && !(await page.$("[data-lernen-quiz]")), "nach dem Quiz: kein zweites Quiz für dieses Paket");
+await page.click("[data-lernen-nochmal]"); await sleep(200);
+ok((await stand()).stand === "6 / 7" && (await stand()).phase === "0", "🔄: Paket nochmals von vorn");
+await page.click("[data-lernen-pause]"); await sleep(100);
+await tippeBisEnde();
+ok(await page.$("[data-lernen-fertig]") && !(await page.$("[data-lernen-quiz]")), "nach nochmals Ansehen: weiterhin kein zweites Quiz");
 await page.click("[data-lernen-beenden]"); await sleep(300);
 ok(await page.$("[data-stufe]") && !(await page.$("[data-lernen-karte]")), "Beenden: zurück im Quiz-Tab");
 

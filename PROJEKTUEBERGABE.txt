@@ -1731,12 +1731,15 @@ MULTIQUIZ (Schritt 3): Kachel-Lang-Druck "🧩 Multiquiz" (nur Quiz-Tab) →
   Gemischte Sprachen: Vorlesesprache je Vokabel über _listeId; im Raster
   sichtbar nur unter Sprachfilter "Alle". Test: e2e/multiquiz.mjs.
 LERNEN (Schritt 4): einstellungen.lernen = { aktiv, zuerst "fremd"|"deutsch",
-  halte (s, Regler 1–10 auf dem Lernbildschirm), info (Schalter An|Aus auf dem
-  Lernbildschirm), vorlesen1, vorlesen2 } (LERNEN_STANDARD).
+  pauseWort/pauseUeb/pauseInfo (s, Regler 0–10; LERNEN_TIPPEN = 10 → kein Timer,
+  warten auf Antippen, Hinweis data-lernen-tippen; früheres "halte" → pauseInfo),
+  info, vorlesen1–3, einstOffen (Bereich "⚙ Vorlesen & Pausen" auf dem
+  Lernbildschirm einklappbar, data-lernen-einst-knopf) } (LERNEN_STANDARD).
   Abschnitte phase 0 Wort → 1 Übersetzung → 2 Zusatzinfo (nur wenn info an und
   Text da, lernInfoZeigen). Wartezeit je Abschnitt: Vorlesen (bis speaking aus)
-  bzw. lernLesezeit(text) (~14 Zeichen/s, min. 0,6 s) + Pause: nach Wort und vor
-  der Zusatzinfo LERNEN_KURZ = 1 s, sonst halte. Antippen = sofort weiter.
+  bzw. lernLesezeit(text) (~14 Zeichen/s, min. 0,6 s) + lernPause(): Wort →
+  pauseWort, Übersetzung → pauseUeb (ohne Zusatzinfo max(pauseUeb, pauseInfo)),
+  Info → pauseInfo. Antippen = sofort weiter.
   Karte: Teile .lernen-teil (opacity 0 → .sichtbar, 0,5 s), Platz für Übersetzung
   und Zusatzinfo immer reserviert (data-lernen-teil, data-sichtbar); Inhalt je
   Vokabel neu (key), Wort blendet ein (.lernen-ein). Zusatzinfo: dünne Linie,
@@ -1756,8 +1759,9 @@ LERNEN (Schritt 4): einstellungen.lernen = { aktiv, zuerst "fremd"|"deutsch",
   Paketweise: lernen.alle (offene Session-Vokabeln, ordneVokabeln), groesse, start;
   Paket-Ende: "Quiz mit diesen N Vokabeln" (starteLernQuiz: Gruppen-Runde mit
   starteQuiz(true, null, ids, "lernen"), quiz.ausLernen, lernen.imQuiz; einmal je
-  Paket: quizGemacht) und "Weiter lernen: nächste N" (naechstesLernPaket); kein
-  "Nochmal". quizStufeRef "lernen" → quizRegeln(): lernen.quizStufe "ohne"
+  Paket: quizGemacht) und "Weiter lernen: nächste N" (naechstesLernPaket);
+  🔄 oben rechts (data-lernen-nochmal) zeigt das Paket nochmals, Quiz bleibt
+  einmalig. quizStufeRef "lernen" → quizRegeln(): lernen.quizStufe "ohne"
   (Standard: Schwer-Regeln ohne akzentHervorheben/akzentZaehler/akzenteTolerant)
   | "einfach" | "schwer" (Modal "Lernen einstellen"), immer ohne falschAbzug/
   aufdeckenAbzug (nur Verbesserung). Test: e2e/lernen_akzente.mjs. Ausgänge der Runde über
