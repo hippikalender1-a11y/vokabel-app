@@ -37,7 +37,7 @@ const lernenUndQuiz = async quizStufe => {
   await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
   await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Akzente")).click()); await sleep(600);
-  const art = await page.evaluate(() => document.querySelector("[data-slot-kopf] [data-quiz-art].aktiv")?.dataset.quizArt);
+  const art = await page.evaluate(() => document.querySelector("[data-start-arten] [data-quiz-art].aktiv")?.dataset.quizArt);
   await page.click("[data-start-knopf]"); await sleep(250);
   await page.click("[data-lernen-pause]"); await sleep(100);
   for (let i = 0; i < 10 && !(await page.$("[data-lernen-fertig]")); i++) { await page.click("[data-lernen-karte]"); await sleep(120); }

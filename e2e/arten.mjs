@@ -54,7 +54,7 @@ await clickText(".tab", "Quiz");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
 await clickText(".slot-chip", "Alt gemischt");
 
-ok(await page.evaluate(() => [...document.querySelectorAll("[data-quiz-art]")].map(b => b.textContent.trim()).join("|")) === "Ü|D|A", "Umschalter Ü | D | A im Quiz-Tab");
+ok(await page.evaluate(() => [...document.querySelectorAll("[data-start-arten] [data-quiz-art]")].map(b => b.querySelector("svg text")?.textContent.trim()).join("|")) === "Ü|D|A", "Umschalter Ü | D | A im Quiz-Tab (Start-Sektion)");
 if (process.env.SHOT) { await page.evaluate(() => { const b = document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv"); b.textContent = "Unregelmäßige Verben Kapitel 3 – Wiederholung (21 - 40)"; }); await page.screenshot({ path: "lang_shot.png", clip: { x: 0, y: 0, width: 390, height: 160 } }); }
 ok(await art() === "uebersetzung", "alte gemischte Konfiguration lädt als Übersetzung");
 console.log("     Modus Ü:", await modusName());
@@ -107,7 +107,7 @@ await waehleArt("uebersetzung");
 ok(await reihenfolge() === "Zufällige Reihenfolge", "geladen → Ü: Zufällig gespeichert");
 
 // Kachel: Balken = Lernfortschritt Übersetzung; Kreise Ü/D/A in der Kopfzeile, antippen wechselt die Art
-const kreise = attr => page.evaluate(attr => [...document.querySelectorAll(`[data-slot-kopf] [${attr}]`)].map(k => `${k.getAttribute(attr)}:${k.dataset.pct}`).join(","), attr);
+const kreise = attr => page.evaluate(attr => [...document.querySelectorAll(`[data-start-arten] [${attr}]`)].map(k => `${k.getAttribute(attr)}:${k.dataset.pct}`).join(","), attr);
 const balken = name => page.evaluate(n => [...document.querySelectorAll(".raster-chip")].find(c => c.querySelector(".raster-name")?.textContent.trim() === n)?.querySelector("[data-kachel-balken]")?.dataset.kachelBalken, name);
 await page.evaluate(() => { const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr")); l.vokabeln[0].fortschritt = { score: 3 }; l.vokabeln[1].akzentFortschritt = { score: 3 }; localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l)); });
 await page.reload(); await sleep(500);
@@ -118,17 +118,21 @@ console.log("     Kachel-Balken:", bk);
 ok(bk === "33" && !(await page.$(".raster-chip [data-mini-kreis]")), "Kachel: Balken Übersetzung 33 %, keine Kreise mehr");
 await clickText(".slot-chip", "Alt gemischt");
 const kr = await kreise("data-quiz-art");
-console.log("     Kopf-Kreise:", kr);
-ok(kr === "uebersetzung:33,diktat:0,akzente:50", "Kopfzeile: Ü 33 %, D 0 %, A 50 % (nur Wörter mit Akzent)");
-await page.click('[data-slot-kopf] [data-quiz-art="diktat"]'); await sleep(400);
+console.log("     Kreise:", kr);
+ok(kr === "uebersetzung:33,diktat:0,akzente:50", "Kreise: Ü 33 %, D 0 %, A 50 % (nur Wörter mit Akzent)");
+await sleep(400);
+ok(!(await page.$("[data-slot-kopf] [data-quiz-art]")), "zugeklappte Kopfzeile ohne Kreise");
+await page.click('[data-start-arten] [data-quiz-art="diktat"]'); await sleep(400);
 ok(await art() === "diktat" && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent.trim()) === "Alt gemischt", "Kreis D antippen: „Alt gemischt“ in Diktat");
-ok(await page.evaluate(() => document.querySelector('[data-slot-kopf] [data-quiz-art="diktat"]').classList.contains("aktiv")), "aktive Art in der Kopfzeile hervorgehoben");
+ok(await page.evaluate(() => { const b = document.querySelector('[data-start-arten] [data-quiz-art="diktat"]'); return b.classList.contains("aktiv") && b.getBoundingClientRect().height > 90 && /Diktat · 0 %/.test(b.textContent); }), "gewählte Art groß, mit Name und Prozent („Diktat · 0 %“)");
 // Statistik: Kreis A zeigt die Akzente-Statistik
 await clickText(".tab", "Statistik"); await sleep(300);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv, button.toggle-opt")?.click(); }); await sleep(300);
 await clickText(".slot-chip", "Alt gemischt");
-await page.click('[data-slot-kopf] [data-statistik-art="akzente"]'); await sleep(400);
-ok(await page.evaluate(() => document.querySelector("[data-kreismitte]")?.textContent.replace("⇄", "").trim()) === "Akzente", "Statistik: Kreis A zeigt die Akzente-Statistik");
+await sleep(400);
+ok(!(await page.$("[data-slot-kopf] [data-statistik-art]")), "Statistik: zugeklappte Kopfzeile ohne Kreise");
+for (let i = 0; i < 3 && (await page.evaluate(() => document.querySelector("[data-kreismitte]")?.textContent.replace("⇄", "").trim())) !== "Akzente"; i++) { await page.click("[data-kreismitte]"); await sleep(300); }
+ok(await page.evaluate(() => document.querySelector("[data-kreismitte]")?.textContent.replace("⇄", "").trim()) === "Akzente", "Statistik: Wechsel über die Mitte des Kreisdiagramms zu Akzente");
 await clickText(".tab", "Quiz");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
 await clickText(".slot-chip", "Drei Arten");

@@ -95,7 +95,7 @@ await sleep(400);
 // Kopfzeile: „Multiquiz“, Info-Zeile nennt die Teile
 const kopfName = await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent.trim());
 ok(kopfName === "Multiquiz", `Kopfzeile: „Multiquiz“ (${kopfName})`);
-ok(await page.evaluate(() => document.querySelectorAll("[data-slot-kopf] [data-quiz-art]").length) >= 1, "Kopfzeile: Kreise der zusammengesetzten Auswahl");
+ok(await page.evaluate(() => document.querySelectorAll("[data-start-arten] [data-quiz-art]").length) >= 1, "Kreise der zusammengesetzten Auswahl");
 await oeffneKopf(); await sleep(300);
 const info = await page.evaluate(() => document.querySelector("[data-kopf-info]")?.textContent.trim());
 console.log("     Info:", info);

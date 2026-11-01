@@ -70,8 +70,8 @@ ok(await page.evaluate(() => document.querySelector("[data-start-knopf]")?.datas
 
 // Statistik: „Neu“ (alle Listen, keine Konfiguration) → Quiz ohne Konfiguration, beide Listen
 // vorher im Quiz auf Diktat wechseln – ein neues Quiz beginnt trotzdem in Übersetzung
-await page.evaluate(() => document.querySelector('[data-slot-kopf] [data-quiz-art="diktat"]')?.click()); await sleep(300);
-const artVorher = await page.evaluate(() => document.querySelector("[data-slot-kopf] [data-quiz-art].aktiv")?.dataset.quizArt);
+await page.evaluate(() => document.querySelector('[data-start-arten] [data-quiz-art="diktat"]')?.click()); await sleep(300);
+const artVorher = await page.evaluate(() => document.querySelector("[data-start-arten] [data-quiz-art].aktiv")?.dataset.quizArt);
 await clickText(".tab", "Statistik");
 await oeffneKopf();
 await page.evaluate(() => [...document.querySelectorAll(".slot-kopf-knoepfe .slot-chip")].find(b => b.textContent.trim() === "Neu").click());
@@ -81,7 +81,7 @@ await sleep(300);
 st = await stand();
 console.log("     Quiz nach Statistik-Neu:", JSON.stringify(st));
 ok(st.kopf !== "gruen" && st.listen === "2 Listen", "Statistik „Neu“ (alle Listen) → Quiz: keine Konfiguration, beide Listen");
-const artNachher = await page.evaluate(() => document.querySelector("[data-slot-kopf] [data-quiz-art].aktiv")?.dataset.quizArt);
+const artNachher = await page.evaluate(() => document.querySelector("[data-start-arten] [data-quiz-art].aktiv")?.dataset.quizArt);
 ok(artVorher === "diktat" && artNachher === "uebersetzung", `neues Quiz beginnt in Übersetzung (vorher ${artVorher}, jetzt ${artNachher})`);
 ok(!(await page.$('[data-anzahl="fortschritt"]')), "Quiz: kein Fortschritt einer alten Session sichtbar");
 

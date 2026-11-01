@@ -1708,6 +1708,11 @@ QUIZ-TAB NEU (Schritt 2, A1–A5):
   Konfiguration gelöst wird (Statistik → Quiz ohne Konfiguration, Sprachfilter,
   Aufteilen, Löschen des geladenen Eintrags; "Neu" und Listen-Start setzen die
   Art ohnehin zurück).
+  Kreise Ü/D/A: zugeklappte Kopfzeile (Quiz und Statistik) nur noch der Name über
+  die ganze Breite; aufgeklappt Kreise wie bisher. Quiz: Start-Sektion über
+  "Quiz mit N Vokabeln" .start-arten (data-start-arten): gewählte Art 95 px mit
+  "Übersetzung · 64 %" (data-start-art-name), andere 57 px, antippen wechselt
+  (wechsleQuizArt). Statistik: Art-Wechsel über die Mitte des Kreisdiagramms.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),
