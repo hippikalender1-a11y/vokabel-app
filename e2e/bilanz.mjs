@@ -47,13 +47,16 @@ async function runde(scores, antworten) {
   await clickText(".typ-btn", "Anzahl", true);
   await clickText("[data-start-knopf]", "");
   await sleep(400);
+  const frage = () => page.evaluate(() => document.querySelector(".quiz-frage-text")?.textContent.trim() || "");
   for (let k = 0; k < Object.keys(antworten).length; k++) {
-    const t = await text();
-    const v = Object.keys(antworten).find(d => t.includes(d));
+    const f = await frage();
+    const v = Object.keys(antworten).find(d => f.includes(d));
     await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click());
     await sleep(250);
     await clickText(".karte-btn", antworten[v] ? "Gewusst" : "Nicht gewusst");
-    await sleep(1300);
+    // warten, bis die nächste Frage bzw. das Ende da ist (unter Last dauert der Übergang länger)
+    for (let w = 0; w < 40 && await frage() === f && !(await page.$("[data-zur-auswertung]")); w++) await sleep(100);
+    await sleep(200);
   }
   return text();
 }

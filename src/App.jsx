@@ -785,10 +785,12 @@ const SCORE_FELD = { uebersetzung: "fortschritt", diktat: "diktatFortschritt", a
 // Sicht für die Statistik: "fortschritt" ist der Score der gewählten Art; Akzente nur Vokabeln mit Akzent
 // Akzente: es zählen nur Wörter mit Akzent (100 % = alle Wörter mit Akzent); dazugenommene Wörter
 // ohne Akzent sind reine Übung und fließen nicht in Statistik, Lernfortschritt und Auswertung ein
-const hatAkzentWort = v => TYPEN.some(t => t.startsWith('E') && hatAkzente(v?.[t]?.wert));
-function statistikSicht(voks, art) {
+// Akzente je Sprache (Einstellungen): beim Rendern gesetzt; Vokabel ohne Listen-Bezug → an
+let AKZENTE_FUER_LISTE = () => true;
+const hatAkzentWort = (v, listeId = null) => AKZENTE_FUER_LISTE(v?._listeId ?? listeId) && TYPEN.some(t => t.startsWith('E') && hatAkzente(v?.[t]?.wert));
+function statistikSicht(voks, art, listeId = null) {
   if (art === "diktat") return voks.map(v => ({ ...v, fortschritt: v.diktatFortschritt }));
-  if (art === "akzente") return voks.filter(hatAkzentWort).map(v => ({ ...v, fortschritt: v.akzentFortschritt }));
+  if (art === "akzente") return voks.filter(v => hatAkzentWort(v, listeId)).map(v => ({ ...v, fortschritt: v.akzentFortschritt }));
   return voks;
 }
 
@@ -1608,6 +1610,17 @@ export default function VokabelApp() {
     return () => { aus = true; clearTimeout(timer); window.speechSynthesis?.cancel(); };
   }, [lernen?.lauf, lernen?.index, lernen?.phase, lernen?.pausiert, lernen?.fertig]);
 
+  // Statistik auf Akzente, aber die Akzente sind für keine Sprache der Auswahl eingeschaltet → Übersetzung
+  useEffect(() => {
+    if (statistikArt === "akzente" && !statistikGefilterteVoks.some(v => AKZENTE_FUER_LISTE(v._listeId))) setStatistikArt("uebersetzung");
+  }, [statistikArt, statistikListenIds, statistikCheckboxAuswahl, einstellungen.akzenteSprachen]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Akzente für die gewählten Listen ausgeschaltet (oder keine Wörter mit Akzent) → Abfrageart A gibt es nicht
+  useEffect(() => {
+    if (quizArt !== "akzente" || !quizKombiListe) return;
+    if (!quizKombiListe.vokabeln.some(v => hatAkzentWort(v))) wechsleQuizArt("uebersetzung");
+  }, [quizArt, quizTabListen, einstellungen.akzenteSprachen]);   // eslint-disable-line react-hooks/exhaustive-deps
+
   // Multiquiz: erst laden (Einstellungen stehen dann im State), dann starten
   useEffect(() => {
     if (!multiStart || aktiverSlot?.id !== multiStart) return;
@@ -2002,6 +2015,9 @@ export default function VokabelApp() {
 
   // ── Sprachen-Filter (global) ──────────────────────────────────────────────
   const vorhandeneSprachen = SPRACHEN.filter(s => listenIndex.some(l => listeSprache(l) === s.code));
+  // Akzente je Sprache (Einstellungen → Akzente); Standard: nur Französisch
+  const akzenteAn = code => einstellungen.akzenteSprachen?.[code] ?? code === "fr";
+  AKZENTE_FUER_LISTE = id => !id || id === "combined" || akzenteAn(spracheVonListe(id));
   // Gewählte Sprache nur wirksam, solange es Listen dieser Sprache gibt
   const sprachFilter = vorhandeneSprachen.some(s => s.code === einstellungen.sprache) ? einstellungen.sprache : "alle";
   const sichtbareListen = sprachFilter === "alle" ? listenIndex : listenIndex.filter(l => listeSprache(l) === sprachFilter);
@@ -4132,7 +4148,7 @@ export default function VokabelApp() {
               <div className="karte-zeile-name">{listenFlagge(l)}{l.name}</div>
               <div className="karte-zeile-sub">{anzahl} Vokabel{anzahl !== 1 ? "n" : ""}</div>
               {(einstellungen.gelerntSchwelle ?? 0) > 0 && liste?.vokabeln.length > 0 && (
-                <span className="mini-kreise" data-listen-kreise style={{marginTop:4}}>{renderMiniKreise(lernstandJeArt(liste.vokabeln), { groesse: 22 })}</span>
+                <span className="mini-kreise" data-listen-kreise style={{marginTop:4}}>{renderMiniKreise(lernstandJeArt(liste.vokabeln, liste.id), { groesse: 22 })}</span>
               )}
             </div>
           ) : (<>
@@ -4144,7 +4160,7 @@ export default function VokabelApp() {
                     </div>
                   </div>
                   {(einstellungen.gelerntSchwelle ?? 0) > 0 && liste?.vokabeln.length > 0 && (
-                    <span className="mini-kreise" data-listen-kreise style={{flexShrink:0}}>{renderMiniKreise(lernstandJeArt(liste.vokabeln), { groesse: 26 })}</span>
+                    <span className="mini-kreise" data-listen-kreise style={{flexShrink:0}}>{renderMiniKreise(lernstandJeArt(liste.vokabeln, liste.id), { groesse: 26 })}</span>
                   )}
             {!exportAuswahlModus && !sortModus && <span style={{color:"var(--text2)"}}>{">"}</span>}
           </>)}
@@ -4252,10 +4268,10 @@ export default function VokabelApp() {
   }
 
   // Lernfortschritt je Art (Mini-Kreise) für eine Vokabelmenge; aus = keine passenden Vokabeln
-  function lernstandJeArt(voks) {
+  function lernstandJeArt(voks, listeId = null) {
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
     return Object.fromEntries(QUIZ_ARTEN.map(a => {
-      const sicht = statistikSicht(voks, a);
+      const sicht = statistikSicht(voks, a, listeId);
       return [a, { pct: lernProzent(sicht.map(v => v.fortschritt?.score), schwelle), aus: sicht.length === 0 }];
     }));
   }
@@ -4281,7 +4297,7 @@ export default function VokabelApp() {
     const aktArt = tab === "statistik" ? statistikArt : quizArt;
     const lernstand = x => {
       const k = x.konfiguration || {};
-      let voks = (k.listenIds || []).flatMap(id => (listeVon(id)?.vokabeln || []).map(v => ({ ...v, _key: `${id}__${v.id}` })));
+      let voks = (k.listenIds || []).flatMap(id => (listeVon(id)?.vokabeln || []).map(v => ({ ...v, _key: `${id}__${v.id}`, _listeId: id })));
       if (k.bereichTyp === "bereich" && k.vokabelAuswahl?.length) { const a = new Set(k.vokabelAuswahl); voks = voks.filter(v => a.has(v._key)); }
       return lernstandJeArt(voks);
     };
@@ -4906,8 +4922,9 @@ export default function VokabelApp() {
     if (!quiz || !quiz.eingabe.trim()) return;
     const eingabe = quiz.eingabe.trim();
 
-    // Modus "Einfach": fehlende/falsche Akzente zählen als richtig (mit Hinweis)
-    const tolerant = quizRegeln().akzenteTolerant;
+    // Modus "Einfach": fehlende/falsche Akzente zählen als richtig (mit Hinweis); ebenso, wenn die Akzente der Sprache aus sind
+    const vokJetzt = quiz.vokabeln[quiz.index], spalteJetzt = quiz.antwortTypen[quiz.antwortTypIndex];
+    const tolerant = quizRegeln().akzenteTolerant || (spalteJetzt?.startsWith("E") && !AKZENTE_FUER_LISTE(vokJetzt?._listeId ?? aktiveListeId));
     let akzentHinweis = false;
 
     function setzeRichtigAufgedeckt(updates) {
@@ -5146,7 +5163,7 @@ export default function VokabelApp() {
     if (!quiz || !quiz.eingabe.trim()) return;
     const aktVok = quiz.vokabeln[quiz.index];
     const wort = aktVok[quiz.diktatSpalte]?.wert || "";
-    const treffer = istRichtigeAntwort(quiz.eingabe.trim(), wort, quizRegeln().akzenteTolerant);
+    const treffer = istRichtigeAntwort(quiz.eingabe.trim(), wort, quizRegeln().akzenteTolerant || (quiz.diktatSpalte?.startsWith("E") && !AKZENTE_FUER_LISTE(aktVok._listeId ?? aktiveListeId)));
     if (treffer) {
       const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "richtig");
       const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
@@ -7849,7 +7866,9 @@ export default function VokabelApp() {
           // Kennzahlen immer über alle Vokabeln; der Gelernt-Knopf blendet nur Graph + Liste aus
           const alleVoks = statistikSicht(statistikGefilterteVoks, statistikArt);
           const artName = STATISTIK_ARTEN.find(([a]) => a === statistikArt)[1];
-          const naechsteArt = () => setStatistikArt(a => STATISTIK_ARTEN[(STATISTIK_ARTEN.findIndex(([x]) => x === a) + 1) % STATISTIK_ARTEN.length][0]);
+          // Akzente nur, wenn sie für eine Sprache der Auswahl eingeschaltet sind (Einstellungen → Akzente)
+          const artenVerfuegbar = STATISTIK_ARTEN.map(([x]) => x).filter(x => x !== "akzente" || statistikGefilterteVoks.some(v => AKZENTE_FUER_LISTE(v._listeId)));
+          const naechsteArt = () => setStatistikArt(a => artenVerfuegbar[(artenVerfuegbar.indexOf(a) + 1) % artenVerfuegbar.length]);
           const istGelerntS = v => schwelleS > 0 && (v.fortschritt?.score ?? -Infinity) >= schwelleS;
           // Drei Bewertungsgruppen + nie abgefragt; Score 0 zählt als "in Arbeit"
           const gruppeVon = v => !v.fortschritt ? "nie" : v.fortschritt.score < 0 ? "negativ" : istGelerntS(v) ? "gelernt" : "arbeit";
@@ -8285,6 +8304,7 @@ export default function VokabelApp() {
                   {k:"Vokabelliste", v:"Alle gefilterten Vokabeln mit Score-Balken (grün = positiv, rot = negativ) und letztem Abfragedatum."},
                 ]},
                 {titel:"Einstellungen-Tab", inhalt:[
+                  {k:"Akzente", v:"Je Sprache An oder Aus (Standard: nur Französisch an). Aus: keine Abfrageart „A“ und keine Akzent-Statistik für Listen dieser Sprache, und fehlende Akzente beim Tippen und im Diktat gelten als richtig. An: „A“ steht zur Verfügung, beim Tippen gilt die Regel der Stufe."},
                   {k:"Farbschema", v:"Sechs Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs und Dunkel – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler: großer Farbkreis (außen kräftig, zur Mitte weniger gesättigt), Regler für Helligkeit und Sättigung, Hex-Feld, „Zuletzt verwendet“ (10 Farben); die App färbt sich beim Ziehen sofort um, „Anwenden“ übernimmt, „Abbrechen“ stellt die alte Farbe wieder her. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
                   {k:"App aktualisieren", v:"„Prüfen“ sucht nach einer neuen App-Version. Wird eine gefunden, erscheint unten der Hinweis „Neue Version verfügbar“ – mit „Aktualisieren“ wird sie aktiv. Die App funktioniert auch offline."},
                   {k:"Gespeicherte Listen", v:"Zeigt, wie viele Listen aktuell auf diesem Gerät gespeichert sind."},
@@ -8330,6 +8350,25 @@ export default function VokabelApp() {
                   ))}
                 </div>
               </div>
+            </div>
+            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Akzente</div>
+            <div className="karte" data-akzent-sprachen>
+              <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
+                <div className="karte-zeile-sub">Ausgeschaltet: keine Abfrageart „A“ und keine Akzent-Statistik für diese Sprache; fehlende Akzente beim Tippen gelten als richtig.</div>
+              </div>
+              {(vorhandeneSprachen.length ? vorhandeneSprachen : SPRACHEN.filter(x => x.code === "fr")).map(sp => (
+                <div key={sp.code} className="toggle-row" style={{borderTop:"1px solid var(--rahmen)"}}>
+                  <div className="toggle-label">{sp.flagge} {sp.name}</div>
+                  <div className="toggle-btn">
+                    <button className={`toggle-opt${akzenteAn(sp.code) ? " aktiv" : ""}`} data-akzent-sprache={`${sp.code}:an`}
+                      onClick={() => speichereEinst({ ...einstellungen, akzenteSprachen: { ...(einstellungen.akzenteSprachen || {}), [sp.code]: true } })}
+                      {...tt(`Akzente für ${sp.name} einschalten: Abfrageart „A“, Akzent-Statistik, Akzente müssen beim Tippen stimmen`)}>An</button>
+                    <button className={`toggle-opt${!akzenteAn(sp.code) ? " aktiv" : ""}`} data-akzent-sprache={`${sp.code}:aus`}
+                      onClick={() => speichereEinst({ ...einstellungen, akzenteSprachen: { ...(einstellungen.akzenteSprachen || {}), [sp.code]: false } })}
+                      {...tt(`Akzente für ${sp.name} ausschalten: keine Abfrageart „A“, fehlende Akzente beim Tippen gelten als richtig`)}>Aus</button>
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Farbschema</div>
             {renderFarbschemata()}

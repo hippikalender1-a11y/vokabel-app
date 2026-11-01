@@ -28,6 +28,15 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Statistik").click()); await sleep(400);
 
+// Standard: Akzente für Englisch aus → die Mitte überspringt „Akzente“
+await mitte();
+const a1 = await art(); await mitte();
+ok(a1 === "Diktat" && await art() === "Übersetzung", `Englisch ohne Akzente (Standard): Mitte wechselt Übersetzung → Diktat → Übersetzung (${a1}, ${await art()})`);
+// Akzente für Englisch einschalten: Akzente-Statistik mit Hinweis „keine Akzente“
+await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"); localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, ...e, akzenteSprachen: { en: true } })); });
+await page.reload(); await sleep(500);
+await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Statistik").click()); await sleep(400);
+
 ok(await art() === "Übersetzung", "Start: Übersetzung");
 const lage = () => page.evaluate(() => { const r = document.querySelector("[data-kreismitte]").getBoundingClientRect(); return Math.round(r.top) + "," + Math.round(r.left); });
 const lageVorher = await lage();

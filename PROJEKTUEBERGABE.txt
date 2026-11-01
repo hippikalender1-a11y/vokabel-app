@@ -1713,6 +1713,15 @@ QUIZ-TAB NEU (Schritt 2, A1–A5):
   "Quiz mit N Vokabeln" .start-arten (data-start-arten): gewählte Art 95 px mit
   "Übersetzung · 64 %" (data-start-art-name), andere 57 px, antippen wechselt
   (wechsleQuizArt). Statistik: Art-Wechsel über die Mitte des Kreisdiagramms.
+AKZENTE JE SPRACHE: einstellungen.akzenteSprachen { code: bool }, Standard nur
+  "fr" (akzenteAn). Modulweit AKZENTE_FUER_LISTE(listeId) (beim Rendern gesetzt);
+  hatAkzentWort(v, listeId) / statistikSicht(…, listeId) / lernstandJeArt(voks,
+  listeId) berücksichtigen es (Vokabeln brauchen _listeId; Listen-Tab übergibt
+  liste.id, Kacheln setzen _listeId). Aus → keine Art "A" (Kreise, Effekt setzt
+  quizArt auf Übersetzung), Statistik-Mitte überspringt Akzente nur bei
+  ausgeschalteter Sprache (Liste ohne Akzent-Wörter: weiter Hinweis), Tippen/Diktat
+  tolerant bei E-Spalten. Einstellungen-Abschnitt "Akzente" (data-akzent-sprache
+  "code:an|aus"). Test: e2e/akzentsprachen.mjs, keineakzente.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),
