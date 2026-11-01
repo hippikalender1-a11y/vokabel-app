@@ -1,6 +1,6 @@
 import puppeteer from "puppeteer-core";
 
-// Farbschemata: 6 Vorlagen (Natur, Freudig, Pastelle, Mädchen, Jungs, Dunkel) wählen; Vorlagen nur duplizieren;
+// Farbschemata: 16 Vorlagen (Natur … Dunkel, Ozean … Espresso) wählen; Vorlagen nur duplizieren;
 // eigene bearbeiten (Farbwähler, live), zurücksetzen, umbenennen, löschen
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -46,7 +46,8 @@ await clickText(".tab", "Einstellungen");
 
 const namen = await page.evaluate(() => [...document.querySelectorAll("[data-farbschema]")].map(b => b.querySelector(".farb-name").textContent.replace("✓ ", "").trim()));
 console.log("     Schemata:", namen.join(" | "));
-ok(namen.join("|") === "Natur|Freudig|Pastelle|Mädchen|Jungs|Dunkel", "6 Vorlagen: Natur, Freudig, Pastelle, Mädchen, Jungs, Dunkel");
+ok(namen.join("|") === "Natur|Freudig|Pastelle|Mädchen|Jungs|Dunkel|Ozean|Lavendel|Minze|Sand|Beere|Olive|Graphit|Kontrast|Mitternacht|Espresso",
+  "16 Vorlagen: Natur, Freudig, Pastelle, Mädchen, Jungs, Dunkel, Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht, Espresso");
 ok(await variable("haupt") === "#2d6a4f" && await page.evaluate(() => document.querySelector('[data-farbschema="natur"]').classList.contains("aktiv")), "Standard: Natur (Hauptfarbe #2d6a4f)");
 
 for (const id of ["freudig", "pastelle", "maedchen", "jungs", "dunkel"]) {
@@ -102,7 +103,8 @@ await page.evaluate(() => { const i = document.querySelector(".modal input"); i.
 await page.keyboard.type("Mein Grün");
 await clickText(".modal button", "Speichern", true);
 ok((await eigene())[0].name === "Mein Grün", "umbenannt: „Mein Grün“");
-await page.click('[data-farbschema="dunkel"]'); await sleep(200);
+// direkt anklicken: die Kachel liegt beim Scrollen sonst unter der festen Kopfzeile
+await page.evaluate(() => document.querySelector('[data-farbschema="dunkel"]').click()); await sleep(200);
 await menue(eigId); await aktion("🗑 Löschen");
 await clickText(".modal .btn-danger", "Löschen", true);
 ok((await eigene()).length === 0 && await bodyBg() === "rgb(22, 24, 22)", "gelöscht; gewähltes Schema (Dunkel) bleibt");

@@ -1742,6 +1742,9 @@ GESAMTSICHERUNG (nach Datenverlust auf Android, Browser hatte den Speicher gelee
   (data-sicherung-erinnerung), wenn letzte Sicherung bzw. erster Start älter als
   einstellungen.sicherungErinnerung Tage (0/3/7/14/30, Standard 7); „Später“ = 1 Tag still.
   Test: e2e/sicherung.mjs.
+FARBVORLAGEN: 16 in FARB_VORLAGEN – Natur, Freudig, Pastelle, Mädchen, Jungs, Dunkel,
+  dazu Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht (dunkel),
+  Espresso (dunkel). Kontraste geprüft (auf-haupt/haupt ≥ 4,5, text/karte ≥ 7).
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),
