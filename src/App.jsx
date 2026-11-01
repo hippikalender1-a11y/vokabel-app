@@ -334,6 +334,13 @@ function sprich(text, lang) {
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(aeusserung(text.split('/')[0].trim(), lang));
 }
+// Auto-Vorlesen in der Abfrage: läuft gerade etwas (z. B. die Antwort beim Weiterblättern), wird angehängt statt abgebrochen
+function sprichAuto(text, lang) {
+  const s = window.speechSynthesis;
+  if (!text || !s) return;
+  if (!s.speaking || s.pending) s.cancel();
+  s.speak(aeusserung(text.split('/')[0].trim(), lang));
+}
 
 // ── KI-Prompt-Generator ────────────────────────────────────────────────────
 // Beispielzeile im Prompt je Sprache (Wort, falsche Antworten, Beispielsatz, Synonyme)
@@ -2086,7 +2093,9 @@ export default function VokabelApp() {
 
   // Nach der Zwischenkarte "Wiederholung" die erste Frage erneut vorlesen
   const quizWiederholungHinweis = quiz?.phase === "wiederholungHinweis";
+  const vorgelesenRef = useRef(null);
   useEffect(() => {
+    vorgelesenRef.current = null;
     if (ansicht !== "quiz" || !quiz || quiz.phase !== "eingabe" || quiz.flash) return;
     if (quiz.modus === "diktat") {
       const text = quiz.vokabeln?.[quiz.index]?.[quiz.diktatSpalte]?.wert;
@@ -2096,8 +2105,20 @@ export default function VokabelApp() {
     if (!einstellungen.autoplay) return;
     if (!(einstellungen.vorlesen || ["E1"]).includes(quiz.frageTyp)) return;
     const text = quiz.vokabeln?.[quiz.index]?.[quiz.frageTyp]?.wert;
-    if (text) sprich(text, vokLang(quiz.vokabeln?.[quiz.index], quiz.frageTyp));
+    if (text) sprichAuto(text, vokLang(quiz.vokabeln?.[quiz.index], quiz.frageTyp));
   }, [quiz?.index, quizWiederholungHinweis, ansicht, einstellungen.autoplay]);
+
+  // Auto-Vorlesen: Antwort beim Aufdecken bzw. im Richtig-Blitz vorlesen (je Spalte nur einmal)
+  const antwortGezeigt = !!quiz && quiz.modus !== "diktat" && (quiz.phase === "aufgedeckt" || !!quiz.flash);
+  useEffect(() => {
+    if (ansicht !== "quiz" || !antwortGezeigt || !einstellungen.autoplay) return;
+    const typ = quiz.antwortTypen?.[quiz.antwortTypIndex];
+    if (!typ || !(einstellungen.vorlesen || ["E1"]).includes(typ)) return;
+    const schluessel = `${quiz.index}|${quiz.antwortTypIndex}`;
+    if (vorgelesenRef.current === schluessel) return;
+    vorgelesenRef.current = schluessel;
+    sprichAuto(quiz.antwortTeile?.[0], vokLang(quiz.vokabeln?.[quiz.index], typ));
+  }, [antwortGezeigt, quiz?.index, quiz?.antwortTypIndex, ansicht, einstellungen.autoplay]);
 
   useEffect(() => {
     if (ansicht !== "quiz" || !quiz) return;
@@ -6282,6 +6303,25 @@ export default function VokabelApp() {
                 onClick={() => speichereEinst({...einstellungen, karteInfo: !karteInfoAn})}
                 {...tt(karteInfoAn ? "Info-Kasten ausblenden (gilt dauerhaft)" : "Info-Kasten einblenden (gilt dauerhaft)")}>i</button>
             )}
+            {(() => {
+              const an = !!einstellungen.autoplay;
+              const vorlesen = einstellungen.vorlesen || ["E1"];
+              const spalten = [...new Set([quiz.frageTyp, ...quiz.antwortTypen])].filter(Boolean);
+              const keineDabei = an && !spalten.some(t => vorlesen.includes(t));
+              return (
+                <button data-autoplay-schalter={an ? "an" : "aus"} className="topbar-back"
+                  style={{width:36, height:36, padding:0, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
+                    ...(an ? {} : {background:"var(--karte)", color:"var(--haupt)", border:"1.5px solid var(--haupt)", opacity:.75})}}
+                  onClick={() => { if (an) window.speechSynthesis?.cancel(); speichereEinst({...einstellungen, autoplay: !an}); }}
+                  {...tt(an ? (keineDabei ? "Automatisches Vorlesen ist an, aber keine Spalte dieser Abfrage ist zum Vorlesen gewählt – lang drücken" : "Automatisches Vorlesen ausschalten")
+                      : "Vokabeln automatisch vorlesen: Frage beim Erscheinen, Antwort beim Aufdecken", [
+                    ...spalten.map(t => ({ label: `${vorlesen.includes(t) ? "✓ " : "○ "}${quiz.liste.spalten[t]?.name || t} vorlesen`,
+                      fn: () => speichereEinst({...einstellungen, vorlesen: vorlesen.includes(t) ? vorlesen.filter(x => x !== t) : [...vorlesen, t]}) })),
+                  ], { langText: "Lang drücken: wählen, welche Spalten automatisch vorgelesen werden" })}>
+                  {an ? <IcoSpkOn s={20}/> : <IcoSpk s={16}/>}
+                </button>
+              );
+            })()}
             <span className="topbar-title">
               {quiz.wiederholungDurchgang ? <span className="wiederholung-marke" {...tt("Diese Vokabeln werden wiederholt, weil sie noch nicht sicher sitzen")}>🔁 Wiederholung </span> : null}
               <span>{quiz.index + 1} / {quiz.vokabeln.length}</span>
@@ -9416,7 +9456,7 @@ export default function VokabelApp() {
                         <div className="toggle-row">
                           <div>
                             <div className="toggle-label">Auto-Play</div>
-                            <div className="toggle-sub">Frage automatisch vorlesen wenn neue Vokabel erscheint</div>
+                            <div className="toggle-sub">Frage beim Erscheinen und Antwort beim Aufdecken automatisch vorlesen – auch während der Abfrage über 🔊 oben schaltbar</div>
                           </div>
                           <div className="toggle-btn">
                             <button className={`toggle-opt${!einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:false})} {...tt("Kein automatisches Vorlesen")}>Aus</button>
@@ -9439,7 +9479,7 @@ export default function VokabelApp() {
                               })}
                             </div>
                             <div style={{fontSize:"0.75rem", color:"var(--text2)", marginTop:8}}>
-                              Nur wenn Frage-Spalte ausgewählt ist, wird Auto-Play ausgelöst
+                              Vorgelesen werden nur Frage und Antworten aus diesen Spalten
                             </div>
                           </div>
                         )}
