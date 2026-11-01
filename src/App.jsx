@@ -309,6 +309,23 @@ function GelerntSterne() {
   );
 }
 
+// Antwortarten einer Spalte: eine (Text) oder mehrere (Liste – je Frage wird zufällig eine gewählt)
+const MODI_REIHENFOLGE = ["karte", "mc", "tippen", "akzent"];
+const modiVon = m => Array.isArray(m) ? m : [m || STANDARD_ANTWORT_MODUS];
+// je Frage und Spalte: aus mehreren angehakten Antwortarten gleich verteilt eine wählen;
+// Akzente nur bei Wörtern mit Akzent (und eingeschalteten Akzenten der Sprache)
+function loeseSpaltenModusAuf(basis, vok) {
+  const r = {};
+  Object.entries(basis || {}).forEach(([t, m]) => {
+    if (!Array.isArray(m)) { r[t] = m; return; }
+    let kand = m.filter(x => x !== "akzent" || (t.startsWith("E") && hatAkzente(vok?.[t]?.wert) && AKZENTE_FUER_LISTE(vok?._listeId)));
+    if (!kand.length) kand = m.filter(x => x !== "akzent");
+    if (!kand.length) kand = [STANDARD_ANTWORT_MODUS];
+    r[t] = kand[Math.floor(Math.random() * kand.length)];
+  });
+  return r;
+}
+
 function sprich(text, lang) {
   if (!text || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
@@ -588,7 +605,10 @@ function artBereinigt(art, k, spalten) {
     antw.forEach(t => { sm[t] = "akzent"; });
     return { ...k, quizModus: "sequenziell", quizAntwortTypenGeordnet: antw, quizSpalteModus: sm };
   }
-  Object.keys(sm).forEach(t => { if (sm[t] === "akzent") sm[t] = STANDARD_ANTWORT_MODUS; });
+  Object.keys(sm).forEach(t => {
+    if (sm[t] === "akzent") sm[t] = STANDARD_ANTWORT_MODUS;
+    else if (Array.isArray(sm[t]) && !sm[t].some(x => x !== "akzent")) sm[t] = STANDARD_ANTWORT_MODUS;
+  });
   return { ...k, quizModus: k.quizModus === "diktat" || !k.quizModus ? "sequenziell" : k.quizModus, quizSpalteModus: sm };
 }
 // Statistik-Gruppen in Anzeige-Reihenfolge mit Farbe (Kreis, Gruppen-Balken)
@@ -4275,6 +4295,25 @@ export default function VokabelApp() {
       return [a, { pct: lernProzent(sicht.map(v => v.fortschritt?.score), schwelle), aus: sicht.length === 0 }];
     }));
   }
+  // Antwortarten einer Spalte als Mehrfach-Schalter: mehrere angehakt → je Frage zufällig eine.
+  // Akzente nur bei Fremdsprachen-Spalten und eingeschalteten Akzenten; mindestens eine Art außer Akzente bleibt an
+  function renderModusKnoepfe(typ) {
+    const aktiv = modiVon(quizSpalteModus[typ]);
+    const akzentMoeglich = typ.startsWith("E") && quizTabListen.some(id => AKZENTE_FUER_LISTE(id));
+    const umschalten = m => setQuizSpalteModus(p => {
+      const alt = modiVon(p[typ]);
+      const neu = MODI_REIHENFOLGE.filter(x => alt.includes(x) !== (x === m));
+      if (!neu.some(x => x !== "akzent")) return p;
+      return { ...p, [typ]: neu.length === 1 ? neu[0] : neu };
+    });
+    return [["tippen", "Tastatur", "Antwort eintippen"], ["mc", "MC", "Antwort aus mehreren Vorschlägen wählen (Multiple Choice)"],
+      ["karte", "Karte", "Karte aufdecken und selbst bewerten: gewusst / nicht gewusst"],
+      ...(akzentMoeglich ? [["akzent", "Akzente", "Akzente setzen – nur bei Wörtern mit Akzent, zählt hier für die Übersetzung"]] : [])].map(([m, label, text]) => (
+      <button key={m} {...tt(`${text} – mehrere angehakt: je Frage zufällig eine davon`)} data-modus-knopf={`${typ}:${m}`}
+        className={`spalten-modus-btn${aktiv.includes(m) ? " aktiv" : ""}`} onClick={() => umschalten(m)}>{label}</button>
+    ));
+  }
+
   // Mini-Kreise Ü D A (zum Anzeigen; mit beiKlick zum Umschalten)
   function renderMiniKreise(ls, { aktiv = null, beiKlick = null, groesse = 24, aufGruen = false, attr = "data-mini-kreis", nurVerfuegbar = false } = {}) {
     return QUIZ_ARTEN.filter(a => !nurVerfuegbar || !ls[a].aus).map(a => {
@@ -4673,7 +4712,8 @@ export default function VokabelApp() {
     const frageTyp = basisFA.frageTyp;
     const antwortTypen = antwortSpaltenFuer(voks[0], basisFA.antwortTypen, quizSpalteModus, akzentOhneAuslassen, true);
     const erstesTeile = voks[0][antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
-    const ersterModusTyp0 = quizSpalteModus[antwortTypen[0]] || STANDARD_ANTWORT_MODUS;
+    const spalteModus0 = loeseSpaltenModusAuf(quizSpalteModus, voks[0]);
+    const ersterModusTyp0 = spalteModus0[antwortTypen[0]] || STANDARD_ANTWORT_MODUS;
     const erstesMC = ersterModusTyp0 === "mc"
       ? generiereButtons(voks, voks[0], antwortTypen[0]) : null;
 
@@ -4687,7 +4727,7 @@ export default function VokabelApp() {
 
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     setQuiz({
-      sitzungsInfoTypen, modus: quizModus, spalteModus: quizSpalteModus,
+      sitzungsInfoTypen, modus: quizModus, spalteModus: spalteModus0, spalteModusBasis: quizSpalteModus,
       liste: kombiListe, vokabeln: voks, index: 0,
       frageTyp, antwortTypen, antwortTypIndex: 0, basisFA, akzentOhneAuslassen,
       phase: "eingabe", eingabe: "", flash: false, infoSichtbar: false, infoSeite: 0,
@@ -4733,7 +4773,7 @@ export default function VokabelApp() {
         const ft = alle[idx % alle.length];
         fa = { frageTyp: ft, antwortTypen: alle.filter(t => t !== ft) };
       }
-      return { frageTyp: fa.frageTyp, antwortTypen: antwortSpaltenFuer(voks[idx], fa.antwortTypen, prev.spalteModus, prev.akzentOhneAuslassen, true) };
+      return { frageTyp: fa.frageTyp, antwortTypen: antwortSpaltenFuer(voks[idx], fa.antwortTypen, prev.spalteModusBasis || prev.spalteModus, prev.akzentOhneAuslassen, true) };
     }
 
     // Baut den State für vokabeln[idx] innerhalb von voks auf
@@ -4741,7 +4781,7 @@ export default function VokabelApp() {
       const { frageTyp, antwortTypen } = getFA(voks, idx);
       const vok = voks[idx];
       const teile = vok[antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
-      const sp = prev.spalteModus;
+      const sp = prev.spalteModusBasis ? loeseSpaltenModusAuf(prev.spalteModusBasis, vok) : prev.spalteModus;
       const mc = (sp[antwortTypen[0]] || STANDARD_ANTWORT_MODUS) === "mc" ? generiereButtons(voks, vok, antwortTypen[0]) : null;
       return { ...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, erstbewertung: null, flash: false, index: idx,
         vokabeln: voks, frageTyp, antwortTypen, antwortTypIndex: 0,
@@ -4790,9 +4830,9 @@ export default function VokabelApp() {
     const { frageTyp, antwortTypen } = getFA(prev.vokabeln, naechsterIdx);
     const naechsteVok = prev.vokabeln[naechsterIdx];
     const teile = naechsteVok[antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
-    const spalteModus = prev.mcWechsel
-      ? {...prev.spalteModus, [antwortTypen[0]]: "tippen"}
-      : prev.spalteModus;
+    // je Vokabel neu auflösen (setzt auch einen MC-Wechsel der vorigen Frage zurück)
+    const spalteModus = prev.spalteModusBasis ? loeseSpaltenModusAuf(prev.spalteModusBasis, naechsteVok)
+      : prev.mcWechsel ? {...prev.spalteModus, [antwortTypen[0]]: "tippen"} : prev.spalteModus;
     const modusTyp0 = spalteModus[antwortTypen[0]] || STANDARD_ANTWORT_MODUS;
     const mc = modusTyp0 === "mc" ? generiereButtons(prev.vokabeln, naechsteVok, antwortTypen[0]) : null;
     return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, erstbewertung: null, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
@@ -4856,8 +4896,8 @@ export default function VokabelApp() {
     const alle = quiz.antwortTypen.map((_, i) => spaltenErgebnisse[i] || "aufgedeckt");
     const gesamt = liste => liste.every(e => e === "richtig") ? "richtig" : liste.includes("falsch") ? "falsch" : "aufgedeckt";
     const vokErgebnis = gesamt(alle);
-    // Akzent-Spalten zählen nur für den eigenen Akzent-Score
-    const istAkzent = i => quiz.spalteModus?.[quiz.antwortTypen[i]] === "akzent";
+    // Akzent-Spalten zählen nur für den eigenen Akzent-Score – gemischt gezogene Akzente zählen für die Übersetzung
+    const istAkzent = i => { const t = quiz.antwortTypen[i]; return quiz.spalteModus?.[t] === "akzent" && !Array.isArray(quiz.spalteModusBasis?.[t]); };
     const normal = alle.filter((_, i) => !istAkzent(i));
     const akzent = alle.filter((_, i) => istAkzent(i));
     const aktVok = getAktVok();
@@ -6729,8 +6769,9 @@ export default function VokabelApp() {
             verfuegbar = verfuegbarReihenfolge;
           }
           // Zeile "Abfrage-Modus": Art der Abfrage (Karte, MC, Tastatur, Akzente bzw. Diktat)
-          const antwortArten = [...new Set((quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet)
-            .map(t => ANTWORT_MODUS_NAMEN[quizSpalteModus[t] || STANDARD_ANTWORT_MODUS]))];
+          const modusSpalten = quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet;
+          const antwortArten = MODI_REIHENFOLGE.filter(m => modusSpalten.some(t => modiVon(quizSpalteModus[t]).includes(m))).map(m => ANTWORT_MODUS_NAMEN[m]);
+          const gemischt = !istDiktat && modusSpalten.some(t => modiVon(quizSpalteModus[t]).length > 1);
           const abfrageModusName = istDiktat ? "Diktat"
             : [quizModus === "rotierend" && "wechselnd", antwortArten.join(" + ") || (quizModus !== "rotierend" && "Frage – Antwort")].filter(Boolean).join(" · ");
           const alleAbgefragt = sessionHatFortschritt && sessionAbgefragtAnzahl >= sessionAnzahl;
@@ -7002,11 +7043,11 @@ export default function VokabelApp() {
                       ])}>
                       {lernAktiv ? "Lernen" : einstellungen.modus === "einfach" ? "Leicht" : "Schwer"}
                     </button>
-                    <button className={`quiz-zeile-knopf${quizAbfrageModusAufgeklappt ? " offen" : ""}${!istDiktat && quizModus === "rotierend" ? " zweizeilig" : ""}`} data-abfragemodus onClick={toggleAbfrageModus}
+                    <button className={`quiz-zeile-knopf${quizAbfrageModusAufgeklappt ? " offen" : ""}${!istDiktat && (quizModus === "rotierend" || gemischt) ? " zweizeilig" : ""}`} data-abfragemodus onClick={toggleAbfrageModus}
                       {...tt("Abfrage-Modus: Spalten, Karte/MC/Tastatur, Frage–Antwort oder wechselnd – antippen zum Einstellen")}>
                       {/* wechselnd: zweizeilig, damit die Antwort-Arten Platz haben */}
-                      {!istDiktat && quizModus === "rotierend"
-                        ? <><span className="zeile1">wechselnd</span><span className="zeile2">{antwortArten.join(" – ") || "keine Spalte"}</span></>
+                      {!istDiktat && (quizModus === "rotierend" || gemischt)
+                        ? <><span className="zeile1">{quizModus === "rotierend" ? (gemischt ? "wechselnd · gemischt" : "wechselnd") : "Gemischt"}</span><span className="zeile2">{antwortArten.join(" – ") || "keine Spalte"}</span></>
                         : abfrageModusName}
                     </button>
                     <button className={`quiz-zeile-knopf umbruch${quizReihenfolgeAufgeklappt ? " offen" : ""}`} data-reihenfolge onClick={toggleReihenfolge}
@@ -7126,26 +7167,12 @@ export default function VokabelApp() {
                                         {...tt("Akzente üben: für jeden Buchstaben den richtigen Akzent wählen – eigener Akzent-Score")}>Akzente</span>
                                     )}
                                     {isAntwort && quizArt !== "akzente" && (
-                                      <div style={{display:"flex", gap:4, marginLeft:4}}>
-                                        <button {...tt("Antwort eintippen")} className={`spalten-modus-btn${quizSpalteModus[typ]==="tippen"?" aktiv":""}`}
-                                          onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"tippen"}))}>Tastatur</button>
-                                        <button {...tt("Antwort aus mehreren Vorschlägen wählen (Multiple Choice)")} className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
-                                          onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"mc"}))}>MC</button>
-                                        <button {...tt("Karte aufdecken und selbst bewerten: gewusst / nicht gewusst")} className={`spalten-modus-btn${(quizSpalteModus[typ]||STANDARD_ANTWORT_MODUS)==="karte"?" aktiv":""}`}
-                                          onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"karte"}))}>Karte</button>
-                                      </div>
+                                      <div style={{display:"flex", gap:4, marginLeft:4, flexWrap:"wrap"}}>{renderModusKnoepfe(typ)}</div>
                                     )}
                                   </div>
                                 )}
                                 {checked && quizModus === "rotierend" && (
-                                  <div style={{display:"flex", gap:5, marginTop:8, marginLeft:30}}>
-                                    <button {...tt("Antwort eintippen")} className={`spalten-modus-btn${quizSpalteModus[typ]==="tippen"?" aktiv":""}`}
-                                      onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"tippen"}))}>Tastatur</button>
-                                    <button {...tt("Antwort aus mehreren Vorschlägen wählen (Multiple Choice)")} className={`spalten-modus-btn${quizSpalteModus[typ]==="mc"?" aktiv":""}`}
-                                      onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"mc"}))}>MC</button>
-                                    <button {...tt("Karte aufdecken und selbst bewerten: gewusst / nicht gewusst")} className={`spalten-modus-btn${(quizSpalteModus[typ]||STANDARD_ANTWORT_MODUS)==="karte"?" aktiv":""}`}
-                                      onClick={() => setQuizSpalteModus(p=>({...p,[typ]:"karte"}))}>Karte</button>
-                                  </div>
+                                  <div style={{display:"flex", gap:5, marginTop:8, marginLeft:30, flexWrap:"wrap"}}>{renderModusKnoepfe(typ)}</div>
                                 )}
                               </div>
                             );
@@ -8269,7 +8296,7 @@ export default function VokabelApp() {
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl. Ist eine gespeicherte Konfiguration geladen, sind Listen- und Vokabel-Auswahl festgelegt und ausgeblendet – zum Ändern lang auf die Kachel drücken und „Listen/Vokabeln ändern“ wählen."},
                   {k:"Vokabel-Auswahl [Alle]", v:"Alle Vokabeln der gewählten Listen werden abgefragt."},
                   {k:"Vokabel-Auswahl [Bereich]", v:"Öffnet eine Checkbox-Liste. Einzelne Vokabeln an-/abwählen. [Von–Bis] ermöglicht Bereichsauswahl per 2 Klicks."},
-                  {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Die Kreise unten über „Quiz mit … Vokabeln“ zeigen den Lernfortschritt der Auswahl je Art – die gewählte Art groß mit Name und Prozent, die anderen kleiner; antippen schaltet die Art um (auch über die Kreise der aufgeklappten Kopfzeile). In der Statistik wechselt man die Art über die Mitte des großen Kreisdiagramms. Eine Art ohne passende Vokabeln wird nicht angezeigt. Auch die Listen im Listen-Tab zeigen die drei Kreise. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC oder Tastatur. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
+                  {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Die Kreise unten über „Quiz mit … Vokabeln“ zeigen den Lernfortschritt der Auswahl je Art – die gewählte Art groß mit Name und Prozent, die anderen kleiner; antippen schaltet die Art um (auch über die Kreise der aufgeklappten Kopfzeile). In der Statistik wechselt man die Art über die Mitte des großen Kreisdiagramms. Eine Art ohne passende Vokabeln wird nicht angezeigt. Auch die Listen im Listen-Tab zeigen die drei Kreise. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC, Tastatur und (bei Sprachen mit Akzenten) Akzente – mehrere angehakt heißt „Gemischt“: je Frage und Spalte wird zufällig eine der Arten gewählt, Akzente nur bei Wörtern mit Akzent; sie zählen dann für den Übersetzungs-Score. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
                   {k:"Akzente", v:"Eigene Abfrageart (A): Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Ob auch Wörter ohne Akzent abgefragt werden, legst du beim Schwierigkeitsgrad fest."},
                   {k:"Zeile 1: Stufe · Modus · Reihenfolge", v:"Erster Knopf: Stufe Lernen, Leicht oder Schwer – antippen wechselt der Reihe nach. Zweiter Knopf: Abfrage-Modus der gewählten Art (z. B. „Karte“) – antippen öffnet die Spalten- und Modus-Einstellungen. Dritter Knopf: Reihenfolge – „Zufällige Reihenfolge“, „Schlechteste zuerst“ (nach Score sortiert) oder „Nach Listen-Platz“ (Originalreihenfolge), dazu Score-Filter und „Unbeantwortete zuerst“. Es ist immer nur ein Bereich offen. Ein neues Quiz (ohne geladene Konfiguration) beginnt immer in Übersetzung. Lang drücken: „Regeln Leicht / Schwer“, bei Lernen „Lernen einstellen“ und „Vorlesen“."},
                   {k:"Lernen", v:"Stufe „Lernen“ (dritter Knopf in Zeile 1): Der Start-Knopf heißt dann „Lernen starten“. Wie ein Film: erst das Wort (auf Wunsch vorgelesen), nach einer Pause die Übersetzung mit den eingeschalteten Info-Spalten, dann die nächste Vokabel. Antippen der Karte überspringt die Pause; unten ⏮ zurück, ⏸ anhalten, ⏭ vor, oben „Beenden“. Gelernt werden die noch offenen Vokabeln der Session in Quiz-Reihenfolge, paketweise (Umfang „Je 5“ → 5 pro Paket). Nach jedem Paket: „Quiz mit diesen 5 Vokabeln“ – einmal je Paket: gewusste verbessern den Score, falsche oder aufgedeckte kosten keinen Punkt (Hilfen unter „Lernen einstellen“: Standard „Ohne Hilfen“ – Akzente nicht hervorgehoben, kein Zähler; oder wie Leicht bzw. Schwer); danach geht es mit dem nächsten Paket weiter –, „Weiter lernen: nächste 5“ oder „Zur Übersicht“; 🔄 oben rechts zeigt das Paket nochmals (das Quiz bleibt einmalig). Lernen selbst ändert keine Scores, und auch das Quiz danach nicht den Session-Fortschritt. Ablauf: Wort, Übersetzung, Zusatzinfo – nach jedem Teil die Vorlese- bzw. Lesezeit (ohne Vorlesen aus der Textlänge geschätzt) plus eine Pause. Unter „⚙ Vorlesen & Pausen“ (aufklappbar unter den Knöpfen): Vorlesen Wort | Übersetzung | Info, Zusatzinfo An | Aus und drei Regler „Pause Wort / Übersetzung / Info“ (0–10 s, Standard 1 / 1 / 3 s; ganz rechts „Tippen“: dort wartet die App, bis du die Karte antippst). Ohne Zusatzinfo gilt nach der Übersetzung die längere der Pausen Übersetzung und Info. Übersetzung und Zusatzinfo haben ihren Platz schon vorher und blenden kurz ein. Lang drücken auf den Knopf → „Lernen einstellen“: was zuerst kommt (Fremdsprache oder Deutsch), was vorgelesen wird und in welcher Sprache die Zusatzinfo vorgelesen wird. "},

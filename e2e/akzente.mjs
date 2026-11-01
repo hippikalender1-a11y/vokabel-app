@@ -60,7 +60,7 @@ if (!(await page.$(".spalten-modus-btn"))) await page.click("[data-abfragemodus]
 await sleep(300);
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")].map(b => b.textContent.trim()));
 console.log("     Modus-Knöpfe Ü:", knoepfe.join(" | "));
-ok(!knoepfe.includes("Akzente"), "Übersetzung: kein Akzente-Modus in den Spalten (eigene Art)");
+ok(knoepfe.includes("Akzente") && !(await page.$('[data-modus-knopf$=":akzent"].aktiv')), "Übersetzung: Akzente als zusätzliche mischbare Art angeboten, aber nicht angehakt");
 await artWaehlen("akzente"); await sleep(300);
 const knoepfeA = await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")].map(b => b.textContent.trim()));
 console.log("     Modus Akzente:", knoepfeA.join(" | "));

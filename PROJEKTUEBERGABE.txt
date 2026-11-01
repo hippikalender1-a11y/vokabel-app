@@ -1722,6 +1722,15 @@ AKZENTE JE SPRACHE: einstellungen.akzenteSprachen { code: bool }, Standard nur
   ausgeschalteter Sprache (Liste ohne Akzent-Wörter: weiter Hinweis), Tippen/Diktat
   tolerant bei E-Spalten. Einstellungen-Abschnitt "Akzente" (data-akzent-sprache
   "code:an|aus"). Test: e2e/akzentsprachen.mjs, keineakzente.mjs.
+GEMISCHTE ANTWORTARTEN: quizSpalteModus[t] = Text (eine Art) oder Liste (MODI_REIHENFOLGE
+  karte/mc/tippen/akzent). renderModusKnoepfe(typ): Mehrfach-Schalter (data-modus-knopf
+  "E1:mc"), Akzente nur bei E-Spalten mit eingeschalteten Akzenten, mindestens eine
+  Art außer Akzente bleibt. Quiz: spalteModusBasis = Einstellung, spalteModus = je
+  Vokabel aufgelöst (loeseSpaltenModusAuf, gleich verteilt; Akzente nur bei Wort mit
+  Akzent) in starteQuiz, starteVokabel und naechsteVokabelState. Gemischt gezogene
+  Akzente zählen für den Übersetzungs-Score (istAkzent nur bei reiner Akzent-Spalte).
+  Knopf "Gemischt" / "Karte – MC – …" (zweizeilig). artBereinigt: reine Akzent-Liste
+  in Übersetzung → Karte. Test: e2e/gemischt.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

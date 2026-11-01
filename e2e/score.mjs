@@ -59,7 +59,8 @@ async function vorbereiten(modus) {
   await page.click("[data-abfragemodus]"); await sleep(300);
   await zeile("Simple Past", "__check"); await zeile("Simple Past", "Antwort");
   await zeile("Past Participle", "__check"); await zeile("Past Participle", "Antwort");
-  for (const n of ["Infinitive", "Simple Past", "Past Participle"]) await zeile(n, modus);
+  // Antwortarten sind Mehrfach-Schalter: gewünschte Art an, Karte (Standard) wieder aus
+  for (const n of ["Infinitive", "Simple Past", "Past Participle"]) { await zeile(n, modus); if (modus !== "Karte") await zeile(n, "Karte"); }
   // Abfrage-Ziel "Anzahl" (ein Durchgang) – dieser Test prüft die Punkte eines einzelnen Durchgangs
   if (!(await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].some(b => b.textContent.trim() === "Anzahl"))))
     await page.evaluate(() => document.querySelector("[data-abfrageziel]")?.click());
