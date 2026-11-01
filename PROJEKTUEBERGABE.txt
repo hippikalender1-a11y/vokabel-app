@@ -1745,6 +1745,22 @@ GESAMTSICHERUNG (nach Datenverlust auf Android, Browser hatte den Speicher gelee
 FARBVORLAGEN: 16 in FARB_VORLAGEN – Natur, Freudig, Pastelle, Mädchen, Jungs, Dunkel,
   dazu Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht (dunkel),
   Espresso (dunkel). Kontraste geprüft (auf-haupt/haupt ≥ 4,5, text/karte ≥ 7).
+DATEINAMEN BEIM EXPORT: JSON-Fenster und neues Fenster "datei-export" (TXT einzeln/mehrere,
+  Gesamtsicherung) mit Feld data-export-name (exportName; Vorschlag exportStandardName /
+  sicherungStandardName, ohne .txt). dateiName(): unerlaubte Zeichen \/:*?"<>| → "-", .txt/.json
+  am Ende weg, leer → Vorschlag; Endung immer .txt. Enter bestätigt. Tests: export, sicherung.
+EINSTELLUNGEN AUFKLAPPBAR: einstBereich (null = alle zu; info, lernen, akzente, farben, konfig,
+  listen, app, daten). einstKopf(key, titel, sub) = Kopfzeile .einst-kopf (data-einst-kopf,
+  data-offen ja|nein); schalteEinstBereich: nur einer offen, rückt unter die Kopfleiste, falls
+  oben verschwunden. Info aufgeklappt = alte Sticky-Leiste (Titel-Knopf „Info ▾“ schließt).
+  Tests öffnen den Bereich mit oeffneEinst(key). Test: e2e/einst_bereiche.mjs.
+LERNEN PAUSIEREN: Lernstand im Slot-Eintrag lernStaende[art] = {ids, groesse, start, index,
+  fertig, quizGemacht, zeit}, getrennt von sessionFortschritte. Effekt schreibt bei jeder
+  Änderung (start/index/fertig/quizGemacht) über setzeLernStand(lernen.slot, lernen.art);
+  alles angesehen → Stand gelöscht. starteLernen(..., stand): Reihenfolge aus stand.ids (fehlende
+  fallen weg), ohne aktiven Slot wird ein Verlaufseintrag angelegt. Quiz-Tab: data-lernstand
+  („12/40“, antippen → data-lern-reset-frage), Start-Knopf data-lernen-start="weiter|neu".
+  Lernbildschirm: „Schließen“ statt „Beenden“. Test: e2e/lernen_pause.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

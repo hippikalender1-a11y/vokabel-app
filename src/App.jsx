@@ -1176,6 +1176,14 @@ const CSS_BASIS = `
   .farbfeld-hintergrund{position:fixed;inset:0;z-index:10003;background:rgba(0,0,0,0.15);display:flex;align-items:flex-end;justify-content:center;}
   .farbfeld{width:100%;max-width:520px;max-height:60vh;overflow-y:auto;background:var(--karte);border-radius:16px 16px 0 0;padding:14px 16px 70px;box-shadow:0 -6px 24px rgba(0,0,0,0.25);font-family:system-ui,sans-serif;box-sizing:border-box;}
   .farb-raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+  .einst-kopf{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;margin:0 0 8px;background:var(--karte);border:1px solid var(--rahmen);border-radius:12px;font-family:inherit;font-size:0.95rem;font-weight:700;color:var(--text-stark);cursor:pointer;text-align:left;}
+  .einst-kopf.offen{background:var(--haupt-flaeche);border-color:var(--haupt-zart);color:var(--haupt);}
+  .einst-kopf-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .einst-kopf-sub{font-size:0.75rem;font-weight:400;color:var(--text2);}
+  .einst-kopf-pfeil{font-size:0.9rem;color:var(--text3);flex:0 0 auto;}
+  .einst-kopf.offen .einst-kopf-pfeil{color:var(--haupt);}
+  .einst-inhalt{margin-bottom:14px;}
+  .einst-titel-knopf{background:none;border:none;padding:0;font-family:inherit;font-weight:700;font-size:0.88rem;color:var(--haupt);cursor:pointer;}
   .farb-kachel{display:flex;flex-direction:column;gap:6px;padding:6px;border:1.5px solid var(--rahmen);border-radius:10px;background:var(--karte);cursor:pointer;font-family:inherit;min-width:0;}
   .farb-kachel.aktiv{border-color:var(--haupt);box-shadow:0 0 0 2px var(--haupt);}
   .farb-streifen{display:flex;gap:3px;padding:5px;border-radius:7px;height:30px;box-sizing:border-box;}
@@ -1379,6 +1387,8 @@ export default function VokabelApp() {
   const [modalMitVokabeln, setModalMitVokabeln] = useState(false);
   const [modalFehler, setModalFehler] = useState("");
   const [jsonExportIds, setJsonExportIds] = useState(null);
+  const [exportName, setExportName] = useState("");        // Dateiname im Export-Fenster (ohne .txt)
+  const [dateiExport, setDateiExport] = useState(null);    // TXT oder Gesamtsicherung: { art: "txt", ids } | { art: "sicherung" }
   const [jsonExportOptionen, setJsonExportOptionen] = useState({ fortschritt: true, diktatFortschritt: true, akzentFortschritt: true, falsch: true });
   const [editSpalteTyp, setEditSpalteTyp] = useState(null);
 
@@ -1493,6 +1503,7 @@ export default function VokabelApp() {
   const slotGezogenRef = useRef(false);                       // Klick nach dem Ziehen schlucken
   // Rückfrage "Abgefragt-Stand löschen?" in der Fortschrittszeile; ohne Antwort nach 6 s wieder weg
   const [sessionResetFrage, setSessionResetFrage] = useState(false);
+  const [lernResetFrage, setLernResetFrage] = useState(false);
   useEffect(() => {
     if (!sessionResetFrage) return;
     const t = setTimeout(() => setSessionResetFrage(false), 6000);
@@ -1544,6 +1555,7 @@ export default function VokabelApp() {
   const slotContainerRef = useRef(null);
   const listenauswahlHeaderRef = useRef(null);
   const infoHeaderRef = useRef(null);
+  const [einstBereich, setEinstBereich] = useState(null);   // Einstellungen: aufgeklappter Bereich (immer nur einer)
   const infoKontextContainerRef = useRef(null);
   const tooltipTimer = useRef(null);
   const tooltipShown = useRef(false);
@@ -1711,6 +1723,14 @@ export default function VokabelApp() {
     if (quizArt !== "akzente" || !quizKombiListe) return;
     if (!quizKombiListe.vokabeln.some(v => hatAkzentWort(v))) wechsleQuizArt("uebersetzung");
   }, [quizArt, quizTabListen, einstellungen.akzenteSprachen]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lernstand mitschreiben (Lernen schließen = pausieren; „Weiter lernen“ macht an derselben Stelle weiter)
+  useEffect(() => {
+    if (!lernen?.slot) return;
+    const ende = lernen.fertig && lernen.start + lernen.voks.length >= lernen.alle.length;
+    setzeLernStand(lernen.slot, lernen.art, ende ? null : { ids: lernen.alle.map(v => v.id), groesse: lernen.groesse, start: lernen.start,
+      index: lernen.index, fertig: !!lernen.fertig, quizGemacht: !!lernen.quizGemacht, zeit: Date.now() });
+  }, [lernen?.start, lernen?.index, lernen?.fertig, lernen?.quizGemacht]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Multiquiz: erst laden (Einstellungen stehen dann im State), dann starten
   useEffect(() => {
@@ -2329,10 +2349,13 @@ export default function VokabelApp() {
   }
 
   // Export-Dateien: Endung immer .txt (nimmt jedes Ziel an), Inhalt steht im Namen: "Name - JSON.txt" / "Name - TXT.txt"
-  function exportDateiname(ids, art) {
+  function exportStandardName(ids, art) {
     const basis = ids.length === 1 ? (listenIndex.find(l => l.id === ids[0])?.name || 'Vokabeln') : `${ids.length} Listen`;
-    return `${basis} - ${art}.txt`;
+    return `${basis} - ${art}`;
   }
+  // eingegebener Name → Dateiname: Zeichen, die Dateisysteme nicht erlauben, raus; leer → Vorschlag
+  const dateiName = (name, standard) => (name.replace(/[\\/:*?"<>|]+/g, "-").replace(/\.(txt|json)$/i, "").trim() || standard) + ".txt";
+  const sicherungStandardName = () => `Vokabel-App Sicherung ${new Date().toISOString().slice(0, 10)}`;
   function teileAlsDatei(text, dateiname) {
     // iPad/iPhone: Downloads aus der Home-Bildschirm-App kommen oft leer an → Teilen-Menü
     // ("In Dateien sichern", Mail, AirDrop). Als .txt/text/plain, damit alle Ziele die Datei annehmen.
@@ -2355,14 +2378,24 @@ export default function VokabelApp() {
     // Großzügig warten: manche Browser holen den Inhalt erst nach dem Download-Dialog
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
-  async function teileListeAlsDateiHandler() {
+  // TXT-Export und Gesamtsicherung: erst Fenster mit Dateinamen, dann teileAlsDatei
+  function oeffneDateiExport(ziel, standard) { setDateiExport(ziel); setExportName(standard); setModal("datei-export"); }
+  function teileListeAlsDateiHandler() {
     if (!aktiveListe) return;
-    await teileAlsDatei(generiereExportText(aktiveListe), exportDateiname([aktiveListeId], "TXT"));
+    oeffneDateiExport({ art: "txt", ids: [aktiveListeId] }, exportStandardName([aktiveListeId], "TXT"));
   }
-  async function exportiereAusgewaehlteAlsDateiHandler() {
+  function exportiereAusgewaehlteAlsDateiHandler() {
     if (exportAusgewaehlt.size === 0) return;
     const ids = [...exportAusgewaehlt];
-    await teileAlsDatei(generiereKombiniertenExport(ids), exportDateiname(ids, "TXT"));
+    oeffneDateiExport({ art: "txt", ids }, exportStandardName(ids, "TXT"));
+  }
+  function bestaetigeDateiExport() {
+    const z = dateiExport;
+    if (!z) return;
+    setModal(null); setDateiExport(null);
+    if (z.art === "sicherung") { speichereSicherung(dateiName(exportName, sicherungStandardName())); return; }
+    const text = z.ids.length === 1 ? generiereExportText(lsGet(SK.liste(z.ids[0]))) : generiereKombiniertenExport(z.ids);
+    teileAlsDatei(text, dateiName(exportName, exportStandardName(z.ids, "TXT")));
   }
 
   const tabReihenfolge = ["listen", "quiz", "statistik", "einstellungen"];
@@ -2635,10 +2668,41 @@ export default function VokabelApp() {
     setAnsicht("uebersicht");
   }
 
-  // Gesamtsicherung als Datei („Vokabel-App Sicherung JJJJ-MM-TT.txt“)
-  function sichereAlles() {
+  // Einstellungen: Bereiche mit Kopfzeile, immer nur einer offen; der geöffnete rückt unter die Kopfleiste, falls er oben verschwunden ist
+  function schalteEinstBereich(key) {
+    const neu = einstBereich === key ? null : key;
+    setEinstBereich(neu);
+    if (neu === "info") setInfoModus("uebersicht");
+    if (neu) requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-einst-kopf="${neu}"]`);
+      if (el && el.getBoundingClientRect().top < headerH) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - headerH - 8 });
+    });
+  }
+  const einstKopf = (key, titel, sub) => (
+    <button className={`einst-kopf${einstBereich === key ? " offen" : ""}`} data-einst-kopf={key} data-offen={einstBereich === key ? "ja" : "nein"}
+      onClick={() => schalteEinstBereich(key)} {...tt(einstBereich === key ? `${titel} zuklappen` : `${titel} aufklappen`)}>
+      <span className="einst-kopf-text">{titel}{sub && <span className="einst-kopf-sub">{sub}</span>}</span>
+      <span className="einst-kopf-pfeil">{einstBereich === key ? "▾" : "▸"}</span>
+    </button>
+  );
+
+  const renderExportNamensFeld = beiEnter => (
+    <div style={{marginBottom:14}}>
+      <label className="inp-label">Dateiname</label>
+      <div style={{display:"flex", alignItems:"center", gap:6}}>
+        <input className="inp" data-export-name value={exportName} onChange={e => setExportName(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") beiEnter(); }} onFocus={e => e.target.select()}
+          {...ttFeld("Name der Datei – leer lassen für den Vorschlag")} style={{flex:1, minWidth:0}} />
+        <span style={{fontSize:"0.85rem", color:"var(--text3)"}}>.txt</span>
+      </div>
+    </div>
+  );
+
+  // Gesamtsicherung als Datei (Vorschlag „Vokabel-App Sicherung JJJJ-MM-TT“, Name änderbar)
+  function sichereAlles() { oeffneDateiExport({ art: "sicherung" }, sicherungStandardName()); }
+  function speichereSicherung(dateiname) {
     const sich = erstelleSicherung();
-    teileAlsDatei(JSON.stringify(sich), `Vokabel-App Sicherung ${new Date(sich.erstellt).toISOString().slice(0, 10)}.txt`);
+    teileAlsDatei(JSON.stringify(sich), dateiname);
     lsSet(SK.letzteSicherung, sich.erstellt); setLetzteSicherung(sich.erstellt);
   }
   async function ladeSicherungsDatei(file) {
@@ -2662,6 +2726,7 @@ export default function VokabelApp() {
 
   function exportiereAlsJson(ids) {
     setJsonExportIds(ids);
+    setExportName(exportStandardName(ids, "JSON"));
     setModal("json-export");
   }
 
@@ -2682,7 +2747,7 @@ export default function VokabelApp() {
       return l;
     });
     const text = JSON.stringify(gefiltert, null, 2);
-    const name = exportDateiname(jsonExportIds, "JSON");
+    const name = dateiName(exportName, exportStandardName(jsonExportIds, "JSON"));
     setModal(null); setJsonExportIds(null);
     teileAlsDatei(text, name);
   }
@@ -3025,15 +3090,48 @@ export default function VokabelApp() {
     return le.pauseInfo;
   }
   function setzeLernEinst(felder) { speichereEinst({ ...einstellungen, lernen: { ...lernEinstellungen(), ...felder } }); }
-  // alle: ganze Session in Abfrage-Reihenfolge; groesse: Paketgröße (null = alle auf einmal)
-  function starteLernen(alle, groesse, spalten, info) {
+  // Lernstand je gespeicherter Konfiguration / Verlaufseintrag und Abfrageart (lernStaende), getrennt vom Abfrage-Fortschritt:
+  // { ids (ganze Lern-Reihenfolge), groesse, start, index, fertig, quizGemacht, zeit }
+  function lernStandVon(slot, art) {
+    if (!slot) return null;
+    return slots[slot.typ]?.find(x => x.id === slot.id)?.lernStaende?.[art] || null;
+  }
+  function setzeLernStand(slot, art, stand) {
+    const data = getSlotsData();
+    if (!slot || !data[slot.typ]?.some(x => x.id === slot.id)) return;
+    setSlotsData({ ...data, [slot.typ]: data[slot.typ].map(x => {
+      if (x.id !== slot.id) return x;
+      const alle = { ...(x.lernStaende || {}) };
+      if (stand) alle[art] = stand; else delete alle[art];
+      return { ...x, lernStaende: alle };
+    }) });
+  }
+  // alle: ganze Session in Abfrage-Reihenfolge; groesse: Paketgröße (null = alle auf einmal);
+  // stand: gespeicherter Lernstand → Reihenfolge und Stelle von damals (fehlende Vokabeln fallen weg)
+  function starteLernen(alle, groesse, spalten, info, stand = null) {
     if (!alle.length || !spalten.length) return;
+    let start = 0, index = 0, fertig = false, quizGemacht = false;
+    if (stand) {
+      const nachId = new Map((quizKombiListe?.vokabeln || []).map(v => [v.id, v]));
+      const damals = stand.ids.map(id => nachId.get(id)).filter(Boolean);
+      if (damals.length) {
+        alle = damals; groesse = stand.groesse;
+        start = Math.min(stand.start, Math.max(0, alle.length - 1));
+        ({ index, fertig, quizGemacht } = stand);
+      }
+    }
     const g = groesse || alle.length;
+    const voks = alle.slice(start, start + g);
+    index = Math.min(index || 0, voks.length - 1);
     const le = lernEinstellungen();
     const fremd = spalten.filter(t => t.startsWith("E")), deutsch = spalten.filter(t => !t.startsWith("E"));
     let zuerst = le.zuerst === "deutsch" ? deutsch : fremd, danach = le.zuerst === "deutsch" ? fremd : deutsch;
     if (!zuerst.length || !danach.length) { zuerst = spalten.slice(0, 1); danach = spalten.slice(1); }
-    setLernen({ alle, groesse: g, start: 0, voks: alle.slice(0, g), index: 0, phase: 0, pausiert: false, fertig: false, lauf: 0, zuerst, danach, info, liste: quizKombiListe });
+    // ohne gewählte Konfiguration: Verlaufseintrag anlegen, damit der Lernstand einen Platz hat
+    const slot = aktiverSlot || { typ: "verlauf", id: erstelleVerlaufEintrag() };
+    setLernResetFrage(false);
+    setLernen({ alle, groesse: g, start, voks, index, phase: 0, pausiert: false, fertig: !!fertig, quizGemacht: !!quizGemacht, lauf: 0, zuerst, danach, info,
+      liste: quizKombiListe, slot, art: quizAbfrageArt });
     window.scrollTo(0, 0);
   }
   // Zusatzinfo dieser Vokabel zeigen? (Schalter auf dem Lernbildschirm, nur wenn es Info-Text gibt)
@@ -5413,7 +5511,7 @@ export default function VokabelApp() {
         <style>{CSS}</style>{farbModusUI}{farbRadUI}
         <div className="app">
           <div className="topbar">
-            <button className="topbar-back" data-lernen-beenden onClick={beendeLernen} {...tt("Lernen beenden – zurück zum Quiz-Tab (Scores bleiben unverändert)")}>Beenden</button>
+            <button className="topbar-back" data-lernen-beenden onClick={beendeLernen} {...tt("Lernen schließen – der Lernstand bleibt gespeichert; „Weiter lernen“ im Quiz-Tab macht hier weiter (Scores bleiben unverändert)")}>Schließen</button>
             <span className="topbar-title">🎬 Lernen<span className="kopf-balken"><span style={{width:`${pct}%`}}/></span></span>
             <span className="quiz-fortschritt" data-lernen-stand>{lernen.start + (lernen.fertig ? n : lernen.index + 1)} / {gesamt}</span>
           </div>
@@ -5441,7 +5539,7 @@ export default function VokabelApp() {
                   Weiter lernen: nächste {Math.min(lernen.groesse, rest)}
                 </button>
               )}
-              <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={beendeLernen} {...tt("Lernen beenden – zurück zum Quiz-Tab")}>Zur Übersicht</button>
+              <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={beendeLernen} {...tt("Zurück zum Quiz-Tab – der Lernstand bleibt gespeichert, solange noch Vokabeln übrig sind")}>Zur Übersicht</button>
             </>) : (<>
               <div className="quiz-frage-box lernen-karte" data-lernen-karte data-lernen-phase={lernen.phase} onClick={lernenWeiter}
                 {...tt(lernen.phase === 0 ? "Antippen: Übersetzung sofort zeigen" : "Antippen: sofort weiter (Zusatzinfo bzw. nächste Vokabel)")}>
@@ -6895,6 +6993,9 @@ export default function VokabelApp() {
           const lernSpalten = (istDiktat ? [quizDiktatSpalte, quizDiktatUebersetzung] : quizModus === "rotierend" ? quizAusgewaehlt : [quizFrageTyp, ...quizAntwortTypenGeordnet]).filter(Boolean);
           const lernInfo = kombiListe ? [...quizInfoTypenSession, ...TYPEN.filter(t => t.startsWith('i') && kombiListe.spalten[t].aktiv && quizZeigeInfo[t])] : [];
           const lernAnzahl = lernAktiv ? lernVokabeln().length : 0;
+          const lernStand = lernAktiv ? lernStandVon(aktiverSlot, quizAbfrageArt) : null;
+          const lernGesamt = lernStand ? lernStand.ids.length : 0;
+          const lernAngesehen = lernStand ? Math.min(lernGesamt, lernStand.start + (lernStand.fertig ? Math.min(lernStand.groesse, lernGesamt - lernStand.start) : lernStand.index)) : 0;
           // Start-Knopf: was in der laufenden Session noch übrig ist (die Paketgröße steht auf dem Umfang-Knopf)
           const startRest = isPakete ? Math.max(0, sessionAnzahl - sessionAbgefragtAnzahl) : verfuegbar;
           const sessionPct = sessionAnzahl > 0 ? Math.round(sessionAbgefragtAnzahl / sessionAnzahl * 100) : 0;
@@ -7513,6 +7614,18 @@ export default function VokabelApp() {
                         <div style={{width:`${sessionPct}%`, height:"100%", background:"var(--haupt)", borderRadius:3, transition:"width 0.3s"}}/>
                       </div>
                     )}
+                    {lernStand && lernResetFrage ? (
+                      <div data-lern-reset-frage style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", minHeight:31, fontSize:"0.82rem", marginBottom:10}}>
+                        <span style={{color:"var(--text)", fontWeight:600}}>Lernstand löschen?</span>
+                        <button data-lern-reset-ja className="toggle-opt aktiv" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8}}
+                          onClick={() => { setLernResetFrage(false); setzeLernStand(aktiverSlot, quizAbfrageArt, null); }}
+                          {...tt("Ja: das Lernen beginnt beim nächsten Start von vorn. Scores und Abfrage-Fortschritt bleiben.")}>
+                          Ja, von vorn
+                        </button>
+                        <button className="toggle-opt" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8, border:"1.5px solid var(--rahmen)"}}
+                          onClick={() => setLernResetFrage(false)} {...tt("Nein: nichts ändern")}>Nein</button>
+                      </div>
+                    ) : null}
                     {sessionResetFrage && sessionHatFortschritt ? (
                       <div data-reset-frage style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", minHeight:31, fontSize:"0.82rem", marginBottom:10}}>
                         <span style={{color:"var(--text)", fontWeight:600}}>Abgefragt-Stand löschen?</span>
@@ -7530,7 +7643,13 @@ export default function VokabelApp() {
                       </div>
                     ) : null}
                     <div style={{display:"flex", gap:10, alignItems:"stretch"}}>
-                      {isPakete && (
+                      {lernStand && !aufteilen && (
+                        <button data-lernstand className="start-fortschritt" onClick={() => setLernResetFrage(f => !f)}
+                          {...tt("Lernstand: so viele Vokabeln schon angesehen – antippen, um das Lernen von vorn zu beginnen (Scores bleiben)")}>
+                          <span data-anzahl="lernstand">{lernAngesehen}/{lernGesamt}</span>
+                        </button>
+                      )}
+                      {isPakete && !(lernStand && !aufteilen) && (
                         <button data-session-zuruecksetzen={sessionHatFortschritt ? "" : undefined} className="start-fortschritt" disabled={!sessionHatFortschritt}
                           onClick={() => setSessionResetFrage(true)}
                           {...tt(sessionHatFortschritt ? "So viele Vokabeln dieser Session wurden schon abgefragt – antippen, um den Abgefragt-Stand zurückzusetzen (Scores und Lernfortschritt bleiben)" : "Fortschritt der Session – noch nichts abgefragt")}>
@@ -7538,10 +7657,11 @@ export default function VokabelApp() {
                         </button>
                       )}
                       {lernAktiv && !aufteilen ? (
-                        <button className="btn btn-primary start-knopf" data-start-knopf data-lernen-start data-start-anzahl={lernAnzahl}
-                          onClick={() => starteLernen(lernVokabeln(), isPakete ? quizPaketGroesse : null, lernSpalten, lernInfo)} disabled={!kannStarten || lernAnzahl === 0}
-                          {...tt("Lernen starten: Wort zeigen, nach einer Pause die Übersetzung – ohne Score, der Session-Fortschritt bleibt")}>
-                          <b>Lernen starten</b><span>{lernAnzahl} Vokabel{lernAnzahl !== 1 ? "n" : ""}</span>
+                        <button className="btn btn-primary start-knopf" data-start-knopf data-lernen-start={lernStand ? "weiter" : "neu"} data-start-anzahl={lernAnzahl}
+                          onClick={() => starteLernen(lernVokabeln(), isPakete ? quizPaketGroesse : null, lernSpalten, lernInfo, lernStand)} disabled={!kannStarten || (lernAnzahl === 0 && !lernStand)}
+                          {...tt(lernStand ? `Weiter lernen an der Stelle, an der du aufgehört hast (${lernAngesehen} von ${lernGesamt} angesehen)` : "Lernen starten: Wort zeigen, nach einer Pause die Übersetzung – ohne Score, der Session-Fortschritt bleibt")}>
+                          {lernStand ? <><b>Weiter lernen</b><span>{lernAngesehen} von {lernGesamt} angesehen</span></>
+                            : <><b>Lernen starten</b><span>{lernAnzahl} Vokabel{lernAnzahl !== 1 ? "n" : ""}</span></>}
                         </button>
                       ) : aufteilen ? (() => {
                         const neu = (aufteilenStand()?.gruppen || []).filter(g => !g.vorhanden).length;
@@ -7623,8 +7743,8 @@ export default function VokabelApp() {
               <div style={{background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"8px 16px", display:"flex", gap:6, flexWrap:"wrap"}}>
                 <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import"); }} {...tt("Vokabeln in diese Liste importieren")}><IcoPlus/></button>
                 <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={kopiereListeHandler} {...tt("Liste als Text in die Zwischenablage kopieren")}>{exportKopiert ? "✓" : <IcoCopy/>}</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])} {...tt("JSON: vollständige Sicherung mit Lernstand (Scores) – Datei „Name - JSON.txt“, zum Wiederherstellen oder für ein anderes Gerät")}>JSON</button>
-                <button className="btn btn-ghost btn-sm" onClick={teileListeAlsDateiHandler} {...tt("TXT: nur die Vokabeln als Text, ohne Scores – Datei „Name - TXT.txt“, zum Weitergeben oder Bearbeiten")}>TXT</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])} {...tt("JSON: vollständige Sicherung mit Lernstand (Scores) – Vorschlag „Name - JSON“, Dateiname änderbar – zum Wiederherstellen oder für ein anderes Gerät")}>JSON</button>
+                <button className="btn btn-ghost btn-sm" onClick={teileListeAlsDateiHandler} {...tt("TXT: nur die Vokabeln als Text, ohne Scores – Vorschlag „Name - TXT“, Dateiname änderbar – zum Weitergeben oder Bearbeiten")}>TXT</button>
                 <button className="btn btn-ghost btn-sm" data-klammern-werkzeug onClick={() => { setKlammerZiel(aktiveListe.spalten.i1?.aktiv && aktiveListe.spalten.i2?.aktiv ? "i2" : "i1"); setModal("klammern"); }}
                   {...tt("Klammerhinweise wie „(= Punkt)“ aus den Wort-Spalten in eine Info-Spalte verschieben – mit Vorschau")}>( ) → Info</button>
                 <button className="btn btn-danger btn-sm" style={{padding:"6px 10px", marginLeft:"auto"}} onClick={() => oeffneModal("loeschen")} {...tt("Liste löschen")}><IcoX/></button>
@@ -8330,9 +8450,10 @@ export default function VokabelApp() {
           </>);
         })()}
         {tab === "einstellungen" && (<>
+          {einstBereich === "info" && (<>
           {/* Info sticky Header */}
           <div ref={infoHeaderRef} style={{position:"sticky", top:headerH, zIndex:9, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-            <span style={{fontWeight:700, fontSize:"0.88rem", color:"var(--text)"}}>Info</span>
+            <button className="einst-titel-knopf" data-einst-kopf="info" data-offen="ja" onClick={() => schalteEinstBereich("info")} {...tt("Info zuklappen")}>Info ▾</button>
             <div style={{display:"flex", gap:6, alignItems:"center"}}>
               {infoModus !== "uebersicht" && (
                 <button className="btn-icon" style={{marginRight:2}} onClick={() => setInfoModus("uebersicht")} {...tt("Zurück zur Übersicht")}><IcoX s={14}/></button>
@@ -8397,8 +8518,8 @@ export default function VokabelApp() {
                 {titel:"Listen-Tab", inhalt:[
                   {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „In Sessions aufteilen“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. „In Sessions aufteilen“ öffnet den Quiz-Tab mit dieser Liste und einem gelben Kasten: Name (vorgegeben: Listenname), Gruppengröße (10, 20, 25, 50, 75, 100 oder eigene), Bereich von–bis (Vokabel-Nummern) und bei Rest „eigene Gruppe“ oder „an letzte anhängen“; die Vorschau zeigt die Namen, z. B. „Verbes (21 - 40)“. Darunter alle Einstellungen wie gewohnt wählen, dann „Sessions anlegen“: je Gruppe eine gespeicherte Konfiguration, untereinander in der ersten Spalte unter dem untersten Eintrag. Namen, die es schon gibt, werden übersprungen. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Im Verschieben-Modus lassen sich mehrere Listen markieren und gemeinsam verschieben. Neue Listen (auch per Import) kommen untereinander in die erste Spalte. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
                   {k:"[+] Neue Liste", v:"Legt eine leere Liste mit eigenem Namen an."},
-                  {k:"💾 Alles sichern", v:"Einstellungen → Daten & Sicherung: eine Datei „Vokabel-App Sicherung Datum.txt“ mit allem – Listen mit Scores, Einstellungen, Farben, gespeicherte Quiz. Der Browser kann gespeicherte Daten löschen (Speicher aufräumen, Browserdaten löschen); mit der Datei holst du alles zurück: „Laden“ in den Einstellungen oder als Datei im Import („Alles wiederherstellen“). Im Listen-Tab erinnert die App, wenn die letzte Sicherung älter ist als eingestellt (Standard 7 Tage)."},
-                  {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, JSON, TXT, Löschen. JSON = vollständige Sicherung mit Lernstand (Datei „Name - JSON.txt“), TXT = nur die Vokabeln als Text ohne Scores (Datei „Name - TXT.txt“). Auf iPad/iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, Mail, AirDrop), sonst wird die Datei heruntergeladen. Beim Import ist die Endung egal – die App erkennt den Inhalt."},
+                  {k:"💾 Alles sichern", v:"Einstellungen → Daten & Sicherung: eine Datei (Vorschlag „Vokabel-App Sicherung Datum.txt“, Name änderbar) mit allem – Listen mit Scores, Einstellungen, Farben, gespeicherte Quiz. Der Browser kann gespeicherte Daten löschen (Speicher aufräumen, Browserdaten löschen); mit der Datei holst du alles zurück: „Laden“ in den Einstellungen oder als Datei im Import („Alles wiederherstellen“). Im Listen-Tab erinnert die App, wenn die letzte Sicherung älter ist als eingestellt (Standard 7 Tage)."},
+                  {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, JSON, TXT, Löschen. JSON = vollständige Sicherung mit Lernstand (Vorschlag „Name - JSON.txt“), TXT = nur die Vokabeln als Text ohne Scores (Vorschlag „Name - TXT.txt“); den Dateinamen kannst du vor dem Speichern ändern. Auf iPad/iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, Mail, AirDrop), sonst wird die Datei heruntergeladen. Beim Import ist die Endung egal – die App erkennt den Inhalt."},
                   {k:"Stift-Button", v:"Listenname umbenennen."},
                   {k:"Vokabeln [+]", v:"Neue Vokabel am Ende der Liste hinzufügen."},
                   {k:"Stift an Vokabel", v:"Vokabel bearbeiten oder löschen."},
@@ -8420,7 +8541,7 @@ export default function VokabelApp() {
                   {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Die Kreise unten über „Quiz mit … Vokabeln“ zeigen den Lernfortschritt der Auswahl je Art – die gewählte Art groß mit Name und Prozent, die anderen kleiner; antippen schaltet die Art um (auch über die Kreise der aufgeklappten Kopfzeile). In der Statistik wechselt man die Art über die Mitte des großen Kreisdiagramms. Eine Art ohne passende Vokabeln wird nicht angezeigt. Auch die Listen im Listen-Tab zeigen die drei Kreise. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC, Tastatur und (bei Sprachen mit Akzenten) Akzente – mehrere angehakt heißt „Gemischt“: je Frage und Spalte wird zufällig eine der Arten gewählt, Akzente nur bei Wörtern mit Akzent; sie zählen dann für den Übersetzungs-Score. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
                   {k:"Akzente", v:"Eigene Abfrageart (A): Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Ob auch Wörter ohne Akzent abgefragt werden, legst du beim Schwierigkeitsgrad fest."},
                   {k:"Zeile 1: Stufe · Modus · Reihenfolge", v:"Erster Knopf: Stufe Lernen, Leicht oder Schwer – antippen wechselt der Reihe nach. Zweiter Knopf: Abfrage-Modus der gewählten Art (z. B. „Karte“) – antippen öffnet die Spalten- und Modus-Einstellungen. Dritter Knopf: Reihenfolge – „Zufällige Reihenfolge“, „Schlechteste zuerst“ (nach Score sortiert) oder „Nach Listen-Platz“ (Originalreihenfolge), dazu Score-Filter und „Unbeantwortete zuerst“. Es ist immer nur ein Bereich offen. Ein neues Quiz (ohne geladene Konfiguration) beginnt immer in Übersetzung. Lang drücken: „Regeln Leicht / Schwer“, bei Lernen „Lernen einstellen“ und „Vorlesen“."},
-                  {k:"Lernen", v:"Stufe „Lernen“ (dritter Knopf in Zeile 1): Der Start-Knopf heißt dann „Lernen starten“. Wie ein Film: erst das Wort (auf Wunsch vorgelesen), nach einer Pause die Übersetzung mit den eingeschalteten Info-Spalten, dann die nächste Vokabel. Antippen der Karte überspringt die Pause; unten ⏮ zurück, ⏸ anhalten, ⏭ vor, oben „Beenden“. Gelernt werden die noch offenen Vokabeln der Session in Quiz-Reihenfolge, paketweise (Umfang „Je 5“ → 5 pro Paket). Nach jedem Paket: „Quiz mit diesen 5 Vokabeln“ – einmal je Paket: gewusste verbessern den Score, falsche oder aufgedeckte kosten keinen Punkt (Hilfen unter „Lernen einstellen“: Standard „Ohne Hilfen“ – Akzente nicht hervorgehoben, kein Zähler; oder wie Leicht bzw. Schwer); danach geht es mit dem nächsten Paket weiter –, „Weiter lernen: nächste 5“ oder „Zur Übersicht“; 🔄 oben rechts zeigt das Paket nochmals (das Quiz bleibt einmalig). Lernen selbst ändert keine Scores, und auch das Quiz danach nicht den Session-Fortschritt. Ablauf: Wort, Übersetzung, Zusatzinfo – nach jedem Teil die Vorlese- bzw. Lesezeit (ohne Vorlesen aus der Textlänge geschätzt) plus eine Pause. Unter „⚙ Vorlesen & Pausen“ (aufklappbar unter den Knöpfen): Vorlesen Wort | Übersetzung | Info, Zusatzinfo An | Aus und drei Regler „Pause Wort / Übersetzung / Info“ (0–10 s, Standard 1 / 1 / 3 s; ganz rechts „Tippen“: dort wartet die App, bis du die Karte antippst). Ohne Zusatzinfo gilt nach der Übersetzung die längere der Pausen Übersetzung und Info. Übersetzung und Zusatzinfo haben ihren Platz schon vorher und blenden kurz ein. Lang drücken auf den Knopf → „Lernen einstellen“: was zuerst kommt (Fremdsprache oder Deutsch), was vorgelesen wird und in welcher Sprache die Zusatzinfo vorgelesen wird. "},
+                  {k:"Lernen", v:"Stufe „Lernen“ (dritter Knopf in Zeile 1): Der Start-Knopf heißt dann „Lernen starten“. Wie ein Film: erst das Wort (auf Wunsch vorgelesen), nach einer Pause die Übersetzung mit den eingeschalteten Info-Spalten, dann die nächste Vokabel. Antippen der Karte überspringt die Pause; unten ⏮ zurück, ⏸ anhalten, ⏭ vor, oben „Schließen“. Schließen pausiert: Der Lernstand bleibt je Konfiguration gespeichert (getrennt vom Abfrage-Fortschritt), auch wenn du zwischendurch eine andere Liste lernst oder abfragst – der Start-Knopf heißt dann „Weiter lernen“ und macht an derselben Stelle weiter; links daneben steht der Lernstand (z. B. 12/40), antippen fragt „Lernstand löschen?“. Sind alle Vokabeln angesehen, beginnt das nächste Lernen von vorn. Gelernt werden die noch offenen Vokabeln der Session in Quiz-Reihenfolge, paketweise (Umfang „Je 5“ → 5 pro Paket). Nach jedem Paket: „Quiz mit diesen 5 Vokabeln“ – einmal je Paket: gewusste verbessern den Score, falsche oder aufgedeckte kosten keinen Punkt (Hilfen unter „Lernen einstellen“: Standard „Ohne Hilfen“ – Akzente nicht hervorgehoben, kein Zähler; oder wie Leicht bzw. Schwer); danach geht es mit dem nächsten Paket weiter –, „Weiter lernen: nächste 5“ oder „Zur Übersicht“; 🔄 oben rechts zeigt das Paket nochmals (das Quiz bleibt einmalig). Lernen selbst ändert keine Scores, und auch das Quiz danach nicht den Session-Fortschritt. Ablauf: Wort, Übersetzung, Zusatzinfo – nach jedem Teil die Vorlese- bzw. Lesezeit (ohne Vorlesen aus der Textlänge geschätzt) plus eine Pause. Unter „⚙ Vorlesen & Pausen“ (aufklappbar unter den Knöpfen): Vorlesen Wort | Übersetzung | Info, Zusatzinfo An | Aus und drei Regler „Pause Wort / Übersetzung / Info“ (0–10 s, Standard 1 / 1 / 3 s; ganz rechts „Tippen“: dort wartet die App, bis du die Karte antippst). Ohne Zusatzinfo gilt nach der Übersetzung die längere der Pausen Übersetzung und Info. Übersetzung und Zusatzinfo haben ihren Platz schon vorher und blenden kurz ein. Lang drücken auf den Knopf → „Lernen einstellen“: was zuerst kommt (Fremdsprache oder Deutsch), was vorgelesen wird und in welcher Sprache die Zusatzinfo vorgelesen wird. "},
                   {k:"Regeln Leicht / Schwer", v:"Lang drücken auf den Stufen-Knopf. Per Haken legst du fest, was in welcher Stufe gilt: fehlende Akzente beim Tippen als richtig werten, Punktabzug bei „Lösung anzeigen“, „Nicht gewusst“ zieht 1 Punkt ab, im Akzent-Modus auch Wörter ohne Akzent abfragen (mit Höchstanteil), Buchstaben mit Akzent hervorheben, die Zahl der noch fehlenden Akzente anzeigen (z. B. 2 / 3) und richtige Antworten automatisch übernehmen (sonst „Prüfen“). „Vorlesen“ (ebenfalls per Lang-Druck): Auto-Play und welche Spalten vorgelesen werden."},
                   {k:"Zeile 2: Umfang · Abfrage-Ziel · Gelernte", v:"Umfang: „Alle Vokabeln“ in einem Durchgang oder „Je N Vokabeln“ – antippen zeigt große Zahlenknöpfe (Alle, 5–50). Bei Paketen kannst du nach jedem Paket pausieren oder weitermachen; abgefragte Vokabeln werden beim nächsten Paket übersprungen. Gelernte (nur wenn es welche gibt): „13 gelernte“ = ausgeblendet, „+ 13 gelernte“ = werden mit abgefragt."},
                   {k:"Abfrage-Ziel", v:"Anzahl: jede Vokabel 1×/2×/3× pro Durchgang abfragen. Mit Wiederholung: Vokabeln so lange einreihen, bis jede 1×/2×/3× richtig beantwortet wurde. Score (global, Knopf z. B. „Score < +3“): nur Vokabeln mit Score unter dem Ziel kommen in die Session, jede einmal (ohne Wiederholung) – Ziel 0 fragt nur negative ab (nie abgefragte zählen als 0). Session-Score: alle Vokabeln, jede so lange, bis sie in dieser Session um das Ziel gestiegen ist."},
@@ -8475,9 +8596,13 @@ export default function VokabelApp() {
             </div>
           )}
 
-          {/* Immer sichtbar: Lernen / App / Daten */}
-          <div className="sektion" style={infoModus !== "uebersicht" ? {paddingBottom:'100dvh'} : {}}>
-            <div className="sektion-label" style={{marginBottom:10}}>Lernen</div>
+          </>)}
+
+          {/* Bereiche mit Kopfzeile: immer nur einer offen */}
+          <div className="sektion" data-einst-bereiche style={einstBereich === "info" && infoModus !== "uebersicht" ? {paddingBottom:'100dvh'} : {}}>
+            {einstBereich !== "info" && einstKopf("info", "Info", "Übersicht, Konzept, Anleitung")}
+            {einstKopf("lernen", "Lernen", "Gelernt-Schwelle")}
+            {einstBereich === "lernen" && (<div className="einst-inhalt">
             <div className="karte">
               <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:8}}>
                 <div>
@@ -8499,7 +8624,9 @@ export default function VokabelApp() {
                 </div>
               </div>
             </div>
-            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Akzente</div>
+            </div>)}
+            {einstKopf("akzente", "Akzente", "je Sprache an oder aus")}
+            {einstBereich === "akzente" && (<div className="einst-inhalt">
             <div className="karte" data-akzent-sprachen>
               <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
                 <div className="karte-zeile-sub">Ausgeschaltet: keine Abfrageart „A“ und keine Akzent-Statistik für diese Sprache; fehlende Akzente beim Tippen gelten als richtig.</div>
@@ -8518,15 +8645,23 @@ export default function VokabelApp() {
                 </div>
               ))}
             </div>
-            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Farbschema</div>
+            </div>)}
+            {einstKopf("farben", "Farbschema", "Vorlagen und eigene Farben")}
+            {einstBereich === "farben" && (<div className="einst-inhalt">
             {renderFarbschemata()}
-            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Gespeicherte Konfigurationen</div>
+            </div>)}
+            {einstKopf("konfig", "Gespeicherte Konfigurationen", "Raster im Quiz- und Statistik-Tab")}
+            {einstBereich === "konfig" && (<div className="einst-inhalt">
             {rasterEinstellung(rasterGroesse(einstellungen), slots.gespeichert.length, setzeRasterGroesse,
               "Plätze für gespeicherte Konfigurationen im Quiz- und Statistik-Tab", "Ist das Raster beim Speichern voll, kommt automatisch eine Zeile dazu.", "")}
-            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Listen</div>
+            </div>)}
+            {einstKopf("listen", "Listen", "Raster im Listen-Tab")}
+            {einstBereich === "listen" && (<div className="einst-inhalt">
             {rasterEinstellung(rasterGroesse(einstellungen, "listenRaster"), listenIndex.length, setzeListenRasterGroesse,
               "Plätze der Listen im Listen-Tab – die Reihenfolge gilt in der ganzen App", "Ist das Raster bei einer neuen Liste voll, kommt automatisch eine Zeile dazu.", "listen")}
-            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>App</div>
+            </div>)}
+            {einstKopf("app", "App", "Version und Aktualisieren")}
+            {einstBereich === "app" && (<div className="einst-inhalt">
             <div className="karte">
               <div className="karte-zeile">
                 <div className="karte-zeile-info">
@@ -8548,7 +8683,9 @@ export default function VokabelApp() {
                 }} {...tt("Nach neuer App-Version suchen")}>Prüfen</button>
               </div>
             </div>
-            <div className="sektion-label" style={{marginBottom:10, marginTop:8}}>Daten & Sicherung</div>
+            </div>)}
+            {einstKopf("daten", "Daten & Sicherung", "Alles sichern, Wiederherstellen, Erinnerung")}
+            {einstBereich === "daten" && (<div className="einst-inhalt">
             <div className="karte" data-sicherung>
               <div className="karte-zeile">
                 <div className="karte-zeile-info">
@@ -8567,7 +8704,7 @@ export default function VokabelApp() {
                   <div className="karte-zeile-sub" data-letzte-sicherung>Listen mit Scores, Einstellungen, Farben, gespeicherte Quiz · {letzteSicherung ? `zuletzt am ${formatTag(letzteSicherung)}` : "noch nie gesichert"}</div>
                 </div>
                 <button className="btn btn-primary btn-sm" data-alles-sichern onClick={sichereAlles}
-                  {...tt("Alles in einer Datei sichern („Vokabel-App Sicherung Datum.txt“, landet in Downloads bzw. im Teilen-Menü)")}>💾 Sichern</button>
+                  {...tt("Alles in einer Datei sichern (Vorschlag „Vokabel-App Sicherung Datum“, Name änderbar; landet in Downloads bzw. im Teilen-Menü)")}>💾 Sichern</button>
               </div>
               <div className="karte-zeile" style={{borderTop:"1px solid var(--rahmen)"}}>
                 <div className="karte-zeile-info">
@@ -8602,12 +8739,13 @@ export default function VokabelApp() {
                 </div>
               </div>
             </div>
+            </div>)}
           </div>
         </>)}
         {tab === "listen" && ansicht === "uebersicht" && exportAuswahlModus && exportAusgewaehlt.size > 0 && (
           <div className="quiz-action-bar">
-            <button {...tt("JSON: vollständige Sicherung mit Lernstand (Scores) – Datei „Name - JSON.txt“, zum Wiederherstellen oder für ein anderes Gerät")} className="btn btn-primary" onClick={() => exportiereAlsJson([...exportAusgewaehlt])}>JSON</button>
-            <button {...tt("TXT: nur die Vokabeln als Text, ohne Scores – Datei „Name - TXT.txt“, zum Weitergeben oder Bearbeiten")} className="btn btn-primary" onClick={exportiereAusgewaehlteAlsDateiHandler}>TXT</button>
+            <button {...tt("JSON: vollständige Sicherung mit Lernstand (Scores) – Vorschlag „Name - JSON“, Dateiname änderbar – zum Wiederherstellen oder für ein anderes Gerät")} className="btn btn-primary" onClick={() => exportiereAlsJson([...exportAusgewaehlt])}>JSON</button>
+            <button {...tt("TXT: nur die Vokabeln als Text, ohne Scores – Vorschlag „Name - TXT“, Dateiname änderbar – zum Weitergeben oder Bearbeiten")} className="btn btn-primary" onClick={exportiereAusgewaehlteAlsDateiHandler}>TXT</button>
             <button {...tt("Ausgewählte Listen als Text in die Zwischenablage kopieren (ohne Scores)")} className="btn btn-ghost" onClick={exportiereAusgewaehlteKopierenHandler}>
               {exportKopiert ? "✓ Kopiert!" : "📋 Kopieren"}
             </button>
@@ -9193,6 +9331,7 @@ export default function VokabelApp() {
             <p style={{fontSize:"0.85rem", color:"var(--text2)", marginBottom:14}}>
               {jsonExportIds.length === 1 ? "1 Liste" : `${jsonExportIds.length} Listen`} — was soll enthalten sein?
             </p>
+            {renderExportNamensFeld(exportiereAlsJsonBestaetigt)}
             {[
               { key: "vokabeln", label: "Vokabeln", pflicht: true },
               { key: "falsch",   label: "Falsche Antworten (MC)" },
@@ -9211,6 +9350,24 @@ export default function VokabelApp() {
             <div className="modal-actions">
               <button {...tt("Schließen, ohne zu exportieren")} className="btn btn-ghost" onClick={() => { setModal(null); setJsonExportIds(null); }}>Abbrechen</button>
               <button {...tt("Export mit diesen Optionen erstellen")} className="btn btn-primary" onClick={exportiereAlsJsonBestaetigt}>Exportieren</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modal === "datei-export" && dateiExport && (
+        <div className="overlay" onClick={() => { setModal(null); setDateiExport(null); }}>
+          <div className="modal" data-datei-export={dateiExport.art} onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">{dateiExport.art === "sicherung" ? "Alles sichern" : "TXT exportieren"}</div>
+            <p style={{fontSize:"0.85rem", color:"var(--text2)", marginBottom:14}}>
+              {dateiExport.art === "sicherung" ? "Listen mit Scores, Einstellungen, Farben und gespeicherte Quiz in einer Datei."
+                : `${dateiExport.ids.length === 1 ? "1 Liste" : `${dateiExport.ids.length} Listen`} — nur die Vokabeln als Text, ohne Scores.`}
+            </p>
+            {renderExportNamensFeld(bestaetigeDateiExport)}
+            <div className="modal-actions">
+              <button {...tt("Schließen, ohne zu speichern")} className="btn btn-ghost" onClick={() => { setModal(null); setDateiExport(null); }}>Abbrechen</button>
+              <button {...tt(dateiExport.art === "sicherung" ? "Sicherungsdatei mit diesem Namen erstellen" : "TXT-Datei mit diesem Namen erstellen")} className="btn btn-primary" data-datei-export-ok
+                onClick={bestaetigeDateiExport}>{dateiExport.art === "sicherung" ? "Sichern" : "Exportieren"}</button>
             </div>
           </div>
         </div>

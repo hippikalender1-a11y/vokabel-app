@@ -75,6 +75,8 @@ await clickText("button", "Exportieren", true);
 for (const n of ["Irregular Verbs", "Unité 1", "Unidad 1"]) await clickText(".karte-zeile", n);
 let vorher = fs.readdirSync(DL);
 await clickText(".quiz-action-bar button", "TXT", true);
+ok(await page.evaluate(() => document.querySelector("[data-datei-export] [data-export-name]")?.value) === "3 Listen - TXT", "TXT: Fenster mit Dateiname, Vorschlag „3 Listen - TXT“");
+await page.click("[data-datei-export-ok]"); await sleep(300);
 const txtAlle = await warteAufDatei(" - TXT.txt", vorher);
 ok(!!txtAlle && path.basename(txtAlle) === "3 Listen - TXT.txt", `TXT (alle) heruntergeladen: ${txtAlle && path.basename(txtAlle)}`);
 const txtInhalt = txtAlle ? fs.readFileSync(txtAlle, "utf8") : "";
@@ -92,6 +94,17 @@ ok(!!jsonAlle && path.basename(jsonAlle) === "3 Listen - JSON.txt", `JSON (alle)
 const jsonDaten = jsonAlle ? JSON.parse(fs.readFileSync(jsonAlle, "utf8")) : [];
 ok(jsonDaten.map(l => l.sprache).join(",") === "en,fr,es", `JSON enthält Sprachen: ${jsonDaten.map(l => l.sprache)}`);
 
+// ── Export 2b: JSON mit eigenem Namen (unerlaubte Zeichen werden zu „-“) ──
+vorher = fs.readdirSync(DL);
+await clickText(".quiz-action-bar button", "JSON", true);
+ok(await page.evaluate(() => document.querySelector(".modal [data-export-name]")?.value) === "3 Listen - JSON", "JSON: Dateiname mit Vorschlag „3 Listen - JSON“");
+await page.click(".modal [data-export-name]", { clickCount: 3 }); await page.keyboard.press("Backspace");
+await page.type(".modal [data-export-name]", "Französisch Klasse 7: Teil/1");
+await page.keyboard.press("Enter"); await sleep(300);
+const jsonEigen = await warteAufDatei("Teil-1.txt", vorher);
+ok(!!jsonEigen && path.basename(jsonEigen) === "Französisch Klasse 7- Teil-1.txt", `JSON mit eigenem Namen (Enter): ${jsonEigen && path.basename(jsonEigen)}`);
+ok(jsonEigen && JSON.parse(fs.readFileSync(jsonEigen, "utf8")).length === 3, "Datei mit eigenem Namen enthält die drei Listen");
+
 // ── Export 3: einzelne französische Liste als TXT ──
 await page.reload(); await sleep(500);
 await clickText(".tab", "Listen");
@@ -100,6 +113,7 @@ await page.evaluate(() => [...document.querySelectorAll(".btn-toggle")].find(b =
 await sleep(300);
 vorher = fs.readdirSync(DL);
 await clickText("button", "TXT", true);
+await page.click("[data-datei-export-ok]"); await sleep(300);
 const txtFr = await warteAufDatei(" - TXT.txt", vorher);
 ok(!!txtFr && path.basename(txtFr) === "Unité 1 - TXT.txt", `TXT (Unité 1) heruntergeladen: ${txtFr && path.basename(txtFr)}`);
 

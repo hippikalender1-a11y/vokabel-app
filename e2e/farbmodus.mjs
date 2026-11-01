@@ -13,7 +13,9 @@ await page.setViewport({ width: 390, height: 900, hasTouch: true, isMobile: true
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
 const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FAIL", msg); };
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Einstellungen: Bereich aufklappen (immer nur einer offen)
+const oeffneEinst = async key => { await page.evaluate(k => { const b = document.querySelector(`[data-einst-kopf="${k}"]`); if (b && b.dataset.offen !== "ja") b.click(); }, key); await new Promise(r => setTimeout(r, 250)); };
 const clickText = async (sel, text, exact = false) => {
   const done = await page.evaluate((sel, text, exact) => {
     const el = [...document.querySelectorAll(sel)].find(e => exact ? e.textContent.trim() === text : e.textContent.trim().includes(text));
@@ -48,7 +50,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, sprache: "alle" }));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Einstellungen");
+await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
 await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
 ok(await page.$("[data-farbmodus-zuruecksetzen]") && await page.$("[data-farbmodus-uebernehmen]"), "Farbmodus an: unten rechts „Zurücksetzen“ und „Farben übernehmen“");
 
@@ -113,7 +115,7 @@ await page.click("[data-farbmodus-zuruecksetzen]"); await sleep(300);
 ok(await variable("haupt") === "#2d6a4f" && !(await page.$("[data-farbmodus-uebernehmen]")) && (await eigene()).length === 0, "„Zurücksetzen“: Farben zurück, Farbmodus aus, nichts gespeichert");
 
 // erneut: ändern und übernehmen (Vorlage Natur → Kopie mit Namen)
-await clickText(".tab", "Einstellungen");
+await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
 await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
 const sektion = await page.evaluate(() => { const r = [...document.querySelectorAll(".tab")].find(t => t.textContent === "Einstellungen").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await rechtsklick(sektion.x, sektion.y);

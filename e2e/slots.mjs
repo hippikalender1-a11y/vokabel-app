@@ -11,6 +11,8 @@ page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
 const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FAIL", msg); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Einstellungen: Bereich aufklappen (immer nur einer offen)
+const oeffneEinst = async key => { await page.evaluate(k => { const b = document.querySelector(`[data-einst-kopf="${k}"]`); if (b && b.dataset.offen !== "ja") b.click(); }, key); await new Promise(r => setTimeout(r, 250)); };
 const clickText = async (sel, text, exact = false) => {
   const done = await page.evaluate((sel, text, exact) => {
     const el = [...document.querySelectorAll(sel)].find(e => exact ? e.textContent.trim() === text : e.textContent.trim().includes(text));
@@ -191,7 +193,7 @@ ok(pl["Meine Verben 2"] === "4|0" && pl["Meine Verben"] === platzN1, `Duplikat u
 await menue("4|0"); await aktion("🗑 Löschen"); await clickText(".modal .btn-danger", "Löschen", true);
 
 // Einstellungen: 3 Spalten, Zeilen verkleinern → Einträge rücken nach, voll → beim Speichern automatisch eine Zeile mehr
-await clickText(".tab", "Einstellungen");
+await clickText(".tab", "Einstellungen"); await oeffneEinst("konfig");
 await page.evaluate(() => document.querySelector('[data-raster-spalten="3"]').click()); await sleep(200);
 for (let i = 0; i < 12; i++) { const weiter = await page.evaluate(() => { const b = [...document.querySelectorAll("button")].find(x => x.textContent.trim() === "−" && x.nextElementSibling?.hasAttribute("data-raster-zeilen")); if (!b || b.disabled) return false; b.click(); return true; }); if (!weiter) break; await sleep(80); }
 const zeilen = await page.evaluate(() => document.querySelector("[data-raster-zeilen]").textContent.trim());

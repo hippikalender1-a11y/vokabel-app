@@ -13,6 +13,8 @@ page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
 const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FAIL", msg); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Einstellungen: Bereich aufklappen (immer nur einer offen)
+const oeffneEinst = async key => { await page.evaluate(k => { const b = document.querySelector(`[data-einst-kopf="${k}"]`); if (b && b.dataset.offen !== "ja") b.click(); }, key); await new Promise(r => setTimeout(r, 250)); };
 const clickText = async (sel, text, exact = false) => {
   const done = await page.evaluate((sel, text, exact) => {
     const el = [...document.querySelectorAll(sel)].find(e => exact ? e.textContent.trim() === text : e.textContent.trim().includes(text));
@@ -130,7 +132,7 @@ ok(await page.evaluate(() => /Gamma/.test(document.body.innerText) && !document.
 await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(300);
 
 // Einstellungen → Listen: 2 Spalten
-await clickText(".tab", "Einstellungen");
+await clickText(".tab", "Einstellungen"); await oeffneEinst("listen");
 await page.evaluate(() => document.querySelector('[data-listen-raster-spalten="2"]').click()); await sleep(200);
 ok(await page.evaluate(() => document.querySelector("[data-listen-raster-zeilen]").textContent.trim()) === "10", "Einstellungen → Listen: Raster 10 Zeilen");
 await clickText(".tab", "Listen");

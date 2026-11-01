@@ -12,7 +12,9 @@ await page.setViewport({ width: 390, height: 900 });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
 const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FAIL", msg); };
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Einstellungen: Bereich aufklappen (immer nur einer offen)
+const oeffneEinst = async key => { await page.evaluate(k => { const b = document.querySelector(`[data-einst-kopf="${k}"]`); if (b && b.dataset.offen !== "ja") b.click(); }, key); await new Promise(r => setTimeout(r, 250)); };
 const clickText = async (sel, text, exact = false) => {
   const done = await page.evaluate((sel, text, exact) => {
     const el = [...document.querySelectorAll(sel)].find(e => exact ? e.textContent.trim() === text : e.textContent.trim().includes(text));
@@ -42,7 +44,7 @@ const farbradHex = async (wert, anwenden = true) => {
 await page.goto(URL);
 await page.evaluate(() => localStorage.clear());
 await page.reload(); await sleep(500);
-await clickText(".tab", "Einstellungen");
+await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
 
 const namen = await page.evaluate(() => [...document.querySelectorAll("[data-farbschema]")].map(b => b.querySelector(".farb-name").textContent.replace("✓ ", "").trim()));
 console.log("     Schemata:", namen.join(" | "));
@@ -61,7 +63,7 @@ ok(await bodyBg() === "rgb(22, 24, 22)", "Auswahl bleibt nach Neuladen erhalten"
 const leiste = () => page.evaluate(() => document.querySelector('meta[name="theme-color"]')?.getAttribute("content"));
 ok(await leiste() === "#161816", `Systemleiste folgt dem Schema (Dunkel: ${await leiste()})`);
 // „Farben bearbeiten“: bei einer Vorlage erst Kopie, dann Liste aller Farbrollen inkl. App-Leiste
-await clickText(".tab", "Einstellungen");
+await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
 await page.click('[data-farbschema="jungs"]'); await sleep(200);
 ok(await leiste() === "#1d5f8a", "Jungs: Systemleiste = Hauptfarbe");
 await page.click("[data-farben-bearbeiten]"); await sleep(300);
@@ -75,7 +77,7 @@ await menue(eigNeu[0].id); await aktion("🗑 Löschen"); await clickText(".moda
 await page.click('[data-farbschema="dunkel"]'); await sleep(200);
 
 // Vorlage: nur Duplizieren
-await clickText(".tab", "Einstellungen");
+await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
 await menue("natur");
 ok((await aktionen()).join("|") === "⧉ Duplizieren", "Vorlage: Lang-Druck nur „Duplizieren“");
 await aktion("⧉ Duplizieren");
