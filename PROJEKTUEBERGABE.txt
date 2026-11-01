@@ -1784,6 +1784,13 @@ FARBROLLEN NACH FUNKTION: neue Rollen app-kopf (topbar, tabs, Kopf-Wrapper), kop
   haupt-hell in karte. Hintergrund nur noch Seite. „🎨 Farbe ändern“: InfoTafel hängt es an jedes Menü und
   jede Erklärung (data-info-farbe, nicht data-info-aktion), Ereignis vokabel-farbe-hier → starteFarbModus +
   Farbfeld an der Stelle; Schalter einstellungen.farbeImMenue (setzeFarbeImMenue). Test: e2e/farbrollen.mjs.
+ELEMENT-FARBEN: schema.elemente = { selektor: { background-color|color|border-color|fill|stroke: hex } },
+  als CSS mit !important nach CSS_BASIS (elementCSS). Selektor = elementSchluessel(el): erstes data-Attribut
+  (ohne SCHLUESSEL_OHNE), sonst Klassen ohne Zustände (ZUSTAND_KLASSEN), sonst Eltern-Schlüssel > Tag.
+  Farbmodus: elementVorschau; Farbfeld je Teil „Alle Stellen“ (data-farbfeld-rolle) / „Nur dieses Element“
+  (data-farbfeld-element "sel|eig", oeffneElementFarbRad, live über <style id="farb-element-live">) / „↺ Rolle“.
+  Schema-Editor: data-element-farbe mit ✕; Zurücksetzen leert elemente. Rechtsklick zeigt jetzt auch reine
+  Erklärungen (wie langer Druck). Test: e2e/elementfarben.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

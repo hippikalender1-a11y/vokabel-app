@@ -968,6 +968,24 @@ function setzeSystemLeiste(farbe) {
   if (!m) { m = document.createElement("meta"); m.name = "theme-color"; document.head.appendChild(m); }
   if (m.getAttribute("content") !== farbe) m.setAttribute("content", farbe);
 }
+// Element-Farben: eigene Farbe je Element-Art, unabhängig von den Rollen – { selektor: { "background-color": "#…", color, … } }
+const TEIL_EIGENSCHAFT = { Hintergrund: "background-color", Schrift: "color", Rahmen: "border-color", Füllung: "fill", "Ring/Linie": "stroke", Linie: "stroke" };
+const elementCSS = el => Object.entries(el || {}).map(([sel, p]) => `${sel}{${Object.entries(p).map(([k, v]) => `${k}:${v} !important;`).join("")}}`).join("");
+const farbeZuHex = c => { const m = c && c.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?/); if (!m || (m[4] !== undefined && +m[4] < 0.05)) return null;
+  return "#" + [m[1], m[2], m[3]].map(v => Math.round(+v).toString(16).padStart(2, "0")).join(""); };
+// Schlüssel einer Element-Art: kennzeichnendes data-Attribut, sonst die Klassen (ohne Zustände), sonst Eltern-Schlüssel > Tag
+const SCHLUESSEL_OHNE = new Set(["data-info", "data-liste-id", "data-slot-id", "data-raster-zelle", "data-multi-nr", "data-wahl-nr", "data-auswahl-nr",
+  "data-statistik-vok", "data-offen", "data-anzahl", "data-pct", "data-kachel-balken", "data-sichtbar", "data-lernen-phase"]);
+const ZUSTAND_KLASSEN = new Set(["aktiv", "offen", "checked", "richtig", "falsch", "aufgedeckt", "weitere", "gelernt-blitz", "aktiv-kachel", "voll", "spalte-ok", "sichtbar", "lernen-ein"]);
+function elementSchluessel(el, tiefe = 0) {
+  if (!el || el === document.body || el === document.documentElement) return "body";
+  const attr = [...el.attributes].map(a => a.name).find(n => n.startsWith("data-") && !SCHLUESSEL_OHNE.has(n));
+  if (attr) return `[${attr}]`;
+  const klassen = [...el.classList].filter(k => !ZUSTAND_KLASSEN.has(k) && /^[\w-]+$/.test(k));
+  if (klassen.length) return "." + klassen.join(".");
+  if (tiefe >= 3) return el.tagName.toLowerCase();
+  return `${elementSchluessel(el.parentElement, tiefe + 1)} > ${el.tagName.toLowerCase()}`;
+}
 const farbVariablen = (f, dunkel) => `:root{${Object.entries(f).map(([k, v]) => `--${k}:${v};`).join("")}color-scheme:${dunkel ? "dark" : "light"};}`;
 // gewähltes Schema: Vorlage oder eigenes (einstellungen.eigeneSchemata)
 function schemaVon(einst) {
@@ -1376,6 +1394,7 @@ export default function VokabelApp() {
   // Farbmodus: Farben direkt am Element ändern (Vorschau bis „Farben übernehmen“)
   const [farbModus, setFarbModus] = useState(false);
   const [farbVorschau, setFarbVorschau] = useState(null);           // Grundfarben während des Farbmodus
+  const [elementVorschau, setElementVorschau] = useState(null);     // Element-Farben während des Farbmodus
   const [farbFeld, setFarbFeld] = useState(null);                   // {gruppen, zeit} nach langem Druck
   const [farbMarke, setFarbMarke] = useState(null);                 // Rechteck des hervorgehobenen Elements
   const [farbName, setFarbName] = useState(null);                   // Name beim Übernehmen einer Vorlage
@@ -1387,7 +1406,7 @@ export default function VokabelApp() {
   // Farbschema: Farben je Rolle (CSS-Variablen + F für SVG); vor dem Laden der Einstellungen aus dem Speicher
   const farbSchema = schemaVon(einstellungen.farbschema || einstellungen.eigeneSchemata ? einstellungen : lsGet(SK.einstellungen, {}));
   F = farbenAus(farbModus && farbVorschau ? farbVorschau : farbSchema.farben);
-  CSS = farbVariablen(F, farbSchema.dunkel) + CSS_BASIS;
+  CSS = farbVariablen(F, farbSchema.dunkel) + CSS_BASIS + elementCSS(farbModus && elementVorschau ? elementVorschau : farbSchema.elemente);
   setzeFarbeImMenue(einstellungen.farbeImMenue !== false && !farbModus);
   useEffect(() => { setzeSystemLeiste(F.leiste); });
   const [infoModus, setInfoModus] = useState("uebersicht");
@@ -1583,7 +1602,8 @@ export default function VokabelApp() {
     if (!text) return {};
     const langText = opts.langText || text;
     return {
-      ...(aktionen ? { onContextMenu(e) { e.preventDefault(); opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen); } } : {}),
+      // Rechtsklick = langer Druck: Menü bzw. Erklärung (mit „🎨 Farbe ändern“)
+      onContextMenu(e) { e.preventDefault(); if (aktionen) opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen); },
       title: text,
       "data-info": text,
       onTouchStart(e) {
@@ -4066,7 +4086,7 @@ export default function VokabelApp() {
     return n;
   };
   function dupliziereSchema(sch) {
-    const neu = { id: "eigen_" + Date.now(), name: schemaName(sch.name), basis: sch.basis || sch.id, dunkel: !!sch.dunkel, farben: { ...sch.farben } };
+    const neu = { id: "eigen_" + Date.now(), name: schemaName(sch.name), basis: sch.basis || sch.id, dunkel: !!sch.dunkel, farben: { ...sch.farben }, elemente: { ...(sch.elemente || {}) } };
     speichereEinst({ ...einstellungen, eigeneSchemata: [...eigeneSchemata, neu], farbschema: neu.id });
     setSchemaBearbeiten(neu.id);
   }
@@ -4130,7 +4150,7 @@ export default function VokabelApp() {
           <div data-schema-editor style={{marginTop:14, borderTop:"1px solid var(--rahmen)", paddingTop:12}}>
             <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:8}}>
               <span style={{flex:1, fontWeight:700, color:"var(--text)"}}>🎨 {bearb.name}</span>
-              <button className="btn btn-ghost btn-sm" data-schema-zuruecksetzen onClick={() => aendereEigenesSchema(bearb.id, () => ({ farben: { ...vorlageVon(bearb).farben }, dunkel: !!vorlageVon(bearb).dunkel }))}
+              <button className="btn btn-ghost btn-sm" data-schema-zuruecksetzen onClick={() => aendereEigenesSchema(bearb.id, () => ({ farben: { ...vorlageVon(bearb).farben }, dunkel: !!vorlageVon(bearb).dunkel, elemente: {} }))}
                 {...tt(`Alle Farben auf die Vorlage „${vorlageVon(bearb).name}“ zurücksetzen`)}>Zurücksetzen</button>
               <button className="btn btn-primary btn-sm" data-schema-fertig onClick={() => setSchemaBearbeiten(null)} {...tt("Bearbeiten beenden – die Farben sind schon gespeichert")}>Fertig</button>
             </div>
@@ -4144,6 +4164,20 @@ export default function VokabelApp() {
                 </span>
               </div>
             ))}
+            {Object.keys(bearb.elemente || {}).length > 0 && (
+              <div data-element-farben style={{margin:"8px 0"}}>
+                <div style={{fontSize:"0.75rem", fontWeight:700, color:"var(--text2)", margin:"4px 0"}}>Eigene Element-Farben</div>
+                {Object.entries(bearb.elemente).flatMap(([sel, p]) => Object.entries(p).map(([eig, hex]) => (
+                  <div key={sel + eig} className="farb-zeile" data-element-farbe={`${sel}|${eig}`}>
+                    <span className="farb-tupfer" style={{background: hex}}/>
+                    <span style={{flex:1, fontSize:"0.75rem", color:"var(--text)", overflowWrap:"anywhere"}}>{sel} · {Object.keys(TEIL_EIGENSCHAFT).find(k => TEIL_EIGENSCHAFT[k] === eig)}</span>
+                    <button className="btn-icon" onClick={() => aendereEigenesSchema(bearb.id, x => { const n = { ...(x.elemente || {}) }; const q = { ...n[sel] }; delete q[eig];
+                      if (Object.keys(q).length) n[sel] = q; else delete n[sel]; return { elemente: n }; })}
+                      {...tt("Eigene Farbe entfernen – das Element nimmt wieder die Farbe seiner Rolle")}>✕</button>
+                  </div>
+                )))}
+              </div>
+            )}
             <label className="farb-zeile" {...ttFeld("Dunkles Schema: Bedienelemente des Systems (Listen, Scrollbalken) dunkel darstellen")}>
               <input type="checkbox" data-schema-dunkel checked={!!bearb.dunkel} onChange={e => aendereEigenesSchema(bearb.id, () => ({ dunkel: e.target.checked }))} style={{width:20, height:20}}/>
               <span style={{fontSize:"0.85rem", fontWeight:600, color:"var(--text)"}}>Dunkles Schema</span>
@@ -4184,17 +4218,37 @@ export default function VokabelApp() {
       rect: r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null,
       oben: !!r && r.top + r.height / 2 > window.innerHeight / 2 });
   }
+  // nur diese Element-Art: eigene Regel statt der Rolle
+  function oeffneElementFarbRad(schluessel, eigenschaft, titel, el) {
+    const r = el?.getBoundingClientRect();
+    const cs = el ? getComputedStyle(el) : null;
+    const jetzt = elementVorschau?.[schluessel]?.[eigenschaft] || (cs && farbeZuHex(cs.getPropertyValue(eigenschaft))) || "#000000";
+    setFarbRad({ rolle: `${schluessel}|${eigenschaft}`, titel, start: vollHex(jetzt).toLowerCase(), element: { schluessel, eigenschaft },
+      rect: r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null, oben: !!r && r.top + r.height / 2 > window.innerHeight / 2 });
+  }
+  const liveElement = text => {
+    let st = document.getElementById("farb-element-live");
+    if (!st) { st = document.createElement("style"); st.id = "farb-element-live"; document.head.appendChild(st); }
+    st.textContent = text;
+  };
   const liveFarbe = hex => {
     if (!farbRad) return;
+    if (farbRad.element) { liveElement(`${farbRad.element.schluessel}{${farbRad.element.eigenschaft}:${hex} !important}`); return; }
     const f = farbenAus({ ...farbRad.basis, [farbRad.rolle]: hex });
     const root = document.documentElement.style;
     Object.entries(f).forEach(([k, v]) => root.setProperty("--" + k, v));
     setzeSystemLeiste(f.leiste);
   };
-  const liveEntfernen = () => { const root = document.documentElement.style; Object.keys(F).forEach(k => root.removeProperty("--" + k)); setzeSystemLeiste(F.leiste); };
+  const liveEntfernen = () => { const root = document.documentElement.style; Object.keys(F).forEach(k => root.removeProperty("--" + k)); setzeSystemLeiste(F.leiste); liveElement(""); };
   function farbRadAnwenden(hex) {
     const { rolle, ziel } = farbRad;
     const verlauf = [hex, ...(einstellungen.farbVerlauf || []).filter(x => x !== hex)].slice(0, 10);
+    if (farbRad.element) {
+      const { schluessel, eigenschaft } = farbRad.element;
+      setElementVorschau(e => ({ ...(e || {}), [schluessel]: { ...(e?.[schluessel] || {}), [eigenschaft]: hex } }));
+      speichereEinst({ ...einstellungen, farbVerlauf: verlauf });
+      liveEntfernen(); setFarbRad(null); return;
+    }
     if (ziel === "vorschau") { setFarbVorschau(f => ({ ...f, [rolle]: hex })); speichereEinst({ ...einstellungen, farbVerlauf: verlauf }); }
     else speichereEinst({ ...einstellungen, farbVerlauf: verlauf,
       eigeneSchemata: eigeneSchemata.map(x => x.id === ziel ? { ...x, farben: { ...x.farben, [rolle]: hex } } : x) });
@@ -4212,9 +4266,18 @@ export default function VokabelApp() {
   // ── Farbmodus ──
   function starteFarbModus() {
     setFarbVorschau({ ...schemaVon(einstellungen).farben });
+    setElementVorschau({ ...(schemaVon(einstellungen).elemente || {}) });
     setFarbModus(true); setSchemaBearbeiten(null);
   }
-  function beendeFarbModus() { setFarbModus(false); setFarbVorschau(null); setFarbFeld(null); setFarbMarke(null); setFarbName(null); }
+  function beendeFarbModus() { setFarbModus(false); setFarbVorschau(null); setElementVorschau(null); setFarbFeld(null); setFarbMarke(null); setFarbName(null); }
+  // eigene Farbe einer Element-Art entfernen → wieder die Rolle
+  function entferneElementFarbe(schluessel, eigenschaft) {
+    setElementVorschau(e => {
+      const p = { ...(e?.[schluessel] || {}) }; delete p[eigenschaft];
+      const n = { ...(e || {}) }; if (Object.keys(p).length) n[schluessel] = p; else delete n[schluessel];
+      return n;
+    });
+  }
   // „🎨 Farbe ändern“ aus einem Lang-Druck-Menü: Farbmodus an und gleich das Farbfeld dieser Stelle
   useEffect(() => {
     const hier = e => {
@@ -4229,17 +4292,16 @@ export default function VokabelApp() {
     const sch = schemaVon(einstellungen);
     if (FARB_VORLAGEN.includes(sch)) {
       if (name === null) { setFarbName(schemaName(sch.name)); setFarbFeld(null); return; }   // Vorlage: erst Namen für die Kopie
-      const neu = { id: "eigen_" + Date.now(), name: name.trim() || schemaName(sch.name), basis: sch.id, dunkel: !!sch.dunkel, farben: { ...farbVorschau } };
+      const neu = { id: "eigen_" + Date.now(), name: name.trim() || schemaName(sch.name), basis: sch.id, dunkel: !!sch.dunkel, farben: { ...farbVorschau }, elemente: { ...(elementVorschau || {}) } };
       speichereEinst({ ...einstellungen, eigeneSchemata: [...eigeneSchemata, neu], farbschema: neu.id });
     } else {
-      aendereEigenesSchema(sch.id, () => ({ farben: { ...farbVorschau } }));
+      aendereEigenesSchema(sch.id, () => ({ farben: { ...farbVorschau }, elemente: { ...(elementVorschau || {}) } }));
     }
     beendeFarbModus();
   }
   // Farbrollen der Elemente im Umkreis von (x, y): je Element Hintergrund, Schrift, Rahmen bzw. bei Grafik Füllung, Linie
   function farbRollenBei(x, y) {
-    const zuHex = c => { const m = c && c.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?/); if (!m || (m[4] !== undefined && +m[4] < 0.05)) return null;
-      return "#" + [m[1], m[2], m[3]].map(v => Math.round(+v).toString(16).padStart(2, "0")).join(""); };
+    const zuHex = farbeZuHex;
     // gleiche Farbe in mehreren Rollen (z. B. Weiß = Karten und Schrift auf Hauptfarbe): je nach Teil die naheliegende Rolle
     const VORZUG = { Schrift: ["auf-haupt", "text-stark", "text", "text2", "text3", "haupt", "falsch", "richtig"],
       Hintergrund: ["karte", "hintergrund", "flaeche", "haupt", "falsch", "gelb"], Füllung: ["karte", "haupt", "haupt-hell", "gelernt", "arbeit", "nie", "negativ"],
@@ -4284,7 +4346,7 @@ export default function VokabelApp() {
         const seite = ["Top", "Right", "Bottom", "Left"].find(sd => parseFloat(cs[`border${sd}Width`]) > 0 && cs[`border${sd}Style`] !== "none");
         if (seite) dazu("Rahmen", cs[`border${seite}Color`], ["border", "border-color", `border-${seite.toLowerCase()}`, `border-${seite.toLowerCase()}-color`]);
       }
-      if (teile.length && gruppen.length < 7) gruppen.push({ name: name(el), el, teile });
+      if (teile.length && gruppen.length < 7) gruppen.push({ name: name(el), el, teile, schluessel: elementSchluessel(el) });
     });
     return gruppen;
   }
@@ -4344,13 +4406,27 @@ export default function VokabelApp() {
                 <div style={{fontSize:"0.75rem", fontWeight:700, color:"var(--text2)", margin:"4px 0 2px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"}}>{g.name}</div>
                 {g.teile.map(t => {
                   const basis = FARB_BASIS[t.rolle] || t.rolle;
+                  const eig = TEIL_EIGENSCHAFT[t.teil];
+                  const eigen = eig && elementVorschau?.[g.schluessel]?.[eig];
+                  const rolleAendern = () => { setFarbMarke(null); oeffneFarbRad(basis, `${t.teil} · ${rollenName(t.rolle)}`, farbVorschau || schemaVon(einstellungen).farben, "vorschau", g.el); };
                   return (
-                    <div key={t.teil + t.rolle} className="farb-zeile" data-farbfeld-zeile={basis}
-                      onPointerEnter={() => markiere(g.el)}
-                      onClick={() => { setFarbMarke(null); oeffneFarbRad(basis, `${t.teil} · ${rollenName(t.rolle)}`, farbVorschau || schemaVon(einstellungen).farben, "vorschau", g.el); }}
-                      {...ttFeld(`${t.teil}: ${rollenName(t.rolle)} – antippen, um die Farbe im Farbkreis zu ändern`)}>
-                      <span className="farb-tupfer" style={{background: `var(--${t.rolle})`}}/>
-                      <span style={{flex:1, fontSize:"0.85rem", color:"var(--text)"}}><b>{t.teil}</b> · {rollenName(t.rolle)}</span>
+                    <div key={t.teil + t.rolle}>
+                      <div className="farb-zeile" data-farbfeld-zeile={basis} onPointerEnter={() => markiere(g.el)} onClick={rolleAendern}
+                        {...ttFeld(`${t.teil}: ${eigen ? "eigene Farbe dieses Elements" : rollenName(t.rolle)} – antippen ändert die Rolle (alle Stellen)`)}>
+                        <span className="farb-tupfer" style={{background: eigen || `var(--${t.rolle})`}}/>
+                        <span style={{flex:1, fontSize:"0.85rem", color:"var(--text)"}}><b>{t.teil}</b> · {eigen ? <>eigene Farbe <span style={{color:"var(--text3)"}}>(statt {rollenName(t.rolle)})</span></> : rollenName(t.rolle)}</span>
+                      </div>
+                      {eig && (
+                        <div style={{display:"flex", gap:6, flexWrap:"wrap", margin:"2px 0 6px 30px"}}>
+                          <button className="typ-btn" data-farbfeld-rolle={basis} onClick={rolleAendern}
+                            {...ttFeld(`Rolle „${rollenName(t.rolle)}“ ändern – gilt für alle Stellen mit dieser Rolle`)}>Alle Stellen</button>
+                          <button className="typ-btn" data-farbfeld-element={`${g.schluessel}|${eig}`}
+                            onClick={() => { setFarbMarke(null); oeffneElementFarbRad(g.schluessel, eig, `${t.teil} · nur „${g.name}“`, g.el); }}
+                            {...ttFeld("Nur diese Element-Art umfärben (alle gleichartigen Stellen), die Rolle bleibt")}>Nur dieses Element</button>
+                          {eigen && <button className="typ-btn" data-farbfeld-zurueck={`${g.schluessel}|${eig}`} onClick={() => entferneElementFarbe(g.schluessel, eig)}
+                            {...ttFeld(`Eigene Farbe entfernen – wieder „${rollenName(t.rolle)}“`)}>↺ Rolle</button>}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -8717,7 +8793,7 @@ export default function VokabelApp() {
                 ]},
                 {titel:"Einstellungen-Tab", inhalt:[
                   {k:"Akzente", v:"Je Sprache An oder Aus (Standard: nur Französisch an). Aus: keine Abfrageart „A“ und keine Akzent-Statistik für Listen dieser Sprache, und fehlende Akzente beim Tippen und im Diktat gelten als richtig. An: „A“ steht zur Verfügung, beim Tippen gilt die Regel der Stufe."},
-                  {k:"Farbschema", v:"16 Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs, Dunkel, Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht und Espresso – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Flächen haben je Funktion eine eigene Rolle: Hintergrund (nur die Seite), App-Kopf (Titel- und Tab-Leiste), Bereichs-Kopfzeilen (z. B. Kopf der Listenauswahl), Karten (Listen, Quiz-Bereiche), Abfrage-Karten, Dialoge, Knöpfe & Felder, Info-Kästen und Ausgewählt – ohne eigenen Wert übernehmen sie die bisherige Farbe, Kopfzeilen und Info-Kästen mit einem Hauch der Hauptfarbe. „🎨 Farbe ändern“ unter jedem Lang-Druck-Menü (abschaltbar unter Farbschema) startet den Farbmodus direkt für diese Stelle. Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler: großer Farbkreis (außen kräftig, zur Mitte weniger gesättigt), Regler für Helligkeit und Sättigung, Hex-Feld, „Zuletzt verwendet“ (10 Farben); die App färbt sich beim Ziehen sofort um, „Anwenden“ übernimmt, „Abbrechen“ stellt die alte Farbe wieder her. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
+                  {k:"Farbschema", v:"16 Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs, Dunkel, Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht und Espresso – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Flächen haben je Funktion eine eigene Rolle: Hintergrund (nur die Seite), App-Kopf (Titel- und Tab-Leiste), Bereichs-Kopfzeilen (z. B. Kopf der Listenauswahl), Karten (Listen, Quiz-Bereiche), Abfrage-Karten, Dialoge, Knöpfe & Felder, Info-Kästen und Ausgewählt – ohne eigenen Wert übernehmen sie die bisherige Farbe, Kopfzeilen und Info-Kästen mit einem Hauch der Hauptfarbe. „🎨 Farbe ändern“ unter jedem Lang-Druck-Menü (abschaltbar unter Farbschema) startet den Farbmodus direkt für diese Stelle. Im Farbfeld hat jeder Teil zwei Wege: „Alle Stellen“ ändert die Rolle (überall, wo sie vorkommt), „Nur dieses Element“ gibt nur dieser Element-Art eine eigene Farbe (z. B. nur dem Start-Knopf – alle gleichartigen Stellen, die Rolle bleibt); „↺ Rolle“ nimmt die eigene Farbe zurück. Eigene Element-Farben gehören zum Schema und stehen in dessen Bearbeiten-Ansicht (✕ entfernt sie). Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler: großer Farbkreis (außen kräftig, zur Mitte weniger gesättigt), Regler für Helligkeit und Sättigung, Hex-Feld, „Zuletzt verwendet“ (10 Farben); die App färbt sich beim Ziehen sofort um, „Anwenden“ übernimmt, „Abbrechen“ stellt die alte Farbe wieder her. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
                   {k:"App aktualisieren", v:"„Prüfen“ sucht nach einer neuen App-Version. Wird eine gefunden, erscheint unten der Hinweis „Neue Version verfügbar“ – mit „Aktualisieren“ wird sie aktiv. Die App funktioniert auch offline."},
                   {k:"Gespeicherte Listen", v:"Zeigt, wie viele Listen aktuell auf diesem Gerät gespeichert sind."},
                 ]},
