@@ -1229,8 +1229,6 @@ const CSS_BASIS = `
   .lernen-regler-zeile > span{min-width:96px;}
   .lernen-regler-zeile input[type=range]{flex:1;accent-color:var(--haupt);}
   .lernen-regler-zeile b{min-width:52px;text-align:right;color:var(--haupt);}
-  .multi-leiste{position:fixed;left:12px;right:12px;bottom:12px;z-index:900;max-width:640px;margin:0 auto;display:flex;gap:8px;padding:8px;background:var(--karte);border:1.5px solid var(--rahmen);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.2);}
-  .multi-leiste .btn-primary{flex:1;}
   .auswahl-nr{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;border-radius:10px;background:var(--gelb);color:var(--auf-haupt);font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;z-index:2;}
   .listen-raster{display:grid;gap:6px;margin-bottom:16px;}
   .listen-raster .karte-zeile{background:var(--karte);border:1px solid var(--rahmen);border-radius:12px;min-width:0;}
@@ -1441,8 +1439,6 @@ export default function VokabelApp() {
   const [promptSprache, setPromptSprache] = useState("en");
   const [letzterPrompt, setLetzterPrompt] = useState("");
   const [exportKopiert, setExportKopiert] = useState(false);
-  const [exportAuswahlModus, setExportAuswahlModus] = useState(false);
-  const [exportAusgewaehlt, setExportAusgewaehlt] = useState(new Set());
   const [statistikSort, setStatistikSort] = useState("score-asc");
   const [statistikArt, setStatistikArt] = useState("uebersetzung");   // uebersetzung / diktat / akzente
   const [statistikFilter, setStatistikFilter] = useState(new Set(['negativ', 'nie', 'arbeit', 'gelernt'])); // Gruppen: negativ / nie / arbeit / gelernt
@@ -1494,8 +1490,12 @@ export default function VokabelApp() {
   const slotZiehenRef = useRef(null);                         // {id, x, y, aktiv, art: "liste" für das Listen-Raster}
   const [listenSortModus, setListenSortModus] = useState(false);   // "Verschieben"-Modus des Listen-Rasters
   const [listenAuswahl, setListenAuswahl] = useState([]);          // im Verschieben-Modus markiert
+  // Auswahl-Modus (Lang-Druck → „☑ Auswählen“): antippen wählt, Lang-Druck zeigt die Aktionen für die Auswahl.
+  // Listen: listenWahl; Konfigurationen: multiAuswahl (Reihenfolge = Nummern); null = aus
+  const [listenWahl, setListenWahl] = useState(null);
+  const [auswahlLoeschen, setAuswahlLoeschen] = useState(null);     // { art: "slot" | "liste", ids } wartet auf Bestätigung
   const rasterAuswahlRef = useRef({ slot: [], liste: [] });          // für die Zieh-Logik (Effekte ohne Abhängigkeiten)
-  rasterAuswahlRef.current = { slot: slotAuswahl, liste: listenAuswahl };
+  rasterAuswahlRef.current = { slot: slotAuswahl, liste: listenAuswahl, slotWahl: multiAuswahl, listeWahl: listenWahl };
   const [listeMenueId, setListeMenueId] = useState(null);          // Liste aus dem Lang-Druck-Menü (Umbenennen, Duplizieren, Zurücksetzen, Löschen)
   const [zuruecksetzenArten, setZuruecksetzenArten] = useState(new Set(Object.keys(SCORE_FELD)));
   // Liste in Sessions aufteilen (Quiz-Tab): { listeId, name, groesse, von, bis, restAnhaengen }
@@ -1567,7 +1567,7 @@ export default function VokabelApp() {
     if (!text) return {};
     const langText = opts.langText || text;
     return {
-      ...(aktionen ? { onContextMenu(e) { e.preventDefault(); zeigeInfo(langText, e.clientX, e.clientY, aktionen); } } : {}),
+      ...(aktionen ? { onContextMenu(e) { e.preventDefault(); opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen); } } : {}),
       title: text,
       "data-info": text,
       onTouchStart(e) {
@@ -1578,6 +1578,7 @@ export default function VokabelApp() {
           if (slotZiehenRef.current?.aktiv) return;   // beim Verschieben im Raster keine Erklärung einblenden
           if (farbModusRef.current) return;            // Farbmodus: langer Druck öffnet das Farbfeld
           tooltipShown.current = true; zeigeInfo(langText, t.clientX, t.clientY, aktionen);
+          if (aktionen) opts.beimMenue?.();
           opts.beimZeigen?.(t.clientX, t.clientY);
         }, 500);
       },
@@ -1934,8 +1935,16 @@ export default function VokabelApp() {
       if (!d.aktiv && Math.hypot(t.clientX - d.x, t.clientY - d.y) > 8) {
         d.aktiv = true;
         clearTimeout(tooltipTimer.current); tooltipShown.current = false; schliesseInfo();
-        if (d.art === "liste") { setListenSortModus(true); if (!rasterAuswahlRef.current.liste.includes(d.id)) setListenAuswahl([]); }
-        else { setSlotSortModus(true); if (!rasterAuswahlRef.current.slot.includes(d.id)) setSlotAuswahl([]); }
+        const r = rasterAuswahlRef.current;
+        if (d.art === "liste") {
+          setListenSortModus(true);
+          if (r.listeWahl) { setListenAuswahl(r.listeWahl.includes(d.id) ? r.listeWahl : [...r.listeWahl, d.id]); setListenWahl(null); }
+          else if (!r.liste.includes(d.id)) setListenAuswahl([]);
+        } else {
+          setSlotSortModus(true);
+          if (r.slotWahl) { setSlotAuswahl(r.slotWahl.includes(d.id) ? r.slotWahl : [...r.slotWahl, d.id]); setMultiAuswahl(null); }
+          else if (!r.slot.includes(d.id)) setSlotAuswahl([]);
+        }
         setSlotDragId(d.id);
       }
       if (!d.aktiv) return;
@@ -2176,7 +2185,7 @@ export default function VokabelApp() {
     if (aktiveListeId && ansicht === "liste-detail" && !passt(aktiveListeId)) {
       setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null);
     }
-    setExportAuswahlModus(false); setExportAusgewaehlt(new Set());
+    setListenWahl(null);
   }
 
   function setzeListenSprache(code) {
@@ -2338,9 +2347,9 @@ export default function VokabelApp() {
     return ids.map(id => { const l = lsGet(SK.liste(id)); return l ? generiereExportText(l) : null; })
       .filter(Boolean).join('\n\n');
   }
-  async function exportiereAusgewaehlteKopierenHandler() {
-    if (exportAusgewaehlt.size === 0) return;
-    const text = generiereKombiniertenExport([...exportAusgewaehlt]);
+  async function kopiereListen(ids) {
+    if (!ids.length) return;
+    const text = generiereKombiniertenExport(ids);
     try {
       await navigator.clipboard.writeText(text);
       setExportKopiert(true);
@@ -2383,11 +2392,6 @@ export default function VokabelApp() {
   function teileListeAlsDateiHandler() {
     if (!aktiveListe) return;
     oeffneDateiExport({ art: "txt", ids: [aktiveListeId] }, exportStandardName([aktiveListeId], "TXT"));
-  }
-  function exportiereAusgewaehlteAlsDateiHandler() {
-    if (exportAusgewaehlt.size === 0) return;
-    const ids = [...exportAusgewaehlt];
-    oeffneDateiExport({ art: "txt", ids }, exportStandardName(ids, "TXT"));
   }
   function bestaetigeDateiExport() {
     const z = dateiExport;
@@ -2436,8 +2440,7 @@ export default function VokabelApp() {
     }
     if (neuerTab === "listen") setAnsicht("uebersicht");
     setTab(neuerTab);
-    setExportAuswahlModus(false);
-    setExportAusgewaehlt(new Set());
+    setListenWahl(null);
     setStatistikVollbild(false);
   }
 
@@ -3182,8 +3185,8 @@ export default function VokabelApp() {
     return { konfiguration: { ...teile[0].konfiguration, listenIds, vokabelAuswahl, bereichTyp: "bereich", quizBereichTyp: "bereich" },
       anzahl: vokabelAuswahl.length, teile: teile.map(t => ({ id: t.id, name: t.name })) };
   }
-  function starteMultiquiz() {
-    const m = multiZusammenstellung(multiAuswahl || []);
+  function starteMultiquiz(ids = multiAuswahl || []) {
+    const m = multiZusammenstellung(ids);
     setMultiAuswahl(null);
     if (!m || !m.anzahl) return;
     const id = neuerSlotId('v');
@@ -3279,6 +3282,18 @@ export default function VokabelApp() {
   function benenneSlotUm(id, name) {
     const data = getSlotsData();
     setSlotsData({ ...data, gespeichert: data.gespeichert.map(x => x.id === id ? { ...x, name } : x) });
+  }
+
+  // Auswahl löschen (nach Rückfrage): Konfigurationen bzw. Listen mit Vokabeln
+  function loescheAuswahl() {
+    const z = auswahlLoeschen;
+    setAuswahlLoeschen(null);
+    if (!z) return;
+    if (z.art === "slot") { z.ids.forEach(id => loescheSlotEintrag("gespeichert", id)); setMultiAuswahl(null); return; }
+    z.ids.forEach(id => lsDel(SK.liste(id)));
+    speichereIndex(listenIndex.filter(l => !z.ids.includes(l.id)));
+    if (z.ids.includes(aktiveListeId)) { setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null); }
+    setListenWahl(null);
   }
 
   function loescheSlotEintrag(typ, id) {
@@ -4323,12 +4338,8 @@ export default function VokabelApp() {
       if (listenAuswahl.length) setzeListenPlaetze(listenAuswahl, platz);
     };
     const oeffne = l => {
-      if (exportAuswahlModus) {
-        setExportAusgewaehlt(prev => {
-          const neu = new Set(prev);
-          if (neu.has(l.id)) neu.delete(l.id); else neu.add(l.id);
-          return neu;
-        });
+      if (listenWahl) {
+        setListenWahl(a => a.includes(l.id) ? a.filter(x => x !== l.id) : [...a, l.id]);
       } else {
         setAktiveListeId(l.id); setAnsicht("liste-detail"); setVokabelAufgeklappt(false); setAktionszeileAufgeklappt(false);
       }
@@ -4337,16 +4348,30 @@ export default function VokabelApp() {
       { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
       { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
       ...(gefiltert ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenSortModus(true); setListenAuswahl([l.id]); } }]),
+      { label: "☑ Auswählen", fn: () => { setListenSortModus(false); setListenWahl([l.id]); } },
       { label: "▦ In Sessions aufteilen", fn: () => starteAufteilen(l.id) },
       { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },
       { label: "🗑 Löschen", gefahr: true, fn: () => { setListeMenueId(l.id); setModal("loeschen"); } },
     ];
+    // Auswahl-Modus: Aktionen für die Auswahl (Lang-Druck auf eine nicht gewählte Liste nimmt sie dazu)
+    const wahlMit = l => listenWahl.includes(l.id) ? listenWahl : [...listenWahl, l.id];
+    const wahlMenue = ids => [
+      { label: "JSON exportieren", fn: () => exportiereAlsJson(ids) },
+      { label: "TXT exportieren", fn: () => oeffneDateiExport({ art: "txt", ids }, exportStandardName(ids, "TXT")) },
+      { label: "📋 Kopieren", fn: () => kopiereListen(ids) },
+      ...(gefiltert ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl(ids); } }]),
+      { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "liste", ids }) },
+      { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) },
+    ];
+    const wahlNamen = ids => ids.map(id => listenIndex.find(x => x.id === id)?.name).filter(Boolean).join(", ");
     const zelle = (l, key) => {
       const anzahl = vokabelAnzahl(l.id);
       const liste = lsGet(SK.liste(l.id));
       const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
       const ziel = slotDragZiel === key && slotDragId && slotDragId !== l.id;
-      const erklaerung = exportAuswahlModus ? tt("Liste für den Export auswählen")
+      const ziehen = gefiltert ? undefined : (px, py) => { slotZiehenRef.current = { art: "liste", id: l.id, x: px, y: py, aktiv: false, langdruck: true }; };
+      const erklaerung = listenWahl ? tt(`${l.name} – antippen: auswählen oder abwählen; lang drücken: Aktionen für die Auswahl (Export, Verschieben, Löschen)`, wahlMenue(wahlMit(l)),
+          { langText: `${wahlMit(l).length} ausgewählt: ${wahlNamen(wahlMit(l))}`, beimMenue: () => setListenWahl(a => a && !a.includes(l.id) ? [...a, l.id] : a), beimZeigen: ziehen })
         : sortModus ? tt(`${l.name} – antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen – markierte wandern zusammen`)
         : tt("Liste öffnen: Vokabeln, Spalten, Sprache, Export", menue(l), { langText: l.name,
             // Lang-Druck und dann ziehen: Menü weg, Verschieben-Modus, Liste wandert mit
@@ -4354,17 +4379,13 @@ export default function VokabelApp() {
       return (
         <div {...erklaerung} key={key} data-raster-zelle={gefiltert ? undefined : key} data-liste-id={l.id} className="karte-zeile"
           style={{cursor: sortModus ? "grab" : "pointer", ...(sortModus ? {touchAction:"none"} : {}),
-            ...(listenAuswahl.includes(l.id) && sortModus ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {}),
+            ...((listenAuswahl.includes(l.id) && sortModus) || listenWahl?.includes(l.id) ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {}),
             ...(slotDragId && (slotDragId === l.id || (listenAuswahl.includes(slotDragId) && listenAuswahl.includes(l.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
             ...(ziel ? {outline:"3px solid var(--haupt-hell)", outlineOffset:1} : {}), position:"relative"}}
           onPointerDown={sortModus ? (e => { slotZiehenRef.current = { art: "liste", id: l.id, x: e.clientX, y: e.clientY, aktiv: false }; }) : undefined}
           onClick={() => sortModus ? tippeImRaster(l, l.platz) : (slotGezogenRef.current ? (slotGezogenRef.current = false) : oeffne(l))}>
           {sortModus && listenAuswahl.includes(l.id) && <span className="auswahl-nr" data-auswahl-nr>{listenAuswahl.indexOf(l.id) + 1}</span>}
-          {exportAuswahlModus && (
-            <div className={`checkbox${exportAusgewaehlt.has(l.id) ? " checked" : ""}`}>
-              {exportAusgewaehlt.has(l.id) && "✓"}
-            </div>
-          )}
+          {listenWahl?.includes(l.id) && <span className="auswahl-nr" data-wahl-nr={listenWahl.indexOf(l.id) + 1}>{listenWahl.indexOf(l.id) + 1}</span>}
           {eng ? (
             <div className="karte-zeile-info">
               <div className="karte-zeile-name">{listenFlagge(l)}{l.name}</div>
@@ -4384,7 +4405,7 @@ export default function VokabelApp() {
                   {(einstellungen.gelerntSchwelle ?? 0) > 0 && liste?.vokabeln.length > 0 && (
                     <span className="mini-kreise" data-listen-kreise style={{flexShrink:0}}>{renderMiniKreise(lernstandJeArt(liste.vokabeln, liste.id), { groesse: 26 })}</span>
                   )}
-            {!exportAuswahlModus && !sortModus && <span style={{color:"var(--text2)"}}>{">"}</span>}
+            {!listenWahl && !sortModus && <span style={{color:"var(--text2)"}}>{">"}</span>}
           </>)}
         </div>
       );
@@ -4411,12 +4432,22 @@ export default function VokabelApp() {
     }
     return (<>
       <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6, minHeight:22}}>
-        <span style={{fontSize:"0.68rem", color: sortModus ? "var(--text2)" : "var(--text3)"}}>
-          {sortModus
+        <span style={{fontSize: listenWahl ? "0.72rem" : "0.68rem", color: sortModus || listenWahl ? "var(--text2)" : "var(--text3)"}} {...(listenWahl ? { "data-wahl-hinweis": true } : {})}>
+          {listenWahl
+            ? (exportKopiert ? "✓ In die Zwischenablage kopiert"
+              : <><b data-wahl-anzahl={listenWahl.length}>☑ {listenWahl.length} ausgewählt</b> – antippen wählt aus oder ab, lang drücken: JSON, TXT, Kopieren{gefiltert ? "" : ", Verschieben"}, Löschen.</>)
+            : sortModus
             ? (listenAuswahl.length ? `${listenAuswahl.length} markiert – freien Platz antippen (dort untereinander) oder ziehen.` : "Listen antippen zum Markieren, dann freien Platz antippen – oder direkt ziehen. Belegter Platz: Einträge rücken auf die frei gewordenen Plätze.")
-            : gefiltert ? "Lang drücken: umbenennen, duplizieren oder löschen · Verschieben unter „Alle“"
-            : "Lang drücken: umbenennen, duplizieren, verschieben oder löschen"}
+            : gefiltert ? "Lang drücken: umbenennen, duplizieren, auswählen (Export, mehrere löschen) oder löschen · Verschieben unter „Alle“"
+            : "Lang drücken: umbenennen, duplizieren, verschieben, auswählen (Export, mehrere löschen) oder löschen"}
         </span>
+        {listenWahl && (<span style={{marginLeft:"auto", display:"flex", gap:6, flexShrink:0}}>
+          <button className="typ-btn" data-wahl-alle style={{fontSize:"0.7rem", padding:"2px 8px"}}
+            onClick={() => setListenWahl(a => [...a, ...sichtbareListen.map(x => x.id).filter(id => !a.includes(id))])}
+            {...tt("Alle sichtbaren Listen auswählen")}>Alle</button>
+          <button className="typ-btn aktiv" data-wahl-fertig style={{fontSize:"0.7rem", padding:"2px 8px"}} onClick={() => setListenWahl(null)}
+            {...tt("Auswahl beenden")}>Fertig</button>
+        </span>)}
         {sortModus && (
           <button data-listen-fertig className="typ-btn aktiv" style={{fontSize:"0.7rem", padding:"2px 8px", marginLeft:"auto"}}
             onClick={() => { setListenSortModus(false); setSlotDragId(null); setListenAuswahl([]); setSlotDragZiel(null); }}
@@ -4551,6 +4582,15 @@ export default function VokabelApp() {
     const sichtbar = raster.gespeichert.filter(slotSichtbar);
     const zeilenAnzeige = slotSortModus ? raster.zeilen : sichtbar.reduce((m, x) => Math.max(m, x.platz.z + 1), 0);
     const sfVon = x => slotSFAlle(x)[aktiverSlot?.id === x.id ? quizAbfrageArt : slotKonfigArt(x)];
+    // Auswahl-Modus: Aktionen für die Auswahl (Lang-Druck auf eine nicht gewählte Kachel nimmt sie dazu)
+    const wahlMit = x => multiAuswahl.includes(x.id) ? multiAuswahl : [...multiAuswahl, x.id];
+    const wahlMenue = ids => [
+      ...(tab === "quiz" && ids.length >= 2 ? [{ label: `🧩 Multiquiz starten (${ids.length})`, fn: () => starteMultiquiz(ids) }] : []),
+      { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl(ids); } },
+      { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "slot", ids }) },
+      { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) },
+    ];
+    const wahlNamen = ids => ids.map(id => slots.gespeichert.find(g => g.id === id)?.name).filter(Boolean).join(", ");
     const tippeImRaster = (x, platz) => {
       if (slotGezogenRef.current) { slotGezogenRef.current = false; return; }
       if (x) { setSlotAuswahl(a => a.includes(x.id) ? a.filter(v => v !== x.id) : [...a, x.id]); return; }
@@ -4592,15 +4632,16 @@ export default function VokabelApp() {
               ? setMultiAuswahl(a => a.includes(x.id) ? a.filter(v => v !== x.id) : [...a, x.id])
               : onLaden('gespeichert', x.id)}
             {...tt(multiAuswahl
-              ? `${x.name} – antippen: zum Multiquiz hinzufügen oder wieder herausnehmen`
-              : `${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`, multiAuswahl ? null : [
+              ? `${x.name} – antippen: auswählen oder abwählen; lang drücken: Aktionen für die Auswahl (Multiquiz, Verschieben, Löschen)`
+              : `${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`, multiAuswahl ? wahlMenue(wahlMit(x)) : [
               { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
               { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: x.id, name: kopieName(x.name), kopie: true }) },
               { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl([x.id]); } },
-              ...(tab === "quiz" ? [{ label: "🧩 Multiquiz", fn: () => { setSlotSortModus(false); setMultiAuswahl([x.id]); } }] : []),
+              { label: "☑ Auswählen", fn: () => { setSlotSortModus(false); setMultiAuswahl([x.id]); } },
               { label: "📝 Listen/Vokabeln ändern", fn: () => { if (slotRef?.id !== x.id) onLaden('gespeichert', x.id); setListenAendern(true); setSlotSektionAufgeklappt(false); } },
               { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
-            ], { langText: x.name,
+            ], { langText: multiAuswahl ? `${wahlMit(x).length} ausgewählt: ${wahlNamen(wahlMit(x))}` : x.name,
+                 beimMenue: multiAuswahl ? () => setMultiAuswahl(a => a && !a.includes(x.id) ? [...a, x.id] : a) : undefined,
                  // Lang-Druck und dann ziehen: Menü weg, Verschieben-Modus, Eintrag wandert mit
                  beimZeigen: (px, py) => { slotZiehenRef.current = { id: x.id, x: px, y: py, aktiv: false, langdruck: true }; } })}>
             {inhalt}
@@ -4626,6 +4667,13 @@ export default function VokabelApp() {
           <span style={label}>📌 Gespeichert</span>
           <span className="slot-kopf-knoepfe" style={{marginLeft:"auto", display:"flex", gap:6, alignItems:"center"}}>
             {!slotSortModus && !multiAuswahl && neuChip}
+            {multiAuswahl && (<>
+              <button className="typ-btn" data-wahl-alle style={{fontSize:"0.7rem", padding:"2px 8px"}}
+                onClick={() => setMultiAuswahl(a => [...a, ...sichtbar.map(x => x.id).filter(id => !a.includes(id))])}
+                {...tt("Alle sichtbaren Konfigurationen auswählen")}>Alle</button>
+              <button className="typ-btn aktiv" data-wahl-fertig style={{fontSize:"0.7rem", padding:"2px 8px"}} onClick={() => setMultiAuswahl(null)}
+                {...tt("Auswahl beenden")}>Fertig</button>
+            </>)}
             {slotSortModus && (
               <button className="typ-btn aktiv" style={{fontSize:"0.7rem", padding:"2px 8px"}}
                 onClick={() => { setSlotSortModus(false); setSlotDragId(null); setSlotAuswahl([]); setSlotDragZiel(null); }}
@@ -4636,10 +4684,11 @@ export default function VokabelApp() {
           </span>
         </div>
         {!slotSortModus && !multiAuswahl && raster.gespeichert.length > 0 && (
-          <div style={{fontSize:"0.68rem", color:"var(--text3)", marginBottom:6}}>Lang drücken: umbenennen, verschieben, Multiquiz oder löschen</div>
+          <div style={{fontSize:"0.68rem", color:"var(--text3)", marginBottom:6}}>Lang drücken: umbenennen, verschieben, auswählen (Multiquiz, mehrere löschen) oder löschen</div>
         )}
-        {multiAuswahl && <div data-multi-hinweis style={{fontSize:"0.72rem", color:"var(--text2)", marginBottom:6}}>
-          🧩 Multiquiz: weitere Kacheln antippen (nochmal antippen nimmt sie heraus). Die Einstellungen kommen von Nr. 1.
+        {multiAuswahl && <div data-wahl-hinweis style={{fontSize:"0.72rem", color:"var(--text2)", marginBottom:6}}>
+          <b data-wahl-anzahl={multiAuswahl.length}>☑ {multiAuswahl.length} ausgewählt</b>
+          {tab === "quiz" && multiAuswahl.length >= 2 ? ` · ${multiZusammenstellung(multiAuswahl)?.anzahl || 0} Vokabeln` : ""} – antippen wählt aus oder ab, lang drücken: {tab === "quiz" ? "Multiquiz, " : ""}Verschieben, Löschen.{tab === "quiz" ? " Multiquiz: Einstellungen von Nr. 1." : ""}
         </div>}
         {slotSortModus && <div style={{fontSize:"0.72rem", color:"var(--text2)", marginBottom:6}}>
           {slotAuswahl.length ? `${slotAuswahl.length} markiert – freien Platz antippen (dort untereinander) oder ziehen.` : "Pakete antippen zum Markieren, dann freien Platz antippen – oder direkt ziehen. Belegter Platz: Einträge rücken auf die frei gewordenen Plätze."}
@@ -6502,22 +6551,10 @@ export default function VokabelApp() {
         {tab === "listen" && ansicht !== "import" && ansicht !== "ki-prompt" && (
           <div className="liste-detail-header" style={{top: headerH}}>
             {ansicht === "uebersicht" ? (
-              exportAuswahlModus ? (
-                <>
-                  <span className="liste-detail-header-name">
-                    {exportAusgewaehlt.size === 0 ? "Liste auswählen" : `${exportAusgewaehlt.size} ausgewählt`}
-                  </span>
-                  <button {...tt("Export-Auswahl beenden")} className="btn btn-ghost btn-sm" onClick={() => {
-                    setExportAuswahlModus(false); setExportAusgewaehlt(new Set());
-                  }}>Abbrechen</button>
-                </>
-              ) : (
                 <>
                   <span className="liste-detail-header-name">Meine Listen</span>
                   <button className="btn btn-ghost btn-sm" style={{display:"inline-flex",alignItems:"center",gap:5}} onClick={() => { resetImport(); setAnsicht("import"); }} {...tt("Neue Vokabelliste importieren oder anlegen")}><IcoPlus s={13}/>Neu</button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setExportAuswahlModus(true)} {...tt("Listen zum Exportieren auswählen")}>Exportieren</button>
                 </>
-              )
             ) : ansicht === "liste-detail" && aktiveListe ? (
               <>
                 <span className="liste-detail-header-name">{aktiveListe.name}</span>
@@ -7024,20 +7061,6 @@ export default function VokabelApp() {
                           </button>,
                           ladeSlot, aktiverSlot)}
                       </div>
-                      {multiAuswahl && slotSektionAufgeklappt && (() => {
-                        const m = multiZusammenstellung(multiAuswahl);
-                        const n = m?.teile.length || 0;
-                        return (<>
-                          <div style={{height:72}}/>
-                          <div className="multi-leiste" data-multi-leiste>
-                            <button className="btn btn-ghost" onClick={() => setMultiAuswahl(null)} {...tt("Multiquiz-Auswahl beenden, nichts starten")}>Abbrechen</button>
-                            <button className="btn btn-primary" data-multi-starten disabled={!m?.anzahl} onClick={starteMultiquiz}
-                              {...tt("Die gewählten Konfigurationen zusammen abfragen – Einstellungen von Nr. 1, eigener Fortschritt im Verlauf")}>
-                              🧩 Multiquiz starten ({n} Quiz · {m?.anzahl || 0} Vokabeln)
-                            </button>
-                          </div>
-                        </>);
-                      })()}
                     </>
                   );
                 })()}
@@ -8516,7 +8539,7 @@ export default function VokabelApp() {
               </div>
               {[
                 {titel:"Listen-Tab", inhalt:[
-                  {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „In Sessions aufteilen“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. „In Sessions aufteilen“ öffnet den Quiz-Tab mit dieser Liste und einem gelben Kasten: Name (vorgegeben: Listenname), Gruppengröße (10, 20, 25, 50, 75, 100 oder eigene), Bereich von–bis (Vokabel-Nummern) und bei Rest „eigene Gruppe“ oder „an letzte anhängen“; die Vorschau zeigt die Namen, z. B. „Verbes (21 - 40)“. Darunter alle Einstellungen wie gewohnt wählen, dann „Sessions anlegen“: je Gruppe eine gespeicherte Konfiguration, untereinander in der ersten Spalte unter dem untersten Eintrag. Namen, die es schon gibt, werden übersprungen. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Im Verschieben-Modus lassen sich mehrere Listen markieren und gemeinsam verschieben. Neue Listen (auch per Import) kommen untereinander in die erste Spalte. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
+                  {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „☑ Auswählen“, „In Sessions aufteilen“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. „In Sessions aufteilen“ öffnet den Quiz-Tab mit dieser Liste und einem gelben Kasten: Name (vorgegeben: Listenname), Gruppengröße (10, 20, 25, 50, 75, 100 oder eigene), Bereich von–bis (Vokabel-Nummern) und bei Rest „eigene Gruppe“ oder „an letzte anhängen“; die Vorschau zeigt die Namen, z. B. „Verbes (21 - 40)“. Darunter alle Einstellungen wie gewohnt wählen, dann „Sessions anlegen“: je Gruppe eine gespeicherte Konfiguration, untereinander in der ersten Spalte unter dem untersten Eintrag. Namen, die es schon gibt, werden übersprungen. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Im Verschieben-Modus lassen sich mehrere Listen markieren und gemeinsam verschieben. „☑ Auswählen“ startet den Auswahl-Modus: weitere Listen antippen (nummeriert, nochmal antippen nimmt heraus, „Alle“ wählt alle sichtbaren, „Fertig“ beendet); lang drücken zeigt dann die Aktionen für die ganze Auswahl – „JSON exportieren“, „TXT exportieren“ (Dateiname änderbar), „📋 Kopieren“, „⇄ Verschieben“, „🗑 Löschen“ (Rückfrage mit allen Namen, „Vorher sichern“) und „Auswahl beenden“. Lang drücken auf eine nicht gewählte Liste nimmt sie dazu. Neue Listen (auch per Import) kommen untereinander in die erste Spalte. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
                   {k:"[+] Neue Liste", v:"Legt eine leere Liste mit eigenem Namen an."},
                   {k:"💾 Alles sichern", v:"Einstellungen → Daten & Sicherung: eine Datei (Vorschlag „Vokabel-App Sicherung Datum.txt“, Name änderbar) mit allem – Listen mit Scores, Einstellungen, Farben, gespeicherte Quiz. Der Browser kann gespeicherte Daten löschen (Speicher aufräumen, Browserdaten löschen); mit der Datei holst du alles zurück: „Laden“ in den Einstellungen oder als Datei im Import („Alles wiederherstellen“). Im Listen-Tab erinnert die App, wenn die letzte Sicherung älter ist als eingestellt (Standard 7 Tage)."},
                   {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, JSON, TXT, Löschen. JSON = vollständige Sicherung mit Lernstand (Vorschlag „Name - JSON.txt“), TXT = nur die Vokabeln als Text ohne Scores (Vorschlag „Name - TXT.txt“); den Dateinamen kannst du vor dem Speichern ändern. Auf iPad/iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, Mail, AirDrop), sonst wird die Datei heruntergeladen. Beim Import ist die Endung egal – die App erkennt den Inhalt."},
@@ -8547,7 +8570,7 @@ export default function VokabelApp() {
                   {k:"Abfrage-Ziel", v:"Anzahl: jede Vokabel 1×/2×/3× pro Durchgang abfragen. Mit Wiederholung: Vokabeln so lange einreihen, bis jede 1×/2×/3× richtig beantwortet wurde. Score (global, Knopf z. B. „Score < +3“): nur Vokabeln mit Score unter dem Ziel kommen in die Session, jede einmal (ohne Wiederholung) – Ziel 0 fragt nur negative ab (nie abgefragte zählen als 0). Session-Score: alle Vokabeln, jede so lange, bis sie in dieser Session um das Ziel gestiegen ist."},
                   {k:"Konfiguration speichern", v:"Lang drücken auf den Namen in der Kopfzeile → „Speichern“. Speichert die aktuelle Auswahl und Einstellungen unter einem Namen; beim nächsten Mal per Kachel laden."},
                   {k:"Quiz starten", v:"Unterste Sektion: Fortschrittsbalken der Session, darunter links der Stand (z. B. „15/50“) – antippen beginnt nach kurzer Rückfrage für die aktuelle Art eine neue Session (gelöscht wird nur, welche Vokabeln schon abgefragt wurden; Scores bleiben) – und rechts der Start-Knopf mit der Zahl der Vokabeln, die in der Session noch übrig sind (z. B. 10 von 25 abgefragt → „15 Vokabeln“; die Paketgröße steht auf dem Umfang-Knopf)."},
-                  {k:"Multiquiz", v:"Mehrere gespeicherte Konfigurationen zusammen abfragen: lang auf eine Kachel drücken → „🧩 Multiquiz“, dann weitere Kacheln antippen (nummeriert; nochmal antippen nimmt sie heraus). Unten „Multiquiz starten (2 Quiz · 50 Vokabeln)“ startet sofort, „Abbrechen“ beendet die Auswahl. Abgefragt werden alle Vokabeln der gewählten Konfigurationen (auch verschiedene Sprachen – vorgelesen wird jede in ihrer Sprache), die Einstellungen kommen von Nr. 1. Das Multiquiz erscheint im Verlauf (🧩) mit eigenem Fortschritt, die Kopfzeile zeigt „Multiquiz“ und in der Info-Zeile die Teile. Lang drücken auf die Kopfzeile → „Speichern“ legt es als eigene Kachel ab (Name-Vorschlag „Multiquiz: A + B“). In der Statistik zeigt es die gemeinsame Statistik; die Scores gelten wie immer je Vokabel."},
+                  {k:"Multiquiz", v:"Mehrere gespeicherte Konfigurationen zusammen abfragen: lang auf eine Kachel drücken → „☑ Auswählen“, dann weitere Kacheln antippen (nummeriert; nochmal antippen nimmt sie heraus; über dem Raster steht „2 ausgewählt · 50 Vokabeln“). Lang drücken auf eine Kachel zeigt die Aktionen für die Auswahl: „🧩 Multiquiz starten“ (ab 2, startet sofort), „⇄ Verschieben“, „🗑 Löschen“ (mehrere auf einmal, Rückfrage mit allen Namen) und „Auswahl beenden“; „Fertig“ oben beendet die Auswahl ebenfalls. Abgefragt werden alle Vokabeln der gewählten Konfigurationen (auch verschiedene Sprachen – vorgelesen wird jede in ihrer Sprache), die Einstellungen kommen von Nr. 1. Das Multiquiz erscheint im Verlauf (🧩) mit eigenem Fortschritt, die Kopfzeile zeigt „Multiquiz“ und in der Info-Zeile die Teile. Lang drücken auf die Kopfzeile → „Speichern“ legt es als eigene Kachel ab (Name-Vorschlag „Multiquiz: A + B“). In der Statistik zeigt es die gemeinsame Statistik; die Scores gelten wie immer je Vokabel."},
                 ]},
                 {titel:"Im Quiz", inhalt:[
                   {k:"Karte (Frage–Antwort)", v:"Tippe auf die Karte, um die Antwort aufzudecken. Dann: Richtig oder Falsch selbst einschätzen."},
@@ -8574,7 +8597,7 @@ export default function VokabelApp() {
                 ]},
                 {titel:"Einstellungen-Tab", inhalt:[
                   {k:"Akzente", v:"Je Sprache An oder Aus (Standard: nur Französisch an). Aus: keine Abfrageart „A“ und keine Akzent-Statistik für Listen dieser Sprache, und fehlende Akzente beim Tippen und im Diktat gelten als richtig. An: „A“ steht zur Verfügung, beim Tippen gilt die Regel der Stufe."},
-                  {k:"Farbschema", v:"Sechs Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs und Dunkel – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler: großer Farbkreis (außen kräftig, zur Mitte weniger gesättigt), Regler für Helligkeit und Sättigung, Hex-Feld, „Zuletzt verwendet“ (10 Farben); die App färbt sich beim Ziehen sofort um, „Anwenden“ übernimmt, „Abbrechen“ stellt die alte Farbe wieder her. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
+                  {k:"Farbschema", v:"16 Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs, Dunkel, Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht und Espresso – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler: großer Farbkreis (außen kräftig, zur Mitte weniger gesättigt), Regler für Helligkeit und Sättigung, Hex-Feld, „Zuletzt verwendet“ (10 Farben); die App färbt sich beim Ziehen sofort um, „Anwenden“ übernimmt, „Abbrechen“ stellt die alte Farbe wieder her. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
                   {k:"App aktualisieren", v:"„Prüfen“ sucht nach einer neuen App-Version. Wird eine gefunden, erscheint unten der Hinweis „Neue Version verfügbar“ – mit „Aktualisieren“ wird sie aktiv. Die App funktioniert auch offline."},
                   {k:"Gespeicherte Listen", v:"Zeigt, wie viele Listen aktuell auf diesem Gerät gespeichert sind."},
                 ]},
@@ -8742,15 +8765,6 @@ export default function VokabelApp() {
             </div>)}
           </div>
         </>)}
-        {tab === "listen" && ansicht === "uebersicht" && exportAuswahlModus && exportAusgewaehlt.size > 0 && (
-          <div className="quiz-action-bar">
-            <button {...tt("JSON: vollständige Sicherung mit Lernstand (Scores) – Vorschlag „Name - JSON“, Dateiname änderbar – zum Wiederherstellen oder für ein anderes Gerät")} className="btn btn-primary" onClick={() => exportiereAlsJson([...exportAusgewaehlt])}>JSON</button>
-            <button {...tt("TXT: nur die Vokabeln als Text, ohne Scores – Vorschlag „Name - TXT“, Dateiname änderbar – zum Weitergeben oder Bearbeiten")} className="btn btn-primary" onClick={exportiereAusgewaehlteAlsDateiHandler}>TXT</button>
-            <button {...tt("Ausgewählte Listen als Text in die Zwischenablage kopieren (ohne Scores)")} className="btn btn-ghost" onClick={exportiereAusgewaehlteKopierenHandler}>
-              {exportKopiert ? "✓ Kopiert!" : "📋 Kopieren"}
-            </button>
-          </div>
-        )}
       </div>
 
       {/* ── Modals (global) ── */}
@@ -9027,6 +9041,31 @@ export default function VokabelApp() {
               <div className="modal-actions">
                 <button {...tt(kopie ? "Schließen, ohne zu duplizieren" : "Schließen, ohne umzubenennen")} className="btn btn-ghost" onClick={schliessen}>Abbrechen</button>
                 <button {...tt(kopie ? "Kopie unter diesem Namen anlegen" : "Neuen Namen speichern")} data-umbenennen-speichern className="btn btn-primary" disabled={!name || doppelt} onClick={speichern}>Speichern</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+      {auswahlLoeschen && (() => {
+        const { art, ids } = auswahlLoeschen;
+        const namen = ids.map(id => art === "slot" ? getSlotEintrag("gespeichert", id)?.name : listenIndex.find(l => l.id === id)?.name).filter(Boolean);
+        const was = art === "slot" ? (ids.length === 1 ? "Konfiguration" : "Konfigurationen") : (ids.length === 1 ? "Liste" : "Listen");
+        return (
+          <div className="overlay" onClick={() => setAuswahlLoeschen(null)}>
+            <div className="modal" data-auswahl-loeschen={art} onClick={e => e.stopPropagation()}>
+              <div className="modal-titel">{ids.length} {was} löschen?</div>
+              <p style={{fontSize:"0.9rem", color:"var(--text)", lineHeight:1.5, margin:"0 0 8px"}} data-auswahl-namen>{namen.map(n => `„${n}“`).join(", ")}</p>
+              <p style={{fontSize:"0.85rem", color:"var(--text2)", lineHeight:1.5}}>
+                {art === "slot" ? "Gespeicherte Einstellungen, Session- und Lernfortschritt dieser Einträge gehen verloren. Die Listen und Scores bleiben."
+                  : "Alle Vokabeln und Scores dieser Listen werden dauerhaft gelöscht. Das kann nicht rückgängig gemacht werden."}
+              </p>
+              {art === "liste" && (
+                <button className="btn btn-ghost btn-sm" style={{marginBottom:10}} onClick={() => { setAuswahlLoeschen(null); sichereAlles(); }}
+                  {...tt("Erst alles in einer Datei sichern; danach kannst du die Auswahl wieder lang drücken und löschen")}>💾 Vorher sichern</button>
+              )}
+              <div className="modal-actions">
+                <button {...tt("Schließen, ohne etwas zu löschen")} className="btn btn-ghost" onClick={() => setAuswahlLoeschen(null)}>Abbrechen</button>
+                <button {...tt(`${ids.length} ${was} endgültig löschen`)} className="btn btn-danger" data-auswahl-loeschen-ok onClick={loescheAuswahl}>Löschen</button>
               </div>
             </div>
           </div>

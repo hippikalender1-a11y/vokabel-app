@@ -100,7 +100,7 @@ ok(await page.evaluate(() => getComputedStyle(document.querySelector(".slot-rast
 ok(await page.evaluate(() => { const neu = [...document.querySelectorAll(".slot-kopf-knoepfe .slot-chip")].find(b => b.textContent.trim() === "Neu"); return !!neu && !neu.closest(".slot-raster"); }),
   "„Neu“ klein oben, nicht im Raster");
 t = await page.evaluate(() => document.body.innerText);
-ok(!t.includes("⇄ Verschieben") && /Lang drücken: umbenennen, verschieben, Multiquiz oder löschen/.test(t) && !(await page.$("svg + svg")),
+ok(!t.includes("⇄ Verschieben") && /Lang drücken: umbenennen, verschieben, auswählen \(Multiquiz, mehrere löschen\) oder löschen/.test(t) && !(await page.$("svg + svg")),
   "Kein Verschieben-Knopf mehr, stattdessen Hinweis auf den Lang-Druck");
 // Lang-Druck (am Rechner: Rechtsklick) → Erklärung mit Menü
 const menue = async key => { await page.evaluate(k => { const el = document.querySelector(`[data-raster-zelle="${k}"]`); const r = el.getBoundingClientRect();
@@ -110,7 +110,7 @@ await menue("2|0");
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.textContent.trim()));
 const blase = await page.evaluate(() => document.querySelector('[role="status"]')?.innerText || "");
 console.log("     Menü:", knoepfe.join(" | "));
-ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|🧩 Multiquiz|📝 Listen/Vokabeln ändern|🗑 Löschen", "Lang-Druck: voller Name + Umbenennen / Duplizieren / Verschieben / Listen ändern / Löschen");
+ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|☑ Auswählen|📝 Listen/Vokabeln ändern|🗑 Löschen", "Lang-Druck: voller Name + Umbenennen / Duplizieren / Verschieben / Listen ändern / Löschen");
 await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
 ok(!(await page.$('[role="status"]')) && /1 markiert – freien Platz antippen/.test(await page.evaluate(() => document.body.innerText)),

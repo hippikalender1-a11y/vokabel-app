@@ -1761,6 +1761,15 @@ LERNEN PAUSIEREN: Lernstand im Slot-Eintrag lernStaende[art] = {ids, groesse, st
   fallen weg), ohne aktiven Slot wird ein Verlaufseintrag angelegt. Quiz-Tab: data-lernstand
   („12/40“, antippen → data-lern-reset-frage), Start-Knopf data-lernen-start="weiter|neu".
   Lernbildschirm: „Schließen“ statt „Beenden“. Test: e2e/lernen_pause.mjs.
+AUSWAHL-MODUS (Listen und gespeicherte Konfigurationen gleich): Lang-Druck → „☑ Auswählen“;
+  antippen wählt aus/ab (Nummern = Reihenfolge), „Alle“/„Fertig“ (data-wahl-alle/-fertig), Hinweis
+  data-wahl-hinweis mit data-wahl-anzahl. Lang-Druck in der Auswahl = Aktionen für die Auswahl
+  (tt-Option beimMenue nimmt die gedrückte Kachel dazu). Listen (listenWahl): JSON/TXT exportieren,
+  Kopieren (kopiereListen), Verschieben (→ listenSortModus mit listenAuswahl), Löschen; Konfigurationen
+  (multiAuswahl): Multiquiz starten (ab 2, nur Quiz-Tab; starteMultiquiz(ids)), Verschieben, Löschen.
+  Löschen: auswahlLoeschen {art, ids} → Rückfrage mit Namen (Listen: „Vorher sichern“) → loescheAuswahl.
+  Lang-Druck + Ziehen in der Auswahl verschiebt die ganze Auswahl. Weggefallen: Export-Modus
+  („Exportieren“-Knopf, Leiste unten), Multiquiz-Leiste. Verlauf bleibt ohne Auswahl. Test: e2e/auswahl.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

@@ -58,8 +58,9 @@ await klick(".topbar button", "▾"); await pruefe("Sprachmenü"); await page.mo
 
 // Listen
 await klick(".tab", "Listen"); await pruefe("Listen-Übersicht");
-await klick("button", "Exportieren", true); await klick(".karte-zeile", "Verbs"); await pruefe("Export-Auswahl");
-await klick("button", "Abbrechen", true);
+await page.evaluate(() => { const el = document.querySelector("[data-liste-id]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(250);
+await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "☑ Auswählen").click()); await sleep(300); await pruefe("Listen-Auswahl");
+await page.evaluate(() => document.querySelector("[data-wahl-fertig]").click()); await sleep(200);
 await klick(".karte-zeile", "Verbs"); await pruefe("Liste-Detail");
 await page.evaluate(() => [...document.querySelectorAll(".btn-toggle")].forEach(b => b.click())); await sleep(300); await pruefe("Liste-Detail offen");
 await klick("button", "Neu"); await pruefe("Import");
