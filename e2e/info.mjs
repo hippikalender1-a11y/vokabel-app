@@ -33,6 +33,8 @@ await page.evaluate(() => {
     { id:3, E1:{wert:"voir",falsch:[]}, D1:{wert:"sehen",falsch:[]} } ] };
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
+  // nur die Erklärung selbst prüfen (ohne „🎨 Farbe ändern“ darunter – eigener Test: farbrollen)
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ farbeImMenue: false }));
 });
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Quiz").click()); await sleep(200);

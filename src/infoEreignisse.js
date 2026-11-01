@@ -10,3 +10,10 @@ export function schliesseInfo() {
 export function schalteInfoModus() {
   window.dispatchEvent(new CustomEvent("vokabel-infomodus"));
 }
+// „🎨 Farbe ändern“ unter jeder Erklärung (Einstellung; im Farbmodus aus)
+let farbeImMenue = true;
+export function setzeFarbeImMenue(an) { farbeImMenue = an; }
+export function farbeImMenueAn() { return farbeImMenue; }
+export function farbeHier(x, y) {
+  window.dispatchEvent(new CustomEvent("vokabel-farbe-hier", { detail: { x, y } }));
+}

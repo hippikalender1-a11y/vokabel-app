@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useRef, Fragment } from "react";
 import { createPortal } from "react-dom";
-import { zeigeInfo, schliesseInfo, schalteInfoModus } from "./infoEreignisse.js";
+import { zeigeInfo, schliesseInfo, schalteInfoModus, setzeFarbeImMenue } from "./infoEreignisse.js";
 
 // ── Storage ────────────────────────────────────────────────────────────────
 const SK = {
@@ -862,7 +862,16 @@ const FARB_ROLLEN = [
   ["leiste", "App-Leiste (System)", "Leiste ganz oben (Uhrzeit, Akku) und unten"],
   ["haupt", "Hauptfarbe", "Knöpfe, Kopfzeilen, aktive Auswahl"], ["haupt-hell", "Hauptfarbe hell", "Fortschrittsringe, Balken"],
   ["auf-haupt", "Schrift auf Hauptfarbe", "Text auf Knöpfen"],
-  ["hintergrund", "Hintergrund", "Seitenhintergrund"], ["karte", "Karten", "Flächen von Karten und Feldern"], ["flaeche", "Fläche grau", "leichte Hinterlegungen"],
+  ["hintergrund", "Hintergrund", "nur die Seite selbst"],
+  ["app-kopf", "App-Kopf", "Titelleiste und Tab-Leiste"],
+  ["kopfzeile", "Bereichs-Kopfzeilen", "Kopf der Listenauswahl, Statistik, Konfiguration, Info, Einstellungs-Bereiche"],
+  ["karte", "Karten", "Listen-Kacheln, Quiz-Bereiche, Einstellungs-Karten"],
+  ["abfrage-karte", "Abfrage-Karten", "Frage-, Antwort- und Lernkarte"],
+  ["dialog", "Dialoge", "Fenster zum Bearbeiten, Exportieren, Rückfragen"],
+  ["knopf", "Knöpfe & Felder", "Eingabefelder, Umschalt-Knöpfe, Chips, Häkchen"],
+  ["info-kasten", "Info-Kästen", "Info-Übersicht, Anleitung, Hinweise, Rückmeldung nach der Runde"],
+  ["haupt-flaeche", "Ausgewählt / hervorgehoben", "aktive Kacheln und Kopfzeilen, richtige Antwort"],
+  ["flaeche", "Fläche grau", "leichte Hinterlegungen"],
   ["text-stark", "Text kräftig", "Überschriften, Eingaben"], ["text", "Text", "normaler Text"], ["text2", "Text leise", "Untertitel, Hinweise"], ["text3", "Text sehr leise", "Zahlen in Klammern"],
   ["rahmen", "Rahmen", "Linien und Ränder"],
   ["richtig", "Richtig", "gewusst / richtig beantwortet"], ["falsch", "Falsch", "nicht gewusst, Löschen"],
@@ -933,7 +942,11 @@ function mische(a, b, t) {
 function farbenAus(f) {
   const k = f.karte;
   return { ...f, "leiste": f.leiste || f.haupt, "gelernt-effekt": f["gelernt-effekt"] || "#fff176",
-    "haupt-zart": mische(f["haupt-hell"], k, 0.5), "haupt-flaeche": mische(f["haupt-hell"], k, 0.88),
+    // eigene Rollen für Flächen; ohne eigenen Wert wie bisher bzw. mit einem Hauch der Hauptfarbe
+    "app-kopf": f["app-kopf"] || k, "kopfzeile": f.kopfzeile || mische(f["haupt-hell"], k, 0.93),
+    "abfrage-karte": f["abfrage-karte"] || k, "dialog": f.dialog || k,
+    "knopf": f.knopf || f.hintergrund, "info-kasten": f["info-kasten"] || mische(f["haupt-hell"], k, 0.9),
+    "haupt-zart": mische(f["haupt-hell"], k, 0.5), "haupt-flaeche": f["haupt-flaeche"] || mische(f["haupt-hell"], k, 0.88),
     "richtig-dunkel": mische(f.richtig, f["text-stark"], 0.35), "richtig-flaeche": mische(f.richtig, k, 0.9),
     "text4": mische(f.text3, k, 0.35), "flaeche-hell": mische(f.flaeche, k, 0.7),
     "falsch-dunkel": mische(f.falsch, f["text-stark"], 0.2), "falsch-zart": mische(f.falsch, k, 0.55), "falsch-flaeche": mische(f.falsch, k, 0.92),
@@ -942,7 +955,7 @@ function farbenAus(f) {
   };
 }
 // abgestufte Rollen werden über ihre Grundfarbe geändert
-const FARB_BASIS = { "haupt-zart": "haupt-hell", "haupt-flaeche": "haupt-hell", "richtig-dunkel": "richtig", "richtig-flaeche": "richtig",
+const FARB_BASIS = { "haupt-zart": "haupt-hell", "richtig-dunkel": "richtig", "richtig-flaeche": "richtig",
   "text4": "text3", "flaeche-hell": "flaeche", "falsch-dunkel": "falsch", "falsch-zart": "falsch", "falsch-flaeche": "falsch",
   "gelb-dunkel": "gelb", "gelb-zart": "gelb", "gelb-flaeche": "gelb", "info-flaeche": "info" };
 /* FARBSCHEMATA-ENDE */
@@ -1057,22 +1070,22 @@ const CSS_BASIS = `
   body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
   input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
   .app{max-width:600px;margin:0 auto;padding:0 0 80px;}
-  .topbar{background:var(--karte);border-bottom:1px solid var(--rahmen);padding:14px 16px;display:flex;align-items:center;gap:12px;}
+  .topbar{background:var(--app-kopf);border-bottom:1px solid var(--rahmen);padding:14px 16px;display:flex;align-items:center;gap:12px;}
   .topbar-title{font-size:1.05rem;font-weight:700;flex:1;text-align:center;}
   .klammer-hinweis{font-size:0.7em;font-weight:500;color:var(--text3);}
   .mc-raster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px;}
   .mc-raster > button{min-height:72px;width:100%;overflow-wrap:anywhere;line-height:1.25;}
   .kopf-balken{display:block;height:5px;margin:5px auto 0;width:min(150px,80%);background:var(--flaeche);border-radius:3px;overflow:hidden;}
   .kopf-balken > span{display:block;height:100%;background:var(--haupt-hell);border-radius:3px;transition:width .3s;}
-  .info-schalter{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:1.5px solid var(--haupt);background:var(--karte);color:var(--haupt);font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit;}
+  .info-schalter{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:1.5px solid var(--haupt);background:var(--app-kopf);color:var(--haupt);font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit;}
   body.info-modus .info-schalter{background:var(--haupt);color:var(--auf-haupt);}
   body.info-modus [data-info]{outline:1.5px dashed var(--haupt-hell) !important;outline-offset:2px;}
   @media (max-width:480px){.sprach-chip-name{display:none;}}
   .topbar-back{background:var(--haupt);color:var(--auf-haupt);font-size:0.88rem;font-weight:600;cursor:pointer;border:none;padding:8px 12px;border-radius:10px;font-family:inherit;transition:opacity .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;}
   .topbar-back:active{opacity:.8;}
-  .tabs{display:flex;background:var(--karte);border-bottom:1px solid var(--rahmen);}
-  .statistik-listen-header{background:var(--karte);border-bottom:1px solid var(--rahmen);padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;z-index:8;}
-  .liste-detail-header{background:var(--karte);border-bottom:1px solid var(--rahmen);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;z-index:9;}
+  .tabs{display:flex;background:var(--app-kopf);border-bottom:1px solid var(--rahmen);}
+  .statistik-listen-header{background:var(--kopfzeile);border-bottom:1px solid var(--rahmen);padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;z-index:8;}
+  .liste-detail-header{background:var(--kopfzeile);border-bottom:1px solid var(--rahmen);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;z-index:9;}
   .tab{flex:1;padding:12px 4px;font-size:0.82rem;font-weight:600;color:var(--text2);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;}
   .tab.aktiv{color:var(--haupt);border-bottom-color:var(--haupt);}
   .sektion{padding:20px 16px 0;}
@@ -1088,12 +1101,12 @@ const CSS_BASIS = `
   .btn:active{opacity:.8;}
   .btn-primary{background:var(--haupt);color:var(--auf-haupt);border:1.5px solid transparent;}
   .btn-ghost{background:transparent;color:var(--haupt);border:1.5px solid var(--haupt);}
-  .btn-ghost-filled{background:var(--hintergrund);color:var(--haupt);border:1.5px solid var(--haupt);}
+  .btn-ghost-filled{background:var(--knopf);color:var(--haupt);border:1.5px solid var(--haupt);}
   .btn-sm{padding:6px 12px;font-size:0.8rem;min-height:30px;}
   .btn-danger{background:transparent;color:var(--falsch);border:1.5px solid var(--falsch);}
   .btn-icon{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;color:var(--text2);font-size:0.82rem;font-weight:600;}
   .btn-icon:hover{background:var(--flaeche);}
-  .inp{width:100%;background:var(--hintergrund);border:1.5px solid var(--rahmen);border-radius:10px;padding:11px 14px;font-size:0.95rem;color:var(--text-stark);outline:none;font-family:inherit;}
+  .inp{width:100%;background:var(--knopf);border:1.5px solid var(--rahmen);border-radius:10px;padding:11px 14px;font-size:0.95rem;color:var(--text-stark);outline:none;font-family:inherit;}
   .inp:focus{border-color:var(--haupt);background:var(--karte);}
   .inp::placeholder{color:var(--text4);}
   textarea.inp{resize:vertical;font-family:monospace;font-size:0.82rem;line-height:1.5;}
@@ -1101,7 +1114,7 @@ const CSS_BASIS = `
   .inp-label{font-size:0.8rem;font-weight:600;color:var(--text2);margin-bottom:6px;display:block;}
   /* Fenster oben anzeigen, damit die Bildschirmtastatur sie nicht verdeckt */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-start;justify-content:center;z-index:100;padding:max(16px, env(safe-area-inset-top)) 16px 16px;overflow-y:auto;}
-  .modal{background:var(--karte);border-radius:16px;width:100%;max-width:500px;padding:24px;margin-top:4vh;box-sizing:border-box;}
+  .modal{background:var(--dialog);border-radius:16px;width:100%;max-width:500px;padding:24px;margin-top:4vh;box-sizing:border-box;}
   .modal-titel{font-size:1.1rem;font-weight:700;margin-bottom:16px;}
   .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
   .leer{text-align:center;padding:48px 24px;color:var(--text2);}
@@ -1113,7 +1126,7 @@ const CSS_BASIS = `
   @keyframes jubelPop{0%{transform:scale(.3);opacity:0;}100%{transform:scale(1);opacity:1;}}
   .spalten-badge{font-size:0.68rem;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--flaeche);color:var(--text3);margin-right:3px;}
   .spalten-badge.aktiv{background:var(--haupt-flaeche);color:var(--haupt);}
-  .typ-btn{font-size:0.78rem;font-weight:600;padding:5px 10px;border-radius:6px;border:1.5px solid var(--rahmen);background:var(--hintergrund);color:var(--text2);cursor:pointer;font-family:inherit;}
+  .typ-btn{font-size:0.78rem;font-weight:600;padding:5px 10px;border-radius:6px;border:1.5px solid var(--rahmen);background:var(--knopf);color:var(--text2);cursor:pointer;font-family:inherit;}
   .typ-btn.aktiv{background:var(--haupt);color:var(--auf-haupt);border-color:var(--haupt);}
   .typ-btn:disabled{opacity:0.3;cursor:not-allowed;}
   .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;}
@@ -1136,7 +1149,7 @@ const CSS_BASIS = `
   .import-beispiel{font-size:0.78rem;color:var(--text2);margin-top:3px;}
   .import-zaehler{font-size:0.82rem;color:var(--text2);margin-bottom:12px;}
   .import-zaehler strong{color:var(--haupt);}
-  .slot-chip{padding:7px 13px;border-radius:8px;border:1.5px solid var(--rahmen);background:var(--hintergrund);font-size:0.78rem;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .slot-chip{padding:7px 13px;border-radius:8px;border:1.5px solid var(--rahmen);background:var(--knopf);font-size:0.78rem;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;white-space:nowrap;}
   .slot-chip.belegt{background:var(--haupt-flaeche);border-color:var(--haupt);color:var(--haupt);}
   .slot-chip.verlauf{background:var(--karte);border-style:dashed;border-color:var(--text4);color:var(--text2);font-weight:500;}
   .slot-chip.zuletzt{background:var(--gelb-flaeche);border-color:var(--gelb);color:var(--orange);}
@@ -1166,7 +1179,7 @@ const CSS_BASIS = `
   .start-knopf{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 12px;min-height:58px;}
   .start-knopf b{font-size:1.1rem;font-weight:800;}
   .start-knopf span{font-size:0.85rem;font-weight:400;opacity:0.95;}
-  .slot-kopf{position:sticky;z-index:9;background:var(--karte);border-bottom:1px solid var(--rahmen);padding:10px 16px;}
+  .slot-kopf{position:sticky;z-index:9;background:var(--kopfzeile);border-bottom:1px solid var(--rahmen);padding:10px 16px;}
   .slot-kopf.gruen{background:var(--haupt);border-bottom-color:var(--haupt);}
   .slot-kopf-name{flex:1;min-width:0;padding:7px 12px;font-size:0.95rem;border-radius:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
   .slot-kopf.gruen .slot-kopf-name{border:1.5px solid rgba(255,255,255,0.75);}
@@ -1176,7 +1189,7 @@ const CSS_BASIS = `
   .farbfeld-hintergrund{position:fixed;inset:0;z-index:10003;background:rgba(0,0,0,0.15);display:flex;align-items:flex-end;justify-content:center;}
   .farbfeld{width:100%;max-width:520px;max-height:60vh;overflow-y:auto;background:var(--karte);border-radius:16px 16px 0 0;padding:14px 16px 70px;box-shadow:0 -6px 24px rgba(0,0,0,0.25);font-family:system-ui,sans-serif;box-sizing:border-box;}
   .farb-raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
-  .einst-kopf{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;margin:0 0 8px;background:var(--karte);border:1px solid var(--rahmen);border-radius:12px;font-family:inherit;font-size:0.95rem;font-weight:700;color:var(--text-stark);cursor:pointer;text-align:left;}
+  .einst-kopf{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;margin:0 0 8px;background:var(--kopfzeile);border:1px solid var(--rahmen);border-radius:12px;font-family:inherit;font-size:0.95rem;font-weight:700;color:var(--text-stark);cursor:pointer;text-align:left;}
   .einst-kopf.offen{background:var(--haupt-flaeche);border-color:var(--haupt-zart);color:var(--haupt);}
   .einst-kopf-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
   .einst-kopf-sub{font-size:0.75rem;font-weight:400;color:var(--text2);}
@@ -1260,7 +1273,7 @@ const CSS_BASIS = `
   .score-pos{background:var(--haupt-flaeche);color:var(--haupt);}
   .score-neg{background:var(--falsch-flaeche);color:var(--falsch);}
   .score-null{background:var(--rahmen);color:var(--text2);}
-  .quiz-frage-box{background:var(--karte);border:1px solid var(--rahmen);border-radius:14px;padding:20px;margin-bottom:14px;}
+  .quiz-frage-box{background:var(--abfrage-karte);border:1px solid var(--rahmen);border-radius:14px;padding:20px;margin-bottom:14px;}
   .akzent-rahmen{container-type:inline-size;}
   .akzent-wort{--k:min(48px, calc((100cqw - (var(--n) - 1) * 4px) / var(--n)));display:flex;flex-wrap:wrap;justify-content:center;column-gap:calc(var(--k) * 0.6);row-gap:8px;margin-top:8px;}
   .akzent-wortgruppe{display:flex;gap:4px;}
@@ -1281,7 +1294,7 @@ const CSS_BASIS = `
   .quiz-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:6px;}
   .quiz-frage-text{font-size:1.5rem;font-weight:700;line-height:1.3;}
   .quiz-info-text{font-size:0.85rem;color:var(--text2);margin-top:6px;}
-  .quiz-antwort-box{background:var(--karte);border:1.5px solid var(--rahmen);border-radius:14px;padding:18px;margin-bottom:14px;transition:border-color .2s,background .2s;min-height:120px;}
+  .quiz-antwort-box{background:var(--abfrage-karte);border:1.5px solid var(--rahmen);border-radius:14px;padding:18px;margin-bottom:14px;transition:border-color .2s,background .2s;min-height:120px;}
   .quiz-antwort-box.richtig{border-color:var(--haupt);background:var(--haupt-flaeche);}
   .quiz-antwort-box.falsch{border-color:var(--falsch);background:var(--falsch-flaeche);}
   .quiz-antwort-box.aufgedeckt{background:var(--gelb-flaeche);border-color:var(--gelb);}
@@ -1295,16 +1308,16 @@ const CSS_BASIS = `
   .quiz-fortschritt{font-size:0.82rem;color:var(--text2);}
   .quiz-aktionen{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;}
   .quiz-action-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;background:var(--karte);border-top:1px solid var(--rahmen);padding:12px 16px 20px;display:flex;gap:10px;flex-wrap:wrap;z-index:20;}
-  .quiz-liste-sticky{position:sticky;top:57px;background:var(--karte);border-bottom:1px solid var(--rahmen);padding:8px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:9;}
+  .quiz-liste-sticky{position:sticky;top:57px;background:var(--kopfzeile);border-bottom:1px solid var(--rahmen);padding:8px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:9;}
   .vok-zeile{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--flaeche);cursor:pointer;}
   .vok-zeile:last-child{border-bottom:none;}
-  .vok-zeile:active{background:var(--hintergrund);}
+  .vok-zeile:active{background:var(--knopf);}
   .vok-nr{font-size:0.72rem;color:var(--text2);min-width:28px;text-align:right;flex-shrink:0;}
-  .spalten-rolle-btn{font-size:0.72rem;font-weight:700;padding:4px 8px;border-radius:6px;border:1.5px solid var(--rahmen);background:var(--hintergrund);color:var(--text2);cursor:pointer;font-family:inherit;}
+  .spalten-rolle-btn{font-size:0.72rem;font-weight:700;padding:4px 8px;border-radius:6px;border:1.5px solid var(--rahmen);background:var(--knopf);color:var(--text2);cursor:pointer;font-family:inherit;}
   .spalten-rolle-btn.frage{background:var(--haupt);color:var(--auf-haupt);border-color:var(--haupt);}
   .spalten-rolle-btn.antwort{background:var(--haupt);color:var(--auf-haupt);border-color:var(--haupt);}
   .spalten-rolle-btn.info{background:var(--gelb);color:var(--auf-haupt);border-color:var(--gelb);}
-  .spalten-modus-btn{font-size:0.72rem;font-weight:700;padding:4px 8px;border-radius:6px;border:1.5px solid var(--rahmen);background:var(--hintergrund);color:var(--text2);cursor:pointer;font-family:inherit;}
+  .spalten-modus-btn{font-size:0.72rem;font-weight:700;padding:4px 8px;border-radius:6px;border:1.5px solid var(--rahmen);background:var(--knopf);color:var(--text2);cursor:pointer;font-family:inherit;}
   .spalten-modus-btn.aktiv{background:var(--haupt-hell);color:var(--auf-haupt);border-color:var(--haupt-hell);}
   .quiz-vorig{background:var(--haupt-flaeche);border:1px solid var(--haupt-zart);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:0.88rem;color:var(--haupt);}
   .quiz-vorig-label{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--haupt);margin-bottom:3px;}
@@ -1312,12 +1325,12 @@ const CSS_BASIS = `
   .quiz-vorig.nicht .quiz-vorig-label{color:var(--falsch);}
   .quiz-setup-check{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--rahmen);cursor:pointer;}
   .quiz-setup-check:last-child{border-bottom:none;}
-  .checkbox{width:20px;height:20px;border-radius:5px;border:2px solid var(--rahmen);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--hintergrund);}
+  .checkbox{width:20px;height:20px;border-radius:5px;border:2px solid var(--rahmen);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--knopf);}
   .checkbox.checked{background:var(--haupt);border-color:var(--haupt);color:var(--auf-haupt);}
   .liste-detail-header-name{flex:1;font-size:0.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .btn-toggle{background:var(--haupt);color:var(--auf-haupt);border:none;cursor:pointer;padding:6px 9px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
   .btn-toggle:active{opacity:.8;}
-  .btn-toggle-ghost{background:var(--hintergrund);color:var(--haupt);border:1.5px solid var(--haupt);cursor:pointer;padding:5px 8px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .btn-toggle-ghost{background:var(--knopf);color:var(--haupt);border:1.5px solid var(--haupt);cursor:pointer;padding:5px 8px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
   .btn-toggle-ghost:active{opacity:.8;}
   .diktat-hint{font-size:1.8rem;font-weight:700;letter-spacing:0.2em;color:var(--haupt);margin:10px 0 6px;font-family:monospace;}
   .diktat-uebersetzung{font-size:0.85rem;color:var(--text2);margin-top:4px;}
@@ -1375,6 +1388,7 @@ export default function VokabelApp() {
   const farbSchema = schemaVon(einstellungen.farbschema || einstellungen.eigeneSchemata ? einstellungen : lsGet(SK.einstellungen, {}));
   F = farbenAus(farbModus && farbVorschau ? farbVorschau : farbSchema.farben);
   CSS = farbVariablen(F, farbSchema.dunkel) + CSS_BASIS;
+  setzeFarbeImMenue(einstellungen.farbeImMenue !== false && !farbModus);
   useEffect(() => { setzeSystemLeiste(F.leiste); });
   const [infoModus, setInfoModus] = useState("uebersicht");
   const [ansicht, setAnsicht] = useState("uebersicht");
@@ -1392,6 +1406,8 @@ export default function VokabelApp() {
 
   const [bearbeiteVokabel, setBearbeiteVokabel] = useState(null);
   const [bearbeiteEingaben, setBearbeiteEingaben] = useState({});
+  const [bearbeiteListe, setBearbeiteListe] = useState(null);   // Liste der bearbeiteten Vokabel (Listen, Statistik, Abfrage)
+  const [bearbeiteNur, setBearbeiteNur] = useState(null);       // Abfrage: nur diese Spalte (richtige Antwort), ohne falsche Antworten
   const [mergeQuelleId, setMergeQuelleId] = useState("");
 
   const [importText, setImportText] = useState("");
@@ -2066,7 +2082,7 @@ export default function VokabelApp() {
   useEffect(() => {
     if (ansicht !== "quiz" || !quiz) return;
     if (quiz.phase === "wiederholungHinweis") {
-      const weiter = (e) => { if (e.key === "Enter" || e.key === "w" || e.key === "W") { e.preventDefault(); starteWiederholung(); } };
+      const weiter = (e) => { if (e.target.closest?.(".modal")) return; if (e.key === "Enter" || e.key === "w" || e.key === "W") { e.preventDefault(); starteWiederholung(); } };
       document.addEventListener("keydown", weiter);
       return () => document.removeEventListener("keydown", weiter);
     }
@@ -2078,7 +2094,7 @@ export default function VokabelApp() {
     let active = false;
     const tid = setTimeout(() => { active = true; }, 250);
     const handler = (e) => {
-      if (!active) return;
+      if (!active || e.target.closest?.(".modal")) return;
       if (e.key === "Enter" || e.key === "w" || e.key === "W") {
         e.preventDefault();
         if (quiz.modus === "diktat") naechsteDiktatVokabel();
@@ -2281,34 +2297,72 @@ export default function VokabelApp() {
   }
 
   // ── Vokabel-Verwaltung ────────────────────────────────────────────────────
-  function oeffneVokabelBearbeiten(vok) {
-    const aktiveSpalten = TYPEN.filter(t => aktiveListe.spalten[t].aktiv);
+  // Vokabel bearbeiten (vok = null: neue Vokabel) in beliebiger Liste – aus Listen, Statistik oder Abfrage.
+  // nur = Spalte: nur deren richtige Antwort (Abfrage), falsche Antworten bleiben unverändert
+  function oeffneVokabelBearbeiten(vok, listeId = aktiveListeId, nur = null) {
+    const liste = listeId === aktiveListeId && aktiveListe ? aktiveListe : lsGet(SK.liste(listeId));
+    if (!liste) return;
+    const orig = vok ? liste.vokabeln.find(v => v.id === (vok._origId ?? vok.id)) : null;
+    if (vok && !orig) return;
     const eingaben = {};
-    aktiveSpalten.forEach(typ => {
-      if (vok[typ]) {
-        const falschStr = vok[typ].falsch?.length > 0 ? ' || ' + vok[typ].falsch.join(' | ') : '';
-        eingaben[typ] = vok[typ].wert + falschStr;
-      } else {
-        eingaben[typ] = '';
-      }
+    if (nur) eingaben[nur] = orig?.[nur]?.wert || '';
+    else TYPEN.filter(t => liste.spalten[t].aktiv).forEach(typ => {
+      const z = orig?.[typ];
+      eingaben[typ] = z ? z.wert + (z.falsch?.length > 0 ? ' || ' + z.falsch.join(' | ') : '') : '';
     });
-    setBearbeiteVokabel(vok);
+    setBearbeiteVokabel(orig || { neu: true });
+    setBearbeiteListe(liste);
+    setBearbeiteNur(nur);
     setBearbeiteEingaben(eingaben);
+    setModalFehler("");
     setModal('vokabel-bearbeiten');
   }
+  function schliesseVokabelBearbeiten() { setModal(null); setBearbeiteVokabel(null); setBearbeiteEingaben({}); setBearbeiteNur(null); setBearbeiteListe(null); }
 
   function speichereVokabelBearbeitung() {
-    if (!bearbeiteVokabel || !aktiveListe) return;
-    const aktiveSpalten = TYPEN.filter(t => aktiveListe.spalten[t].aktiv);
-    const updated = { id: bearbeiteVokabel.id, fortschritt: bearbeiteVokabel.fortschritt };
-    aktiveSpalten.forEach(typ => {
-      const raw = (bearbeiteEingaben[typ] || '').trim();
-      if (raw) updated[typ] = parseKolumne(raw);
+    if (!bearbeiteVokabel || !bearbeiteListe) return;
+    const liste = lsGet(SK.liste(bearbeiteListe.id)) || bearbeiteListe;
+    const nur = bearbeiteNur;
+    const neuEintrag = !!bearbeiteVokabel.neu;
+    const orig = neuEintrag ? null : liste.vokabeln.find(v => v.id === bearbeiteVokabel.id);
+    if (!neuEintrag && !orig) { schliesseVokabelBearbeiten(); return; }
+    let neu;
+    if (nur) {
+      const wert = (bearbeiteEingaben[nur] || '').trim();
+      if (!wert) { setModalFehler("Die richtige Antwort darf nicht leer sein."); return; }
+      neu = { ...orig, [nur]: { ...(orig[nur] || { falsch: [] }), wert } };
+    } else {
+      // Lernstand und nicht angezeigte Spalten bleiben erhalten
+      neu = neuEintrag ? { id: liste.naechste_id } : { ...orig };
+      TYPEN.filter(t => liste.spalten[t].aktiv).forEach(typ => {
+        const raw = (bearbeiteEingaben[typ] || '').trim();
+        if (raw) neu[typ] = parseKolumne(raw); else delete neu[typ];
+      });
+      if (TYPEN.filter(t => !t.startsWith('i') && neu[t]?.wert).length < 2) { setModalFehler("Mindestens zwei Spalten (außer Info) ausfüllen."); return; }
+    }
+    const neueListe = neuEintrag
+      ? { ...liste, naechste_id: liste.naechste_id + 1, vokabeln: [...liste.vokabeln, neu] }
+      : { ...liste, vokabeln: liste.vokabeln.map(v => v.id === neu.id ? neu : v) };
+    lsSet(SK.liste(liste.id), neueListe);
+    if (liste.id === aktiveListeId) setAktiveListe(neueListe);
+    // laufende Abfrage: Vokabel dort ebenfalls ändern (auch MC-Knöpfe mit der alten Antwort)
+    if (!neuEintrag) setQuiz(q => {
+      if (!q) return q;
+      const passt = v => (v._listeId ?? q.liste.id) === liste.id && (v._origId ?? v.id) === neu.id;
+      const spalten = nur ? { [nur]: neu[nur] } : Object.fromEntries(TYPEN.map(t => [t, neu[t]]));
+      const auf = v => passt(v) ? { ...v, ...spalten } : v;
+      const vokabeln = q.vokabeln.map(auf);
+      const neuQ = { ...q, vokabeln, liste: { ...q.liste, vokabeln: q.liste.vokabeln.map(auf) } };
+      // gerade gefragte Vokabel und Spalte: Lösung (und MC-Knöpfe) sofort neu
+      const typ = q.modus === "diktat" ? q.diktatSpalte : q.antwortTypen?.[q.antwortTypIndex];
+      const akt = vokabeln[q.index];
+      if (!passt(akt) || !typ || !(typ in spalten) || q.modus === "diktat") return neuQ;
+      neuQ.antwortTeile = (akt[typ]?.wert || "").split('/').map(x => x.trim());
+      if (q.mcButtons?.length && q.phase === "eingabe") { const mc = generiereButtons(vokabeln, akt, typ); neuQ.mcButtons = mc.buttons; neuQ.mcRichtig = mc.richtig; }
+      return neuQ;
     });
-    const neueListe = { ...aktiveListe, vokabeln: aktiveListe.vokabeln.map(v => v.id === updated.id ? updated : v) };
-    lsSet(SK.liste(aktiveListeId), neueListe);
-    setAktiveListe(neueListe);
-    setModal(null); setBearbeiteVokabel(null); setBearbeiteEingaben({});
+    speichereIndex(listenIndex);   // neu zeichnen (Anzahl, Lernstand in Listen und Statistik)
+    schliesseVokabelBearbeiten();
   }
 
   function loescheVokabel(vokId) {
@@ -2688,6 +2742,46 @@ export default function VokabelApp() {
       <span className="einst-kopf-pfeil">{einstBereich === key ? "▾" : "▸"}</span>
     </button>
   );
+
+  // Dialog „Vokabel bearbeiten / Neue Vokabel / Richtige Antwort bearbeiten“ – im Haupt-Bildschirm und über der Abfrage
+  function renderVokabelEditor() {
+    if (modal !== "vokabel-bearbeiten" || !bearbeiteVokabel || !bearbeiteListe) return null;
+    const l = bearbeiteListe, nur = bearbeiteNur;
+    const spalten = nur ? [nur] : TYPEN.filter(t => l.spalten[t].aktiv);
+    const name = t => l.spalten[t]?.name || t;
+    // Abfrage: zur Orientierung die anderen Spalten der Vokabel (nur lesen)
+    const kontext = nur ? TYPEN.filter(t => t !== nur && !t.startsWith('i') && l.spalten[t].aktiv && bearbeiteVokabel[t]?.wert) : [];
+    return (
+      <div className="overlay" onClick={schliesseVokabelBearbeiten}>
+        <div className="modal" data-vokabel-editor={nur ? "antwort" : bearbeiteVokabel.neu ? "neu" : "voll"} onClick={e => e.stopPropagation()}>
+          <div className="modal-titel">{nur ? "Richtige Antwort bearbeiten" : bearbeiteVokabel.neu ? "Neue Vokabel" : "Vokabel bearbeiten"}</div>
+          {(l.id !== aktiveListeId || nur) && <div style={{fontSize:"0.8rem", color:"var(--text2)", margin:"-6px 0 12px"}}>in „{l.name}“</div>}
+          {kontext.map(t => (
+            <div key={t} style={{fontSize:"0.85rem", color:"var(--text2)", marginBottom:6}}>{name(t)}: <b style={{color:"var(--text-stark)"}}>{bearbeiteVokabel[t].wert}</b></div>
+          ))}
+          {spalten.map((typ, i) => (
+            <div key={typ} style={{marginBottom:12}}>
+              <label className="inp-label">
+                {name(typ)}
+                {nur ? <span style={{fontWeight:400}}> – richtige Antwort</span> : !typ.startsWith('i') && <span style={{fontWeight:400}}> (|| falsche Antworten)</span>}
+              </label>
+              <input {...ttFeld(nur ? "Richtige Antwort ändern – falsche Antworten bleiben unverändert" : "Inhalt dieser Spalte bearbeiten")} className="inp" data-vokabel-feld={typ}
+                value={bearbeiteEingaben[typ] || ''} autoFocus={i === 0}
+                onChange={e => { setBearbeiteEingaben(prev => ({...prev, [typ]: e.target.value})); setModalFehler(""); }}
+                onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); speichereVokabelBearbeitung(); } }}
+              />
+            </div>
+          ))}
+          {modalFehler && <div className="fehler">{modalFehler}</div>}
+          <div className="modal-actions">
+            <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={schliesseVokabelBearbeiten}>Abbrechen</button>
+            <button {...tt(bearbeiteVokabel.neu ? "Neue Vokabel am Ende der Liste anlegen" : "Änderungen an der Vokabel speichern")} className="btn btn-primary" data-vokabel-speichern
+              onClick={speichereVokabelBearbeitung}>{bearbeiteVokabel.neu ? "Anlegen" : "Speichern"}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const renderExportNamensFeld = beiEnter => (
     <div style={{marginBottom:14}}>
@@ -4023,6 +4117,10 @@ export default function VokabelApp() {
             🎨 Farben bearbeiten{FARB_VORLAGEN.includes(schemaVon(einstellungen)) ? " (als Kopie)" : ""}
           </button>
         )}
+        <label style={{display:"flex", alignItems:"center", gap:10, marginTop:12, fontSize:"0.85rem", color:"var(--text)", cursor:"pointer"}} {...ttFeld("Jedes Lang-Druck-Menü und jede Erklärung bekommt „🎨 Farbe ändern“ – startet den Farbmodus für genau diese Stelle")}>
+          <input type="checkbox" data-farbe-im-menue checked={einstellungen.farbeImMenue !== false} onChange={e => speichereEinst({ ...einstellungen, farbeImMenue: e.target.checked })} style={{width:18, height:18}}/>
+          „🎨 Farbe ändern“ im Lang-Druck-Menü
+        </label>
         <button data-farbmodus-start className={`btn ${farbModus ? "btn-ghost-filled" : "btn-ghost"}`} style={{width:"100%", marginTop:10}}
           onClick={() => farbModus ? beendeFarbModus() : starteFarbModus()}
           {...tt("Farbmodus: durch die App gehen und per langem Druck auf ein Element dessen Farben ändern – unten rechts übernehmen oder zurücksetzen")}>
@@ -4117,6 +4215,16 @@ export default function VokabelApp() {
     setFarbModus(true); setSchemaBearbeiten(null);
   }
   function beendeFarbModus() { setFarbModus(false); setFarbVorschau(null); setFarbFeld(null); setFarbMarke(null); setFarbName(null); }
+  // „🎨 Farbe ändern“ aus einem Lang-Druck-Menü: Farbmodus an und gleich das Farbfeld dieser Stelle
+  useEffect(() => {
+    const hier = e => {
+      const { x, y } = e.detail;
+      if (!farbModusRef.current) starteFarbModus();
+      setTimeout(() => setFarbFeld({ gruppen: farbRollenBei(x, y), zeit: Date.now() }), 80);
+    };
+    window.addEventListener("vokabel-farbe-hier", hier);
+    return () => window.removeEventListener("vokabel-farbe-hier", hier);
+  });
   function uebernehmeFarben(name = null) {
     const sch = schemaVon(einstellungen);
     if (FARB_VORLAGEN.includes(sch)) {
@@ -5791,7 +5899,7 @@ export default function VokabelApp() {
 
     return (
       <>
-        <style>{CSS}</style>{farbModusUI}{farbRadUI}
+        <style>{CSS}</style>{farbModusUI}{farbRadUI}{renderVokabelEditor()}
         <div className="app">
           <div className="topbar">
             <button {...tt("Diktat abbrechen – bisherige Ergebnisse werden ausgewertet")} className="topbar-back" onClick={() => { beendeQuiz(); }}>Beenden</button>
@@ -5800,7 +5908,10 @@ export default function VokabelApp() {
           </div>
           <div className="sektion" style={{display:"flex", flexDirection:"column", paddingBottom:0}}>
             {/* Lautsprecher-Box – nicht Teil der Weiter-Zone */}
-            <div className="quiz-frage-box" style={{textAlign:"center", marginBottom:14, flexShrink:0}}>
+            <div className="quiz-frage-box" style={{textAlign:"center", marginBottom:14, flexShrink:0}} data-karte-diktat
+              {...tt("Lang drücken: richtige Antwort bearbeiten", [
+                { label: "✎ Richtige Antwort bearbeiten", fn: () => oeffneVokabelBearbeiten(quiz.vokabeln[quiz.index], quiz.vokabeln[quiz.index]._listeId ?? quiz.liste.id, quiz.diktatSpalte) },
+              ], { langText: `${quiz.liste.spalten[quiz.diktatSpalte]?.name || quiz.diktatSpalte}: richtige Antwort bearbeiten` })}>
               <div className="quiz-label">{quiz.liste.spalten[quiz.diktatSpalte]?.name || quiz.diktatSpalte} — hör genau hin!</div>
               {quiz.diktatSpalte.startsWith('E') && (
                 <button {...tt("Wort vorlesen")} className="diktat-play-btn"
@@ -5933,7 +6044,7 @@ export default function VokabelApp() {
                 {ges > 0 && (<>
                   {renderRundenErgebnis(quiz, r, f, quiz.abgebrochen ? "Bis zum Abbruch" : istLetzteBatch ? "Letztes Paket" : "Dieses Paket")}
                   {feedback && (
-                    <div style={{background:"var(--hintergrund)", borderRadius:12, padding:"14px 16px", margin:"0 0 16px", fontSize:"1rem", lineHeight:1.6, color:"var(--text)", fontStyle:"italic", textAlign:"center"}}>
+                    <div style={{background:"var(--info-kasten)", borderRadius:12, padding:"14px 16px", margin:"0 0 16px", fontSize:"1rem", lineHeight:1.6, color:"var(--text)", fontStyle:"italic", textAlign:"center"}}>
                       „{feedback}"
                     </div>
                   )}
@@ -5993,7 +6104,7 @@ export default function VokabelApp() {
                 <div style={{height:8}}/>
                 {renderRundenErgebnis(quiz, r, f, quiz.abgebrochen ? "Bis zum Abbruch" : "Diese Runde")}
                 {feedback && (
-                  <div style={{background:"var(--hintergrund)", borderRadius:12, padding:"14px 16px", margin:"0 0 16px", fontSize:"1rem", lineHeight:1.6, color:"var(--text)", fontStyle:"italic", textAlign:"center"}}>
+                  <div style={{background:"var(--info-kasten)", borderRadius:12, padding:"14px 16px", margin:"0 0 16px", fontSize:"1rem", lineHeight:1.6, color:"var(--text)", fontStyle:"italic", textAlign:"center"}}>
                     „{feedback}"
                   </div>
                 )}
@@ -6064,6 +6175,11 @@ export default function VokabelApp() {
     const isWeitere = quiz.phase === "weitere";
     const frageWert = aktVokRaw[quiz.frageTyp]?.wert || "";
 
+    // Lang-Druck auf die Karte: nur die richtige Antwort der aktuellen Spalte bearbeiten
+    const antwortBearbeiten = tt("Lang drücken: richtige Antwort bearbeiten", [
+      { label: "✎ Richtige Antwort bearbeiten", fn: () => oeffneVokabelBearbeiten(aktVokRaw, aktVokRaw._listeId ?? quiz.liste.id, aktAntwortTyp) },
+    ], { langText: `${antwortLabel}: richtige Antwort bearbeiten` });
+
     let antwortBoxKlasse = "quiz-antwort-box";
     if (quiz.flash) antwortBoxKlasse += " richtig";
     if (quiz.gelerntBlitz && quiz.gelerntBlitz === blitzKey(quiz)) antwortBoxKlasse += " gelernt-blitz";
@@ -6075,7 +6191,7 @@ export default function VokabelApp() {
 
     return (
       <>
-        <style>{CSS}</style>{farbModusUI}{farbRadUI}
+        <style>{CSS}</style>{farbModusUI}{farbRadUI}{renderVokabelEditor()}
         <div className="app">
           <div className="topbar">
             {quiz.wiederholungDurchgang ? (
@@ -6124,7 +6240,7 @@ export default function VokabelApp() {
                 <div style={{display:"flex", gap:10, alignItems:"stretch", marginBottom:14}}>
                   {/* Linke Spalte */}
                   <div style={{flex:1, display:"flex", flexDirection:"column", gap:10}}>
-                    <div className="quiz-frage-box" style={{marginBottom:0}}>
+                    <div className="quiz-frage-box" style={{marginBottom:0}} data-karte-frage {...antwortBearbeiten}>
                       <div className="quiz-label">{frageLabel}</div>
                       <div style={{display:"flex", alignItems:"baseline", gap:8, justifyContent:"center"}}>
                         <div className="quiz-frage-text" style={{textAlign:"center"}}>{mitHinweis(frageWert)}</div>
@@ -6148,7 +6264,7 @@ export default function VokabelApp() {
                       </div>
                     ))}
 
-                    <div className={antwortBoxKlasse} style={{marginBottom:0}}>
+                    <div className={antwortBoxKlasse} style={{marginBottom:0}} data-karte-antwort {...antwortBearbeiten}>
                       {antwortBoxKlasse.includes("gelernt-blitz") && <GelerntSterne/>}
                       <div className="quiz-label" style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
                         <span>{antwortLabel}{isWeitere && <span style={{color:"var(--info)", marginLeft:8}}>— weitere Antwort</span>}</span>
@@ -6497,7 +6613,7 @@ export default function VokabelApp() {
     <>
       <style>{CSS}</style>{farbModusUI}{farbRadUI}
       <div className="app">
-        <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"var(--karte)"}}>
+        <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"var(--app-kopf)"}}>
         <div className="topbar" style={{position:"relative"}}>
           <button className="info-schalter" data-info-schalter onClick={schalteInfoModus} title="Info-Modus: Elemente antippen, um sie erklärt zu bekommen">ⓘ</button>
           {statistikVollbild && tab === "statistik" ? renderVollbildKopf() : <span className="topbar-title">Vokabel-Trainer</span>}
@@ -6778,7 +6894,7 @@ export default function VokabelApp() {
                     <div className="sektion-label">Spalten zuweisen</div>
                     <span className="import-zaehler"><strong>{anzahlZugewiesen}</strong> / {anzahlGesamt}</span>
                   </div>
-                  <div style={{background:"var(--hintergrund)", border:"1px solid var(--rahmen)", borderRadius:10, padding:"10px 14px", marginBottom:12, fontSize:"0.82rem", color:"var(--text2)"}}>
+                  <div style={{background:"var(--info-kasten)", border:"1px solid var(--rahmen)", borderRadius:10, padding:"10px 14px", marginBottom:12, fontSize:"0.82rem", color:"var(--text2)"}}>
                     <strong>Analysiert:</strong> {importParsed.header.map(h => h.wert || "–").join(", ")}
                   </div>
                   <div className="karte">
@@ -7164,7 +7280,7 @@ export default function VokabelApp() {
 
                 {/* Alle/Bereich – sticky direkt unter Haupt-Header */}
                 {kombiListe && !(aktiverSlot?.typ === "gespeichert" && !listenAendern) && (
-                  <div ref={alleBereichRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH, zIndex:8, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                  <div ref={alleBereichRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH, zIndex:8, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
                     {aufteilen ? (<>
                       <span style={{flex:1, fontWeight:700, fontSize:"0.85rem", color:"var(--gelb-dunkel)"}}>▦ Aufteilen</span>
                       <span data-anzahl="auswahl" style={{fontSize:"0.8rem", color:"var(--text3)"}}>({quizGefilterteVoks.length} V.)</span>
@@ -7763,7 +7879,7 @@ export default function VokabelApp() {
             <>
             {/* Aktionszeile */}
             {aktionszeileAufgeklappt && (
-              <div style={{background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"8px 16px", display:"flex", gap:6, flexWrap:"wrap"}}>
+              <div style={{background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"8px 16px", display:"flex", gap:6, flexWrap:"wrap"}}>
                 <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={() => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import"); }} {...tt("Vokabeln in diese Liste importieren")}><IcoPlus/></button>
                 <button className="btn btn-ghost btn-sm" style={{padding:"6px 10px"}} onClick={kopiereListeHandler} {...tt("Liste als Text in die Zwischenablage kopieren")}>{exportKopiert ? "✓" : <IcoCopy/>}</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => exportiereAlsJson([aktiveListeId])} {...tt("JSON: vollständige Sicherung mit Lernstand (Scores) – Vorschlag „Name - JSON“, Dateiname änderbar – zum Wiederherstellen oder für ein anderes Gerät")}>JSON</button>
@@ -8059,7 +8175,7 @@ export default function VokabelApp() {
           const istBereich = statistikBereichTyp === "bereich";
           const auswahlAnzahl = statistikGefilterteVoks.length;
           return (<>
-            <div ref={statistikVokauswahlRef} style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH, zIndex:7, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
+            <div ref={statistikVokauswahlRef} style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH, zIndex:7, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
               {/* LINKS */}
               <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
                 {istBereich && statistikEinzelauswahlAufgeklappt ? (
@@ -8225,7 +8341,7 @@ export default function VokabelApp() {
           return (<>
             {/* Ø-Score sticky Header */}
             {!statistikVollbild && (
-            <div style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
+            <div style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
               <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2, flexShrink:0}}>
                 <span style={{fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>{schwelleS > 0 ? "Lernfortschritt" : "Ø Score"}</span>
                 <span style={{fontSize:"0.72rem", fontWeight:700, color:"var(--text2)"}} {...tt("Ausgewertet wird dieser Score – Tap in die Kreismitte wechselt")}>{artName}</span>
@@ -8431,7 +8547,11 @@ export default function VokabelApp() {
                   const t2 = vok.D1?.wert || "";
                   const displayText = [t1, t2].filter(Boolean).join(" – ");
                   return (
-                    <div key={`${vok._listeName}_${vok.id}_${idx}`}
+                    <div key={`${vok._listeName}_${vok.id}_${idx}`} data-statistik-vok={vok.id}
+                      {...tt(`${displayText || "Vokabel"} – lang drücken: bearbeiten oder neue Vokabel`, [
+                        { label: "✎ Bearbeiten", fn: () => oeffneVokabelBearbeiten(vok, vok._listeId) },
+                        { label: `➕ Neue Vokabel in „${vok._listeName}“`, fn: () => oeffneVokabelBearbeiten(null, vok._listeId) },
+                      ], { langText: `${displayText || "Vokabel"} · ${vok._listeName}` })}
                       style={{display:"flex", alignItems:"center", gap:8, padding:"7px 12px", background: GRUPPE_BG[gruppe],
                         borderBottom: idx < voks.length-1 ? "1px solid var(--rahmen)" : "none"}}>
                       {/* Text */}
@@ -8475,7 +8595,7 @@ export default function VokabelApp() {
         {tab === "einstellungen" && (<>
           {einstBereich === "info" && (<>
           {/* Info sticky Header */}
-          <div ref={infoHeaderRef} style={{position:"sticky", top:headerH, zIndex:9, background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+          <div ref={infoHeaderRef} style={{position:"sticky", top:headerH, zIndex:9, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
             <button className="einst-titel-knopf" data-einst-kopf="info" data-offen="ja" onClick={() => schalteEinstBereich("info")} {...tt("Info zuklappen")}>Info ▾</button>
             <div style={{display:"flex", gap:6, alignItems:"center"}}>
               {infoModus !== "uebersicht" && (
@@ -8492,7 +8612,7 @@ export default function VokabelApp() {
 
           {infoModus === "uebersicht" && (
             <div className="sektion">
-              <div style={{background:"var(--hintergrund)", borderRadius:12, padding:"14px 16px", fontSize:"0.85rem", lineHeight:1.65, color:"var(--text)"}}>
+              <div style={{background:"var(--info-kasten)", borderRadius:12, padding:"14px 16px", fontSize:"0.85rem", lineHeight:1.65, color:"var(--text)"}}>
                 <div style={{fontWeight:700, marginBottom:6, fontSize:"0.95rem"}}>Vokabel-Trainer</div>
                 <p style={{margin:0}}>
                   Lerne Vokabeln aus eigenen Listen – flexibel, ohne Anmeldung, direkt im Browser.
@@ -8526,7 +8646,7 @@ export default function VokabelApp() {
               ].map(abschnitt => (
                 <div key={abschnitt.titel} style={{marginBottom:20}}>
                   <div className="sektion-label" style={{marginBottom:6}}>{abschnitt.titel}</div>
-                  <div style={{background:"var(--hintergrund)", borderRadius:10, padding:"12px 14px", whiteSpace:"pre-line"}}>
+                  <div style={{background:"var(--info-kasten)", borderRadius:10, padding:"12px 14px", whiteSpace:"pre-line"}}>
                     {abschnitt.text}
                   </div>
                 </div>
@@ -8573,7 +8693,7 @@ export default function VokabelApp() {
                   {k:"Multiquiz", v:"Mehrere gespeicherte Konfigurationen zusammen abfragen: lang auf eine Kachel drücken → „☑ Auswählen“, dann weitere Kacheln antippen (nummeriert; nochmal antippen nimmt sie heraus; über dem Raster steht „2 ausgewählt · 50 Vokabeln“). Lang drücken auf eine Kachel zeigt die Aktionen für die Auswahl: „🧩 Multiquiz starten“ (ab 2, startet sofort), „⇄ Verschieben“, „🗑 Löschen“ (mehrere auf einmal, Rückfrage mit allen Namen) und „Auswahl beenden“; „Fertig“ oben beendet die Auswahl ebenfalls. Abgefragt werden alle Vokabeln der gewählten Konfigurationen (auch verschiedene Sprachen – vorgelesen wird jede in ihrer Sprache), die Einstellungen kommen von Nr. 1. Das Multiquiz erscheint im Verlauf (🧩) mit eigenem Fortschritt, die Kopfzeile zeigt „Multiquiz“ und in der Info-Zeile die Teile. Lang drücken auf die Kopfzeile → „Speichern“ legt es als eigene Kachel ab (Name-Vorschlag „Multiquiz: A + B“). In der Statistik zeigt es die gemeinsame Statistik; die Scores gelten wie immer je Vokabel."},
                 ]},
                 {titel:"Im Quiz", inhalt:[
-                  {k:"Karte (Frage–Antwort)", v:"Tippe auf die Karte, um die Antwort aufzudecken. Dann: Richtig oder Falsch selbst einschätzen."},
+                  {k:"Karte (Frage–Antwort)", v:"Tippe auf die Karte, um die Antwort aufzudecken. Dann: Richtig oder Falsch selbst einschätzen. Lang drücken auf Frage- oder Antwortkarte (auch beim Diktat) → „✎ Richtige Antwort bearbeiten“: ändert nur die richtige Antwort der gerade gefragten Spalte – falsche Antworten und Lernstand bleiben, die Änderung gilt sofort (auch für die laufende Frage)."},
                   {k:"Tippen", v:"Antwort eintippen und bestätigen. Nach 3 Fehlversuchen wird die Lösung gezeigt. Ob fehlende Akzente als richtig gelten, hängt vom Schwierigkeitsgrad ab (Einstellungen)."},
                   {k:"Diktat", v:"Großer Lautsprecher: Wort nochmals vorlesen. Kleiner Lautsprecher: langsamer/erneut. Antwort eintippen."},
                   {k:"Scoring", v:"Richtig: +1 Punkt, Streak +1. Ab Streak 3: mindestens +2 Punkte. Falsch: Streak auf 0 und −1 Punkt – oder kein Abzug, wenn die Regel „Nicht gewusst zieht 1 Punkt ab“ in der Stufe aus ist (Standard: Einfach ohne Abzug, Schwer −1). Die Vokabel wird in jedem Fall wiederholt. Aufgedeckt: kein Punkt, kein Streak. Mehrere Antwort-Spalten zählen zusammen als eine Bewertung: alle gewusst = richtig, sonst falsch. Multiple Choice: nur ein Treffer ohne Fehlklick gilt als gewusst – nach einem Fehlklick darf man weitersuchen, die Spalte zählt aber als nicht gewusst."},
@@ -8593,11 +8713,11 @@ export default function VokabelApp() {
                   {k:"Score-Balken", v:"Null ist in allen Zeilen an derselben Stelle. Nach links bis −5 (tiefer = voller roter Balken), nach rechts bis zur Gelernt-Schwelle. Gelernte Vokabeln: ganzer Balken dunkelgrün."},
                   {k:"Sortierung", v:"Score / Streak / Datum / A→Z / Listen-Nr. Pfeil zeigt Richtung, nochmals tippen kehrt um."},
                   {k:"Vollbild", v:"Maximiert Graph und Vokabelliste ohne die oberen Header-Zeilen. 'Vollbild verlassen' oben rechts."},
-                  {k:"Vokabelliste", v:"Alle gefilterten Vokabeln mit Score-Balken (grün = positiv, rot = negativ) und letztem Abfragedatum."},
+                  {k:"Vokabelliste", v:"Alle gefilterten Vokabeln mit Score-Balken (grün = positiv, rot = negativ) und letztem Abfragedatum. Lang drücken auf eine Zeile: „✎ Bearbeiten“ (alle Spalten, mit falschen Antworten nach ||) oder „➕ Neue Vokabel“ in der Liste dieser Zeile (mindestens zwei Spalten außer Info). Lernstände bleiben beim Bearbeiten erhalten."},
                 ]},
                 {titel:"Einstellungen-Tab", inhalt:[
                   {k:"Akzente", v:"Je Sprache An oder Aus (Standard: nur Französisch an). Aus: keine Abfrageart „A“ und keine Akzent-Statistik für Listen dieser Sprache, und fehlende Akzente beim Tippen und im Diktat gelten als richtig. An: „A“ steht zur Verfügung, beim Tippen gilt die Regel der Stufe."},
-                  {k:"Farbschema", v:"16 Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs, Dunkel, Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht und Espresso – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler: großer Farbkreis (außen kräftig, zur Mitte weniger gesättigt), Regler für Helligkeit und Sättigung, Hex-Feld, „Zuletzt verwendet“ (10 Farben); die App färbt sich beim Ziehen sofort um, „Anwenden“ übernimmt, „Abbrechen“ stellt die alte Farbe wieder her. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
+                  {k:"Farbschema", v:"16 Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs, Dunkel, Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht und Espresso – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Flächen haben je Funktion eine eigene Rolle: Hintergrund (nur die Seite), App-Kopf (Titel- und Tab-Leiste), Bereichs-Kopfzeilen (z. B. Kopf der Listenauswahl), Karten (Listen, Quiz-Bereiche), Abfrage-Karten, Dialoge, Knöpfe & Felder, Info-Kästen und Ausgewählt – ohne eigenen Wert übernehmen sie die bisherige Farbe, Kopfzeilen und Info-Kästen mit einem Hauch der Hauptfarbe. „🎨 Farbe ändern“ unter jedem Lang-Druck-Menü (abschaltbar unter Farbschema) startet den Farbmodus direkt für diese Stelle. Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler: großer Farbkreis (außen kräftig, zur Mitte weniger gesättigt), Regler für Helligkeit und Sättigung, Hex-Feld, „Zuletzt verwendet“ (10 Farben); die App färbt sich beim Ziehen sofort um, „Anwenden“ übernimmt, „Abbrechen“ stellt die alte Farbe wieder her. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
                   {k:"App aktualisieren", v:"„Prüfen“ sucht nach einer neuen App-Version. Wird eine gefunden, erscheint unten der Hinweis „Neue Version verfügbar“ – mit „Aktualisieren“ wird sie aktiv. Die App funktioniert auch offline."},
                   {k:"Gespeicherte Listen", v:"Zeigt, wie viele Listen aktuell auf diesem Gerät gespeichert sind."},
                 ]},
@@ -8868,29 +8988,7 @@ export default function VokabelApp() {
           </div>
         </div>
       )}
-      {modal === "vokabel-bearbeiten" && bearbeiteVokabel && aktiveListe && (
-        <div className="overlay" onClick={() => setModal(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-titel">Vokabel bearbeiten</div>
-            {TYPEN.filter(t => aktiveListe.spalten[t].aktiv).map(typ => (
-              <div key={typ} style={{marginBottom:12}}>
-                <label className="inp-label">
-                  {aktiveListe.spalten[typ].name || typ}
-                  {!typ.startsWith('i') && <span style={{fontWeight:400}}> (|| falsche Antworten)</span>}
-                </label>
-                <input {...ttFeld("Inhalt dieser Spalte bearbeiten")} className="inp" value={bearbeiteEingaben[typ] || ''}
-                  onChange={e => setBearbeiteEingaben(prev => ({...prev, [typ]: e.target.value}))}
-                  onKeyDown={e => e.key === 'Enter' && speichereVokabelBearbeitung()}
-                />
-              </div>
-            ))}
-            <div className="modal-actions">
-              <button {...tt("Schließen, ohne etwas zu ändern")} className="btn btn-ghost" onClick={() => { setModal(null); setBearbeiteVokabel(null); }}>Abbrechen</button>
-              <button {...tt("Änderungen an der Vokabel speichern")} className="btn btn-primary" onClick={speichereVokabelBearbeitung}>Speichern</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {renderVokabelEditor()}
       {gruppenQuiz && (
         <div className="overlay" onClick={() => setGruppenQuiz(null)}>
           <div className="modal" data-gruppen-quiz onClick={e => e.stopPropagation()}>

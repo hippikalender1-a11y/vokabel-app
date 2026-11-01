@@ -1770,6 +1770,20 @@ AUSWAHL-MODUS (Listen und gespeicherte Konfigurationen gleich): Lang-Druck → �
   Löschen: auswahlLoeschen {art, ids} → Rückfrage mit Namen (Listen: „Vorher sichern“) → loescheAuswahl.
   Lang-Druck + Ziehen in der Auswahl verschiebt die ganze Auswahl. Weggefallen: Export-Modus
   („Exportieren“-Knopf, Leiste unten), Multiquiz-Leiste. Verlauf bleibt ohne Auswahl. Test: e2e/auswahl.mjs.
+VOKABELN BEARBEITEN ÜBERALL: oeffneVokabelBearbeiten(vok|null, listeId, nur) für jede Liste (bearbeiteListe,
+  bearbeiteNur); renderVokabelEditor() im Haupt-Bildschirm und über Abfrage/Diktat. Abfrage: Lang-Druck auf
+  data-karte-frage/-antwort/-diktat → nur richtige Antwort (falsch bleibt), laufende Frage wird angepasst
+  (antwortTeile, MC neu). Statistik-Zeile (data-statistik-vok): Bearbeiten (alle Spalten) oder neue Vokabel
+  in deren Liste. Speichern erhält jetzt alle Lernstände (früher gingen Diktat-/Akzent-Fortschritt verloren).
+  Tastatur der Abfrage ignoriert Eingaben im Dialog. Test: e2e/vokabel_bearbeiten.mjs.
+FARBROLLEN NACH FUNKTION: neue Rollen app-kopf (topbar, tabs, Kopf-Wrapper), kopfzeile (liste-detail-header,
+  statistik-listen-header, slot-kopf, quiz-liste-sticky, einst-kopf, sticky Kopfzeilen, Info-Leiste),
+  abfrage-karte (quiz-frage-box, quiz-antwort-box), dialog (.modal), knopf (inp, typ-btn, slot-chip, checkbox …),
+  info-kasten (Info-Übersicht, Anleitung, Rückmeldung, Import-Hinweis); haupt-flaeche jetzt eigene Rolle
+  „Ausgewählt / hervorgehoben“. farbenAus: ohne Wert = bisherige Farbe, kopfzeile = 7 % / info-kasten = 10 %
+  haupt-hell in karte. Hintergrund nur noch Seite. „🎨 Farbe ändern“: InfoTafel hängt es an jedes Menü und
+  jede Erklärung (data-info-farbe, nicht data-info-aktion), Ereignis vokabel-farbe-hier → starteFarbModus +
+  Farbfeld an der Stelle; Schalter einstellungen.farbeImMenue (setzeFarbeImMenue). Test: e2e/farbrollen.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

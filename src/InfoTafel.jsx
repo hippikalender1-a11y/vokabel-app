@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { schalteInfoModus } from "./infoEreignisse.js";
+import { schalteInfoModus, farbeImMenueAn, farbeHier } from "./infoEreignisse.js";
 
 // Erklär-Tafel: zeigt Erklärtexte (data-info) als Sprechblase an der Stelle des Fingers,
 // bis man irgendwo hintippt. Info-Modus: Antippen eines Elements erklärt es, statt es auszuführen.
@@ -57,7 +57,7 @@ export default function InfoTafel() {
     const klick = e => {
       // Nachzügler-Klick vom Loslassen des Lang-Drucks: verschlucken, Tafel bleibt offen
       if (info && (haltenRef.current || Date.now() < sperreBisRef.current)) { e.preventDefault(); e.stopPropagation(); return; }
-      if (e.target.closest("[data-info-schalter]") || e.target.closest("[data-info-aktion]")) return;
+      if (e.target.closest("[data-info-schalter]") || e.target.closest("[data-info-aktion]") || e.target.closest("[data-info-farbe]")) return;
       const el = modus ? e.target.closest("[data-info]") : null;
       if (el) {
         e.preventDefault(); e.stopPropagation();
@@ -76,7 +76,9 @@ export default function InfoTafel() {
   // Menü-Knöpfe (aktionen) schweben getrennt unter der Blase.
   const breite = Math.min(300, window.innerWidth - 24);
   const links = info ? Math.max(12, Math.min(info.x - breite / 2, window.innerWidth - breite - 12)) : 0;
-  const mitMenue = info?.aktionen?.length > 0;
+  // Menü: Aktionen des Elements, dazu „🎨 Farbe ändern“ (startet den Farbmodus an dieser Stelle)
+  const menue = info ? [...(info.aktionen || []), ...(!modus && farbeImMenueAn() ? [{ label: "🎨 Farbe ändern", farbe: true, fn: () => farbeHier(info.x, info.y) }] : [])] : [];
+  const mitMenue = menue.length > 0;
   const darueber = info && info.y > (mitMenue ? 330 : 150);
   return (
     <>
@@ -97,9 +99,9 @@ export default function InfoTafel() {
           </div>
           {mitMenue && (
             <div data-info-menue style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {info.aktionen.map(a => (
-                <button key={a.label} data-info-aktion={a.label} onClick={() => { setInfo(null); a.fn(); }} style={{
-                  background: "var(--karte)", color: a.gefahr ? "var(--falsch)" : "var(--haupt)", textAlign: "left", whiteSpace: "nowrap",
+              {menue.map(a => (
+                <button key={a.label} data-info-aktion={a.farbe ? undefined : a.label} data-info-farbe={a.farbe ? "" : undefined} onClick={() => { setInfo(null); a.fn(); }} style={{
+                  background: "var(--karte)", color: a.gefahr ? "var(--falsch)" : a.farbe ? "var(--text2)" : "var(--haupt)", textAlign: "left", whiteSpace: "nowrap",
                   border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: "11px 18px",
                   fontSize: "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: "pointer",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.22)",
