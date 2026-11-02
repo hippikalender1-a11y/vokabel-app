@@ -882,6 +882,10 @@ const FARB_ROLLEN = [
   ["haupt-flaeche", "Ausgewählt / hervorgehoben", "aktive Kacheln und Kopfzeilen, richtige Antwort"],
   ["start", "Liste & Start", "aktuelle Liste oben im Quiz-Tab und Start-Knopf"],
   ["auf-start", "Schrift auf Liste & Start", "Text auf dem Start-Knopf und der aktuellen Liste"],
+  ["auf-falsch", "Schrift auf Falsch", "Text auf roten Knöpfen und Markierungen (Nicht gewusst, geänderte Session)"],
+  ["auf-gelb", "Schrift auf Hervorhebung", "Text auf gelben Markierungen (Auswahl-Nummern, Info-Spalte)"],
+  ["auf-haupt-hell", "Schrift auf Hauptfarbe hell", "Text auf hellen Haupt-Knöpfen (Antwortart der Spalte)"],
+  ["auf-gelernt", "Schrift auf Statistik: Gelernt", "Häkchen auf 100 %-Kacheln"],
   ["flaeche", "Fläche grau", "leichte Hinterlegungen"],
   ["text-stark", "Text kräftig", "Überschriften, Eingaben"], ["text", "Text", "normaler Text"], ["text2", "Text leise", "Untertitel, Hinweise"], ["text3", "Text sehr leise", "Zahlen in Klammern"],
   ["rahmen", "Rahmen", "Linien und Ränder"],
@@ -959,7 +963,9 @@ function farbenAus(f) {
   const k = f.karte;
   const start = f.start || hervorgehoben(f.haupt);
   // Schrift auf Liste & Start: gewählte Farbe, sonst wie auf der Hauptfarbe (keine automatische Umstellung)
-  return { ...f, "start": start, "auf-start": f["auf-start"] || f["auf-haupt"], "leiste": f.leiste || f.haupt, "gelernt-effekt": f["gelernt-effekt"] || "#fff176",
+  return { ...f, "start": start, "auf-start": f["auf-start"] || f["auf-haupt"],
+    "auf-falsch": f["auf-falsch"] || f["auf-haupt"], "auf-gelb": f["auf-gelb"] || f["auf-haupt"],
+    "auf-haupt-hell": f["auf-haupt-hell"] || f["auf-haupt"], "auf-gelernt": f["auf-gelernt"] || f["auf-haupt"], "leiste": f.leiste || f.haupt, "gelernt-effekt": f["gelernt-effekt"] || "#fff176",
     // eigene Rollen für Flächen; ohne eigenen Wert wie bisher bzw. mit einem Hauch der Hauptfarbe
     "app-kopf": f["app-kopf"] || k, "kopfzeile": f.kopfzeile || mische(f["haupt-hell"], k, 0.93),
     "abfrage-karte": f["abfrage-karte"] || k, "dialog": f.dialog || k,
@@ -971,6 +977,15 @@ function farbenAus(f) {
     "gelb-dunkel": mische(f.gelb, f["text-stark"], 0.45), "gelb-zart": mische(f.gelb, k, 0.5), "gelb-flaeche": mische(f.gelb, k, 0.9),
     "info-flaeche": mische(f.info, k, 0.9),
   };
+}
+// Schriften, die (noch ohne eigenen Wert) von „Schrift auf Hauptfarbe“ übernommen werden – eine Schrift gilt nur
+// auf ihrem Hintergrund: Ändert man eine Rolle, werden die davon abhängigen Schriften vorher mit ihrem Wert festgeschrieben
+const SCHRIFT_ABHAENGIG = { "auf-haupt": ["auf-start", "auf-falsch", "auf-gelb", "auf-haupt-hell", "auf-gelernt"] };
+function mitFestenSchriften(basis, rolle, hex) {
+  const alt = farbenAus(basis), neu = { ...basis };
+  (SCHRIFT_ABHAENGIG[rolle] || []).forEach(r => { if (!basis[r]) neu[r] = alt[r]; });
+  neu[rolle] = hex;
+  return neu;
 }
 // abgestufte Rollen werden über ihre Grundfarbe geändert
 const FARB_BASIS = { "haupt-zart": "haupt-hell", "richtig-dunkel": "richtig", "richtig-flaeche": "richtig",
@@ -1320,7 +1335,7 @@ const CSS_BASIS = `
   .lernen-regler-zeile > span{min-width:96px;}
   .lernen-regler-zeile input[type=range]{flex:1;accent-color:var(--haupt);}
   .lernen-regler-zeile b{min-width:52px;text-align:right;color:var(--haupt);}
-  .auswahl-nr{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;border-radius:10px;background:var(--gelb);color:var(--auf-haupt);font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;z-index:2;}
+  .auswahl-nr{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;border-radius:10px;background:var(--gelb);color:var(--auf-gelb);font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;box-sizing:border-box;z-index:2;}
   .listen-raster{display:grid;gap:6px;margin-bottom:16px;}
   .listen-raster .karte-zeile{background:var(--karte);border:1px solid var(--rahmen);border-radius:12px;min-width:0;}
   .listen-raster .karte-zeile:last-child{border-bottom:1px solid var(--rahmen);}
@@ -1338,7 +1353,7 @@ const CSS_BASIS = `
   .kachel-balken{flex:1;height:6px;border-radius:3px;background:var(--rahmen);overflow:hidden;}
   .kachel-balken > span{display:block;height:100%;background:var(--haupt-hell);border-radius:3px;}
   .kachel-balken.voll > span{background:var(--gelernt);}
-  .kachel-voll{font-size:0.7rem;font-weight:900;color:var(--auf-haupt);background:var(--gelernt);border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .kachel-voll{font-size:0.7rem;font-weight:900;color:var(--auf-gelernt);background:var(--gelernt);border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .raster-chip.aktiv-kachel{background:var(--haupt) !important;border-color:var(--haupt) !important;color:var(--auf-haupt) !important;}
   .raster-chip.aktiv-kachel .kachel-balken{background:rgba(255,255,255,0.35);}
   .raster-chip.aktiv-kachel .kachel-balken > span{background:var(--auf-haupt);}
@@ -1362,7 +1377,7 @@ const CSS_BASIS = `
   .akzent-kachel.ok{background:var(--haupt-zart);border-color:var(--haupt);color:var(--richtig-dunkel);}
   .akzent-kachel.falsch{background:var(--falsch-flaeche);border-color:var(--falsch);color:var(--falsch);}
   .akzent-kachel.loesung{background:var(--gelb-flaeche);border-color:var(--gelb);color:var(--haupt);}
-  .akzent-kachel.blink{background:var(--falsch);border-color:var(--falsch);color:var(--auf-haupt);}
+  .akzent-kachel.blink{background:var(--falsch);border-color:var(--falsch);color:var(--auf-falsch);}
   .akzent-aktionen{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;}
   .akzent-pruefen{min-width:60%;padding:14px 28px;font-size:1.15rem;}
   .akzent-leiste{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:12px;padding:10px 6px;background:var(--haupt-flaeche);border-radius:12px;}
@@ -1394,9 +1409,9 @@ const CSS_BASIS = `
   .spalten-rolle-btn{font-size:0.72rem;font-weight:700;padding:4px 8px;border-radius:6px;border:1.5px solid var(--rahmen);background:var(--knopf);color:var(--text2);cursor:pointer;font-family:inherit;}
   .spalten-rolle-btn.frage{background:var(--haupt);color:var(--auf-haupt);border-color:var(--haupt);}
   .spalten-rolle-btn.antwort{background:var(--haupt);color:var(--auf-haupt);border-color:var(--haupt);}
-  .spalten-rolle-btn.info{background:var(--gelb);color:var(--auf-haupt);border-color:var(--gelb);}
+  .spalten-rolle-btn.info{background:var(--gelb);color:var(--auf-gelb);border-color:var(--gelb);}
   .spalten-modus-btn{font-size:0.72rem;font-weight:700;padding:4px 8px;border-radius:6px;border:1.5px solid var(--rahmen);background:var(--knopf);color:var(--text2);cursor:pointer;font-family:inherit;}
-  .spalten-modus-btn.aktiv{background:var(--haupt-hell);color:var(--auf-haupt);border-color:var(--haupt-hell);}
+  .spalten-modus-btn.aktiv{background:var(--haupt-hell);color:var(--auf-haupt-hell);border-color:var(--haupt-hell);}
   .quiz-vorig{background:var(--haupt-flaeche);border:1px solid var(--haupt-zart);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:0.88rem;color:var(--haupt);}
   .quiz-vorig-label{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--haupt);margin-bottom:3px;}
   .quiz-vorig.nicht{background:var(--falsch-flaeche);border-color:var(--falsch-zart);color:var(--falsch-dunkel);}
@@ -1418,7 +1433,7 @@ const CSS_BASIS = `
   .karte-btn{padding:22px 16px;border-radius:14px;font-size:1.05rem;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s;width:100%;}
   .karte-btn:active{opacity:.8;}
   .karte-btn-ja{background:var(--haupt);color:var(--auf-haupt);}
-  .karte-btn-nein{background:var(--falsch);color:var(--auf-haupt);}
+  .karte-btn-nein{background:var(--falsch);color:var(--auf-falsch);}
   .karte-aufdecken{text-align:center;padding:20px 0;color:var(--text3);font-size:0.9rem;font-style:italic;}
   .score-slider{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;outline:none;cursor:pointer;}
   .score-slider::-webkit-slider-runnable-track{height:4px;background:var(--rahmen);border-radius:2px;}
@@ -4395,7 +4410,7 @@ export default function VokabelApp() {
   const liveFarbe = hex => {
     if (!farbRad) return;
     if (farbRad.element) { liveElement(`${farbRad.element.schluessel}{${farbRad.element.eigenschaft}:${hex} !important}`); return; }
-    const f = farbenAus({ ...farbRad.basis, [farbRad.rolle]: hex });
+    const f = farbenAus(mitFestenSchriften(farbRad.basis, farbRad.rolle, hex));
     const root = document.documentElement.style;
     Object.entries(f).forEach(([k, v]) => root.setProperty("--" + k, v));
     setzeSystemLeiste(f.leiste);
@@ -4410,9 +4425,9 @@ export default function VokabelApp() {
       speichereEinst({ ...einstellungen, farbVerlauf: verlauf });
       liveEntfernen(); setFarbRad(null); return;
     }
-    if (ziel === "vorschau") { setFarbVorschau(f => ({ ...f, [rolle]: hex })); speichereEinst({ ...einstellungen, farbVerlauf: verlauf }); }
+    if (ziel === "vorschau") { setFarbVorschau(f => mitFestenSchriften(f || farbRad.basis, rolle, hex)); speichereEinst({ ...einstellungen, farbVerlauf: verlauf }); }
     else speichereEinst({ ...einstellungen, farbVerlauf: verlauf,
-      eigeneSchemata: eigeneSchemata.map(x => x.id === ziel ? { ...x, farben: { ...x.farben, [rolle]: hex } } : x) });
+      eigeneSchemata: eigeneSchemata.map(x => x.id === ziel ? { ...x, farben: mitFestenSchriften(x.farben, rolle, hex) } : x) });
     liveEntfernen(); setFarbRad(null);
   }
   function farbRadAbbrechen() { liveEntfernen(); setFarbRad(null); }
@@ -4869,7 +4884,7 @@ export default function VokabelApp() {
               {...tt("Auswahl auf den gespeicherten Stand zurücksetzen")}>Zurücksetzen</button>
           )}
           <button onClick={toggleSlotSektion} className="toggle-opt aktiv slot-kopf-name" data-slot-kopf-name
-            style={geaendert ? {background:"var(--falsch)", color:"var(--auf-haupt)"} : undefined}
+            style={geaendert ? {background:"var(--falsch)", color:"var(--auf-falsch)"} : undefined}
             {...tt(gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, aktionen, { langText: name })}>
             {name}
           </button>
@@ -6552,7 +6567,7 @@ export default function VokabelApp() {
                                 background:
                                   btn.status === "richtig" ? "var(--haupt)" :
                                   btn.status === "falsch"  ? "var(--falsch)" : "var(--rahmen)",
-                                color: btn.status === "neutral" ? "var(--text-stark)" : "var(--auf-haupt)",
+                                color: btn.status === "neutral" ? "var(--text-stark)" : btn.status === "falsch" ? "var(--auf-falsch)" : "var(--auf-haupt)",
                                 transition: "background .15s",
                               }}
                             >{btn.text}</button>
@@ -7726,7 +7741,7 @@ export default function VokabelApp() {
                                   onClick={() => setQuizDiktatUebersetzung("")}>Keine</button>
                                 {abfragbar.filter(t => t !== quizDiktatSpalte).map(typ => (
                                   <button {...tt("Diese Spalte als Übersetzung/Hinweis anzeigen")} key={typ} className="typ-btn"
-                                    style={quizDiktatUebersetzung===typ ? {background:"var(--gelb)",color:"var(--auf-haupt)",borderColor:"var(--gelb)"} : undefined}
+                                    style={quizDiktatUebersetzung===typ ? {background:"var(--gelb)",color:"var(--auf-gelb)",borderColor:"var(--gelb)"} : undefined}
                                     onClick={() => setQuizDiktatUebersetzung(typ)}>
                                     {kombiListe.spalten[typ].name || typ}
                                   </button>
