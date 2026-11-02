@@ -886,6 +886,12 @@ const FARB_ROLLEN = [
   ["auf-gelb", "Schrift auf Hervorhebung", "Text auf gelben Markierungen (Auswahl-Nummern, Info-Spalte)"],
   ["auf-haupt-hell", "Schrift auf Hauptfarbe hell", "Text auf hellen Haupt-Knöpfen (Antwortart der Spalte)"],
   ["auf-gelernt", "Schrift auf Statistik: Gelernt", "Häkchen auf 100 %-Kacheln"],
+  ["app-kopf-schrift", "Schrift im App-Kopf", "Titel „Vokabel-Trainer“"], ["app-kopf-schrift-leise", "Schrift im App-Kopf leise", "nicht gewählte Tabs"],
+  ["kopf-schrift", "Schrift auf Kopfzeilen", "Überschriften der Einstellungs-Köpfe, Session-, Listen- und Statistik-Kopf"],
+  ["kopf-schrift-leise", "Schrift auf Kopfzeilen leise", "Unterzeilen und Pfeile der Kopfzeilen, Info-Zeile im Session-Kopf"],
+  ["kopf-offen", "Geöffneter Kopf", "Hintergrund eines aufgeklappten Einstellungs-Kopfs"], ["kopf-offen-schrift", "Schrift auf geöffnetem Kopf", "Überschrift und Pfeil eines aufgeklappten Einstellungs-Kopfs"],
+  ["dialog-schrift", "Schrift in Dialogen", "Titel und Text der Fenster"],
+  ["abfrage-schrift", "Schrift auf Abfrage-Karten", "Frage und Antwort"], ["abfrage-schrift-leise", "Schrift auf Abfrage-Karten leise", "Spaltenname über Frage und Antwort"],
   ["flaeche", "Fläche grau", "leichte Hinterlegungen"],
   ["text-stark", "Text kräftig", "Überschriften, Eingaben"], ["text", "Text", "normaler Text"], ["text2", "Text leise", "Untertitel, Hinweise"], ["text3", "Text sehr leise", "Zahlen in Klammern"],
   ["rahmen", "Rahmen", "Linien und Ränder"],
@@ -943,6 +949,27 @@ const FARB_VORLAGEN = [
   { id: "espresso", name: "Espresso", farben: { "leiste": "#1a1411", "haupt": "#d19a66", "haupt-hell": "#e3b98a", "auf-haupt": "#2a1a0e", "hintergrund": "#1a1411", "karte": "#251d18", "flaeche": "#30261f",
     "text-stark": "#f5ede4", "text": "#e6dccf", "text2": "#bba995", "text3": "#8f7e6c", "rahmen": "#3d3128", "richtig": "#7fbf6a", "falsch": "#e57060",
     "gelb": "#f0c050", "gelernt-effekt": "#fff176", "orange": "#e8924a", "info": "#c09ae0", "gelernt": "#7fbf6a", "arbeit": "#d9b44a", "nie": "#4a3d33", "negativ": "#d9675a" }, dunkel: true },
+  // bunte Pastell-Vorlagen: Kopf, Kopfzeilen, Abfrage-Karten, Dialoge, Knöpfe, Info-Kästen und Start je eigener Ton
+  { id: "sorbet", name: "Sorbet", farben: { "haupt": "#d9756c", "haupt-hell": "#f6c1b8", "auf-haupt": "#3a1f1c", "hintergrund": "#fff6f0", "karte": "#ffffff", "flaeche": "#fdeee6", "rahmen": "#f0d9cf", "app-kopf": "#cdeee2",
+    "kopfzeile": "#e6dcf7", "abfrage-karte": "#fffbe8", "dialog": "#fdf4ff", "knopf": "#fff0e8", "info-kasten": "#e3f4ee", "haupt-flaeche": "#fbe1dc", "start": "#9fd8c4", "auf-start": "#1d3a31",
+    "kopf-offen": "#d5c6f2", "kopf-offen-schrift": "#3d2a63", "text-stark": "#2e2420", "text": "#4a3c36", "text2": "#85736b", "text3": "#b3a39b", "richtig": "#5fae8c", "falsch": "#e0707a",
+    "gelb": "#f7cf6b", "gelernt-effekt": "#fff176", "orange": "#f2a46b", "info": "#9b84d6", "gelernt": "#7cc4a4", "arbeit": "#f7d98c", "nie": "#ebe0da", "negativ": "#f09aa0" } },
+  { id: "lagune", name: "Lagune", farben: { "haupt": "#3fa3a9", "haupt-hell": "#a6dfe2", "auf-haupt": "#0d2e31", "hintergrund": "#f1fafb", "karte": "#ffffff", "flaeche": "#e2f2f4", "rahmen": "#cfe6ea", "app-kopf": "#bfe6f5",
+    "kopfzeile": "#ffe0d6", "abfrage-karte": "#ffffff", "dialog": "#f4fbff", "knopf": "#eef8fa", "info-kasten": "#fff1e8", "haupt-flaeche": "#d8f0f2", "start": "#f4a48e", "auf-start": "#4a1d12",
+    "kopf-offen": "#ffcdbd", "kopf-offen-schrift": "#6a2a18", "text-stark": "#12272b", "text": "#2b4146", "text2": "#5f7a80", "text3": "#93aab0", "richtig": "#4bb08a", "falsch": "#e66b6b",
+    "gelb": "#f6c85f", "gelernt-effekt": "#fff176", "orange": "#f39a6b", "info": "#7a8be0", "gelernt": "#4fb3a2", "arbeit": "#f6d27f", "nie": "#d9e7ea", "negativ": "#ef8f8f" } },
+  { id: "blumenwiese", name: "Blumenwiese", farben: { "haupt": "#de7aa2", "haupt-hell": "#f8cadb", "auf-haupt": "#4a1830", "hintergrund": "#fbfdf2", "karte": "#ffffff", "flaeche": "#f2f6e4", "rahmen": "#e3e8cf", "app-kopf": "#fff2b8",
+    "kopfzeile": "#d9f0c9", "abfrage-karte": "#fffdf6", "dialog": "#fff7fb", "knopf": "#f8fbec", "info-kasten": "#fff6d6", "haupt-flaeche": "#fde3ec", "start": "#b8e09a", "auf-start": "#213a12",
+    "kopf-offen": "#f8cadb", "kopf-offen-schrift": "#5a1d3a", "text-stark": "#2a2a1c", "text": "#3f3f2c", "text2": "#75765c", "text3": "#a5a68c", "richtig": "#6cb36a", "falsch": "#e46f86",
+    "gelb": "#f5c842", "gelernt-effekt": "#fff176", "orange": "#f4a259", "info": "#a17ad6", "gelernt": "#8acb6e", "arbeit": "#f6d56a", "nie": "#e8ead9", "negativ": "#ef8fa4" } },
+  { id: "nordlicht", name: "Nordlicht", farben: { "haupt": "#8a78d6", "haupt-hell": "#cbc2f2", "auf-haupt": "#1b1440", "hintergrund": "#f6f5fd", "karte": "#ffffff", "flaeche": "#ecebf8", "rahmen": "#dddbf0", "app-kopf": "#c8ecdf",
+    "kopfzeile": "#d6e6fb", "abfrage-karte": "#ffffff", "dialog": "#f9f8ff", "knopf": "#f2f1fb", "info-kasten": "#e5f5ef", "haupt-flaeche": "#e6e1fa", "start": "#8fd3b9", "auf-start": "#133a2c",
+    "kopf-offen": "#c4d9f7", "kopf-offen-schrift": "#1f3c66", "text-stark": "#1f1d33", "text": "#36344d", "text2": "#6c6a86", "text3": "#9e9cb6", "richtig": "#4fae8a", "falsch": "#e07085",
+    "gelb": "#f3c75d", "gelernt-effekt": "#fff176", "orange": "#f0a070", "info": "#6f8de0", "gelernt": "#7fc8ac", "arbeit": "#f1d488", "nie": "#e2e1ef", "negativ": "#ee8fa0" } },
+  { id: "sommerfest", name: "Sommerfest", farben: { "haupt": "#d98330", "haupt-hell": "#fad3a6", "auf-haupt": "#3a2005", "hintergrund": "#fffaf2", "karte": "#ffffff", "flaeche": "#fdf0dd", "rahmen": "#f2dfc2", "app-kopf": "#ffd0dc",
+    "kopfzeile": "#c9eef0", "abfrage-karte": "#fffdf8", "dialog": "#fff8fa", "knopf": "#fff4e6", "info-kasten": "#e6f6f7", "haupt-flaeche": "#fde6c9", "start": "#f28fab", "auf-start": "#4d1225",
+    "kopf-offen": "#a9e2e6", "kopf-offen-schrift": "#134447", "text-stark": "#2d2116", "text": "#47372a", "text2": "#85705c", "text3": "#b5a28f", "richtig": "#56b07e", "falsch": "#e2606f",
+    "gelb": "#f4c542", "gelernt-effekt": "#fff176", "orange": "#ee8a4b", "info": "#8f79d4", "gelernt": "#6cc196", "arbeit": "#f6cf72", "nie": "#efe4d6", "negativ": "#ec8a95" } },
 ];
 function hexZuRgb(h) {
   h = (h || "#000").replace("#", "");
@@ -965,12 +992,17 @@ function farbenAus(f) {
   // Schrift auf Liste & Start: gewählte Farbe, sonst wie auf der Hauptfarbe (keine automatische Umstellung)
   return { ...f, "start": start, "auf-start": f["auf-start"] || f["auf-haupt"],
     "auf-falsch": f["auf-falsch"] || f["auf-haupt"], "auf-gelb": f["auf-gelb"] || f["auf-haupt"],
-    "auf-haupt-hell": f["auf-haupt-hell"] || f["auf-haupt"], "auf-gelernt": f["auf-gelernt"] || f["auf-haupt"], "leiste": f.leiste || f.haupt, "gelernt-effekt": f["gelernt-effekt"] || "#fff176",
+    "auf-haupt-hell": f["auf-haupt-hell"] || f["auf-haupt"], "auf-gelernt": f["auf-gelernt"] || f["auf-haupt"],
+    "app-kopf-schrift": f["app-kopf-schrift"] || f["text-stark"], "app-kopf-schrift-leise": f["app-kopf-schrift-leise"] || f.text2,
+    "kopf-schrift": f["kopf-schrift"] || f["text-stark"], "kopf-schrift-leise": f["kopf-schrift-leise"] || f.text2,
+    "kopf-offen-schrift": f["kopf-offen-schrift"] || f.haupt,
+    "dialog-schrift": f["dialog-schrift"] || f["text-stark"],
+    "abfrage-schrift": f["abfrage-schrift"] || f["text-stark"], "abfrage-schrift-leise": f["abfrage-schrift-leise"] || f.text2, "leiste": f.leiste || f.haupt, "gelernt-effekt": f["gelernt-effekt"] || "#fff176",
     // eigene Rollen für Flächen; ohne eigenen Wert wie bisher bzw. mit einem Hauch der Hauptfarbe
     "app-kopf": f["app-kopf"] || k, "kopfzeile": f.kopfzeile || mische(f["haupt-hell"], k, 0.93),
     "abfrage-karte": f["abfrage-karte"] || k, "dialog": f.dialog || k,
     "knopf": f.knopf || f.hintergrund, "info-kasten": f["info-kasten"] || mische(f["haupt-hell"], k, 0.9),
-    "haupt-zart": mische(f["haupt-hell"], k, 0.5), "haupt-flaeche": f["haupt-flaeche"] || mische(f["haupt-hell"], k, 0.88),
+    "haupt-zart": mische(f["haupt-hell"], k, 0.5), "haupt-flaeche": f["haupt-flaeche"] || mische(f["haupt-hell"], k, 0.88), "kopf-offen": f["kopf-offen"] || f["haupt-flaeche"] || mische(f["haupt-hell"], k, 0.88),
     "richtig-dunkel": mische(f.richtig, f["text-stark"], 0.35), "richtig-flaeche": mische(f.richtig, k, 0.9),
     "text4": mische(f.text3, k, 0.35), "flaeche-hell": mische(f.flaeche, k, 0.7),
     "falsch-dunkel": mische(f.falsch, f["text-stark"], 0.2), "falsch-zart": mische(f.falsch, k, 0.55), "falsch-flaeche": mische(f.falsch, k, 0.92),
@@ -978,12 +1010,13 @@ function farbenAus(f) {
     "info-flaeche": mische(f.info, k, 0.9),
   };
 }
-// Schriften, die (noch ohne eigenen Wert) von „Schrift auf Hauptfarbe“ übernommen werden – eine Schrift gilt nur
-// auf ihrem Hintergrund: Ändert man eine Rolle, werden die davon abhängigen Schriften vorher mit ihrem Wert festgeschrieben
-const SCHRIFT_ABHAENGIG = { "auf-haupt": ["auf-start", "auf-falsch", "auf-gelb", "auf-haupt-hell", "auf-gelernt"] };
+// Schriften und Flächen, die (noch ohne eigenen Wert) von einer anderen Rolle übernommen werden – eine Schrift gilt nur
+// auf ihrem Hintergrund: Ändert man eine Rolle, werden die davon abhängigen vorher mit ihrem bisherigen Wert festgeschrieben
+const FESTE_ROLLEN = ["auf-start", "auf-falsch", "auf-gelb", "auf-haupt-hell", "auf-gelernt", "app-kopf-schrift", "app-kopf-schrift-leise",
+  "kopf-schrift", "kopf-schrift-leise", "kopf-offen", "kopf-offen-schrift", "dialog-schrift", "abfrage-schrift", "abfrage-schrift-leise"];
 function mitFestenSchriften(basis, rolle, hex) {
-  const alt = farbenAus(basis), neu = { ...basis };
-  (SCHRIFT_ABHAENGIG[rolle] || []).forEach(r => { if (!basis[r]) neu[r] = alt[r]; });
+  const alt = farbenAus(basis), danach = farbenAus({ ...basis, [rolle]: hex }), neu = { ...basis };
+  FESTE_ROLLEN.forEach(r => { if (r !== rolle && !basis[r] && alt[r] !== danach[r]) neu[r] = alt[r]; });
   neu[rolle] = hex;
   return neu;
 }
@@ -991,6 +1024,32 @@ function mitFestenSchriften(basis, rolle, hex) {
 const FARB_BASIS = { "haupt-zart": "haupt-hell", "richtig-dunkel": "richtig", "richtig-flaeche": "richtig",
   "text4": "text3", "flaeche-hell": "flaeche", "falsch-dunkel": "falsch", "falsch-zart": "falsch", "falsch-flaeche": "falsch",
   "gelb-dunkel": "gelb", "gelb-zart": "gelb", "gelb-flaeche": "gelb", "info-flaeche": "info" };
+// Zufällige Pastell-Farben: zufälliger Grundton, Begleittöne nach einer zufälligen Harmonie
+// (benachbart, Gegenfarbe, Dreiklang); Schrift jeweils dunkel im Ton der Fläche
+function hslZuHex(h, s, l) {
+  h = ((h % 360) + 360) % 360; s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return "#" + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
+}
+function zufallsFarben(zufall = Math.random) {
+  const z = (a, b) => a + zufall() * (b - a);
+  const h0 = z(0, 360);
+  const harmonie = [[30, -30], [180, 150], [120, 240], [60, 200]][Math.floor(zufall() * 4)];
+  const h1 = h0 + harmonie[0], h2 = h0 + harmonie[1];
+  const satt = z(55, 75);
+  const c = (h, s, l) => hslZuHex(h, s, l);
+  return {
+    "haupt": c(h0, satt, z(56, 61)), "haupt-hell": c(h0, satt, 82), "auf-haupt": c(h0, 50, 13),
+    "hintergrund": c(h0, 60, 97), "karte": "#ffffff", "flaeche": c(h0, 40, 93), "rahmen": c(h0, 30, 86),
+    "app-kopf": c(h1, 60, 88), "kopfzeile": c(h2, 60, 90), "abfrage-karte": c(h1, 70, 98), "dialog": c(h2, 60, 98),
+    "knopf": c(h0, 60, 95), "info-kasten": c(h1, 50, 93), "haupt-flaeche": c(h0, 60, 91),
+    "start": c(h2, satt, z(68, 74)), "auf-start": c(h2, 45, 17), "kopf-offen": c(h1, 55, 82), "kopf-offen-schrift": c(h1, 45, 20),
+    "text-stark": c(h0, 20, 14), "text": c(h0, 15, 25), "text2": c(h0, 10, 45), "text3": c(h0, 8, 64),
+    "richtig": c(150, 38, 52), "falsch": c(355, 65, 64), "gelb": c(43, 88, 64), "gelernt-effekt": "#fff176",
+    "orange": c(25, 82, 66), "info": c(255, 55, 66), "gelernt": c(150, 40, 60), "arbeit": c(45, 80, 76), "nie": c(h0, 15, 89), "negativ": c(355, 75, 76),
+  };
+}
 /* FARBSCHEMATA-ENDE */
 // aktuelle Farben (beim Rendern gesetzt); SVG-Attribute kennen kein var() → fv() setzt die Farbe ein
 let F = farbenAus(FARB_VORLAGEN[0].farben);
@@ -1152,7 +1211,7 @@ const CSS_BASIS = `
   body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
   input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
   .app{max-width:600px;margin:0 auto;padding:0 0 80px;}
-  .topbar{background:var(--app-kopf);border-bottom:1px solid var(--rahmen);padding:14px 16px;display:flex;align-items:center;gap:12px;}
+  .topbar{background:var(--app-kopf);color:var(--app-kopf-schrift);border-bottom:1px solid var(--rahmen);padding:14px 16px;display:flex;align-items:center;gap:12px;}
   .topbar-title{font-size:1.05rem;font-weight:700;flex:1;text-align:center;}
   .klammer-hinweis{font-size:0.7em;font-weight:500;color:var(--text3);}
   .mc-raster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px;}
@@ -1166,9 +1225,9 @@ const CSS_BASIS = `
   .topbar-back{background:var(--haupt);color:var(--auf-haupt);font-size:0.88rem;font-weight:600;cursor:pointer;border:none;padding:8px 12px;border-radius:10px;font-family:inherit;transition:opacity .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;}
   .topbar-back:active{opacity:.8;}
   .tabs{display:flex;background:var(--app-kopf);border-bottom:1px solid var(--rahmen);}
-  .statistik-listen-header{background:var(--kopfzeile);border-bottom:1px solid var(--rahmen);padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;z-index:8;}
-  .liste-detail-header{background:var(--kopfzeile);border-bottom:1px solid var(--rahmen);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;z-index:9;}
-  .tab{flex:1;padding:12px 4px;font-size:0.82rem;font-weight:600;color:var(--text2);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;}
+  .statistik-listen-header{background:var(--kopfzeile);color:var(--kopf-schrift);border-bottom:1px solid var(--rahmen);padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;z-index:8;}
+  .liste-detail-header{background:var(--kopfzeile);color:var(--kopf-schrift);border-bottom:1px solid var(--rahmen);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;z-index:9;}
+  .tab{flex:1;padding:12px 4px;font-size:0.82rem;font-weight:600;color:var(--app-kopf-schrift-leise);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;}
   .tab.aktiv{color:var(--haupt);border-bottom-color:var(--haupt);}
   .sektion{padding:20px 16px 0;}
   .sektion-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
@@ -1197,7 +1256,7 @@ const CSS_BASIS = `
   .inp-label{font-size:0.8rem;font-weight:600;color:var(--text2);margin-bottom:6px;display:block;}
   /* Fenster oben anzeigen, damit die Bildschirmtastatur sie nicht verdeckt */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-start;justify-content:center;z-index:100;padding:max(16px, env(safe-area-inset-top)) 16px 16px;overflow-y:auto;}
-  .modal{background:var(--dialog);border-radius:16px;width:100%;max-width:500px;padding:24px;margin-top:4vh;box-sizing:border-box;}
+  .modal{background:var(--dialog);color:var(--dialog-schrift);border-radius:16px;width:100%;max-width:500px;padding:24px;margin-top:4vh;box-sizing:border-box;}
   .modal-titel{font-size:1.1rem;font-weight:700;margin-bottom:16px;}
   .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
   .leer{text-align:center;padding:48px 24px;color:var(--text2);}
@@ -1262,12 +1321,12 @@ const CSS_BASIS = `
   .start-knopf{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 12px;min-height:58px;}
   .start-knopf b{font-size:1.1rem;font-weight:800;}
   .start-knopf span{font-size:0.85rem;font-weight:400;opacity:0.95;}
-  .slot-kopf{position:sticky;z-index:9;background:var(--kopfzeile);border-bottom:1px solid var(--rahmen);padding:10px 16px;}
+  .slot-kopf{position:sticky;z-index:9;background:var(--kopfzeile);color:var(--kopf-schrift);border-bottom:1px solid var(--rahmen);padding:10px 16px;}
   .slot-kopf.gruen{background:var(--haupt);border-bottom-color:var(--haupt);}
   .slot-kopf-name{flex:1;min-width:0;padding:7px 12px;font-size:0.95rem;border-radius:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
   .slot-kopf-name.toggle-opt.aktiv{background:var(--start);color:var(--auf-start);}
   .slot-kopf.gruen .slot-kopf-name{border:1.5px solid rgba(255,255,255,0.45);}
-  .slot-kopf-info{font-size:0.75rem;color:var(--text2);text-align:center;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .slot-kopf-info{font-size:0.75rem;color:var(--kopf-schrift-leise);text-align:center;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .slot-kopf.gruen .slot-kopf-info{color:var(--auf-haupt);opacity:0.85;}
   .farbmodus-leiste{position:fixed;right:12px;bottom:12px;z-index:10002;display:flex;gap:6px;padding:6px 8px;background:var(--karte);border:1.5px solid var(--rahmen);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.2);font-family:system-ui,sans-serif;}
   .farbfeld-hintergrund{position:fixed;inset:0;z-index:10003;background:rgba(0,0,0,0.15);display:flex;align-items:flex-end;justify-content:center;}
@@ -1275,12 +1334,13 @@ const CSS_BASIS = `
   .farbfeld-hintergrund.oben .farbfeld{border-radius:0 0 16px 16px;padding:14px 16px 16px;box-shadow:0 6px 24px rgba(0,0,0,0.25);}
   .farbfeld{width:100%;max-width:520px;max-height:48vh;overflow-y:auto;background:var(--karte);border-radius:16px 16px 0 0;padding:14px 16px 70px;box-shadow:0 -6px 24px rgba(0,0,0,0.25);font-family:system-ui,sans-serif;box-sizing:border-box;}
   .farb-raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
-  .einst-kopf{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;margin:0 0 8px;background:var(--kopfzeile);border:1px solid var(--rahmen);border-radius:12px;font-family:inherit;font-size:0.95rem;font-weight:700;color:var(--text-stark);cursor:pointer;text-align:left;}
-  .einst-kopf.offen{background:var(--haupt-flaeche);border-color:var(--haupt-zart);color:var(--haupt);}
+  .einst-kopf{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;margin:0 0 8px;background:var(--kopfzeile);border:1px solid var(--rahmen);border-radius:12px;font-family:inherit;font-size:0.95rem;font-weight:700;color:var(--kopf-schrift);cursor:pointer;text-align:left;}
+  .einst-kopf.offen{background:var(--kopf-offen);border-color:var(--haupt-zart);color:var(--kopf-offen-schrift);}
   .einst-kopf-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
-  .einst-kopf-sub{font-size:0.75rem;font-weight:400;color:var(--text2);}
-  .einst-kopf-pfeil{font-size:0.9rem;color:var(--text3);flex:0 0 auto;}
-  .einst-kopf.offen .einst-kopf-pfeil{color:var(--haupt);}
+  .einst-kopf-sub{font-size:0.75rem;font-weight:400;color:var(--kopf-schrift-leise);}
+  .einst-kopf-pfeil{font-size:0.9rem;color:var(--kopf-schrift-leise);flex:0 0 auto;}
+  .einst-kopf.offen .einst-kopf-pfeil{color:var(--kopf-offen-schrift);}
+  .einst-kopf.offen .einst-kopf-sub{color:var(--kopf-offen-schrift);opacity:0.8;}
   .einst-inhalt{margin-bottom:14px;}
   .neue-session-knopf{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:12px;}
   .neue-session-wahl{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--rahmen);border-radius:12px;background:var(--knopf);color:var(--text-stark);font-family:inherit;cursor:pointer;}
@@ -1297,6 +1357,12 @@ const CSS_BASIS = `
   .farb-name{font-size:0.78rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .farb-zeile{display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--flaeche);cursor:pointer;}
   .farb-tupfer{width:42px;height:32px;border:1px solid var(--rahmen);border-radius:8px;flex-shrink:0;box-shadow:inset 0 0 0 2px var(--karte);}
+  /* Farb-Werkzeuge (Farbmodus-Leiste, Farbfeld, Farbwähler, Namensfenster): feste Farben, unabhängig vom Schema – immer lesbar */
+  [data-farbmodus-ui]{--karte:#ffffff;--dialog:#ffffff;--hintergrund:#f6f6f4;--flaeche:#eeeeec;--flaeche-hell:#f6f6f4;--knopf:#f4f4f2;--rahmen:#d2d2cc;--text-stark:#1a1a1a;--text:#2b2b2b;--text2:#5c5c58;--text3:#8a8a85;--text4:#b0b0aa;--dialog-schrift:#1a1a1a;--kopf-schrift:#1a1a1a;--haupt:#2d6a4f;--haupt-hell:#52b788;--auf-haupt:#ffffff;--haupt-flaeche:#e6f2ec;--haupt-zart:#a9d6c0;--falsch:#c0392b;--auf-falsch:#ffffff;--gelb:#f9a825;--gelb-flaeche:#fdf3d8;--info:#6a1b9a;color:#1a1a1a;}
+  [data-farbmodus-ui] .btn.btn-primary{background:#2d6a4f !important;color:#fff !important;border-color:transparent !important;}
+  [data-farbmodus-ui] .btn.btn-ghost{background:#fff !important;color:#2d6a4f !important;border-color:#2d6a4f !important;}
+  [data-farbmodus-ui] .btn.btn-ghost-filled{background:#f4f4f2 !important;color:#2d6a4f !important;border-color:#2d6a4f !important;}
+  [data-farbmodus-ui] .farbmodus-leiste,[data-farbmodus-ui] .farbfeld,[data-farbmodus-ui] .farbrad{background:#fff !important;color:#1a1a1a !important;}
   .farbrad-rahmen{position:fixed;left:0;right:0;bottom:0;z-index:10006;display:flex;justify-content:center;pointer-events:none;}
   .farbrad-rahmen.oben{bottom:auto;top:0;}
   .farbrad{pointer-events:auto;width:100%;max-width:520px;background:var(--karte);border-radius:16px 16px 0 0;padding:10px 14px 12px;box-shadow:0 -4px 22px rgba(0,0,0,0.28);font-family:system-ui,sans-serif;box-sizing:border-box;}
@@ -1366,7 +1432,7 @@ const CSS_BASIS = `
   .score-pos{background:var(--haupt-flaeche);color:var(--haupt);}
   .score-neg{background:var(--falsch-flaeche);color:var(--falsch);}
   .score-null{background:var(--rahmen);color:var(--text2);}
-  .quiz-frage-box{background:var(--abfrage-karte);border:1px solid var(--rahmen);border-radius:14px;padding:20px;margin-bottom:14px;}
+  .quiz-frage-box{background:var(--abfrage-karte);color:var(--abfrage-schrift);border:1px solid var(--rahmen);border-radius:14px;padding:20px;margin-bottom:14px;}
   .akzent-rahmen{container-type:inline-size;}
   .akzent-wort{--k:min(48px, calc((100cqw - (var(--n) - 1) * 4px) / var(--n)));display:flex;flex-wrap:wrap;justify-content:center;column-gap:calc(var(--k) * 0.6);row-gap:8px;margin-top:8px;}
   .akzent-wortgruppe{display:flex;gap:4px;}
@@ -1384,10 +1450,10 @@ const CSS_BASIS = `
   .akzent-variante{min-width:48px;height:58px;border-radius:10px;border:1.5px solid var(--haupt);background:var(--karte);font-family:inherit;font-size:1.9rem;font-weight:700;color:var(--text-stark);cursor:pointer;}
   .wiederholung-karte{background:var(--gelb-flaeche);border:2px dashed var(--orange);text-align:center;}
   .wiederholung-marke{color:var(--orange);font-size:0.85rem;font-weight:700;}
-  .quiz-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:6px;}
+  .quiz-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--abfrage-schrift-leise);margin-bottom:6px;}
   .quiz-frage-text{font-size:1.5rem;font-weight:700;line-height:1.3;}
   .quiz-info-text{font-size:0.85rem;color:var(--text2);margin-top:6px;}
-  .quiz-antwort-box{background:var(--abfrage-karte);border:1.5px solid var(--rahmen);border-radius:14px;padding:18px;margin-bottom:14px;transition:border-color .2s,background .2s;min-height:120px;}
+  .quiz-antwort-box{background:var(--abfrage-karte);color:var(--abfrage-schrift);border:1.5px solid var(--rahmen);border-radius:14px;padding:18px;margin-bottom:14px;transition:border-color .2s,background .2s;min-height:120px;}
   .quiz-antwort-box.richtig{border-color:var(--haupt);background:var(--haupt-flaeche);}
   .quiz-antwort-box.falsch{border-color:var(--falsch);background:var(--falsch-flaeche);}
   .quiz-antwort-box.aufgedeckt{background:var(--gelb-flaeche);border-color:var(--gelb);}
@@ -1401,7 +1467,7 @@ const CSS_BASIS = `
   .quiz-fortschritt{font-size:0.82rem;color:var(--text2);}
   .quiz-aktionen{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;}
   .quiz-action-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;background:var(--karte);border-top:1px solid var(--rahmen);padding:12px 16px 20px;display:flex;gap:10px;flex-wrap:wrap;z-index:20;}
-  .quiz-liste-sticky{position:sticky;top:57px;background:var(--kopfzeile);border-bottom:1px solid var(--rahmen);padding:8px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:9;}
+  .quiz-liste-sticky{position:sticky;top:57px;background:var(--kopfzeile);color:var(--kopf-schrift);border-bottom:1px solid var(--rahmen);padding:8px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:9;}
   .vok-zeile{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--flaeche);cursor:pointer;}
   .vok-zeile:last-child{border-bottom:none;}
   .vok-zeile:active{background:var(--knopf);}
@@ -4266,6 +4332,15 @@ export default function VokabelApp() {
     speichereEinst({ ...einstellungen, eigeneSchemata: [...eigeneSchemata, neu], farbschema: neu.id });
     setSchemaBearbeiten(neu.id);
   }
+  // 🎲 Zufällige Farben: ersetzt das Schema „Zufall“ (umbenannte oder duplizierte bleiben erhalten)
+  function zufallsSchema() {
+    const farben = zufallsFarben();
+    const alt = eigeneSchemata.find(x => x.zufall && x.name === "Zufall");
+    const sch = alt ? { ...alt, farben, elemente: {} } : { id: "zufall_" + Date.now(), name: "Zufall", basis: "natur", dunkel: false, zufall: true, farben, elemente: {} };
+    speichereEinst({ ...einstellungen, farbschema: sch.id,
+      eigeneSchemata: alt ? eigeneSchemata.map(x => x.id === alt.id ? sch : x) : [...eigeneSchemata, sch] });
+    if (schemaBearbeiten && schemaBearbeiten !== sch.id) setSchemaBearbeiten(null);
+  }
   function aendereEigenesSchema(id, aenderung) {
     speichereEinst({ ...einstellungen, eigeneSchemata: eigeneSchemata.map(x => x.id === id ? { ...x, ...aenderung(x) } : x) });
   }
@@ -4313,6 +4388,10 @@ export default function VokabelApp() {
             🎨 Farben bearbeiten{FARB_VORLAGEN.includes(schemaVon(einstellungen)) ? " (als Kopie)" : ""}
           </button>
         )}
+        <button data-zufall-farben className="btn btn-ghost" style={{width:"100%", marginTop:10}} onClick={zufallsSchema}
+          {...tt("Zufälliges Pastell-Schema „Zufall“ erzeugen und verwenden – jeder Tipp ein neues; zum Behalten umbenennen oder duplizieren")}>
+          🎲 Zufällige Farben
+        </button>
         <label style={{display:"flex", alignItems:"center", gap:10, marginTop:12, fontSize:"0.85rem", color:"var(--text)", cursor:"pointer"}} {...ttFeld("Jedes Lang-Druck-Menü und jede Erklärung bekommt „🎨 Farbe ändern“ – startet den Farbmodus für genau diese Stelle")}>
           <input type="checkbox" data-farbe-im-menue checked={einstellungen.farbeImMenue !== false} onChange={e => speichereEinst({ ...einstellungen, farbeImMenue: e.target.checked })} style={{width:18, height:18}}/>
           „🎨 Farbe ändern“ im Lang-Druck-Menü
@@ -4605,7 +4684,7 @@ export default function VokabelApp() {
                     <div key={t.teil + t.rolle}>
                       <div className="farb-zeile" data-farbfeld-zeile={basis} data-farbfeld-titel={titel} onPointerEnter={() => markiere(g.el)} onClick={rolleAendern}
                         {...ttFeld(`${titel}: ${eigen ? "eigene Farbe dieses Elements" : rollenName(t.rolle)} – antippen ändert die Rolle (alle Stellen)`)}>
-                        <span className="farb-tupfer" style={{background: eigen || `var(--${t.rolle})`}}/>
+                        <span className="farb-tupfer" style={{background: eigen || F[t.rolle]}}/>
                         <span style={{flex:1, minWidth:0, color:"var(--text)"}}>
                           <span style={{display:"block", fontSize:"0.88rem", fontWeight:700}}>{titel}</span>
                           <span className="farb-rolle" style={{display:"block", fontSize:"0.75rem", color:"var(--text2)"}}>{eigen ? <>eigene Farbe <span style={{color:"var(--text3)"}}>– sonst wie: {rollenName(t.rolle)}</span></> : <>gilt auch für: {rollenName(t.rolle)}</>}</span>
@@ -8979,7 +9058,7 @@ export default function VokabelApp() {
                 {titel:"Einstellungen-Tab", inhalt:[
                   {k:"Aufbau", v:"Vier Bereiche, immer nur einer offen: Listen (alle Listen öffnen, „+ Neu“ zum Importieren, darunter die Sicherung), Lernen (Gelernt-Schwelle, Akzente je Sprache), Raster (Plätze für Sessions und Listen) und App (Aktualisieren, Farbschema, Info mit Übersicht, Konzept und Anleitung)."},
                   {k:"Akzente", v:"Je Sprache An oder Aus (Standard: nur Französisch an). Aus: keine Abfrageart „A“ und keine Akzent-Statistik für Listen dieser Sprache, und fehlende Akzente beim Tippen und im Diktat gelten als richtig. An: „A“ steht zur Verfügung, beim Tippen gilt die Regel der Stufe."},
-                  {k:"Farbschema", v:"16 Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs, Dunkel, Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht und Espresso – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Liste & Start (aktuelle Liste oben im Quiz-Tab und Start-Knopf) und ihre Schrift sind eigene Rollen – gewählte Farben gelten immer genau so, es wird nichts automatisch umgestellt. Flächen haben je Funktion eine eigene Rolle: Hintergrund (nur die Seite), App-Kopf (Titel- und Tab-Leiste), Bereichs-Kopfzeilen (z. B. Kopf der Listenauswahl), Karten (Listen, Quiz-Bereiche), Abfrage-Karten, Dialoge, Knöpfe & Felder, Info-Kästen und Ausgewählt – ohne eigenen Wert übernehmen sie die bisherige Farbe, Kopfzeilen und Info-Kästen mit einem Hauch der Hauptfarbe. „🎨 Farbe ändern“ unter jedem Lang-Druck-Menü (abschaltbar unter Farbschema) startet den Farbmodus direkt für diese Stelle. Das Farbfeld öffnet sich auf der Seite gegenüber der angetippten Stelle, das Element bleibt sichtbar und markiert. Jede Zeile nennt zuerst Element und Teil (z. B. „Start-Knopf · Text groß“, „Start-Knopf · Text klein“, „Start-Knopf · Hintergrund“), darunter klein die Rolle („gilt auch für: …“). Jeder Teil hat zwei Wege: „Alle Stellen“ ändert die Rolle (überall, wo sie vorkommt), „Nur dieses Element“ gibt nur dieser Element-Art eine eigene Farbe (z. B. nur dem Start-Knopf – alle gleichartigen Stellen, die Rolle bleibt); „↺ Rolle“ nimmt die eigene Farbe zurück. Eigene Element-Farben gehören zum Schema und stehen in dessen Bearbeiten-Ansicht (✕ entfernt sie). Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler: großer Farbkreis (außen kräftig, zur Mitte weniger gesättigt), Regler für Helligkeit und Sättigung, Hex-Feld, „Zuletzt verwendet“ (10 Farben) und „In diesem Schema“ (alle Farben des gerade bearbeiteten Schemas, ohne Doppelte – antippen übernimmt sie); die App färbt sich beim Ziehen sofort um, „Anwenden“ übernimmt, „Abbrechen“ stellt die alte Farbe wieder her. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
+                  {k:"Farbschema", v:"21 Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs, Dunkel, Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht, Espresso und die bunten Pastell-Vorlagen Sorbet, Lagune, Blumenwiese, Nordlicht und Sommerfest (mit eigenen Tönen für Kopf, Kopfzeilen, Karten, Knöpfe und Start). „🎲 Zufällige Farben“ erzeugt bei jedem Tipp ein neues stimmiges Pastell-Schema „Zufall“ (zufälliger Grundton, Begleittöne benachbart, als Gegenfarbe oder Dreiklang) – zum Behalten umbenennen oder duplizieren, sonst ersetzt der nächste Tipp es – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Liste & Start (aktuelle Liste oben im Quiz-Tab und Start-Knopf) und ihre Schrift sind eigene Rollen – gewählte Farben gelten immer genau so, es wird nichts automatisch umgestellt. Flächen haben je Funktion eine eigene Rolle: Hintergrund (nur die Seite), App-Kopf (Titel- und Tab-Leiste), Bereichs-Kopfzeilen (z. B. Kopf der Listenauswahl), Karten (Listen, Quiz-Bereiche), Abfrage-Karten, Dialoge, Knöpfe & Felder, Info-Kästen und Ausgewählt – ohne eigenen Wert übernehmen sie die bisherige Farbe, Kopfzeilen und Info-Kästen mit einem Hauch der Hauptfarbe. „🎨 Farbe ändern“ unter jedem Lang-Druck-Menü (abschaltbar unter Farbschema) startet den Farbmodus direkt für diese Stelle. Das Farbfeld öffnet sich auf der Seite gegenüber der angetippten Stelle, das Element bleibt sichtbar und markiert. Jede Zeile nennt zuerst Element und Teil (z. B. „Start-Knopf · Text groß“, „Start-Knopf · Text klein“, „Start-Knopf · Hintergrund“), darunter klein die Rolle („gilt auch für: …“). Jeder Teil hat zwei Wege: „Alle Stellen“ ändert die Rolle (überall, wo sie vorkommt), „Nur dieses Element“ gibt nur dieser Element-Art eine eigene Farbe (z. B. nur dem Start-Knopf – alle gleichartigen Stellen, die Rolle bleibt); „↺ Rolle“ nimmt die eigene Farbe zurück. Eigene Element-Farben gehören zum Schema und stehen in dessen Bearbeiten-Ansicht (✕ entfernt sie). Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler: großer Farbkreis (außen kräftig, zur Mitte weniger gesättigt), Regler für Helligkeit und Sättigung, Hex-Feld, „Zuletzt verwendet“ (10 Farben) und „In diesem Schema“ (alle Farben des gerade bearbeiteten Schemas, ohne Doppelte – antippen übernimmt sie); die App färbt sich beim Ziehen sofort um, „Anwenden“ übernimmt, „Abbrechen“ stellt die alte Farbe wieder her. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
                   {k:"App aktualisieren", v:"„Prüfen“ sucht nach einer neuen App-Version. Wird eine gefunden, erscheint unten der Hinweis „Neue Version verfügbar“ – mit „Aktualisieren“ wird sie aktiv. Die App funktioniert auch offline."},
                   {k:"Gespeicherte Listen", v:"Zeigt, wie viele Listen aktuell auf diesem Gerät gespeichert sind."},
                 ]},

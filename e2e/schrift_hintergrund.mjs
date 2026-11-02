@@ -84,6 +84,27 @@ await page.reload(); await sleep(500);
 const geladen = await werte();
 ok(geladen["auf-haupt"] === "#ff0000" && schriften.filter(n => n !== "auf-haupt").every(n => geladen[n] === vorher[n]), "nach dem Neuladen gleich");
 
+// Kopfzeilen: eigene Schrift – weiß auf den Einstellungs-Köpfen, der Inhalt bleibt
+const farbe = sel => page.evaluate(sel => getComputedStyle(document.querySelector(sel)).color, sel);
+await clickText(".tab", "Einstellungen");
+const kartenTextVorher = await variable("text-stark");
+const kopfFarbfeld = async () => { const q = await mitte('[data-einst-kopf="lernen"] .einst-kopf-text'); await rechtsklick(q.x, q.y); };
+await oeffneEinst("app");
+await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
+await kopfFarbfeld();
+console.log("     Farbfeld Kopf:", (await page.evaluate(() => [...document.querySelectorAll("[data-farbfeld-zeile]")].map(z => z.dataset.farbfeldZeile))).join(","));
+ok(await page.$('[data-farbfeld-zeile="kopf-schrift"]'), "Farbfeld am Einstellungs-Kopf: „Schrift auf Kopfzeilen“");
+await setzeFarbe("kopf-schrift", "#ffffff");
+ok(await farbe('[data-einst-kopf="lernen"]') === "rgb(255, 255, 255)" && await variable("text-stark") === kartenTextVorher, "Kopf-Schrift weiß, „Text kräftig“ des Inhalts unverändert");
+// allgemeinen Text ändern → Kopf-Schrift bleibt weiß
+if (await page.$("[data-farbfeld]")) await clickText("[data-farbfeld] button", "Schließen", true);
+await oeffneEinst("lernen");
+const z = await mitte("[data-akzent-sprachen] .toggle-label");
+await rechtsklick(z.x, z.y);
+await setzeFarbe("text-stark", "#003300");
+ok(await variable("text-stark") === "#003300" && await farbe('[data-einst-kopf="raster"]') === "rgb(255, 255, 255)", "„Text kräftig“ geändert, Kopf-Schrift bleibt weiß");
+ok(await variable("abfrage-schrift") === kartenTextVorher && await variable("dialog-schrift") === kartenTextVorher, "Abfrage- und Dialog-Schrift bleiben beim alten Wert");
+
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);
