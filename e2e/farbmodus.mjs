@@ -66,7 +66,8 @@ const knopf = await page.evaluate(() => { const b = document.querySelector("[dat
 await rechtsklick(knopf.x, knopf.y);
 let zeilen = await feldZeilen();
 console.log("     Farbfeld Knopf:", zeilen.join(" | "));
-ok(zeilen.some(z => /Hintergrund · Liste & Start$/.test(z)) && zeilen.some(z => /Schrift · Schrift auf Hauptfarbe/.test(z)), "Start-Knopf: Hintergrund „Liste & Start“, Schrift auf Hauptfarbe");
+ok(zeilen.some(z => /^Start-Knopf · Hintergrund gilt auch für: Liste & Start$/.test(z)) && zeilen.some(z => /^Start-Knopf · Text groß gilt auch für: Schrift auf Liste & Start$/.test(z)),
+  "Start-Knopf: „Start-Knopf · Hintergrund“ (Liste & Start), „Start-Knopf · Text groß“ (Schrift auf Liste & Start)");
 const startVorher = await variable("start");
 ok(!(await page.$('[role="status"]')), "keine Erklärung/kein Menü im Farbmodus");
 // Farbkreis: groß, Regler Helligkeit/Sättigung, live, Abbrechen
