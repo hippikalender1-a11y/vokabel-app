@@ -73,7 +73,7 @@ ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset
 await langDruck('[data-slot-id="g_b"]');
 const wahlMenue = await aktionen();
 console.log("     Auswahl-Menü:", wahlMenue.join(" | "));
-ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|⇄ Verschieben|🗑 Löschen (2)|✕ Auswahl beenden", "Lang-Druck in der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
+ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|📁 In Gruppe… (2)|⇄ Verschieben|🗑 Löschen (2)|✕ Auswahl beenden", "Lang-Druck in der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
 ok(/2 ausgewählt/.test(await hinweis() || ""), "Lang-Druck auf nicht gewählte Kachel nimmt sie dazu");
 await page.mouse.click(5, 300); await sleep(200);   // Menü schließen (Klick daneben wird verschluckt)
 // Fertig beendet

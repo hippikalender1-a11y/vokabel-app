@@ -94,7 +94,7 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 await langDruck('[data-slot-id="g1"]'); await aktion("☑ Auswählen");
 await klick('[data-slot-id="g2"]');
 await langDruck('[data-slot-id="g2"]');
-ok(await menue() === "🧩 Multiquiz starten (2)|⇄ Verschieben|🗑 Löschen (2)|✕ Auswahl beenden", `Konfigurationen: Aktionen für die Auswahl (${await menue()})`);
+ok(await menue() === "🧩 Multiquiz starten (2)|📁 In Gruppe… (2)|⇄ Verschieben|🗑 Löschen (2)|✕ Auswahl beenden", `Konfigurationen: Aktionen für die Auswahl (${await menue()})`);
 await aktion("🗑 Löschen");
 ok(await page.evaluate(() => /2 Konfigurationen löschen\?/.test(document.querySelector('[data-auswahl-loeschen="slot"]')?.textContent || "")
   && document.querySelector("[data-auswahl-namen]").textContent === "„Quiz A“, „Quiz B“"), "Rückfrage „2 Konfigurationen löschen?“ mit Namen");
@@ -107,7 +107,7 @@ await tab("Statistik");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await langDruck('[data-slot-id="g3"]'); await aktion("☑ Auswählen");
 await langDruck('[data-slot-id="g3"]');
-ok(await menue() === "⇄ Verschieben|🗑 Löschen (1)|✕ Auswahl beenden", `Statistik: Auswahl ohne Multiquiz (${await menue()})`);
+ok(await menue() === "📁 In Gruppe… (1)|⇄ Verschieben|🗑 Löschen (1)|✕ Auswahl beenden", `Statistik: Auswahl ohne Multiquiz (${await menue()})`);
 await aktion("✕ Auswahl beenden");
 
 await browser.close();

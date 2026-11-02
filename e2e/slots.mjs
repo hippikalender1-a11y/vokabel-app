@@ -111,7 +111,7 @@ await menue("2|0");
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.textContent.trim()));
 const blase = await page.evaluate(() => document.querySelector('[role="status"]')?.innerText || "");
 console.log("     Menü:", knoepfe.join(" | "));
-ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|☑ Auswählen|📝 Listen/Vokabeln ändern|🗑 Löschen", "Lang-Druck: voller Name + Umbenennen / Duplizieren / Verschieben / Listen ändern / Löschen");
+ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|☑ Auswählen|📁 In Gruppe…|📝 Listen/Vokabeln ändern|🗑 Löschen", "Lang-Druck: voller Name + Umbenennen / Duplizieren / Verschieben / Listen ändern / Löschen");
 await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
 ok(!(await page.$('[role="status"]')) && /1 markiert – freien Platz antippen/.test(await page.evaluate(() => document.body.innerText)),

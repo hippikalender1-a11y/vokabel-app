@@ -158,6 +158,22 @@ function platziereGruppe(eintraege, ids, ziel) {
     return ohne;
   });
 }
+// Session-Gruppen (Ordner): slots.ordner = [{ id, name, platz }]; Sessions darin tragen ordner: id und einen Platz
+// im Raster der Gruppe. Oberste Ebene = Gruppen + Sessions ohne Gruppe (beide mit Platz im Haupt-Raster).
+function ebeneVon(data, ordnerId) {
+  const ordner = data.ordner || [];
+  const gibt = new Set(ordner.map(o => o.id));
+  return ordnerId
+    ? data.gespeichert.filter(x => x.ordner === ordnerId)
+    : [...ordner.map(o => ({ ...o, istOrdner: true })), ...data.gespeichert.filter(x => !x.ordner || !gibt.has(x.ordner))];
+}
+function setzeEbene(data, eintraege) {
+  const map = new Map(eintraege.map(e => [e.id, e]));
+  const ohneMarke = ({ istOrdner: _i, ...o }) => o;   // eslint-disable-line no-unused-vars
+  return { ...data,
+    ordner: (data.ordner || []).map(o => map.has(o.id) ? ohneMarke(map.get(o.id)) : o),
+    gespeichert: data.gespeichert.map(x => map.has(x.id) ? map.get(x.id) : x) };
+}
 function formatSlotDatum() {
   const n = new Date();
   return n.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
@@ -657,6 +673,8 @@ function artBereinigt(art, k, spalten) {
 }
 // Statistik-Gruppen in Anzeige-Reihenfolge mit Farbe (Kreis, Gruppen-Balken)
 const GRUPPE_BALKEN = [["gelernt", "var(--gelernt)"], ["arbeit", "var(--arbeit)"], ["nie", "var(--nie)"], ["negativ", "var(--negativ)"]];
+// Fortschrittsbalken im Statistik-Kopf: eigene Rollen, unabhängig vom Kreisdiagramm
+const FORTSCHRITT_BALKEN = [["gelernt", "var(--fortschritt-gelernt)"], ["arbeit", "var(--fortschritt-arbeit)"], ["nie", "var(--fortschritt-nie)"], ["negativ", "var(--fortschritt-negativ)"]];
 // Session-Standard: in Paketen abfragen
 const STANDARD_SESSION_MODUS = "pakete";
 // Standard-Reihenfolge: schlechteste zuerst, nur Score ≤ 3, unbeantwortete zuerst
@@ -898,6 +916,9 @@ const FARB_ROLLEN = [
   ["richtig", "Richtig", "gewusst / richtig beantwortet"], ["falsch", "Falsch", "nicht gewusst, Löschen"],
   ["gelb", "Hervorhebung", "Markierung, Sterne"], ["gelernt-effekt", "Gelernt-Effekt", "Aufleuchten, wenn eine Vokabel gelernt ist"],
   ["orange", "Warnung", "Hinweise"], ["info", "Info", "weitere Antwort, Info-Spalten"],
+  ["fortschritt-balken", "Fortschrittsbalken: Hintergrund", "leerer Teil des Balkens im Statistik-Kopf"],
+  ["fortschritt-gelernt", "Fortschrittsbalken: Gelernt", "Balken im Statistik-Kopf"], ["fortschritt-arbeit", "Fortschrittsbalken: In Arbeit", "Balken im Statistik-Kopf"],
+  ["fortschritt-nie", "Fortschrittsbalken: Nie abgefragt", "Balken im Statistik-Kopf"], ["fortschritt-negativ", "Fortschrittsbalken: Negativ", "Balken im Statistik-Kopf"],
   ["gelernt", "Statistik: Gelernt", ""], ["arbeit", "Statistik: In Arbeit", ""], ["nie", "Statistik: Nie abgefragt", ""], ["negativ", "Statistik: Negativ", ""],
 ];
 const FARB_VORLAGEN = [
@@ -996,6 +1017,8 @@ function farbenAus(f) {
     "app-kopf-schrift": f["app-kopf-schrift"] || f["text-stark"], "app-kopf-schrift-leise": f["app-kopf-schrift-leise"] || f.text2,
     "kopf-schrift": f["kopf-schrift"] || f["text-stark"], "kopf-schrift-leise": f["kopf-schrift-leise"] || f.text2,
     "kopf-offen-schrift": f["kopf-offen-schrift"] || f.haupt,
+    "fortschritt-balken": f["fortschritt-balken"] || f.flaeche, "fortschritt-gelernt": f["fortschritt-gelernt"] || f.gelernt,
+    "fortschritt-arbeit": f["fortschritt-arbeit"] || f.arbeit, "fortschritt-nie": f["fortschritt-nie"] || f.nie, "fortschritt-negativ": f["fortschritt-negativ"] || f.negativ,
     "dialog-schrift": f["dialog-schrift"] || f["text-stark"],
     "abfrage-schrift": f["abfrage-schrift"] || f["text-stark"], "abfrage-schrift-leise": f["abfrage-schrift-leise"] || f.text2, "leiste": f.leiste || f.haupt, "gelernt-effekt": f["gelernt-effekt"] || "#fff176",
     // eigene Rollen für Flächen; ohne eigenen Wert wie bisher bzw. mit einem Hauch der Hauptfarbe
@@ -1013,7 +1036,8 @@ function farbenAus(f) {
 // Schriften und Flächen, die (noch ohne eigenen Wert) von einer anderen Rolle übernommen werden – eine Schrift gilt nur
 // auf ihrem Hintergrund: Ändert man eine Rolle, werden die davon abhängigen vorher mit ihrem bisherigen Wert festgeschrieben
 const FESTE_ROLLEN = ["auf-start", "auf-falsch", "auf-gelb", "auf-haupt-hell", "auf-gelernt", "app-kopf-schrift", "app-kopf-schrift-leise",
-  "kopf-schrift", "kopf-schrift-leise", "kopf-offen", "kopf-offen-schrift", "dialog-schrift", "abfrage-schrift", "abfrage-schrift-leise"];
+  "kopf-schrift", "kopf-schrift-leise", "kopf-offen", "kopf-offen-schrift", "dialog-schrift", "abfrage-schrift", "abfrage-schrift-leise",
+  "fortschritt-balken", "fortschritt-gelernt", "fortschritt-arbeit", "fortschritt-nie", "fortschritt-negativ"];
 function mitFestenSchriften(basis, rolle, hex) {
   const alt = farbenAus(basis), danach = farbenAus({ ...basis, [rolle]: hex }), neu = { ...basis };
   FESTE_ROLLEN.forEach(r => { if (r !== rolle && !basis[r] && alt[r] !== danach[r]) neu[r] = alt[r]; });
@@ -1342,6 +1366,9 @@ const CSS_BASIS = `
   .einst-kopf.offen .einst-kopf-pfeil{color:var(--kopf-offen-schrift);}
   .einst-kopf.offen .einst-kopf-sub{color:var(--kopf-offen-schrift);opacity:0.8;}
   .einst-inhalt{margin-bottom:14px;}
+  .ordner-kachel{border-width:2px;border-style:solid;box-shadow:3px 3px 0 -1px var(--karte), 3px 3px 0 0 var(--rahmen);}
+  .ordner-kachel.ordner-aktiv{outline:2px solid var(--haupt);outline-offset:1px;}
+  .ordner-anzahl{font-weight:500;opacity:0.7;}
   .neue-session-knopf{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:12px;}
   .neue-session-wahl{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--rahmen);border-radius:12px;background:var(--knopf);color:var(--text-stark);font-family:inherit;cursor:pointer;}
   .neue-session-wahl b{font-size:0.98rem;}
@@ -1569,7 +1596,11 @@ export default function VokabelApp() {
   const [bearbeiteListe, setBearbeiteListe] = useState(null);   // Liste der bearbeiteten Vokabel (Listen, Statistik, Abfrage)
   const [bearbeiteNur, setBearbeiteNur] = useState(null);       // Abfrage: nur diese Spalte (richtige Antwort), ohne falsche Antworten
   const [bearbeiteFalsch, setBearbeiteFalsch] = useState(null);
-  const [neueSessionSchritt, setNeueSessionSchritt] = useState("art");   // Dialog „Neue Session aus Listen“: art | liste // Abfrage (MC): diese falsche Antwort der Spalte bearbeiteNur
+  const [neueSessionSchritt, setNeueSessionSchritt] = useState("art");
+  const [slotOrdner, setSlotOrdner] = useState(null);            // geöffnete Session-Gruppe (Quiz- und Statistik-Tab)
+  const slotOrdnerRef = useRef(null); slotOrdnerRef.current = slotOrdner;
+  const [inGruppe, setInGruppe] = useState(null);                // Dialog „In Gruppe…“: { ids, name }
+  const [ordnerUmbenennen, setOrdnerUmbenennen] = useState(null); // { id, name }   // Dialog „Neue Session aus Listen“: art | liste // Abfrage (MC): diese falsche Antwort der Spalte bearbeiteNur
   const [mergeQuelleId, setMergeQuelleId] = useState("");
 
   const [importText, setImportText] = useState("");
@@ -3205,9 +3236,18 @@ export default function VokabelApp() {
   // Raster: Plätze vergeben und bei Bedarf Zeilen anhängen (Einstellung wird mitgespeichert)
   function rasterEinordnen(data, einst = lsGet(SK.einstellungen, defaultEinstellungen())) {
     const groesse = rasterGroesse(einst);
-    const r = ordneRaster(data.gespeichert, groesse);
-    if (r.zeilen !== groesse.zeilen) speichereEinst({ ...einst, slotRaster: { ...groesse, zeilen: r.zeilen } });
-    return { ...data, gespeichert: r.gespeichert };
+    let neu = { ...data, ordner: data.ordner || [] };
+    // Verweise auf nicht mehr vorhandene Gruppen lösen
+    const gibt = new Set(neu.ordner.map(o => o.id));
+    neu.gespeichert = neu.gespeichert.map(x => x.ordner && !gibt.has(x.ordner) ? (({ ordner: _o, platz: _p, ...r }) => r)(x) : x);   // eslint-disable-line no-unused-vars
+    let zeilen = groesse.zeilen;
+    for (const oid of [null, ...neu.ordner.map(o => o.id)]) {
+      const r = ordneRaster(ebeneVon(neu, oid), groesse);
+      zeilen = Math.max(zeilen, r.zeilen);
+      neu = setzeEbene(neu, r.gespeichert);
+    }
+    if (zeilen !== groesse.zeilen) speichereEinst({ ...einst, slotRaster: { ...groesse, zeilen } });
+    return neu;
   }
   // Rastergröße ändern: Einträge außerhalb rücken auf freie Plätze; reicht der Platz nicht,
   // bleiben so viele Zeilen wie nötig (kleiner geht dann nicht)
@@ -3222,8 +3262,57 @@ export default function VokabelApp() {
     const einstNeu = ziel.z + ids.length > g.zeilen ? { ...einst, slotRaster: { ...g, zeilen: ziel.z + ids.length } } : einst;
     if (einstNeu !== einst) speichereEinst(einstNeu);
     const data = rasterEinordnen(getSlotsData(), einstNeu);
-    setSlotsData(rasterEinordnen({ ...data, gespeichert: platziereGruppe(data.gespeichert, ids, ziel) }, einstNeu));
+    const ordnerId = slotOrdnerRef.current;
+    const ebene = ebeneVon(data, ordnerId);
+    // Sessions auf eine Gruppen-Kachel gezogen → in diese Gruppe
+    const imZiel = ebene.find(e => e.platz && e.platz.z === ziel.z && e.platz.s === ziel.s);
+    if (imZiel?.istOrdner && !ids.includes(imZiel.id) && ids.every(id => !ebene.find(e => e.id === id)?.istOrdner)) { verschiebeInOrdner(ids, imZiel.id); return; }
+    setSlotsData(rasterEinordnen(setzeEbene(data, platziereGruppe(ebene, ids, ziel)), einstNeu));
     setSlotAuswahl([]);
+  }
+  // Sessions in eine Gruppe (oder mit null heraus auf die oberste Ebene); sie kommen dort ans Ende
+  function verschiebeInOrdner(ids, ordnerId) {
+    const data = getSlotsData(), set = new Set(ids);
+    const gespeichert = data.gespeichert.map(x => {
+      if (!set.has(x.id)) return x;
+      const { platz: _p, ordner: _o, ...r } = x;   // eslint-disable-line no-unused-vars
+      return ordnerId ? { ...r, ordner: ordnerId } : r;
+    });
+    setSlotsData(rasterEinordnen({ ...data, gespeichert }));
+    setMultiAuswahl(null); setSlotSortModus(false); setSlotAuswahl([]); setInGruppe(null);
+  }
+  // neue Gruppe aus Sessions: die Gruppe nimmt den Platz der ersten Session ein
+  function legeOrdnerAn(name, ids) {
+    const data = rasterEinordnen(getSlotsData()), set = new Set(ids), id = neuerSlotId("ordner");
+    const erste = data.gespeichert.find(x => x.id === ids[0] && !x.ordner);
+    const gespeichert = data.gespeichert.map(x => {
+      if (!set.has(x.id)) return x;
+      const { platz: _p, ordner: _o, ...r } = x;   // eslint-disable-line no-unused-vars
+      return { ...r, ordner: id };
+    });
+    const ordner = [...(data.ordner || []), { id, name: name.trim() || "Gruppe", ...(erste?.platz ? { platz: erste.platz } : {}) }];
+    setSlotsData(rasterEinordnen({ ...data, ordner, gespeichert }));
+    setMultiAuswahl(null); setSlotSortModus(false); setSlotAuswahl([]); setInGruppe(null);
+    return id;
+  }
+  // Gruppe auflösen: Sessions zurück auf die oberste Ebene (die erste auf den Platz der Gruppe)
+  function loeseOrdnerAuf(id) {
+    const data = rasterEinordnen(getSlotsData());
+    const o = (data.ordner || []).find(x => x.id === id);
+    let erste = true;
+    const gespeichert = data.gespeichert.map(x => {
+      if (x.ordner !== id) return x;
+      const { platz: _p, ordner: _o, ...r } = x;   // eslint-disable-line no-unused-vars
+      if (erste && o?.platz) { erste = false; return { ...r, platz: o.platz }; }
+      return r;
+    });
+    setSlotsData(rasterEinordnen({ ...data, ordner: data.ordner.filter(x => x.id !== id), gespeichert }));
+    if (slotOrdner === id) setSlotOrdner(null);
+  }
+  function benenneOrdnerUm(id, name) {
+    const data = getSlotsData();
+    setSlotsData({ ...data, ordner: (data.ordner || []).map(o => o.id === id ? { ...o, name: name.trim() || o.name } : o) });
+    setOrdnerUmbenennen(null);
   }
 
   function getSlotEintrag(typ, id) {
@@ -3538,7 +3627,7 @@ export default function VokabelApp() {
     setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false);
     setQuizVonBisModus(false); setQuizVonBisErster(null);
     setSlotSektionAufgeklappt(false); setListenAuswahlAufgeklappt(false);
-    setAufteilen({ listeId, name: liste.name, groesse: 20, von: 1, bis: liste.vokabeln.length, restAnhaengen: false });
+    setAufteilen({ listeId, name: liste.name, groesse: 20, von: 1, bis: liste.vokabeln.length, restAnhaengen: false, gruppe: true });
     setTab("quiz");
     window.scrollTo(0, 0);
   }
@@ -3565,8 +3654,17 @@ export default function VokabelApp() {
       konfiguration: { ...basisKonfig, listenIds: [aufteilen.listeId], bereichTyp: "bereich", quizBereichTyp: "bereich",
         vokabelAuswahl: stand.liste.vokabeln.slice(g.von - 1, g.bis).map(v => `${aufteilen.listeId}__${v.id}`) },
     }));
-    setSlotsData(rasterEinordnen({ ...data, gespeichert: [...data.gespeichert, ...eintraege] }));
+    // „In Gruppe zusammenfassen“: Gruppe mit dem Namen (vorhandene gleichen Namens wird ergänzt)
+    let ordnerId = null, ordner = data.ordner || [];
+    if (aufteilen.gruppe !== false && eintraege.length > 0) {
+      const name = (aufteilen.name || "").trim() || stand.liste.name;
+      ordnerId = ordner.find(o => o.name === name)?.id || neuerSlotId("ordner");
+      if (!ordner.some(o => o.id === ordnerId)) ordner = [...ordner, { id: ordnerId, name }];
+      eintraege.forEach(e => { e.ordner = ordnerId; });
+    }
+    setSlotsData(rasterEinordnen({ ...data, ordner, gespeichert: [...data.gespeichert, ...eintraege] }));
     setAufteilen(null);
+    if (ordnerId) setSlotOrdner(ordnerId);
     setSlotSektionAufgeklappt(true);
     window.scrollTo(0, 0);
   }
@@ -3992,7 +4090,7 @@ export default function VokabelApp() {
           ? <span style={{fontWeight:800, fontSize:"1.1rem", color:"var(--haupt)", lineHeight:1}}>{Math.round(lernProzent(voks.map(v => v.fortschritt?.score), schwelle))} %</span>
           : <span style={{fontWeight:800, fontSize:"1.1rem", color:"var(--haupt)", lineHeight:1}}>Ø {avg === null ? "–" : `${avg > 0 ? "+" : ""}${avg.toFixed(1)}`}</span>}
         <div style={{display:"flex", width:"min(200px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"var(--flaeche)"}}>
-          {voks.length > 0 && GRUPPE_BALKEN.map(([g, farbe]) => anzahl[g] > 0 && (
+          {voks.length > 0 && FORTSCHRITT_BALKEN.map(([g, farbe]) => anzahl[g] > 0 && (
             <div key={g} style={{width:`${anzahl[g] / voks.length * 100}%`, background:farbe}}/>
           ))}
         </div>
@@ -4305,6 +4403,11 @@ export default function VokabelApp() {
             </div>
           </div>
         )}
+        <label style={{display:"flex", alignItems:"center", gap:8, fontSize:"0.82rem", color:"var(--text)", margin:"2px 0 10px", cursor:"pointer"}}
+          {...ttFeld("Die neuen Sessions in einer Gruppe (Ordner) mit diesem Namen ablegen")}>
+          <input type="checkbox" data-aufteilen-gruppe checked={aufteilen.gruppe !== false} onChange={e => upd({ gruppe: e.target.checked })} style={{width:18, height:18}}/>
+          📁 In Gruppe „{(aufteilen.name || "").trim() || stand.liste.name}“ zusammenfassen
+        </label>
         <div style={{fontSize:"0.78rem", color:"var(--text2)", marginBottom:4}}>Vorschau: {gruppen.length} Session{gruppen.length !== 1 ? "s" : ""}</div>
         <div data-aufteilen-vorschau style={{display:"flex", flexWrap:"wrap", gap:5}}>
           {vorschau.map((g, i) => g ? (
@@ -5036,15 +5139,21 @@ export default function VokabelApp() {
     const label = {fontSize:"0.72rem", color:"var(--text3)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em"};
     // Raster: alle Einträge (auch andere Sprache) belegen ihren Platz; sichtbar nur die der gewählten Sprache
     const groesse = rasterGroesse(einstellungen);
-    const raster = ordneRaster(slots.gespeichert, groesse);
+    // Ebene: oberste (Gruppen + Sessions ohne Gruppe) oder die geöffnete Gruppe
+    const ordnerOffen = (slots.ordner || []).find(o => o.id === slotOrdner) || null;
+    const raster = ordneRaster(ebeneVon(slots, ordnerOffen?.id || null), groesse);
+    const kinderVon = id => slots.gespeichert.filter(s => s.ordner === id);
+    const sichtbarE = x => x.istOrdner ? (sprachFilter === "alle" || kinderVon(x.id).length === 0 || kinderVon(x.id).some(slotSichtbar)) : slotSichtbar(x);
     const platzMap = new Map(raster.gespeichert.map(x => [`${x.platz.z}|${x.platz.s}`, x]));
-    const sichtbar = raster.gespeichert.filter(slotSichtbar);
-    const zeilenAnzeige = slotSortModus ? raster.zeilen : sichtbar.reduce((m, x) => Math.max(m, x.platz.z + 1), 0);
+    const sichtbar = raster.gespeichert.filter(x => sichtbarE(x) && !x.istOrdner);
+    const zeilenAnzeige = slotSortModus ? raster.zeilen : raster.gespeichert.filter(sichtbarE).reduce((m, x) => Math.max(m, x.platz.z + 1), 0);
     const sfVon = x => slotSFAlle(x)[aktiverSlot?.id === x.id ? quizAbfrageArt : slotKonfigArt(x)];
     // Auswahl-Modus: Aktionen für die Auswahl (Lang-Druck auf eine nicht gewählte Kachel nimmt sie dazu)
     const wahlMit = x => multiAuswahl.includes(x.id) ? multiAuswahl : [...multiAuswahl, x.id];
     const wahlMenue = ids => [
       ...(tab === "quiz" && ids.length >= 2 ? [{ label: `🧩 Multiquiz starten (${ids.length})`, fn: () => starteMultiquiz(ids) }] : []),
+      { label: `📁 In Gruppe… (${ids.length})`, fn: () => setInGruppe({ ids, name: "" }) },
+      ...(ordnerOffen ? [{ label: `↑ Aus der Gruppe (${ids.length})`, fn: () => verschiebeInOrdner(ids, null) }] : []),
       { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl(ids); } },
       { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "slot", ids }) },
       { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) },
@@ -5060,18 +5169,21 @@ export default function VokabelApp() {
       const key = `${z}|${sp}`;
       const x = platzMap.get(key);
       const ziel = slotDragZiel === key && slotDragId && slotDragId !== x?.id;
-      if (x && slotSichtbar(x)) {
-        const pct = Math.round(lernstand(x).uebersetzung.pct);
+      if (x && sichtbarE(x)) {
+        const kinder = x.istOrdner ? kinderVon(x.id) : null;
+        const pct = x.istOrdner
+          ? (kinder.length ? Math.round(kinder.reduce((a, k) => a + lernstand(k).uebersetzung.pct, 0) / kinder.length) : 0)
+          : Math.round(lernstand(x).uebersetzung.pct);
         const multiNr = multiAuswahl ? multiAuswahl.indexOf(x.id) + 1 : 0;
         const inhalt = (<>
-          <span className="raster-name">{x.multi && <span aria-hidden="true">🧩 </span>}{x.name}</span>
+          <span className="raster-name">{x.istOrdner && <span aria-hidden="true">📁 </span>}{x.multi && <span aria-hidden="true">🧩 </span>}{x.name}{x.istOrdner && <span className="ordner-anzahl" data-ordner-anzahl={kinder.length}> · {kinder.length}</span>}</span>
           <span className="raster-fuss" data-kachel-balken={pct} {...ttFeld(`Lernfortschritt Übersetzung: ${pct} %`)}>
             <span className={`kachel-balken${pct >= 100 ? " voll" : ""}`}><span style={{width:`${pct}%`}}/></span>
             {pct >= 100 && <span className="kachel-voll" title="100 % gelernt">✓</span>}
           </span>
         </>);
         zellen.push(slotSortModus ? (
-          <button key={key} data-raster-zelle={key} data-slot-id={x.id} className="slot-chip belegt raster-chip"
+          <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-ordner-id={x.istOrdner ? x.id : undefined} className={`slot-chip belegt raster-chip${x.istOrdner ? " ordner-kachel" : ""}`}
             style={{touchAction:"none", cursor:"grab",
               ...(slotAuswahl.includes(x.id) ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {}),
               ...(slotDragId && (slotDragId === x.id || (slotAuswahl.includes(slotDragId) && slotAuswahl.includes(x.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
@@ -5082,6 +5194,22 @@ export default function VokabelApp() {
             {...tt(`${x.name} – antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen – markierte wandern zusammen`)}>
             {inhalt}
             {slotAuswahl.includes(x.id) && <span className="auswahl-nr" data-auswahl-nr>{slotAuswahl.indexOf(x.id) + 1}</span>}
+          </button>
+        ) : x.istOrdner ? (
+          <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-ordner-id={x.id}
+            className={`slot-chip belegt raster-chip ordner-kachel${slotRef?.typ === "gespeichert" && kinder.some(k => k.id === slotRef.id) ? " ordner-aktiv" : ""}`}
+            style={{position:"relative"}}
+            onClick={() => { if (slotGezogenRef.current) { slotGezogenRef.current = false; return; } if (!multiAuswahl) setSlotOrdner(x.id); }}
+            {...tt(`Gruppe „${x.name}“ mit ${kinder.length} Session${kinder.length !== 1 ? "s" : ""} – antippen öffnet sie`, multiAuswahl ? [] : [
+              { label: "📂 Öffnen", fn: () => setSlotOrdner(x.id) },
+              ...(tab === "quiz" && kinder.length >= 2 ? [{ label: `🧩 Multiquiz der Gruppe (${kinder.length})`, fn: () => starteMultiquiz(kinder.map(k => k.id)) }] : []),
+              { label: "✎ Umbenennen", fn: () => setOrdnerUmbenennen({ id: x.id, name: x.name }) },
+              { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl([x.id]); } },
+              { label: "📤 Gruppe auflösen", fn: () => loeseOrdnerAuf(x.id) },
+            ], { langText: `📁 ${x.name}`,
+                 beimZeigen: (px, py) => { slotZiehenRef.current = { id: x.id, x: px, y: py, aktiv: false, langdruck: true }; } })}>
+            {inhalt}
+            {null}
           </button>
         ) : (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-multi-nr={multiNr || undefined}
@@ -5097,6 +5225,8 @@ export default function VokabelApp() {
               { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: x.id, name: kopieName(x.name), kopie: true }) },
               { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl([x.id]); } },
               { label: "☑ Auswählen", fn: () => { setSlotSortModus(false); setMultiAuswahl([x.id]); } },
+              { label: "📁 In Gruppe…", fn: () => setInGruppe({ ids: [x.id], name: "" }) },
+              ...(ordnerOffen ? [{ label: "↑ Aus der Gruppe", fn: () => verschiebeInOrdner([x.id], null) }] : []),
               { label: "📝 Listen/Vokabeln ändern", fn: () => { if (slotRef?.id !== x.id) onLaden('gespeichert', x.id); setListenAendern(true); setSlotSektionAufgeklappt(false); } },
               { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
             ], { langText: multiAuswahl ? `${wahlMit(x).length} ausgewählt: ${wahlNamen(wahlMit(x))}` : x.name,
@@ -5123,7 +5253,13 @@ export default function VokabelApp() {
     return (<>
       <div style={{margin:`0 ${abstand}px 12px`}}>
         <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6, minHeight:22}}>
-          <span style={label}>📌 Gespeichert</span>
+          {ordnerOffen ? (
+            <span data-ordner-pfad style={{display:"flex", alignItems:"center", gap:6, minWidth:0}}>
+              <button className="typ-btn" data-ordner-zurueck style={{fontSize:"0.75rem", padding:"3px 9px"}} onClick={() => { setSlotOrdner(null); setSlotSortModus(false); setSlotAuswahl([]); }}
+                {...tt("Zurück zu allen Sessions")}>← Alle Sessions</button>
+              <span style={{...label, color:"var(--text2)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>› 📁 {ordnerOffen.name}</span>
+            </span>
+          ) : <span style={label}>📌 Gespeichert</span>}
           <span className="slot-kopf-knoepfe" style={{marginLeft:"auto", display:"flex", gap:6, alignItems:"center"}}>
             {!slotSortModus && !multiAuswahl && neuChip}
             {multiAuswahl && (<>
@@ -5158,7 +5294,7 @@ export default function VokabelApp() {
           </div>
         )}
       </div>
-      {verlauf.length > 0 && !slotSortModus && (
+      {verlauf.length > 0 && !slotSortModus && !ordnerOffen && (
         <div style={{margin:`0 ${abstand}px 14px`, paddingTop:10, borderTop:"1px dashed var(--rahmen)"}}>
           <div style={{...label, marginBottom:6}}>🕘 Verlauf · letzte Abfragen</div>
           <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
@@ -8683,21 +8819,21 @@ export default function VokabelApp() {
             {!statistikVollbild && (
             <div style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
               <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2, flexShrink:0}}>
-                <span style={{fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>{schwelleS > 0 ? "Lernfortschritt" : "Ø Score"}</span>
-                <span style={{fontSize:"0.72rem", fontWeight:700, color:"var(--text2)"}} {...tt("Ausgewertet wird dieser Score – Tap in die Kreismitte wechselt")}>{artName}</span>
+                <span data-statistik-kopf-titel style={{fontWeight:600, fontSize:"0.85rem", color:"var(--kopf-schrift)"}}>{schwelleS > 0 ? "Lernfortschritt" : "Ø Score"}</span>
+                <span style={{fontSize:"0.72rem", fontWeight:700, color:"var(--kopf-schrift-leise)"}} {...tt("Ausgewertet wird dieser Score – Tap in die Kreismitte wechselt")}>{artName}</span>
               </div>
               {schwelleS > 0 && (
                 <div style={{display:"flex", flexDirection:"column", alignItems:"center", flex:1, minWidth:0}}>
                   <div style={{display:"flex", alignItems:"baseline", gap:6}}>
-                    <span style={{fontWeight:800, fontSize:"1.25rem", color: keineAkzente ? "var(--text3)" : "var(--haupt)"}}>{keineAkzente ? "–" : `${Math.round(lernFortschritt)} %`}</span>
+                    <span data-statistik-kopf-prozent style={{fontWeight:800, fontSize:"1.25rem", color: keineAkzente ? "var(--kopf-schrift-leise)" : "var(--kopf-schrift)"}}>{keineAkzente ? "–" : `${Math.round(lernFortschritt)} %`}</span>
                   </div>
-                  <div style={{display:"flex", width:"min(180px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"var(--flaeche)", margin:"3px 0 2px"}}
+                  <div data-statistik-kopf-balken style={{display:"flex", width:"min(180px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"var(--fortschritt-balken)", margin:"3px 0 2px"}}
                     {...tt(`Gelernt ${kopfAnzahl.gelernt} · In Arbeit ${kopfAnzahl.arbeit} · Nie abgefragt ${kopfAnzahl.nie} · Negativ ${kopfAnzahl.negativ}`)}>
-                    {kopfVoks.length > 0 && GRUPPE_BALKEN.map(([g, farbe]) => kopfAnzahl[g] > 0 && (
+                    {kopfVoks.length > 0 && FORTSCHRITT_BALKEN.map(([g, farbe]) => kopfAnzahl[g] > 0 && (
                       <div key={g} style={{width:`${kopfAnzahl[g] / kopfVoks.length * 100}%`, background:farbe}}/>
                     ))}
                   </div>
-                  <div style={{fontSize:"0.7rem", color:"var(--text2)", whiteSpace:"nowrap"}}>
+                  <div data-statistik-kopf-zahl style={{fontSize:"0.7rem", color:"var(--kopf-schrift-leise)", whiteSpace:"nowrap"}}>
                     {keineAkzente ? "keine Akzente" : <>{gelerntAnzahl} / {kopfVoks.length} gelernt</>}
                     {avgScore !== null && <> · Ø {avgScore > 0 ? "+" : ""}{avgScore.toFixed(1)}</>}
                   </div>
@@ -9016,6 +9152,7 @@ export default function VokabelApp() {
                 ]},
                 {titel:"Quiz-Tab", inhalt:[
                   {k:"Kopfzeile (Session-Auswahl)", v:"Oben im Tab steht der Name der geladenen Session („Neu“, wenn keine geladen ist). Die App startet in der Auswahl: gespeicherte Sessions und Verlauf – die Einstellungen darunter sind dann ausgeblendet. Antippen des Namens schaltet um zwischen Auswahl und Einstellungen (kein Aufklappen); eine Session antippen lädt sie und zeigt ihre Einstellungen. In der Auswahl stehen rechts die Kreise Ü, D und A und darunter eine Info-Zeile (z. B. „Englisch 6 · Nr. 1–25 · 25 Vokabeln“); eine gespeicherte Konfiguration erscheint dann in einer grünen Kopfzeile. Lang drücken auf den Namen: „Speichern“. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Raster, bis 100 Zeilen × 4 Spalten); jede Kachel zeigt unten einen Balken mit dem Lernfortschritt Übersetzung (✓ bei 100 %), die geladene Kachel ist in der Hauptfarbe gefüllt. Lang drücken auf eine Kachel zeigt den vollständigen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie unter neuem Namen, mit eigenem Fortschritt), „Verschieben“, „Listen/Vokabeln ändern“ und „Löschen“. „Verschieben“: Einträge antippen markiert sie (nummeriert, mehrere möglich), ein freier Platz setzt die markierten dort untereinander ein; oder direkt ziehen – ein markierter Eintrag nimmt alle markierten mit, auf einem belegten Platz rücken die Einträge auf die frei gewordenen Plätze (einzeln: die beiden tauschen); „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt untereinander in die erste Spalte unter den untersten Eintrag; das Raster wächst bei Bedarf."},
+                  {k:"📁 Gruppen", v:"Sessions lassen sich in Gruppen (Ordner) zusammenfassen: lang drücken → „📁 In Gruppe…“ (vorhandene Gruppe oder neue mit Namen), im Auswahl-Modus für mehrere auf einmal, oder eine Session auf eine Gruppen-Kachel ziehen. Eine Gruppen-Kachel zeigt 📁, Namen, Anzahl und den mittleren Lernfortschritt; antippen öffnet sie, oben führt „← Alle Sessions“ zurück. In der Gruppe: lang drücken → „↑ Aus der Gruppe“. Lang drücken auf die Gruppe: Öffnen, „🧩 Multiquiz der Gruppe“, Umbenennen, Verschieben, „Gruppe auflösen“ (die Sessions kommen zurück). „Mehrere Sessions“ (Aufteilen) legt die neuen Sessions auf Wunsch gleich in eine Gruppe. Gilt auch im Statistik-Tab."},
                   {k:"＋ Neue Session aus Listen", v:"Oben in der Auswahl. „Eine Session“: Listen und Vokabeln wählen, dann wie gewohnt einstellen und starten (lang auf den Namen drücken → Speichern). „Mehrere Sessions“: eine Liste wählen und in Pakete aufteilen (Name, Gruppengröße, Bereich von–bis, Rest) – je Paket eine gespeicherte Session."},
                   {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl. Ist eine gespeicherte Konfiguration geladen, sind Listen- und Vokabel-Auswahl festgelegt und ausgeblendet – zum Ändern lang auf die Kachel drücken und „Listen/Vokabeln ändern“ wählen."},
@@ -9242,6 +9379,49 @@ export default function VokabelApp() {
       </div>
 
       {/* ── Modals (global) ── */}
+      {inGruppe && (
+        <div className="overlay" onClick={() => setInGruppe(null)}>
+          <div className="modal" data-in-gruppe-dialog onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">In Gruppe ({inGruppe.ids.length} Session{inGruppe.ids.length !== 1 ? "s" : ""})</div>
+            {(slots.ordner || []).length > 0 && (<>
+              <div style={{fontSize:"0.8rem", color:"var(--text2)", marginBottom:8}}>In eine vorhandene Gruppe:</div>
+              <div style={{display:"flex", flexDirection:"column", gap:6, marginBottom:14}}>
+                {slots.ordner.map(o => (
+                  <button key={o.id} className="neue-session-wahl" data-in-gruppe={o.id} onClick={() => verschiebeInOrdner(inGruppe.ids, o.id)}
+                    {...tt(`In die Gruppe „${o.name}“ verschieben`)}>
+                    <b>📁 {o.name}</b><span>{slots.gespeichert.filter(x => x.ordner === o.id).length} Sessions</span>
+                  </button>
+                ))}
+              </div>
+            </>)}
+            <label className="inp-label">Neue Gruppe</label>
+            <input className="inp" data-ordner-name-feld value={inGruppe.name} placeholder="Name der Gruppe" autoFocus
+              onChange={e => setInGruppe(g => ({ ...g, name: e.target.value }))}
+              onKeyDown={e => { if (e.key === "Enter" && inGruppe.name.trim()) legeOrdnerAn(inGruppe.name, inGruppe.ids); }}
+              {...ttFeld("Name der neuen Gruppe")} />
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setInGruppe(null)} {...tt("Schließen, ohne etwas zu ändern")}>Abbrechen</button>
+              <button className="btn btn-primary" data-ordner-neu disabled={!inGruppe.name.trim()} onClick={() => legeOrdnerAn(inGruppe.name, inGruppe.ids)}
+                {...tt("Neue Gruppe mit diesen Sessions anlegen")}>Neue Gruppe</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {ordnerUmbenennen && (
+        <div className="overlay" onClick={() => setOrdnerUmbenennen(null)}>
+          <div className="modal" data-ordner-umbenennen onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">Gruppe umbenennen</div>
+            <input className="inp" data-ordner-name-feld value={ordnerUmbenennen.name} autoFocus
+              onChange={e => setOrdnerUmbenennen(o => ({ ...o, name: e.target.value }))}
+              onKeyDown={e => { if (e.key === "Enter") benenneOrdnerUm(ordnerUmbenennen.id, ordnerUmbenennen.name); }}
+              {...ttFeld("Neuer Name der Gruppe")} />
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setOrdnerUmbenennen(null)} {...tt("Schließen, ohne etwas zu ändern")}>Abbrechen</button>
+              <button className="btn btn-primary" data-ordner-umbenennen-ok onClick={() => benenneOrdnerUm(ordnerUmbenennen.id, ordnerUmbenennen.name)} {...tt("Neuen Namen speichern")}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
       {modal === "neue-session" && (
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" data-neue-session-dialog={neueSessionSchritt} onClick={e => e.stopPropagation()}>
