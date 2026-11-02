@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen, neueEineSession } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -39,7 +39,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Vocabulaire");
 let i = await info();
 console.log("     Start:", JSON.stringify(i));
@@ -55,7 +55,7 @@ await page.evaluate(() => window.scrollTo(0, 0));
 if (!(await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].some(c => c.textContent.trim() === "Neu"))))
   await page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv")].find(b => b.textContent.trim() === "Neu")?.click());
 await sleep(300);
-await clickText(".slot-chip", "Neu", true);
+await neueEineSession(page);
 await clickText(".quiz-setup-check", "Vocabulaire");
 i = await info();
 ok(i.session === "Je 10 Vokabeln" && i.start === 10, "Nach „Neu“: wieder Pakete mit 10");

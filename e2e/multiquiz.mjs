@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen } from "./hilfen.mjs";
 
 // Multiquiz: Lang-Druck auf eine Kachel → „☑ Auswählen“, weitere Kacheln antippen, Lang-Druck → „🧩 Multiquiz starten“;
 // Vokabeln zusammen (auch verschiedene Sprachen), Einstellungen von Nr. 1, Kopfzeile „Multiquiz“, speicherbar, Statistik zusammen
@@ -52,7 +53,7 @@ await page.evaluate(() => {
     { id:"g_b", name:"Teil B", timestamp:2, konfiguration:kB, sessionFortschritt:null, platz:{z:0,s:1} } ] }));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await oeffneKopf(); await sleep(300);
 
 // Lang-Druck auf „Teil A“ → Menü mit „☑ Auswählen“
@@ -110,6 +111,7 @@ ok(info === "🧩 Teil A + Teil B · 5 Vokabeln", "Info-Zeile: Teile + Anzahl");
 const sl = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")));
 ok(sl.verlauf.length === 1 && sl.verlauf[0].multi?.map(t => t.name).join("+") === "Teil A+Teil B", "genau ein Verlauf-Eintrag mit den Teilen");
 ok(await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].some(c => c.textContent.includes("🧩"))), "Verlauf-Chip mit 🧩");
+await page.click("[data-slot-kopf-name]"); await sleep(300);   // Auswahl zu → Einstellungen
 ok(await page.evaluate(() => document.querySelector("[data-reihenfolge]")?.textContent.trim()) === "Nach Listen-Platz", "Reihenfolge von Teil A übernommen");
 
 // Speichern: Name-Vorschlag „Multiquiz: Teil A + Teil B“

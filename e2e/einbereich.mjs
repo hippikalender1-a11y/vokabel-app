@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen } from "./hilfen.mjs";
 
 // Quiz-Tab: immer nur ein Bereich offen – ein anderer Knopf schließt den vorherigen
 const URL = "http://localhost:4199/vokabel-app/";
@@ -32,7 +33,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", gelerntSchwelle:6, sprache:"alle" }));
 });
 await page.reload(); await sleep(500);
-await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
+await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300); await quizEinstellungen(page);
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(t => t.textContent.includes("Englisch")).click()); await sleep(300);
 // Listen-Auswahl zu (falls offen)
 await page.evaluate(() => window.scrollTo(0, 0));
@@ -48,9 +49,10 @@ ok(await offen() === "ziel", `Abfrage-Ziel antippen schließt Modus (${await off
 await tippe("[data-umfang]");
 ok(await offen() === "umfang", `Umfang antippen schließt Abfrage-Ziel (${await offen()})`);
 await tippe("[data-slot-kopf-name]");
-ok(await offen() === "kopf", `Kopfzeile öffnen schließt Umfang (${await offen()})`);
+ok(await offen() === "kopf" && !(await page.$("[data-reihenfolge]")), `Kopfzeile öffnen: nur die Auswahl, Umfang zu, Einstellungen ausgeblendet (${await offen()})`);
+await tippe("[data-slot-kopf-name]");
 await tippe("[data-reihenfolge]");
-ok(await offen() === "reihenfolge", `Reihenfolge schließt die Kopfzeile (${await offen()})`);
+ok(await offen() === "reihenfolge", `Kopf zu, Reihenfolge auf (${await offen()})`);
 await tippe("[data-stufe]");
 ok(await offen() === "", `Leicht/Schwer antippen schließt den offenen Bereich (${await offen()})`);
 const titel = () => page.evaluate(() => document.querySelector("[data-start-titel]")?.textContent.trim());

@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -52,7 +52,7 @@ if (start === "detail") {
   await clickText(".karte-zeile", "Vocabulaire");
   await clickText("button", "Quiz starten", true);
 } else {
-  await clickText(".tab", "Quiz");
+  await clickText(".tab", "Quiz"); await quizEinstellungen(page);
   await clickText(".quiz-setup-check", "Vocabulaire");
 }
 if (start === "preset") {

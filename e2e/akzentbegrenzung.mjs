@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen } from "./hilfen.mjs";
 
 // Akzente mit Wörtern ohne Akzent: höchstens Faktor × so viele wie mit Akzent (je Stufe einstellbar),
 // bevorzugt schwächster / kein Akzent-Score, gleichmäßig verteilt
@@ -57,7 +58,7 @@ await page.evaluate(() => {
     stufen: { schwer: { akzentOhneMischen: true } } }));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Akzente");
 await artWaehlen("akzente");
 

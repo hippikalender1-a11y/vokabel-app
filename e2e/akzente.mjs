@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -53,7 +54,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Akzente");
 // Spalten-Bereich ggf. aufklappen
 if (!(await page.$(".spalten-modus-btn"))) await page.click("[data-abfragemodus]");
@@ -187,7 +188,7 @@ await sleep(250);
 ok(await mitte() === "Übersetzung", "3. Tap: zurück zu Übersetzung");
 
 // Schwierigkeitsgrad: Hervorheben gilt standardmäßig nur in "Einfach"; per Haken änderbar
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await sleep(300);
 const markiert = () => page.evaluate(() => document.querySelectorAll(".akzent-kachel.markiert").length);
 let zaehlerDa = null;

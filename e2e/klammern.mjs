@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen } from "./hilfen.mjs";
 
 // Klammerhinweise: nicht vorlesen, nicht verlangen, dezent anzeigen; Aufräum-Werkzeug „( ) → Info“ mit Vorschau
 const URL = "http://localhost:4199/vokabel-app/";
@@ -43,9 +43,9 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ autoplay: true, vorlesen: ["E1", "D1"], gelerntSchwelle: 3, sprache: "alle" }));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
-await clickText(".slot-chip", "Words");
+await clickText(".slot-chip", "Words"); await sleep(500);
 await clickText("[data-start-knopf]", "");
 await sleep(500);
 

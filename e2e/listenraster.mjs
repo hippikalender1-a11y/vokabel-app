@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen } from "./hilfen.mjs";
 
 // Listen-Tab als Raster: Lang-Druck → Menü (Umbenennen, Duplizieren, Verschieben, Löschen),
 // Lang-Druck + Ziehen verschiebt (belegt → tauschen), Größe unter Einstellungen → Listen, Sprachfilter rückt zusammen
@@ -82,7 +82,7 @@ await page.click("[data-listen-fertig]"); await sleep(300);
 ok(!(await page.$("[data-listen-fertig]")), "„Fertig“ beendet das Verschieben");
 
 // Reihenfolge auch im Quiz-Tab
-await clickText(".tab", "Quiz"); await sleep(300);
+await clickText(".tab", "Quiz"); await sleep(300); await quizEinstellungen(page);
 const quizReihe = await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].map(d => d.textContent.trim()).filter(t => /Alpha|Beta|Gamma/.test(t)).map(t => t.match(/Alpha|Beta|Gamma/)[0]).join(","));
 ok(quizReihe === "Gamma,Alpha,Beta", `Quiz-Tab zeigt die Listen in Raster-Reihenfolge (${quizReihe})`);
 await zuListen(page);
@@ -161,7 +161,7 @@ const auswahlRaster = () => page.evaluate(() => {
   return n + ":" + [...r.children].map((c, i) => c.classList.contains("quiz-setup-check") ? `${Math.floor(i / n)}|${i % n}=${c.children[1].children[0].textContent.trim().replace(/^[^\p{L}]+/u, "")}` : null).filter(Boolean).join(",");
 });
 const erwartet = "2:" + Object.entries(pl).sort((a, b) => a[1].localeCompare(b[1])).map(([n, p]) => `${p}=${n}`).join(",");
-await clickText(".tab", "Quiz"); await sleep(300);
+await clickText(".tab", "Quiz"); await sleep(300); await quizEinstellungen(page);
 let qr = await auswahlRaster();
 if (!qr) { await clickText("span, div", "Listen-Auswahl", true); qr = await auswahlRaster(); }
 console.log("     Quiz-Raster:", qr, "| erwartet:", erwartet);

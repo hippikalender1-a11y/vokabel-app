@@ -51,7 +51,7 @@ await page.reload(); await sleep(500);
 // Quiz: Paket Tiere wählen → Statistik zeigt dasselbe
 await clickText(".tab", "Quiz");
 await oeffneKopf();
-await clickText(".slot-chip", "Paket Tiere");
+await clickText(".slot-chip", "Paket Tiere"); await sleep(500);
 await clickText(".tab", "Statistik");
 await sleep(300);
 let st = await stand();
@@ -60,7 +60,7 @@ ok(st.kopf === "gruen" && st.name === "Paket Tiere" && st.listen === "(ausgeblen
 
 // Statistik: Paket Farben wählen → Quiz zeigt dasselbe
 await oeffneKopf();
-await clickText(".slot-chip", "Paket Farben");
+await clickText(".slot-chip", "Paket Farben"); await sleep(500);
 await clickText(".tab", "Quiz");
 await sleep(300);
 st = await stand();

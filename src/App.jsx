@@ -1239,6 +1239,11 @@ const CSS_BASIS = `
   .einst-kopf-pfeil{font-size:0.9rem;color:var(--text3);flex:0 0 auto;}
   .einst-kopf.offen .einst-kopf-pfeil{color:var(--haupt);}
   .einst-inhalt{margin-bottom:14px;}
+  .neue-session-knopf{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:12px;}
+  .neue-session-wahl{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border:1.5px solid var(--rahmen);border-radius:12px;background:var(--knopf);color:var(--text-stark);font-family:inherit;cursor:pointer;}
+  .neue-session-wahl b{font-size:0.98rem;}
+  .neue-session-wahl span{font-size:0.78rem;color:var(--text2);}
+  .neue-session-wahl:hover{border-color:var(--haupt);}
   .einst-unterkopf{margin:18px 0 8px;}
   .einst-inhalt > .einst-unterkopf:first-child{margin-top:4px;}
   .einst-titel-knopf{background:none;border:none;padding:0;font-family:inherit;font-weight:700;font-size:0.88rem;color:var(--haupt);cursor:pointer;}
@@ -1454,7 +1459,8 @@ export default function VokabelApp() {
   const [bearbeiteEingaben, setBearbeiteEingaben] = useState({});
   const [bearbeiteListe, setBearbeiteListe] = useState(null);   // Liste der bearbeiteten Vokabel (Listen, Statistik, Abfrage)
   const [bearbeiteNur, setBearbeiteNur] = useState(null);       // Abfrage: nur diese Spalte (richtige Antwort), ohne falsche Antworten
-  const [bearbeiteFalsch, setBearbeiteFalsch] = useState(null); // Abfrage (MC): diese falsche Antwort der Spalte bearbeiteNur
+  const [bearbeiteFalsch, setBearbeiteFalsch] = useState(null);
+  const [neueSessionSchritt, setNeueSessionSchritt] = useState("art");   // Dialog „Neue Session aus Listen“: art | liste // Abfrage (MC): diese falsche Antwort der Spalte bearbeiteNur
   const [mergeQuelleId, setMergeQuelleId] = useState("");
 
   const [importText, setImportText] = useState("");
@@ -7362,7 +7368,7 @@ export default function VokabelApp() {
 
           return (
             <>
-              <div className="sektion" style={{paddingTop:0, paddingBottom: (slotSektionAufgeklappt || listenAuswahlAufgeklappt || quizListeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt || quizEinstellungenAufgeklappt || quizSessionAufgeklappt) ? '100dvh' : 0}}>
+              <div className="sektion" data-quiz-ansicht={slotSektionAufgeklappt ? "auswahl" : "einstellungen"} style={{paddingTop:0, paddingBottom: (listenAuswahlAufgeklappt || quizListeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt || quizEinstellungenAufgeklappt || quizSessionAufgeklappt) ? '100dvh' : 0}}>
                 {/* VERLAUF + GESPEICHERT – Kopfzeile (zu/auf gleich) + aufklappbares Raster */}
                 {(() => {
                   return (
@@ -7378,21 +7384,19 @@ export default function VokabelApp() {
                       )}
                       <div ref={slotContainerRef} style={{overflow:'hidden', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 4 : 0}}>
                         {slotSektionAufgeklappt && sicherungErinnerungUI()}
-                        {slotSektionAufgeklappt && renderSlotBereiche(
-                          <button className="slot-chip belegt"
-                            style={!aktiverSlot
-                              ? {background:"var(--haupt-flaeche)", borderColor:"var(--haupt)", color:"var(--haupt)"}
-                              : {color:"var(--text3)"}}
-                            onClick={neueQuizKonfiguration}
-                            {...tt("Neu beginnen – Listen, Vokabelauswahl und alle Einstellungen zurücksetzen")}>
-                            Neu
-                          </button>,
-                          ladeSlot, aktiverSlot)}
+                        {slotSektionAufgeklappt && listenIndex.length > 0 && !slotSortModus && !multiAuswahl && (
+                          <button className="btn btn-ghost neue-session-knopf" data-neue-session onClick={() => { setNeueSessionSchritt("art"); setModal("neue-session"); }}
+                            {...tt("Neue Session aus Listen zusammenstellen – eine Session oder mehrere (eine Liste in Pakete aufteilen)")}>
+                            <IcoPlus s={13}/> Neue Session aus Listen
+                          </button>
+                        )}
+                        {slotSektionAufgeklappt && renderSlotBereiche(null, ladeSlot, aktiverSlot)}
                       </div>
                     </>
                   );
                 })()}
 
+                {!slotSektionAufgeklappt && (<>
                 {/* LISTEN-AUSWAHL – sticky Header (ausgeblendet bei geladener gespeicherter Konfiguration) */}
                 {!(aktiverSlot?.typ === "gespeichert" && !listenAendern) && (<>
                 {(() => {
@@ -8040,6 +8044,7 @@ export default function VokabelApp() {
                   </div>
                 )}
 
+                </>)}
               </div>
             </>
           );
@@ -8868,8 +8873,8 @@ export default function VokabelApp() {
                   {k:"Import", v:"Vokabeln aus einer TXT-Datei oder JSON-Datei importieren."},
                 ]},
                 {titel:"Quiz-Tab", inhalt:[
-                  {k:"Kopfzeile (Session-Auswahl)", v:"Oben im Tab: zugeklappt nur der Name der geladenen Konfiguration („Neu“, wenn keine geladen ist) über die ganze Breite. Antippen öffnet die Auswahl mit gespeicherten Konfigurationen und Verlaufs-Einträgen; aufgeklappt stehen rechts die Kreise Ü, D und A und darunter eine Info-Zeile (z. B. „Englisch 6 · Nr. 1–25 · 25 Vokabeln“). Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann in einer grünen Kopfzeile. Lang drücken auf den Namen: „Speichern“. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Raster, bis 100 Zeilen × 4 Spalten); jede Kachel zeigt unten einen Balken mit dem Lernfortschritt Übersetzung (✓ bei 100 %), die geladene Kachel ist in der Hauptfarbe gefüllt. Lang drücken auf eine Kachel zeigt den vollständigen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie unter neuem Namen, mit eigenem Fortschritt), „Verschieben“, „Listen/Vokabeln ändern“ und „Löschen“. „Verschieben“: Einträge antippen markiert sie (nummeriert, mehrere möglich), ein freier Platz setzt die markierten dort untereinander ein; oder direkt ziehen – ein markierter Eintrag nimmt alle markierten mit, auf einem belegten Platz rücken die Einträge auf die frei gewordenen Plätze (einzeln: die beiden tauschen); „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt untereinander in die erste Spalte unter den untersten Eintrag; das Raster wächst bei Bedarf."},
-                  {k:"Neu-Chip", v:"Setzt die aktive Session zurück – Quiz startet ohne geladene Konfiguration."},
+                  {k:"Kopfzeile (Session-Auswahl)", v:"Oben im Tab steht der Name der geladenen Session („Neu“, wenn keine geladen ist). Die App startet in der Auswahl: gespeicherte Sessions und Verlauf – die Einstellungen darunter sind dann ausgeblendet. Antippen des Namens schaltet um zwischen Auswahl und Einstellungen (kein Aufklappen); eine Session antippen lädt sie und zeigt ihre Einstellungen. In der Auswahl stehen rechts die Kreise Ü, D und A und darunter eine Info-Zeile (z. B. „Englisch 6 · Nr. 1–25 · 25 Vokabeln“); eine gespeicherte Konfiguration erscheint dann in einer grünen Kopfzeile. Lang drücken auf den Namen: „Speichern“. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Raster, bis 100 Zeilen × 4 Spalten); jede Kachel zeigt unten einen Balken mit dem Lernfortschritt Übersetzung (✓ bei 100 %), die geladene Kachel ist in der Hauptfarbe gefüllt. Lang drücken auf eine Kachel zeigt den vollständigen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie unter neuem Namen, mit eigenem Fortschritt), „Verschieben“, „Listen/Vokabeln ändern“ und „Löschen“. „Verschieben“: Einträge antippen markiert sie (nummeriert, mehrere möglich), ein freier Platz setzt die markierten dort untereinander ein; oder direkt ziehen – ein markierter Eintrag nimmt alle markierten mit, auf einem belegten Platz rücken die Einträge auf die frei gewordenen Plätze (einzeln: die beiden tauschen); „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt untereinander in die erste Spalte unter den untersten Eintrag; das Raster wächst bei Bedarf."},
+                  {k:"＋ Neue Session aus Listen", v:"Oben in der Auswahl. „Eine Session“: Listen und Vokabeln wählen, dann wie gewohnt einstellen und starten (lang auf den Namen drücken → Speichern). „Mehrere Sessions“: eine Liste wählen und in Pakete aufteilen (Name, Gruppengröße, Bereich von–bis, Rest) – je Paket eine gespeicherte Session."},
                   {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl. Ist eine gespeicherte Konfiguration geladen, sind Listen- und Vokabel-Auswahl festgelegt und ausgeblendet – zum Ändern lang auf die Kachel drücken und „Listen/Vokabeln ändern“ wählen."},
                   {k:"Vokabel-Auswahl [Alle]", v:"Alle Vokabeln der gewählten Listen werden abgefragt."},
@@ -9095,6 +9100,37 @@ export default function VokabelApp() {
       </div>
 
       {/* ── Modals (global) ── */}
+      {modal === "neue-session" && (
+        <div className="overlay" onClick={() => setModal(null)}>
+          <div className="modal" data-neue-session-dialog={neueSessionSchritt} onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">Neue Session aus Listen</div>
+            {neueSessionSchritt === "art" ? (<>
+              <button className="neue-session-wahl" data-neue-session-art="eine" onClick={() => { setModal(null); neueQuizKonfiguration(); window.scrollTo(0, 0); }}
+                {...tt("Listen und Vokabeln wählen, dann wie gewohnt einstellen; lang auf den Namen drücken speichert die Session")}>
+                <b>Eine Session</b><span>Listen und Vokabeln wählen, dann einstellen und starten</span>
+              </button>
+              <button className="neue-session-wahl" data-neue-session-art="mehrere" onClick={() => setNeueSessionSchritt("liste")}
+                {...tt("Eine Liste in Pakete aufteilen (Bereich von–bis, Größe) – je Paket eine gespeicherte Session")}>
+                <b>Mehrere Sessions</b><span>Eine Liste aufteilen, z. B. Nr. 51–125 in Pakete zu 25</span>
+              </button>
+            </>) : (<>
+              <div style={{fontSize:"0.82rem", color:"var(--text2)", marginBottom:10}}>Welche Liste soll aufgeteilt werden?</div>
+              <div style={{display:"flex", flexDirection:"column", gap:6, maxHeight:"50vh", overflowY:"auto"}}>
+                {sichtbareListen.map(l => (
+                  <button key={l.id} className="neue-session-wahl" data-aufteilen-liste={l.id} onClick={() => { setModal(null); starteAufteilen(l.id); }}
+                    {...tt(`„${l.name}“ in Sessions aufteilen`)}>
+                    <b>{l.name}</b><span>{lsGet(SK.liste(l.id))?.vokabeln.length || 0} Vokabeln</span>
+                  </button>
+                ))}
+              </div>
+            </>)}
+            <div className="modal-actions">
+              {neueSessionSchritt === "liste" && <button className="btn btn-ghost" onClick={() => setNeueSessionSchritt("art")} {...tt("Zurück zur Auswahl Eine / Mehrere")}>Zurück</button>}
+              <button className="btn btn-ghost" onClick={() => setModal(null)} {...tt("Schließen, ohne etwas anzulegen")}>Abbrechen</button>
+            </div>
+          </div>
+        </div>
+      )}
       {modal === "neue-liste" && (
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>

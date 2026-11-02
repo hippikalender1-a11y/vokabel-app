@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen } from "./hilfen.mjs";
 
 // Farbmodus: in den Einstellungen starten, normal durch die App gehen, langer Druck auf ein Element →
 // Farbfeld mit den Farbrollen im Umkreis (auch kleine Mini-Kreise); Änderung live;
@@ -56,7 +57,7 @@ await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click
 ok(await page.$("[data-farbmodus-zuruecksetzen]") && await page.$("[data-farbmodus-uebernehmen]"), "Farbmodus an: unten rechts „Zurücksetzen“ und „Farben übernehmen“");
 
 // normal navigieren
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Nomen");
 ok(await page.$("[data-farbmodus-uebernehmen]"), "Navigieren im Farbmodus: Leiste bleibt");
 
@@ -99,7 +100,7 @@ await page.click("[data-farbrad-abbrechen]"); await sleep(200);
 await clickText("[data-farbfeld] button", "Schließen", true);
 
 // Mini-Kreis in der Kopfzeile per Finger: Umkreis erfasst Ring und Buchstabe
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") k.querySelector("button.zeile-rechts")?.click(); }); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]")?.click(); }); await sleep(300);
 const kreis = await mitte('[data-quiz-art="uebersetzung"]');
 await finger("touchStart", kreis.x + 6, kreis.y + 8); await sleep(700); await finger("touchEnd"); await sleep(300);
 zeilen = await feldZeilen();

@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen, neueEineSession } from "./hilfen.mjs";
 
 // Gespeicherte Session: eigener Paket-Fortschritt je Abfrageart (Übersetzung / Akzente), Zurücksetzen,
 // Kopfzeile grün + zentriert, Liste klappt nach Auswahl zu
@@ -50,7 +51,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g_1", name:"Mein Paket", timestamp:1, konfiguration:k, sessionFortschritt:null }] }));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 if (!(await text()).includes("Mein Paket")) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
 ok(!(await text()).includes("Verlauf & Gespeichert") && await page.$("[data-kopf-info]"), "Aufgeklappt: keine Überschrift mehr, dafür die Info-Zeile");
@@ -134,7 +135,7 @@ ok(await fortschritt() === "10/14", "Übersetzungs-Fortschritt bleibt nach dem Z
 
 // nach Neuladen bleibt alles erhalten
 await page.reload(); await sleep(600);
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await sleep(300);
 ok(await kopf() === "gruen" && (await text()).includes("Mein Paket") && await fortschritt() === "10/14",
   "Nach Neuladen: gespeicherte Session automatisch geladen (grüne Kopfzeile, Übersetzung 10/14)");
@@ -145,18 +146,18 @@ ok(await kopf() === "gruen" && !(await text()).includes("Verlauf & Gespeichert")
 await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
 ok(await kopf() === "offen" && await page.$("[data-kopf-info]"), "Statistik: Antippen öffnet die Auswahl (mit Info-Zeile)");
-await clickText(".slot-chip", "Mein Paket");
+await clickText(".slot-chip", "Mein Paket"); await sleep(500);
 await sleep(300);
 ok(await kopf() === "gruen" && !(await page.$(".slot-raster")), "Statistik: nach Auswahl wieder zu und grün");
 await page.screenshot({ path: "statistik_kopf.png", clip: { x: 0, y: 0, width: 820, height: 300 } });
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await sleep(300);
 // „Neu“ → beim nächsten Start nichts automatisch laden
 await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
-await clickText(".slot-chip", "Neu", true);
+await neueEineSession(page);
 await page.reload(); await sleep(600);
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await sleep(300);
 ok(await kopf() !== "gruen" && await fortschritt() === null, "Nach „Neu“ und Neuladen: keine Session automatisch geladen");
 await browser.close();

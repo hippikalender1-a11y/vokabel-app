@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
@@ -73,7 +73,7 @@ await klick("button", "Analysieren", true); await pruefe("Import-Zuordnung");
 
 // Quiz-Tab mit allen Bereichen
 await page.goto(URL); await sleep(500);
-await klick(".tab", "Quiz");
+await klick(".tab", "Quiz"); await quizEinstellungen(page);
 await pruefe("Quiz-Tab");
 await klick(".quiz-setup-check", "Verbs"); await pruefe("Quiz-Tab Liste");
 for (const [sel, b] of [["button", "Bereich"], ["[data-abfragemodus]", ""], ["[data-reihenfolge]", ""], ["[data-umfang]", ""], ["[data-abfrageziel]", ""]]) { await klick(sel, b, !!b); await pruefe("Quiz-Bereich " + (b || sel)); }
@@ -81,7 +81,7 @@ await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-n
 
 // Quiz läuft (Karte)
 await page.goto(URL); await sleep(500);
-await klick(".tab", "Quiz"); await klick(".quiz-setup-check", "Verbs");
+await klick(".tab", "Quiz"); await klick(".quiz-setup-check", "Verbs"); await quizEinstellungen(page);
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(500);
 await pruefe("Quiz Karte Frage");
 await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click()); await sleep(300); await pruefe("Quiz Karte aufgedeckt");

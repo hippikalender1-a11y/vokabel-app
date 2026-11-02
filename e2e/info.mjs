@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
@@ -37,7 +38,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ farbeImMenue: false }));
 });
 await page.reload(); await sleep(500);
-await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Quiz").click()); await sleep(200);
+await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Quiz").click()); await sleep(200); await quizEinstellungen(page);
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(d => d.textContent.includes("Verbes")).click()); await sleep(300);
 
 // 1) Langes Drücken (oben) → Tafel unten, bleibt nach dem Loslassen

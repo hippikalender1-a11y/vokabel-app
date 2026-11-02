@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen, neueEineSession } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -44,7 +45,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Verbes");
 // Bereich: 2 Vokabeln, Reihenfolge Zufällig (Standard: Schlechteste), speichern
 await clickText("button", "Bereich", true);
@@ -62,7 +63,7 @@ ok(z.start === "2" && z.reihenfolge === "Zufällige Reihenfolge", "Preset: 2 Vok
 // Neu
 await page.evaluate(() => window.scrollTo(0, 0));
 if (!(await page.evaluate(() => /📌 Gespeichert/i.test(document.body.innerText)))) await clickText(".toggle-opt.aktiv", "Französisch");
-await clickText(".slot-chip", "Neu", true);
+await neueEineSession(page);
 await sleep(400);
 z = await zustand();
 console.log("     Nach Neu:", JSON.stringify(z));
@@ -89,7 +90,7 @@ ok(/GESAMT\s*\n?\s*2/i.test(t), "Statistik: Preset zeigt 2 Vokabeln");
 // nach dem Laden ist der Bereich zu → wieder öffnen
 await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
-await clickText(".slot-chip", "Neu", true);
+await clickText(".slot-chip", "Neu", true);   // Statistik: „Neu“-Chip wie bisher
 await sleep(300);
 t = await page.evaluate(() => document.body.innerText);
 ok(/GESAMT\s*\n?\s*3/i.test(t), "Statistik Neu: wieder alle 3 Vokabeln");

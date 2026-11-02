@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen } from "./hilfen.mjs";
 
 // Paket-Ende: Knopf nennt die echte Restzahl („Letzte 2 Vokabeln“), Größen über dem Rest fehlen;
 // „Zur Übersicht“/„Beenden“/„Schließen“ kehren eingeklappt zurück, „Pause“ nicht;
@@ -43,7 +44,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, sprache: "alle", farbschema: "lavendel" }));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Vocabulaire");
 await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await sleep(300);
 await page.click('[data-umfang-wahl="5"]'); await sleep(500);
@@ -64,9 +65,10 @@ await page.evaluate(() => document.querySelector('[data-quiz-art="uebersetzung"]
 
 // Paket 1 (5 von 7) → Rest 2
 const kopf = () => page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf);
-const oeffneKopf = async () => { if (await kopf() !== "offen") { await page.click("[data-slot-kopf-name]"); await sleep(300); } };
-await oeffneKopf();
-const vorher = await kopf();
+const reihenfolgeOffen = () => page.evaluate(() => !!document.querySelector("[data-reihenfolge]")?.classList.contains("offen"));
+const oeffneReihenfolge = async () => { if (!(await reihenfolgeOffen())) { await page.click("[data-reihenfolge]"); await sleep(300); } };
+await oeffneReihenfolge();
+const vorher = await reihenfolgeOffen();
 await page.click("[data-start-knopf]"); await sleep(500);
 await paket(5);
 const knopf = await page.evaluate(() => document.querySelector("[data-naechstes-paket]")?.textContent.trim());
@@ -75,7 +77,7 @@ ok(!(await page.$("[data-paket-groessen]")), "keine Paketgrößen-Auswahl, da al
 
 // Pause: Übersicht wie vorher
 await page.click("[data-pause]"); await sleep(500);
-ok(vorher === "offen" && await kopf() === "offen", `Pause: Bereiche bleiben wie sie waren (Kopf ${await kopf()})`);
+ok(vorher && await reihenfolgeOffen(), "Pause: Bereiche bleiben wie sie waren (Reihenfolge offen)");
 
 // letzte 2 → Auswertung → Zur Übersicht: eingeklappt
 await page.click("[data-start-knopf]"); await sleep(500);
@@ -86,14 +88,14 @@ await clickText("button", "Zur Übersicht"); await sleep(500);
 const nachher = await page.evaluate(() => ({ listen: [...document.querySelectorAll(".quiz-setup-check")].filter(e => e.offsetParent).length,
   kopf: document.querySelector("[data-slot-kopf]")?.dataset.slotKopf, y: window.scrollY, tab: document.querySelector(".tab.aktiv, .tab.active")?.textContent }));
 console.log("     nach „Zur Übersicht“:", JSON.stringify(nachher));
-ok(nachher.listen === 0 && nachher.kopf !== "offen" && nachher.y === 0, "Zur Übersicht: alle Bereiche eingeklappt, oben");
+ok(nachher.listen === 0 && nachher.kopf !== "offen" && !(await reihenfolgeOffen()) && nachher.y === 0, "Zur Übersicht: alle Bereiche eingeklappt, oben");
 
 // Beenden während der Abfrage (ohne Antwort) → eingeklappt
-await oeffneKopf();
-const offen = await kopf();
+await oeffneReihenfolge();
+const offen = await reihenfolgeOffen();
 await page.click("[data-start-knopf]"); await sleep(500);
 await clickText("button", "Beenden", true); await sleep(500);
-ok(offen === "offen" && await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf) !== "offen", `Beenden: Kopfbereich wieder eingeklappt (vorher ${offen})`);
+ok(offen && !(await reihenfolgeOffen()), "Beenden: offener Bereich (Reihenfolge) wieder eingeklappt");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

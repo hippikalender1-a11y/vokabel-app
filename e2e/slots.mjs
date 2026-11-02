@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -39,7 +40,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Verbes");
 await page.click("[data-umfang]"); await sleep(200); await page.click('[data-umfang-wahl="alle"]'); await sleep(300);
 
@@ -97,8 +98,8 @@ let pl = await plaetze();
 console.log("     Plätze:", JSON.stringify(pl));
 ok(pl[n1] === "0|0" && pl[n2] === "1|0" && pl[n3] === "2|0", "Neue Einträge untereinander in der ersten Spalte (Raster 10 × 2)");
 ok(await page.evaluate(() => getComputedStyle(document.querySelector(".slot-raster")).gridTemplateColumns.split(" ").length === 2), "Raster mit 2 Spalten");
-ok(await page.evaluate(() => { const neu = [...document.querySelectorAll(".slot-kopf-knoepfe .slot-chip")].find(b => b.textContent.trim() === "Neu"); return !!neu && !neu.closest(".slot-raster"); }),
-  "„Neu“ klein oben, nicht im Raster");
+ok(await page.evaluate(() => { const neu = document.querySelector("[data-neue-session]"); return !!neu && !neu.closest(".slot-raster"); }),
+  "„＋ Neue Session aus Listen“ oben, nicht im Raster");
 t = await page.evaluate(() => document.body.innerText);
 ok(!t.includes("⇄ Verschieben") && /Lang drücken: umbenennen, verschieben, auswählen \(Multiquiz, mehrere löschen\) oder löschen/.test(t) && !(await page.$("svg + svg")),
   "Kein Verschieben-Knopf mehr, stattdessen Hinweis auf den Lang-Druck");
@@ -161,7 +162,7 @@ await page.reload(); await sleep(400);
 ok(JSON.stringify(await plaetze()) === JSON.stringify(pl), "Plätze bleiben nach Neuladen erhalten");
 
 // Umbenennen über das Menü: Name ändert sich, Platz bleibt; doppelter Name wird abgelehnt
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 if (!(await page.$("[data-raster-zelle]"))) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
 const platzN1 = pl[n1];
@@ -200,7 +201,7 @@ const zeilen = await page.evaluate(() => document.querySelector("[data-raster-ze
 pl = await plaetze();
 console.log("     1 Zeile × 3:", JSON.stringify(pl));
 ok(zeilen === "1" && Object.values(pl).every(p => p.startsWith("0|")) && new Set(Object.values(pl)).size === 3, "Verkleinern auf 1 × 3: alle Einträge in Zeile 1, keiner doppelt");
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await speichern();
 const einst = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen")).slotRaster);
 pl = await plaetze();

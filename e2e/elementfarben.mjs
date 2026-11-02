@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen } from "./hilfen.mjs";
 
 // Element-Farben: im Farbfeld je Teil „Alle Stellen“ (Rolle) oder „Nur dieses Element“ (eigene Farbe der Element-Art,
 // Rolle bleibt); gespeichert im Farbschema, im Schema-Editor sichtbar und entfernbar
@@ -37,7 +38,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, sprache: "alle" }));
 });
 await page.reload(); await sleep(500);
-await tab("Quiz");
+await tab("Quiz"); await quizEinstellungen(page);
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(c => c.textContent.includes("Unité 1")).click()); await sleep(400);
 const haupt = await variable("haupt");
 const neuBgVorher = await bg("[data-start-knopf]");
@@ -69,7 +70,7 @@ const e = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_ein
 const sch = e.eigeneSchemata?.find(x => x.id === e.farbschema);
 ok(sch?.elemente?.["[data-start-knopf]"]?.["background-color"] === "#123456", "gespeichert im neuen Schema (elemente)");
 await page.reload(); await sleep(500);
-await tab("Quiz");
+await tab("Quiz"); await quizEinstellungen(page);
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(c => c.textContent.includes("Unité 1"))?.click()); await sleep(400);
 ok(await bg("[data-start-knopf]") === "rgb(18, 52, 86)", "nach dem Neuladen weiterhin umgefärbt");
 
@@ -78,7 +79,7 @@ await tab("Einstellungen"); await oeffneEinst("app");
 await page.click("[data-farben-bearbeiten]"); await sleep(300);
 ok(await page.$('[data-element-farbe="[data-start-knopf]|background-color"]'), "Schema-Editor: „Eigene Element-Farben“ mit dem Start-Knopf");
 await page.evaluate(() => document.querySelector('[data-element-farbe="[data-start-knopf]|background-color"] button').click()); await sleep(300);
-await tab("Quiz");
+await tab("Quiz"); await quizEinstellungen(page);
 ok(await bg("[data-start-knopf]") === neuBgVorher, "entfernt: Start-Knopf wieder in der Hauptfarbe");
 
 await browser.close();

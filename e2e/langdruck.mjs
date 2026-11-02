@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen } from "./hilfen.mjs";
 
 // Lang-Druck per Touch auf gespeicherte Konfiguration: nur Name in der Erklärung, Menü-Knöpfe frei schwebend,
 // Lang-Druck + Ziehen → Menü weg, Verschieben-Modus, Eintrag auf neuen Platz; Fenster oben (Tastatur)
@@ -55,7 +56,7 @@ console.log("     Erklärung:", blase);
 ok(blase === "Unregelmäßige Verben Kapitel 3 – Wiederholung", "Lang-Druck zeigt den vollen Namen");
 ok(getrennt, "Menü-Knöpfe schweben getrennt von der Erklärung");
 // Tipp daneben schließt
-await page.touchscreen.tap(200, 780); await sleep(300);
+await page.touchscreen.tap(8, 640); await sleep(300);
 ok(!(await page.$('[role="status"]')) && !(await page.$("[data-info-menue]")), "Tipp daneben schließt Erklärung und Menü");
 ok(Object.keys(await plaetze()).length === 2 && !(await page.evaluate(() => document.body.innerText.includes("Jetzt den Zielplatz"))), "Nichts geladen oder verschoben");
 

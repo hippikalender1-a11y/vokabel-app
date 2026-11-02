@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { quizEinstellungen } from "./hilfen.mjs";
 
 // Mehrere Antworten: jede Antwort (gewusst ✓ oder nicht ✗) bleibt oben untereinander stehen,
 // zwischen den Antworten keine Verzögerung; die Pause vor der nächsten Vokabel endet mit einem Antippen
@@ -45,9 +46,9 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g_1", name:"Drei Antworten", timestamp:1, konfiguration:k, sessionFortschritt:null, platz:{z:0,s:0} }] }));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Quiz");
+await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
-await clickText(".slot-chip", "Drei Antworten");
+await clickText(".slot-chip", "Drei Antworten"); await sleep(500);
 await clickText("[data-start-knopf]", "");
 await sleep(300);
 

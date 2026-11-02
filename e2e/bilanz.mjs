@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -39,7 +39,7 @@ async function runde(scores, antworten) {
     localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", autoplay:false, vorlesen:["E1"], gelerntSchwelle:3, sprache:"alle" }));
   }, scores);
   await page.reload(); await sleep(500);
-  await clickText(".tab", "Quiz");
+  await clickText(".tab", "Quiz"); await quizEinstellungen(page);
   await clickText(".quiz-setup-check", "Verbes");
   // Abfrage-Ziel "Anzahl" (ein Durchgang) – dieser Test prüft die Punkte eines einzelnen Durchgangs
   if (!(await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].some(b => b.textContent.trim() === "Anzahl"))))
