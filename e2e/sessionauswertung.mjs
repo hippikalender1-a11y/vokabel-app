@@ -72,7 +72,7 @@ for (let i = 0; i < 2; i++) { await page.evaluate(() => document.querySelector("
 ok(await kopf() === "2/12", `nach 2 Antworten: 2/12 (${await kopf()})`);
 // Reihenfolge Listen-Nr. mit „unbeantwortete zuerst“: Paket 1 = w4 … w12, w1; Paket 2 = w2, w3
 await paket(["w4", "w5"]);
-await clickText("button", "Nächste");
+await clickText("[data-naechstes-paket]", "");
 await sleep(400);
 ok(await kopf() === "10/12", `zweites Paket: Balken zählt die ganze Session weiter (${await kopf()})`);
 await paket([]);
@@ -95,7 +95,7 @@ ok(/Dauer/.test(a.text), "Dauer angezeigt");
 await clickText("button", "Nochmal");
 await sleep(400);
 await paket([]);
-if (await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.includes("Nächste")))) { await clickText("button", "Nächste"); await sleep(400); await paket([]); }
+if (await page.evaluate(() => !!document.querySelector("[data-naechstes-paket]"))) { await clickText("[data-naechstes-paket]", ""); await sleep(400); await paket([]); }
 await page.click("[data-zur-auswertung]"); await sleep(400);
 a = await auswertung();
 console.log("     2. Durchlauf:", a.text.slice(0, 220));

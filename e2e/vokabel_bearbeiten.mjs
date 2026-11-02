@@ -72,7 +72,7 @@ await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zu
 // ── Abfrage (Tippen): geänderte Antwort gilt sofort ──
 await ladeSlot("Tippen");
 await page.click("[data-start-knopf]"); await sleep(500);
-await langDruck("[data-karte-frage]"); await aktion("✎ Richtige Antwort bearbeiten");
+await langDruck("[data-karte-antwort]"); await aktion("✎ Richtige Antwort bearbeiten");
 await feld("E1", "aller");
 await page.keyboard.press("Enter"); await sleep(300);
 ok((await vok(1)).E1.wert === "aller" && !(await page.$("[data-vokabel-editor]")), "Enter im Dialog speichert (auch über der Frage-Karte)");

@@ -313,6 +313,8 @@ function GelerntSterne() {
 }
 
 // Antwortarten einer Spalte: eine (Text) oder mehrere (Liste – je Frage wird zufällig eine gewählt)
+// Start-Knopf im Quiz-Tab: nennt die gewählte Abfrageart
+const START_TEXT = { uebersetzung: "Übersetzung starten", diktat: "Diktat starten", akzente: "Akzente starten" };
 const MODI_REIHENFOLGE = ["karte", "mc", "tippen", "akzent"];
 const modiVon = m => Array.isArray(m) ? m : [m || STANDARD_ANTWORT_MODUS];
 // je Frage und Spalte: aus mehreren angehakten Antwortarten gleich verteilt eine wählen;
@@ -878,6 +880,7 @@ const FARB_ROLLEN = [
   ["knopf", "Knöpfe & Felder", "Eingabefelder, Umschalt-Knöpfe, Chips, Häkchen"],
   ["info-kasten", "Info-Kästen", "Info-Übersicht, Anleitung, Hinweise, Rückmeldung nach der Runde"],
   ["haupt-flaeche", "Ausgewählt / hervorgehoben", "aktive Kacheln und Kopfzeilen, richtige Antwort"],
+  ["start", "Liste & Start", "aktuelle Liste oben im Quiz-Tab und Start-Knopf"],
   ["flaeche", "Fläche grau", "leichte Hinterlegungen"],
   ["text-stark", "Text kräftig", "Überschriften, Eingaben"], ["text", "Text", "normaler Text"], ["text2", "Text leise", "Untertitel, Hinweise"], ["text3", "Text sehr leise", "Zahlen in Klammern"],
   ["rahmen", "Rahmen", "Linien und Ränder"],
@@ -946,9 +949,22 @@ function mische(a, b, t) {
   const x = hexZuRgb(a), y = hexZuRgb(b);
   return "#" + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, "0")).join("");
 }
+// Liste & Start: etwas heller und kräftiger als die Hauptfarbe
+function hervorgehoben(hex) {
+  const { h, s, v } = hexZuHsv(hex);
+  return hsvZuHex(h, Math.min(1, s * 1.12 + 0.06), Math.min(1, v * 1.12 + 0.07));
+}
+// Kontrast nach WCAG; Schrift: bevorzugte Farbe, sonst Weiß oder Fast-Schwarz (was besser lesbar ist)
+const leuchtdichte = hex => { const [r, g, b] = hexZuRgb(hex).map(c => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+const kontrast = (a, b) => { const [x, y] = [leuchtdichte(a), leuchtdichte(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+function schriftAuf(grund, bevorzugt) {
+  if (kontrast(grund, bevorzugt) >= 3) return bevorzugt;   // große, fette Schrift
+  return kontrast(grund, "#ffffff") >= kontrast(grund, "#141414") ? "#ffffff" : "#141414";
+}
 function farbenAus(f) {
   const k = f.karte;
-  return { ...f, "leiste": f.leiste || f.haupt, "gelernt-effekt": f["gelernt-effekt"] || "#fff176",
+  const start = f.start || hervorgehoben(f.haupt);
+  return { ...f, "start": start, "auf-start": schriftAuf(start, f["auf-haupt"]), "leiste": f.leiste || f.haupt, "gelernt-effekt": f["gelernt-effekt"] || "#fff176",
     // eigene Rollen für Flächen; ohne eigenen Wert wie bisher bzw. mit einem Hauch der Hauptfarbe
     "app-kopf": f["app-kopf"] || k, "kopfzeile": f.kopfzeile || mische(f["haupt-hell"], k, 0.93),
     "abfrage-karte": f["abfrage-karte"] || k, "dialog": f.dialog || k,
@@ -962,7 +978,7 @@ function farbenAus(f) {
   };
 }
 // abgestufte Rollen werden über ihre Grundfarbe geändert
-const FARB_BASIS = { "haupt-zart": "haupt-hell", "richtig-dunkel": "richtig", "richtig-flaeche": "richtig",
+const FARB_BASIS = { "haupt-zart": "haupt-hell", "auf-start": "auf-haupt", "richtig-dunkel": "richtig", "richtig-flaeche": "richtig",
   "text4": "text3", "flaeche-hell": "flaeche", "falsch-dunkel": "falsch", "falsch-zart": "falsch", "falsch-flaeche": "falsch",
   "gelb-dunkel": "gelb", "gelb-zart": "gelb", "gelb-flaeche": "gelb", "info-flaeche": "info" };
 /* FARBSCHEMATA-ENDE */
@@ -1125,6 +1141,7 @@ const CSS_BASIS = `
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:10px;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s;}
   .btn:active{opacity:.8;}
   .btn-primary{background:var(--haupt);color:var(--auf-haupt);border:1.5px solid transparent;}
+  .btn-primary.start-knopf{background:var(--start);color:var(--auf-start);}
   .btn-ghost{background:transparent;color:var(--haupt);border:1.5px solid var(--haupt);}
   .btn-ghost-filled{background:var(--knopf);color:var(--haupt);border:1.5px solid var(--haupt);}
   .btn-sm{padding:6px 12px;font-size:0.8rem;min-height:30px;}
@@ -1207,7 +1224,8 @@ const CSS_BASIS = `
   .slot-kopf{position:sticky;z-index:9;background:var(--kopfzeile);border-bottom:1px solid var(--rahmen);padding:10px 16px;}
   .slot-kopf.gruen{background:var(--haupt);border-bottom-color:var(--haupt);}
   .slot-kopf-name{flex:1;min-width:0;padding:7px 12px;font-size:0.95rem;border-radius:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
-  .slot-kopf.gruen .slot-kopf-name{border:1.5px solid rgba(255,255,255,0.75);}
+  .slot-kopf-name.toggle-opt.aktiv{background:var(--start);color:var(--auf-start);}
+  .slot-kopf.gruen .slot-kopf-name{border:1.5px solid rgba(255,255,255,0.45);}
   .slot-kopf-info{font-size:0.75rem;color:var(--text2);text-align:center;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .slot-kopf.gruen .slot-kopf-info{color:var(--auf-haupt);opacity:0.85;}
   .farbmodus-leiste{position:fixed;right:12px;bottom:12px;z-index:10002;display:flex;gap:6px;padding:6px 8px;background:var(--karte);border:1.5px solid var(--rahmen);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.2);font-family:system-ui,sans-serif;}
@@ -1434,6 +1452,7 @@ export default function VokabelApp() {
   const [bearbeiteEingaben, setBearbeiteEingaben] = useState({});
   const [bearbeiteListe, setBearbeiteListe] = useState(null);   // Liste der bearbeiteten Vokabel (Listen, Statistik, Abfrage)
   const [bearbeiteNur, setBearbeiteNur] = useState(null);       // Abfrage: nur diese Spalte (richtige Antwort), ohne falsche Antworten
+  const [bearbeiteFalsch, setBearbeiteFalsch] = useState(null); // Abfrage (MC): diese falsche Antwort der Spalte bearbeiteNur
   const [mergeQuelleId, setMergeQuelleId] = useState("");
 
   const [importText, setImportText] = useState("");
@@ -1610,10 +1629,14 @@ export default function VokabelApp() {
     const langText = opts.langText || text;
     return {
       // Rechtsklick = langer Druck: Menü bzw. Erklärung (mit „🎨 Farbe ändern“)
-      onContextMenu(e) { e.preventDefault(); if (aktionen) opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen); },
+      // verschachtelt: ein inneres Element mit eigenem Menü hat Vorrang vor dem äußeren (sonst gewinnt wie bisher das äußere)
+      onContextMenu(e) { e.preventDefault(); if (e.nativeEvent._ttMenue) return; if (aktionen) e.nativeEvent._ttMenue = true;
+        if (aktionen) opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen); },
       title: text,
       "data-info": text,
       onTouchStart(e) {
+        if (e.nativeEvent._ttMenue) return;
+        if (aktionen) e.nativeEvent._ttMenue = true;
         const t = e.touches[0];
         clearTimeout(tooltipTimer.current);
         tooltipShown.current = false;
@@ -2340,13 +2363,13 @@ export default function VokabelApp() {
   // ── Vokabel-Verwaltung ────────────────────────────────────────────────────
   // Vokabel bearbeiten (vok = null: neue Vokabel) in beliebiger Liste – aus Listen, Statistik oder Abfrage.
   // nur = Spalte: nur deren richtige Antwort (Abfrage), falsche Antworten bleiben unverändert
-  function oeffneVokabelBearbeiten(vok, listeId = aktiveListeId, nur = null) {
+  function oeffneVokabelBearbeiten(vok, listeId = aktiveListeId, nur = null, falsch = null) {
     const liste = listeId === aktiveListeId && aktiveListe ? aktiveListe : lsGet(SK.liste(listeId));
     if (!liste) return;
     const orig = vok ? liste.vokabeln.find(v => v.id === (vok._origId ?? vok.id)) : null;
     if (vok && !orig) return;
     const eingaben = {};
-    if (nur) eingaben[nur] = orig?.[nur]?.wert || '';
+    if (nur) eingaben[nur] = falsch ?? (orig?.[nur]?.wert || '');
     else TYPEN.filter(t => liste.spalten[t].aktiv).forEach(typ => {
       const z = orig?.[typ];
       eingaben[typ] = z ? z.wert + (z.falsch?.length > 0 ? ' || ' + z.falsch.join(' | ') : '') : '';
@@ -2354,24 +2377,35 @@ export default function VokabelApp() {
     setBearbeiteVokabel(orig || { neu: true });
     setBearbeiteListe(liste);
     setBearbeiteNur(nur);
+    setBearbeiteFalsch(falsch);
     setBearbeiteEingaben(eingaben);
     setModalFehler("");
     setModal('vokabel-bearbeiten');
   }
-  function schliesseVokabelBearbeiten() { setModal(null); setBearbeiteVokabel(null); setBearbeiteEingaben({}); setBearbeiteNur(null); setBearbeiteListe(null); }
+  function schliesseVokabelBearbeiten() { setModal(null); setBearbeiteVokabel(null); setBearbeiteEingaben({}); setBearbeiteNur(null); setBearbeiteFalsch(null); setBearbeiteListe(null); }
 
   function speichereVokabelBearbeitung() {
     if (!bearbeiteVokabel || !bearbeiteListe) return;
     const liste = lsGet(SK.liste(bearbeiteListe.id)) || bearbeiteListe;
-    const nur = bearbeiteNur;
+    const nur = bearbeiteNur, falschAlt = bearbeiteFalsch;
     const neuEintrag = !!bearbeiteVokabel.neu;
     const orig = neuEintrag ? null : liste.vokabeln.find(v => v.id === bearbeiteVokabel.id);
     if (!neuEintrag && !orig) { schliesseVokabelBearbeiten(); return; }
     let neu;
+    const wert = nur ? (bearbeiteEingaben[nur] || '').trim() : '';
     if (nur) {
-      const wert = (bearbeiteEingaben[nur] || '').trim();
-      if (!wert) { setModalFehler("Die richtige Antwort darf nicht leer sein."); return; }
-      neu = { ...orig, [nur]: { ...(orig[nur] || { falsch: [] }), wert } };
+      if (falschAlt != null) {
+        // falsche Antwort ändern; leer = entfernen
+        const alt = orig[nur]?.falsch || [];
+        neu = { ...orig, [nur]: { ...orig[nur], falsch: wert ? alt.map(f => f === falschAlt ? wert : f) : alt.filter(f => f !== falschAlt) } };
+      } else if (nur.startsWith('i')) {
+        // Info darf leer werden (Spalte entfällt)
+        neu = { ...orig };
+        if (wert) neu[nur] = { ...(orig[nur] || { falsch: [] }), wert }; else delete neu[nur];
+      } else {
+        if (!wert) { setModalFehler("Das Feld darf nicht leer sein."); return; }
+        neu = { ...orig, [nur]: { ...(orig[nur] || { falsch: [] }), wert } };
+      }
     } else {
       // Lernstand und nicht angezeigte Spalten bleiben erhalten
       neu = neuEintrag ? { id: liste.naechste_id } : { ...orig };
@@ -2397,7 +2431,15 @@ export default function VokabelApp() {
       // gerade gefragte Vokabel und Spalte: Lösung (und MC-Knöpfe) sofort neu
       const typ = q.modus === "diktat" ? q.diktatSpalte : q.antwortTypen?.[q.antwortTypIndex];
       const akt = vokabeln[q.index];
-      if (!passt(akt) || !typ || !(typ in spalten) || q.modus === "diktat") return neuQ;
+      if (!passt(akt)) return neuQ;
+      // schon beantwortete Spalten dieser Vokabel zeigen den neuen Wert
+      if (falschAlt == null && q.vorigeAntworten?.length) neuQ.vorigeAntworten = q.vorigeAntworten.map(v =>
+        spalten[v.typ]?.wert ? { ...v, wert: spalten[v.typ].wert.split('/').map(x => x.trim()).join(" / ") } : v);
+      if (!typ || !(typ in spalten) || q.modus === "diktat") return neuQ;
+      if (falschAlt != null) {
+        if (q.mcButtons?.length) neuQ.mcButtons = q.mcButtons.flatMap(b => b.korrekt || b.text !== falschAlt ? [b] : wert ? [{ ...b, text: wert }] : []);
+        return neuQ;
+      }
       neuQ.antwortTeile = (akt[typ]?.wert || "").split('/').map(x => x.trim());
       if (q.mcButtons?.length && q.phase === "eingabe") { const mc = generiereButtons(vokabeln, akt, typ); neuQ.mcButtons = mc.buttons; neuQ.mcRichtig = mc.richtig; }
       return neuQ;
@@ -2787,15 +2829,20 @@ export default function VokabelApp() {
   // Dialog „Vokabel bearbeiten / Neue Vokabel / Richtige Antwort bearbeiten“ – im Haupt-Bildschirm und über der Abfrage
   function renderVokabelEditor() {
     if (modal !== "vokabel-bearbeiten" || !bearbeiteVokabel || !bearbeiteListe) return null;
-    const l = bearbeiteListe, nur = bearbeiteNur;
+    const l = bearbeiteListe, nur = bearbeiteNur, falsch = bearbeiteFalsch;
     const spalten = nur ? [nur] : TYPEN.filter(t => l.spalten[t].aktiv);
     const name = t => l.spalten[t]?.name || t;
-    // Abfrage: zur Orientierung die anderen Spalten der Vokabel (nur lesen)
-    const kontext = nur ? TYPEN.filter(t => t !== nur && !t.startsWith('i') && l.spalten[t].aktiv && bearbeiteVokabel[t]?.wert) : [];
+    // Abfrage: was wird bearbeitet (Frage, richtige Antwort, Info oder eine falsche Antwort)
+    const art = !nur ? null : falsch != null ? "falsch" : nur.startsWith('i') ? "info"
+      : quiz && quiz.modus !== "diktat" && nur === quiz.frageTyp ? "frage" : "antwort";
+    const titel = { frage: "Frage bearbeiten", antwort: "Richtige Antwort bearbeiten", falsch: "Falsche Antwort bearbeiten", info: `${nur && name(nur)} bearbeiten` };
+    const zusatz = { frage: " – Frage", antwort: " – richtige Antwort", falsch: " – falsche Antwort", info: "" };
+    // Abfrage: zur Orientierung die anderen Spalten der Vokabel (nur lesen); bei falscher Antwort auch die richtige
+    const kontext = nur ? TYPEN.filter(t => (t !== nur || art === "falsch") && !t.startsWith('i') && l.spalten[t].aktiv && bearbeiteVokabel[t]?.wert) : [];
     return (
       <div className="overlay" onClick={schliesseVokabelBearbeiten}>
-        <div className="modal" data-vokabel-editor={nur ? "antwort" : bearbeiteVokabel.neu ? "neu" : "voll"} onClick={e => e.stopPropagation()}>
-          <div className="modal-titel">{nur ? "Richtige Antwort bearbeiten" : bearbeiteVokabel.neu ? "Neue Vokabel" : "Vokabel bearbeiten"}</div>
+        <div className="modal" data-vokabel-editor={nur ? art : bearbeiteVokabel.neu ? "neu" : "voll"} onClick={e => e.stopPropagation()}>
+          <div className="modal-titel">{nur ? titel[art] : bearbeiteVokabel.neu ? "Neue Vokabel" : "Vokabel bearbeiten"}</div>
           {(l.id !== aktiveListeId || nur) && <div style={{fontSize:"0.8rem", color:"var(--text2)", margin:"-6px 0 12px"}}>in „{l.name}“</div>}
           {kontext.map(t => (
             <div key={t} style={{fontSize:"0.85rem", color:"var(--text2)", marginBottom:6}}>{name(t)}: <b style={{color:"var(--text-stark)"}}>{bearbeiteVokabel[t].wert}</b></div>
@@ -2804,13 +2851,19 @@ export default function VokabelApp() {
             <div key={typ} style={{marginBottom:12}}>
               <label className="inp-label">
                 {name(typ)}
-                {nur ? <span style={{fontWeight:400}}> – richtige Antwort</span> : !typ.startsWith('i') && <span style={{fontWeight:400}}> (|| falsche Antworten)</span>}
+                {nur ? <span style={{fontWeight:400}}>{zusatz[art]}</span> : !typ.startsWith('i') && <span style={{fontWeight:400}}> (|| falsche Antworten)</span>}
               </label>
-              <input {...ttFeld(nur ? "Richtige Antwort ändern – falsche Antworten bleiben unverändert" : "Inhalt dieser Spalte bearbeiten")} className="inp" data-vokabel-feld={typ}
+              {art === "info" ? (
+                <textarea {...ttFeld("Zusatzinfo ändern – leer lassen entfernt sie")} className="inp" data-vokabel-feld={typ} rows={4}
+                  value={bearbeiteEingaben[typ] || ''} autoFocus style={{resize:"vertical", fontFamily:"inherit"}}
+                  onChange={e => { setBearbeiteEingaben(prev => ({...prev, [typ]: e.target.value})); setModalFehler(""); }} />
+              ) : (
+              <input {...ttFeld(art === "falsch" ? "Falsche Antwort ändern – leer lassen entfernt sie" : nur ? "Nur diesen Wert ändern – falsche Antworten bleiben unverändert" : "Inhalt dieser Spalte bearbeiten")} className="inp" data-vokabel-feld={typ}
                 value={bearbeiteEingaben[typ] || ''} autoFocus={i === 0}
                 onChange={e => { setBearbeiteEingaben(prev => ({...prev, [typ]: e.target.value})); setModalFehler(""); }}
                 onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); speichereVokabelBearbeitung(); } }}
               />
+              )}
             </div>
           ))}
           {modalFehler && <div className="fehler">{modalFehler}</div>}
@@ -3285,7 +3338,7 @@ export default function VokabelApp() {
   }
   function lernenVor() { setLernen(l => l && (l.index + 1 >= l.voks.length ? { ...l, fertig: true } : { ...l, index: l.index + 1, phase: 0, lauf: l.lauf + 1 })); }
   function lernenZurueck() { setLernen(l => l && { ...l, index: Math.max(0, l.index - 1), phase: 0, fertig: false, lauf: l.lauf + 1 }); }
-  function beendeLernen() { window.speechSynthesis?.cancel(); setLernen(null); }
+  function beendeLernen() { window.speechSynthesis?.cancel(); setLernen(null); klappeUebersichtEin(); }
   // nächstes Paket der Session (nach dem letzten: Endbildschirm bleibt)
   function naechstesLernPaket(l) {
     const start = l.start + l.groesse;
@@ -3788,10 +3841,17 @@ export default function VokabelApp() {
     }
   }
 
-  function beendeQuiz() {
+  // zurück zur Übersicht – eingeklappt (alle Bereiche zu, nach oben); nur „Pause“ lässt die Bereiche, wie sie waren
+  function beendeQuiz(einklappen = true) {
     setQuiz(null);
     setTab("quiz");
     setAnsicht("uebersicht");
+    if (einklappen) klappeUebersichtEin();
+  }
+  function klappeUebersichtEin() {
+    schliesseQuizBereiche();
+    setQuizModusInfoAufgeklappt(false);
+    requestAnimationFrame(() => window.scrollTo(0, 0));
   }
 
   // Statistik-Vollbild: Kopfzeile zeigt den Lernfortschritt der EINGEBLENDETEN Gruppen
@@ -3984,6 +4044,32 @@ export default function VokabelApp() {
       </>
     );
   }
+  // Paket-Ende: nächstes Paket wählen; Größen nur unterhalb des Session-Rests, beim Rest „Letzte N Vokabeln“
+  const naechstesPaketUI = (rest, doWeiter, doBeende) => {
+    const groessen = [5,10,15,20,25,30,40,50].filter(n => n < rest);
+    const letzte = quizPaketGroesse >= rest;
+    const n = Math.min(quizPaketGroesse, rest);
+    return (
+      <>
+        {groessen.length > 0 && (
+          <div style={{marginBottom:10}} data-paket-groessen>
+            <div style={{fontSize:"0.78rem", color:"var(--text2)", marginBottom:6}}>Nächstes Paket:</div>
+            <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+              {groessen.map(g => (
+                <button {...tt(`Nächstes Paket mit ${g} Vokabeln`)} key={g} className={`typ-btn${quizPaketGroesse===g?" aktiv":""}`}
+                  onClick={() => setQuizPaketGroesse(g)}>{g}</button>
+              ))}
+            </div>
+          </div>
+        )}
+        <button data-naechstes-paket={n} {...tt(letzte ? `Die letzten ${rest} Vokabeln dieser Session abfragen` : "Nächstes Paket starten – bereits abgefragte Vokabeln werden übersprungen")}
+          className="btn btn-primary" style={{width:"100%", marginBottom:8}} onClick={() => doWeiter(quizPaketGroesse)}>
+          {letzte ? `Letzte ${rest} Vokabel${rest !== 1 ? "n" : ""}` : `Nächste ${n} Vokabeln`}
+        </button>
+        <button {...tt("Pause – Fortschritt bleibt gespeichert, später über die Session weitermachen")} className="btn btn-ghost" style={{width:"100%"}} onClick={() => doBeende(false, true)} data-pause>Pause</button>
+      </>
+    );
+  };
   const weiterZurAuswertung = (
     <button data-zur-auswertung {...tt("Weiter zur Auswertung der ganzen Session: Start und Ende im Vergleich")} className="btn btn-primary" style={{width:"100%", fontSize:"1.05rem"}}
       onClick={() => { setQuiz(q => q && { ...q, sessionAuswertung: true }); window.scrollTo(0, 0); }}>Weiter →</button>
@@ -5879,7 +5965,7 @@ export default function VokabelApp() {
         const aktSlot = lsGet(SK.sessionAktiv);
         const schonAbgefragt = new Set([...((aktSlot?.abgefragt) || []), ...(quiz.sessionVokIds || [])]);
         const istLetzteBatch = schonAbgefragt.size >= (quiz.sessionGesamt || 0);
-        const doBeende = (letzteRunde) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], letzteRunde); beendeQuiz(); };
+        const doBeende = (letzteRunde, pause = false) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], letzteRunde); beendeQuiz(!pause); };
         const doWeiter = (n) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], false); setQuizPaketGroesse(n); starteDiktat(); };
         if (istLetzteBatch && quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, (<>
           <button data-nochmal {...tt("Session gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}}
@@ -5913,21 +5999,7 @@ export default function VokabelApp() {
                 </div>
                 )}
                 {istLetzteBatch ? weiterZurAuswertung : (
-                  <>
-                    <div style={{marginBottom:10}}>
-                      <div style={{fontSize:"0.78rem", color:"var(--text2)", marginBottom:6}}>Nächstes Paket:</div>
-                      <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                        {[5,10,15,20,25,30,40,50].map(n => (
-                          <button {...tt(`Nächstes Paket mit ${n} Vokabeln`)} key={n} className={`typ-btn${quizPaketGroesse===n?" aktiv":""}`}
-                            onClick={() => setQuizPaketGroesse(n)}>{n}</button>
-                        ))}
-                      </div>
-                    </div>
-                    <button {...tt("Nächstes Paket starten – bereits abgefragte Vokabeln werden übersprungen")} className="btn btn-primary" style={{width:"100%", marginBottom:8}} onClick={() => doWeiter(quizPaketGroesse)}>
-                      Nächste {quizPaketGroesse} Vokabeln
-                    </button>
-                    <button {...tt("Pause – Fortschritt bleibt gespeichert, später über die Session weitermachen")} className="btn btn-ghost" style={{width:"100%"}} onClick={() => doBeende(false)}>Pause</button>
-                  </>
+                  naechstesPaketUI(Math.max(0, (quiz.sessionGesamt || 0) - schonAbgefragt.size), doWeiter, doBeende)
                 )}
               </div>
             </div>
@@ -6097,7 +6169,7 @@ export default function VokabelApp() {
         const sessionMenge = quiz.sessionIds ? new Set(quiz.sessionIds) : null;
         const schonAbgefragt = new Set([...((aktSlot?.abgefragt) || []), ...(quiz.sessionVokIds || [])].filter(id => !sessionMenge || sessionMenge.has(id)));
         const istLetzteBatch = schonAbgefragt.size >= (quiz.sessionGesamt || 0);
-        const doBeende = (letzteRunde) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], letzteRunde); beendeQuiz(); };
+        const doBeende = (letzteRunde, pause = false) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], letzteRunde); beendeQuiz(!pause); };
         const doWeiter = (n) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], false); setQuizPaketGroesse(n); starteQuiz(); };
         const r = quiz.quizRichtigAnzahl || 0;
         const f = quiz.quizFalschAnzahl || 0;
@@ -6150,21 +6222,7 @@ export default function VokabelApp() {
                   <><button {...tt("Zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => beendeQuiz()}>Zur Übersicht</button>
                   <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
                 ) : istLetzteBatch ? weiterZurAuswertung : (
-                  <>
-                    <div style={{marginBottom:10}}>
-                      <div style={{fontSize:"0.78rem", color:"var(--text2)", marginBottom:6}}>Nächstes Paket:</div>
-                      <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                        {[5,10,15,20,25,30,40,50].map(n => (
-                          <button {...tt(`Nächstes Paket mit ${n} Vokabeln`)} key={n} className={`typ-btn${quizPaketGroesse===n?" aktiv":""}`}
-                            onClick={() => setQuizPaketGroesse(n)}>{n}</button>
-                        ))}
-                      </div>
-                    </div>
-                    <button {...tt("Nächstes Paket starten – bereits abgefragte Vokabeln werden übersprungen")} className="btn btn-primary" style={{width:"100%", marginBottom:8}} onClick={() => doWeiter(quizPaketGroesse)}>
-                      Nächste {quizPaketGroesse} Vokabeln
-                    </button>
-                    <button {...tt("Pause – Fortschritt bleibt gespeichert, später über die Session weitermachen")} className="btn btn-ghost" style={{width:"100%"}} onClick={() => doBeende(false)}>Pause</button>
-                  </>
+                  naechstesPaketUI(Math.max(0, (quiz.sessionGesamt || 0) - schonAbgefragt.size), doWeiter, doBeende)
                 )}
               </div>
             </div>
@@ -6272,10 +6330,18 @@ export default function VokabelApp() {
     const isWeitere = quiz.phase === "weitere";
     const frageWert = aktVokRaw[quiz.frageTyp]?.wert || "";
 
-    // Lang-Druck auf die Karte: nur die richtige Antwort der aktuellen Spalte bearbeiten
+    // Lang-Druck: Frage, richtige Antwort, Info, beantwortete Spalten und eigene falsche MC-Antworten einzeln bearbeiten
+    const vokListeId = aktVokRaw._listeId ?? quiz.liste.id;
+    const bearbeite = (typ, falsch = null) => oeffneVokabelBearbeiten(aktVokRaw, vokListeId, typ, falsch);
+    const spaltenName = t => quiz.liste.spalten[t]?.name || t;
     const antwortBearbeiten = tt("Lang drücken: richtige Antwort bearbeiten", [
-      { label: "✎ Richtige Antwort bearbeiten", fn: () => oeffneVokabelBearbeiten(aktVokRaw, aktVokRaw._listeId ?? quiz.liste.id, aktAntwortTyp) },
+      { label: "✎ Richtige Antwort bearbeiten", fn: () => bearbeite(aktAntwortTyp) },
     ], { langText: `${antwortLabel}: richtige Antwort bearbeiten` });
+    const frageBearbeiten = tt("Lang drücken: Frage bearbeiten", [
+      { label: "✎ Frage bearbeiten", fn: () => bearbeite(quiz.frageTyp) },
+    ], { langText: `${frageLabel}: Frage bearbeiten` });
+    const infoAktionen = typen => typen.map(t => ({ label: `✎ ${spaltenName(t)} bearbeiten`, fn: () => bearbeite(t) }));
+    const eigeneFalsche = aktVokRaw[aktAntwortTyp]?.falsch || [];
 
     let antwortBoxKlasse = "quiz-antwort-box";
     if (quiz.flash) antwortBoxKlasse += " richtig";
@@ -6342,7 +6408,7 @@ export default function VokabelApp() {
                 const name = quiz.liste.spalten[typ]?.name || typ;
                 const pages = splitInSeiten(text);
                 return pages.map((page, i) => ({
-                  name,
+                  name, typ,
                   text: (i > 0 ? "…" : "") + page + (i < pages.length - 1 ? "…" : ""),
                   page: i, total: pages.length,
                 }));
@@ -6356,7 +6422,7 @@ export default function VokabelApp() {
                 <div style={{display:"flex", gap:10, alignItems:"stretch", marginBottom:14}}>
                   {/* Linke Spalte */}
                   <div style={{flex:1, display:"flex", flexDirection:"column", gap:10}}>
-                    <div className="quiz-frage-box" style={{marginBottom:0}} data-karte-frage {...antwortBearbeiten}>
+                    <div className="quiz-frage-box" style={{marginBottom:0}} data-karte-frage {...frageBearbeiten}>
                       <div className="quiz-label">{frageLabel}</div>
                       <div style={{display:"flex", alignItems:"baseline", gap:8, justifyContent:"center"}}>
                         <div className="quiz-frage-text" style={{textAlign:"center"}}>{mitHinweis(frageWert)}</div>
@@ -6368,7 +6434,8 @@ export default function VokabelApp() {
                     </div>
 
                     {quiz.vorigeAntworten.map((v, i) => (
-                      <div key={i} className={`quiz-vorig${v.richtig ? "" : " nicht"}`} data-vorig={v.richtig ? "richtig" : "falsch"}>
+                      <div key={i} className={`quiz-vorig${v.richtig ? "" : " nicht"}`} data-vorig={v.richtig ? "richtig" : "falsch"}
+                        {...tt(`${v.label}: schon beantwortet – lang drücken zum Bearbeiten`, [{ label: "✎ Antwort bearbeiten", fn: () => bearbeite(v.typ) }], { langText: `${v.label}: Antwort bearbeiten` })}>
                         <div className="quiz-vorig-label">{v.richtig ? "✓" : "✗"} {v.label}</div>
                         <div style={{textAlign:"center", fontSize:"1rem", display:"flex", alignItems:"center", justifyContent:"center", gap:6}}>
                           <strong>{mitHinweis(v.wert)}</strong>
@@ -6398,7 +6465,11 @@ export default function VokabelApp() {
                       {aktSpaltModus === "mc" && !quiz.flash && quiz.phase === "eingabe" && (
                         <div className="mc-raster" data-mc-raster>
                           {(quiz.mcButtons || []).map((btn, idx) => (
-                            <button {...tt("Diese Antwort wählen – nur ein Treffer ohne Fehlklick zählt als gewusst")} key={idx} data-mc-knopf
+                            <button {...tt("Diese Antwort wählen – nur ein Treffer ohne Fehlklick zählt als gewusst",
+                                btn.korrekt ? [{ label: "✎ Richtige Antwort bearbeiten", fn: () => bearbeite(aktAntwortTyp) }]
+                                  : eigeneFalsche.includes(btn.text) ? [{ label: "✎ Falsche Antwort bearbeiten", fn: () => bearbeite(aktAntwortTyp, btn.text) }] : [],
+                                { langText: btn.korrekt || eigeneFalsche.includes(btn.text) ? "Lang drücken: diese Antwort bearbeiten"
+                                  : "Diese falsche Antwort stammt aus einer anderen Vokabel – bearbeiten in deren Liste" })} key={idx} data-mc-knopf
                               onClick={e => { e.stopPropagation(); quiz.phase === "eingabe" && klickeButton(idx); }}
                               style={{
                                 padding:"12px 10px", borderRadius:12, border:"none",
@@ -6532,7 +6603,8 @@ export default function VokabelApp() {
 
                   {/* Rechte Spalte: Info-Box */}
                   {quiz.infoSichtbar && aktInfoSeite && aktSpaltModus !== "karte" && (
-                    <div {...tt("Nächste Info-Seite anzeigen")} onClick={() => setQuiz(prev => ({...prev, infoSeite: ((prev.infoSeite || 0) + 1) % infoSeitenAnzahl}))}
+                    <div {...tt("Nächste Info-Seite anzeigen", infoAktionen([aktInfoSeite.typ]), { langText: `${aktInfoSeite.name}: lang drücken zum Bearbeiten` })} data-info-box
+                      onClick={() => setQuiz(prev => ({...prev, infoSeite: ((prev.infoSeite || 0) + 1) % infoSeitenAnzahl}))}
                       style={{
                         width:150, flexShrink:0, background:"var(--gelb-flaeche)",
                         border:"1px solid var(--gelb-zart)", borderRadius:12, padding:"12px",
@@ -6560,7 +6632,8 @@ export default function VokabelApp() {
             {/* Karten-Modus: Info-Kasten (eingeklappt eine Zeile „Info“) – nur vor dem Aufdecken, danach stehen hier die Bewertungs-Knöpfe */}
             {karteMitInfo && karteInfoAn && !quiz.flash && quiz.phase === "eingabe" && (
               <div data-karte-info={karteInfoOffen ? "offen" : "zu"} onClick={e => { e.stopPropagation(); if (!karteInfoPin) setQuiz(prev => ({...prev, infoSichtbar: !prev.infoSichtbar})); }}
-                {...tt(karteInfoPin ? "Info-Text (angeheftet)" : karteInfoOffen ? "Info einklappen" : "Info aufklappen")}
+                {...tt(karteInfoPin ? "Info-Text (angeheftet)" : karteInfoOffen ? "Info einklappen" : "Info aufklappen",
+                  infoAktionen(quiz.sitzungsInfoTypen || []), { langText: "Info: lang drücken zum Bearbeiten" })}
                 style={{background:"var(--gelb-flaeche)", border:"1px solid var(--gelb-zart)", borderRadius:12, padding: karteInfoOffen ? "10px 12px" : "7px 12px", marginBottom:14, cursor: karteInfoPin ? "default" : "pointer"}}>
                 <div style={{display:"flex", alignItems:"center", gap:8}}>
                   <span style={{flex:1, fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--orange)"}}>Info</span>
@@ -7936,8 +8009,8 @@ export default function VokabelApp() {
                       ) : (
                         <button className="btn btn-primary start-knopf" data-start-knopf data-start-anzahl={verfuegbar} data-start-rest={startRest}
                           onClick={() => starteQuiz()} disabled={!kannStarten || verfuegbar === 0}
-                          {...tt(isPakete ? `Quiz starten – in dieser Session sind noch ${startRest} Vokabeln übrig; abgefragt wird in Paketen zu ${quizPaketGroesse}` : "Quiz starten – die Zahl nennt die Vokabeln dieser Fragerunde")}>
-                          <b>Quiz starten</b><span>{startRest} Vokabel{startRest !== 1 ? "n" : ""}</span>
+                          {...tt(isPakete ? `${START_TEXT[quizArt] || "Quiz starten"} – in dieser Session sind noch ${startRest} Vokabeln übrig; abgefragt wird in Paketen zu ${quizPaketGroesse}` : `${START_TEXT[quizArt] || "Quiz starten"} – die Zahl nennt die Vokabeln dieser Fragerunde`)}>
+                          <b>{START_TEXT[quizArt] || "Quiz starten"}</b><span>{startRest} Vokabel{startRest !== 1 ? "n" : ""}</span>
                         </button>
                       )}
                     </div>

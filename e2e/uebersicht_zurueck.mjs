@@ -1,0 +1,100 @@
+import puppeteer from "puppeteer-core";
+
+// Paket-Ende: Knopf nennt die echte Restzahl („Letzte 2 Vokabeln“), Größen über dem Rest fehlen;
+// „Zur Übersicht“/„Beenden“/„Schließen“ kehren eingeklappt zurück, „Pause“ nicht;
+// Start-Knopf nennt die Abfrageart; aktuelle Liste und Start-Knopf in eigener, hellerer Farbe
+const URL = "http://localhost:4199/vokabel-app/";
+const browser = await puppeteer.launch({
+  executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  headless: true, args: ["--no-first-run"],
+});
+const page = await browser.newPage();
+await page.setViewport({ width: 390, height: 900 });
+page.on("pageerror", e => console.log("PAGEERROR", e.message));
+let fehler = 0;
+const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FAIL", msg); };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clickText = async (sel, text, exact = false) => {
+  const done = await page.evaluate((sel, text, exact) => {
+    const el = [...document.querySelectorAll(sel)].find(e => exact ? e.textContent.trim() === text : e.textContent.trim().includes(text));
+    if (el) el.click();
+    return !!el;
+  }, sel, text, exact);
+  if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
+  await sleep(300);
+};
+const paket = async n => {
+  for (let i = 0; i < n; i++) {
+    await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click()); await sleep(250);
+    await clickText(".karte-btn", "Gewusst"); await sleep(1200);
+  }
+};
+const startText = () => page.evaluate(() => document.querySelector("[data-start-knopf] b")?.textContent);
+const listenSichtbar = () => page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].filter(e => e.offsetParent).length);
+const bg = sel => page.evaluate(sel => getComputedStyle(document.querySelector(sel)).backgroundColor, sel);
+
+await page.goto(URL);
+await page.evaluate(() => {
+  localStorage.clear();
+  const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
+  localStorage.setItem("vokabel_liste_l_fr", JSON.stringify({ id:"l_fr", name:"Vocabulaire", sprache:"fr", spalten: sp, naechste_id: 8,
+    vokabeln: Array.from({ length: 7 }, (_, i) => ({ id: i + 1, E1: { wert: "mot" + i, falsch: [] }, D1: { wert: "Wort" + i, falsch: [] } })) }));
+  localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:"Vocabulaire", sprache:"fr" }]));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, sprache: "alle", farbschema: "lavendel" }));
+});
+await page.reload(); await sleep(500);
+await clickText(".tab", "Quiz");
+await clickText(".quiz-setup-check", "Vocabulaire");
+await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await sleep(300);
+await page.click('[data-umfang-wahl="5"]'); await sleep(500);
+
+// Start-Knopf: Abfrageart und Farbe
+ok(await startText() === "Übersetzung starten", `Start-Knopf „Übersetzung starten“ (${await startText()})`);
+const farben = await page.evaluate(() => { const v = n => getComputedStyle(document.documentElement).getPropertyValue("--" + n).trim(); return { haupt: v("haupt"), start: v("start"), aufStart: v("auf-start") }; });
+console.log("     Farben:", JSON.stringify(farben));
+const startBg = await bg("[data-start-knopf]"), nameBg = await bg("[data-slot-kopf-name]");
+const andererBg = await page.evaluate(() => { const b = [...document.querySelectorAll(".btn-primary")].find(x => !x.matches("[data-start-knopf]") && x.offsetParent); return b ? getComputedStyle(b).backgroundColor : null; });
+console.log("     Start:", startBg, " Liste:", nameBg, " anderer Knopf:", andererBg);
+ok(farben.start && farben.start !== farben.haupt && startBg === nameBg, "Liste oben und Start-Knopf in der eigenen Farbe „Liste & Start“ (heller als die Hauptfarbe)");
+ok(!andererBg || andererBg !== startBg, "andere Knöpfe bleiben in der Hauptfarbe");
+await page.screenshot({ path: "uebersicht_farbe.png", clip: { x: 0, y: 0, width: 390, height: 900 } });
+await page.evaluate(() => document.querySelector('[data-quiz-art="diktat"]')?.click()); await sleep(400);
+if (await page.$('[data-quiz-art="diktat"]')) ok(await startText() === "Diktat starten", `Diktat: „Diktat starten“ (${await startText()})`);
+await page.evaluate(() => document.querySelector('[data-quiz-art="uebersetzung"]')?.click()); await sleep(400);
+
+// Paket 1 (5 von 7) → Rest 2
+const kopf = () => page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf);
+const oeffneKopf = async () => { if (await kopf() !== "offen") { await page.click("[data-slot-kopf-name]"); await sleep(300); } };
+await oeffneKopf();
+const vorher = await kopf();
+await page.click("[data-start-knopf]"); await sleep(500);
+await paket(5);
+const knopf = await page.evaluate(() => document.querySelector("[data-naechstes-paket]")?.textContent.trim());
+ok(knopf === "Letzte 2 Vokabeln", `Paket-Ende: „Letzte 2 Vokabeln“ (${knopf})`);
+ok(!(await page.$("[data-paket-groessen]")), "keine Paketgrößen-Auswahl, da alle Größen ≥ Rest");
+
+// Pause: Übersicht wie vorher
+await page.click("[data-pause]"); await sleep(500);
+ok(vorher === "offen" && await kopf() === "offen", `Pause: Bereiche bleiben wie sie waren (Kopf ${await kopf()})`);
+
+// letzte 2 → Auswertung → Zur Übersicht: eingeklappt
+await page.click("[data-start-knopf]"); await sleep(500);
+await paket(2);
+await page.evaluate(() => document.querySelector("[data-zur-auswertung]")?.click()); await sleep(400);
+await page.evaluate(() => window.scrollTo(0, 400));
+await clickText("button", "Zur Übersicht"); await sleep(500);
+const nachher = await page.evaluate(() => ({ listen: [...document.querySelectorAll(".quiz-setup-check")].filter(e => e.offsetParent).length,
+  kopf: document.querySelector("[data-slot-kopf]")?.dataset.slotKopf, y: window.scrollY, tab: document.querySelector(".tab.aktiv, .tab.active")?.textContent }));
+console.log("     nach „Zur Übersicht“:", JSON.stringify(nachher));
+ok(nachher.listen === 0 && nachher.kopf !== "offen" && nachher.y === 0, "Zur Übersicht: alle Bereiche eingeklappt, oben");
+
+// Beenden während der Abfrage (ohne Antwort) → eingeklappt
+await oeffneKopf();
+const offen = await kopf();
+await page.click("[data-start-knopf]"); await sleep(500);
+await clickText("button", "Beenden", true); await sleep(500);
+ok(offen === "offen" && await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf) !== "offen", `Beenden: Kopfbereich wieder eingeklappt (vorher ${offen})`);
+
+await browser.close();
+console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
+process.exit(fehler ? 1 : 0);

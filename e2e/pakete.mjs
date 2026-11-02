@@ -74,14 +74,14 @@ if (start === "preset") {
   await sleep(400);
   console.log("     Slots:", await page.evaluate(() => localStorage.getItem("vokabel_slots")?.slice(0, 160)));
 }
-const startBtn = await page.evaluate(() => [...document.querySelectorAll("button")].map(b => b.textContent.trim()).find(t => /^Quiz starten/.test(t)));
+const startBtn = await page.evaluate(() => [...document.querySelectorAll("button")].map(b => b.textContent.trim()).find(t => /starten/.test(t)));
 console.log("     Start-Button:", startBtn);
 await clickText("[data-start-knopf]", "");
 await sleep(500);
 await paketDurchspielen(5);
 console.log("     Nach Paket 1:", await titel());
-ok((await text()).includes("Nächste 5 Vokabeln"), "Paket 1 fertig, Button sichtbar");
-await clickText("button", "Nächste 5 Vokabeln");
+ok(/Nächste 5 Vokabeln|Letzte 3 Vokabeln/.test(await text()), "Paket 1 fertig, Button mit der Restzahl sichtbar");
+await clickText("[data-naechstes-paket]", "");
 await sleep(600);
 const t2 = await titel();
 console.log("     Nach Klick:", t2);

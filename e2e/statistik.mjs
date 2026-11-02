@@ -89,7 +89,7 @@ await page.click('[data-umfang-wahl="10"]'); await sleep(300);
 await clickText("[data-start-knopf]", "");
 await sleep(400);
 await karteGewusst(10);
-await clickText("button", "Nächste 10 Vokabeln");
+await clickText("button", "Letzte 2 Vokabeln");
 await sleep(400);
 await karteGewusst(2);
 t = await text();

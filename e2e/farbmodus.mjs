@@ -13,7 +13,8 @@ await page.setViewport({ width: 390, height: 900, hasTouch: true, isMobile: true
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
 const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FAIL", msg); };
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
 // Einstellungen: Bereich aufklappen (immer nur einer offen)
 const oeffneEinst = async key => { await page.evaluate(k => { const b = document.querySelector(`[data-einst-kopf="${k}"]`); if (b && b.dataset.offen !== "ja") b.click(); }, key); await new Promise(r => setTimeout(r, 250)); };
 const clickText = async (sel, text, exact = false) => {
@@ -64,33 +65,34 @@ const knopf = await page.evaluate(() => { const b = document.querySelector("[dat
 await rechtsklick(knopf.x, knopf.y);
 let zeilen = await feldZeilen();
 console.log("     Farbfeld Knopf:", zeilen.join(" | "));
-ok(zeilen.some(z => /Hintergrund · Hauptfarbe$/.test(z)) && zeilen.some(z => /Schrift · Schrift auf Hauptfarbe/.test(z)), "Knopf: Hintergrund Hauptfarbe, Schrift auf Hauptfarbe");
+ok(zeilen.some(z => /Hintergrund · Liste & Start$/.test(z)) && zeilen.some(z => /Schrift · Schrift auf Hauptfarbe/.test(z)), "Start-Knopf: Hintergrund „Liste & Start“, Schrift auf Hauptfarbe");
+const startVorher = await variable("start");
 ok(!(await page.$('[role="status"]')), "keine Erklärung/kein Menü im Farbmodus");
 // Farbkreis: groß, Regler Helligkeit/Sättigung, live, Abbrechen
-await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="haupt"]').click()); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="start"]').click()); await sleep(300);
 const kreisGr = await page.evaluate(() => { const c = document.querySelector("[data-farbrad-kreis]"); return c ? Math.round(c.getBoundingClientRect().width) : 0; });
 ok(kreisGr >= 130 && kreisGr <= 175 && await page.$("[data-farbrad-hell]") && await page.$("[data-farbrad-saett]"), `kompakter Farbkreis (${kreisGr} px) mit Reglern Helligkeit und Sättigung`);
 const lage = await page.evaluate(() => { const f = document.querySelector("[data-farbrad]").getBoundingClientRect();
-  const b = [...document.querySelectorAll("button")].find(x => /^Quiz starten/.test(x.textContent.trim())).getBoundingClientRect();
+  const b = [...document.querySelectorAll("button")].find(x => x.matches("[data-start-knopf]")).getBoundingClientRect();
   return { seite: document.querySelector("[data-farbrad]").dataset.farbradSeite, frei: f.bottom <= b.top || f.top >= b.bottom, hoehe: Math.round(f.height), feld: !!document.querySelector("[data-farbfeld]") }; });
 console.log("     Farbwähler:", JSON.stringify(lage));
 ok(lage.seite === "oben" && lage.frei && lage.hoehe < 330, "Farbwähler als Leiste auf der freien Seite – der Knopf bleibt sichtbar");
 ok(!lage.feld, "Farbfeld „Farben hier“ ausgeblendet, solange der Farbwähler offen ist");
 const kr = await page.evaluate(() => { const r = document.querySelector("[data-farbrad-kreis]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, r: r.width / 2 }; });
 await page.mouse.move(kr.x + kr.r * 0.9, kr.y); await page.mouse.down(); await page.mouse.move(kr.x + kr.r * 0.9, kr.y + 2); await sleep(150);
-const amRand = await variable("haupt");
+const amRand = await variable("start");
 await page.mouse.move(kr.x + 2, kr.y + 1); await sleep(150);
-const kreisMitte = await variable("haupt");
+const kreisMitte = await variable("start");
 await page.mouse.up();
 console.log("     Kreis Rand/Mitte:", amRand, kreisMitte);
 const satt = h => { const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); return (Math.max(r, g, b) - Math.min(r, g, b)) / Math.max(1, r, g, b); };
-ok(amRand !== "#2d6a4f" && satt(amRand) > 0.8 && satt(kreisMitte) < 0.1, "Ziehen im Kreis: App färbt sich live um, außen kräftig, Mitte kaum gesättigt");
+ok(amRand !== startVorher && satt(amRand) > 0.8 && satt(kreisMitte) < 0.1, "Ziehen im Kreis: App färbt sich live um, außen kräftig, Mitte kaum gesättigt");
 await page.click("[data-farbrad-abbrechen]"); await sleep(300);
-ok(await variable("haupt") === "#2d6a4f" && !(await page.$("[data-farbrad]")), "Abbrechen: alte Farbe wieder da");
+ok(await variable("start") === startVorher && !(await page.$("[data-farbrad]")), "Abbrechen: alte Farbe wieder da");
 ok(await page.$("[data-farbfeld]"), "danach ist das Farbfeld wieder da");
-await setzeFarbe("haupt", "#aa0000");
-ok(await variable("haupt") === "#aa0000", "Anwenden: Hauptfarbe geändert");
-await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="haupt"]').click()); await sleep(300);
+await setzeFarbe("start", "#aa0000");
+ok(await variable("start") === "#aa0000", "Anwenden: Farbe „Liste & Start“ geändert");
+await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="start"]').click()); await sleep(300);
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-farbrad-verlauf] button")].map(b => b.title).join()) === "#aa0000", "Verlauf: zuletzt verwendete Farbe");
 if (process.env.SHOT) await page.screenshot({ path: "farbrad_shot.png" });
 await page.click("[data-farbrad-abbrechen]"); await sleep(200);
