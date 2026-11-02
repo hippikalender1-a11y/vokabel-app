@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Session-Durchlauf geschafft: große Überschrift („Geschafft!“ o. ä.) unter dem Balken, Knopf „Nochmal!“ startet die Session neu
 const URL = "http://localhost:4199/vokabel-app/";
@@ -43,7 +44,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText(".karte-zeile", "Verbes");
 await clickText("button", "Quiz starten", true);
 await clickText("[data-start-knopf]", "");

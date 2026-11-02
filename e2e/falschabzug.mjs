@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Regel „Nicht gewusst zieht 1 Punkt ab“ je Stufe: an → immer genau −1 (keine Staffelung mehr), aus → Score bleibt gleich
 const URL = "http://localhost:4199/vokabel-app/";
@@ -36,7 +37,7 @@ const runde = async (modus, regel) => {
     localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus, gelerntSchwelle: 6, sprache: "alle", ...(regel === undefined ? {} : { stufen: { [modus]: { falschAbzug: regel } } }) }));
   }, modus, regel);
   await page.reload(); await sleep(500);
-  await clickText(".tab", "Listen");
+  await zuListen(page);
   await clickText(".karte-zeile", "Verbes");
   await clickText("button", "Quiz starten", true);
   await clickText("[data-start-knopf]", "");

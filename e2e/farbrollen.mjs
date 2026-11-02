@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Farbrollen nach Funktion getrennt (App-Kopf, Bereichs-Kopfzeilen, Abfrage-Karten, Dialoge, Knöpfe & Felder,
 // Info-Kästen, Ausgewählt); „🎨 Farbe ändern“ in jedem Lang-Druck-Menü startet den Farbmodus an dieser Stelle
@@ -43,9 +44,9 @@ ok(v.knopf === v.hintergrund, "Knöpfe & Felder: wie bisher (Hintergrund)");
 ok(v.kopfzeile !== v.karte && v["info-kasten"] !== v.hintergrund && v["info-kasten"] !== v.karte, "Bereichs-Kopfzeilen und Info-Kästen: eigener Hauch der Hauptfarbe");
 
 // Listenauswahl: Kopfzeile und Listen-Kacheln unterscheiden sich
-await tab("Listen");
-const kopfBg = await bg(".liste-detail-header"), kachelBg = await bg('[data-liste-id="l_a"]');
-ok(kopfBg === rgb(v.kopfzeile) && kachelBg === rgb(v.karte) && kopfBg !== kachelBg, `Listen-Tab: Kopfzeile (${kopfBg}) ≠ Liste (${kachelBg})`);
+await zuListen(page);
+const kopfBg = await bg('[data-einst-kopf="lernen"]'), kachelBg = await bg('[data-liste-id="l_a"]');
+ok(kopfBg === rgb(v.kopfzeile) && kachelBg === rgb(v.karte) && kopfBg !== kachelBg, `Einstellungen › Listen: Kopfzeile (${kopfBg}) ≠ Liste (${kachelBg})`);
 ok(await bg(".topbar") === rgb(v["app-kopf"]) && await bg(".tabs") === rgb(v["app-kopf"]), "Titel- und Tab-Leiste: App-Kopf");
 
 // Seiten-Hintergrund ändern → Knöpfe/Felder und Info-Kästen bleiben
@@ -57,11 +58,11 @@ await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_e
 await page.reload(); await sleep(500);
 ok(await bg("body") === "rgb(255, 0, 0)" && await variable("knopf") === "#f7f5f0", "Seite rot, Knöpfe & Felder behalten ihre eigene Farbe");
 await tab("Einstellungen");
-await page.click('[data-einst-kopf="info"]'); await sleep(300);
+await page.click('[data-einst-kopf="app"]'); await sleep(300); await page.click('[data-info-oeffnen]'); await sleep(300);
 ok(await page.evaluate(() => [...document.querySelectorAll("div")].some(d => d.style.background === "var(--info-kasten)")), "Info-Übersicht nutzt die Rolle Info-Kästen");
 
 // ── „🎨 Farbe ändern“ im Lang-Druck-Menü ──
-await tab("Listen");
+await zuListen(page);
 await langDruck('[data-liste-id="l_a"]');
 ok(await page.$("[data-info-farbe]") && !(await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].some(b => /Farbe/.test(b.textContent)))),
   "Lang-Druck auf eine Liste: „🎨 Farbe ändern“ unter den Aktionen");
@@ -71,19 +72,19 @@ console.log("     Farbfeld Liste:", zeilen.join(" | "));
 ok(await page.$("[data-farbmodus-uebernehmen]") && zeilen.includes("karte"), "Farbmodus läuft, Farbfeld der Liste zeigt „Karten“");
 await page.evaluate(() => [...document.querySelectorAll("[data-farbfeld] button")].find(b => b.textContent.trim() === "Schließen").click()); await sleep(300);
 // im Farbmodus: Lang-Druck auf die Kopfzeile → Bereichs-Kopfzeilen
-const kopf = await page.evaluate(() => { const r = document.querySelector(".liste-detail-header").getBoundingClientRect(); return { x: r.x + 120, y: r.y + r.height / 2 }; });
+const kopf = await page.evaluate(() => { const r = document.querySelector('[data-einst-kopf="lernen"]').getBoundingClientRect(); return { x: r.x + 120, y: r.y + r.height / 2 }; });
 await page.evaluate((x, y) => document.elementFromPoint(x, y).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: x, clientY: y })), kopf.x, kopf.y); await sleep(300);
 zeilen = await feldZeilen();
 console.log("     Farbfeld Kopfzeile:", zeilen.join(" | "));
-ok(zeilen.includes("kopfzeile") && !zeilen.includes("karte"), "Kopfzeile der Listen: eigene Rolle „Bereichs-Kopfzeilen“");
+ok(zeilen.includes("kopfzeile") && !zeilen.includes("karte"), "Kopfzeile in den Einstellungen: eigene Rolle „Bereichs-Kopfzeilen“");
 ok(/Bereichs-Kopfzeilen/.test(await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="kopfzeile"]')?.innerText || "")), "Name im Farbfeld: „Bereichs-Kopfzeilen“");
 await page.evaluate(() => document.querySelector("[data-farbmodus-zuruecksetzen]").click()); await sleep(300);
 
 // Eintrag ausschaltbar
 await tab("Einstellungen");
-await page.click('[data-einst-kopf="farben"]'); await sleep(300);
+await page.click('[data-einst-kopf="app"]'); await sleep(300);
 await page.click("[data-farbe-im-menue]"); await sleep(200);
-await tab("Listen");
+await zuListen(page);
 await langDruck('[data-liste-id="l_a"]');
 ok(!(await page.$("[data-info-farbe]")) && await page.$("[data-info-aktion]"), "ausgeschaltet: kein „🎨 Farbe ändern“, übrige Aktionen bleiben");
 

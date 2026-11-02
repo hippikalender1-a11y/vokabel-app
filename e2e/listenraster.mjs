@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Listen-Tab als Raster: Lang-Druck → Menü (Umbenennen, Duplizieren, Verschieben, Löschen),
 // Lang-Druck + Ziehen verschiebt (belegt → tauschen), Größe unter Einstellungen → Listen, Sprachfilter rückt zusammen
@@ -53,7 +54,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify(listen.map(([id, name, sprache]) => ({ id, name, sprache }))));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Listen");
+await zuListen(page);
 
 let pl = await plaetze();
 console.log("     Start:", JSON.stringify(pl));
@@ -84,7 +85,7 @@ ok(!(await page.$("[data-listen-fertig]")), "„Fertig“ beendet das Verschiebe
 await clickText(".tab", "Quiz"); await sleep(300);
 const quizReihe = await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].map(d => d.textContent.trim()).filter(t => /Alpha|Beta|Gamma/.test(t)).map(t => t.match(/Alpha|Beta|Gamma/)[0]).join(","));
 ok(quizReihe === "Gamma,Alpha,Beta", `Quiz-Tab zeigt die Listen in Raster-Reihenfolge (${quizReihe})`);
-await clickText(".tab", "Listen");
+await zuListen(page);
 
 // Umbenennen über das Menü
 await menue("Alpha"); await aktion("✎ Umbenennen");
@@ -132,10 +133,10 @@ ok(await page.evaluate(() => /Gamma/.test(document.body.innerText) && !document.
 await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(300);
 
 // Einstellungen → Listen: 2 Spalten
-await clickText(".tab", "Einstellungen"); await oeffneEinst("listen");
+await clickText(".tab", "Einstellungen"); await oeffneEinst("raster");
 await page.evaluate(() => document.querySelector('[data-listen-raster-spalten="2"]').click()); await sleep(200);
 ok(await page.evaluate(() => document.querySelector("[data-listen-raster-zeilen]").textContent.trim()) === "10", "Einstellungen → Listen: Raster 10 Zeilen");
-await clickText(".tab", "Listen");
+await zuListen(page);
 pl = await plaetze();
 const spalten = await page.evaluate(() => getComputedStyle(document.querySelector(".listen-raster")).gridTemplateColumns.split(" ").length);
 console.log("     2 Spalten:", JSON.stringify(pl));
@@ -170,12 +171,12 @@ let sr = await auswahlRaster();
 if (!sr) { await page.evaluate(() => [...document.querySelectorAll("button.zeile-rechts")].find(b => b.title === "Listen für die Statistik auswählen")?.click()); await sleep(400); sr = await auswahlRaster(); }
 console.log("     Statistik-Raster:", sr);
 ok(sr === erwartet, "Statistik: Listenauswahl im gleichen Raster");
-await clickText(".tab", "Listen");
+await zuListen(page);
 
 // Sprachfilter: rückt zusammen, kein Verschieben
 await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"); e.sprache = "fr"; localStorage.setItem("vokabel_einstellungen", JSON.stringify(e)); });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Listen");
+await zuListen(page);
 pl = await plaetze();
 console.log("     Filter fr:", JSON.stringify(pl));
 ok(Object.keys(pl).join(",") === "Beta,Alpha neu" && Object.values(pl).every(v => v === "-"), "Sprachfilter: nur französische Listen, zusammengerückt");

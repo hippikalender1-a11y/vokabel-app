@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Vorlesen: jede Spalte mit einer Stimme ihrer Sprache (Deutsch nie mit französischer Stimme).
 // Sprachausgabe als Attrappe mit deutschen und französischen Stimmen; protokolliert Text, lang und Stimme.
@@ -46,7 +47,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ autoplay: true, vorlesen: ["E1", "D1"], gelerntSchwelle: 3, sprache: "alle" }));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText(".karte-zeile", "Verbes");
 await clickText("button", "Quiz starten", true);
 await clickText("[data-start-knopf]", "");
@@ -55,7 +56,7 @@ await sleep(600);
 // Französisch: Vorlese-Knopf in der Vokabelliste der Liste
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Beenden")?.click()); await sleep(400);
 if (await page.evaluate(() => /Zur Übersicht/.test(document.body.innerText))) await clickText("button", "Zur Übersicht");
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText(".karte-zeile", "Verbes");
 await page.evaluate(() => { const b = document.querySelector('button[title="Vorlesen"]'); if (!b) [...document.querySelectorAll("button, div")].find(x => /^Vokabeln/.test(x.textContent.trim()) && x.onclick)?.click(); });
 await sleep(300);

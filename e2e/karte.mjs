@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -48,7 +49,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_en", name:l.name, sprache:"en" }]));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText(".karte-zeile", "Irregular Verbs");
 await clickText("button", "Quiz starten", true);
 await page.click("[data-abfragemodus]"); await sleep(300);

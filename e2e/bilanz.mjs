@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -79,7 +80,7 @@ await page.screenshot({ path: "bilanz.png" });
 
 // Listen-Übersicht
 await clickText("button", "Zur Übersicht");
-await clickText(".tab", "Listen");
+await zuListen(page);
 await sleep(300);
 const kr = await page.evaluate(() => [...document.querySelectorAll("[data-liste-id]")].filter(d => d.textContent.includes("Verbes")).map(d => [...d.querySelectorAll("[data-listen-kreise] [data-mini-kreis]")].map(k => k.dataset.miniKreis + ":" + k.dataset.pct).join(",")).join());
 console.log("     Listen-Kreise:", kr);

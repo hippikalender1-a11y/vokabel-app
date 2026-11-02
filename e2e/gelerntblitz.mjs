@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Vokabel erreicht mit „Gewusst“ die Gelernt-Schwelle → Karte leuchtet kurz hellgelb; andere nicht.
 // Mini-Kreis bei 100 % komplett grün gefüllt.
@@ -39,7 +40,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:"Verbes", sprache:"fr" }]));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText(".karte-zeile", "Verbes");
 await clickText("button", "Quiz starten", true);
 await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].find(b => b.textContent.trim() === "Listen-Nr.")?.click());
@@ -67,10 +68,10 @@ ok(effekt?.sterne === 8 && effekt?.dauer === "0.4s" && effekt?.farbe === "#fff17
 
 // Mini-Kreis Ü bei 100 %: komplett grün
 await clickText("button", "Zur Übersicht").catch(() => {});
-await clickText(".tab", "Listen");
+await zuListen(page);
 await page.evaluate(() => { const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr")); l.vokabeln.forEach(v => v.fortschritt = { score: 4 }); localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l)); });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Listen");
+await zuListen(page);
 const kreis = await page.evaluate(() => { const k = document.querySelector('[data-listen-kreise] [data-mini-kreis="uebersetzung"]'); return { pct: k?.dataset.pct, fill: k?.querySelector("circle")?.getAttribute("fill") }; });
 console.log("     Kreis Ü:", JSON.stringify(kreis));
 ok(kreis.pct === "100" && kreis.fill === "#52b788", "100 %: Kreis komplett grün gefüllt");

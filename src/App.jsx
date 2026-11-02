@@ -1239,6 +1239,8 @@ const CSS_BASIS = `
   .einst-kopf-pfeil{font-size:0.9rem;color:var(--text3);flex:0 0 auto;}
   .einst-kopf.offen .einst-kopf-pfeil{color:var(--haupt);}
   .einst-inhalt{margin-bottom:14px;}
+  .einst-unterkopf{margin:18px 0 8px;}
+  .einst-inhalt > .einst-unterkopf:first-child{margin-top:4px;}
   .einst-titel-knopf{background:none;border:none;padding:0;font-family:inherit;font-weight:700;font-size:0.88rem;color:var(--haupt);cursor:pointer;}
   .farb-kachel{display:flex;flex-direction:column;gap:6px;padding:6px;border:1.5px solid var(--rahmen);border-radius:10px;background:var(--karte);cursor:pointer;font-family:inherit;min-width:0;}
   .farb-kachel.aktiv{border-color:var(--haupt);box-shadow:0 0 0 2px var(--haupt);}
@@ -2131,6 +2133,11 @@ export default function VokabelApp() {
     if (text) sprichAuto(text, vokLang(quiz.vokabeln?.[quiz.index], quiz.frageTyp));
   }, [quiz?.index, quizWiederholungHinweis, ansicht, einstellungen.autoplay]);
 
+  // Listen-Übersicht gibt es nur noch unter Einstellungen › Listen (z. B. nach Import, Löschen, Abbrechen)
+  useEffect(() => {
+    if (tab === "listen" && ansicht === "uebersicht") { setTab("einstellungen"); setEinstBereich("listen"); }
+  }, [tab, ansicht]);
+
   // Auto-Vorlesen: Antwort beim Aufdecken bzw. im Richtig-Blitz vorlesen (je Spalte nur einmal)
   const antwortGezeigt = !!quiz && quiz.modus !== "diktat" && (quiz.phase === "aufgedeckt" || !!quiz.flash);
   useEffect(() => {
@@ -2575,7 +2582,6 @@ export default function VokabelApp() {
         setQuizCheckboxAuswahl(new Set(statistikBereichTyp === "bereich" ? statistikCheckboxAuswahl : []));
       }
     }
-    if (neuerTab === "listen") setAnsicht("uebersicht");
     setTab(neuerTab);
     setListenWahl(null);
     setStatistikVollbild(false);
@@ -4070,6 +4076,20 @@ export default function VokabelApp() {
       </>
     );
   };
+  // Sicherungs-Erinnerung (oben in der Session-Auswahl)
+  const sicherungErinnerungUI = () => sicherungAlt && (
+    <div className="meldung-info sicherung-erinnerung" data-sicherung-erinnerung>
+      <div>💾 {sicherungAlt.nie ? "Noch keine Sicherung." : `Letzte Sicherung vor ${sicherungAlt.tage} Tagen.`} Der Browser kann gespeicherte Daten löschen – eine Sicherungsdatei schützt Listen, Scores und Farben.</div>
+      <div style={{display:"flex", gap:8, marginTop:8}}>
+        <button className="btn btn-primary btn-sm" data-sicherung-jetzt onClick={sichereAlles}
+          {...tt("Alles in einer Datei sichern: Listen mit Scores, Einstellungen, Farben, gespeicherte Quiz")}>Jetzt sichern</button>
+        <button className="btn btn-ghost btn-sm" data-sicherung-spaeter onClick={() => { const t = Date.now(); lsSet(SK.sicherungSpaeter, t); setSicherungSpaeter(t); }}
+          {...tt("Erinnerung für einen Tag ausblenden")}>Später</button>
+      </div>
+    </div>
+  );
+  // zurück aus Liste/Import zu Einstellungen › Listen
+  function zuEinstListen() { setTab("einstellungen"); setEinstBereich("listen"); setAnsicht("uebersicht"); setListenWahl(null); requestAnimationFrame(() => window.scrollTo(0, 0)); }
   const weiterZurAuswertung = (
     <button data-zur-auswertung {...tt("Weiter zur Auswertung der ganzen Session: Start und Ende im Vergleich")} className="btn btn-primary" style={{width:"100%", fontSize:"1.05rem"}}
       onClick={() => { setQuiz(q => q && { ...q, sessionAuswertung: true }); window.scrollTo(0, 0); }}>Weiter →</button>
@@ -4632,7 +4652,7 @@ export default function VokabelApp() {
       if (listenWahl) {
         setListenWahl(a => a.includes(l.id) ? a.filter(x => x !== l.id) : [...a, l.id]);
       } else {
-        setAktiveListeId(l.id); setAnsicht("liste-detail"); setVokabelAufgeklappt(false); setAktionszeileAufgeklappt(false);
+        setAktiveListeId(l.id); setTab("listen"); setAnsicht("liste-detail"); window.scrollTo(0, 0); setVokabelAufgeklappt(false); setAktionszeileAufgeklappt(false);
       }
     };
     const menue = l => [
@@ -6841,13 +6861,11 @@ export default function VokabelApp() {
           )}
         </div>
         {!statistikVollbild && <div className="tabs">
-          <button {...tt("Listen verwalten: anlegen, importieren, bearbeiten, exportieren")} className={`tab${tab==="listen"?" aktiv":""}`}
-            onClick={() => handleTabWechsel("listen")}>Listen</button>
           <button {...tt("Abfrage einstellen und starten")} className={`tab${tab==="quiz"?" aktiv":""}`}
             onClick={() => handleTabWechsel("quiz")}>Quiz</button>
           <button {...tt("Lernfortschritt und Scores ansehen")} className={`tab${tab==="statistik"?" aktiv":""}`}
             onClick={() => handleTabWechsel("statistik")}>Statistik</button>
-          <button {...tt("Einstellungen, Info und Anleitung")} className={`tab${tab==="einstellungen"?" aktiv":""}`}
+          <button {...tt("Listen, Sicherung, Einstellungen, Info und Anleitung")} className={`tab${tab==="einstellungen" || tab==="listen"?" aktiv":""}`}
             onClick={() => handleTabWechsel("einstellungen")}>Einstellungen</button>
         </div>}
         </div>{/* end sticky header wrapper */}
@@ -6855,13 +6873,9 @@ export default function VokabelApp() {
         {/* ── Listen-Header (persistent) ── */}
         {tab === "listen" && ansicht !== "import" && ansicht !== "ki-prompt" && (
           <div className="liste-detail-header" style={{top: headerH}}>
-            {ansicht === "uebersicht" ? (
-                <>
-                  <span className="liste-detail-header-name">Meine Listen</span>
-                  <button className="btn btn-ghost btn-sm" style={{display:"inline-flex",alignItems:"center",gap:5}} onClick={() => { resetImport(); setAnsicht("import"); }} {...tt("Neue Vokabelliste importieren oder anlegen")}><IcoPlus s={13}/>Neu</button>
-                </>
-            ) : ansicht === "liste-detail" && aktiveListe ? (
+            {ansicht === "liste-detail" && aktiveListe ? (
               <>
+                <button className="btn-icon" data-zurueck-listen onClick={zuEinstListen} {...tt("Zurück zu Einstellungen › Listen")} style={{padding:"4px 6px", marginRight:2, color:"var(--haupt)"}}><IcoBack s={18}/></button>
                 <span className="liste-detail-header-name">{aktiveListe.name}</span>
                 <button className="btn-toggle" style={{padding:"4px 8px"}} onClick={() => setAktionszeileAufgeklappt(v => !v)} {...tt("Aktionen zur Liste öffnen oder schließen")}>
                   {aktionszeileAufgeklappt ? <IcoDown s={10}/> : <IcoUp s={10}/>}
@@ -6877,6 +6891,7 @@ export default function VokabelApp() {
           <div className="liste-detail-header"
             style={ansicht === "ki-prompt" ? {cursor:"pointer", top: headerH} : {top: headerH}}
             onClick={ansicht === "ki-prompt" ? () => setAnsicht("import") : undefined}>
+            {ansicht === "import" && <button className="btn-icon" data-zurueck-listen onClick={e => { e.stopPropagation(); zuEinstListen(); }} {...tt("Zurück zu Einstellungen › Listen")} style={{padding:"4px 6px", marginRight:2, color:"var(--haupt)"}}><IcoBack s={18}/></button>}
             <span className="liste-detail-header-name">Importieren</span>
             {ansicht === "import" && !importParsed && !importMehrfachListen && !importJsonData && (
               <button {...tt("Eingefügten Text auswerten und Spalten zuordnen")} className="btn btn-primary btn-sm" onClick={e => { e.stopPropagation(); analysiereImport(); }}>Analysieren</button>
@@ -7354,7 +7369,15 @@ export default function VokabelApp() {
                     <>
                       {renderSlotKopf(false)}
                       {/* Aufklappbarer Chips-Bereich */}
+                      {listenIndex.length === 0 && (
+                        <div className="meldung-info" data-keine-listen style={{marginTop:12}}>
+                          <div>Noch keine Listen. Importiere eine Vokabelliste oder lege eine an – danach stellst du hier deine Sessions zusammen.</div>
+                          <button className="btn btn-primary btn-sm" style={{marginTop:8}} data-liste-importieren onClick={() => { resetImport(); setTab("listen"); setAnsicht("import"); }}
+                            {...tt("Zu Einstellungen › Listen: Liste importieren oder neu anlegen")}>Liste importieren</button>
+                        </div>
+                      )}
                       <div ref={slotContainerRef} style={{overflow:'hidden', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 4 : 0}}>
+                        {slotSektionAufgeklappt && sicherungErinnerungUI()}
                         {slotSektionAufgeklappt && renderSlotBereiche(
                           <button className="slot-chip belegt"
                             style={!aktiverSlot
@@ -8023,25 +8046,6 @@ export default function VokabelApp() {
         })()}
 
         {/* ── Listen-Übersicht: Raster (Größe unter Einstellungen → Listen) ── */}
-        {tab === "listen" && ansicht === "uebersicht" && (
-          <div className="sektion">
-            {sicherungAlt && (
-              <div className="meldung-info sicherung-erinnerung" data-sicherung-erinnerung>
-                <div>💾 {sicherungAlt.nie ? "Noch keine Sicherung." : `Letzte Sicherung vor ${sicherungAlt.tage} Tagen.`} Der Browser kann gespeicherte Daten löschen – eine Sicherungsdatei schützt Listen, Scores und Farben.</div>
-                <div style={{display:"flex", gap:8, marginTop:8}}>
-                  <button className="btn btn-primary btn-sm" data-sicherung-jetzt onClick={sichereAlles}
-                    {...tt("Alles in einer Datei sichern: Listen mit Scores, Einstellungen, Farben, gespeicherte Quiz")}>Jetzt sichern</button>
-                  <button className="btn btn-ghost btn-sm" data-sicherung-spaeter onClick={() => { const t = Date.now(); lsSet(SK.sicherungSpaeter, t); setSicherungSpaeter(t); }}
-                    {...tt("Erinnerung für einen Tag ausblenden")}>Später</button>
-                </div>
-              </div>
-            )}
-            {sichtbareListen.length === 0 ? (
-              <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.<br/>Tippe auf <strong>+</strong> um eine neue Liste anzulegen.</div></div>
-            ) : renderListenRaster()}
-          </div>
-        )}
-
         {/* ── Listen-Detail ── */}
         {tab === "listen" && ansicht === "liste-detail" && aktiveListe && (() => {
           const aktiveSpalten = TYPEN.filter(t => aktiveListe.spalten[t].aktiv);
@@ -8785,7 +8789,7 @@ export default function VokabelApp() {
           {einstBereich === "info" && (<>
           {/* Info sticky Header */}
           <div ref={infoHeaderRef} style={{position:"sticky", top:headerH, zIndex:9, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-            <button className="einst-titel-knopf" data-einst-kopf="info" data-offen="ja" onClick={() => schalteEinstBereich("info")} {...tt("Info zuklappen")}>Info ▾</button>
+            <button className="einst-titel-knopf" data-einst-kopf="info" data-offen="ja" onClick={() => schalteEinstBereich("app")} {...tt("Info schließen – zurück zu App")}>‹ Info</button>
             <div style={{display:"flex", gap:6, alignItems:"center"}}>
               {infoModus !== "uebersicht" && (
                 <button className="btn-icon" style={{marginRight:2}} onClick={() => setInfoModus("uebersicht")} {...tt("Zurück zur Übersicht")}><IcoX s={14}/></button>
@@ -8808,9 +8812,9 @@ export default function VokabelApp() {
                   Alle Daten bleiben auf diesem Gerät.
                 </p>
                 <div style={{marginTop:10, display:"flex", flexDirection:"column", gap:4}}>
-                  <div><span style={{fontWeight:600}}>Listen</span> – Vokabeln verwalten, importieren und exportieren</div>
-                  <div><span style={{fontWeight:600}}>Quiz</span> – Abfragen mit Karte, Tippen oder Diktat</div>
+                                    <div><span style={{fontWeight:600}}>Quiz</span> – Abfragen mit Karte, Tippen oder Diktat</div>
                   <div><span style={{fontWeight:600}}>Statistik</span> – Lernfortschritt auf einen Blick</div>
+                  <div><span style={{fontWeight:600}}>Einstellungen</span> – Listen verwalten, importieren und sichern; Lernen, Raster, Farben, Info</div>
                 </div>
               </div>
             </div>
@@ -8847,10 +8851,10 @@ export default function VokabelApp() {
                 💡 <strong>Tipp:</strong> Tippe oben links auf ⓘ: Im Info-Modus sind erklärbare Elemente gestrichelt markiert – antippen zeigt die Erklärung, statt die Aktion auszuführen. Alternativ einen Knopf gedrückt halten. Die Erklärung bleibt stehen, bis du irgendwo hintippst. Am PC erscheint sie auch beim Darüberfahren.
               </div>
               {[
-                {titel:"Listen-Tab", inhalt:[
-                  {k:"Übersicht", v:"Zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Listen, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie zu öffnen. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „☑ Auswählen“, „In Sessions aufteilen“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. „In Sessions aufteilen“ öffnet den Quiz-Tab mit dieser Liste und einem gelben Kasten: Name (vorgegeben: Listenname), Gruppengröße (10, 20, 25, 50, 75, 100 oder eigene), Bereich von–bis (Vokabel-Nummern) und bei Rest „eigene Gruppe“ oder „an letzte anhängen“; die Vorschau zeigt die Namen, z. B. „Verbes (21 - 40)“. Darunter alle Einstellungen wie gewohnt wählen, dann „Sessions anlegen“: je Gruppe eine gespeicherte Konfiguration, untereinander in der ersten Spalte unter dem untersten Eintrag. Namen, die es schon gibt, werden übersprungen. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Im Verschieben-Modus lassen sich mehrere Listen markieren und gemeinsam verschieben. „☑ Auswählen“ startet den Auswahl-Modus: weitere Listen antippen (nummeriert, nochmal antippen nimmt heraus, „Alle“ wählt alle sichtbaren, „Fertig“ beendet); lang drücken zeigt dann die Aktionen für die ganze Auswahl – „JSON exportieren“, „TXT exportieren“ (Dateiname änderbar), „📋 Kopieren“, „⇄ Verschieben“, „🗑 Löschen“ (Rückfrage mit allen Namen, „Vorher sichern“) und „Auswahl beenden“. Lang drücken auf eine nicht gewählte Liste nimmt sie dazu. Neue Listen (auch per Import) kommen untereinander in die erste Spalte. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
+                {titel:"Listen (Einstellungen › Listen)", inhalt:[
+                  {k:"Übersicht", v:"Einstellungen › Listen zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Raster, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie bildschirmfüllend zu öffnen; der Pfeil oben links führt zurück. „+ Neu“ öffnet den Import. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „☑ Auswählen“, „In Sessions aufteilen“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. „In Sessions aufteilen“ öffnet den Quiz-Tab mit dieser Liste und einem gelben Kasten: Name (vorgegeben: Listenname), Gruppengröße (10, 20, 25, 50, 75, 100 oder eigene), Bereich von–bis (Vokabel-Nummern) und bei Rest „eigene Gruppe“ oder „an letzte anhängen“; die Vorschau zeigt die Namen, z. B. „Verbes (21 - 40)“. Darunter alle Einstellungen wie gewohnt wählen, dann „Sessions anlegen“: je Gruppe eine gespeicherte Konfiguration, untereinander in der ersten Spalte unter dem untersten Eintrag. Namen, die es schon gibt, werden übersprungen. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Im Verschieben-Modus lassen sich mehrere Listen markieren und gemeinsam verschieben. „☑ Auswählen“ startet den Auswahl-Modus: weitere Listen antippen (nummeriert, nochmal antippen nimmt heraus, „Alle“ wählt alle sichtbaren, „Fertig“ beendet); lang drücken zeigt dann die Aktionen für die ganze Auswahl – „JSON exportieren“, „TXT exportieren“ (Dateiname änderbar), „📋 Kopieren“, „⇄ Verschieben“, „🗑 Löschen“ (Rückfrage mit allen Namen, „Vorher sichern“) und „Auswahl beenden“. Lang drücken auf eine nicht gewählte Liste nimmt sie dazu. Neue Listen (auch per Import) kommen untereinander in die erste Spalte. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
                   {k:"[+] Neue Liste", v:"Legt eine leere Liste mit eigenem Namen an."},
-                  {k:"💾 Alles sichern", v:"Einstellungen → Daten & Sicherung: eine Datei (Vorschlag „Vokabel-App Sicherung Datum.txt“, Name änderbar) mit allem – Listen mit Scores, Einstellungen, Farben, gespeicherte Quiz. Der Browser kann gespeicherte Daten löschen (Speicher aufräumen, Browserdaten löschen); mit der Datei holst du alles zurück: „Laden“ in den Einstellungen oder als Datei im Import („Alles wiederherstellen“). Im Listen-Tab erinnert die App, wenn die letzte Sicherung älter ist als eingestellt (Standard 7 Tage)."},
+                  {k:"💾 Alles sichern", v:"Einstellungen → Listen → Sicherung: eine Datei (Vorschlag „Vokabel-App Sicherung Datum.txt“, Name änderbar) mit allem – Listen mit Scores, Einstellungen, Farben, gespeicherte Quiz. Der Browser kann gespeicherte Daten löschen (Speicher aufräumen, Browserdaten löschen); mit der Datei holst du alles zurück: „Laden“ in den Einstellungen oder als Datei im Import („Alles wiederherstellen“). Oben in der Session-Auswahl (Quiz-Tab) erinnert die App, wenn die letzte Sicherung älter ist als eingestellt (Standard 7 Tage)."},
                   {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, JSON, TXT, Löschen. JSON = vollständige Sicherung mit Lernstand (Vorschlag „Name - JSON.txt“), TXT = nur die Vokabeln als Text ohne Scores (Vorschlag „Name - TXT.txt“); den Dateinamen kannst du vor dem Speichern ändern. Auf iPad/iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, Mail, AirDrop), sonst wird die Datei heruntergeladen. Beim Import ist die Endung egal – die App erkennt den Inhalt."},
                   {k:"Stift-Button", v:"Listenname umbenennen."},
                   {k:"Vokabeln [+]", v:"Neue Vokabel am Ende der Liste hinzufügen."},
@@ -8864,13 +8868,13 @@ export default function VokabelApp() {
                   {k:"Import", v:"Vokabeln aus einer TXT-Datei oder JSON-Datei importieren."},
                 ]},
                 {titel:"Quiz-Tab", inhalt:[
-                  {k:"Kopfzeile (Session-Auswahl)", v:"Oben im Tab: zugeklappt nur der Name der geladenen Konfiguration („Neu“, wenn keine geladen ist) über die ganze Breite. Antippen öffnet die Auswahl mit gespeicherten Konfigurationen und Verlaufs-Einträgen; aufgeklappt stehen rechts die Kreise Ü, D und A und darunter eine Info-Zeile (z. B. „Englisch 6 · Nr. 1–25 · 25 Vokabeln“). Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann in einer grünen Kopfzeile. Lang drücken auf den Namen: „Speichern“. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Gespeicherte Konfigurationen, bis 100 Zeilen × 4 Spalten); jede Kachel zeigt unten einen Balken mit dem Lernfortschritt Übersetzung (✓ bei 100 %), die geladene Kachel ist in der Hauptfarbe gefüllt. Lang drücken auf eine Kachel zeigt den vollständigen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie unter neuem Namen, mit eigenem Fortschritt), „Verschieben“, „Listen/Vokabeln ändern“ und „Löschen“. „Verschieben“: Einträge antippen markiert sie (nummeriert, mehrere möglich), ein freier Platz setzt die markierten dort untereinander ein; oder direkt ziehen – ein markierter Eintrag nimmt alle markierten mit, auf einem belegten Platz rücken die Einträge auf die frei gewordenen Plätze (einzeln: die beiden tauschen); „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt untereinander in die erste Spalte unter den untersten Eintrag; das Raster wächst bei Bedarf."},
+                  {k:"Kopfzeile (Session-Auswahl)", v:"Oben im Tab: zugeklappt nur der Name der geladenen Konfiguration („Neu“, wenn keine geladen ist) über die ganze Breite. Antippen öffnet die Auswahl mit gespeicherten Konfigurationen und Verlaufs-Einträgen; aufgeklappt stehen rechts die Kreise Ü, D und A und darunter eine Info-Zeile (z. B. „Englisch 6 · Nr. 1–25 · 25 Vokabeln“). Nach der Auswahl klappt der Bereich zu; eine gespeicherte Konfiguration erscheint dann in einer grünen Kopfzeile. Lang drücken auf den Namen: „Speichern“. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Raster, bis 100 Zeilen × 4 Spalten); jede Kachel zeigt unten einen Balken mit dem Lernfortschritt Übersetzung (✓ bei 100 %), die geladene Kachel ist in der Hauptfarbe gefüllt. Lang drücken auf eine Kachel zeigt den vollständigen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie unter neuem Namen, mit eigenem Fortschritt), „Verschieben“, „Listen/Vokabeln ändern“ und „Löschen“. „Verschieben“: Einträge antippen markiert sie (nummeriert, mehrere möglich), ein freier Platz setzt die markierten dort untereinander ein; oder direkt ziehen – ein markierter Eintrag nimmt alle markierten mit, auf einem belegten Platz rücken die Einträge auf die frei gewordenen Plätze (einzeln: die beiden tauschen); „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt untereinander in die erste Spalte unter den untersten Eintrag; das Raster wächst bei Bedarf."},
                   {k:"Neu-Chip", v:"Setzt die aktive Session zurück – Quiz startet ohne geladene Konfiguration."},
                   {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl. Ist eine gespeicherte Konfiguration geladen, sind Listen- und Vokabel-Auswahl festgelegt und ausgeblendet – zum Ändern lang auf die Kachel drücken und „Listen/Vokabeln ändern“ wählen."},
                   {k:"Vokabel-Auswahl [Alle]", v:"Alle Vokabeln der gewählten Listen werden abgefragt."},
                   {k:"Vokabel-Auswahl [Bereich]", v:"Öffnet eine Checkbox-Liste. Einzelne Vokabeln an-/abwählen. [Von–Bis] ermöglicht Bereichsauswahl per 2 Klicks."},
-                  {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Die Kreise unten über „Quiz mit … Vokabeln“ zeigen den Lernfortschritt der Auswahl je Art – die gewählte Art groß mit Name und Prozent, die anderen kleiner; antippen schaltet die Art um (auch über die Kreise der aufgeklappten Kopfzeile). In der Statistik wechselt man die Art über die Mitte des großen Kreisdiagramms. Eine Art ohne passende Vokabeln wird nicht angezeigt. Auch die Listen im Listen-Tab zeigen die drei Kreise. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC, Tastatur und (bei Sprachen mit Akzenten) Akzente – mehrere angehakt heißt „Gemischt“: je Frage und Spalte wird zufällig eine der Arten gewählt, Akzente nur bei Wörtern mit Akzent; sie zählen dann für den Übersetzungs-Score. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
+                  {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Die Kreise unten über „Quiz mit … Vokabeln“ zeigen den Lernfortschritt der Auswahl je Art – die gewählte Art groß mit Name und Prozent, die anderen kleiner; antippen schaltet die Art um (auch über die Kreise der aufgeklappten Kopfzeile). In der Statistik wechselt man die Art über die Mitte des großen Kreisdiagramms. Eine Art ohne passende Vokabeln wird nicht angezeigt. Auch die Listen unter Einstellungen › Listen zeigen die drei Kreise. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC, Tastatur und (bei Sprachen mit Akzenten) Akzente – mehrere angehakt heißt „Gemischt“: je Frage und Spalte wird zufällig eine der Arten gewählt, Akzente nur bei Wörtern mit Akzent; sie zählen dann für den Übersetzungs-Score. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
                   {k:"Akzente", v:"Eigene Abfrageart (A): Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Ob auch Wörter ohne Akzent abgefragt werden, legst du beim Schwierigkeitsgrad fest."},
                   {k:"Zeile 1: Stufe · Modus · Reihenfolge", v:"Erster Knopf: Stufe Lernen, Leicht oder Schwer – antippen wechselt der Reihe nach. Zweiter Knopf: Abfrage-Modus der gewählten Art (z. B. „Karte“) – antippen öffnet die Spalten- und Modus-Einstellungen. Dritter Knopf: Reihenfolge – „Zufällige Reihenfolge“, „Schlechteste zuerst“ (nach Score sortiert) oder „Nach Listen-Platz“ (Originalreihenfolge), dazu Score-Filter und „Unbeantwortete zuerst“. Es ist immer nur ein Bereich offen. Ein neues Quiz (ohne geladene Konfiguration) beginnt immer in Übersetzung. Lang drücken: „Regeln Leicht / Schwer“, bei Lernen „Lernen einstellen“ und „Vorlesen“."},
                   {k:"Lernen", v:"Stufe „Lernen“ (dritter Knopf in Zeile 1): Der Start-Knopf heißt dann „Lernen starten“. Wie ein Film: erst das Wort (auf Wunsch vorgelesen), nach einer Pause die Übersetzung mit den eingeschalteten Info-Spalten, dann die nächste Vokabel. Antippen der Karte überspringt die Pause; unten ⏮ zurück, ⏸ anhalten, ⏭ vor, oben „Schließen“. Schließen pausiert: Der Lernstand bleibt je Konfiguration gespeichert (getrennt vom Abfrage-Fortschritt), auch wenn du zwischendurch eine andere Liste lernst oder abfragst – der Start-Knopf heißt dann „Weiter lernen“ und macht an derselben Stelle weiter; links daneben steht der Lernstand (z. B. 12/40), antippen fragt „Lernstand löschen?“. Sind alle Vokabeln angesehen, beginnt das nächste Lernen von vorn. Gelernt werden die noch offenen Vokabeln der Session in Quiz-Reihenfolge, paketweise (Umfang „Je 5“ → 5 pro Paket). Nach jedem Paket: „Quiz mit diesen 5 Vokabeln“ – einmal je Paket: gewusste verbessern den Score, falsche oder aufgedeckte kosten keinen Punkt (Hilfen unter „Lernen einstellen“: Standard „Ohne Hilfen“ – Akzente nicht hervorgehoben, kein Zähler; oder wie Leicht bzw. Schwer); danach geht es mit dem nächsten Paket weiter –, „Weiter lernen: nächste 5“ oder „Zur Übersicht“; 🔄 oben rechts zeigt das Paket nochmals (das Quiz bleibt einmalig). Lernen selbst ändert keine Scores, und auch das Quiz danach nicht den Session-Fortschritt. Ablauf: Wort, Übersetzung, Zusatzinfo – nach jedem Teil die Vorlese- bzw. Lesezeit (ohne Vorlesen aus der Textlänge geschätzt) plus eine Pause. Unter „⚙ Vorlesen & Pausen“ (aufklappbar unter den Knöpfen): Vorlesen Wort | Übersetzung | Info, Zusatzinfo An | Aus und drei Regler „Pause Wort / Übersetzung / Info“ (0–10 s, Standard 1 / 1 / 3 s; ganz rechts „Tippen“: dort wartet die App, bis du die Karte antippst). Ohne Zusatzinfo gilt nach der Übersetzung die längere der Pausen Übersetzung und Info. Übersetzung und Zusatzinfo haben ihren Platz schon vorher und blenden kurz ein. Lang drücken auf den Knopf → „Lernen einstellen“: was zuerst kommt (Fremdsprache oder Deutsch), was vorgelesen wird und in welcher Sprache die Zusatzinfo vorgelesen wird. "},
@@ -8905,6 +8909,7 @@ export default function VokabelApp() {
                   {k:"Vokabelliste", v:"Alle gefilterten Vokabeln mit Score-Balken (grün = positiv, rot = negativ) und letztem Abfragedatum. Lang drücken auf eine Zeile: „✎ Bearbeiten“ (alle Spalten, mit falschen Antworten nach ||) oder „➕ Neue Vokabel“ in der Liste dieser Zeile (mindestens zwei Spalten außer Info). Lernstände bleiben beim Bearbeiten erhalten."},
                 ]},
                 {titel:"Einstellungen-Tab", inhalt:[
+                  {k:"Aufbau", v:"Vier Bereiche, immer nur einer offen: Listen (alle Listen öffnen, „+ Neu“ zum Importieren, darunter die Sicherung), Lernen (Gelernt-Schwelle, Akzente je Sprache), Raster (Plätze für Sessions und Listen) und App (Aktualisieren, Farbschema, Info mit Übersicht, Konzept und Anleitung)."},
                   {k:"Akzente", v:"Je Sprache An oder Aus (Standard: nur Französisch an). Aus: keine Abfrageart „A“ und keine Akzent-Statistik für Listen dieser Sprache, und fehlende Akzente beim Tippen und im Diktat gelten als richtig. An: „A“ steht zur Verfügung, beim Tippen gilt die Regel der Stufe."},
                   {k:"Farbschema", v:"16 Vorlagen: Natur (Standard), Freudig, Pastelle, Mädchen, Jungs, Dunkel, Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht und Espresso – antippen wählt das Schema, die App färbt sich sofort um. Vorlagen lassen sich nicht ändern, aber duplizieren (lang drücken). Flächen haben je Funktion eine eigene Rolle: Hintergrund (nur die Seite), App-Kopf (Titel- und Tab-Leiste), Bereichs-Kopfzeilen (z. B. Kopf der Listenauswahl), Karten (Listen, Quiz-Bereiche), Abfrage-Karten, Dialoge, Knöpfe & Felder, Info-Kästen und Ausgewählt – ohne eigenen Wert übernehmen sie die bisherige Farbe, Kopfzeilen und Info-Kästen mit einem Hauch der Hauptfarbe. „🎨 Farbe ändern“ unter jedem Lang-Druck-Menü (abschaltbar unter Farbschema) startet den Farbmodus direkt für diese Stelle. Im Farbfeld hat jeder Teil zwei Wege: „Alle Stellen“ ändert die Rolle (überall, wo sie vorkommt), „Nur dieses Element“ gibt nur dieser Element-Art eine eigene Farbe (z. B. nur dem Start-Knopf – alle gleichartigen Stellen, die Rolle bleibt); „↺ Rolle“ nimmt die eigene Farbe zurück. Eigene Element-Farben gehören zum Schema und stehen in dessen Bearbeiten-Ansicht (✕ entfernt sie). Farbmodus: „🎨 Farbmodus starten“, dann normal durch die App gehen und lang auf ein Element drücken – das Farbfeld zeigt die Farben dieser Stelle (auch kleiner Teile im Umkreis, z. B. Ring und Buchstabe der Mini-Kreise); antippen hebt das Element hervor und öffnet den Farbwähler: großer Farbkreis (außen kräftig, zur Mitte weniger gesättigt), Regler für Helligkeit und Sättigung, Hex-Feld, „Zuletzt verwendet“ (10 Farben); die App färbt sich beim Ziehen sofort um, „Anwenden“ übernimmt, „Abbrechen“ stellt die alte Farbe wieder her. Unten rechts: „Zurücksetzen“ verwirft alles und beendet, „Farben übernehmen“ speichert (bei einer Vorlage als neues eigenes Schema) und beendet. Eigene Schemata: lang drücken → Bearbeiten (Farbwähler je Rolle: Hauptfarbe, Hintergrund, Text, Richtig/Falsch, Statistik-Farben …, Änderungen sofort sichtbar und gespeichert; „Zurücksetzen“ holt die Farben der Vorlage zurück), Duplizieren, Umbenennen, Löschen."},
                   {k:"App aktualisieren", v:"„Prüfen“ sucht nach einer neuen App-Version. Wird eine gefunden, erscheint unten der Hinweis „Neue Version verfügbar“ – mit „Aktualisieren“ wird sie aktiv. Die App funktioniert auch offline."},
@@ -8932,92 +8937,17 @@ export default function VokabelApp() {
 
           {/* Bereiche mit Kopfzeile: immer nur einer offen */}
           <div className="sektion" data-einst-bereiche style={einstBereich === "info" && infoModus !== "uebersicht" ? {paddingBottom:'100dvh'} : {}}>
-            {einstBereich !== "info" && einstKopf("info", "Info", "Übersicht, Konzept, Anleitung")}
-            {einstKopf("lernen", "Lernen", "Gelernt-Schwelle")}
-            {einstBereich === "lernen" && (<div className="einst-inhalt">
-            <div className="karte">
-              <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:8}}>
-                <div>
-                  <div className="karte-zeile-name">Gelernt-Schwelle</div>
-                  <div className="karte-zeile-sub">
-                    {(einstellungen.gelerntSchwelle ?? 0) === 0
-                      ? "Deaktiviert – alle Vokabeln werden abgefragt"
-                      : `Score ≥ +${einstellungen.gelerntSchwelle} gilt als gelernt (Diktat: eigener Diktat-Score)`}
-                  </div>
-                </div>
-                <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(v => (
-                    <button key={v} className={`toggle-opt${(einstellungen.gelerntSchwelle??0)===v?" aktiv":""}`}
-                      onClick={() => speichereEinst({...einstellungen, gelerntSchwelle: v})}
-                      {...tt(v === 0 ? "Deaktiviert – alle Vokabeln werden abgefragt" : `Vokabeln mit Score ≥ +${v} gelten als gelernt`)}>
-                      {v === 0 ? "Aus" : `+${v}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {einstKopf("listen", "Listen", "Listen öffnen, importieren, sichern")}
+            {einstBereich === "listen" && (<div className="einst-inhalt" data-einst-listen>
+            <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10}}>
+              <div className="sektion-label" style={{margin:0}}>Meine Listen</div>
+              <button className="btn btn-ghost btn-sm" data-liste-neu style={{display:"inline-flex",alignItems:"center",gap:5}} onClick={() => { resetImport(); setTab("listen"); setAnsicht("import"); }}
+                {...tt("Neue Vokabelliste importieren oder anlegen")}><IcoPlus s={13}/>Neu</button>
             </div>
-            </div>)}
-            {einstKopf("akzente", "Akzente", "je Sprache an oder aus")}
-            {einstBereich === "akzente" && (<div className="einst-inhalt">
-            <div className="karte" data-akzent-sprachen>
-              <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
-                <div className="karte-zeile-sub">Ausgeschaltet: keine Abfrageart „A“ und keine Akzent-Statistik für diese Sprache; fehlende Akzente beim Tippen gelten als richtig.</div>
-              </div>
-              {(vorhandeneSprachen.length ? vorhandeneSprachen : SPRACHEN.filter(x => x.code === "fr")).map(sp => (
-                <div key={sp.code} className="toggle-row" style={{borderTop:"1px solid var(--rahmen)"}}>
-                  <div className="toggle-label">{sp.flagge} {sp.name}</div>
-                  <div className="toggle-btn">
-                    <button className={`toggle-opt${akzenteAn(sp.code) ? " aktiv" : ""}`} data-akzent-sprache={`${sp.code}:an`}
-                      onClick={() => speichereEinst({ ...einstellungen, akzenteSprachen: { ...(einstellungen.akzenteSprachen || {}), [sp.code]: true } })}
-                      {...tt(`Akzente für ${sp.name} einschalten: Abfrageart „A“, Akzent-Statistik, Akzente müssen beim Tippen stimmen`)}>An</button>
-                    <button className={`toggle-opt${!akzenteAn(sp.code) ? " aktiv" : ""}`} data-akzent-sprache={`${sp.code}:aus`}
-                      onClick={() => speichereEinst({ ...einstellungen, akzenteSprachen: { ...(einstellungen.akzenteSprachen || {}), [sp.code]: false } })}
-                      {...tt(`Akzente für ${sp.name} ausschalten: keine Abfrageart „A“, fehlende Akzente beim Tippen gelten als richtig`)}>Aus</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            </div>)}
-            {einstKopf("farben", "Farbschema", "Vorlagen und eigene Farben")}
-            {einstBereich === "farben" && (<div className="einst-inhalt">
-            {renderFarbschemata()}
-            </div>)}
-            {einstKopf("konfig", "Gespeicherte Konfigurationen", "Raster im Quiz- und Statistik-Tab")}
-            {einstBereich === "konfig" && (<div className="einst-inhalt">
-            {rasterEinstellung(rasterGroesse(einstellungen), slots.gespeichert.length, setzeRasterGroesse,
-              "Plätze für gespeicherte Konfigurationen im Quiz- und Statistik-Tab", "Ist das Raster beim Speichern voll, kommt automatisch eine Zeile dazu.", "")}
-            </div>)}
-            {einstKopf("listen", "Listen", "Raster im Listen-Tab")}
-            {einstBereich === "listen" && (<div className="einst-inhalt">
-            {rasterEinstellung(rasterGroesse(einstellungen, "listenRaster"), listenIndex.length, setzeListenRasterGroesse,
-              "Plätze der Listen im Listen-Tab – die Reihenfolge gilt in der ganzen App", "Ist das Raster bei einer neuen Liste voll, kommt automatisch eine Zeile dazu.", "listen")}
-            </div>)}
-            {einstKopf("app", "App", "Version und Aktualisieren")}
-            {einstBereich === "app" && (<div className="einst-inhalt">
-            <div className="karte">
-              <div className="karte-zeile">
-                <div className="karte-zeile-info">
-                  <div className="karte-zeile-name">App aktualisieren</div>
-                  <div className="karte-zeile-sub">Version {APP_VERSION} · {updateStatus || "Nach neuer Version suchen"}</div>
-                </div>
-                <button className="btn btn-ghost btn-sm" onClick={async () => {
-                  // Offline-App: Service Worker nach neuer Version fragen; UpdateHinweis zeigt dann den Banner
-                  const reg = await navigator.serviceWorker?.getRegistration();
-                  if (!reg) { window.location.reload(); return; }
-                  if (!navigator.onLine) { setUpdateStatus("Keine Internetverbindung"); return; }
-                  setUpdateStatus("Suche…");
-                  try {
-                    await reg.update();
-                    setUpdateStatus(reg.installing || reg.waiting ? "Neue Version gefunden" : "App ist aktuell");
-                  } catch {
-                    setUpdateStatus("Prüfung fehlgeschlagen");
-                  }
-                }} {...tt("Nach neuer App-Version suchen")}>Prüfen</button>
-              </div>
-            </div>
-            </div>)}
-            {einstKopf("daten", "Daten & Sicherung", "Alles sichern, Wiederherstellen, Erinnerung")}
-            {einstBereich === "daten" && (<div className="einst-inhalt">
+            {sichtbareListen.length === 0 ? (
+              <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.<br/>Tippe auf <strong>+ Neu</strong>, um eine Liste zu importieren oder anzulegen.</div></div>
+            ) : renderListenRaster()}
+            <div className="sektion-label einst-unterkopf">Sicherung</div>
             <div className="karte" data-sicherung>
               <div className="karte-zeile">
                 <div className="karte-zeile-info">
@@ -9066,9 +8996,97 @@ export default function VokabelApp() {
                   {SICHERUNG_TAGE.map(t => (
                     <button key={t} className={`toggle-opt${sicherungTage === t ? " aktiv" : ""}`} data-sicherung-tage-wahl={t}
                       onClick={() => speichereEinst({ ...einstellungen, sicherungErinnerung: t })}
-                      {...tt(t ? `Im Listen-Tab erinnern, wenn die letzte Sicherung älter als ${t} Tage ist` : "Nicht an Sicherungen erinnern")}>{t ? `${t} T` : "Aus"}</button>
+                      {...tt(t ? `In der Session-Auswahl erinnern, wenn die letzte Sicherung älter als ${t} Tage ist` : "Nicht an Sicherungen erinnern")}>{t ? `${t} T` : "Aus"}</button>
                   ))}
                 </div>
+              </div>
+            </div>
+            </div>)}
+            {einstKopf("lernen", "Lernen", "Gelernt-Schwelle, Akzente")}
+            {einstBereich === "lernen" && (<div className="einst-inhalt">
+            <div className="karte">
+              <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:8}}>
+                <div>
+                  <div className="karte-zeile-name">Gelernt-Schwelle</div>
+                  <div className="karte-zeile-sub">
+                    {(einstellungen.gelerntSchwelle ?? 0) === 0
+                      ? "Deaktiviert – alle Vokabeln werden abgefragt"
+                      : `Score ≥ +${einstellungen.gelerntSchwelle} gilt als gelernt (Diktat: eigener Diktat-Score)`}
+                  </div>
+                </div>
+                <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(v => (
+                    <button key={v} className={`toggle-opt${(einstellungen.gelerntSchwelle??0)===v?" aktiv":""}`}
+                      onClick={() => speichereEinst({...einstellungen, gelerntSchwelle: v})}
+                      {...tt(v === 0 ? "Deaktiviert – alle Vokabeln werden abgefragt" : `Vokabeln mit Score ≥ +${v} gelten als gelernt`)}>
+                      {v === 0 ? "Aus" : `+${v}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="sektion-label einst-unterkopf">Akzente je Sprache</div>
+            <div className="karte" data-akzent-sprachen>
+              <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
+                <div className="karte-zeile-sub">Ausgeschaltet: keine Abfrageart „A“ und keine Akzent-Statistik für diese Sprache; fehlende Akzente beim Tippen gelten als richtig.</div>
+              </div>
+              {(vorhandeneSprachen.length ? vorhandeneSprachen : SPRACHEN.filter(x => x.code === "fr")).map(sp => (
+                <div key={sp.code} className="toggle-row" style={{borderTop:"1px solid var(--rahmen)"}}>
+                  <div className="toggle-label">{sp.flagge} {sp.name}</div>
+                  <div className="toggle-btn">
+                    <button className={`toggle-opt${akzenteAn(sp.code) ? " aktiv" : ""}`} data-akzent-sprache={`${sp.code}:an`}
+                      onClick={() => speichereEinst({ ...einstellungen, akzenteSprachen: { ...(einstellungen.akzenteSprachen || {}), [sp.code]: true } })}
+                      {...tt(`Akzente für ${sp.name} einschalten: Abfrageart „A“, Akzent-Statistik, Akzente müssen beim Tippen stimmen`)}>An</button>
+                    <button className={`toggle-opt${!akzenteAn(sp.code) ? " aktiv" : ""}`} data-akzent-sprache={`${sp.code}:aus`}
+                      onClick={() => speichereEinst({ ...einstellungen, akzenteSprachen: { ...(einstellungen.akzenteSprachen || {}), [sp.code]: false } })}
+                      {...tt(`Akzente für ${sp.name} ausschalten: keine Abfrageart „A“, fehlende Akzente beim Tippen gelten als richtig`)}>Aus</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </div>)}
+            {einstKopf("raster", "Raster", "Plätze für Sessions und Listen")}
+            {einstBereich === "raster" && (<div className="einst-inhalt">
+            <div className="sektion-label einst-unterkopf">Sessions (gespeicherte Konfigurationen)</div>
+            {rasterEinstellung(rasterGroesse(einstellungen), slots.gespeichert.length, setzeRasterGroesse,
+              "Plätze für gespeicherte Konfigurationen im Quiz- und Statistik-Tab", "Ist das Raster beim Speichern voll, kommt automatisch eine Zeile dazu.", "")}
+            <div className="sektion-label einst-unterkopf">Listen</div>
+            {rasterEinstellung(rasterGroesse(einstellungen, "listenRaster"), listenIndex.length, setzeListenRasterGroesse,
+              "Plätze der Listen unter Einstellungen › Listen – die Reihenfolge gilt in der ganzen App", "Ist das Raster bei einer neuen Liste voll, kommt automatisch eine Zeile dazu.", "listen")}
+            </div>)}
+            {einstKopf("app", "App", "Aktualisieren, Farbschema, Info")}
+            {einstBereich === "app" && (<div className="einst-inhalt">
+            <div className="karte">
+              <div className="karte-zeile">
+                <div className="karte-zeile-info">
+                  <div className="karte-zeile-name">App aktualisieren</div>
+                  <div className="karte-zeile-sub">Version {APP_VERSION} · {updateStatus || "Nach neuer Version suchen"}</div>
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={async () => {
+                  // Offline-App: Service Worker nach neuer Version fragen; UpdateHinweis zeigt dann den Banner
+                  const reg = await navigator.serviceWorker?.getRegistration();
+                  if (!reg) { window.location.reload(); return; }
+                  if (!navigator.onLine) { setUpdateStatus("Keine Internetverbindung"); return; }
+                  setUpdateStatus("Suche…");
+                  try {
+                    await reg.update();
+                    setUpdateStatus(reg.installing || reg.waiting ? "Neue Version gefunden" : "App ist aktuell");
+                  } catch {
+                    setUpdateStatus("Prüfung fehlgeschlagen");
+                  }
+                }} {...tt("Nach neuer App-Version suchen")}>Prüfen</button>
+              </div>
+            </div>
+            <div className="sektion-label einst-unterkopf">Farbschema</div>
+            {renderFarbschemata()}
+            <div className="sektion-label einst-unterkopf">Info</div>
+            <div className="karte">
+              <div className="karte-zeile">
+                <div className="karte-zeile-info">
+                  <div className="karte-zeile-name">Info</div>
+                  <div className="karte-zeile-sub">Übersicht, Konzept, Anleitung</div>
+                </div>
+                <button className="btn btn-ghost btn-sm" data-info-oeffnen onClick={() => schalteEinstBereich("info")} {...tt("Übersicht, Konzept und Anleitung der App öffnen")}>Öffnen</button>
               </div>
             </div>
             </div>)}

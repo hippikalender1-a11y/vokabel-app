@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer-core";
 
-// Einstellungen: jeder Bereich hinter einer Kopfzeile, anfangs alle zu; antippen klappt auf, immer nur einer offen;
-// erneut antippen klappt zu; Info mit Übersicht/Konzept/Anleitung
+// Einstellungen: Listen (mit Sicherung), Lernen (Schwelle + Akzente), Raster, App (Aktualisieren, Farbschema, Info);
+// anfangs alle zu, immer nur einer offen; Info über App, „‹ Info“ zurück
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -22,28 +22,38 @@ await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
 
 const koepfe = await page.evaluate(() => [...document.querySelectorAll("[data-einst-kopf]")].map(b => b.dataset.einstKopf).join(","));
-ok(koepfe === "info,lernen,akzente,farben,konfig,listen,app,daten", `Kopfzeilen: Info, Lernen, Akzente, Farbschema, Konfigurationen, Listen, App, Daten (${koepfe})`);
+ok(koepfe === "listen,lernen,raster,app", `Kopfzeilen: Listen, Lernen, Raster, App (${koepfe})`);
 ok(await offen() === "" && !(await page.$("[data-farbschema]")) && !(await page.$("[data-alles-sichern]")), "anfangs alle zugeklappt");
 
-await kopf("farben");
-ok(await offen() === "farben" && await page.$("[data-farbschema]"), "Farbschema aufgeklappt");
-await kopf("daten");
-ok(await offen() === "daten" && await page.$("[data-alles-sichern]") && !(await page.$("[data-farbschema]")), "Daten & Sicherung auf → Farbschema zu (nur einer offen)");
-await kopf("daten");
-ok(await offen() === "" && !(await page.$("[data-alles-sichern]")), "erneut antippen: zugeklappt");
-
-// Info: Kopfleiste mit Übersicht / Konzept / Anleitung
+// Listen: Raster der Listen, „+ Neu“ und die Sicherung
+await kopf("listen");
+ok(await offen() === "listen" && await page.$("[data-liste-neu]") && await page.$("[data-alles-sichern]"), "Listen: „+ Neu“ und Sicherung");
+// Lernen: Gelernt-Schwelle und Akzente
 await kopf("lernen");
+ok(await offen() === "lernen" && await page.$("[data-akzent-sprachen]") && !(await page.$("[data-alles-sichern]")), "Lernen mit Akzenten; Listen zu (nur einer offen)");
+// Raster: beide Raster-Einstellungen
+await kopf("raster");
+ok(await offen() === "raster" && await page.evaluate(() => [...document.querySelectorAll(".einst-unterkopf")].map(d => d.textContent).join("|")) === "Sessions (gespeicherte Konfigurationen)|Listen", "Raster: Sessions und Listen");
+// App: Aktualisieren, Farbschema, Info
+await kopf("app");
+ok(await offen() === "app" && await page.$("[data-farbschema]") && await page.$("[data-info-oeffnen]") && /App aktualisieren/.test(await page.evaluate(() => document.body.innerText)), "App: Aktualisieren, Farbschema, Info");
+await kopf("app");
+ok(await offen() === "", "erneut antippen: zugeklappt");
+
+// Info: über App öffnen, „‹ Info“ führt zurück zu App
+await kopf("app");
+await page.click("[data-info-oeffnen]"); await sleep(300);
+ok(await offen() === "info" && await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].some(b => b.textContent.trim() === "Anleitung")), "Info: Übersicht / Konzept / Anleitung");
+ok(await page.evaluate(() => /Vokabel-Trainer/.test(document.body.innerText)), "Info zeigt die Übersicht");
 await kopf("info");
-ok(await offen() === "info" && await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].some(b => b.textContent.trim() === "Anleitung")), "Info auf: Übersicht / Konzept / Anleitung; Lernen zu");
-ok(await page.evaluate(() => /Vokabel-Trainer/.test(document.body.innerText) && !document.querySelector('[data-einst-kopf="lernen"][data-offen="ja"]')), "Info zeigt die Übersicht");
-await kopf("akzente");
-ok(await offen() === "akzente" && !(await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].some(b => b.textContent.trim() === "Anleitung"))), "Akzente auf → Info zu");
+ok(await offen() === "app" && await page.$("[data-farbschema]"), "„‹ Info“: zurück zu App");
 
 // geöffneter Bereich bleibt beim Tab-Wechsel offen
-await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Listen")).click()); await sleep(300);
+await kopf("lernen");
+await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
-ok(await offen() === "akzente", "nach Tab-Wechsel: Akzente noch offen");
+ok(await offen() === "lernen", "nach Tab-Wechsel: Lernen noch offen");
+ok(await page.evaluate(() => [...document.querySelectorAll(".tab")].map(t => t.textContent).join(",")) === "Quiz,Statistik,Einstellungen", "Tabs: Quiz, Statistik, Einstellungen");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

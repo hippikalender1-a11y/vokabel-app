@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Vokabeln in der App bearbeiten: Abfrage – Lang-Druck auf die Karte → nur die richtige Antwort (falsche bleiben);
 // Statistik – Lang-Druck auf eine Zeile → Bearbeiten (alle Spalten) oder neue Vokabel in dieser Liste;
@@ -107,7 +108,7 @@ ok(liste.vokabeln.length === 3 && liste.vokabeln[2].id === 3 && liste.vokabeln[2
 ok(await page.$('[data-statistik-vok="l_fr__3"]'), "Statistik zeigt die neue Vokabel");
 
 // ── Listen: Bearbeiten erhält den Lernstand ──
-await tab("Listen");
+await zuListen(page);
 await page.evaluate(() => [...document.querySelectorAll(".karte-zeile")].find(z => z.textContent.includes("Verbes")).click()); await sleep(400);
 await page.evaluate(() => { const b = [...document.querySelectorAll(".btn-toggle")].find(b => /Vokabeln ausklappen/.test(b.getAttribute("title") || "")); b?.click(); }); await sleep(300);
 await page.evaluate(() => document.querySelector('button[title="Vokabel bearbeiten"], .btn-icon[title="Bearbeiten"]').click()); await sleep(300);

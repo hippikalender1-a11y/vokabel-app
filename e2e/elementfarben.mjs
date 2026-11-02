@@ -74,7 +74,7 @@ await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].fi
 ok(await bg("[data-start-knopf]") === "rgb(18, 52, 86)", "nach dem Neuladen weiterhin umgefärbt");
 
 // Schema-Editor: Liste der Element-Farben, entfernen → wieder Rolle
-await tab("Einstellungen"); await oeffneEinst("farben");
+await tab("Einstellungen"); await oeffneEinst("app");
 await page.click("[data-farben-bearbeiten]"); await sleep(300);
 ok(await page.$('[data-element-farbe="[data-start-knopf]|background-color"]'), "Schema-Editor: „Eigene Element-Farben“ mit dem Start-Knopf");
 await page.evaluate(() => document.querySelector('[data-element-farbe="[data-start-knopf]|background-color"] button').click()); await sleep(300);

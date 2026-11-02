@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Liste in Sessions aufteilen: Lang-Druck → „In Sessions aufteilen“ → Quiz-Tab mit gelbem Kasten
 // (Name, Gruppengröße, Bereich, Rest, Vorschau) → „n Sessions anlegen“ → gespeicherte Konfigurationen „Name (21 - 40)“
@@ -41,7 +42,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id: "l_fr", name: "Verbes", sprache: "fr" }]));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Listen");
+await zuListen(page);
 await page.evaluate(() => { const el = document.querySelector("[data-liste-id]"); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 20 })); });
 await sleep(250);
@@ -97,7 +98,7 @@ await clickText(".topbar-back", "Beenden"); await sleep(400);
 if (await page.evaluate(() => /Zur Übersicht/.test(document.body.innerText))) await clickText("button", "Zur Übersicht");
 
 // erneut aufteilen: vorhandene Namen werden übersprungen
-await clickText(".tab", "Listen");
+await zuListen(page);
 await page.evaluate(() => { const el = document.querySelector("[data-liste-id]"); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 20 })); });
 await sleep(250);

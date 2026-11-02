@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Karten-Modus: gelber Info-Kasten unter der Antwort (eingeklappt „Info“), Pinnadel hält ihn offen,
 // „i“ in der Kopfzeile blendet ihn aus – beides dauerhaft gespeichert
@@ -31,7 +32,7 @@ const kasten = () => page.evaluate(() => {
 const schalter = () => page.evaluate(() => document.querySelector("[data-karte-info-schalter]")?.dataset.karteInfoSchalter || null);
 const einst = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"));
 const starte = async () => {
-  await clickText(".tab", "Listen");
+  await zuListen(page);
   await clickText(".karte-zeile", "Verbes");
   await clickText("button", "Quiz starten", true);
   await clickText("[data-start-knopf]", "");

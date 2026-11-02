@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Session-Auswertung über mehrere Pakete: Balken Start/Ende, Lernfortschritt, neu gelernt, Zusatzdaten;
 // nach „Nochmal!“ beginnt die Auswertung mit neuen Start-Werten
@@ -53,7 +54,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, sprache: "alle" }));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText(".karte-zeile", "Verbes");
 await clickText("button", "Quiz starten", true);
 // Reihenfolge Listen-Nr., keine Score-Grenze → alle 12 in der Session, Pakete zu 10

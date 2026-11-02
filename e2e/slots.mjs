@@ -193,7 +193,7 @@ ok(pl["Meine Verben 2"] === "4|0" && pl["Meine Verben"] === platzN1, `Duplikat u
 await menue("4|0"); await aktion("🗑 Löschen"); await clickText(".modal .btn-danger", "Löschen", true);
 
 // Einstellungen: 3 Spalten, Zeilen verkleinern → Einträge rücken nach, voll → beim Speichern automatisch eine Zeile mehr
-await clickText(".tab", "Einstellungen"); await oeffneEinst("konfig");
+await clickText(".tab", "Einstellungen"); await oeffneEinst("raster");
 await page.evaluate(() => document.querySelector('[data-raster-spalten="3"]').click()); await sleep(200);
 for (let i = 0; i < 12; i++) { const weiter = await page.evaluate(() => { const b = [...document.querySelectorAll("button")].find(x => x.textContent.trim() === "−" && x.nextElementSibling?.hasAttribute("data-raster-zeilen")); if (!b || b.disabled) return false; b.click(); return true; }); if (!weiter) break; await sleep(80); }
 const zeilen = await page.evaluate(() => document.querySelector("[data-raster-zeilen]").textContent.trim());

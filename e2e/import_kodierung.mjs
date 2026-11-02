@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -34,7 +35,7 @@ async function importiere(datei) {
   await page.goto(URL);
   await page.evaluate(() => localStorage.clear());
   await page.reload(); await sleep(400);
-  await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Listen").click()); await sleep(200);
+  await zuListen(page); await sleep(200);
   await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim().endsWith("Neu"))?.click()); await sleep(300);
   const inp = await page.$('input[type="file"]');
   const accept = await page.evaluate(() => document.querySelector('input[type="file"]').getAttribute("accept"));

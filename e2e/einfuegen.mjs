@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
@@ -16,7 +17,7 @@ async function einfuegen(text) {
   await page.goto(URL);
   await page.evaluate(() => localStorage.clear());
   await page.reload(); await sleep(400);
-  await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Listen").click()); await sleep(200);
+  await zuListen(page); await sleep(200);
   await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim().endsWith("Neu"))?.click()); await sleep(300);
   await page.evaluate(t => {
     const ta = document.querySelector("textarea");

@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -60,7 +61,7 @@ i = await info();
 ok(i.session === "Je 10 Vokabeln" && i.start === 10, "Nach „Neu“: wieder Pakete mit 10");
 
 // Start aus der Liste
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText(".karte-zeile", "Vocabulaire");
 await clickText("button", "Quiz starten", true);
 i = await info();

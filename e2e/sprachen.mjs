@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -43,7 +44,7 @@ const idx = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_l
 ok(idx[0].sprache === "en", `Migration Index-Sprache: ${JSON.stringify(idx)}`);
 
 // 2) Französische Liste importieren
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText("button", "Neu");
 await page.type("textarea.inp", "Französisch // Deutsch\nl'été // der Sommer\nl'école // die Schule\nle garçon // der Junge");
 await clickText("button", "Analysieren");
@@ -93,7 +94,7 @@ t = await bodyText();
 ok(!t.includes("Englisch Unit 1"), "Statistik zeigt keine englische Liste");
 
 // 3b) KI-Prompt mit Französisch vorausgewählt
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText("button", "Neu");
 await clickText("button", "Prompt generieren");
 const prompt = await page.evaluate(() => [...document.querySelectorAll("textarea")].map(t => t.value).join(" "));
@@ -101,7 +102,7 @@ ok(prompt.includes("Französisch // Deutsch") && prompt.includes("aller"), "KI-P
 await page.goto(URL); await sleep(500);
 
 // 4) Vorlesen in Liste-Detail mit fr-FR
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText(".karte-zeile", "Unité 1");
 t = await bodyText();
 ok(/fremdsprache/i.test(t), "Sprachauswahl in Liste-Detail");
@@ -136,7 +137,7 @@ await clickText(".typ-btn", "Französisch");
 // 6) Zurück auf Alle
 await clickText(".topbar button", "▾");
 await clickText(".karte-zeile", "Alle Sprachen");
-await clickText(".tab", "Listen");
+await zuListen(page);
 t = await bodyText();
 ok(t.includes("Englisch Unit 1") && t.includes("Unité 1"), "Alle Sprachen: beide Listen");
 

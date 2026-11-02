@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -19,12 +20,18 @@ await cdp.send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath:
 await page.evaluateOnNewDocument(() => { try { delete Navigator.prototype.share; } catch {} });
 let fehler = 0;
 const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FAIL", msg); };
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
 // Einstellungen: Bereich aufklappen (immer nur einer offen)
 const oeffneEinst = async key => { await page.evaluate(k => { const b = document.querySelector(`[data-einst-kopf="${k}"]`); if (b && b.dataset.offen !== "ja") b.click(); }, key); await new Promise(r => setTimeout(r, 250)); };
 const tab = async name => { await page.evaluate(n => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes(n)).click(), name); await sleep(400); };
 const TAG = 24 * 3600 * 1000;
 const setze = (k, v) => page.evaluate((k, v) => localStorage.setItem(k, JSON.stringify(v)), k, v);
+// Erinnerung steht oben in der Session-Auswahl (Quiz-Tab)
+const zurAuswahl = async () => {
+  await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
+};
 const erinnerung = () => page.evaluate(() => document.querySelector("[data-sicherung-erinnerung]")?.textContent || null);
 const warteAufDatei = async () => {
   for (let i = 0; i < 40; i++) {
@@ -51,13 +58,13 @@ await page.reload(); await sleep(600);
 
 // Erste Start: Erinnerung zählt ab jetzt → noch keine
 ok(await page.evaluate(() => !!localStorage.getItem("vokabel_sicherung_basis")), "Start: Beginn der Erinnerungs-Frist gemerkt");
-await tab("Listen");
+await zurAuswahl();
 ok(await erinnerung() === null, "frisch: keine Erinnerung");
 console.log("     Speicher dauerhaft:", await page.evaluate(() => navigator.storage?.persisted ? navigator.storage.persisted() : "n/a"));
 
 // 8 Tage ohne Sicherung → Erinnerung
 await setze("vokabel_sicherung_basis", Date.now() - 8 * TAG);
-await page.reload(); await sleep(600); await tab("Listen");
+await page.reload(); await sleep(600); await zurAuswahl();
 ok(/Noch keine Sicherung/.test(await erinnerung() || ""), `nach 8 Tagen: Erinnerung „Noch keine Sicherung“ (${await erinnerung()})`);
 
 // Jetzt sichern → Datei, Erinnerung weg
@@ -73,7 +80,7 @@ ok(sich.vokabelAppSicherung === 1 && sich.daten.vokabel_liste_l_fr && sich.daten
 ok(!("vokabel_sicherung_basis" in sich.daten) && !("vokabel_letzte_sicherung" in sich.daten), "Erinnerungs-Daten nicht in der Datei");
 await sleep(300);
 ok(await erinnerung() === null, "nach dem Sichern: Erinnerung weg");
-await tab("Einstellungen"); await oeffneEinst("daten");
+await tab("Einstellungen"); await oeffneEinst("listen");
 ok(/zuletzt am \d\d\.\d\d\.\d{4}/.test(await page.evaluate(() => document.querySelector("[data-letzte-sicherung]").textContent)), "Einstellungen: „zuletzt am …“");
 // eigener Name für die Sicherung
 await page.click("[data-alles-sichern]"); await sleep(300);
@@ -90,7 +97,7 @@ await page.reload(); await sleep(600);
 ok(await page.evaluate(() => !localStorage.getItem("vokabel_listen_index")), "alles gelöscht (wie vom Browser aufgeräumt)");
 
 // Wiederherstellen über Einstellungen
-await tab("Einstellungen"); await oeffneEinst("daten");
+await tab("Einstellungen"); await oeffneEinst("listen");
 await (await page.$("[data-sicherung-datei]")).uploadFile(datei); await sleep(600);
 ok(/2 Listen/.test(await page.evaluate(() => document.querySelector("[data-sicherung-bestaetigen]")?.textContent || "")), "Nachfrage: Sicherung mit 2 Listen");
 await Promise.all([page.waitForNavigation(), page.click("[data-wiederherstellen-ok]")]); await sleep(700);
@@ -106,19 +113,19 @@ ok(st.idx === "Unité 1,Verbs" && st.sc === "4,-2", "Listen mit Scores wieder da
 ok(st.e.farbschema === "freudig" && st.e.modus === "einfach" && st.e.gelerntSchwelle === 5, "Farben und Einstellungen wieder da");
 ok(st.slots === "Mein Quiz", "gespeicherte Quiz wieder da");
 ok(st.letzte, "Zeitpunkt der Sicherung übernommen");
-await tab("Listen");
-ok(await page.evaluate(() => document.body.innerText.includes("Unité 1") && document.body.innerText.includes("Verbs")), "Listen-Tab zeigt beide Listen");
+await zuListen(page);
+ok(await page.evaluate(() => document.body.innerText.includes("Unité 1") && document.body.innerText.includes("Verbs")), "Einstellungen › Listen zeigt beide Listen");
 
 // Keine Gesamtsicherung → Hinweis
 const fremd = path.join(DL, "liste.json"); fs.writeFileSync(fremd, JSON.stringify([{ name: "x", vokabeln: [] }]));
-await tab("Einstellungen"); await oeffneEinst("daten");
+await tab("Einstellungen"); await oeffneEinst("listen");
 await (await page.$("[data-sicherung-datei]")).uploadFile(fremd); await sleep(500);
 ok(await page.evaluate(() => /keine Gesamtsicherung/.test(document.querySelector("[data-sicherung]").textContent)), "andere Datei: Hinweis „keine Gesamtsicherung“");
 
 // Import-Ansicht erkennt die Gesamtsicherung
 await page.evaluate(() => localStorage.clear()); await page.reload(); await sleep(600);
-await tab("Listen");
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim().includes("Neu")).click()); await sleep(300);
+await zuListen(page);
+await page.click("[data-liste-neu]"); await sleep(300);
 await (await page.$('input[type="file"]')).uploadFile(datei); await sleep(600);
 ok(/Gesamtsicherung vom/.test(await page.evaluate(() => document.body.innerText)), "Import: „Gesamtsicherung vom … erkannt“");
 await Promise.all([page.waitForNavigation(), page.click("[data-alles-wiederherstellen]")]); await sleep(700);
@@ -127,25 +134,25 @@ ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellun
 
 // Letzte Sicherung 10 Tage alt → Erinnerung; „Später“ → einen Tag still
 await setze("vokabel_letzte_sicherung", Date.now() - 10 * TAG);
-await page.reload(); await sleep(600); await tab("Listen");
+await page.reload(); await sleep(600); await zurAuswahl();
 ok(/vor 10 Tagen/.test(await erinnerung() || ""), `Erinnerung „Letzte Sicherung vor 10 Tagen“ (${await erinnerung()})`);
 await page.click("[data-sicherung-spaeter]"); await sleep(300);
 ok(await erinnerung() === null, "„Später“: Erinnerung weg");
-await page.reload(); await sleep(600); await tab("Listen");
+await page.reload(); await sleep(600); await zurAuswahl();
 ok(await erinnerung() === null, "„Später“ gilt auch nach dem Neuladen");
 await setze("vokabel_sicherung_spaeter", Date.now() - 2 * TAG);
-await page.reload(); await sleep(600); await tab("Listen");
+await page.reload(); await sleep(600); await zurAuswahl();
 ok(await erinnerung() !== null, "nach einem Tag: Erinnerung wieder da");
 
 // Erinnerung aus / 14 Tage
-await tab("Einstellungen"); await oeffneEinst("daten");
+await tab("Einstellungen"); await oeffneEinst("listen");
 await page.click('[data-sicherung-tage-wahl="14"]'); await sleep(200);
-await tab("Listen");
+await zurAuswahl();
 ok(await erinnerung() === null, "Erinnerung 14 Tage: bei 10 Tagen noch still");
-await tab("Einstellungen"); await oeffneEinst("daten");
+await tab("Einstellungen"); await oeffneEinst("listen");
 await page.click('[data-sicherung-tage-wahl="0"]'); await sleep(200);
 await setze("vokabel_letzte_sicherung", Date.now() - 100 * TAG);
-await page.reload(); await sleep(600); await tab("Listen");
+await page.reload(); await sleep(600); await zurAuswahl();
 ok(await erinnerung() === null, "Erinnerung aus: keine Erinnerung");
 
 await browser.close();

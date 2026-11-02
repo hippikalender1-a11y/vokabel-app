@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Auto-Vorlesen in der Kartenabfrage: 🔊 in der Kopfzeile schaltet es während der Abfrage an/aus (dauerhaft gespeichert);
 // Frage beim Erscheinen und Antwort beim Aufdecken werden vorgelesen, wenn ihre Spalte gewählt ist; Lang-Druck wählt die Spalten
@@ -48,7 +49,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ autoplay: false, vorlesen: ["E1"], gelerntSchwelle: 3, sprache: "alle" }));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText(".karte-zeile", "Verbes");
 await clickText("button", "Quiz starten", true);
 await clickText("[data-start-knopf]", "");

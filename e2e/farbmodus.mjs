@@ -51,7 +51,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, sprache: "alle" }));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
+await clickText(".tab", "Einstellungen"); await oeffneEinst("app");
 await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
 ok(await page.$("[data-farbmodus-zuruecksetzen]") && await page.$("[data-farbmodus-uebernehmen]"), "Farbmodus an: unten rechts „Zurücksetzen“ und „Farben übernehmen“");
 
@@ -117,7 +117,7 @@ await page.click("[data-farbmodus-zuruecksetzen]"); await sleep(300);
 ok(await variable("haupt") === "#2d6a4f" && !(await page.$("[data-farbmodus-uebernehmen]")) && (await eigene()).length === 0, "„Zurücksetzen“: Farben zurück, Farbmodus aus, nichts gespeichert");
 
 // erneut: ändern und übernehmen (Vorlage Natur → Kopie mit Namen)
-await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
+await clickText(".tab", "Einstellungen"); await oeffneEinst("app");
 await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
 const sektion = await page.evaluate(() => { const r = [...document.querySelectorAll(".tab")].find(t => t.textContent === "Einstellungen").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await rechtsklick(sektion.x, sektion.y);

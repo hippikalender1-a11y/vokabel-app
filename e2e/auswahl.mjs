@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Auswahl-Modus für Listen und gespeicherte Konfigurationen: Lang-Druck → „☑ Auswählen“, antippen wählt aus/ab,
 // Lang-Druck → Aktionen für die Auswahl (Listen: JSON, TXT, Kopieren, Verschieben, Löschen; Konfigurationen:
@@ -46,7 +47,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 
 // ── Listen ──
-await tab("Listen");
+await zuListen(page);
 await langDruck('[data-liste-id="l_a"]');
 ok((await menue()).includes("☑ Auswählen"), "Liste: Lang-Druck bietet „☑ Auswählen“");
 await aktion("☑ Auswählen");

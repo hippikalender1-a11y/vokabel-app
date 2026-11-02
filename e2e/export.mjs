@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -73,7 +74,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify(listen.map(l => ({ id:l.id, name:l.name, sprache:l.sprache }))));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Listen");
+await zuListen(page);
 
 // ── Export 1: alle drei als TXT (Lang-Druck → Auswählen, antippen, Lang-Druck → TXT) ──
 ok(!(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Exportieren"))), "kein eigener „Exportieren“-Knopf mehr");
@@ -115,7 +116,7 @@ ok(jsonEigen && JSON.parse(fs.readFileSync(jsonEigen, "utf8")).length === 3, "Da
 
 // ── Export 3: einzelne französische Liste als TXT ──
 await page.reload(); await sleep(500);
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText(".karte-zeile", "Unité 1");
 await page.evaluate(() => [...document.querySelectorAll(".btn-toggle")].find(b => /Aktionen/.test(b.getAttribute("title") || ""))?.click());
 await sleep(300);
@@ -127,7 +128,7 @@ ok(!!txtFr && path.basename(txtFr) === "Unité 1 - TXT.txt", `TXT (Unité 1) her
 
 // ── Import A: TXT mit allen drei Listen ──
 await leeren();
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText("button", "Neu");
 let input = await page.$('input[type="file"]');
 await input.uploadFile(txtAlle);
@@ -147,7 +148,7 @@ ok(daten.find(d => d.index.name === "Unité 1")?.liste.vokabeln[0].E1.falsch?.[0
 
 // ── Import B: JSON-Backup ──
 await leeren();
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText("button", "Neu");
 input = await page.$('input[type="file"]');
 await input.uploadFile(jsonAlle);
@@ -162,7 +163,7 @@ ok(daten[0].liste.spalten.E3.aktiv, "Import B: E3 erhalten");
 
 // ── Import C: einzelne französische TXT ──
 await leeren();
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText("button", "Neu");
 input = await page.$('input[type="file"]');
 await input.uploadFile(txtFr);

@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
@@ -57,7 +58,7 @@ await pruefe("Kopf");
 await klick(".topbar button", "▾"); await pruefe("Sprachmenü"); await page.mouse.click(5, 700); await sleep(200);
 
 // Listen
-await klick(".tab", "Listen"); await pruefe("Listen-Übersicht");
+await zuListen(page); await pruefe("Listen-Übersicht");
 await page.evaluate(() => { const el = document.querySelector("[data-liste-id]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(250);
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "☑ Auswählen").click()); await sleep(300); await pruefe("Listen-Auswahl");
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]").click()); await sleep(200);
@@ -66,7 +67,7 @@ await page.evaluate(() => [...document.querySelectorAll(".btn-toggle")].forEach(
 await klick("button", "Neu"); await pruefe("Import");
 await klick("button", "Prompt generieren"); await pruefe("KI-Prompt");
 await page.goto(URL); await sleep(500);
-await klick(".tab", "Listen"); await klick("button", "Neu");
+await zuListen(page); await klick("button", "Neu");
 await page.evaluate(() => { const ta = document.querySelector("textarea"); Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(ta, "Englisch // Deutsch\ngo // gehen"); ta.dispatchEvent(new Event("input", { bubbles: true })); });
 await klick("button", "Analysieren", true); await pruefe("Import-Zuordnung");
 

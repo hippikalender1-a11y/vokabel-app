@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -47,7 +48,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 
 if (start === "detail") {
-  await clickText(".tab", "Listen");
+  await zuListen(page);
   await clickText(".karte-zeile", "Vocabulaire");
   await clickText("button", "Quiz starten", true);
 } else {

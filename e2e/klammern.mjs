@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { zuListen } from "./hilfen.mjs";
 
 // Klammerhinweise: nicht vorlesen, nicht verlangen, dezent anzeigen; Aufräum-Werkzeug „( ) → Info“ mit Vorschau
 const URL = "http://localhost:4199/vokabel-app/";
@@ -65,7 +66,7 @@ await page.evaluate(() => document.querySelector("[data-zur-auswertung]")?.click
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Zur Übersicht")?.click()); await sleep(400);
 
 // Aufräum-Werkzeug
-await clickText(".tab", "Listen");
+await zuListen(page);
 await clickText(".karte-zeile", "Words");
 await page.evaluate(() => { if (!document.querySelector("[data-klammern-werkzeug]")) [...document.querySelectorAll("button")].find(b => /▼|▲/.test(b.textContent) && b.closest(".liste-detail-header"))?.click(); });
 await sleep(300);
