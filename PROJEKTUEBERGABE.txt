@@ -1849,7 +1849,7 @@ GRUPPEN-GESTEN (Feedback zu Schritt 4): Lang-Druck auf eine Kachel (Sessions + L
   bei Auswahl-Änderung, Stelle des Lang-Drucks bleibt für „🎨 Farbe ändern“). Menü-Einträge mit behalten: true
   („☑ Auswählen“, Export, Kopieren) schließen die Tafel, Auswahl bleibt (alter Auswahl-Modus mit Fertig).
   EINSAMMELN: Lang-Druck (500 ms) auf freie Stelle in [data-lasso] + ziehen → lasso-State markiert, beim Loslassen
-  übernommen (Raster springt nicht), dann Tafel. GRUPPE PER VERWEILEN: beim Ziehen GRUPPE_VERWEILEN_MS = 2500 über
+  übernommen (Raster springt nicht), dann Tafel. GRUPPE PER VERWEILEN: beim Ziehen GRUPPE_VERWEILEN_MS = 1200 (Ring über der Kachel) über
   einer Session/Gruppe (nur oberste Ebene, keine Gruppen in Gruppen) → Ring (.gruppen-ring, data-gruppen-ring
   laeuft|fertig), gruppenZielRef; Loslassen → gruppiere(): auf Session = neue Gruppe (gruppenName: gemeinsamer
   Namensanfang, sonst „Gruppe n“) am Platz der Ziel-Session, auf Gruppe = hinein; schnell loslassen tauscht wie

@@ -81,7 +81,7 @@ ok(!d.gespeichert.find(x => x.id === "s3").ordner, "Teil 3 aus der Gruppe genomm
 await page.click("[data-ordner-zurueck]"); await sleep(300);
 k = await kacheln();
 ok(k.includes("Teil 3") && k.some(t => t.startsWith("📁 Kapitel A")), `oberste Ebene: Gruppe + Teil 3 (${k.join(" | ")})`);
-// Session auf die Gruppen-Kachel ziehen und 2,5 s halten → in die Gruppe
+// Session auf die Gruppen-Kachel ziehen und 1,2 s halten → in die Gruppe
 await langDruck(kachel("s3")); await aktion("⇄ Verschieben");
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 const p1 = await page.evaluate(() => { const r = document.querySelector('[data-slot-id="s3"]').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });

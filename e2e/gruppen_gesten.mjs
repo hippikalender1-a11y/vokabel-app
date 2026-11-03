@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 import { zuListen } from "./hilfen.mjs";
 
 // Gesten im Session- und Listen-Raster: Lang-Druck öffnet die Auswahl-Tafel (unten, bleibt offen; weitere antippen
-// wählt mit aus; nur die Tafel beendet), Lang-Druck auf freie Stelle + ziehen sammelt ein, beim Ziehen 2,5 s über
+// wählt mit aus; nur die Tafel beendet), Lang-Druck auf freie Stelle + ziehen sammelt ein, beim Ziehen 1,2 s über
 // einer Session halten bildet eine Gruppe, auf „← Alle Sessions“ ziehen nimmt heraus, Gruppe mit einer Session löst sich auf
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -101,7 +101,7 @@ ok(!(d.ordner || []).length && d.gespeichert.find(x => x.id === "s3").platz.z ==
 ring = await ziehe(kachel("s3"), kachel("s4"), 2800);
 d = await slots();
 const g = (d.ordner || [])[0];
-ok(ring === "fertig", "nach 2,5 s: Ring voll (📁)");
+ok(ring === "fertig", "nach 1,2 s: Ring voll (📁)");
 ok(g && g.name === "Teil" && ["s3", "s4"].every(id => d.gespeichert.find(x => x.id === id).ordner === g.id), `verweilt: Gruppe „${g?.name}“ aus Teil 3 + 4`);
 ok(g?.platz?.z === 2 && g?.platz?.s === 0, "Gruppe steht am Platz der Ziel-Session");
 const schatten = await page.evaluate(id => getComputedStyle(document.querySelector(`[data-ordner-id="${id}"]`)).boxShadow, g.id);

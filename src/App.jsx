@@ -204,7 +204,7 @@ function zielUnter(x, y) {
   const el = document.elementFromPoint(x, y);
   return el?.closest("[data-ordner-zurueck]") ? "raus" : el?.closest("[data-raster-zelle]")?.dataset.rasterZelle || null;
 }
-const GRUPPE_VERWEILEN_MS = 2500;   // so lange über einer Kachel halten, bis Loslassen eine Gruppe bildet
+const GRUPPE_VERWEILEN_MS = 1200;   // so lange über einer Kachel halten, bis Loslassen eine Gruppe bildet
 function formatSlotDatum() {
   const n = new Date();
   return n.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
@@ -1398,9 +1398,10 @@ const CSS_BASIS = `
   .einst-kopf.offen .einst-kopf-sub{color:var(--kopf-offen-schrift);opacity:0.8;}
   .einst-inhalt{margin-bottom:14px;}
   .ordner-kachel{border-width:2px;border-style:solid;margin:0 8px 8px 0;box-shadow:4px 4px 0 -2px var(--haupt-flaeche), 4px 4px 0 0 var(--haupt), 8px 8px 0 -2px var(--haupt-flaeche), 8px 8px 0 0 color-mix(in srgb, var(--haupt) 55%, transparent);}
-  .gruppen-ring{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3;}
-  .gruppen-ring svg{width:40px;height:40px;transform:rotate(-90deg);}
-  .gruppen-ring circle{fill:var(--karte);stroke:var(--haupt);stroke-width:3;stroke-dasharray:94.25;stroke-dashoffset:94.25;animation:gruppenRing 2.5s linear forwards;}
+  /* Ring über der Kachel (nicht unter dem Finger) */
+  .gruppen-ring{position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);width:46px;height:46px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3));}
+  .gruppen-ring svg{width:46px;height:46px;transform:rotate(-90deg);}
+  .gruppen-ring circle{fill:var(--karte);stroke:var(--haupt);stroke-width:3;stroke-dasharray:94.25;stroke-dashoffset:94.25;animation:gruppenRing 1.2s linear forwards;}
   .gruppen-ring.fertig circle{animation:none;stroke-dashoffset:0;fill:var(--haupt-flaeche);}
   .gruppen-ring span{position:absolute;font-size:1.05rem;opacity:0.35;}
   .gruppen-ring.fertig span{opacity:1;}
@@ -2271,7 +2272,7 @@ export default function VokabelApp() {
     };
   }, [slotSortModus, listenSortModus]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Beim Ziehen über einer anderen Session oder Gruppe verweilen: nach 2,5 s bildet Loslassen eine Gruppe
+  // Beim Ziehen über einer anderen Session oder Gruppe verweilen: nach 1,2 s bildet Loslassen eine Gruppe
   // (nur auf der obersten Ebene; Gruppen selbst lassen sich nicht in Gruppen legen)
   useEffect(() => {
     gruppenZielRef.current = null; setGruppenZiel(null);
@@ -5463,7 +5464,7 @@ export default function VokabelApp() {
           </span>
         </div>
         {!slotSortModus && !multiAuswahl && raster.gespeichert.length > 0 && (
-          <div style={{fontSize:"0.68rem", color:"var(--text3)", marginBottom:6}}>Lang drücken: Menü, danach weitere antippen wählt mehrere aus · freie Stelle lang drücken und ziehen sammelt ein · beim Ziehen 2,5 s auf einer Session halten: Gruppe</div>
+          <div style={{fontSize:"0.68rem", color:"var(--text3)", marginBottom:6}}>Lang drücken: Menü, danach weitere antippen wählt mehrere aus · freie Stelle lang drücken und ziehen sammelt ein · beim Ziehen 1,2 s auf einer Session halten: Gruppe</div>
         )}
         {multiAuswahl && <div data-wahl-hinweis style={{fontSize:"0.72rem", color:"var(--text2)", marginBottom:6}}>
           <b data-wahl-anzahl={multiAuswahl.length}>☑ {multiAuswahl.length} ausgewählt</b>
@@ -5471,7 +5472,7 @@ export default function VokabelApp() {
         </div>}
         {slotSortModus && <div style={{fontSize:"0.72rem", color:"var(--text2)", marginBottom:6}}>
           {slotAuswahl.length ? `${slotAuswahl.length} markiert – freien Platz antippen (dort untereinander) oder ziehen.` : "Pakete antippen zum Markieren, dann freien Platz antippen – oder direkt ziehen. Belegter Platz: Einträge rücken auf die frei gewordenen Plätze."}
-          {ordnerOffen ? " Auf „← Alle Sessions“ ziehen: aus der Gruppe." : " Beim Ziehen 2,5 s über einer Session oder Gruppe halten: Gruppe."}
+          {ordnerOffen ? " Auf „← Alle Sessions“ ziehen: aus der Gruppe." : " Beim Ziehen 1,2 s über einer Session oder Gruppe halten: Gruppe."}
         </div>}
         {zellen.length > 0 && (
           <div className="slot-raster" data-lasso={slotSortModus ? undefined : "slot"} style={{gridTemplateColumns:`repeat(${groesse.spalten}, minmax(0, 1fr))`}}>
