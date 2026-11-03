@@ -174,6 +174,37 @@ function setzeEbene(data, eintraege) {
     ordner: (data.ordner || []).map(o => map.has(o.id) ? ohneMarke(map.get(o.id)) : o),
     gespeichert: data.gespeichert.map(x => map.has(x.id) ? map.get(x.id) : x) };
 }
+// Gruppen mit höchstens einer Session lösen sich auf (die verbliebene Session nimmt den Platz der Gruppe ein)
+function loeseKleineGruppen(data, ordnerIds) {
+  let ordner = data.ordner || [], gespeichert = data.gespeichert;
+  for (const oid of new Set(ordnerIds)) {
+    const o = ordner.find(x => x.id === oid);
+    if (!o || gespeichert.filter(x => x.ordner === oid).length > 1) continue;
+    gespeichert = gespeichert.map(x => {
+      if (x.ordner !== oid) return x;
+      const { ordner: _o, platz: _p, ...r } = x;   // eslint-disable-line no-unused-vars
+      return o.platz ? { ...r, platz: o.platz } : r;
+    });
+    ordner = ordner.filter(x => x.id !== oid);
+  }
+  return { ...data, ordner, gespeichert };
+}
+// Name einer neuen Gruppe: gemeinsamer Namensanfang der Sessions (ohne angeschnittene Zahl), sonst „Gruppe n“
+function gruppenName(namen, vorhandene = []) {
+  let p = namen.reduce((a, n) => { let i = 0; while (i < a.length && i < n.length && a[i] === n[i]) i++; return a.slice(0, i); });
+  while (/\d$/.test(p) && namen.some(n => /\d/.test(n[p.length] || ""))) p = p.slice(0, -1);
+  p = p.replace(/[^\p{L}\p{N})\]]+$/u, "").trim();
+  if (p.length >= 2) return p;
+  let i = 1;
+  while (vorhandene.includes(`Gruppe ${i}`)) i++;
+  return `Gruppe ${i}`;
+}
+// Ziel unter dem Finger beim Ziehen im Raster: Platz „z|s“ oder „raus“ (auf „← Alle Sessions“: aus der Gruppe)
+function zielUnter(x, y) {
+  const el = document.elementFromPoint(x, y);
+  return el?.closest("[data-ordner-zurueck]") ? "raus" : el?.closest("[data-raster-zelle]")?.dataset.rasterZelle || null;
+}
+const GRUPPE_VERWEILEN_MS = 2500;   // so lange über einer Kachel halten, bis Loslassen eine Gruppe bildet
 function formatSlotDatum() {
   const n = new Date();
   return n.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
@@ -1366,7 +1397,14 @@ const CSS_BASIS = `
   .einst-kopf.offen .einst-kopf-pfeil{color:var(--kopf-offen-schrift);}
   .einst-kopf.offen .einst-kopf-sub{color:var(--kopf-offen-schrift);opacity:0.8;}
   .einst-inhalt{margin-bottom:14px;}
-  .ordner-kachel{border-width:2px;border-style:solid;box-shadow:3px 3px 0 -1px var(--karte), 3px 3px 0 0 var(--rahmen);}
+  .ordner-kachel{border-width:2px;border-style:solid;margin:0 8px 8px 0;box-shadow:4px 4px 0 -2px var(--haupt-flaeche), 4px 4px 0 0 var(--haupt), 8px 8px 0 -2px var(--haupt-flaeche), 8px 8px 0 0 color-mix(in srgb, var(--haupt) 55%, transparent);}
+  .gruppen-ring{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3;}
+  .gruppen-ring svg{width:40px;height:40px;transform:rotate(-90deg);}
+  .gruppen-ring circle{fill:var(--karte);stroke:var(--haupt);stroke-width:3;stroke-dasharray:94.25;stroke-dashoffset:94.25;animation:gruppenRing 2.5s linear forwards;}
+  .gruppen-ring.fertig circle{animation:none;stroke-dashoffset:0;fill:var(--haupt-flaeche);}
+  .gruppen-ring span{position:absolute;font-size:1.05rem;opacity:0.35;}
+  .gruppen-ring.fertig span{opacity:1;}
+  @keyframes gruppenRing{to{stroke-dashoffset:0;}}
   .ordner-kachel.ordner-aktiv{outline:2px solid var(--haupt);outline-offset:1px;}
   .ordner-anzahl{font-weight:500;opacity:0.7;}
   .neue-session-knopf{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:12px;}
@@ -1710,6 +1748,13 @@ export default function VokabelApp() {
   // Liste in Sessions aufteilen (Quiz-Tab): { listeId, name, groesse, von, bis, restAnhaengen }
   const [aufteilen, setAufteilen] = useState(null);
   const slotGezogenRef = useRef(false);                       // Klick nach dem Ziehen schlucken
+  // Auswahl-Tafel (Lang-Druck auf eine Kachel): bleibt unten offen, weitere Kacheln antippen wählt mit aus
+  const auswahlTafelRef = useRef(null);                       // "slot" | "liste" solange offen
+  const auswahlTafelDaten = useRef({});                       // je Art: () => { text, aktionen } aus dem letzten Render
+  const [gruppenZiel, setGruppenZiel] = useState(null);       // "z|s": lange genug darüber gehalten – Loslassen bildet eine Gruppe
+  const gruppenZielRef = useRef(null);
+  const lassoRef = useRef(null);                              // Lang-Druck auf freie Stelle + ziehen: Kacheln einsammeln
+  const [lasso, setLasso] = useState(null);                   // { art, ids } während des Einsammelns (erst beim Loslassen übernommen – Raster springt nicht)
   // Rückfrage "Abgefragt-Stand löschen?" in der Fortschrittszeile; ohne Antwort nach 6 s wieder weg
   const [sessionResetFrage, setSessionResetFrage] = useState(false);
   const [lernResetFrage, setLernResetFrage] = useState(false);
@@ -1771,7 +1816,8 @@ export default function VokabelApp() {
   // Erklärtext: Maus = title; Touch = lange drücken → Info-Tafel (bleibt bis Antippen, InfoTafel.jsx);
   // data-info macht das Element im Info-Modus erklärbar
   // aktionen (optional): Lang-Druck bzw. Rechtsklick zeigt die Erklärung mit Menü-Knöpfen darunter
-  // opts.langText: anderer Text für den Lang-Druck (z. B. nur der volle Name); opts.beimZeigen(x, y): Rückruf
+  // opts.langText: anderer Text für den Lang-Druck (z. B. nur der volle Name); opts.beimZeigen(x, y): Rückruf;
+  // opts.auswahl: als Auswahl-Tafel zeigen (siehe infoEreignisse.js)
   function tt(text, aktionen, opts = {}) {
     if (!text) return {};
     const langText = opts.langText || text;
@@ -1779,7 +1825,7 @@ export default function VokabelApp() {
       // Rechtsklick = langer Druck: Menü bzw. Erklärung (mit „🎨 Farbe ändern“)
       // verschachtelt: ein inneres Element mit eigenem Menü hat Vorrang vor dem äußeren (sonst gewinnt wie bisher das äußere)
       onContextMenu(e) { e.preventDefault(); if (e.nativeEvent._ttMenue) return; if (aktionen) e.nativeEvent._ttMenue = true;
-        if (aktionen) opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen); },
+        if (aktionen) opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen, opts.auswahl && { auswahl: opts.auswahl }); },
       title: text,
       "data-info": text,
       onTouchStart(e) {
@@ -1791,7 +1837,7 @@ export default function VokabelApp() {
         tooltipTimer.current = setTimeout(() => {
           if (slotZiehenRef.current?.aktiv) return;   // beim Verschieben im Raster keine Erklärung einblenden
           if (farbModusRef.current) return;            // Farbmodus: langer Druck öffnet das Farbfeld
-          tooltipShown.current = true; zeigeInfo(langText, t.clientX, t.clientY, aktionen);
+          tooltipShown.current = true; zeigeInfo(langText, t.clientX, t.clientY, aktionen, opts.auswahl && { auswahl: opts.auswahl });
           if (aktionen) opts.beimMenue?.();
           opts.beimZeigen?.(t.clientX, t.clientY);
         }, 500);
@@ -2141,7 +2187,7 @@ export default function VokabelApp() {
   // Lang-Druck auf einen Raster-Eintrag und dann ziehen (auch außerhalb des Verschieben-Modus):
   // sobald der Finger sich bewegt, Menü/Erklärung weg, Verschieben-Modus an, Eintrag folgt dem Finger
   useEffect(() => {
-    const zelleUnter = t => document.elementFromPoint(t.clientX, t.clientY)?.closest("[data-raster-zelle]")?.dataset.rasterZelle || null;
+    const zelleUnter = t => zielUnter(t.clientX, t.clientY);
     const bewegen = e => {
       const d = slotZiehenRef.current;
       if (!d?.langdruck) return;
@@ -2175,7 +2221,7 @@ export default function VokabelApp() {
       const t = e.changedTouches[0];
       const ziel = e.type === "touchend" && t ? zelleUnter(t) : null;
       setSlotDragId(null); setSlotDragZiel(null);
-      if (ziel) { const [z, sp] = ziel.split("|").map(Number); setzeGezogen(d, { z, s: sp }); }
+      if (ziel) legeGezogenAb(d, ziel);
     };
     window.addEventListener("touchmove", bewegen, { passive: false });
     window.addEventListener("touchend", loslassen);
@@ -2191,7 +2237,7 @@ export default function VokabelApp() {
   // (belegt → tauschen). Ohne Bewegung bleibt es ein Antippen (Auswahl) bzw. Lang-Druck (Info).
   useEffect(() => {
     if (!slotSortModus && !listenSortModus) return;
-    const zelleUnter = e => document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-raster-zelle]")?.dataset.rasterZelle || null;
+    const zelleUnter = e => zielUnter(e.clientX, e.clientY);
     const bewegen = e => {
       const d = slotZiehenRef.current;
       if (!d || d.langdruck) return;   // Lang-Druck-Zug läuft über die Touch-Verfolgung
@@ -2213,7 +2259,7 @@ export default function VokabelApp() {
       slotGezogenRef.current = true; setTimeout(() => { slotGezogenRef.current = false; }, 400);   // nur den Klick direkt danach schlucken
       const ziel = e.type === "pointerup" ? zelleUnter(e) : null;
       setSlotDragId(null); setSlotDragZiel(null);
-      if (ziel) { const [z, sp] = ziel.split("|").map(Number); setzeGezogen(d, { z, s: sp }); }
+      if (ziel) legeGezogenAb(d, ziel);
     };
     window.addEventListener("pointermove", bewegen);
     window.addEventListener("pointerup", loslassen);
@@ -2224,6 +2270,84 @@ export default function VokabelApp() {
       window.removeEventListener("pointercancel", loslassen);
     };
   }, [slotSortModus, listenSortModus]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Beim Ziehen über einer anderen Session oder Gruppe verweilen: nach 2,5 s bildet Loslassen eine Gruppe
+  // (nur auf der obersten Ebene; Gruppen selbst lassen sich nicht in Gruppen legen)
+  useEffect(() => {
+    gruppenZielRef.current = null; setGruppenZiel(null);
+    if (!slotDragId || !slotDragZiel || slotDragZiel === "raus" || slotZiehenRef.current?.art === "liste" || slotOrdnerRef.current) return;
+    const el = document.querySelector(`[data-raster-zelle="${slotDragZiel}"][data-slot-id]`);
+    const ordnerIds = new Set((getSlotsData().ordner || []).map(o => o.id));
+    const ausw = rasterAuswahlRef.current.slot;
+    const ids = ausw.includes(slotDragId) ? ausw : [slotDragId];
+    if (!el || ids.includes(el.dataset.slotId) || ids.some(id => ordnerIds.has(id))) return;
+    const ziel = slotDragZiel;
+    const t = setTimeout(() => { gruppenZielRef.current = ziel; setGruppenZiel(ziel); navigator.vibrate?.(30); }, GRUPPE_VERWEILEN_MS);
+    return () => clearTimeout(t);
+  }, [slotDragZiel, slotDragId]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auswahl-Tafel aktuell halten (Inhalt hängt an der Auswahl); Auswahl beendet → Tafel zu
+  useEffect(() => {
+    const art = auswahlTafelRef.current;
+    if (!art) return;
+    if (!(art === "liste" ? listenWahl : multiAuswahl)) { auswahlTafelRef.current = null; schliesseInfo(); return; }
+    zeigeAuswahlTafel(art);
+  }, [multiAuswahl, listenWahl]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // geöffnete Gruppe gibt es nicht mehr (aufgelöst) → zurück auf die oberste Ebene
+  useEffect(() => {
+    if (slotOrdner && !(slots.ordner || []).some(o => o.id === slotOrdner)) setSlotOrdner(null);
+  }, [slots, slotOrdner]);
+
+  // Lang-Druck auf eine freie Stelle im Raster und dann ziehen: jede überstrichene Kachel kommt in die Auswahl
+  useEffect(() => {
+    const setze = (art, ids) => (art === "liste" ? setListenWahl : setMultiAuswahl)(ids);
+    const start = e => {
+      if (e.touches.length !== 1) { if (lassoRef.current) clearTimeout(lassoRef.current.timer); lassoRef.current = null; return; }
+      const feld = e.target.closest?.("[data-lasso]");
+      if (!feld || e.target.closest("[data-slot-id], [data-liste-id]")) return;
+      const t = e.touches[0];
+      const l = { art: feld.dataset.lasso, feld, x: t.clientX, y: t.clientY, aktiv: false, ids: [] };
+      l.timer = setTimeout(() => {
+        l.aktiv = true; navigator.vibrate?.(15);
+        const r = rasterAuswahlRef.current;
+        l.ids = [...((l.art === "liste" ? r.listeWahl : r.slotWahl) || [])];
+        setLasso({ art: l.art, ids: l.ids });
+      }, 500);
+      lassoRef.current = l;
+    };
+    const bewegen = e => {
+      const l = lassoRef.current;
+      if (!l) return;
+      const t = e.touches[0];
+      if (!l.aktiv) { if (Math.hypot(t.clientX - l.x, t.clientY - l.y) > 8) { clearTimeout(l.timer); lassoRef.current = null; } return; }
+      if (e.cancelable) e.preventDefault();   // Seite nicht scrollen, solange eingesammelt wird
+      const el = document.elementFromPoint(t.clientX, t.clientY)?.closest(l.art === "liste" ? "[data-liste-id]" : "[data-slot-id]:not([data-ordner-id])");
+      const id = el && l.feld.contains(el) ? (l.art === "liste" ? el.dataset.listeId : el.dataset.slotId) : null;
+      if (id && !l.ids.includes(id)) { l.ids = [...l.ids, id]; setLasso({ art: l.art, ids: l.ids }); }
+      if (t.clientY < 90) window.scrollBy(0, -12); else if (t.clientY > window.innerHeight - 60) window.scrollBy(0, 12);
+    };
+    const ende = () => {
+      const l = lassoRef.current;
+      if (!l) return;
+      lassoRef.current = null; clearTimeout(l.timer);
+      if (!l.aktiv) return;
+      setLasso(null);
+      if (!l.ids.length) return;
+      auswahlTafelRef.current = l.art;   // die Tafel geht mit der übernommenen Auswahl auf (Effekt)
+      setze(l.art, l.ids);
+    };
+    document.addEventListener("touchstart", start, { passive: true });
+    window.addEventListener("touchmove", bewegen, { passive: false });
+    window.addEventListener("touchend", ende);
+    window.addEventListener("touchcancel", ende);
+    return () => {
+      document.removeEventListener("touchstart", start);
+      window.removeEventListener("touchmove", bewegen);
+      window.removeEventListener("touchend", ende);
+      window.removeEventListener("touchcancel", ende);
+    };
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const quizListenKey = quizTabListen.join(",");
   // Spalten-Konfiguration an neu gewählte Listen anpassen: Spalten, die dort fehlen,
@@ -2346,11 +2470,27 @@ export default function VokabelApp() {
     speichereIndex(platziereGruppe(lsGet(SK.listenIndex, []), ids, ziel), einstNeu);
     setListenAuswahl([]);
   }
-  // Gezogener Eintrag: ist er markiert, wandert die ganze markierte Gruppe mit
-  function setzeGezogen(d, ziel) {
+  // Gezogener Eintrag: ist er markiert, wandert die ganze markierte Gruppe mit.
+  // Ziel „raus“: aus der geöffneten Gruppe; lange genug über einer Kachel gehalten: Gruppe bilden
+  function legeGezogenAb(d, ziel) {
+    const gruppe = gruppenZielRef.current === ziel;
+    gruppenZielRef.current = null;
     const ausw = rasterAuswahlRef.current[d.art === "liste" ? "liste" : "slot"];
     const ids = ausw.includes(d.id) ? ausw : [d.id];
-    (d.art === "liste" ? setzeListenPlaetze : setzeSlotPlaetze)(ids, ziel);
+    if (ziel === "raus") { if (d.art !== "liste" && slotOrdnerRef.current) verschiebeInOrdner(ids, null); return; }
+    const [z, sp] = ziel.split("|").map(Number);
+    if (gruppe && d.art !== "liste") { gruppiere(ids, { z, s: sp }); return; }
+    (d.art === "liste" ? setzeListenPlaetze : setzeSlotPlaetze)(ids, { z, s: sp });
+  }
+  // Auswahl-Tafel zeigen bzw. aktualisieren (Inhalt aus dem letzten Render)
+  function zeigeAuswahlTafel(art) {
+    const d = auswahlTafelDaten.current[art]?.();
+    if (!d) return;
+    auswahlTafelRef.current = art;
+    zeigeInfo(d.text, null, null, d.aktionen, { auswahl: auswahlTafel(art) });   // Stelle des Lang-Drucks bleibt (für „🎨 Farbe ändern“)
+  }
+  function auswahlTafel(art) {
+    return { zu: behalten => { auswahlTafelRef.current = null; if (!behalten) (art === "liste" ? setListenWahl : setMultiAuswahl)(null); } };
   }
   function listenKopieName(name) {
     const namen = new Set(listenIndex.map(l => l.name.toLowerCase()));
@@ -3264,36 +3404,46 @@ export default function VokabelApp() {
     const data = rasterEinordnen(getSlotsData(), einstNeu);
     const ordnerId = slotOrdnerRef.current;
     const ebene = ebeneVon(data, ordnerId);
-    // Sessions auf eine Gruppen-Kachel gezogen → in diese Gruppe
-    const imZiel = ebene.find(e => e.platz && e.platz.z === ziel.z && e.platz.s === ziel.s);
-    if (imZiel?.istOrdner && !ids.includes(imZiel.id) && ids.every(id => !ebene.find(e => e.id === id)?.istOrdner)) { verschiebeInOrdner(ids, imZiel.id); return; }
     setSlotsData(rasterEinordnen(setzeEbene(data, platziereGruppe(ebene, ids, ziel)), einstNeu));
     setSlotAuswahl([]);
   }
   // Sessions in eine Gruppe (oder mit null heraus auf die oberste Ebene); sie kommen dort ans Ende
   function verschiebeInOrdner(ids, ordnerId) {
     const data = getSlotsData(), set = new Set(ids);
+    const quellen = data.gespeichert.filter(x => set.has(x.id) && x.ordner && x.ordner !== ordnerId).map(x => x.ordner);
     const gespeichert = data.gespeichert.map(x => {
       if (!set.has(x.id)) return x;
       const { platz: _p, ordner: _o, ...r } = x;   // eslint-disable-line no-unused-vars
       return ordnerId ? { ...r, ordner: ordnerId } : r;
     });
-    setSlotsData(rasterEinordnen({ ...data, gespeichert }));
+    setSlotsData(rasterEinordnen(loeseKleineGruppen({ ...data, gespeichert }, quellen)));
     setMultiAuswahl(null); setSlotSortModus(false); setSlotAuswahl([]); setInGruppe(null);
   }
   // neue Gruppe aus Sessions: die Gruppe nimmt den Platz der ersten Session ein
   function legeOrdnerAn(name, ids) {
     const data = rasterEinordnen(getSlotsData()), set = new Set(ids), id = neuerSlotId("ordner");
     const erste = data.gespeichert.find(x => x.id === ids[0] && !x.ordner);
+    const quellen = data.gespeichert.filter(x => set.has(x.id) && x.ordner).map(x => x.ordner);
     const gespeichert = data.gespeichert.map(x => {
       if (!set.has(x.id)) return x;
       const { platz: _p, ordner: _o, ...r } = x;   // eslint-disable-line no-unused-vars
       return { ...r, ordner: id };
     });
     const ordner = [...(data.ordner || []), { id, name: name.trim() || "Gruppe", ...(erste?.platz ? { platz: erste.platz } : {}) }];
-    setSlotsData(rasterEinordnen({ ...data, ordner, gespeichert }));
+    setSlotsData(rasterEinordnen(loeseKleineGruppen({ ...data, ordner, gespeichert }, quellen)));
     setMultiAuswahl(null); setSlotSortModus(false); setSlotAuswahl([]); setInGruppe(null);
     return id;
+  }
+  // Gezogene Sessions auf eine Session (neue Gruppe aus allen, an deren Platz) bzw. in eine Gruppe
+  function gruppiere(ids, ziel) {
+    const data = rasterEinordnen(getSlotsData());
+    const ebene = ebeneVon(data, null);
+    const imZiel = ebene.find(e => e.platz && e.platz.z === ziel.z && e.platz.s === ziel.s);
+    const sessions = ids.filter(id => data.gespeichert.some(x => x.id === id));
+    if (!imZiel || !sessions.length || sessions.includes(imZiel.id)) { setzeSlotPlaetze(ids, ziel); return; }
+    if (imZiel.istOrdner) { verschiebeInOrdner(sessions, imZiel.id); return; }
+    const alle = [imZiel.id, ...sessions];
+    legeOrdnerAn(gruppenName(alle.map(id => data.gespeichert.find(x => x.id === id)?.name || ""), (data.ordner || []).map(o => o.name)), alle);
   }
   // Gruppe auflösen: Sessions zurück auf die oberste Ebene (die erste auf den Platz der Gruppe)
   function loeseOrdnerAuf(id) {
@@ -3705,7 +3855,9 @@ export default function VokabelApp() {
 
   function loescheSlotEintrag(typ, id) {
     const data = getSlotsData();
-    const updated = { ...data, [typ]: data[typ].filter(s => s.id !== id) };
+    const oid = data[typ].find(s => s.id === id)?.ordner;
+    let updated = { ...data, [typ]: data[typ].filter(s => s.id !== id) };
+    if (oid) updated = rasterEinordnen(loeseKleineGruppen(updated, [oid]));
     setSlotsData(updated);
     if (lsGet(SK.letzterSlot) === id) lsDel(SK.letzterSlot);
     if (aktiverSlot?.typ === typ && aktiverSlot?.id === id) {
@@ -4910,7 +5062,7 @@ export default function VokabelApp() {
       { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
       { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
       ...(gefiltert ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenSortModus(true); setListenAuswahl([l.id]); } }]),
-      { label: "☑ Auswählen", fn: () => { setListenSortModus(false); setListenWahl([l.id]); } },
+      { label: "☑ Auswählen", behalten: true, fn: () => { setListenSortModus(false); setListenWahl([l.id]); } },
       { label: "▦ In Sessions aufteilen", fn: () => starteAufteilen(l.id) },
       { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },
       { label: "🗑 Löschen", gefahr: true, fn: () => { setListeMenueId(l.id); setModal("loeschen"); } },
@@ -4918,30 +5070,38 @@ export default function VokabelApp() {
     // Auswahl-Modus: Aktionen für die Auswahl (Lang-Druck auf eine nicht gewählte Liste nimmt sie dazu)
     const wahlMit = l => listenWahl.includes(l.id) ? listenWahl : [...listenWahl, l.id];
     const wahlMenue = ids => [
-      { label: "JSON exportieren", fn: () => exportiereAlsJson(ids) },
-      { label: "TXT exportieren", fn: () => oeffneDateiExport({ art: "txt", ids }, exportStandardName(ids, "TXT")) },
-      { label: "📋 Kopieren", fn: () => kopiereListen(ids) },
+      { label: "JSON exportieren", behalten: true, fn: () => exportiereAlsJson(ids) },
+      { label: "TXT exportieren", behalten: true, fn: () => oeffneDateiExport({ art: "txt", ids }, exportStandardName(ids, "TXT")) },
+      { label: "📋 Kopieren", behalten: true, fn: () => kopiereListen(ids) },
       ...(gefiltert ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl(ids); } }]),
       { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "liste", ids }) },
       { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) },
     ];
     const wahlNamen = ids => ids.map(id => listenIndex.find(x => x.id === id)?.name).filter(Boolean).join(", ");
+    // Auswahl-Tafel: eine Liste → ihr Menü, mehrere → Aktionen für die Auswahl
+    const tafelInhalt = ids => {
+      const l = ids.length === 1 && listenIndex.find(x => x.id === ids[0]);
+      if (l) return { text: l.name, aktionen: menue(l) };
+      return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: wahlMenue(ids) } : { text: "Nichts ausgewählt – Listen antippen", aktionen: [] };
+    };
+    auswahlTafelDaten.current.liste = () => listenWahl && tafelInhalt(listenWahl);
     const zelle = (l, key) => {
       const anzahl = vokabelAnzahl(l.id);
       const liste = lsGet(SK.liste(l.id));
       const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
       const ziel = slotDragZiel === key && slotDragId && slotDragId !== l.id;
       const ziehen = gefiltert ? undefined : (px, py) => { slotZiehenRef.current = { art: "liste", id: l.id, x: px, y: py, aktiv: false, langdruck: true }; };
-      const erklaerung = listenWahl ? tt(`${l.name} – antippen: auswählen oder abwählen; lang drücken: Aktionen für die Auswahl (Export, Verschieben, Löschen)`, wahlMenue(wahlMit(l)),
-          { langText: `${wahlMit(l).length} ausgewählt: ${wahlNamen(wahlMit(l))}`, beimMenue: () => setListenWahl(a => a && !a.includes(l.id) ? [...a, l.id] : a), beimZeigen: ziehen })
-        : sortModus ? tt(`${l.name} – antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen – markierte wandern zusammen`)
-        : tt("Liste öffnen: Vokabeln, Spalten, Sprache, Export", menue(l), { langText: l.name,
-            // Lang-Druck und dann ziehen: Menü weg, Verschieben-Modus, Liste wandert mit
-            beimZeigen: gefiltert ? undefined : (px, py) => { slotZiehenRef.current = { art: "liste", id: l.id, x: px, y: py, aktiv: false, langdruck: true }; } });
+      // Lang-Druck: Liste kommt in die Auswahl, die Tafel bleibt unten offen (weitere antippen wählt mit aus);
+      // Lang-Druck und dann ziehen: Tafel weg, Verschieben-Modus, (ausgewählte) Listen wandern mit
+      const tafel = tafelInhalt(listenWahl ? wahlMit(l) : [l.id]);
+      const erklaerung = sortModus && !listenWahl ? tt(`${l.name} – antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen – markierte wandern zusammen`)
+        : tt(listenWahl ? `${l.name} – antippen: auswählen oder abwählen; lang drücken: Aktionen für die Auswahl (Export, Verschieben, Löschen)` : "Liste öffnen: Vokabeln, Spalten, Sprache, Export",
+          tafel.aktionen, { langText: tafel.text, auswahl: auswahlTafel("liste"), beimZeigen: ziehen,
+            beimMenue: () => { auswahlTafelRef.current = "liste"; setListenSortModus(false); setListenWahl(a => a ? (a.includes(l.id) ? a : [...a, l.id]) : [l.id]); } });
       return (
-        <div {...erklaerung} key={key} data-raster-zelle={gefiltert ? undefined : key} data-liste-id={l.id} className="karte-zeile"
+        <div {...erklaerung} key={key} data-raster-zelle={gefiltert ? undefined : key} data-liste-id={l.id} data-auswahl-durchlass className="karte-zeile"
           style={{cursor: sortModus ? "grab" : "pointer", ...(sortModus ? {touchAction:"none"} : {}),
-            ...((listenAuswahl.includes(l.id) && sortModus) || listenWahl?.includes(l.id) ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {}),
+            ...((listenAuswahl.includes(l.id) && sortModus) || listenWahl?.includes(l.id) || (lasso?.art === "liste" && lasso.ids.includes(l.id)) ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {}),
             ...(slotDragId && (slotDragId === l.id || (listenAuswahl.includes(slotDragId) && listenAuswahl.includes(l.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
             ...(ziel ? {outline:"3px solid var(--haupt-hell)", outlineOffset:1} : {}), position:"relative"}}
           onPointerDown={sortModus ? (e => { slotZiehenRef.current = { art: "liste", id: l.id, x: e.clientX, y: e.clientY, aktiv: false }; }) : undefined}
@@ -5000,14 +5160,14 @@ export default function VokabelApp() {
               : <><b data-wahl-anzahl={listenWahl.length}>☑ {listenWahl.length} ausgewählt</b> – antippen wählt aus oder ab, lang drücken: JSON, TXT, Kopieren{gefiltert ? "" : ", Verschieben"}, Löschen.</>)
             : sortModus
             ? (listenAuswahl.length ? `${listenAuswahl.length} markiert – freien Platz antippen (dort untereinander) oder ziehen.` : "Listen antippen zum Markieren, dann freien Platz antippen – oder direkt ziehen. Belegter Platz: Einträge rücken auf die frei gewordenen Plätze.")
-            : gefiltert ? "Lang drücken: umbenennen, duplizieren, auswählen (Export, mehrere löschen) oder löschen · Verschieben unter „Alle“"
-            : "Lang drücken: umbenennen, duplizieren, verschieben, auswählen (Export, mehrere löschen) oder löschen"}
+            : gefiltert ? "Lang drücken: Menü, danach weitere antippen wählt mehrere aus · freie Stelle lang drücken und ziehen sammelt ein · Verschieben unter „Alle“"
+            : "Lang drücken: Menü, danach weitere antippen wählt mehrere aus · freie Stelle lang drücken und ziehen sammelt ein"}
         </span>
         {listenWahl && (<span style={{marginLeft:"auto", display:"flex", gap:6, flexShrink:0}}>
-          <button className="typ-btn" data-wahl-alle style={{fontSize:"0.7rem", padding:"2px 8px"}}
+          <button className="typ-btn" data-wahl-alle data-auswahl-durchlass style={{fontSize:"0.7rem", padding:"2px 8px"}}
             onClick={() => setListenWahl(a => [...a, ...sichtbareListen.map(x => x.id).filter(id => !a.includes(id))])}
             {...tt("Alle sichtbaren Listen auswählen")}>Alle</button>
-          <button className="typ-btn aktiv" data-wahl-fertig style={{fontSize:"0.7rem", padding:"2px 8px"}} onClick={() => setListenWahl(null)}
+          <button className="typ-btn aktiv" data-wahl-fertig data-auswahl-durchlass style={{fontSize:"0.7rem", padding:"2px 8px"}} onClick={() => setListenWahl(null)}
             {...tt("Auswahl beenden")}>Fertig</button>
         </span>)}
         {sortModus && (
@@ -5018,7 +5178,7 @@ export default function VokabelApp() {
           </button>
         )}
       </div>
-      <div className={`listen-raster${eng ? " eng" : ""}`} style={{gridTemplateColumns:`repeat(${groesse.spalten}, minmax(0, 1fr))`}}>
+      <div className={`listen-raster${eng ? " eng" : ""}`} data-lasso={sortModus ? undefined : "liste"} style={{gridTemplateColumns:`repeat(${groesse.spalten}, minmax(0, 1fr))`}}>
         {zellen}
       </div>
     </>);
@@ -5159,6 +5319,26 @@ export default function VokabelApp() {
       { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) },
     ];
     const wahlNamen = ids => ids.map(id => slots.gespeichert.find(g => g.id === id)?.name).filter(Boolean).join(", ");
+    const einzelMenue = x => [
+      { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
+      { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: x.id, name: kopieName(x.name), kopie: true }) },
+      { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl([x.id]); } },
+      { label: "☑ Auswählen", behalten: true, fn: () => { setSlotSortModus(false); setMultiAuswahl([x.id]); } },
+      { label: "📁 In Gruppe…", fn: () => setInGruppe({ ids: [x.id], name: "" }) },
+      ...(ordnerOffen ? [{ label: "↑ Aus der Gruppe", fn: () => verschiebeInOrdner([x.id], null) }] : []),
+      { label: "📝 Listen/Vokabeln ändern", fn: () => { if (slotRef?.id !== x.id) onLaden('gespeichert', x.id); setListenAendern(true); setSlotSektionAufgeklappt(false); } },
+      { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
+    ];
+    // Auswahl-Tafel: eine Session → ihr Menü, mehrere → Aktionen für die Auswahl
+    const tafelInhalt = ids => {
+      const x = ids.length === 1 && slots.gespeichert.find(g => g.id === ids[0]);
+      if (x) return { text: x.name, aktionen: einzelMenue(x) };
+      return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: wahlMenue(ids) } : { text: "Nichts ausgewählt – Sessions antippen", aktionen: [] };
+    };
+    auswahlTafelDaten.current.slot = () => multiAuswahl && tafelInhalt(multiAuswahl);
+    // Ziehen: diese Kacheln wandern mit; über einer anderen verweilen bildet eine Gruppe (nur oberste Ebene, keine Gruppen in Gruppen)
+    const ziehIds = slotDragId ? (slotAuswahl.includes(slotDragId) ? slotAuswahl : [slotDragId]) : [];
+    const gruppierbar = !!slotDragId && !ordnerOffen && ziehIds.every(id => !(slots.ordner || []).some(o => o.id === id));
     const tippeImRaster = (x, platz) => {
       if (slotGezogenRef.current) { slotGezogenRef.current = false; return; }
       if (x) { setSlotAuswahl(a => a.includes(x.id) ? a.filter(v => v !== x.id) : [...a, x.id]); return; }
@@ -5175,6 +5355,7 @@ export default function VokabelApp() {
           ? (kinder.length ? Math.round(kinder.reduce((a, k) => a + lernstand(k).uebersetzung.pct, 0) / kinder.length) : 0)
           : Math.round(lernstand(x).uebersetzung.pct);
         const multiNr = multiAuswahl ? multiAuswahl.indexOf(x.id) + 1 : 0;
+        const verweilen = ziel && gruppierbar && !ziehIds.includes(x.id);
         const inhalt = (<>
           <span className="raster-name">{x.istOrdner && <span aria-hidden="true">📁 </span>}{x.multi && <span aria-hidden="true">🧩 </span>}{x.name}{x.istOrdner && <span className="ordner-anzahl" data-ordner-anzahl={kinder.length}> · {kinder.length}</span>}</span>
           <span className="raster-fuss" data-kachel-balken={pct} {...ttFeld(`Lernfortschritt Übersetzung: ${pct} %`)}>
@@ -5194,6 +5375,11 @@ export default function VokabelApp() {
             {...tt(`${x.name} – antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen – markierte wandern zusammen`)}>
             {inhalt}
             {slotAuswahl.includes(x.id) && <span className="auswahl-nr" data-auswahl-nr>{slotAuswahl.indexOf(x.id) + 1}</span>}
+            {verweilen ? (
+              <span className={`gruppen-ring${gruppenZiel === key ? " fertig" : ""}`} data-gruppen-ring={gruppenZiel === key ? "fertig" : "laeuft"}>
+                <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15"/></svg><span>📁</span>
+              </span>
+            ) : null}
           </button>
         ) : x.istOrdner ? (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-ordner-id={x.id}
@@ -5212,27 +5398,23 @@ export default function VokabelApp() {
             {null}
           </button>
         ) : (
-          <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-multi-nr={multiNr || undefined}
+          <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-multi-nr={multiNr || undefined} data-auswahl-durchlass
             className={`slot-chip belegt raster-chip${!multiAuswahl && slotRef?.typ === "gespeichert" && slotRef?.id === x.id ? " aktiv-kachel" : ""}`}
-            style={{...chipStil('gespeichert', x.id, slotRef), position:"relative", ...(multiNr ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {})}}
+            style={{...chipStil('gespeichert', x.id, slotRef), position:"relative", ...(multiNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {})}}
             onClick={() => multiAuswahl
               ? setMultiAuswahl(a => a.includes(x.id) ? a.filter(v => v !== x.id) : [...a, x.id])
               : onLaden('gespeichert', x.id)}
-            {...tt(multiAuswahl
+            {...(() => {
+              // Lang-Druck: Session kommt in die Auswahl, die Tafel bleibt unten offen (weitere antippen wählt mit aus)
+              const tafel = tafelInhalt(multiAuswahl ? wahlMit(x) : [x.id]);
+              return tt(multiAuswahl
               ? `${x.name} – antippen: auswählen oder abwählen; lang drücken: Aktionen für die Auswahl (Multiquiz, Verschieben, Löschen)`
-              : `${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`, multiAuswahl ? wahlMenue(wahlMit(x)) : [
-              { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
-              { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: x.id, name: kopieName(x.name), kopie: true }) },
-              { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl([x.id]); } },
-              { label: "☑ Auswählen", fn: () => { setSlotSortModus(false); setMultiAuswahl([x.id]); } },
-              { label: "📁 In Gruppe…", fn: () => setInGruppe({ ids: [x.id], name: "" }) },
-              ...(ordnerOffen ? [{ label: "↑ Aus der Gruppe", fn: () => verschiebeInOrdner([x.id], null) }] : []),
-              { label: "📝 Listen/Vokabeln ändern", fn: () => { if (slotRef?.id !== x.id) onLaden('gespeichert', x.id); setListenAendern(true); setSlotSektionAufgeklappt(false); } },
-              { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
-            ], { langText: multiAuswahl ? `${wahlMit(x).length} ausgewählt: ${wahlNamen(wahlMit(x))}` : x.name,
-                 beimMenue: multiAuswahl ? () => setMultiAuswahl(a => a && !a.includes(x.id) ? [...a, x.id] : a) : undefined,
-                 // Lang-Druck und dann ziehen: Menü weg, Verschieben-Modus, Eintrag wandert mit
-                 beimZeigen: (px, py) => { slotZiehenRef.current = { id: x.id, x: px, y: py, aktiv: false, langdruck: true }; } })}>
+              : `${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`, tafel.aktionen,
+               { langText: tafel.text, auswahl: auswahlTafel("slot"),
+                 beimMenue: () => { auswahlTafelRef.current = "slot"; setSlotSortModus(false); setMultiAuswahl(a => a ? (a.includes(x.id) ? a : [...a, x.id]) : [x.id]); },
+                 // Lang-Druck und dann ziehen: Tafel weg, Verschieben-Modus, (ausgewählte) Einträge wandern mit
+                 beimZeigen: (px, py) => { slotZiehenRef.current = { id: x.id, x: px, y: py, aktiv: false, langdruck: true }; } });
+            })()}>
             {inhalt}
             {multiNr ? <span className="auswahl-nr">{multiNr}</span> : null /* gleiche Kind-Struktur wie im Verschieben-Modus (Markierungsnummer) – sonst baut React den Inhalt neu auf und ein laufendes Ziehen verliert den Finger */}
           </button>
@@ -5255,18 +5437,20 @@ export default function VokabelApp() {
         <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6, minHeight:22}}>
           {ordnerOffen ? (
             <span data-ordner-pfad style={{display:"flex", alignItems:"center", gap:6, minWidth:0}}>
-              <button className="typ-btn" data-ordner-zurueck style={{fontSize:"0.75rem", padding:"3px 9px"}} onClick={() => { setSlotOrdner(null); setSlotSortModus(false); setSlotAuswahl([]); }}
-                {...tt("Zurück zu allen Sessions")}>← Alle Sessions</button>
+              <button className="typ-btn" data-ordner-zurueck data-raus-ziel={slotDragZiel === "raus" ? "" : undefined}
+                style={{fontSize:"0.75rem", padding:"3px 9px", ...(slotDragZiel === "raus" && slotDragId ? {outline:"3px solid var(--haupt-hell)", outlineOffset:1} : {})}}
+                onClick={() => { setSlotOrdner(null); setSlotSortModus(false); setSlotAuswahl([]); }}
+                {...tt("Zurück zu allen Sessions – Sessions hierher ziehen nimmt sie aus der Gruppe")}>← Alle Sessions</button>
               <span style={{...label, color:"var(--text2)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>› 📁 {ordnerOffen.name}</span>
             </span>
           ) : <span style={label}>📌 Gespeichert</span>}
           <span className="slot-kopf-knoepfe" style={{marginLeft:"auto", display:"flex", gap:6, alignItems:"center"}}>
             {!slotSortModus && !multiAuswahl && neuChip}
             {multiAuswahl && (<>
-              <button className="typ-btn" data-wahl-alle style={{fontSize:"0.7rem", padding:"2px 8px"}}
+              <button className="typ-btn" data-wahl-alle data-auswahl-durchlass style={{fontSize:"0.7rem", padding:"2px 8px"}}
                 onClick={() => setMultiAuswahl(a => [...a, ...sichtbar.map(x => x.id).filter(id => !a.includes(id))])}
                 {...tt("Alle sichtbaren Konfigurationen auswählen")}>Alle</button>
-              <button className="typ-btn aktiv" data-wahl-fertig style={{fontSize:"0.7rem", padding:"2px 8px"}} onClick={() => setMultiAuswahl(null)}
+              <button className="typ-btn aktiv" data-wahl-fertig data-auswahl-durchlass style={{fontSize:"0.7rem", padding:"2px 8px"}} onClick={() => setMultiAuswahl(null)}
                 {...tt("Auswahl beenden")}>Fertig</button>
             </>)}
             {slotSortModus && (
@@ -5279,7 +5463,7 @@ export default function VokabelApp() {
           </span>
         </div>
         {!slotSortModus && !multiAuswahl && raster.gespeichert.length > 0 && (
-          <div style={{fontSize:"0.68rem", color:"var(--text3)", marginBottom:6}}>Lang drücken: umbenennen, verschieben, auswählen (Multiquiz, mehrere löschen) oder löschen</div>
+          <div style={{fontSize:"0.68rem", color:"var(--text3)", marginBottom:6}}>Lang drücken: Menü, danach weitere antippen wählt mehrere aus · freie Stelle lang drücken und ziehen sammelt ein · beim Ziehen 2,5 s auf einer Session halten: Gruppe</div>
         )}
         {multiAuswahl && <div data-wahl-hinweis style={{fontSize:"0.72rem", color:"var(--text2)", marginBottom:6}}>
           <b data-wahl-anzahl={multiAuswahl.length}>☑ {multiAuswahl.length} ausgewählt</b>
@@ -5287,9 +5471,10 @@ export default function VokabelApp() {
         </div>}
         {slotSortModus && <div style={{fontSize:"0.72rem", color:"var(--text2)", marginBottom:6}}>
           {slotAuswahl.length ? `${slotAuswahl.length} markiert – freien Platz antippen (dort untereinander) oder ziehen.` : "Pakete antippen zum Markieren, dann freien Platz antippen – oder direkt ziehen. Belegter Platz: Einträge rücken auf die frei gewordenen Plätze."}
+          {ordnerOffen ? " Auf „← Alle Sessions“ ziehen: aus der Gruppe." : " Beim Ziehen 2,5 s über einer Session oder Gruppe halten: Gruppe."}
         </div>}
         {zellen.length > 0 && (
-          <div className="slot-raster" style={{gridTemplateColumns:`repeat(${groesse.spalten}, minmax(0, 1fr))`}}>
+          <div className="slot-raster" data-lasso={slotSortModus ? undefined : "slot"} style={{gridTemplateColumns:`repeat(${groesse.spalten}, minmax(0, 1fr))`}}>
             {zellen}
           </div>
         )}

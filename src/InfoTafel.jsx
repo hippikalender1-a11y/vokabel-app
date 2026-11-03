@@ -32,7 +32,8 @@ export default function InfoTafel() {
   useEffect(() => {
     const zeigen = e => {
       if (fingerAufRef.current > 0) haltenRef.current = true;
-      setInfo(e.detail);
+      // Auswahl-Tafel aktualisiert (ohne Stelle): Stelle des Lang-Drucks behalten
+      setInfo(alt => e.detail.x == null && alt ? { ...e.detail, x: alt.x, y: alt.y } : e.detail);
     };
     const umschalten = () => setModus(m => !m);
     const schliessen = () => setInfo(null);
@@ -58,6 +59,13 @@ export default function InfoTafel() {
       // Nachzügler-Klick vom Loslassen des Lang-Drucks: verschlucken, Tafel bleibt offen
       if (info && (haltenRef.current || Date.now() < sperreBisRef.current)) { e.preventDefault(); e.stopPropagation(); return; }
       if (e.target.closest("[data-info-schalter]") || e.target.closest("[data-info-aktion]") || e.target.closest("[data-info-farbe]")) return;
+      // Auswahl-Tafel: Kacheln wählen weiter aus, die Tafel selbst beendet die Auswahl, sonst passiert nichts
+      if (info?.auswahl) {
+        if (e.target.closest("[data-auswahl-durchlass]")) return;
+        e.preventDefault(); e.stopPropagation();
+        if (e.target.closest("[data-info-blase]")) { setInfo(null); info.auswahl.zu?.(false); }
+        return;
+      }
       const el = modus ? e.target.closest("[data-info]") : null;
       if (el) {
         e.preventDefault(); e.stopPropagation();
@@ -74,36 +82,38 @@ export default function InfoTafel() {
 
   // Sprechblase an der Fingerstelle: knapp darüber, bei zu wenig Platz oben knapp darunter.
   // Menü-Knöpfe (aktionen) schweben getrennt unter der Blase.
-  const breite = Math.min(300, window.innerWidth - 24);
-  const links = info ? Math.max(12, Math.min(info.x - breite / 2, window.innerWidth - breite - 12)) : 0;
+  // Auswahl-Tafel: unten angedockt, damit die Kacheln darüber antippbar bleiben
+  const unten = !!info?.auswahl;
+  const breite = unten ? Math.min(480, window.innerWidth - 24) : Math.min(300, window.innerWidth - 24);
+  const links = unten ? (window.innerWidth - breite) / 2 : info ? Math.max(12, Math.min(info.x - breite / 2, window.innerWidth - breite - 12)) : 0;
   // Menü: Aktionen des Elements, dazu „🎨 Farbe ändern“ (startet den Farbmodus an dieser Stelle)
-  const menue = info ? [...(info.aktionen || []), ...(!modus && farbeImMenueAn() ? [{ label: "🎨 Farbe ändern", farbe: true, fn: () => farbeHier(info.x, info.y) }] : [])] : [];
+  const menue = info ? [...(info.aktionen || []), ...(!modus && farbeImMenueAn() && info.x != null ? [{ label: "🎨 Farbe ändern", farbe: true, fn: () => farbeHier(info.x, info.y) }] : [])] : [];
   const mitMenue = menue.length > 0;
   const darueber = info && info.y > (mitMenue ? 330 : 150);
   return (
     <>
       {info && (
-        <div style={{
+        <div data-auswahl-tafel={unten ? "" : undefined} style={{
           position: "fixed", left: links, width: breite, zIndex: 10001,
-          top: darueber ? info.y - 14 : info.y + 14,
-          transform: darueber ? "translateY(-100%)" : "none",
-          display: "flex", flexDirection: "column", gap: 10,
+          ...(unten ? { bottom: 12 } : { top: darueber ? info.y - 14 : info.y + 14, transform: darueber ? "translateY(-100%)" : "none" }),
+          display: "flex", flexDirection: "column", gap: unten ? 8 : 10,
           fontFamily: "system-ui,sans-serif",
         }}>
-          <div role="status" style={{
-            background: "rgba(28,24,20,0.95)", color: "var(--auf-haupt)", borderRadius: 14,
+          <div role="status" data-info-blase style={{
+            background: "rgba(28,24,20,0.95)", color: "var(--auf-haupt)", borderRadius: 14, cursor: unten ? "pointer" : undefined,
             padding: "12px 14px 8px", boxShadow: "0 6px 24px rgba(0,0,0,0.3)", boxSizing: "border-box",
           }}>
             <div style={{ fontSize: mitMenue ? "1.05rem" : "0.95rem", fontWeight: mitMenue ? 700 : 400, lineHeight: 1.5, overflowWrap: "anywhere" }}>{info.text}</div>
-            <div style={{ fontSize: "0.7rem", color: "var(--text4)", textAlign: "right", marginTop: 6 }}>Antippen zum Schließen</div>
+            <div style={{ fontSize: "0.7rem", color: "var(--text4)", textAlign: "right", marginTop: 6 }}>{unten ? "Weitere antippen wählt mit aus · hier antippen: Auswahl beenden" : "Antippen zum Schließen"}</div>
           </div>
           {mitMenue && (
-            <div data-info-menue style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div data-info-menue style={{ display: "flex", flexDirection: unten ? "row" : "column", flexWrap: unten ? "wrap" : undefined, gap: unten ? 6 : 8 }}>
               {menue.map(a => (
-                <button key={a.label} data-info-aktion={a.farbe ? undefined : a.label} data-info-farbe={a.farbe ? "" : undefined} onClick={() => { setInfo(null); a.fn(); }} style={{
+                <button key={a.label} data-info-aktion={a.farbe ? undefined : a.label} data-info-farbe={a.farbe ? "" : undefined}
+                  onClick={() => { setInfo(null); info.auswahl?.zu?.(!!a.behalten); a.fn(); }} style={{
                   background: "var(--karte)", color: a.gefahr ? "var(--falsch)" : a.farbe ? "var(--text2)" : "var(--haupt)", textAlign: "left", whiteSpace: "nowrap",
-                  border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: "11px 18px",
-                  fontSize: "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: "pointer",
+                  border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: unten ? "8px 12px" : "11px 18px",
+                  fontSize: unten ? "0.85rem" : "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: "pointer",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.22)",
                 }}>{a.label}</button>
               ))}

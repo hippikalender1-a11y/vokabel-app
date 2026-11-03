@@ -1841,6 +1841,21 @@ GEPLANT (mit Nutzer abgestimmt, alle erledigt): (erledigt: 2) Einstellungen neu 
   aus Listen“ mit Eine Session / Mehrere Sessions (Aufteilen mit Bereich). 4) Session-Gruppen als Ordner (Kachel
   öffnet, „← Alle Sessions › Gruppe“; anlegen per Ziehen aufeinander oder Auswahl → In Gruppe…; Lang-Druck:
   Umbenennen, Auflösen, Multiquiz, Farbe; auch im Statistik-Tab; Aufteilen legt optional eine Gruppe an).
+GRUPPEN-GESTEN (Feedback zu Schritt 4): Lang-Druck auf eine Kachel (Sessions + Listen) nimmt sie in die Auswahl
+  (multiAuswahl / listenWahl) und öffnet die AUSWAHL-TAFEL: zeigeInfo(…, { auswahl: { zu(behalten) } }) → InfoTafel
+  unten angedockt (data-auswahl-tafel); Klicks nur auf [data-auswahl-durchlass] (Kacheln, Alle, Fertig) gehen durch,
+  Tippen auf die Blase (data-info-blase) beendet die Auswahl, alles andere wird verschluckt. Inhalt: eine Kachel →
+  ihr Menü, mehrere → Aktionen der Auswahl (tafelInhalt; auswahlTafelDaten-Ref aus dem Render, Effekt aktualisiert
+  bei Auswahl-Änderung, Stelle des Lang-Drucks bleibt für „🎨 Farbe ändern“). Menü-Einträge mit behalten: true
+  („☑ Auswählen“, Export, Kopieren) schließen die Tafel, Auswahl bleibt (alter Auswahl-Modus mit Fertig).
+  EINSAMMELN: Lang-Druck (500 ms) auf freie Stelle in [data-lasso] + ziehen → lasso-State markiert, beim Loslassen
+  übernommen (Raster springt nicht), dann Tafel. GRUPPE PER VERWEILEN: beim Ziehen GRUPPE_VERWEILEN_MS = 2500 über
+  einer Session/Gruppe (nur oberste Ebene, keine Gruppen in Gruppen) → Ring (.gruppen-ring, data-gruppen-ring
+  laeuft|fertig), gruppenZielRef; Loslassen → gruppiere(): auf Session = neue Gruppe (gruppenName: gemeinsamer
+  Namensanfang, sonst „Gruppe n“) am Platz der Ziel-Session, auf Gruppe = hinein; schnell loslassen tauscht wie
+  bisher. Auf „← Alle Sessions“ ziehen (zielUnter → "raus") nimmt aus der Gruppe. loeseKleineGruppen: Gruppe mit
+  ≤ 1 Session löst sich nach Herausnehmen/Löschen auf. Gruppen-Kachel als Stapel (zwei Kartenkanten).
+  Test: e2e/gruppen_gesten.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

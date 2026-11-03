@@ -101,7 +101,7 @@ ok(await page.evaluate(() => getComputedStyle(document.querySelector(".slot-rast
 ok(await page.evaluate(() => { const neu = document.querySelector("[data-neue-session]"); return !!neu && !neu.closest(".slot-raster"); }),
   "„＋ Neue Session aus Listen“ oben, nicht im Raster");
 t = await page.evaluate(() => document.body.innerText);
-ok(!t.includes("⇄ Verschieben") && /Lang drücken: umbenennen, verschieben, auswählen \(Multiquiz, mehrere löschen\) oder löschen/.test(t) && !(await page.$("svg + svg")),
+ok(!t.includes("⇄ Verschieben") && /Lang drücken: Menü, danach weitere antippen wählt mehrere aus/.test(t) && !(await page.$("svg + svg")),
   "Kein Verschieben-Knopf mehr, stattdessen Hinweis auf den Lang-Druck");
 // Lang-Druck (am Rechner: Rechtsklick) → Erklärung mit Menü
 const menue = async key => { await page.evaluate(k => { const el = document.querySelector(`[data-raster-zelle="${k}"]`); const r = el.getBoundingClientRect();

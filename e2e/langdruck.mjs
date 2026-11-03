@@ -55,9 +55,12 @@ const getrennt = await page.evaluate(() => { const m = document.querySelector("[
 console.log("     Erklärung:", blase);
 ok(blase === "Unregelmäßige Verben Kapitel 3 – Wiederholung", "Lang-Druck zeigt den vollen Namen");
 ok(getrennt, "Menü-Knöpfe schweben getrennt von der Erklärung");
-// Tipp daneben schließt
+// Auswahl-Tafel: Tipp daneben bewirkt nichts, Tipp auf die Tafel schließt
 await page.touchscreen.tap(8, 640); await sleep(300);
-ok(!(await page.$('[role="status"]')) && !(await page.$("[data-info-menue]")), "Tipp daneben schließt Erklärung und Menü");
+ok(await page.$('[role="status"]') && await page.$("[data-info-menue]"), "Tipp daneben: Auswahl-Tafel bleibt offen");
+const tb = await page.evaluate(() => { const r = document.querySelector("[data-info-blase]").getBoundingClientRect(); return { x: r.x + 20, y: r.y + 10 }; });
+await page.touchscreen.tap(tb.x, tb.y); await sleep(300);
+ok(!(await page.$('[role="status"]')) && !(await page.$("[data-info-menue]")), "Tipp auf die Tafel schließt Erklärung und Menü");
 ok(Object.keys(await plaetze()).length === 2 && !(await page.evaluate(() => document.body.innerText.includes("Jetzt den Zielplatz"))), "Nichts geladen oder verschoben");
 
 // 2) Lang-Druck + Ziehen auf freien Platz 2|1 → Menü weg, Verschieben-Modus, Eintrag verschoben

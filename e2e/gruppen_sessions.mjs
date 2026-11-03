@@ -81,12 +81,12 @@ ok(!d.gespeichert.find(x => x.id === "s3").ordner, "Teil 3 aus der Gruppe genomm
 await page.click("[data-ordner-zurueck]"); await sleep(300);
 k = await kacheln();
 ok(k.includes("Teil 3") && k.some(t => t.startsWith("📁 Kapitel A")), `oberste Ebene: Gruppe + Teil 3 (${k.join(" | ")})`);
-// Session auf die Gruppen-Kachel ziehen (Verschieben-Modus: markieren, Gruppe antippen)
+// Session auf die Gruppen-Kachel ziehen und 2,5 s halten → in die Gruppe
 await langDruck(kachel("s3")); await aktion("⇄ Verschieben");
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 const p1 = await page.evaluate(() => { const r = document.querySelector('[data-slot-id="s3"]').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 const p2 = await page.evaluate(id => { const r = document.querySelector(`[data-ordner-id="${id}"]`).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, ordner.id);
-await page.mouse.move(p1.x, p1.y); await page.mouse.down(); await page.mouse.move(p1.x + 20, p1.y + 20, { steps: 3 }); await page.mouse.move(p2.x, p2.y, { steps: 6 }); await page.mouse.up(); await sleep(400);
+await page.mouse.move(p1.x, p1.y); await page.mouse.down(); await page.mouse.move(p1.x + 20, p1.y + 20, { steps: 3 }); await page.mouse.move(p2.x, p2.y, { steps: 6 }); await sleep(2800); await page.mouse.up(); await sleep(400);
 d = await slots();
 ok(d.gespeichert.find(x => x.id === "s3").ordner === ordner.id, "Session auf die Gruppen-Kachel gezogen → in der Gruppe");
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(b => b.textContent.trim() === "Fertig")?.click()); await sleep(200);

@@ -107,8 +107,8 @@ await tab("Statistik");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await langDruck('[data-slot-id="g3"]'); await aktion("☑ Auswählen");
 await langDruck('[data-slot-id="g3"]');
-ok(await menue() === "📁 In Gruppe… (1)|⇄ Verschieben|🗑 Löschen (1)|✕ Auswahl beenden", `Statistik: Auswahl ohne Multiquiz (${await menue()})`);
-await aktion("✕ Auswahl beenden");
+ok(!/Multiquiz/.test(await menue()) && /📁 In Gruppe…/.test(await menue()), `Statistik: Menü ohne Multiquiz (${await menue()})`);
+await klick("[data-info-blase]");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
