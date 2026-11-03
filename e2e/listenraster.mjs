@@ -62,10 +62,13 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); const ziel = await mitte("0|0");
-await finger("touchStart", p.x, p.y); await sleep(700);
+await finger("touchStart", p.x, p.y); await sleep(700); await finger("touchEnd"); await sleep(400);
 ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|☑ Auswählen|▦ In Sessions aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen", "Lang-Druck: Menü Umbenennen, Duplizieren, Verschieben, Auswählen, Aufteilen, Zurücksetzen, Löschen");
+await page.evaluate(() => document.querySelector("[data-info-blase]").click()); await sleep(300);
+// kurz halten (angehoben) und ziehen: verschieben
+await finger("touchStart", p.x, p.y); await sleep(400);
 for (let i = 1; i <= 8; i++) { await finger("touchMove", p.x, p.y + (ziel.y - p.y) * i / 8); await sleep(40); }
-ok((await aktionen()).length === 0 && await page.$("[data-listen-fertig]"), "beim Ziehen: Menü weg, Verschieben-Modus");
+ok((await aktionen()).length === 0 && await page.$("[data-listen-fertig]"), "beim Ziehen: kein Menü, Verschieben-Modus");
 await finger("touchEnd"); await sleep(300);
 pl = await plaetze();
 console.log("     nach Ziehen:", JSON.stringify(pl));

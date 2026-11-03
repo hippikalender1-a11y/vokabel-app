@@ -204,7 +204,11 @@ function zielUnter(x, y) {
   const el = document.elementFromPoint(x, y);
   return el?.closest("[data-ordner-zurueck]") ? "raus" : el?.closest("[data-raster-zelle]")?.dataset.rasterZelle || null;
 }
-const GRUPPE_VERWEILEN_MS = 1200;   // so lange über einer Kachel halten, bis Loslassen eine Gruppe bildet
+const GRUPPE_VERWEILEN_MS = 1200;
+// Kachel-Gesten (Touch): sofort wischen scrollt; so lange halten hebt die Kachel an (ziehen verschiebt) …
+const KACHEL_ANHEBEN_MS = 250;
+// … und so lange halten wählt sie aus (weiterfahren sammelt weitere ein, loslassen öffnet die Auswahl-Tafel)
+const KACHEL_AUSWAEHLEN_MS = 600;   // so lange über einer Kachel halten, bis Loslassen eine Gruppe bildet
 function formatSlotDatum() {
   const n = new Date();
   return n.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
@@ -1400,6 +1404,7 @@ const CSS_BASIS = `
   .ordner-kachel{border-width:2px;border-style:solid;margin:0 8px 8px 0;box-shadow:4px 4px 0 -2px var(--haupt-flaeche), 4px 4px 0 0 var(--haupt), 8px 8px 0 -2px var(--haupt-flaeche), 8px 8px 0 0 color-mix(in srgb, var(--haupt) 55%, transparent);}
   /* Ring über der Kachel (nicht unter dem Finger) */
   .gruppen-ring{position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);width:46px;height:46px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3));}
+  [data-angehoben]{transform:scale(1.05);box-shadow:0 6px 16px rgba(0,0,0,0.25);z-index:4;transition:transform 0.12s, box-shadow 0.12s;}
   .gruppen-ring svg{width:46px;height:46px;transform:rotate(-90deg);}
   .gruppen-ring circle{fill:var(--karte);stroke:var(--haupt);stroke-width:3;stroke-dasharray:94.25;stroke-dashoffset:94.25;animation:gruppenRing 1.2s linear forwards;}
   .gruppen-ring.fertig circle{animation:none;stroke-dashoffset:0;fill:var(--haupt-flaeche);}
@@ -1755,7 +1760,10 @@ export default function VokabelApp() {
   const [gruppenZiel, setGruppenZiel] = useState(null);       // "z|s": lange genug darüber gehalten – Loslassen bildet eine Gruppe
   const gruppenZielRef = useRef(null);
   const lassoRef = useRef(null);                              // Lang-Druck auf freie Stelle + ziehen: Kacheln einsammeln
-  const [lasso, setLasso] = useState(null);                   // { art, ids } während des Einsammelns (erst beim Loslassen übernommen – Raster springt nicht)
+  const [lasso, setLasso] = useState(null);
+  const kachelGesteRef = useRef(null);                        // Haltestufen auf einer Kachel (Touch)
+  const [angehoben, setAngehoben] = useState(null);           // Id der angehobenen Kachel (bereit zum Ziehen)
+  const auswahlTafelStelle = useRef(null);                    // { x, y } für „🎨 Farbe ändern“, wenn die Tafel nach dem Einsammeln aufgeht                   // { art, ids } während des Einsammelns (erst beim Loslassen übernommen – Raster springt nicht)
   // Rückfrage "Abgefragt-Stand löschen?" in der Fortschrittszeile; ohne Antwort nach 6 s wieder weg
   const [sessionResetFrage, setSessionResetFrage] = useState(false);
   const [lernResetFrage, setLernResetFrage] = useState(false);
@@ -1818,7 +1826,7 @@ export default function VokabelApp() {
   // data-info macht das Element im Info-Modus erklärbar
   // aktionen (optional): Lang-Druck bzw. Rechtsklick zeigt die Erklärung mit Menü-Knöpfen darunter
   // opts.langText: anderer Text für den Lang-Druck (z. B. nur der volle Name); opts.beimZeigen(x, y): Rückruf;
-  // opts.auswahl: als Auswahl-Tafel zeigen (siehe infoEreignisse.js)
+  // opts.auswahl: als Auswahl-Tafel zeigen (siehe infoEreignisse.js); opts.eigeneGeste: Touch-Lang-Druck übernimmt die Kachel-Geste
   function tt(text, aktionen, opts = {}) {
     if (!text) return {};
     const langText = opts.langText || text;
@@ -1832,6 +1840,7 @@ export default function VokabelApp() {
       onTouchStart(e) {
         if (e.nativeEvent._ttMenue) return;
         if (aktionen) e.nativeEvent._ttMenue = true;
+        if (opts.eigeneGeste) return;   // Kacheln: Haltestufen (Verschieben / Auswählen) statt Erklärung
         const t = e.touches[0];
         clearTimeout(tooltipTimer.current);
         tooltipShown.current = false;
@@ -2291,7 +2300,7 @@ export default function VokabelApp() {
   useEffect(() => {
     const art = auswahlTafelRef.current;
     if (!art) return;
-    if (!(art === "liste" ? listenWahl : multiAuswahl)) { auswahlTafelRef.current = null; schliesseInfo(); return; }
+    if (!(art === "liste" ? listenWahl : multiAuswahl)) { auswahlTafelRef.current = null; auswahlTafelStelle.current = null; schliesseInfo(); return; }
     zeigeAuswahlTafel(art);
   }, [multiAuswahl, listenWahl]);   // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -2299,6 +2308,77 @@ export default function VokabelApp() {
   useEffect(() => {
     if (slotOrdner && !(slots.ordner || []).some(o => o.id === slotOrdner)) setSlotOrdner(null);
   }, [slots, slotOrdner]);
+
+  // Kachel-Gesten (Touch): sofort wischen scrollt; KACHEL_ANHEBEN_MS halten hebt die Kachel an – ziehen verschiebt
+  // (über die Lang-Druck-Verfolgung oben); KACHEL_AUSWAEHLEN_MS halten wählt sie aus – weiterfahren sammelt weitere
+  // ein (Lasso), loslassen öffnet die Auswahl-Tafel. Gruppen-Kacheln: nur anheben (ihr Menü kommt über tt).
+  useEffect(() => {
+    const aus = () => {
+      const g = kachelGesteRef.current;
+      if (g) { clearTimeout(g.t1); clearTimeout(g.t2); }
+      kachelGesteRef.current = null; setAngehoben(null);
+    };
+    const start = e => {
+      aus();
+      if (e.touches.length !== 1 || farbModusRef.current) return;
+      const el = e.target.closest?.("[data-kachel-geste]");
+      if (!el) return;
+      const t = e.touches[0];
+      const art = el.dataset.kachelGeste;   // "slot" | "liste" | "ordner"
+      const id = art === "liste" ? el.dataset.listeId : el.dataset.slotId;
+      const g = { art, id, x: t.clientX, y: t.clientY, stufe: 0, t0: Date.now() };
+      g.heben = () => {
+        if (g.stufe >= 1) return;
+        g.stufe = 1;
+        if (el.dataset.kachelZieh === undefined) return;
+        slotZiehenRef.current = { ...(art === "liste" ? { art: "liste" } : {}), id, x: g.x, y: g.y, aktiv: false, langdruck: true };
+        setAngehoben(id);
+      };
+      g.waehlen = () => {
+        if (g.stufe >= 2 || slotZiehenRef.current?.aktiv) return;
+        g.stufe = 2; slotZiehenRef.current = null; setAngehoben(null); navigator.vibrate?.(20);
+        const lassoArt = art === "liste" ? "liste" : "slot";
+        const r = rasterAuswahlRef.current;
+        const ids = [...((lassoArt === "liste" ? r.listeWahl : r.slotWahl) || [])];
+        if (!ids.includes(id)) ids.push(id);
+        lassoRef.current = { art: lassoArt, feld: el.closest("[data-lasso]") || el.parentElement, x: g.x, y: g.y, aktiv: true, ids };
+        setLasso({ art: lassoArt, ids });
+      };
+      g.t1 = setTimeout(g.heben, KACHEL_ANHEBEN_MS);
+      if (art !== "ordner") g.t2 = setTimeout(g.waehlen, KACHEL_AUSWAEHLEN_MS);
+      kachelGesteRef.current = g;
+    };
+    const bewegen = e => {
+      const g = kachelGesteRef.current;
+      if (!g) return;
+      const t = e.touches[0];
+      if (Math.hypot(t.clientX - g.x, t.clientY - g.y) <= 8) return;
+      // Timer können sich verspäten (Browser beschäftigt): maßgeblich ist die gehaltene Zeit
+      const gehalten = Date.now() - g.t0;
+      if (g.art !== "ordner" && gehalten >= KACHEL_AUSWAEHLEN_MS) g.waehlen();
+      else if (gehalten >= KACHEL_ANHEBEN_MS) g.heben();
+      if (g.stufe === 2) { clearTimeout(g.t1); clearTimeout(g.t2); kachelGesteRef.current = g; return; }   // Einsammeln läuft (Lasso)
+      if (g.stufe === 0) { aus(); return; }   // sofort gewischt: Seite scrollt
+      if (g.stufe === 1) aus();                // angehoben und gezogen: das Verschieben läuft
+    };
+    const loslassen = e => {
+      const g = kachelGesteRef.current;
+      if (!g) return;
+      if (g.stufe === 2 && e.cancelable) e.preventDefault();   // kein Klick hinterher (würde die Kachel wieder abwählen)
+      if (g.stufe === 1 && slotZiehenRef.current && !slotZiehenRef.current.aktiv) slotZiehenRef.current = null;   // nur angehoben
+      aus();
+    };
+    document.addEventListener("touchstart", start, { passive: true });
+    window.addEventListener("touchmove", bewegen, { passive: true });
+    window.addEventListener("touchend", loslassen, { passive: false });
+    window.addEventListener("touchcancel", aus);
+    return () => {
+      document.removeEventListener("touchstart", start);
+      window.removeEventListener("touchmove", bewegen);
+      window.removeEventListener("touchend", loslassen);
+      window.removeEventListener("touchcancel", aus);
+    };
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Lang-Druck auf eine freie Stelle im Raster und dann ziehen: jede überstrichene Kachel kommt in die Auswahl
   useEffect(() => {
@@ -2336,6 +2416,7 @@ export default function VokabelApp() {
       setLasso(null);
       if (!l.ids.length) return;
       auswahlTafelRef.current = l.art;   // die Tafel geht mit der übernommenen Auswahl auf (Effekt)
+      auswahlTafelStelle.current = { x: l.x, y: l.y };
       setze(l.art, l.ids);
     };
     document.addEventListener("touchstart", start, { passive: true });
@@ -2488,10 +2569,11 @@ export default function VokabelApp() {
     const d = auswahlTafelDaten.current[art]?.();
     if (!d) return;
     auswahlTafelRef.current = art;
-    zeigeInfo(d.text, null, null, d.aktionen, { auswahl: auswahlTafel(art) });   // Stelle des Lang-Drucks bleibt (für „🎨 Farbe ändern“)
+    const st = auswahlTafelStelle.current;   // sonst bleibt die Stelle des Lang-Drucks (für „🎨 Farbe ändern“)
+    zeigeInfo(d.text, st?.x ?? null, st?.y ?? null, d.aktionen, { auswahl: auswahlTafel(art) });
   }
   function auswahlTafel(art) {
-    return { zu: behalten => { auswahlTafelRef.current = null; if (!behalten) (art === "liste" ? setListenWahl : setMultiAuswahl)(null); } };
+    return { zu: behalten => { auswahlTafelRef.current = null; auswahlTafelStelle.current = null; if (!behalten) (art === "liste" ? setListenWahl : setMultiAuswahl)(null); } };
   }
   function listenKopieName(name) {
     const namen = new Set(listenIndex.map(l => l.name.toLowerCase()));
@@ -5091,16 +5173,16 @@ export default function VokabelApp() {
       const liste = lsGet(SK.liste(l.id));
       const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
       const ziel = slotDragZiel === key && slotDragId && slotDragId !== l.id;
-      const ziehen = gefiltert ? undefined : (px, py) => { slotZiehenRef.current = { art: "liste", id: l.id, x: px, y: py, aktiv: false, langdruck: true }; };
-      // Lang-Druck: Liste kommt in die Auswahl, die Tafel bleibt unten offen (weitere antippen wählt mit aus);
-      // Lang-Druck und dann ziehen: Tafel weg, Verschieben-Modus, (ausgewählte) Listen wandern mit
+      // Lang-Druck (Maus: Rechtsklick): Liste kommt in die Auswahl, die Tafel bleibt unten offen (weitere antippen wählt mit aus);
+      // Touch: Haltestufen (kurz halten + ziehen verschiebt, lang halten + fahren wählt aus)
       const tafel = tafelInhalt(listenWahl ? wahlMit(l) : [l.id]);
       const erklaerung = sortModus && !listenWahl ? tt(`${l.name} – antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen – markierte wandern zusammen`)
         : tt(listenWahl ? `${l.name} – antippen: auswählen oder abwählen; lang drücken: Aktionen für die Auswahl (Export, Verschieben, Löschen)` : "Liste öffnen: Vokabeln, Spalten, Sprache, Export",
-          tafel.aktionen, { langText: tafel.text, auswahl: auswahlTafel("liste"), beimZeigen: ziehen,
+          tafel.aktionen, { langText: tafel.text, auswahl: auswahlTafel("liste"), eigeneGeste: true,
             beimMenue: () => { auswahlTafelRef.current = "liste"; setListenSortModus(false); setListenWahl(a => a ? (a.includes(l.id) ? a : [...a, l.id]) : [l.id]); } });
       return (
         <div {...erklaerung} key={key} data-raster-zelle={gefiltert ? undefined : key} data-liste-id={l.id} data-auswahl-durchlass className="karte-zeile"
+          data-kachel-geste={sortModus ? undefined : "liste"} data-kachel-zieh={sortModus || gefiltert ? undefined : ""} data-angehoben={angehoben === l.id ? "" : undefined}
           style={{cursor: sortModus ? "grab" : "pointer", ...(sortModus ? {touchAction:"none"} : {}),
             ...((listenAuswahl.includes(l.id) && sortModus) || listenWahl?.includes(l.id) || (lasso?.art === "liste" && lasso.ids.includes(l.id)) ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {}),
             ...(slotDragId && (slotDragId === l.id || (listenAuswahl.includes(slotDragId) && listenAuswahl.includes(l.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
@@ -5383,7 +5465,7 @@ export default function VokabelApp() {
             ) : null}
           </button>
         ) : x.istOrdner ? (
-          <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-ordner-id={x.id}
+          <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-ordner-id={x.id} data-kachel-geste="ordner" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined}
             className={`slot-chip belegt raster-chip ordner-kachel${slotRef?.typ === "gespeichert" && kinder.some(k => k.id === slotRef.id) ? " ordner-aktiv" : ""}`}
             style={{position:"relative"}}
             onClick={() => { if (slotGezogenRef.current) { slotGezogenRef.current = false; return; } if (!multiAuswahl) setSlotOrdner(x.id); }}
@@ -5400,21 +5482,22 @@ export default function VokabelApp() {
           </button>
         ) : (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-multi-nr={multiNr || undefined} data-auswahl-durchlass
+            data-kachel-geste="slot" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined}
             className={`slot-chip belegt raster-chip${!multiAuswahl && slotRef?.typ === "gespeichert" && slotRef?.id === x.id ? " aktiv-kachel" : ""}`}
             style={{...chipStil('gespeichert', x.id, slotRef), position:"relative", ...(multiNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {})}}
             onClick={() => multiAuswahl
               ? setMultiAuswahl(a => a.includes(x.id) ? a.filter(v => v !== x.id) : [...a, x.id])
               : onLaden('gespeichert', x.id)}
             {...(() => {
-              // Lang-Druck: Session kommt in die Auswahl, die Tafel bleibt unten offen (weitere antippen wählt mit aus)
+              // Lang-Druck (Maus: Rechtsklick): Session kommt in die Auswahl, die Tafel bleibt unten offen (weitere antippen wählt mit aus);
+              // Touch: Haltestufen (kurz halten + ziehen verschiebt, lang halten + fahren wählt aus)
               const tafel = tafelInhalt(multiAuswahl ? wahlMit(x) : [x.id]);
               return tt(multiAuswahl
               ? `${x.name} – antippen: auswählen oder abwählen; lang drücken: Aktionen für die Auswahl (Multiquiz, Verschieben, Löschen)`
               : `${x.name} – antippen: Konfiguration laden (Liste, Vokabelauswahl, Einstellungen, Fortschritt)`, tafel.aktionen,
                { langText: tafel.text, auswahl: auswahlTafel("slot"),
                  beimMenue: () => { auswahlTafelRef.current = "slot"; setSlotSortModus(false); setMultiAuswahl(a => a ? (a.includes(x.id) ? a : [...a, x.id]) : [x.id]); },
-                 // Lang-Druck und dann ziehen: Tafel weg, Verschieben-Modus, (ausgewählte) Einträge wandern mit
-                 beimZeigen: (px, py) => { slotZiehenRef.current = { id: x.id, x: px, y: py, aktiv: false, langdruck: true }; } });
+                 eigeneGeste: true });
             })()}>
             {inhalt}
             {multiNr ? <span className="auswahl-nr">{multiNr}</span> : null /* gleiche Kind-Struktur wie im Verschieben-Modus (Markierungsnummer) – sonst baut React den Inhalt neu auf und ein laufendes Ziehen verliert den Finger */}

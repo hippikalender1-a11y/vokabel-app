@@ -80,12 +80,38 @@ ok(await gewaehlt() === "s1,s2,s3", `Einsammeln: Teil 1–3 ausgewählt (${await
 ok(/^3 ausgewählt/.test(await tafel() || ""), `danach Auswahl-Tafel „3 ausgewählt“ (${await tafel()})`);
 await page.click("[data-info-blase]"); await sleep(300);
 
+// ── Haltestufen auf einer Kachel ──
+// sofort wischen: nichts (Seite scrollt)
+let h = await mitte(kachel("s1"));
+await finger("touchStart", h.x, h.y); await sleep(80);
+for (let i = 1; i <= 4; i++) { await finger("touchMove", h.x, h.y + i * 15); await sleep(30); }
+await finger("touchEnd"); await sleep(400);
+ok(!(await tafel()) && await gewaehlt() === "" && !(await page.$("[data-wahl-fertig]")) && !(await page.$(".slot-kopf-knoepfe .typ-btn.aktiv")), "sofort gewischt: weder verschoben noch ausgewählt");
+// lang halten und über weitere Kacheln fahren: auswählen
+await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
+h = await mitte(kachel("s1")); const h3 = await mitte(kachel("s3"));
+await finger("touchStart", h.x, h.y); await sleep(350);
+ok(await page.$(`[data-angehoben][data-slot-id="s1"]`), "nach 0,25 s: Kachel angehoben");
+await sleep(400);
+ok(!(await page.$("[data-angehoben]")), "nach 0,6 s: ausgewählt statt angehoben");
+for (let i = 1; i <= 8; i++) { await finger("touchMove", h.x, h.y + (h3.y - h.y) * i / 8); await sleep(40); }
+await finger("touchEnd"); await sleep(400);
+ok(await gewaehlt() === "s1,s2,s3", `lang halten + fahren: Teil 1–3 ausgewählt (${await gewaehlt()})`);
+ok(/^3 ausgewählt/.test(await tafel() || ""), "danach Auswahl-Tafel „3 ausgewählt“");
+ok(!(await page.$(".slot-kopf-knoepfe .typ-btn.aktiv")) || await page.$("[data-wahl-fertig]"), "kein Verschieben-Modus");
+await page.click("[data-info-blase]"); await sleep(300);
+// lang halten, loslassen: Tafel mit dem Menü der Kachel
+await finger("touchStart", h.x, h.y); await sleep(750); await finger("touchEnd"); await sleep(400);
+ok((await tafel())?.startsWith("Teil 1") && await gewaehlt() === "s1", `lang halten + loslassen: Tafel „Teil 1“, nur Teil 1 ausgewählt (${await gewaehlt()})`);
+ok(await page.evaluate(() => !document.querySelector("[data-slot-kopf-name]") || document.querySelector("[data-slot-kopf-name]").textContent.trim() !== "Teil 1"), "lang halten lädt die Session nicht");
+await page.click("[data-info-blase]"); await sleep(300);
+
 // ── Ziehen + verweilen: Gruppe ──
 // schnell loslassen tauscht (keine Gruppe)
 const ziehe = async (von, nach, warten) => {
   await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
   const p = await mitte(von);
-  await finger("touchStart", p.x, p.y); await sleep(700);
+  await finger("touchStart", p.x, p.y); await sleep(400);   // kurz halten: angehoben
   await finger("touchMove", p.x + 12, p.y + 12); await sleep(300);   // Ziehen beginnt (Verschieben-Modus: Raster kann sich verschieben)
   const q = await mitte(nach);
   for (let i = 1; i <= 8; i++) { await finger("touchMove", p.x + (q.x - p.x) * i / 8, p.y + (q.y - p.y) * i / 8); await sleep(40); }

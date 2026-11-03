@@ -63,14 +63,15 @@ await page.touchscreen.tap(tb.x, tb.y); await sleep(300);
 ok(!(await page.$('[role="status"]')) && !(await page.$("[data-info-menue]")), "Tipp auf die Tafel schließt Erklärung und Menü");
 ok(Object.keys(await plaetze()).length === 2 && !(await page.evaluate(() => document.body.innerText.includes("Jetzt den Zielplatz"))), "Nichts geladen oder verschoben");
 
-// 2) Lang-Druck + Ziehen auf freien Platz 2|1 → Menü weg, Verschieben-Modus, Eintrag verschoben
+// 2) Kurz halten (angehoben) + Ziehen auf freien Platz 2|1 → Verschieben-Modus, Eintrag verschoben
 p = await mitte("0|0");
 await page.touchscreen.touchStart(p.x, p.y);
-await sleep(700);
-ok(!!(await page.$("[data-info-menue]")), "Nach dem Halten: Menü sichtbar");
-await page.touchscreen.touchMove(p.x + 15, p.y + 20);
+await sleep(350);
+const angehoben = await page.evaluate(() => !!document.querySelector("[data-angehoben]") && !document.querySelector("[data-info-menue]"));
+await page.touchscreen.touchMove(p.x + 15, p.y + 20);   // sofort weiter: nach 0,6 s würde der Druck auswählen
+ok(angehoben, "Nach kurzem Halten: Kachel angehoben, kein Menü");
 await sleep(150);
-ok(!(await page.$('[role="status"]')) && !(await page.$("[data-info-menue]")), "Sobald gezogen wird: Erklärung und Menü sofort weg");
+ok(!(await page.$('[role="status"]')) && !(await page.$("[data-info-menue]")) && !(await page.$("[data-angehoben]")), "Sobald gezogen wird: keine Erklärung, kein Menü")
 ok(await page.evaluate(() => /Fertig/.test(document.querySelector(".slot-kopf-knoepfe")?.innerText || "")), "… und Verschieben-Modus an");
 const ziel = await mitte("2|1");
 for (let i = 1; i <= 8; i++) { await page.touchscreen.touchMove(p.x + (ziel.x - p.x) * i / 8, p.y + (ziel.y - p.y) * i / 8); await sleep(40); }

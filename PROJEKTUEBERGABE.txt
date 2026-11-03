@@ -1855,6 +1855,11 @@ GRUPPEN-GESTEN (Feedback zu Schritt 4): Lang-Druck auf eine Kachel (Sessions + L
   Namensanfang, sonst „Gruppe n“) am Platz der Ziel-Session, auf Gruppe = hinein; schnell loslassen tauscht wie
   bisher. Auf „← Alle Sessions“ ziehen (zielUnter → "raus") nimmt aus der Gruppe. loeseKleineGruppen: Gruppe mit
   ≤ 1 Session löst sich nach Herausnehmen/Löschen auf. Gruppen-Kachel als Stapel (zwei Kartenkanten).
+  HALTESTUFEN (Touch, Kacheln mit data-kachel-geste slot|liste|ordner, tt mit eigeneGeste): sofort wischen scrollt;
+  KACHEL_ANHEBEN_MS = 250 → angehoben (data-angehoben, slotZiehenRef langdruck) – ziehen verschiebt;
+  KACHEL_AUSWAEHLEN_MS = 600 → ausgewählt (Lasso ab der Kachel) – weiterfahren sammelt ein, loslassen öffnet die Tafel
+  (Klick danach per preventDefault verschluckt). Stufen nach gehaltener Zeit (t0), nicht nur per Timer. Gruppen-Kachel:
+  nur anheben, ihr Menü weiter über tt (500 ms). Maus: Rechtsklick = Tafel, Ziehen im Verschieben-Modus.
   Test: e2e/gruppen_gesten.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
