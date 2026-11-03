@@ -47,7 +47,7 @@ await sleep(300);
 // 1) Lang-Druck: Erklärung = voller Name, Knöpfe getrennt von der Blase
 let p = await mitte("0|0");
 await page.touchscreen.touchStart(p.x, p.y);
-await sleep(700);
+await sleep(1000);
 await page.touchscreen.touchEnd();
 await sleep(500);
 const blase = await page.evaluate(() => document.querySelector('[role="status"]')?.innerText.split("\n")[0]);
@@ -82,10 +82,10 @@ console.log("     Plätze:", JSON.stringify(pl));
 ok(pl["Unregelmäßige Verben Kapitel 3 – Wiederholung"] === "2|1", "Lang-Druck + Ziehen: Eintrag auf den neuen Platz verschoben");
 
 // 3) Fenster oben (Umbenennen über das Menü)
-await clickText(".slot-kopf-knoepfe button", "Fertig", true);
+ok(!(await page.evaluate(() => /Fertig/.test(document.querySelector(".slot-kopf-knoepfe")?.innerText || ""))), "nach dem Ablegen ist der Verschieben-Modus wieder aus");
 p = await mitte("0|1");
 await page.touchscreen.touchStart(p.x, p.y);
-await sleep(700);
+await sleep(1000);
 await page.touchscreen.touchEnd();
 await sleep(500);
 await page.evaluate(() => document.querySelector('[data-info-aktion="✎ Umbenennen"]').click());

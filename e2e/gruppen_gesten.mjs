@@ -92,8 +92,8 @@ await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 h = await mitte(kachel("s1")); const h3 = await mitte(kachel("s3"));
 await finger("touchStart", h.x, h.y); await sleep(350);
 ok(await page.$(`[data-angehoben][data-slot-id="s1"]`), "nach 0,25 s: Kachel angehoben");
-await sleep(400);
-ok(!(await page.$("[data-angehoben]")), "nach 0,6 s: ausgewählt statt angehoben");
+await sleep(700);
+ok(!(await page.$("[data-angehoben]")), "nach 0,9 s: ausgewählt statt angehoben");
 for (let i = 1; i <= 8; i++) { await finger("touchMove", h.x, h.y + (h3.y - h.y) * i / 8); await sleep(40); }
 await finger("touchEnd"); await sleep(400);
 ok(await gewaehlt() === "s1,s2,s3", `lang halten + fahren: Teil 1–3 ausgewählt (${await gewaehlt()})`);
@@ -101,10 +101,30 @@ ok(/^3 ausgewählt/.test(await tafel() || ""), "danach Auswahl-Tafel „3 ausgew
 ok(!(await page.$(".slot-kopf-knoepfe .typ-btn.aktiv")) || await page.$("[data-wahl-fertig]"), "kein Verschieben-Modus");
 await page.click("[data-info-blase]"); await sleep(300);
 // lang halten, loslassen: Tafel mit dem Menü der Kachel
-await finger("touchStart", h.x, h.y); await sleep(750); await finger("touchEnd"); await sleep(400);
+await finger("touchStart", h.x, h.y); await sleep(1050); await finger("touchEnd"); await sleep(400);
 ok((await tafel())?.startsWith("Teil 1") && await gewaehlt() === "s1", `lang halten + loslassen: Tafel „Teil 1“, nur Teil 1 ausgewählt (${await gewaehlt()})`);
 ok(await page.evaluate(() => !document.querySelector("[data-slot-kopf-name]") || document.querySelector("[data-slot-kopf-name]").textContent.trim() !== "Teil 1"), "lang halten lädt die Session nicht");
 await page.click("[data-info-blase]"); await sleep(300);
+
+// ausgewählte Kachel lang halten und ziehen: die ganze Auswahl wandert (Teil 1 + 2 in die freie rechte Spalte)
+await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
+h = await mitte(kachel("s1")); const h2 = await mitte(kachel("s2"));
+await finger("touchStart", h.x, h.y); await sleep(1050);
+for (let i = 1; i <= 4; i++) { await finger("touchMove", h.x, h.y + (h2.y - h.y) * i / 4); await sleep(40); }
+await finger("touchEnd"); await sleep(400);
+ok(await gewaehlt() === "s1,s2", `Teil 1 + 2 ausgewählt (${await gewaehlt()})`);
+h = await mitte(kachel("s1"));   // der Auswahl-Hinweis verschiebt das Raster
+await finger("touchStart", h.x, h.y); await sleep(1050);
+ok(await page.$(`[data-angehoben][data-slot-id="s1"]`), "ausgewählte Kachel lang gehalten: bleibt angehoben (kein Einsammeln)");
+const rechts = { x: h.x + h.w + 6, y: h.y };
+for (let i = 1; i <= 8; i++) { await finger("touchMove", h.x + (rechts.x - h.x) * i / 8, h.y); await sleep(40); }
+await finger("touchEnd"); await sleep(400);
+let d = await slots();
+ok(["s1", "s2"].every(id => d.gespeichert.find(x => x.id === id).platz.s === 1), `ganze Auswahl verschoben (Teil 1: ${JSON.stringify(d.gespeichert.find(x => x.id === "s1").platz)}, Teil 2: ${JSON.stringify(d.gespeichert.find(x => x.id === "s2").platz)})`);
+ok(!(await tafel()) && !(await page.$(".slot-kopf-knoepfe .typ-btn.aktiv")), "danach: Tafel zu, kein Verschieben-Modus");
+// zurück in die linke Spalte (für die folgenden Schritte)
+await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("vokabel_slots")); d.gespeichert.forEach(x => { if (x.id === "s1") x.platz = { z: 0, s: 0 }; if (x.id === "s2") x.platz = { z: 1, s: 0 }; }); localStorage.setItem("vokabel_slots", JSON.stringify(d)); });
+await page.reload(); await sleep(700);
 
 // ── Ziehen + verweilen: Gruppe ──
 // schnell loslassen tauscht (keine Gruppe)
@@ -121,9 +141,10 @@ const ziehe = async (von, nach, warten) => {
   return ring;
 };
 let ring = await ziehe(kachel("s3"), kachel("s4"), 0);
-let d = await slots();
+d = await slots();
 ok(ring === "laeuft", "beim Darüberziehen läuft der Ring");
 ok(!(d.ordner || []).length && d.gespeichert.find(x => x.id === "s3").platz.z === 3, "schnell losgelassen: getauscht, keine Gruppe");
+ok(!(await page.$(".slot-kopf-knoepfe .typ-btn.aktiv")), "nach dem Ablegen ist der Verschieben-Modus wieder aus");
 ring = await ziehe(kachel("s3"), kachel("s4"), 2800);
 d = await slots();
 const g = (d.ordner || [])[0];

@@ -62,7 +62,7 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); const ziel = await mitte("0|0");
-await finger("touchStart", p.x, p.y); await sleep(700); await finger("touchEnd"); await sleep(400);
+await finger("touchStart", p.x, p.y); await sleep(1000); await finger("touchEnd"); await sleep(400);
 ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|☑ Auswählen|▦ In Sessions aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen", "Lang-Druck: Menü Umbenennen, Duplizieren, Verschieben, Auswählen, Aufteilen, Zurücksetzen, Löschen");
 await page.evaluate(() => document.querySelector("[data-info-blase]").click()); await sleep(300);
 // kurz halten (angehoben) und ziehen: verschieben
@@ -74,10 +74,11 @@ pl = await plaetze();
 console.log("     nach Ziehen:", JSON.stringify(pl));
 ok(pl.Gamma === "0|0" && pl.Alpha === "2|0" && pl.Beta === "1|0", "Gamma auf Alphas Platz gezogen: die beiden tauschen");
 ok(await indexNamen() === "Gamma,Beta,Alpha", "Reihenfolge gespeichert (Index folgt dem Raster)");
+ok(!(await page.$("[data-listen-fertig]")), "nach dem Ablegen ist der Verschieben-Modus wieder aus");
 
 // Verschieben-Modus: antippen, dann freien Platz antippen
 await sleep(500);   // der Klick direkt nach dem Ziehen wird verschluckt
-await page.evaluate(() => [...document.querySelectorAll("[data-liste-id]")].find(d => d.textContent.includes("Beta")).click()); await sleep(200);
+await menue("Beta"); await aktion("⇄ Verschieben");   // markiert Beta, Verschieben-Modus bleibt bis „Fertig“
 await page.evaluate(() => document.querySelector('[data-raster-zelle="5|0"]').click()); await sleep(300);
 pl = await plaetze();
 ok(pl.Beta === "5|0", `Antippen + freien Platz antippen: Beta auf 5|0 (${pl.Beta})`);

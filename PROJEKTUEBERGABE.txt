@@ -1857,7 +1857,9 @@ GRUPPEN-GESTEN (Feedback zu Schritt 4): Lang-Druck auf eine Kachel (Sessions + L
   ≤ 1 Session löst sich nach Herausnehmen/Löschen auf. Gruppen-Kachel als Stapel (zwei Kartenkanten).
   HALTESTUFEN (Touch, Kacheln mit data-kachel-geste slot|liste|ordner, tt mit eigeneGeste): sofort wischen scrollt;
   KACHEL_ANHEBEN_MS = 250 → angehoben (data-angehoben, slotZiehenRef langdruck) – ziehen verschiebt;
-  KACHEL_AUSWAEHLEN_MS = 600 → ausgewählt (Lasso ab der Kachel) – weiterfahren sammelt ein, loslassen öffnet die Tafel
+  KACHEL_AUSWAEHLEN_MS = 900 → ausgewählt (Lasso ab der Kachel) – weiterfahren sammelt ein, loslassen öffnet die Tafel;
+  schon ausgewählte Kachel: Stufe 3 = bleibt angehoben, ziehen verschiebt die Auswahl. Nach einem Gesten-Verschieben
+  ist der Verschieben-Modus wieder aus (nur über das Menü „⇄ Verschieben“ bleibt er bis „Fertig“).
   (Klick danach per preventDefault verschluckt). Stufen nach gehaltener Zeit (t0), nicht nur per Timer. Gruppen-Kachel:
   nur anheben, ihr Menü weiter über tt (500 ms). Maus: Rechtsklick = Tafel, Ziehen im Verschieben-Modus.
   Test: e2e/gruppen_gesten.mjs.

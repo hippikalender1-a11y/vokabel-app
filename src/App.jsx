@@ -207,8 +207,9 @@ function zielUnter(x, y) {
 const GRUPPE_VERWEILEN_MS = 1200;
 // Kachel-Gesten (Touch): sofort wischen scrollt; so lange halten hebt die Kachel an (ziehen verschiebt) …
 const KACHEL_ANHEBEN_MS = 250;
-// … und so lange halten wählt sie aus (weiterfahren sammelt weitere ein, loslassen öffnet die Auswahl-Tafel)
-const KACHEL_AUSWAEHLEN_MS = 600;   // so lange über einer Kachel halten, bis Loslassen eine Gruppe bildet
+// … und so lange halten wählt sie aus (weiterfahren sammelt weitere ein, loslassen öffnet die Auswahl-Tafel);
+// ist sie schon ausgewählt, bleibt sie angehoben – ziehen verschiebt dann die ganze Auswahl
+const KACHEL_AUSWAEHLEN_MS = 900;   // so lange über einer Kachel halten, bis Loslassen eine Gruppe bildet
 function formatSlotDatum() {
   const n = new Date();
   return n.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
@@ -2232,6 +2233,8 @@ export default function VokabelApp() {
       const ziel = e.type === "touchend" && t ? zelleUnter(t) : null;
       setSlotDragId(null); setSlotDragZiel(null);
       if (ziel) legeGezogenAb(d, ziel);
+      // per Geste verschoben: Verschieben-Modus wieder aus (über das Menü „⇄ Verschieben“ bleibt er bis „Fertig“)
+      if (d.art === "liste") { setListenSortModus(false); setListenAuswahl([]); } else { setSlotSortModus(false); setSlotAuswahl([]); }
     };
     window.addEventListener("touchmove", bewegen, { passive: false });
     window.addEventListener("touchend", loslassen);
@@ -2336,9 +2339,12 @@ export default function VokabelApp() {
       };
       g.waehlen = () => {
         if (g.stufe >= 2 || slotZiehenRef.current?.aktiv) return;
-        g.stufe = 2; slotZiehenRef.current = null; setAngehoben(null); navigator.vibrate?.(20);
+        g.heben();   // falls der Anheben-Timer noch nicht lief
         const lassoArt = art === "liste" ? "liste" : "slot";
         const r = rasterAuswahlRef.current;
+        // schon ausgewählt: angehoben lassen (Stufe 3) – ziehen verschiebt die ganze Auswahl
+        if (slotZiehenRef.current && ((lassoArt === "liste" ? r.listeWahl : r.slotWahl) || []).includes(id)) { g.stufe = 3; navigator.vibrate?.(20); return; }
+        g.stufe = 2; slotZiehenRef.current = null; setAngehoben(null); navigator.vibrate?.(20);
         const ids = [...((lassoArt === "liste" ? r.listeWahl : r.slotWahl) || [])];
         if (!ids.includes(id)) ids.push(id);
         lassoRef.current = { art: lassoArt, feld: el.closest("[data-lasso]") || el.parentElement, x: g.x, y: g.y, aktiv: true, ids };
@@ -2359,13 +2365,13 @@ export default function VokabelApp() {
       else if (gehalten >= KACHEL_ANHEBEN_MS) g.heben();
       if (g.stufe === 2) { clearTimeout(g.t1); clearTimeout(g.t2); kachelGesteRef.current = g; return; }   // Einsammeln läuft (Lasso)
       if (g.stufe === 0) { aus(); return; }   // sofort gewischt: Seite scrollt
-      if (g.stufe === 1) aus();                // angehoben und gezogen: das Verschieben läuft
+      aus();                                   // angehoben und gezogen: das Verschieben läuft
     };
     const loslassen = e => {
       const g = kachelGesteRef.current;
       if (!g) return;
-      if (g.stufe === 2 && e.cancelable) e.preventDefault();   // kein Klick hinterher (würde die Kachel wieder abwählen)
-      if (g.stufe === 1 && slotZiehenRef.current && !slotZiehenRef.current.aktiv) slotZiehenRef.current = null;   // nur angehoben
+      if (g.stufe >= 2 && e.cancelable) e.preventDefault();   // kein Klick hinterher (würde die Kachel wieder abwählen)
+      if (g.stufe !== 2 && slotZiehenRef.current && !slotZiehenRef.current.aktiv) slotZiehenRef.current = null;   // nur angehoben
       aus();
     };
     document.addEventListener("touchstart", start, { passive: true });
