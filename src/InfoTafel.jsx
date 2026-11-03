@@ -84,6 +84,25 @@ export default function InfoTafel() {
   // Menü-Knöpfe (aktionen) schweben getrennt unter der Blase.
   // Auswahl-Tafel: unten angedockt, damit die Kacheln darüber antippbar bleiben
   const unten = !!info?.auswahl;
+  // Auswahl-Tafel: unten Platz schaffen (die Kacheln lassen sich über die Tafel hochscrollen)
+  // und die gedrückte Kachel freilegen, falls die Tafel sie verdeckt
+  const tafelRef = useRef(null);
+  const warUntenRef = useRef(false);
+  useEffect(() => {
+    if (!unten) { warUntenRef.current = false; document.body.style.paddingBottom = ""; return; }
+    const el = tafelRef.current;
+    if (!el) return;
+    const anpassen = () => { document.body.style.paddingBottom = `${el.offsetHeight + 24}px`; };
+    anpassen();
+    if (!warUntenRef.current) {
+      warUntenRef.current = true;
+      const frei = window.innerHeight - el.offsetHeight - 24;   // Unterkante des sichtbaren Bereichs über der Tafel
+      if (info.y != null && info.y > frei - 40) window.scrollBy({ top: info.y - frei + 60, behavior: "smooth" });
+    }
+    const obs = new ResizeObserver(anpassen);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [unten, info]);
   const breite = unten ? Math.min(480, window.innerWidth - 24) : Math.min(300, window.innerWidth - 24);
   const links = unten ? (window.innerWidth - breite) / 2 : info ? Math.max(12, Math.min(info.x - breite / 2, window.innerWidth - breite - 12)) : 0;
   // Menü: Aktionen des Elements, dazu „🎨 Farbe ändern“ (startet den Farbmodus an dieser Stelle)
@@ -93,7 +112,7 @@ export default function InfoTafel() {
   return (
     <>
       {info && (
-        <div data-auswahl-tafel={unten ? "" : undefined} style={{
+        <div ref={tafelRef} data-auswahl-tafel={unten ? "" : undefined} style={{
           position: "fixed", left: links, width: breite, zIndex: 10001,
           ...(unten ? { bottom: 12 } : { top: darueber ? info.y - 14 : info.y + 14, transform: darueber ? "translateY(-100%)" : "none" }),
           display: "flex", flexDirection: "column", gap: unten ? 8 : 10,

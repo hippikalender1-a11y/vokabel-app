@@ -47,6 +47,18 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(700);
 
+// ── Tafel verdeckt die gedrückte Kachel nicht (kleiner Bildschirm, unterste Kachel) ──
+await page.setViewport({ width: 390, height: 520, hasTouch: true, isMobile: true }); await sleep(300);
+await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
+await kontext(kachel("s4")); await sleep(600);
+const tafelLage = await page.evaluate(() => { const k = document.querySelector('[data-slot-id="s4"]').getBoundingClientRect(), t = document.querySelector("[data-auswahl-tafel]").getBoundingClientRect(); return { k: Math.round(k.bottom), t: Math.round(t.top), pad: document.body.style.paddingBottom }; });
+ok(tafelLage.k <= tafelLage.t, `unterste Kachel über die Tafel gescrollt (Kachel unten ${tafelLage.k}, Tafel oben ${tafelLage.t})`);
+ok(parseInt(tafelLage.pad) > 100, `unten Platz zum Hochscrollen (${tafelLage.pad})`);
+await page.click("[data-info-blase]"); await sleep(300);
+ok(await page.evaluate(() => document.body.style.paddingBottom === ""), "Tafel zu: Platz unten wieder weg");
+await page.setViewport({ width: 390, height: 844, hasTouch: true, isMobile: true }); await sleep(300);
+await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
+
 // ── Auswahl-Tafel ──
 await kontext(kachel("s1"));
 ok((await tafel())?.startsWith("Teil 1"), `Lang-Druck: Auswahl-Tafel unten mit „Teil 1“ (${await tafel()})`);
@@ -124,7 +136,7 @@ ok(["s1", "s2"].every(id => d.gespeichert.find(x => x.id === id).platz.s === 1),
 ok(!(await tafel()) && !(await page.$(".slot-kopf-knoepfe .typ-btn.aktiv")), "danach: Tafel zu, kein Verschieben-Modus");
 // zurück in die linke Spalte (für die folgenden Schritte)
 await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("vokabel_slots")); d.gespeichert.forEach(x => { if (x.id === "s1") x.platz = { z: 0, s: 0 }; if (x.id === "s2") x.platz = { z: 1, s: 0 }; }); localStorage.setItem("vokabel_slots", JSON.stringify(d)); });
-await page.reload(); await sleep(700);
+await page.reload(); await page.waitForSelector(kachel("s3")); await sleep(1200);
 
 // ── Ziehen + verweilen: Gruppe ──
 // schnell loslassen tauscht (keine Gruppe)
