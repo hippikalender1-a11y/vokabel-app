@@ -1874,6 +1874,11 @@ VOKABEL-SUCHE: sucheVokabeln(voks, text) (Modul): nur SUCH_SPALTEN E1–E3 + D1�
   (sucheStatistik), Listenansicht (sucheListe, klebt unter listeDetailKopfH). Aufteilen: 🔍 neben Von/Bis
   (data-aufteilen-suche von|bis → aufteilenSuche, Trefferliste data-aufteilen-treffer = Nr., max. 40), darunter
   „Anfang/Ende: Nr. n · Wort – Deutsch“ (data-aufteilen-wort). Test: e2e/suche.mjs.
+VON–BIS PER LANG-DRUCK: vonBisLangDruck(art, vok, nr, w1, w2) an den Zeilen der Einzelauswahl (Quiz + Statistik):
+  Lang-Druck (beimMenue) setzt VonBisModus + Erster = diese Vokabel und öffnet die Auswahl-Tafel unten (auswahl.hinweis
+  eigener Text, Aktion „✕ Von–Bis abbrechen“). Zeilen + Suchleiste tragen data-auswahl-durchlass (Ende antippen, suchen,
+  ‹ ›, „nur Treffer“). vonBisTafelRef + Effekt: endet der Modus (Ende gewählt, Abbruch, Reset) → schliesseInfo().
+  Test: e2e/vonbis_langdruck.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

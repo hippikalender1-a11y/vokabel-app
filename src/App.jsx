@@ -1723,6 +1723,12 @@ export default function VokabelApp() {
   const [statistikEinzelauswahlAufgeklappt, setStatistikEinzelauswahlAufgeklappt] = useState(false);
   const [statistikVonBisModus, setStatistikVonBisModus] = useState(false);
   const [statistikVonBisErster, setStatistikVonBisErster] = useState(null);
+  // Lang-Druck auf eine Vokabel startet Von–Bis (sie ist der Anfang); die Tafel unten bleibt offen, bis das Ende angetippt ist
+  const vonBisTafelRef = useRef(null);   // "quiz" | "statistik" | null
+  useEffect(() => {
+    const art = vonBisTafelRef.current;
+    if ((art === "quiz" && !quizVonBisModus) || (art === "statistik" && !statistikVonBisModus)) { vonBisTafelRef.current = null; schliesseInfo(); }
+  }, [quizVonBisModus, statistikVonBisModus]);
   const [statistikVokauswahlH, setStatistikVokauswahlH] = useState(0);
   const [slots, setSlots] = useState(defaultSlots());          // {verlauf:[], gespeichert:[]}
   const [aktiverSlot, setAktiverSlot] = useState(null);        // {typ:"verlauf"|"gespeichert", id:string} | null
@@ -4643,13 +4649,23 @@ export default function VokabelApp() {
   function springeZuTreffer(art, id) {
     requestAnimationFrame(() => document.querySelector(`[data-such-ziel="${art}"][data-such-id="${window.CSS.escape(String(id))}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
   }
+  // Lang-Druck auf eine Vokabelzeile: Von–Bis mit dieser Vokabel als Anfang
+  function vonBisLangDruck(art, vok, nr, w1, w2) {
+    const [setModus, setErster] = art === "quiz" ? [setQuizVonBisModus, setQuizVonBisErster] : [setStatistikVonBisModus, setStatistikVonBisErster];
+    const abbrechen = () => { vonBisTafelRef.current = null; setModus(false); setErster(null); };
+    return tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs) – lang drücken: Von–Bis ab hier",
+      [{ label: "✕ Von–Bis abbrechen", fn: abbrechen }],
+      { langText: `Von–Bis: Anfang ist Nr. ${nr} · ${w1 || "–"}${w2 ? " – " + w2 : ""}. Tippe jetzt die letzte Vokabel an (scrollen und suchen geht weiter).`,
+        auswahl: { zu: () => abbrechen(), hinweis: "letzte Vokabel antippen · hier antippen: abbrechen" },
+        beimMenue: () => { vonBisTafelRef.current = art; setModus(true); setErster(vok.id); } });
+  }
   function renderSuchleiste(art, voks, such, setSuch, top) {
     const { treffer, nr } = suchInfo(voks, such);
     const n = treffer.length;
     const springe = k => { if (!n) return; const z = (k + n) % n; setSuch(x => ({ ...x, nr: z })); springeZuTreffer(art, treffer[z].id); };
     const knopf = {fontSize:"0.8rem", padding:"4px 9px", flexShrink:0};
     return (
-      <div data-suchleiste={art} style={{position:"sticky", top, zIndex:6, display:"flex", alignItems:"center", gap:5, padding:"8px 10px",
+      <div data-suchleiste={art} data-auswahl-durchlass style={{position:"sticky", top, zIndex:6, display:"flex", alignItems:"center", gap:5, padding:"8px 10px",
         background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", borderRadius:"inherit"}}>
         <input data-such-feld className="inp" type="text" enterKeyHint="search" placeholder="🔍 Vokabel suchen…" value={such.text}
           style={{flex:1, minWidth:0, padding:"6px 10px"}}
@@ -8255,8 +8271,8 @@ export default function VokabelApp() {
                         const isVon = quizVonBisModus && vok.id === quizVonBisErster;
                         const sp1 = abfragbar[0]; const sp2 = abfragbar[1];
                         return (
-                          <div {...tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs)")} key={vok.id} className="vok-zeile"
-                            data-such-ziel="quiz" data-such-id={vok.id}
+                          <div {...vonBisLangDruck("quiz", vok, idx + 1, sp1 && vok[sp1]?.wert, sp2 && vok[sp2]?.wert)} key={vok.id} className="vok-zeile"
+                            data-such-ziel="quiz" data-such-id={vok.id} data-auswahl-durchlass
                             style={{background: isVon ? "var(--gelb-flaeche)" : inChk ? "var(--haupt-flaeche)" : "transparent", ...suchMarke(such, vok.id)}}
                             onClick={() => {
                               if (!quizVonBisModus) { toggleVokCheckbox(vok.id); return; }
@@ -9130,8 +9146,8 @@ export default function VokabelApp() {
                     const sp1 = TYPEN.find(t => vok._spalten[t]?.aktiv);
                     const sp2 = TYPEN.filter(t => vok._spalten[t]?.aktiv)[1];
                     return (
-                      <div {...tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs)")} key={vok.id} className="vok-zeile"
-                        data-such-ziel="statistik" data-such-id={vok.id}
+                      <div {...vonBisLangDruck("statistik", vok, idx + 1, sp1 && vok[sp1]?.wert, sp2 && vok[sp2]?.wert)} key={vok.id} className="vok-zeile"
+                        data-such-ziel="statistik" data-such-id={vok.id} data-auswahl-durchlass
                         style={{background: isVon ? "var(--gelb-flaeche)" : gewaehlt ? "var(--haupt-flaeche)" : "transparent", ...suchMarke(statSuche, vok.id)}}
                         onClick={() => {
                           if (!statistikVonBisModus) {
@@ -9579,7 +9595,7 @@ export default function VokabelApp() {
                   {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
                   {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl. Ist eine gespeicherte Konfiguration geladen, sind Listen- und Vokabel-Auswahl festgelegt und ausgeblendet – zum Ändern lang auf die Kachel drücken und „Listen/Vokabeln ändern“ wählen."},
                   {k:"Vokabel-Auswahl [Alle]", v:"Alle Vokabeln der gewählten Listen werden abgefragt."},
-                  {k:"Vokabel-Auswahl [Bereich]", v:"Öffnet eine Checkbox-Liste. Einzelne Vokabeln an-/abwählen. [Von–Bis] ermöglicht Bereichsauswahl per 2 Klicks."},
+                  {k:"Vokabel-Auswahl [Bereich]", v:"Öffnet eine Checkbox-Liste. Einzelne Vokabeln an-/abwählen. [Von–Bis] ermöglicht Bereichsauswahl per 2 Klicks – oder lang auf die erste Vokabel drücken und die letzte antippen."},
                   {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Die Kreise unten über „Quiz mit … Vokabeln“ zeigen den Lernfortschritt der Auswahl je Art – die gewählte Art groß mit Name und Prozent, die anderen kleiner; antippen schaltet die Art um (auch über die Kreise der aufgeklappten Kopfzeile). In der Statistik wechselt man die Art über die Mitte des großen Kreisdiagramms. Eine Art ohne passende Vokabeln wird nicht angezeigt. Auch die Listen unter Einstellungen › Listen zeigen die drei Kreise. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC, Tastatur und (bei Sprachen mit Akzenten) Akzente – mehrere angehakt heißt „Gemischt“: je Frage und Spalte wird zufällig eine der Arten gewählt, Akzente nur bei Wörtern mit Akzent; sie zählen dann für den Übersetzungs-Score. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
                   {k:"Akzente", v:"Eigene Abfrageart (A): Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Ob auch Wörter ohne Akzent abgefragt werden, legst du beim Schwierigkeitsgrad fest."},
                   {k:"Zeile 1: Stufe · Modus · Reihenfolge", v:"Erster Knopf: Stufe Lernen, Leicht oder Schwer – antippen wechselt der Reihe nach. Zweiter Knopf: Abfrage-Modus der gewählten Art (z. B. „Karte“) – antippen öffnet die Spalten- und Modus-Einstellungen. Dritter Knopf: Reihenfolge – „Zufällige Reihenfolge“, „Schlechteste zuerst“ (nach Score sortiert) oder „Nach Listen-Platz“ (Originalreihenfolge), dazu Score-Filter und „Unbeantwortete zuerst“. Es ist immer nur ein Bereich offen. Ein neues Quiz (ohne geladene Konfiguration) beginnt immer in Übersetzung. Lang drücken: „Regeln Leicht / Schwer“, bei Lernen „Lernen einstellen“ und „Vorlesen“."},
