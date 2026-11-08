@@ -51,20 +51,27 @@ await klickText(".toggle-opt", "Bereich"); await sleep(400);
 // ── Lang-Druck auf eine Vokabel startet Von–Bis ──
 const cdp = await page.createCDPSession();
 const finger = (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
-const tafel = () => page.evaluate(() => document.querySelector("[data-auswahl-tafel] [data-info-blase]")?.textContent ?? null);
+const tafel = () => page.evaluate(() => { const t = document.querySelector("[data-auswahl-tafel]"); return t ? [...t.querySelectorAll("button")].map(b => b.textContent).join(" | ") : null; });
+const sichtbar = sel => page.evaluate(sel => { const e = document.querySelector(sel); return !!e && e.offsetParent !== null; }, sel);
+const feld = art => page.evaluate(a => document.querySelector(`[data-suchleiste="${a}"] [data-such-feld]`).value, art);
 const zeile = (art, nr) => `[data-such-ziel="${art}"][data-such-id="${nr}"], [data-such-ziel="${art}"][data-such-id$="__${nr}"]`;
 const gelb = (art, nr) => page.evaluate(s => /→/.test(document.querySelector(s)?.textContent || ""), zeile(art, nr));
 const auswahlText = () => page.evaluate(() => document.querySelector('[data-anzahl="auswahl"]')?.textContent);
 const tipp = (art, nr) => page.evaluate(s => document.querySelector(s).click(), zeile(art, nr)).then(() => sleep(400));
 
-await page.evaluate(s => document.querySelector(s).scrollIntoView({ block: "center" }), zeile("quiz", 5)); await sleep(400);
+// ── Bereich: Liste maximiert ──
+ok(!(await sichtbar("[data-slot-kopf]")) && !(await sichtbar(".liste-detail-header")) && !(await page.$("[data-start-knopf]")) && !(await page.$(".quiz-zeile")),
+  "Bereich offen: Session-Leiste, Listen-Auswahl, Optionen und Start ausgeblendet");
+ok(await sichtbar('[data-suchleiste="quiz"]') && await zeilen("quiz") === 80, "nur „Alle | Bereich“, Suche und die Liste sind da");
+
+await tippe('[data-suchleiste="quiz"] [data-such-feld]', "mot5"); await sleep(400);
 let r = await page.evaluate(s => { const b = document.querySelector(s).getBoundingClientRect(); return { x: b.x + 80, y: b.y + b.height / 2 }; }, zeile("quiz", 5));
 await finger("touchStart", r.x, r.y); await sleep(800); await finger("touchEnd"); await sleep(500);
 ok(await gelb("quiz", 5), "Lang-Druck auf Nr. 5: ist Anfang (→)");
 const t = await tafel();
-ok(/Anfang ist Nr\. 5 · mot5 – Wort5/.test(t || ""), `Tafel unten: Anfang + Hinweis (${t})`);
+ok(t === "✕ Von–Bis abbrechen | 🎨 Farbe ändern" && !(await page.$("[data-info-blase]")), `Tafel unten nur mit Knöpfen, ohne Erklärtext (${t})`);
+ok(await feld("quiz") === "", "Anfang gesetzt: Suchfeld geleert (für die Suche nach dem Ende)");
 ok(await page.evaluate(() => document.querySelectorAll('[data-such-ziel="quiz"] .checkbox.checked').length) === 1, "Loslassen wählt nichts aus (nur der Anfang ist markiert)");
-ok(/letzte Vokabel antippen · hier antippen: abbrechen/.test(t || ""), "Tafel-Hinweis passt zu Von–Bis");
 // Suche bleibt bedienbar, Ende über die Suche finden
 await tippe('[data-suchleiste="quiz"] [data-such-feld]', "chat");
 ok(await anzahl("quiz") === "1" && await tafel(), "Suche während Von–Bis: Treffer, Tafel bleibt");
@@ -84,8 +91,12 @@ ok(!(await gelb("quiz", 2)) && !(await tafel()) && /\(66 V\.\)/.test(await auswa
 // Antippen außerhalb wird verschluckt, Tippen auf die Tafel bricht ab
 await page.evaluate(s => { const el = document.querySelector(s); const b = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: b.x + 20, clientY: b.y + 10 })); }, zeile("quiz", 3)); await sleep(400);
-await page.evaluate(() => document.querySelector("[data-auswahl-tafel] [data-info-blase]").click()); await sleep(400);
-ok(!(await gelb("quiz", 3)) && !(await tafel()), "Tippen auf die Tafel bricht ab");
+await klickText(".btn", "…Bis");
+ok(!(await gelb("quiz", 3)) && !(await tafel()), "„…Bis“-Knopf oben beendet Von–Bis, Tafel zu");
+// Bereich antippen schließt die Liste, die Session-Optionen sind wieder da
+await klickText(".toggle-opt", "Bereich"); await sleep(400);
+ok(!(await page.$('[data-suchleiste="quiz"]')) && await page.$("[data-start-knopf]") && await sichtbar("[data-slot-kopf]") && await sichtbar(".liste-detail-header"),
+  "„Bereich“ antippen: Liste zu, Session-Leiste, Listen-Auswahl und Start wieder sichtbar");
 
 // ── Statistik ──
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => /Statistik/.test(t.textContent)).click()); await sleep(500);
@@ -94,7 +105,7 @@ const statZahl = () => page.evaluate(() => document.querySelectorAll('[data-such
 const vorher = await statZahl();
 await page.evaluate(s => { const el = document.querySelector(s); el.scrollIntoView({ block: "center" }); const b = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: b.x + 20, clientY: b.y + 10 })); }, zeile("statistik", 1)); await sleep(500);
-ok(await gelb("statistik", 1) && /Anfang ist Nr\. 1 /.test(await tafel() || ""), "Statistik: Lang-Druck auf Nr. 1 ist Anfang");
+ok(await gelb("statistik", 1) && /Von–Bis abbrechen/.test(await tafel() || ""), "Statistik: Lang-Druck auf Nr. 1 ist Anfang");
 await tipp("statistik", 4);
 ok(await statZahl() - vorher === 4 && !(await tafel()), `Statistik: Ende Nr. 4 → 4 Vokabeln dazu, Tafel zu (${vorher} → ${await statZahl()})`);
 

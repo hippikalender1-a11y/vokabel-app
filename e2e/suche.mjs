@@ -75,6 +75,8 @@ const auswahl = await page.evaluate(() => document.querySelector('[data-anzahl="
 ok(/\(39 V\.\)/.test(auswahl || ""), `Von–Bis über die Treffer wählt den ganzen Bereich 12–50 (${auswahl})`);
 await page.click('[data-suchleiste="quiz"] [data-nur-treffer]'); await sleep(300);
 ok(await zeilen("quiz") === 80, "„nur Treffer“ aus: wieder alle 80");
+ok(await page.evaluate(() => document.querySelector('[data-suchleiste="quiz"] [data-such-feld]').value) === "", "Von–Bis: Anfang gesetzt leert das Suchfeld");
+await tippe('[data-suchleiste="quiz"] [data-such-feld]', "maison");
 await page.click('[data-suchleiste="quiz"] [data-such-leeren]'); await sleep(300);
 ok(await page.evaluate(() => document.querySelector('[data-suchleiste="quiz"] [data-such-feld]').value) === "" && !(await aktuell("quiz")), "✕ leert die Suche");
 

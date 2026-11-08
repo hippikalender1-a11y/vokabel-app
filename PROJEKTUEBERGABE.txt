@@ -1878,7 +1878,12 @@ VON–BIS PER LANG-DRUCK: vonBisLangDruck(art, vok, nr, w1, w2) an den Zeilen de
   Lang-Druck (beimMenue) setzt VonBisModus + Erster = diese Vokabel und öffnet die Auswahl-Tafel unten (auswahl.hinweis
   eigener Text, Aktion „✕ Von–Bis abbrechen“). Zeilen + Suchleiste tragen data-auswahl-durchlass (Ende antippen, suchen,
   ‹ ›, „nur Treffer“). vonBisTafelRef + Effekt: endet der Modus (Ende gewählt, Abbruch, Reset) → schliesseInfo().
-  Test: e2e/vonbis_langdruck.mjs.
+  Tafel ohne Erklärtext (auswahl.ohneText: nur „✕ Von–Bis abbrechen“ + „🎨 Farbe ändern“); Von–Bis-Knopf oben ist
+  data-auswahl-durchlass (beendet). Anfang gesetzt (Effekt auf *VonBisErster) → Suchfeld geleert, bei „nur Treffer“
+  zum Anfang springen. Test: e2e/vonbis_langdruck.mjs.
+VOKABELLISTE MAXIMIERT: quizVokMax (Quiz, Bereich + Liste offen, nicht Aufteilen): Session-Leiste (renderSlotKopf) und
+  Listen-Auswahl-Kopf display:none (Höhen messen 0), alles unter der Liste (Zeile 1 … Start) nicht gerendert; die Liste
+  klappt beim Scrollen nicht von selbst zu (kontexte „vokabeln“ offen = !quizVokMax), nur „Bereich“ schließt sie.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

@@ -51,6 +51,20 @@ await sleep(600);
 let z = await liste();
 ok(z.offen && z.letzteUnten > z.hoehe, `Lange Vokabel-Auswahl offen, Ende nicht sichtbar (${z.letzteUnten} > ${z.hoehe})`);
 
+// 0) Quiz: maximierte Vokabelliste klappt beim Scrollen nicht von selbst zu (nur „Bereich“ schließt sie)
+await wisch(6000); await sleep(1200);
+z = await liste();
+ok(z.offen && !z.hinweis, "Quiz-Liste (maximiert): Schwung über das Ende – bleibt offen, kein Hinweis");
+await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);
+await clickText("button", "Bereich", true); await sleep(400);
+ok(!(await liste()).offen, "Quiz: „Bereich“ antippen schließt die Liste");
+
+// Bremse an der langen Vokabel-Auswahl der Statistik
+await clickText(".tab", "Statistik"); await sleep(500);
+await clickText(".toggle-opt", "Bereich", true); await sleep(600);
+z = await liste();
+ok(z.offen && z.letzteUnten > z.hoehe, `Statistik: lange Vokabel-Auswahl offen, Ende nicht sichtbar (${z.letzteUnten} > ${z.hoehe})`);
+
 // 1) Schwungvoll weit über das Ende hinaus
 await wisch(6000);
 await sleep(1200);   // Scroll-Ruhe + Zurückgleiten
@@ -69,7 +83,7 @@ ok(!z.hinweis, "Hinweis verschwindet");
 
 // 3) Tippen auf den Hinweis
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);
-await clickText("button", "Bereich", true);   // Bereich ist schon aktiv → Klick öffnet die Liste wieder
+await clickText(".toggle-opt", "Bereich", true);   // Bereich ist schon aktiv → Klick öffnet die Liste wieder
 await sleep(600);
 if (!(await liste()).offen) { await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("V.)"))?.click()); await sleep(600); }
 z = await liste();
@@ -84,6 +98,7 @@ if (z.offen) {
 }
 
 // 4) Kurzer Bereich: Abfrage-Modus öffnen, Weiterscrollen klappt wie bisher sofort zu
+await clickText(".tab", "Quiz"); await sleep(500);
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);
 await page.click("[data-abfragemodus]"); await sleep(300);
 await sleep(600);

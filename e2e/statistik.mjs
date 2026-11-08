@@ -65,6 +65,7 @@ await page.evaluate(async () => { const u = document.querySelector("[data-umfang
 await clickText("button", "Bereich", true);
 await page.evaluate(() => [...document.querySelectorAll(".vok-nr")].slice(0, 3).forEach(z => z.parentElement.click()));
 await sleep(300);
+await clickText("button", "Bereich", true); await sleep(300);   // Liste zu → Session-Optionen wieder sichtbar
 await clickText("[data-start-knopf]", "");
 await sleep(400);
 await karteGewusst(3);
