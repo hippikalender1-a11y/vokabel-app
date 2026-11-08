@@ -210,6 +210,25 @@ const KACHEL_ANHEBEN_MS = 250;
 // … und so lange halten wählt sie aus (weiterfahren sammelt weitere ein, loslassen öffnet die Auswahl-Tafel);
 // ist sie schon ausgewählt, bleibt sie angehoben – ziehen verschiebt dann die ganze Auswahl
 const KACHEL_AUSWAEHLEN_MS = 900;   // so lange über einer Kachel halten, bis Loslassen eine Gruppe bildet
+// Vokabel-Suche: nur Fremdsprache (E1–E3) und Deutsch (D1–D2), „enthält“, Groß/klein und Akzente egal;
+// Treffer am Wortanfang zuerst, sonst in Listen-Reihenfolge. Ergebnis: [{ id, i (Position in voks), rang }]
+const SUCH_SPALTEN = ["E1", "E2", "E3", "D1", "D2"];
+function suchNorm(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+function sucheVokabeln(voks, text) {
+  const q = suchNorm(text).trim();
+  if (!q) return [];
+  const treffer = [];
+  voks.forEach((v, i) => {
+    let rang = 2;
+    for (const t of SUCH_SPALTEN) {
+      const w = suchNorm(v[t]?.wert);
+      for (let p = w.indexOf(q); p >= 0 && rang > 0; p = w.indexOf(q, p + 1)) rang = p === 0 || !/[\p{L}\p{N}]/u.test(w[p - 1]) ? 0 : Math.min(rang, 1);
+    }
+    if (rang < 2) treffer.push({ id: v.id, i, rang });
+  });
+  return treffer.sort((a, b) => a.rang - b.rang || a.i - b.i);
+}
+const SUCHE_LEER = { text: "", nr: 0, nurTreffer: false };
 function formatSlotDatum() {
   const n = new Date();
   return n.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'})
@@ -1754,6 +1773,13 @@ export default function VokabelApp() {
   const [zuruecksetzenArten, setZuruecksetzenArten] = useState(new Set(Object.keys(SCORE_FELD)));
   // Liste in Sessions aufteilen (Quiz-Tab): { listeId, name, groesse, von, bis, restAnhaengen }
   const [aufteilen, setAufteilen] = useState(null);
+  // Vokabel-Suche je Stelle: { text, nr (aktueller Treffer), nurTreffer }; Aufteilen: { feld: "von"|"bis", text } oder null
+  const [sucheQuiz, setSucheQuiz] = useState(SUCHE_LEER);
+  const [sucheStatistik, setSucheStatistik] = useState(SUCHE_LEER);
+  const [sucheListe, setSucheListe] = useState(SUCHE_LEER);
+  const [aufteilenSuche, setAufteilenSuche] = useState(null);
+  const listeDetailKopfRef = useRef(null);
+  const [listeDetailKopfH, setListeDetailKopfH] = useState(48);
   const slotGezogenRef = useRef(false);                       // Klick nach dem Ziehen schlucken
   // Auswahl-Tafel (Lang-Druck auf eine Kachel): bleibt unten offen, weitere Kacheln antippen wählt mit aus
   const auswahlTafelRef = useRef(null);                       // "slot" | "liste" solange offen
@@ -2118,6 +2144,17 @@ export default function VokabelApp() {
     obs.observe(el);
     return () => obs.disconnect();
   }, [tab, statistikVollbild]);
+
+  useEffect(() => {
+    const el = listeDetailKopfRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(() => setListeDetailKopfH(el.offsetHeight));
+    obs.observe(el);
+    setListeDetailKopfH(el.offsetHeight);
+    return () => obs.disconnect();
+  }, [tab, ansicht]);
+  useEffect(() => { setSucheListe(x => ({ ...SUCHE_LEER, nurTreffer: x.nurTreffer })); }, [aktiveListeId]);
+  useEffect(() => { if (!aufteilen) setAufteilenSuche(null); }, [aufteilen]);
 
   useEffect(() => {
     const el = statistikVokauswahlRef.current;
@@ -4591,6 +4628,52 @@ export default function VokabelApp() {
     return name;
   }
 
+  // Suchleiste über einer Vokabelliste (Einzelauswahl Quiz/Statistik, Listenansicht): Treffer anspringen (‹ ›, Enter)
+  // oder mit „nur Treffer“ filtern. Zeilen tragen data-such-ziel={art} data-such-id={vok.id}.
+  function suchInfo(voks, such) {
+    const treffer = sucheVokabeln(voks, such.text);
+    const nr = Math.min(such.nr, Math.max(0, treffer.length - 1));
+    return { treffer, nr, ids: new Set(treffer.map(t => t.id)), aktuell: treffer[nr]?.id, filter: such.nurTreffer && !!such.text.trim() };
+  }
+  // Hervorhebung einer Zeile: aktueller Treffer kräftig, weitere Treffer zart (linker Rand)
+  function suchMarke(info, id) {
+    return id === info.aktuell ? { boxShadow:"inset 5px 0 0 var(--gelb)", outline:"2px solid var(--gelb)", outlineOffset:-2 }
+      : info.ids.has(id) ? { boxShadow:"inset 5px 0 0 var(--gelb-zart)" } : {};
+  }
+  function springeZuTreffer(art, id) {
+    requestAnimationFrame(() => document.querySelector(`[data-such-ziel="${art}"][data-such-id="${window.CSS.escape(String(id))}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
+  }
+  function renderSuchleiste(art, voks, such, setSuch, top) {
+    const { treffer, nr } = suchInfo(voks, such);
+    const n = treffer.length;
+    const springe = k => { if (!n) return; const z = (k + n) % n; setSuch(x => ({ ...x, nr: z })); springeZuTreffer(art, treffer[z].id); };
+    const knopf = {fontSize:"0.8rem", padding:"4px 9px", flexShrink:0};
+    return (
+      <div data-suchleiste={art} style={{position:"sticky", top, zIndex:6, display:"flex", alignItems:"center", gap:5, padding:"8px 10px",
+        background:"var(--karte)", borderBottom:"1px solid var(--rahmen)", borderRadius:"inherit"}}>
+        <input data-such-feld className="inp" type="text" enterKeyHint="search" placeholder="🔍 Vokabel suchen…" value={such.text}
+          style={{flex:1, minWidth:0, padding:"6px 10px"}}
+          onChange={e => {
+            const text = e.target.value;
+            setSuch(x => ({ ...x, text, nr: 0 }));
+            const erster = sucheVokabeln(voks, text)[0];
+            if (erster) springeZuTreffer(art, erster.id);
+          }}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); springe(nr + 1); } }}
+          {...ttFeld("Suche in Fremdsprache und Deutsch: enthält den Text, Groß/klein und Akzente egal – Treffer am Wortanfang zuerst")}/>
+        {such.text && (<>
+          <span data-such-anzahl={n} style={{fontSize:"0.75rem", color: n ? "var(--text2)" : "var(--falsch)", whiteSpace:"nowrap", flexShrink:0}}>{n ? `${nr + 1}/${n}` : "0"}</span>
+          <button className="typ-btn" data-such-zurueck style={knopf} disabled={!n} onClick={() => springe(nr - 1)} {...tt("Voriger Treffer")}>‹</button>
+          <button className="typ-btn" data-such-weiter style={knopf} disabled={!n} onClick={() => springe(nr + 1)} {...tt("Nächster Treffer")}>›</button>
+          <button className="typ-btn" data-such-leeren style={knopf} onClick={() => setSuch(x => ({ ...x, text: "", nr: 0 }))} {...tt("Suche leeren")}>✕</button>
+        </>)}
+        <button className={`typ-btn${such.nurTreffer ? " aktiv" : ""}`} data-nur-treffer style={{...knopf, fontSize:"0.72rem"}}
+          onClick={() => setSuch(x => ({ ...x, nurTreffer: !x.nurTreffer }))}
+          {...tt(such.nurTreffer ? "Wieder alle Vokabeln zeigen" : "Nur die Treffer zeigen (Von–Bis wählt trotzdem den ganzen Bereich dazwischen)")}>nur Treffer</button>
+      </div>
+    );
+  }
+
   // Kasten „In Sessions aufteilen“ im Quiz-Tab: Name, Gruppengröße, Bereich, Rest, Vorschau
   function renderAufteilenKasten() {
     const stand = aufteilenStand();
@@ -4624,15 +4707,67 @@ export default function VokabelApp() {
             value={AUFTEILEN_GROESSEN.includes(aufteilen.groesse) ? "" : aufteilen.groesse}
             onChange={e => { const n = zahl(e.target.value, 1, anzahl); if (n !== "") upd({ groesse: n }); }}/>
         </div>
-        <div style={zeile}>
+        <div style={{...zeile, marginBottom:4}}>
           <span style={label}>Bereich (Nr.)</span>
           <input {...ttFeld("Erste Vokabel-Nummer der Liste, ab der aufgeteilt wird")} data-aufteilen-von className="inp" type="number" min={1} max={anzahl}
-            style={{width:74, padding:"5px 8px"}} value={aufteilen.von} onChange={e => upd({ von: zahl(e.target.value, 1, anzahl) })}/>
+            style={{width:60, padding:"5px 6px"}} value={aufteilen.von} onChange={e => upd({ von: zahl(e.target.value, 1, anzahl) })}/>
+          <button className={`typ-btn${aufteilenSuche?.feld === "von" ? " aktiv" : ""}`} data-aufteilen-suche="von" style={{padding:"4px 6px"}}
+            onClick={() => setAufteilenSuche(x => x?.feld === "von" ? null : { feld: "von", text: "" })} {...tt("Anfang suchen: Vokabel suchen und antippen")}>🔍</button>
           <span style={{fontSize:"0.8rem", color:"var(--text2)"}}>bis</span>
           <input {...ttFeld("Letzte Vokabel-Nummer, bis zu der aufgeteilt wird")} data-aufteilen-bis className="inp" type="number" min={1} max={anzahl}
-            style={{width:74, padding:"5px 8px"}} value={aufteilen.bis} onChange={e => upd({ bis: zahl(e.target.value, 1, anzahl) })}/>
+            style={{width:60, padding:"5px 6px"}} value={aufteilen.bis} onChange={e => upd({ bis: zahl(e.target.value, 1, anzahl) })}/>
+          <button className={`typ-btn${aufteilenSuche?.feld === "bis" ? " aktiv" : ""}`} data-aufteilen-suche="bis" style={{padding:"4px 6px"}}
+            onClick={() => setAufteilenSuche(x => x?.feld === "bis" ? null : { feld: "bis", text: "" })} {...tt("Ende suchen: Vokabel suchen und antippen")}>🔍</button>
           <span style={{fontSize:"0.75rem", color:"var(--text3)"}}>von {anzahl}</span>
         </div>
+        {(() => {
+          // Anfang und Ende als Wort (Fremdsprache · Deutsch)
+          const wort = nr => { const v = stand.liste.vokabeln[nr - 1]; if (!v) return "–";
+            const e = SUCH_SPALTEN.filter(t => t.startsWith("E")).map(t => v[t]?.wert).find(Boolean); const d = SUCH_SPALTEN.filter(t => t.startsWith("D")).map(t => v[t]?.wert).find(Boolean);
+            return [e, d].filter(Boolean).join(" – "); };
+          const von = aufteilen.von || 1, bis = aufteilen.bis || anzahl;
+          return (
+            <div data-aufteilen-woerter style={{fontSize:"0.75rem", color:"var(--text2)", margin:"0 0 10px 90px", lineHeight:1.5}}>
+              <div data-aufteilen-wort="von">Anfang: Nr. {von} · {wort(von)}</div>
+              <div data-aufteilen-wort="bis">Ende: Nr. {bis} · {wort(bis)}</div>
+            </div>
+          );
+        })()}
+        {aufteilenSuche && (() => {
+          const voks = stand.liste.vokabeln;
+          const treffer = sucheVokabeln(voks, aufteilenSuche.text);
+          const anzeige = treffer.slice(0, 40);
+          const e1 = SUCH_SPALTEN.filter(t => t.startsWith("E")), d1 = SUCH_SPALTEN.filter(t => t.startsWith("D"));
+          return (
+            <div data-aufteilen-suchfeld={aufteilenSuche.feld} style={{background:"var(--karte)", border:"1px solid var(--rahmen)", borderRadius:10, padding:8, marginBottom:10}}>
+              <div style={{display:"flex", gap:6, alignItems:"center", marginBottom:6}}>
+                <input data-such-feld className="inp" type="text" enterKeyHint="search" autoFocus placeholder={aufteilenSuche.feld === "von" ? "🔍 Anfang suchen…" : "🔍 Ende suchen…"}
+                  style={{flex:1, minWidth:0, padding:"6px 10px"}} value={aufteilenSuche.text}
+                  onChange={e => setAufteilenSuche(x => ({ ...x, text: e.target.value }))}
+                  {...ttFeld("Suche in Fremdsprache und Deutsch: enthält den Text, Groß/klein und Akzente egal")}/>
+                <button className="typ-btn" style={{padding:"4px 9px"}} onClick={() => setAufteilenSuche(null)} {...tt("Suche schließen")}>✕</button>
+              </div>
+              {aufteilenSuche.text.trim() && (
+                <div style={{maxHeight:240, overflowY:"auto"}}>
+                  {anzeige.length === 0 && <div style={{fontSize:"0.8rem", color:"var(--text3)", padding:"4px 6px"}}>Keine Treffer</div>}
+                  {anzeige.map(t => {
+                    const v = voks[t.i];
+                    return (
+                      <div key={t.id} data-aufteilen-treffer={t.i + 1} className="vok-zeile" style={{cursor:"pointer"}}
+                        onClick={() => { upd({ [aufteilenSuche.feld]: t.i + 1 }); setAufteilenSuche(null); }}
+                        {...tt(`Nr. ${t.i + 1} als ${aufteilenSuche.feld === "von" ? "Anfang" : "Ende"} übernehmen`)}>
+                        <span className="vok-nr">{t.i + 1}</span>
+                        <span style={{fontSize:"0.86rem", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{e1.map(x => v[x]?.wert).find(Boolean) || ""}</span>
+                        <span style={{fontSize:"0.8rem", color:"var(--text2)", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textAlign:"right"}}>{d1.map(x => v[x]?.wert).find(Boolean) || ""}</span>
+                      </div>
+                    );
+                  })}
+                  {treffer.length > anzeige.length && <div style={{fontSize:"0.72rem", color:"var(--text3)", padding:"4px 6px"}}>… {treffer.length - anzeige.length} weitere – Suchtext genauer fassen</div>}
+                </div>
+              )}
+            </div>
+          );
+        })()}
         {hatRest && (
           <div style={zeile}>
             <span style={label}>Rest</span>
@@ -7431,7 +7566,7 @@ export default function VokabelApp() {
 
         {/* ── Listen-Header (persistent) ── */}
         {tab === "listen" && ansicht !== "import" && ansicht !== "ki-prompt" && (
-          <div className="liste-detail-header" style={{top: headerH}}>
+          <div ref={listeDetailKopfRef} className="liste-detail-header" style={{top: headerH}}>
             {ansicht === "liste-detail" && aktiveListe ? (
               <>
                 <button className="btn-icon" data-zurueck-listen onClick={zuEinstListen} {...tt("Zurück zu Einstellungen › Listen")} style={{padding:"4px 6px", marginRight:2, color:"var(--haupt)"}}><IcoBack s={18}/></button>
@@ -8107,17 +8242,22 @@ export default function VokabelApp() {
                 {aufteilen && kombiListe && renderAufteilenKasten()}
 
                 {/* Einzelauswahl (Bereich-Modus) */}
-                {quizListeAufgeklappt && quizBereichTyp === "bereich" && kombiListe && !(aktiverSlot?.typ === "gespeichert" && !listenAendern) && (
-                  <div ref={einzelauswahlRef} className="karte" style={{marginBottom:8, marginTop:8}}>
+                {quizListeAufgeklappt && quizBereichTyp === "bereich" && kombiListe && !(aktiverSlot?.typ === "gespeichert" && !listenAendern) && (() => {
+                  const such = suchInfo(basisVoks, sucheQuiz);
+                  return (
+                  <div ref={einzelauswahlRef} className="karte" style={{marginBottom:8, marginTop:8, overflow:"visible"}}>
+                    {basisVoks.length > 0 && renderSuchleiste("quiz", basisVoks, sucheQuiz, setSucheQuiz, headerH + slotH + listenauswahlHeaderH + alleBereichH)}
                     {basisVoks.length === 0
                       ? <div style={{padding:"16px", color:"var(--text2)", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
                       : basisVoks.map((vok, idx) => {
+                        if (such.filter && !such.ids.has(vok.id)) return null;   // „nur Treffer“ (Von–Bis zählt trotzdem über die ganze Liste)
                         const inChk = quizCheckboxAuswahl.has(vok.id);
                         const isVon = quizVonBisModus && vok.id === quizVonBisErster;
                         const sp1 = abfragbar[0]; const sp2 = abfragbar[1];
                         return (
                           <div {...tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs)")} key={vok.id} className="vok-zeile"
-                            style={{background: isVon ? "var(--gelb-flaeche)" : inChk ? "var(--haupt-flaeche)" : "transparent"}}
+                            data-such-ziel="quiz" data-such-id={vok.id}
+                            style={{background: isVon ? "var(--gelb-flaeche)" : inChk ? "var(--haupt-flaeche)" : "transparent", ...suchMarke(such, vok.id)}}
                             onClick={() => {
                               if (!quizVonBisModus) { toggleVokCheckbox(vok.id); return; }
                               if (quizVonBisErster === null) {
@@ -8143,7 +8283,7 @@ export default function VokabelApp() {
                       })
                     }
                   </div>
-                )}
+                  ); })()}
 
                 {/* ZEILE 1: Stufe (Lernen/Leicht/Schwer) | Abfrage-Modus | Reihenfolge – je ein Bereich klappt darunter auf */}
                 {kombiListe && (
@@ -8614,6 +8754,7 @@ export default function VokabelApp() {
           const anzeigeVoks = listenGelerntAusblenden && schwelleL > 0
             ? aktiveListe.vokabeln.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleL)
             : aktiveListe.vokabeln;
+          const listenSuche = suchInfo(anzeigeVoks, sucheListe);
           // In der Vokabelliste angezeigte Spalten (je Liste gemerkt, Standard: nur die erste); mindestens eine bleibt sichtbar
           const gemerkt = aktiveSpalten.filter(t => (ansichtSpaltenAn[aktiveListeId] || []).includes(t));
           const anzeigeSpalten = gemerkt.length > 0 ? gemerkt : aktiveSpalten.slice(0, 1);
@@ -8759,12 +8900,14 @@ export default function VokabelApp() {
                       })}
                     </div>
                   )}
-                  <div className="karte">
+                  <div className="karte" style={{overflow:"visible"}}>
+                    {renderSuchleiste("liste", anzeigeVoks, sucheListe, setSucheListe, headerH + listeDetailKopfH)}
                     {anzeigeVoks.map(vok => {
+                      if (listenSuche.filter && !listenSuche.ids.has(vok.id)) return null;   // „nur Treffer“
                       const score = vok.fortschritt != null ? clampScore(vok.fortschritt.score) : null;
                       const istGelernt = schwelleL > 0 && (vok.fortschritt?.score ?? -Infinity) >= schwelleL;
                       return (
-                        <div key={vok.id} className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:4}}>
+                        <div key={vok.id} className="karte-zeile" data-such-ziel="liste" data-such-id={vok.id} style={{flexDirection:"column", alignItems:"flex-start", gap:4, ...suchMarke(listenSuche, vok.id)}}>
                           <div style={{display:"flex", width:"100%", justifyContent:"space-between", alignItems:"flex-start"}}>
                             <div style={{display:"flex", flexDirection:"column", gap:3, flex:1}}>
                               {anzeigeSpalten.map(typ => vok[typ] ? (
@@ -8925,6 +9068,7 @@ export default function VokabelApp() {
           const hatVoks = statistikBasisVoks.length > 0;
           const istBereich = statistikBereichTyp === "bereich";
           const auswahlAnzahl = statistikGefilterteVoks.length;
+          const statSuche = suchInfo(statistikBasisVoks, sucheStatistik);
           return (<>
             <div ref={statistikVokauswahlRef} style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH, zIndex:7, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8}}>
               {/* LINKS */}
@@ -8977,15 +9121,18 @@ export default function VokabelApp() {
             </div>
             {statistikEinzelauswahlAufgeklappt && istBereich && (
               <div ref={statistikEinzelauswahlRef} style={{background:"var(--hintergrund)", borderBottom:"1px solid var(--rahmen)", paddingBottom:8}}>
-                <div className="karte" style={{margin:"8px 16px 0 16px"}}>
+                <div className="karte" style={{margin:"8px 16px 0 16px", overflow:"visible"}}>
+                  {statistikBasisVoks.length > 0 && renderSuchleiste("statistik", statistikBasisVoks, sucheStatistik, setSucheStatistik, headerH + slotH + statistikListenHeaderH + statistikVokauswahlH)}
                   {statistikBasisVoks.map((vok, idx) => {
+                    if (statSuche.filter && !statSuche.ids.has(vok.id)) return null;   // „nur Treffer“
                     const gewaehlt = statistikCheckboxAuswahl.has(vok.id);
                     const isVon = statistikVonBisModus && vok.id === statistikVonBisErster;
                     const sp1 = TYPEN.find(t => vok._spalten[t]?.aktiv);
                     const sp2 = TYPEN.filter(t => vok._spalten[t]?.aktiv)[1];
                     return (
                       <div {...tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs)")} key={vok.id} className="vok-zeile"
-                        style={{background: isVon ? "var(--gelb-flaeche)" : gewaehlt ? "var(--haupt-flaeche)" : "transparent"}}
+                        data-such-ziel="statistik" data-such-id={vok.id}
+                        style={{background: isVon ? "var(--gelb-flaeche)" : gewaehlt ? "var(--haupt-flaeche)" : "transparent", ...suchMarke(statSuche, vok.id)}}
                         onClick={() => {
                           if (!statistikVonBisModus) {
                             setStatistikCheckboxAuswahl(prev => { const n = new Set(prev); if (n.has(vok.id)) n.delete(vok.id); else n.add(vok.id); return n; });

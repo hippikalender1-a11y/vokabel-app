@@ -1865,6 +1865,15 @@ GRUPPEN-GESTEN (Feedback zu Schritt 4): Lang-Druck auf eine Kachel (Sessions + L
   (Klick danach per preventDefault verschluckt). Stufen nach gehaltener Zeit (t0), nicht nur per Timer. Gruppen-Kachel:
   nur anheben, ihr Menü weiter über tt (500 ms). Maus: Rechtsklick = Tafel, Ziehen im Verschieben-Modus.
   Test: e2e/gruppen_gesten.mjs.
+VOKABEL-SUCHE: sucheVokabeln(voks, text) (Modul): nur SUCH_SPALTEN E1–E3 + D1–D2, „enthält“, suchNorm (klein, ohne
+  Akzente), Treffer am Wortanfang zuerst ([{ id, i, rang }]). renderSuchleiste(art, voks, such, setSuch, top): klebende
+  Leiste (data-suchleiste quiz|statistik|liste; Feld data-such-feld, Zähler data-such-anzahl, ‹ › data-such-zurueck/
+  -weiter, Enter = nächster, ✕ data-such-leeren, Schalter data-nur-treffer). Zeilen: data-such-ziel + data-such-id,
+  suchMarke (aktueller Treffer Rahmen, weitere zart links), springeZuTreffer (scrollIntoView, weich). „nur Treffer“
+  blendet aus; Von–Bis rechnet weiter über die ganze Liste. Stellen: Einzelauswahl Quiz (sucheQuiz) und Statistik
+  (sucheStatistik), Listenansicht (sucheListe, klebt unter listeDetailKopfH). Aufteilen: 🔍 neben Von/Bis
+  (data-aufteilen-suche von|bis → aufteilenSuche, Trefferliste data-aufteilen-treffer = Nr., max. 40), darunter
+  „Anfang/Ende: Nr. n · Wort – Deutsch“ (data-aufteilen-wort). Test: e2e/suche.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),
