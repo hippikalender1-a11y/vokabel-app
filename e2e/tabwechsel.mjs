@@ -26,7 +26,7 @@ const clickText = async (sel, text, exact = false) => {
 // Kopfzeile: Zustand + Name; Listen-Chip (rechte Spalte der Listen-Auswahl)
 const stand = () => page.evaluate(() => {
   const k = document.querySelector("[data-slot-kopf]");
-  const listen = [...document.querySelectorAll("button.zeile-rechts")].find(b => /Listen für/.test(b.getAttribute("title") || ""));
+  const listen = [...document.querySelectorAll("button.zeile-rechts")].find(b => /Listen für|Gewählte Listen/.test(b.getAttribute("title") || ""));
   // gespeicherte Konfiguration: Listen-Auswahl ausgeblendet
   return { kopf: k?.dataset.slotKopf, name: k?.querySelector("button.toggle-opt.aktiv")?.textContent.trim(), listen: listen ? listen.textContent.trim() : "(ausgeblendet)" };
 });
@@ -86,7 +86,7 @@ ok(artVorher === "diktat" && artNachher === "uebersetzung", `neues Quiz beginnt 
 ok(!(await page.$('[data-anzahl="fortschritt"]')), "Quiz: kein Fortschritt einer alten Session sichtbar");
 
 // Quiz: nur Tiere → Statistik zeigt Tiere
-await page.evaluate(() => document.querySelector("button.zeile-rechts[title^='Listen für']").click());
+await page.evaluate(() => document.querySelector("button.zeile-rechts[title^='Gewählte Listen']").click());
 await sleep(300);
 await clickText(".quiz-setup-check", "Farben");
 await clickText(".tab", "Statistik");

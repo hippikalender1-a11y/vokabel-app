@@ -44,9 +44,21 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(800);
 
-// ── Quiz: Einzelauswahl ──
+// ── Neue Session: „Neues Quiz · nicht gespeichert“, Listen-Auswahl ohne Liste: Hinweis statt Knopf ──
 await neueEineSession(page);
+const kopf = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf-name]"); return { text: k.textContent, ng: !!k.querySelector("[data-nicht-gespeichert]") }; });
+ok(/^Neues Quiz/.test(kopf.text) && kopf.ng, `Kopf: „Neues Quiz“ + „nicht gespeichert“ (${kopf.text})`);
+const rechts = () => page.evaluate(() => { const h = document.querySelector(".liste-detail-header"); return { hinweis: h.querySelector("[data-listen-hinweis]")?.textContent ?? null, knopf: h.querySelector(".zeile-rechts")?.textContent ?? null }; });
+let re = await rechts();
+ok(re.hinweis === "Liste auswählen" && re.knopf === null && await page.$(".quiz-setup-check"), `ohne Liste: rechts nur Hinweis, kein Knopf, Listen offen (${JSON.stringify(re)})`);
+await page.evaluate(() => document.querySelector("[data-listen-hinweis]").click()); await sleep(300);
+ok(await page.$(".quiz-setup-check") && !/Bitte Liste auswählen/.test(await page.evaluate(() => document.body.innerText)), "Hinweis antippen schließt nichts");
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(400);
+re = await rechts();
+ok(re.knopf === "Unité 1" && re.hinweis === null, `Liste gewählt: Knopf mit dem Namen (${JSON.stringify(re)})`);
+await page.evaluate(() => document.querySelector(".liste-detail-header .zeile-rechts").click()); await sleep(400);
+ok(!(await page.$(".quiz-setup-check")), "Knopf antippen klappt die Listen-Auswahl zu");
+await page.evaluate(() => document.querySelector(".liste-detail-header .zeile-rechts").click()); await sleep(400);
 await klickText(".toggle-opt", "Bereich"); await sleep(400);
 // ── Lang-Druck auf eine Vokabel startet Von–Bis ──
 const cdp = await page.createCDPSession();
@@ -63,6 +75,28 @@ const tipp = (art, nr) => page.evaluate(s => document.querySelector(s).click(), 
 ok(!(await sichtbar("[data-slot-kopf]")) && !(await sichtbar(".liste-detail-header")) && !(await page.$("[data-start-knopf]")) && !(await page.$(".quiz-zeile")),
   "Bereich offen: Session-Leiste, Listen-Auswahl, Optionen und Start ausgeblendet");
 ok(await sichtbar('[data-suchleiste="quiz"]') && await zeilen("quiz") === 80, "nur „Alle | Bereich“, Suche und die Liste sind da");
+ok(!(await sichtbar(".topbar")) && !(await sichtbar(".tab")), "auch Kopfzeile „Vokabel-Trainer“ und Tabs ausgeblendet");
+// nur die Liste scrollt: Zeile „Alle | Bereich“ und Suche bleiben stehen
+const lage = () => page.evaluate(() => ({ zeile: Math.round(document.querySelector(".toggle-opt.aktiv").getBoundingClientRect().top), suche: Math.round(document.querySelector('[data-suchleiste="quiz"]').getBoundingClientRect().top), sy: scrollY }));
+const l0 = await lage();
+await page.evaluate(() => document.querySelector("[data-vok-scroller]").scrollBy(0, 900)); await sleep(300);
+const l1 = await lage();
+ok(await page.$("[data-vok-scroller]") && l0.zeile === l1.zeile && l0.suche === l1.suche && l1.sy === 0, `Liste scrollt allein, „Alle | Bereich“ und Suche bleiben stehen (${JSON.stringify(l0)} → ${JSON.stringify(l1)})`);
+await page.evaluate(() => document.querySelector("[data-vok-scroller]").scrollTo(0, 0)); await sleep(300);
+const fs = await page.evaluate(() => getComputedStyle(document.querySelector('[data-suchleiste="quiz"] [data-such-feld]')).fontSize);
+ok(fs === "16px", `Suchfeld auf Touch-Geräten 16 px (kein iOS-Zoom beim Antippen) (${fs})`);
+// langer Druck mit Toleranz: kleine Bewegung bricht nicht ab, große schon
+let rr = await page.evaluate(s => { const b = document.querySelector(s).getBoundingClientRect(); return { x: b.x + 200, y: b.y + b.height / 2 }; }, zeile("quiz", 3));
+await finger("touchStart", rr.x, rr.y); await sleep(150); await finger("touchMove", rr.x + 6, rr.y + 4); await sleep(700); await finger("touchEnd"); await sleep(400);
+ok(await gelb("quiz", 3), "langer Druck auf dem Text mit 6 px Zittern: Von–Bis-Anfang");
+await page.evaluate(() => document.querySelector('[data-info-aktion="✕ Von–Bis abbrechen"]').click()); await sleep(400);
+await finger("touchStart", rr.x, rr.y); await sleep(150); await finger("touchMove", rr.x + 25, rr.y); await sleep(700); await finger("touchEnd"); await sleep(400);
+ok(!(await gelb("quiz", 3)) && !(await tafel()), "25 px Bewegung bricht den langen Druck ab");
+// Häkchen setzen schließt die Tastatur der Suche
+await page.focus('[data-suchleiste="quiz"] [data-such-feld]');
+await tipp("quiz", 4);
+ok(await page.evaluate(() => !document.activeElement?.matches("[data-such-feld]")), "Häkchen setzen: Suchfeld verliert den Fokus (Tastatur zu)");
+await tipp("quiz", 4);
 
 await tippe('[data-suchleiste="quiz"] [data-such-feld]', "mot5"); await sleep(400);
 let r = await page.evaluate(s => { const b = document.querySelector(s).getBoundingClientRect(); return { x: b.x + 80, y: b.y + b.height / 2 }; }, zeile("quiz", 5));
@@ -82,6 +116,16 @@ ok(/\(66 V\.\)/.test(await auswahlText() || ""), `Ende Nr. 70 antippen: Bereich 
 ok(!(await tafel()) && !(await page.$("[data-info-blase]")), "Tafel nach dem Ende zu");
 await page.click('[data-suchleiste="quiz"] [data-nur-treffer]'); await sleep(300);
 await page.click('[data-suchleiste="quiz"] [data-such-leeren]'); await sleep(300);
+// Zeile im Blick: „nur Treffer“, Anfang auf Nr. 70 → Liste wieder ganz, Nr. 70 bleibt sichtbar (über der Tafel)
+await tippe('[data-suchleiste="quiz"] [data-such-feld]', "chat");
+await page.click('[data-suchleiste="quiz"] [data-nur-treffer]'); await sleep(300);
+await page.evaluate(s => { const el = document.querySelector(s); const b = el.getBoundingClientRect();
+  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: b.x + 20, clientY: b.y + 10 })); }, zeile("quiz", 70)); await sleep(1300);
+const blick = await page.evaluate(s => { const b = document.querySelector(s).getBoundingClientRect(); const t = document.querySelector("[data-auswahl-tafel]").getBoundingClientRect();
+  const l = document.querySelector('[data-suchleiste="quiz"]').getBoundingClientRect(); return { oben: Math.round(b.top), unten: Math.round(b.bottom), leiste: Math.round(l.bottom), tafel: Math.round(t.top) }; }, zeile("quiz", 70));
+ok(await zeilen("quiz") === 80 && blick.oben >= blick.leiste && blick.unten <= blick.tafel, `Anfang Nr. 70: Liste wieder ganz, Zeile zwischen Suche und Tafel sichtbar (${JSON.stringify(blick)})`);
+await page.evaluate(() => document.querySelector('[data-info-aktion="✕ Von–Bis abbrechen"]').click()); await sleep(400);
+await page.click('[data-suchleiste="quiz"] [data-nur-treffer]'); await sleep(300);
 // Abbrechen über die Tafel
 await page.evaluate(s => { const el = document.querySelector(s); const b = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: b.x + 20, clientY: b.y + 10 })); }, zeile("quiz", 2)); await sleep(400);

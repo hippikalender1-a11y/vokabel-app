@@ -53,7 +53,7 @@ i = await info();
 ok(i.session === "Alle Vokabeln" && i.start === 25, "„Alle“ gewählt: 25 Vokabeln");
 await page.evaluate(() => window.scrollTo(0, 0));
 if (!(await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].some(c => c.textContent.trim() === "Neu"))))
-  await page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv")].find(b => b.textContent.trim() === "Neu")?.click());
+  await page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv")].find(b => b.textContent.trim().startsWith("Neues Quiz"))?.click());
 await sleep(300);
 await neueEineSession(page);
 await clickText(".quiz-setup-check", "Vocabulaire");

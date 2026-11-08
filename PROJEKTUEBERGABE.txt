@@ -1884,6 +1884,19 @@ VON–BIS PER LANG-DRUCK: vonBisLangDruck(art, vok, nr, w1, w2) an den Zeilen de
 VOKABELLISTE MAXIMIERT: quizVokMax (Quiz, Bereich + Liste offen, nicht Aufteilen): Session-Leiste (renderSlotKopf) und
   Listen-Auswahl-Kopf display:none (Höhen messen 0), alles unter der Liste (Zeile 1 … Start) nicht gerendert; die Liste
   klappt beim Scrollen nicht von selbst zu (kontexte „vokabeln“ offen = !quizVokMax), nur „Bereich“ schließt sie.
+  Seit c52dc88+: auch App-Kopf (headerRef) ausgeblendet; nur die Liste scrollt: „Alle | Bereich“-Zeile und Karte
+  (data-vok-scroller) position:fixed im sichtbaren Ausschnitt (sichtFenster = visualViewport offsetTop/height, mit
+  Tastatur kleiner), Breite wie .app (maxSpalte), Suchleiste klebt mit top 0 in der Karte, unten Platz
+  var(--tafel-platz) (setzt InfoTafel neben body.paddingBottom).
+ZEILE IM BLICK: zeileImBlick(art, id) bei jedem Antippen / Lang-Druck einer Vokabelzeile (Quiz + Statistik): Suchfeld
+  blur (Tastatur zu), dann sichtbarHalten nach 0/150/400/800 ms – nur wenn die Zeile verdeckt ist (Suchleiste oben,
+  Tafel/Tastatur unten), dann mittig (Scroller bzw. window).
+LANGER DRUCK TOLERANZ: tt() merkt tooltipStart; onTouchMove bricht erst ab 10 px ab.
+EINGABEFELDER 16 PX: @media (pointer:coarse) input/textarea/select font-size 16px !important (iOS zoomt sonst beim
+  Antippen hinein und nicht zurück). Ansichten auf 320 px geprüft: nichts ragt über den Rand.
+NEUE SESSION: Kopf „Neues Quiz“ + data-nicht-gespeichert (Statistik: „Neue Auswahl“). Listen-Auswahl: listenOffen =
+  aufgeklappt || keine Liste; ohne Liste rechts Hinweis data-listen-hinweis „Liste auswählen“ (kein Knopf), Platzhalter
+  „Bitte Liste auswählen“ entfällt; mit Liste der Namens-Knopf (klappt zu/auf).
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

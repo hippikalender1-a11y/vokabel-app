@@ -46,8 +46,8 @@ await page.click("[data-slot-kopf-name]"); await sleep(300);
 await page.click("[data-neue-session]"); await sleep(300);
 ok(await page.$('[data-neue-session-dialog="art"]') && await page.$('[data-neue-session-art="eine"]') && await page.$('[data-neue-session-art="mehrere"]'), "Dialog: Eine Session / Mehrere Sessions");
 await page.click('[data-neue-session-art="eine"]'); await sleep(400);
-ok(await ansicht() === "einstellungen" && await sichtbar(".quiz-setup-check") && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Neu",
-  "Eine Session: „Neu“ mit Listen-Auswahl");
+ok(await ansicht() === "einstellungen" && await sichtbar(".quiz-setup-check") && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Neues Quiznicht gespeichert",
+  "Eine Session: „Neues Quiz · nicht gespeichert“ mit Listen-Auswahl");
 
 // Neue Session: Mehrere → Liste wählen → Aufteilen
 await page.click("[data-slot-kopf-name]"); await sleep(300);

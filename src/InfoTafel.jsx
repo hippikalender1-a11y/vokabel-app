@@ -89,10 +89,11 @@ export default function InfoTafel() {
   const tafelRef = useRef(null);
   const warUntenRef = useRef(false);
   useEffect(() => {
-    if (!unten) { warUntenRef.current = false; document.body.style.paddingBottom = ""; return; }
+    if (!unten) { warUntenRef.current = false; document.body.style.paddingBottom = ""; document.documentElement.style.removeProperty("--tafel-platz"); return; }
     const el = tafelRef.current;
     if (!el) return;
-    const anpassen = () => { document.body.style.paddingBottom = `${el.offsetHeight + 24}px`; };
+    // Platz unten: Seite (body) und eigene Scroll-Bereiche (var(--tafel-platz), z. B. die maximierte Vokabelliste)
+    const anpassen = () => { document.body.style.paddingBottom = `${el.offsetHeight + 24}px`; document.documentElement.style.setProperty("--tafel-platz", `${el.offsetHeight + 24}px`); };
     anpassen();
     if (!warUntenRef.current) {
       warUntenRef.current = true;

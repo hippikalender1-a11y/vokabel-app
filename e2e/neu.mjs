@@ -69,7 +69,7 @@ await sleep(400);
 z = await zustand();
 console.log("     Nach Neu:", JSON.stringify(z));
 ok(z.gewaehlt === 0 && !/^[1-9]/.test(z.start), "Neu: keine Liste mehr ausgewählt");
-ok(z.kopfChip === "Neu", "Neu: kein Preset aktiv");
+ok(z.kopfChip === "Neues Quiznicht gespeichert", "Neu: kein Preset aktiv („Neues Quiz · nicht gespeichert“)");
 const sa = await page.evaluate(() => localStorage.getItem("vokabel_session_aktiv"));
 ok(sa === null, "Neu: keine aktive Session");
 

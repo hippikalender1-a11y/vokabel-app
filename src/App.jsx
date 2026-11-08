@@ -1330,6 +1330,7 @@ const CSS_BASIS = `
   .inp{width:100%;background:var(--knopf);border:1.5px solid var(--rahmen);border-radius:10px;padding:11px 14px;font-size:0.95rem;color:var(--text-stark);outline:none;font-family:inherit;}
   .inp:focus{border-color:var(--haupt);background:var(--karte);}
   .inp::placeholder{color:var(--text4);}
+  @media (pointer:coarse){input,textarea,select{font-size:16px !important;}}
   textarea.inp{resize:vertical;font-family:monospace;font-size:0.82rem;line-height:1.5;}
   select.inp{cursor:pointer;}
   .inp-label{font-size:0.8rem;font-weight:600;color:var(--text2);margin-bottom:6px;display:block;}
@@ -1732,12 +1733,10 @@ export default function VokabelApp() {
   useEffect(() => {
     if (quizVonBisErster == null || !sucheQuiz.text) return;
     setSucheQuiz(x => ({ ...x, text: "", nr: 0 }));
-    if (sucheQuiz.nurTreffer) springeZuTreffer("quiz", quizVonBisErster);   // Liste wird wieder ganz: Anfang im Blick behalten
   }, [quizVonBisErster]);
   useEffect(() => {
     if (statistikVonBisErster == null || !sucheStatistik.text) return;
     setSucheStatistik(x => ({ ...x, text: "", nr: 0 }));
-    if (sucheStatistik.nurTreffer) springeZuTreffer("statistik", statistikVonBisErster);
   }, [statistikVonBisErster]);
   const [statistikVokauswahlH, setStatistikVokauswahlH] = useState(0);
   const [slots, setSlots] = useState(defaultSlots());          // {verlauf:[], gespeichert:[]}
@@ -1865,6 +1864,7 @@ export default function VokabelApp() {
   const infoKontextContainerRef = useRef(null);
   const tooltipTimer = useRef(null);
   const tooltipShown = useRef(false);
+  const tooltipStart = useRef(null);   // Fingerposition beim Aufsetzen: kleine Bewegungen brechen den langen Druck nicht ab
   // Erklärtext: Maus = title; Touch = lange drücken → Info-Tafel (bleibt bis Antippen, InfoTafel.jsx);
   // data-info macht das Element im Info-Modus erklärbar
   // aktionen (optional): Lang-Druck bzw. Rechtsklick zeigt die Erklärung mit Menü-Knöpfen darunter
@@ -1885,6 +1885,7 @@ export default function VokabelApp() {
         if (aktionen) e.nativeEvent._ttMenue = true;
         if (opts.eigeneGeste) return;   // Kacheln: Haltestufen (Verschieben / Auswählen) statt Erklärung
         const t = e.touches[0];
+        tooltipStart.current = { x: t.clientX, y: t.clientY };
         clearTimeout(tooltipTimer.current);
         tooltipShown.current = false;
         tooltipTimer.current = setTimeout(() => {
@@ -1896,7 +1897,10 @@ export default function VokabelApp() {
         }, 500);
       },
       onTouchEnd(e)   { clearTimeout(tooltipTimer.current); if (tooltipShown.current) { e.preventDefault(); tooltipShown.current = false; } },
-      onTouchMove()   { clearTimeout(tooltipTimer.current); },   // Finger zittert nach dem Aufgehen: Tafel bleibt
+      onTouchMove(e)  {   // erst ab 10 px Bewegung abbrechen (Finger zittert); Finger zittert nach dem Aufgehen: Tafel bleibt
+        const t = e.touches[0], st = tooltipStart.current;
+        if (!t || !st || Math.hypot(t.clientX - st.x, t.clientY - st.y) > 10) clearTimeout(tooltipTimer.current);
+      },
       onTouchCancel() { clearTimeout(tooltipTimer.current); tooltipShown.current = false; },
     };
   }
@@ -1930,6 +1934,21 @@ export default function VokabelApp() {
   // (früh berechnet: Closures wie kontexteRef lesen es auch nach Renders, die vorzeitig zurückkehren)
   const quizVokMax = tab === "quiz" && quizTabListen.length > 0 && quizListeAufgeklappt && quizBereichTyp === "bereich"
     && !(aktiverSlot?.typ === "gespeichert" && !listenAendern) && !aufteilen && !slotSektionAufgeklappt;
+  // sichtbarer Ausschnitt (iOS: mit Tastatur kleiner und ggf. verschoben) – die maximierte Liste liegt fest darin
+  const [sichtFenster, setSichtFenster] = useState(null);
+  useEffect(() => {
+    if (!quizVokMax) { setSichtFenster(null); return; }
+    const vv = window.visualViewport;
+    const neu = () => setSichtFenster({ top: vv ? vv.offsetTop : 0, h: vv ? vv.height : window.innerHeight });
+    window.scrollTo(0, 0);
+    neu();
+    vv?.addEventListener("resize", neu); vv?.addEventListener("scroll", neu); window.addEventListener("resize", neu);
+    return () => { vv?.removeEventListener("resize", neu); vv?.removeEventListener("scroll", neu); window.removeEventListener("resize", neu); };
+  }, [quizVokMax]);
+  const maxFenster = quizVokMax && sichtFenster;
+  const maxSpalte = { left: "max(0px, calc(50% - 300px))", width: "min(100%, 600px)", margin: 0, boxSizing: "border-box" };   // wie .app (max. 600 px, mittig)
+  // Listen-Auswahl: ohne gewählte Liste immer offen (rechts nur ein Hinweis statt Knopf)
+  const listenOffen = listenAuswahlAufgeklappt || quizTabListen.length === 0;
   kontexteRef.current = () => {
     const q = headerH + slotH + listenauswahlHeaderH;
     return [
@@ -4663,6 +4682,29 @@ export default function VokabelApp() {
   function springeZuTreffer(art, id) {
     requestAnimationFrame(() => document.querySelector(`[data-such-ziel="${art}"][data-such-id="${window.CSS.escape(String(id))}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
   }
+  // Nach einer Aktion in der Vokabelliste (Häkchen, Von–Bis): Tastatur der Suche schließen und die Zeile im Blick halten –
+  // verschoben wird nur, wenn sie danach verdeckt oder außerhalb liegt (Tastatur zu, Tafel unten, Liste länger), dann in die Mitte
+  function sichtbarHalten(art, id) {
+    const el = document.querySelector(`[data-such-ziel="${art}"][data-such-id="${window.CSS.escape(String(id))}"]`);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const vv = window.visualViewport;
+    const vOben = vv ? vv.offsetTop : 0, vUnten = vOben + (vv ? vv.height : window.innerHeight);
+    const scroller = el.closest("[data-vok-scroller]");
+    const sr = scroller?.getBoundingClientRect();
+    const leiste = document.querySelector(`[data-suchleiste="${art}"]`)?.getBoundingClientRect();
+    const tafel = document.querySelector("[data-auswahl-tafel]")?.getBoundingClientRect();
+    const oben = Math.max(vOben, sr ? sr.top : vOben, leiste ? leiste.bottom : vOben);
+    const unten = Math.min(vUnten, sr ? sr.bottom : vUnten, tafel ? tafel.top : vUnten);
+    if (r.top >= oben - 1 && r.bottom <= unten + 1) return;
+    const dy = (r.top + r.height / 2) - (oben + unten) / 2;
+    (scroller || window).scrollBy({ top: dy, behavior: "smooth" });
+  }
+  function zeileImBlick(art, id) {
+    const f = document.activeElement;
+    if (f?.matches?.("[data-such-feld]")) f.blur();
+    [0, 150, 400, 800].forEach(ms => setTimeout(() => requestAnimationFrame(() => sichtbarHalten(art, id)), ms));
+  }
   // Lang-Druck auf eine Vokabelzeile: Von–Bis mit dieser Vokabel als Anfang
   function vonBisLangDruck(art, vok, nr, w1, w2) {
     const [setModus, setErster] = art === "quiz" ? [setQuizVonBisModus, setQuizVonBisErster] : [setStatistikVonBisModus, setStatistikVonBisErster];
@@ -4670,7 +4712,7 @@ export default function VokabelApp() {
     return tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs) – lang drücken: Von–Bis ab hier",
       [{ label: "✕ Von–Bis abbrechen", fn: abbrechen }],
       { auswahl: { zu: () => abbrechen(), ohneText: true },
-        beimMenue: () => { vonBisTafelRef.current = art; setModus(true); setErster(vok.id); } });
+        beimMenue: () => { vonBisTafelRef.current = art; setModus(true); setErster(vok.id); zeileImBlick(art, vok.id); } });
   }
   function renderSuchleiste(art, voks, such, setSuch, top) {
     const { treffer, nr } = suchInfo(voks, such);
@@ -5447,7 +5489,8 @@ export default function VokabelApp() {
     const geaendert = !statistik && vokabelgruppeGeaendert;
     const gruen = gespeichert && !geaendert;
     const multi = multiVonSlot(slot);
-    const name = gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : multi ? "Multiquiz" : statistik && statistikSlotGeleert ? "Leer" : "Neu";
+    const name = gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : multi ? "Multiquiz" : statistik && statistikSlotGeleert ? "Leer" : statistik ? "Neue Auswahl" : "Neues Quiz";
+    const ungespeichert = !statistik && !gespeichert && !multi;
     // Vokabeln der Auswahl (für die Kreise) und Info-Zeile
     let voks = [], listenIds = [];
     if (statistik) {
@@ -5481,7 +5524,7 @@ export default function VokabelApp() {
           <button onClick={toggleSlotSektion} className="toggle-opt aktiv slot-kopf-name" data-slot-kopf-name
             style={geaendert ? {background:"var(--falsch)", color:"var(--auf-falsch)"} : undefined}
             {...tt(gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, aktionen, { langText: name })}>
-            {name}
+            {name}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}
           </button>
           {voks.length > 0 && !zu && (
             <span className="mini-kreise" {...(statistik ? { "data-statistik-arten": true } : { "data-quiz-arten": true })} style={{gap:4, flexShrink:0}}>
@@ -7545,7 +7588,7 @@ export default function VokabelApp() {
     <>
       <style>{CSS}</style>{farbModusUI}{farbRadUI}
       <div className="app">
-        <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"var(--app-kopf)"}}>
+        <div ref={headerRef} style={{position:"sticky", top:0, zIndex:10, background:"var(--app-kopf)", ...(quizVokMax ? {display:"none"} : {})}}>
         <div className="topbar" style={{position:"relative"}}>
           <button className="info-schalter" data-info-schalter onClick={schalteInfoModus} title="Info-Modus: Elemente antippen, um sie erklärt zu bekommen">ⓘ</button>
           {statistikVollbild && tab === "statistik" ? renderVollbildKopf() : <span className="topbar-title">Vokabel-Trainer</span>}
@@ -8127,7 +8170,7 @@ export default function VokabelApp() {
                     <div ref={listenauswahlHeaderRef} className="liste-detail-header" style={{position:"sticky", top:headerH + slotH, zIndex:8, marginLeft:"-16px", marginRight:"-16px", ...(quizVokMax ? {display:"none"} : {})}}>
                       {/* LINKS */}
                       <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
-                        {listenAuswahlAufgeklappt ? (
+                        {listenOffen ? (
                           <>
                             {n < sichtbareListen.length && (
                               <button className="btn btn-ghost btn-sm"
@@ -8157,19 +8200,24 @@ export default function VokabelApp() {
                       )}
                       {/* RECHTS */}
                       <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
-                        <button
-                          className="toggle-opt aktiv zeile-rechts"
-                          onClick={toggleListenAuswahl}
-                          {...tt("Listen für das Quiz auswählen")}>
-                          {chipText}
-                        </button>
+                        {n === 0 ? (
+                          <span data-listen-hinweis style={{fontSize:"0.85rem", fontWeight:600, color:"var(--text3)", padding:"6px 4px"}}
+                            {...tt("Liste(n) unten antippen – danach steht hier ihr Name; antippen klappt die Auswahl zu")}>Liste auswählen</span>
+                        ) : (
+                          <button
+                            className="toggle-opt aktiv zeile-rechts"
+                            onClick={toggleListenAuswahl}
+                            {...tt("Gewählte Listen – antippen klappt die Listen-Auswahl auf bzw. zu")}>
+                            {chipText}
+                          </button>
+                        )}
                       </span>
                     </div>
                   );
                 })()}
                 {/* LISTEN-AUSWAHL Inhalt */}
-                <div ref={listenContainerRef} style={{overflow:'hidden', paddingTop: listenAuswahlAufgeklappt ? 16 : 0}}>
-                  {listenAuswahlAufgeklappt && (<>
+                <div ref={listenContainerRef} style={{overflow:'hidden', paddingTop: listenOffen ? 16 : 0}}>
+                  {listenOffen && (<>
                     {sichtbareListen.length === 0
                       ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
                       : (() => { const { spalten, plaetze } = listenRasterPlaetze(); const eng = spalten > 1; return (
@@ -8202,18 +8250,13 @@ export default function VokabelApp() {
                   </>)}
                 </div>
 
-                {/* Platzhalter wenn keine Liste gewählt und Liste eingeklappt */}
-                {!listenAuswahlAufgeklappt && quizTabListen.length === 0 && (
-                  <div style={{padding:"48px 16px", textAlign:"center"}}>
-                    <span style={{fontSize:"1.3rem", color:"var(--text4)", fontWeight:600}}>Bitte Liste auswählen</span>
-                  </div>
-                )}
 
                 </>)}
 
                 {/* Alle/Bereich – sticky direkt unter Haupt-Header */}
                 {kombiListe && !(aktiverSlot?.typ === "gespeichert" && !listenAendern) && (
-                  <div ref={alleBereichRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH, zIndex:8, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px"}}>
+                  <div ref={alleBereichRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH, zIndex:8, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px",
+                    ...(maxFenster ? { position:"fixed", top:maxFenster.top, ...maxSpalte } : {})}}>
                     {aufteilen ? (<>
                       <span style={{flex:1, fontWeight:700, fontSize:"0.85rem", color:"var(--gelb-dunkel)"}}>▦ Aufteilen</span>
                       <span data-anzahl="auswahl" style={{fontSize:"0.8rem", color:"var(--text3)"}}>({quizGefilterteVoks.length} V.)</span>
@@ -8274,8 +8317,13 @@ export default function VokabelApp() {
                 {quizListeAufgeklappt && quizBereichTyp === "bereich" && kombiListe && !(aktiverSlot?.typ === "gespeichert" && !listenAendern) && (() => {
                   const such = suchInfo(basisVoks, sucheQuiz);
                   return (
-                  <div ref={einzelauswahlRef} className="karte" style={{marginBottom:8, marginTop:8, overflow:"visible"}}>
-                    {basisVoks.length > 0 && renderSuchleiste("quiz", basisVoks, sucheQuiz, setSucheQuiz, headerH + slotH + listenauswahlHeaderH + alleBereichH)}
+                  <div ref={einzelauswahlRef} className="karte" data-vok-scroller={maxFenster ? "" : undefined}
+                    style={maxFenster
+                      ? { position:"fixed", top:maxFenster.top + alleBereichH, height:Math.max(120, maxFenster.h - alleBereichH), ...maxSpalte, zIndex:7,
+                          overflowY:"auto", overscrollBehavior:"contain", WebkitOverflowScrolling:"touch", borderRadius:0, borderLeft:"none", borderRight:"none", borderTop:"none",
+                          paddingBottom:"var(--tafel-platz, 0px)" }
+                      : {marginBottom:8, marginTop:8, overflow:"visible"}}>
+                    {basisVoks.length > 0 && renderSuchleiste("quiz", basisVoks, sucheQuiz, setSucheQuiz, maxFenster ? 0 : headerH + slotH + listenauswahlHeaderH + alleBereichH)}
                     {basisVoks.length === 0
                       ? <div style={{padding:"16px", color:"var(--text2)", fontSize:"0.85rem"}}>Keine Vokabeln verfügbar.</div>
                       : basisVoks.map((vok, idx) => {
@@ -8288,6 +8336,7 @@ export default function VokabelApp() {
                             data-such-ziel="quiz" data-such-id={vok.id} data-auswahl-durchlass
                             style={{background: isVon ? "var(--gelb-flaeche)" : inChk ? "var(--haupt-flaeche)" : "transparent", ...suchMarke(such, vok.id)}}
                             onClick={() => {
+                              zeileImBlick("quiz", vok.id);
                               if (!quizVonBisModus) { toggleVokCheckbox(vok.id); return; }
                               if (quizVonBisErster === null) {
                                 setQuizVonBisErster(vok.id);
@@ -9165,6 +9214,7 @@ export default function VokabelApp() {
                         data-such-ziel="statistik" data-such-id={vok.id} data-auswahl-durchlass
                         style={{background: isVon ? "var(--gelb-flaeche)" : gewaehlt ? "var(--haupt-flaeche)" : "transparent", ...suchMarke(statSuche, vok.id)}}
                         onClick={() => {
+                          zeileImBlick("statistik", vok.id);
                           if (!statistikVonBisModus) {
                             setStatistikCheckboxAuswahl(prev => { const n = new Set(prev); if (n.has(vok.id)) n.delete(vok.id); else n.add(vok.id); return n; });
                             return;
