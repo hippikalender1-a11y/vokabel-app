@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -20,6 +20,7 @@ const clickText = async (sel, text, exact = false) => {
   }, sel, text, exact);
   // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(250);
 };
@@ -36,6 +37,7 @@ const setze = async (i, v) => {
 const artWaehlen = async a => {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") k.querySelector("button.zeile-rechts")?.click(); });
   await new Promise(r => setTimeout(r, 300));
+  await bereichZu(page);   // Ü|D|A sitzt im Start-Bereich – nur sichtbar, wenn kein Bereich offen ist
   await page.click(`[data-quiz-art="${a}"]`);
 };
 await page.goto(URL);
@@ -56,6 +58,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Akzente");
+await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 // Spalten-Bereich ggf. aufklappen
 if (!(await page.$(".spalten-modus-btn"))) await page.click("[data-abfragemodus]");
 await sleep(300);
@@ -63,9 +66,11 @@ const knoepfe = await page.evaluate(() => [...document.querySelectorAll(".spalte
 console.log("     Modus-Knöpfe Ü:", knoepfe.join(" | "));
 ok(knoepfe.includes("Akzente") && !(await page.$('[data-modus-knopf$=":akzent"].aktiv')), "Übersetzung: Akzente als zusätzliche mischbare Art angeboten, aber nicht angehakt");
 await artWaehlen("akzente"); await sleep(300);
+if (!(await page.$(".spalten-modus-btn"))) { await page.click("[data-abfragemodus]"); await sleep(300); }   // Modus wieder öffnen (Art-Wahl klappt ihn zu)
 const knoepfeA = await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")].map(b => b.textContent.trim()));
 console.log("     Modus Akzente:", knoepfeA.join(" | "));
 ok(knoepfeA.join("|") === "Akzente", "Akzente (A): Antwortspalte fest auf Akzente, keine anderen Modi");
+await bereichZu(page);   // Modus zu → Start und Anzahl-Zeilen wieder sichtbar
 const startAnzahl = () => page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl);
 let t = await text();
 ok(await startAnzahl() === "4", "Stufe „Schwer“ (Standard): auch Wörter ohne Akzent → 4 Wörter");

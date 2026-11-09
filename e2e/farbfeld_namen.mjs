@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
 
 // Farbfeld: Zeilen nennen Element und Teil („Start-Knopf · Text groß“), darunter die Rolle („gilt auch für: …“);
 // es öffnet sich gegenüber der angetippten Stelle (Element bleibt sichtbar, markiert); Schrift auf Liste & Start gilt unverändert
@@ -23,6 +23,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };
@@ -52,6 +53,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Unité 1");
+await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 ok(await variable("auf-start") === "#24382d", `Pastelle: Schrift auf Liste & Start aus der Vorlage (${await variable("auf-start")})`);
 
 // Lang-Druck auf den Start-Knopf → 🎨 Farbe ändern

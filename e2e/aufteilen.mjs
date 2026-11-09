@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, bereichZu } from "./hilfen.mjs";
 
 // Liste in Sessions aufteilen: Lang-Druck → „In Sessions aufteilen“ → Quiz-Tab mit gelbem Kasten
 // (Name, Gruppengröße, Bereich, Rest, Vorschau) → „n Sessions anlegen“ → gespeicherte Konfigurationen „Name (21 - 40)“
@@ -22,6 +22,7 @@ const clickText = async (sel, text, exact = false) => {
   }, sel, text, exact);
   // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };

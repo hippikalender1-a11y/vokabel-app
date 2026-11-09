@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, quizEinstellungen, neueEineSession } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen, neueEineSession, listenZu, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -20,6 +20,7 @@ const clickText = async (sel, text, exact = false) => {
   }, sel, text, exact);
   // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };
@@ -41,6 +42,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Vocabulaire");
+await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 let i = await info();
 console.log("     Start:", JSON.stringify(i));
 ok(i.session === "Je 10 Vokabeln" && i.start === 10, "App-Start: Pakete mit 10 Vokabeln");
@@ -57,6 +59,7 @@ if (!(await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].som
 await sleep(300);
 await neueEineSession(page);
 await clickText(".quiz-setup-check", "Vocabulaire");
+await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 i = await info();
 ok(i.session === "Je 10 Vokabeln" && i.start === 10, "Nach „Neu“: wieder Pakete mit 10");
 

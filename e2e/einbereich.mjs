@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu } from "./hilfen.mjs";
 
 // Quiz-Tab: immer nur ein Bereich offen – ein anderer Knopf schließt den vorherigen
 const URL = "http://localhost:4199/vokabel-app/";
@@ -35,21 +35,27 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300); await quizEinstellungen(page);
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(t => t.textContent.includes("Englisch")).click()); await sleep(300);
+await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 // Listen-Auswahl zu (falls offen)
 await page.evaluate(() => window.scrollTo(0, 0));
 
+const da = sel => page.evaluate(sel => !!document.querySelector(sel), sel);
+const fokus = () => page.evaluate(() => document.querySelector("[data-quiz-fokus]")?.dataset.quizFokus);
 await tippe("[data-umfang]");
 ok(await offen() === "umfang", `Umfang offen (${await offen()})`);
-await tippe("[data-reihenfolge]");
-ok(await offen() === "reihenfolge", `Reihenfolge antippen schließt Umfang (${await offen()})`);
-await tippe("[data-abfragemodus]");
-ok(await offen() === "modus", `Modus antippen schließt Reihenfolge (${await offen()})`);
+ok(await fokus() === "zeile2" && !(await da("[data-reihenfolge]")) && !(await da("[data-start-knopf]")) ,
+  "Fokus: nur Zeile 2 + Umfang, Zeile 1 und Start ausgeblendet");
 await tippe("[data-abfrageziel]");
-ok(await offen() === "ziel", `Abfrage-Ziel antippen schließt Modus (${await offen()})`);
-await tippe("[data-umfang]");
-ok(await offen() === "umfang", `Umfang antippen schließt Abfrage-Ziel (${await offen()})`);
+ok(await offen() === "ziel", `Abfrage-Ziel (gleiche Zeile) wechselt von Umfang (${await offen()})`);
+await tippe("[data-abfrageziel]");
+ok(await offen() === "" && await da("[data-reihenfolge]") && await da("[data-start-knopf]"), "Abfrage-Ziel nochmal: zu, alles wieder sichtbar");
+await tippe("[data-reihenfolge]");
+ok(await offen() === "reihenfolge" && await fokus() === "zeile1" && !(await da("[data-umfang]")), `Reihenfolge offen, Zeile 2 ausgeblendet (${await offen()})`);
+await tippe("[data-abfragemodus]");
+ok(await offen() === "modus", `Modus (gleiche Zeile) wechselt von Reihenfolge (${await offen()})`);
+await tippe("[data-abfragemodus]");
 await tippe("[data-slot-kopf-name]");
-ok(await offen() === "kopf" && !(await page.$("[data-reihenfolge]")), `Kopfzeile öffnen: nur die Auswahl, Umfang zu, Einstellungen ausgeblendet (${await offen()})`);
+ok(await offen() === "kopf" && !(await page.$("[data-reihenfolge]")), `Kopfzeile öffnen: nur die Auswahl, Einstellungen ausgeblendet (${await offen()})`);
 await tippe("[data-slot-kopf-name]");
 await tippe("[data-reihenfolge]");
 ok(await offen() === "reihenfolge", `Kopf zu, Reihenfolge auf (${await offen()})`);
@@ -66,6 +72,20 @@ await tippe("[data-reihenfolge]");
 await tippe("[data-reihenfolge]");
 ok(await offen() === "", "nochmal antippen schließt den eigenen Bereich");
 
+// ohne offenen Bereich: nur Kopf, Tabs und Session-Leiste bleiben stehen, der Rest scrollt
+await page.setViewport({ width: 375, height: 500 }); await sleep(300);
+await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
+const lage = () => page.evaluate(() => ({ kopf: Math.round(document.querySelector("[data-slot-kopf]").getBoundingClientRect().top),
+  listen: Math.round(document.querySelector(".liste-detail-header").getBoundingClientRect().top), zeile1: Math.round(document.querySelector("[data-reihenfolge]").getBoundingClientRect().top) }));
+const v = await lage();
+await page.evaluate(() => window.scrollTo(0, 150)); await sleep(300);
+const n = await lage();
+ok(n.kopf === v.kopf && n.listen === v.listen - 150 && n.zeile1 === v.zeile1 - 150, `Session-Leiste bleibt, Listen-Zeile und Zeile 1 scrollen mit (${JSON.stringify(v)} → ${JSON.stringify(n)})`);
+await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
+await tippe("[data-reihenfolge]");
+await page.evaluate(() => window.scrollTo(0, 150)); await sleep(300);
+const z1 = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]").getBoundingClientRect(); const z = document.querySelector("[data-reihenfolge]").getBoundingClientRect(); return Math.round(z.top - k.bottom); });
+ok(Math.abs(z1) <= 12, `offener Bereich: seine Zeile klebt unter der Session-Leiste (Abstand ${z1})`);
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);

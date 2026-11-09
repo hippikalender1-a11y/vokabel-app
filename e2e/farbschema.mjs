@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { bereichZu } from "./hilfen.mjs";
 
 // Farbschemata: 21 Vorlagen (Natur … Dunkel, Ozean … Espresso, Sorbet … Sommerfest) wählen; Vorlagen nur duplizieren;
 // eigene bearbeiten (Farbwähler, live), zurücksetzen, umbenennen, löschen
@@ -21,6 +22,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };

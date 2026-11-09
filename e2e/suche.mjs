@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, neueEineSession } from "./hilfen.mjs";
+import { zuListen, neueEineSession, listenZu } from "./hilfen.mjs";
 
 // Vokabel-Suche: Einzelauswahl (Quiz + Statistik), Aufteilen (🔍 bei Von/Bis), Listenansicht.
 // Nur Fremdsprache + Deutsch, „enthält“, Groß/klein + Akzente egal, Wortanfang zuerst; springen ‹ › oder „nur Treffer“
@@ -47,6 +47,7 @@ await page.reload(); await sleep(800);
 // ── Quiz: Einzelauswahl ──
 await neueEineSession(page);
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(400);
+await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 await klickText(".toggle-opt", "Bereich"); await sleep(400);
 ok(await page.$('[data-suchleiste="quiz"]'), "Quiz-Einzelauswahl: Suchleiste vorhanden");
 await tippe('[data-suchleiste="quiz"] [data-such-feld]', "MAISON");

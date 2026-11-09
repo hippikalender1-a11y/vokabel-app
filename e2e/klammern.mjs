@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, quizEinstellungen } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen, bereichZu } from "./hilfen.mjs";
 
 // Klammerhinweise: nicht vorlesen, nicht verlangen, dezent anzeigen; Aufräum-Werkzeug „( ) → Info“ mit Vorschau
 const URL = "http://localhost:4199/vokabel-app/";
@@ -19,6 +19,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };

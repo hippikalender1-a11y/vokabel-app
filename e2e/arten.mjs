@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen } from "./hilfen.mjs";
+import { quizEinstellungen, bereichZu } from "./hilfen.mjs";
 
 // Abfragearten getrennt: Ü|D|A-Umschalter im Quiz-Tab, je Art eigene Einstellungen (bleiben beim Umschalten
 // erhalten und werden mit der Konfiguration gespeichert); Akzente nur noch als eigene Art (kein Mischen)
@@ -22,6 +22,7 @@ const clickText = async (sel, text, exact = false) => {
   }, sel, text, exact);
   // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };
@@ -35,6 +36,7 @@ const gespeichert = () => page.evaluate(() => JSON.parse(localStorage.getItem("v
 const artWaehlen = async a => {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") k.querySelector("button.zeile-rechts")?.click(); });
   await new Promise(r => setTimeout(r, 300));
+  await bereichZu(page);   // Ü|D|A sitzt im Start-Bereich – nur sichtbar, wenn kein Bereich offen ist
   await page.click(`[data-quiz-art="${a}"]`);
 };
 await page.goto(URL);
@@ -123,7 +125,7 @@ console.log("     Kreise:", kr);
 ok(kr === "uebersetzung:33,diktat:0,akzente:50", "Kreise: Ü 33 %, D 0 %, A 50 % (nur Wörter mit Akzent)");
 await sleep(400);
 ok(!(await page.$("[data-slot-kopf] [data-quiz-art]")), "zugeklappte Kopfzeile ohne Kreise");
-await page.click('[data-start-arten] [data-quiz-art="diktat"]'); await sleep(400);
+await bereichZu(page); await page.click('[data-start-arten] [data-quiz-art="diktat"]'); await sleep(400);
 ok(await art() === "diktat" && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent.trim()) === "Alt gemischt", "Kreis D antippen: „Alt gemischt“ in Diktat");
 ok(await page.evaluate(() => { const b = document.querySelector('[data-start-arten] [data-quiz-art="diktat"]'); return b.classList.contains("aktiv") && b.getBoundingClientRect().height > 90 && /Diktat · 0 %/.test(b.textContent); }), "gewählte Art groß, mit Name und Prozent („Diktat · 0 %“)");
 // Statistik: Kreis A zeigt die Akzente-Statistik

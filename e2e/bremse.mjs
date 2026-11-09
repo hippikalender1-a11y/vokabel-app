@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -20,6 +20,7 @@ const clickText = async (sel, text, exact = false) => {
   }, sel, text, exact);
   // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };
@@ -46,6 +47,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Vocabulaire");
+await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 await clickText("button", "Bereich", true);
 await sleep(600);
 let z = await liste();
@@ -97,7 +99,7 @@ if (z.offen) {
   console.log("     (Liste ließ sich im Test nicht erneut öffnen – Schritt 3 übersprungen)");
 }
 
-// 4) Kurzer Bereich: Abfrage-Modus öffnen, Weiterscrollen klappt wie bisher sofort zu
+// 4) Quiz: Abfrage-Modus öffnen – Weiterscrollen klappt nicht mehr zu, nur die Überschrift
 await clickText(".tab", "Quiz"); await sleep(500);
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);
 await page.click("[data-abfragemodus]"); await sleep(300);
@@ -107,7 +109,9 @@ ok(await modusOffen(), "Abfrage-Modus offen");
 ok(!(await liste()).hinweis, "Kurzer Bereich: kein Hinweis");
 await wisch(1500);
 await sleep(400);
-ok(!(await modusOffen()), "Kurzer Bereich klappt beim Weiterscrollen wie bisher zu");
+ok(await modusOffen(), "Quiz: offener Bereich klappt beim Weiterscrollen nicht zu (Fokus – zu nur über die Überschrift)");
+await page.click("[data-abfragemodus]"); await sleep(400);
+ok(!(await modusOffen()), "Überschrift antippen klappt zu");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

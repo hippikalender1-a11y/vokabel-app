@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
 
 // Farbmodus: in den Einstellungen starten, normal durch die App gehen, langer Druck auf ein Element →
 // Farbfeld mit den Farbrollen im Umkreis (auch kleine Mini-Kreise); Änderung live;
@@ -24,6 +24,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };
@@ -59,6 +60,7 @@ ok(await page.$("[data-farbmodus-zuruecksetzen]") && await page.$("[data-farbmod
 // normal navigieren
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Nomen");
+await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 ok(await page.$("[data-farbmodus-uebernehmen]"), "Navigieren im Farbmodus: Leiste bleibt");
 
 // Rechtsklick (= langer Druck am Rechner) auf „Quiz starten“

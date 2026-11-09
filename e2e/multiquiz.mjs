@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen } from "./hilfen.mjs";
+import { quizEinstellungen, bereichZu } from "./hilfen.mjs";
 
 // Multiquiz: Lang-Druck auf eine Kachel → „☑ Auswählen“, weitere Kacheln antippen, Lang-Druck → „🧩 Multiquiz starten“;
 // Vokabeln zusammen (auch verschiedene Sprachen), Einstellungen von Nr. 1, Kopfzeile „Multiquiz“, speicherbar, Statistik zusammen
@@ -22,6 +22,7 @@ const clickText = async (sel, text, exact = false) => {
     return !!el;
   }, sel, text, exact);
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await sleep(300); return clickText(sel, text, exact); }
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };

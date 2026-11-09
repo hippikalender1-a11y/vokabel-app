@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, bereichZu } from "./hilfen.mjs";
 
 // Auto-Vorlesen in der Kartenabfrage: 🔊 in der Kopfzeile schaltet es während der Abfrage an/aus (dauerhaft gespeichert);
 // Frage beim Erscheinen und Antwort beim Aufdecken werden vorgelesen, wenn ihre Spalte gewählt ist; Lang-Druck wählt die Spalten
@@ -20,6 +20,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };

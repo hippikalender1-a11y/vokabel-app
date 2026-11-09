@@ -58,7 +58,6 @@ re = await rechts();
 ok(re.knopf === "Unité 1" && re.hinweis === null, `Liste gewählt: Knopf mit dem Namen (${JSON.stringify(re)})`);
 await page.evaluate(() => document.querySelector(".liste-detail-header .zeile-rechts").click()); await sleep(400);
 ok(!(await page.$(".quiz-setup-check")), "Knopf antippen klappt die Listen-Auswahl zu");
-await page.evaluate(() => document.querySelector(".liste-detail-header .zeile-rechts").click()); await sleep(400);
 await klickText(".toggle-opt", "Bereich"); await sleep(400);
 // ── Lang-Druck auf eine Vokabel startet Von–Bis ──
 const cdp = await page.createCDPSession();

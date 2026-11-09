@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, neueEineSession } from "./hilfen.mjs";
+import { quizEinstellungen, neueEineSession, listenZu, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -20,6 +20,7 @@ const clickText = async (sel, text, exact = false) => {
   }, sel, text, exact);
   // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };
@@ -47,6 +48,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Verbes");
+await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 // Bereich: 2 Vokabeln, Reihenfolge Zufällig (Standard: Schlechteste), speichern
 await clickText("button", "Bereich", true);
 await page.evaluate(() => [...document.querySelectorAll(".vok-nr")].slice(0, 2).forEach(z => z.parentElement.click()));
@@ -54,6 +56,7 @@ await sleep(300);
 await clickText("button", "Bereich", true); await sleep(300);   // Liste zu → Session-Optionen wieder sichtbar
 await page.click("[data-reihenfolge]"); await sleep(300);
 await clickText(".toggle-opt", "Zufällig", true);
+await bereichZu(page);   // Reihenfolge zu → Start wieder sichtbar
 await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Speichern"]').click()); await new Promise(r => setTimeout(r, 300));
 await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].pop()?.click());
 await sleep(400);
@@ -74,6 +77,7 @@ const sa = await page.evaluate(() => localStorage.getItem("vokabel_session_aktiv
 ok(sa === null, "Neu: keine aktive Session");
 
 await clickText(".quiz-setup-check", "Verbes");
+await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 z = await zustand();
 ok(z.start === "3", `Liste neu gewählt: alle 3 Vokabeln (${z.start})`);
 ok(z.reihenfolge === "Schlechteste zuerst", `Neu: Reihenfolge zurück auf Schlechteste (${z.reihenfolge})`);

@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, bereichZu } from "./hilfen.mjs";
 
 // Vorlesen: jede Spalte mit einer Stimme ihrer Sprache (Deutsch nie mit französischer Stimme).
 // Sprachausgabe als Attrappe mit deutschen und französischen Stimmen; protokolliert Text, lang und Stimme.
@@ -20,6 +20,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };

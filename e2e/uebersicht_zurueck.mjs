@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
 
 // Paket-Ende: Knopf nennt die echte Restzahl („Letzte 2 Vokabeln“), Größen über dem Rest fehlen;
 // „Zur Übersicht“/„Beenden“/„Schließen“ kehren eingeklappt zurück, „Pause“ nicht;
@@ -21,6 +21,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(300);
 };
@@ -46,6 +47,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await clickText(".quiz-setup-check", "Vocabulaire");
+await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await sleep(300);
 await page.click('[data-umfang-wahl="5"]'); await sleep(500);
 
@@ -67,8 +69,10 @@ await page.evaluate(() => document.querySelector('[data-quiz-art="uebersetzung"]
 const kopf = () => page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf);
 const reihenfolgeOffen = () => page.evaluate(() => !!document.querySelector("[data-reihenfolge]")?.classList.contains("offen"));
 const oeffneReihenfolge = async () => { if (!(await reihenfolgeOffen())) { await page.click("[data-reihenfolge]"); await sleep(300); } };
+// mit offenem Bereich gibt es keinen Start-Knopf (Fokus): Reihenfolge öffnen, prüfen, wieder zu
 await oeffneReihenfolge();
-const vorher = await reihenfolgeOffen();
+ok(await reihenfolgeOffen() && !(await page.$("[data-start-knopf]")), "Reihenfolge offen: Start ausgeblendet (Fokus)");
+await page.click("[data-reihenfolge]"); await sleep(300);
 await page.click("[data-start-knopf]"); await sleep(500);
 await paket(5);
 const knopf = await page.evaluate(() => document.querySelector("[data-naechstes-paket]")?.textContent.trim());
@@ -77,7 +81,7 @@ ok(!(await page.$("[data-paket-groessen]")), "keine Paketgrößen-Auswahl, da al
 
 // Pause: Übersicht wie vorher
 await page.click("[data-pause]"); await sleep(500);
-ok(vorher && await reihenfolgeOffen(), "Pause: Bereiche bleiben wie sie waren (Reihenfolge offen)");
+ok(await page.$("[data-start-knopf]") && !(await reihenfolgeOffen()), "Pause: Übersicht wie vorher (kein Bereich offen, Start sichtbar)");
 
 // letzte 2 → Auswertung → Zur Übersicht: eingeklappt
 await page.click("[data-start-knopf]"); await sleep(500);
@@ -91,11 +95,9 @@ console.log("     nach „Zur Übersicht“:", JSON.stringify(nachher));
 ok(nachher.listen === 0 && nachher.kopf !== "offen" && !(await reihenfolgeOffen()) && nachher.y === 0, "Zur Übersicht: alle Bereiche eingeklappt, oben");
 
 // Beenden während der Abfrage (ohne Antwort) → eingeklappt
-await oeffneReihenfolge();
-const offen = await reihenfolgeOffen();
 await page.click("[data-start-knopf]"); await sleep(500);
 await clickText("button", "Beenden", true); await sleep(500);
-ok(offen && !(await reihenfolgeOffen()), "Beenden: offener Bereich (Reihenfolge) wieder eingeklappt");
+ok(!(await reihenfolgeOffen()) && await page.$("[data-start-knopf]"), "Beenden: Übersicht mit eingeklappten Bereichen");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

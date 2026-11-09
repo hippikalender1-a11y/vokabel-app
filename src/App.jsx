@@ -1831,7 +1831,7 @@ export default function VokabelApp() {
   const [aktionszeileAufgeklappt, setAktionszeileAufgeklappt] = useState(false);
   const [diktatManualPlays, setDiktatManualPlays] = useState(0);
   const [quizTabListen, setQuizTabListen] = useState([]);
-  const [listenAuswahlAufgeklappt, setListenAuswahlAufgeklappt] = useState(true);
+  const [listenAuswahlAufgeklappt, setListenAuswahlAufgeklappt] = useState(false);   // ohne gewählte Liste öffnet sie der Effekt unten
   const eingabeRef = useRef(null);
   const flashTimerRef = useRef(null);
   const flashWeiterRef = useRef(null);   // was nach der Verzögerung passiert (Antippen beendet sie sofort)
@@ -1949,16 +1949,20 @@ export default function VokabelApp() {
   const maxSpalte = { left: "max(0px, calc(50% - 300px))", width: "min(100%, 600px)", margin: 0, boxSizing: "border-box" };   // wie .app (max. 600 px, mittig)
   // Listen-Auswahl: ohne gewählte Liste immer offen (rechts nur ein Hinweis statt Knopf)
   const listenOffen = listenAuswahlAufgeklappt || quizTabListen.length === 0;
+  // Quiz-Fokus: ein offener Bereich zeigt nur seine Überschrift (klebt unter der Session-Leiste) und seinen Inhalt;
+  // zu nur über die Überschrift (kein Zuklappen beim Weiterscrollen). Ohne offenen Bereich scrollt alles unter der Session-Leiste.
+  const quizListenSichtbar = !(aktiverSlot?.typ === "gespeichert" && !listenAendern);
+  const quizFokus = tab !== "quiz" || slotSektionAufgeklappt || quizTabListen.length === 0 || aufteilen ? null
+    : quizListenSichtbar && listenOffen ? "listen"
+    : quizVokMax ? "einzel"
+    : quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt ? "zeile1"
+    : quizSessionAufgeklappt ? "zeile2" : null;
+  const fokusZeigt = k => !quizFokus || quizFokus === k;
+  useEffect(() => { if (tab === "quiz") window.scrollTo(0, 0); }, [quizFokus]);   // Bereich auf/zu: von oben
   kontexteRef.current = () => {
     const q = headerH + slotH + listenauswahlHeaderH;
     return [
       ["slot",      slotContainerRef,            headerH + slotH,                         () => setSlotSektionAufgeklappt(false)],
-      ["listen",    listenContainerRef,          q,                                       () => setListenAuswahlAufgeklappt(false)],
-      ["vokabeln",  einzelauswahlRef,            q + alleBereichH,                        () => setQuizListeAufgeklappt(false), !quizVokMax],
-      ["modus",     abfrageModusContainerRef,    q + alleBereichH + abfrageModusH,        () => setQuizAbfrageModusAufgeklappt(false)],
-      ["reihe",     reihenfolgeContainerRef,     q + alleBereichH + abfrageModusH + reihenfolgeH, () => setQuizReihenfolgeAufgeklappt(false)],
-      ["einst",     einstellungenContainerRef,   q + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH, () => setQuizEinstellungenAufgeklappt(false)],
-      ["session",   sessionContainerRef,         q + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH + sessionH, () => setQuizSessionAufgeklappt(false), quizSessionAufgeklappt],
       ["statListen", statistikListenContainerRef, headerH + slotH,                        () => setStatistikListenAufgeklappt(false)],
       ["statVok",   statistikEinzelauswahlRef,   headerH + slotH + statistikListenHeaderH, () => setStatistikEinzelauswahlAufgeklappt(false)],
       ["info",      infoKontextContainerRef,     infoHeaderRef.current?.getBoundingClientRect().bottom ?? 0, () => setInfoModus("uebersicht"), infoModus !== "uebersicht"],
@@ -2021,7 +2025,7 @@ export default function VokabelApp() {
     obs.observe(el);
     setAlleBereichH(el.offsetHeight);
     return () => obs.disconnect();
-  }, [quizTabListen.length, aktiverSlot, listenAendern, tab]);
+  }, [quizTabListen.length, aktiverSlot, listenAendern, tab, quizFokus]);   // Fokus: Zeile wird neu eingehängt
   // Lernen: aktuelle Seite (Wort bzw. Übersetzung) ggf. vorlesen, danach die eingestellte Pause, dann weiter
   useEffect(() => {
     if (!lernen || lernen.pausiert || lernen.fertig) return;
@@ -2106,7 +2110,7 @@ export default function VokabelApp() {
     obs.observe(el);
     setAbfrageModusH(el.offsetHeight);
     return () => obs.disconnect();
-  }, [quizTabListen.length]);
+  }, [quizTabListen.length, quizFokus]);
 
   // Reihenfolge-Zeile Höhe messen
   useEffect(() => {
@@ -2136,7 +2140,7 @@ export default function VokabelApp() {
     obs.observe(el);
     setSessionH(el.offsetHeight);
     return () => obs.disconnect();
-  }, [quizTabListen.length]);
+  }, [quizTabListen.length, quizFokus]);
 
   // Slot-Sektion Header Höhe messen
   useEffect(() => {
@@ -8128,7 +8132,8 @@ export default function VokabelApp() {
 
           return (
             <>
-              <div className="sektion" data-quiz-ansicht={slotSektionAufgeklappt ? "auswahl" : "einstellungen"} style={{paddingTop:0, paddingBottom: (listenAuswahlAufgeklappt || quizListeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt || quizEinstellungenAufgeklappt || quizSessionAufgeklappt) ? '100dvh' : 0}}>
+              <div className="sektion" data-quiz-ansicht={slotSektionAufgeklappt ? "auswahl" : "einstellungen"} style={{paddingTop:0, paddingBottom:0}}
+                data-quiz-fokus={quizFokus || ""} data-quiz-offen={quizFokus === "zeile1" ? (quizAbfrageModusAufgeklappt ? "modus" : "reihenfolge") : quizFokus === "zeile2" ? String(quizSessionAufgeklappt) : quizFokus || ""}>
                 {/* VERLAUF + GESPEICHERT – Kopfzeile (zu/auf gleich) + aufklappbares Raster */}
                 {(() => {
                   return (
@@ -8167,7 +8172,7 @@ export default function VokabelApp() {
                     ? (listenIndex.find(l => l.id === quizTabListen[0])?.name || "Liste")
                     : `${n} Listen`;
                   return (
-                    <div ref={listenauswahlHeaderRef} className="liste-detail-header" style={{position:"sticky", top:headerH + slotH, zIndex:8, marginLeft:"-16px", marginRight:"-16px", ...(quizVokMax ? {display:"none"} : {})}}>
+                    <div ref={listenauswahlHeaderRef} className="liste-detail-header" style={{position: quizFokus === "listen" ? "sticky" : "relative", top: quizFokus === "listen" ? headerH + slotH : 0, zIndex:8, marginLeft:"-16px", marginRight:"-16px", ...(fokusZeigt("listen") ? {} : {display:"none"})}}>
                       {/* LINKS */}
                       <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
                         {listenOffen ? (
@@ -8254,8 +8259,8 @@ export default function VokabelApp() {
                 </>)}
 
                 {/* Alle/Bereich – sticky direkt unter Haupt-Header */}
-                {kombiListe && !(aktiverSlot?.typ === "gespeichert" && !listenAendern) && (
-                  <div ref={alleBereichRef} style={{position:"sticky", top:headerH + slotH + listenauswahlHeaderH, zIndex:8, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px",
+                {kombiListe && !(aktiverSlot?.typ === "gespeichert" && !listenAendern) && fokusZeigt("einzel") && (
+                  <div ref={alleBereichRef} style={{position:"relative", top:0, zIndex:8, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px",
                     ...(maxFenster ? { position:"fixed", top:maxFenster.top, ...maxSpalte } : {})}}>
                     {aufteilen ? (<>
                       <span style={{flex:1, fontWeight:700, fontSize:"0.85rem", color:"var(--gelb-dunkel)"}}>▦ Aufteilen</span>
@@ -8365,8 +8370,8 @@ export default function VokabelApp() {
 
                 {!quizVokMax && (<>
                 {/* ZEILE 1: Stufe (Lernen/Leicht/Schwer) | Abfrage-Modus | Reihenfolge – je ein Bereich klappt darunter auf */}
-                {kombiListe && (
-                  <div ref={abfrageModusRef} className="quiz-zeile" style={{top:headerH + slotH + listenauswahlHeaderH + alleBereichH}}>
+                {kombiListe && fokusZeigt("zeile1") && (
+                  <div ref={abfrageModusRef} className="quiz-zeile" style={{position: quizFokus === "zeile1" ? "sticky" : "relative", top: quizFokus === "zeile1" ? headerH + slotH : 0}}>
                     <button className="quiz-zeile-knopf stufe" data-stufe={lernAktiv ? "lernen" : einstellungen.modus === "einfach" ? "einfach" : "schwer"}
                       onClick={() => { schliesseQuizBereiche(null);
                         // Reihenfolge: Lernen → Leicht → Schwer → Lernen
@@ -8393,7 +8398,7 @@ export default function VokabelApp() {
                     </button>
                   </div>
                 )}
-                {kombiListe && mitAkzentAnzahl != null && (
+                {kombiListe && !quizFokus && mitAkzentAnzahl != null && (
                   <div className="quiz-zeile-hinweis" data-anzahl="akzent"
                     {...tt(ohneAkzentAnzahl != null ? "Vokabeln mit Akzent und dazu genommene Wörter ohne Akzent (Anzahl begrenzt, siehe Regeln)" : "Davon Vokabeln mit Akzent in der Akzente-Spalte")}>
                     ({mitAkzentAnzahl} mit Akzent{ohneAkzentAnzahl != null ? ` + ${ohneAkzentAnzahl} ohne` : ""})
@@ -8610,8 +8615,8 @@ export default function VokabelApp() {
                 )}
 
                 {/* ZEILE 2: Umfang | Abfrage-Ziel | Gelernte */}
-                {kombiListe && (
-                  <div ref={sessionRef} className="quiz-zeile" style={{top:headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH, zIndex:6}}>
+                {kombiListe && fokusZeigt("zeile2") && (
+                  <div ref={sessionRef} className="quiz-zeile" style={{position: quizFokus === "zeile2" ? "sticky" : "relative", top: quizFokus === "zeile2" ? headerH + slotH : 0, zIndex:6}}>
                     <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "umfang" ? " offen" : ""}`} data-umfang
                       onClick={() => toggleSessionBereich("umfang")}
                       {...tt("Umfang: alle Vokabeln auf einmal oder in Paketen – antippen zum Einstellen")}>
@@ -8715,7 +8720,7 @@ export default function VokabelApp() {
                 )}
 
                 {/* START-BEREICH: Session-Fortschritt + großer Start-Knopf */}
-                {kombiListe && (
+                {kombiListe && !quizFokus && (
                   <div className="start-bereich">
                     {(() => {
                       // Abfrageart wählen: gewählte Art groß (mit Name und Lernfortschritt), die anderen kleiner

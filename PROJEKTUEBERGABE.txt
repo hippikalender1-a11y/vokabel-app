@@ -1897,6 +1897,13 @@ EINGABEFELDER 16 PX: @media (pointer:coarse) input/textarea/select font-size 16p
 NEUE SESSION: Kopf „Neues Quiz“ + data-nicht-gespeichert (Statistik: „Neue Auswahl“). Listen-Auswahl: listenOffen =
   aufgeklappt || keine Liste; ohne Liste rechts Hinweis data-listen-hinweis „Liste auswählen“ (kein Knopf), Platzhalter
   „Bitte Liste auswählen“ entfällt; mit Liste der Namens-Knopf (klappt zu/auf).
+QUIZ-FOKUS: quizFokus = "listen" | "einzel" | "zeile1" (Modus/Reihenfolge) | "zeile2" (Umfang/Ziel) | null. Kleben (sticky)
+  nur App-Kopf, Tabs und Session-Leiste; die Zeile des offenen Bereichs klebt darunter (top headerH + slotH), alle anderen
+  Zeilen/Start sind ausgeblendet (fokusZeigt). Ohne Fokus scrollen Listen-Zeile, „Alle | Bereich“, Zeile 1/2 und Start.
+  Zu nur über die Überschrift: Rolladen-Kontexte listen/vokabeln/modus/reihe/einst/session entfernt, kein 100dvh-Polster.
+  Fokuswechsel → scrollTo(0,0); Höhen-Effekte (alleBereichH, abfrageModusH, sessionH) hängen an quizFokus (Zeilen werden
+  neu eingehängt). listenAuswahlAufgeklappt startet false (ohne Liste öffnet der Effekt sie). Sektion trägt
+  data-quiz-fokus / data-quiz-offen (Tests: hilfen.mjs listenZu, bereichZu; clickText-Fallback klappt offenen Bereich zu).
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

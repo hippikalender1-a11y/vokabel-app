@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen } from "./hilfen.mjs";
+import { quizEinstellungen, bereichZu } from "./hilfen.mjs";
 
 // Lang-Druck per Touch auf gespeicherte Konfiguration: nur Name in der Erklärung, Menü-Knöpfe frei schwebend,
 // Lang-Druck + Ziehen → Menü weg, Verschieben-Modus, Eintrag auf neuen Platz; Fenster oben (Tastatur)
@@ -22,6 +22,7 @@ const clickText = async (sel, text, exact = false) => {
   }, sel, text, exact);
   // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
+  if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(250);
 };
@@ -56,7 +57,8 @@ console.log("     Erklärung:", blase);
 ok(blase === "Unregelmäßige Verben Kapitel 3 – Wiederholung", "Lang-Druck zeigt den vollen Namen");
 ok(getrennt, "Menü-Knöpfe schweben getrennt von der Erklärung");
 // Auswahl-Tafel: Tipp daneben bewirkt nichts, Tipp auf die Tafel schließt
-await page.touchscreen.tap(8, 640); await sleep(300);
+{ const k = await page.evaluate(() => { const r = document.querySelector("[data-slot-kopf]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  await page.touchscreen.tap(k.x, k.y); await sleep(300); }   // eindeutig neben den Kacheln (Session-Leiste)
 ok(await page.$('[role="status"]') && await page.$("[data-info-menue]"), "Tipp daneben: Auswahl-Tafel bleibt offen");
 const tb = await page.evaluate(() => { const r = document.querySelector("[data-info-blase]").getBoundingClientRect(); return { x: r.x + 20, y: r.y + 10 }; });
 await page.touchscreen.tap(tb.x, tb.y); await sleep(300);

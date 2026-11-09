@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -17,6 +17,7 @@ const clickText = async (sel, text) => {
     if (el) el.click();
     return !!el;
   }, sel, text);
+  if (!done && await bereichZu(page)) return clickText(sel, text);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
   await sleep(250);
 };
