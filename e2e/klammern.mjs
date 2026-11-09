@@ -69,11 +69,10 @@ await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.t
 // Aufräum-Werkzeug
 await zuListen(page);
 await clickText(".karte-zeile", "Words");
-await page.evaluate(() => { if (!document.querySelector("[data-klammern-werkzeug]")) [...document.querySelectorAll("button")].find(b => /▼|▲/.test(b.textContent) && b.closest(".liste-detail-header"))?.click(); });
 await sleep(300);
-if (!(await page.$("[data-klammern-werkzeug]"))) await page.evaluate(() => [...document.querySelectorAll("button, span, div")].find(x => x.title?.includes("Aktionen") || /Aktionen/.test(x.getAttribute?.("data-info") || ""))?.click());
-await sleep(300);
-await page.evaluate(() => document.querySelector("[data-klammern-werkzeug]").click()); await sleep(300);
+// „( ) → Info“ steckt im Menü der Liste (lang drücken auf den Namen im Listenkopf)
+await page.evaluate(() => { const el = document.querySelector("[data-liste-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-info-aktion="( ) → Info"]').click()); await sleep(300);
 const vorschau = await page.evaluate(() => ({ anzahl: document.querySelector("[data-klammer-anzahl]")?.dataset.klammerAnzahl, text: document.querySelector("[data-klammern-modal]")?.innerText.replace(/\s+/g, " ") }));
 console.log("     Vorschau:", vorschau.text.slice(0, 260));
 ok(vorschau.anzahl === "1" && /point \(= Punkt\) → point/.test(vorschau.text) && /Info: = Punkt; bei Zahlenangaben/.test(vorschau.text), "Vorschau: 1 Vokabel, „point“ + Info „= Punkt; bei Zahlenangaben“ ((un)lucky bleibt)");

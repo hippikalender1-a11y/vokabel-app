@@ -47,7 +47,7 @@ const runde = async (modus, regel) => {
   for (let i = 0; i < 10; i++) {
     if (await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.includes("Wiederholung starten") || b.textContent.includes("Weiter zur Wiederholung"))))
       await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Wiederholung starten|Weiter zur Wiederholung/.test(b.textContent))?.click());
-    if (!(await page.$(".karte-aufdecken"))) break;
+    if (!(await page.$("[data-karte-verdeckt]"))) break;
     await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(150);
     await page.click(".karte-btn-nein"); await sleep(150);
     await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(300);

@@ -28,7 +28,7 @@ const clickText = async (sel, text, exact = false) => {
 const titel = () => page.evaluate(() => document.querySelector(".topbar-title")?.textContent.trim());
 const alleGewusst = async () => {
   for (let i = 0; i < 8; i++) {
-    if (!(await page.$(".karte-aufdecken"))) break;
+    if (!(await page.$("[data-karte-verdeckt]"))) break;
     await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(250);
     await clickText(".karte-btn-ja", "Gewusst"); await sleep(1200);
   }

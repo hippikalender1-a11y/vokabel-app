@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, farbZeige } from "./hilfen.mjs";
 
 // Farbrollen nach Funktion getrennt (App-Kopf, Bereichs-Kopfzeilen, Abfrage-Karten, Dialoge, Knöpfe & Felder,
 // Info-Kästen, Ausgewählt); „🎨 Farbe ändern“ in jedem Lang-Druck-Menü startet den Farbmodus an dieser Stelle
@@ -82,8 +82,8 @@ await page.evaluate(() => document.querySelector("[data-farbmodus-zuruecksetzen]
 
 // Eintrag ausschaltbar
 await tab("Einstellungen");
-await page.click('[data-einst-kopf="app"]'); await sleep(300);
-await page.click("[data-farbe-im-menue]"); await sleep(200);
+await page.evaluate(() => { const k = document.querySelector('[data-einst-kopf="farben"]'); if (k.dataset.offen !== "ja") k.click(); }); await sleep(300);
+await farbZeige(page, "[data-farbe-im-menue]"); await page.click("[data-farbe-im-menue]"); await sleep(200);
 await zuListen(page);
 await langDruck('[data-liste-id="l_a"]');
 ok(!(await page.$("[data-info-farbe]")) && await page.$("[data-info-aktion]"), "ausgeschaltet: kein „🎨 Farbe ändern“, übrige Aktionen bleiben");

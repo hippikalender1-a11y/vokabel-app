@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, farbZeige } from "./hilfen.mjs";
 
 // Element-Farben: im Farbfeld je Teil „Alle Stellen“ (Rolle) oder „Nur dieses Element“ (eigene Farbe der Element-Art,
 // Rolle bleibt); gespeichert im Farbschema, im Schema-Editor sichtbar und entfernbar
@@ -77,8 +77,8 @@ await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 ok(await bg("[data-start-knopf]") === "rgb(18, 52, 86)", "nach dem Neuladen weiterhin umgefärbt");
 
 // Schema-Editor: Liste der Element-Farben, entfernen → wieder Rolle
-await tab("Einstellungen"); await oeffneEinst("app");
-await page.click("[data-farben-bearbeiten]"); await sleep(300);
+await tab("Einstellungen"); await oeffneEinst("farben");
+await farbZeige(page, "[data-farben-bearbeiten]"); await page.click("[data-farben-bearbeiten]"); await sleep(300);
 ok(await page.$('[data-element-farbe="[data-start-knopf]|background-color"]'), "Schema-Editor: „Eigene Element-Farben“ mit dem Start-Knopf");
 await page.evaluate(() => document.querySelector('[data-element-farbe="[data-start-knopf]|background-color"] button').click()); await sleep(300);
 await tab("Quiz"); await quizEinstellungen(page);

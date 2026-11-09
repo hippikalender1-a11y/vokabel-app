@@ -42,9 +42,10 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await zuListen(page);
 await clickText(".karte-zeile", "Englisch Buch 5. Klasse");
-await page.evaluate(() => [...document.querySelectorAll(".btn-toggle")].find(b => /Aktionen/.test(b.getAttribute("title") || ""))?.click());
 await sleep(300);
-await clickText("button", "JSON", true);
+await page.evaluate(() => { const el = document.querySelector("[data-liste-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-info-aktion="📤 Exportieren"]').click()); await sleep(300);
+await page.click('[data-export-art="json"]'); await sleep(300);
 await clickText(".modal button", "Exportieren", true);
 await sleep(500);
 const g = await page.evaluate(() => window.__geteilt);

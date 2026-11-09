@@ -77,9 +77,11 @@ console.log("     Auswahl-Menü:", wahlMenue.join(" | "));
 ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|📁 In Gruppe… (2)|⇄ Verschieben|🗑 Löschen (2)|✕ Auswahl beenden", "Lang-Druck in der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
 ok(/2 ausgewählt/.test(await hinweis() || ""), "Lang-Druck auf nicht gewählte Kachel nimmt sie dazu");
 await page.mouse.click(5, 300); await sleep(200);   // Menü schließen (Klick daneben wird verschluckt)
-// Fertig beendet
-await page.click("[data-wahl-fertig]"); await sleep(250);
-ok(!(await page.$("[data-wahl-hinweis]")), "„Fertig“ beendet den Auswahl-Modus");
+// „Fertig“ mit 2 Kacheln: Multiquiz einstellen (laden, nicht starten)
+await page.click("[data-wahl-fertig]"); await sleep(700);
+ok(!(await page.$("[data-wahl-hinweis]")) && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent.trim()) === "Multiquiz" && !(await page.$(".quiz-frage-text")),
+  "„Fertig“ beendet den Auswahl-Modus und stellt das Multiquiz ein, ohne zu starten");
+await oeffneKopf(); await sleep(300);
 
 // nochmal: A + B, Lang-Druck → Multiquiz starten
 await langDruck('[data-slot-id="g_a"]'); await aktion("☑ Auswählen");
@@ -110,7 +112,7 @@ const info = await page.evaluate(() => document.querySelector("[data-kopf-info]"
 console.log("     Info:", info);
 ok(info === "🧩 Teil A + Teil B · 5 Vokabeln", "Info-Zeile: Teile + Anzahl");
 const sl = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")));
-ok(sl.verlauf.length === 1 && sl.verlauf[0].multi?.map(t => t.name).join("+") === "Teil A+Teil B", "genau ein Verlauf-Eintrag mit den Teilen");
+ok(sl.verlauf.length === 2 && sl.verlauf.every(v => v.multi?.map(t => t.name).join("+") === "Teil A+Teil B"), "je Multiquiz ein Verlauf-Eintrag mit den Teilen („Fertig“ + „Multiquiz starten“), die Runde legt keinen weiteren an");
 ok(await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].some(c => c.textContent.includes("🧩"))), "Verlauf-Chip mit 🧩");
 await page.click("[data-slot-kopf-name]"); await sleep(300);   // Auswahl zu → Einstellungen
 ok(await page.evaluate(() => document.querySelector("[data-reihenfolge]")?.textContent.trim()) === "Nach Listen-Platz", "Reihenfolge von Teil A übernommen");

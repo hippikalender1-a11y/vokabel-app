@@ -10,7 +10,7 @@ let fehler = 0;
 const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FAIL", msg); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const tafel = () => page.evaluate(() => {
-  const t = [...document.querySelectorAll('[role="status"]')].find(d => /Antippen zum Schließen/.test(d.textContent));
+  const t = document.querySelector('[data-info-blase]');
   if (!t) return null;
   const r = t.getBoundingClientRect();
   return { text: t.firstElementChild.textContent, oben: r.top < innerHeight / 2, top: r.top, bottom: r.bottom, left: r.left, right: r.right };

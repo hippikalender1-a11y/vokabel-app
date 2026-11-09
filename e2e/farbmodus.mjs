@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, farbZeige } from "./hilfen.mjs";
 
 // Farbmodus: in den Einstellungen starten, normal durch die App gehen, langer Druck auf ein Element →
 // Farbfeld mit den Farbrollen im Umkreis (auch kleine Mini-Kreise); Änderung live;
@@ -53,8 +53,8 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, sprache: "alle" }));
 });
 await page.reload(); await sleep(500);
-await clickText(".tab", "Einstellungen"); await oeffneEinst("app");
-await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
+await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
+await farbZeige(page, "[data-farbmodus-start]"); await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
 ok(await page.$("[data-farbmodus-zuruecksetzen]") && await page.$("[data-farbmodus-uebernehmen]"), "Farbmodus an: unten rechts „Zurücksetzen“ und „Farben übernehmen“");
 
 // normal navigieren
@@ -121,8 +121,8 @@ await page.click("[data-farbmodus-zuruecksetzen]"); await sleep(300);
 ok(await variable("haupt") === "#2d6a4f" && !(await page.$("[data-farbmodus-uebernehmen]")) && (await eigene()).length === 0, "„Zurücksetzen“: Farben zurück, Farbmodus aus, nichts gespeichert");
 
 // erneut: ändern und übernehmen (Vorlage Natur → Kopie mit Namen)
-await clickText(".tab", "Einstellungen"); await oeffneEinst("app");
-await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
+await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
+await farbZeige(page, "[data-farbmodus-start]"); await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
 const sektion = await page.evaluate(() => { const r = [...document.querySelectorAll(".tab")].find(t => t.textContent === "Einstellungen").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await rechtsklick(sektion.x, sektion.y);
 console.log("     Farbfeld Tab:", (await feldZeilen()).join(" | "));

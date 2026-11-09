@@ -121,10 +121,9 @@ export default function InfoTafel() {
         }}>
           {!info.auswahl?.ohneText && <div role="status" data-info-blase style={{
             background: "rgba(28,24,20,0.95)", color: "var(--auf-haupt)", borderRadius: 14, cursor: unten ? "pointer" : undefined,
-            padding: "12px 14px 8px", boxShadow: "0 6px 24px rgba(0,0,0,0.3)", boxSizing: "border-box",
+            padding: "12px 14px", boxShadow: "0 6px 24px rgba(0,0,0,0.3)", boxSizing: "border-box",
           }}>
             <div style={{ fontSize: mitMenue ? "1.05rem" : "0.95rem", fontWeight: mitMenue ? 700 : 400, lineHeight: 1.5, overflowWrap: "anywhere" }}>{info.text}</div>
-            <div style={{ fontSize: "0.7rem", color: "var(--text4)", textAlign: "right", marginTop: 6 }}>{unten ? "Weitere antippen wählt mit aus · hier antippen: Auswahl beenden" : "Antippen zum Schließen"}</div>
           </div>}
           {mitMenue && (
             <div data-info-menue style={{ display: "flex", flexDirection: unten ? "row" : "column", flexWrap: unten ? "wrap" : undefined, gap: unten ? 6 : 8 }}>

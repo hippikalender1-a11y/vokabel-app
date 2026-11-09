@@ -78,7 +78,7 @@ ok(await startAnzahl() === "4", "Stufe „Schwer“ (Standard): auch Wörter ohn
 await page.evaluate(() => { const el = document.querySelector("[data-stufe]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(250); await page.evaluate(() => document.querySelector('[data-info-aktion="⚙ Regeln Leicht / Schwer"]').click());
 await sleep(300);
 await page.evaluate(() => {
-  const zeile = [...document.querySelectorAll("div")].find(d => d.textContent.trim() === "Akzent-Modus: auch Wörter ohne Akzent abfragen");
+  const zeile = [...document.querySelectorAll("div")].filter(d => d.textContent.trim() === "Akzent-Modus: auch Wörter ohne Akzent abfragen").pop();
   zeile.parentElement.nextElementSibling.nextElementSibling.click();
 });
 await sleep(200);
@@ -247,7 +247,7 @@ await sleep(400);
 // Haken "hervorheben" in Spalte Einfach entfernen
 await oeffneEinst();
 await page.evaluate(() => {
-  const zeile = [...document.querySelectorAll("div")].find(d => d.textContent.trim() === "Akzent-Modus: Buchstaben mit Akzent hervorheben");
+  const zeile = [...document.querySelectorAll("div")].filter(d => d.textContent.trim() === "Akzent-Modus: Buchstaben mit Akzent hervorheben").pop();
   zeile.parentElement.nextElementSibling.click();
 });
 await sleep(200);

@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 
 // Eine Schrift gilt nur auf ihrem Hintergrund: „Schrift auf Hauptfarbe“ ändern lässt Schrift auf Falsch, Hervorhebung,
 // Liste & Start usw. unverändert (sie werden beim Ändern mit ihrem bisherigen Wert festgeschrieben)
-import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, farbZeige } from "./hilfen.mjs";
 
 
 
@@ -65,8 +65,8 @@ const vorher = await werte();
 console.log("     vorher:", JSON.stringify(vorher));
 ok(schriften.every(n => vorher[n]), "eigene Schrift-Rollen je farbigem Hintergrund vorhanden");
 // Farbmodus: Schrift auf einem Haupt-Knopf (Umfang) über „Alle Stellen“ ändern
-await clickText(".tab", "Einstellungen"); await oeffneEinst("app");
-await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
+await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
+await farbZeige(page, "[data-farbmodus-start]"); await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
 await clickText(".tab", "Quiz");
 const p = await mitte("[data-umfang]");
 await rechtsklick(p.x, p.y);
@@ -91,8 +91,8 @@ const farbe = sel => page.evaluate(sel => getComputedStyle(document.querySelecto
 await clickText(".tab", "Einstellungen");
 const kartenTextVorher = await variable("text-stark");
 const kopfFarbfeld = async () => { const q = await mitte('[data-einst-kopf="lernen"] .einst-kopf-text'); await rechtsklick(q.x, q.y); };
-await oeffneEinst("app");
-await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
+await oeffneEinst("farben");
+await farbZeige(page, "[data-farbmodus-start]"); await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
 await kopfFarbfeld();
 console.log("     Farbfeld Kopf:", (await page.evaluate(() => [...document.querySelectorAll("[data-farbfeld-zeile]")].map(z => z.dataset.farbfeldZeile))).join(","));
 ok(await page.$('[data-farbfeld-zeile="kopf-schrift"]'), "Farbfeld am Einstellungs-Kopf: „Schrift auf Kopfzeilen“");

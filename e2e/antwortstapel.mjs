@@ -58,7 +58,7 @@ await aufdecken(); await karte(false);
 let st = await stapel();
 console.log("     nach Nicht gewusst:", JSON.stringify(st));
 ok(JSON.stringify(st) === '["falsch:cheval"]', "nicht gewusste Antwort bleibt stehen (✗) – sofort weiter, ohne Pause");
-ok(await page.$(".karte-aufdecken"), "nächste Antwort (Plural) wird sofort abgefragt");
+ok(await page.$("[data-karte-verdeckt]"), "nächste Antwort (Plural) wird sofort abgefragt");
 await aufdecken(); await karte(true);
 st = await stapel();
 console.log("     nach Gewusst:", JSON.stringify(st));

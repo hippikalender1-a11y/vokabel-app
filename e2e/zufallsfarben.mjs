@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { farbZeige } from "./hilfen.mjs";
 
 // Fünf bunte Pastell-Vorlagen (eigene Töne für Kopf, Kopfzeilen, Start …) und „🎲 Zufällige Farben“:
 // jeder Tipp ersetzt das Schema „Zufall“; umbenannte Zufalls-Schemata bleiben erhalten
@@ -21,25 +22,26 @@ await page.goto(URL);
 await page.evaluate(() => localStorage.clear());
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
-await page.click('[data-einst-kopf="app"]'); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector('[data-einst-kopf="farben"]'); if (k.dataset.offen !== "ja") k.click(); }); await sleep(300);
 
 // Vorlagen
 const neu = ["sorbet", "lagune", "blumenwiese", "nordlicht", "sommerfest"];
+await farbZeige(page, '[data-farbschema="sorbet"]');
 ok(await page.evaluate(n => n.every(id => document.querySelector(`[data-farbschema="${id}"]`)), neu), "fünf neue Vorlagen: Sorbet, Lagune, Blumenwiese, Nordlicht, Sommerfest");
-await page.click('[data-farbschema="sorbet"]'); await sleep(300);
+await farbZeige(page, '[data-farbschema="sorbet"]'); await page.click('[data-farbschema="sorbet"]'); await sleep(300);
 const sorbet = { kopf: await variable("app-kopf"), zeile: await variable("kopfzeile"), start: await variable("start"), haupt: await variable("haupt") };
 console.log("     Sorbet:", JSON.stringify(sorbet));
 ok(sorbet.kopf === "#cdeee2" && sorbet.zeile === "#e6dcf7" && sorbet.start === "#9fd8c4" && sorbet.haupt === "#d9756c", "Sorbet: App-Kopf, Kopfzeilen, Start und Hauptfarbe in eigenen Tönen");
 ok(new Set(Object.values(sorbet)).size === 4, "Sorbet: vier verschiedene Töne");
 
 // Zufall
-await page.click("[data-zufall-farben]"); await sleep(300);
+await farbZeige(page, "[data-zufall-farben]"); await page.click("[data-zufall-farben]"); await sleep(300);
 let z = await zufallsSchemata();
 const e1 = await einst();
 ok(z.length === 1 && z[0].name === "Zufall" && e1.farbschema === z[0].id, "🎲: Schema „Zufall“ angelegt und gewählt");
 const h1 = await variable("haupt");
 ok(/^#[0-9a-f]{6}$/.test(h1) && h1 !== sorbet.haupt, `🎲: neue Hauptfarbe (${h1})`);
-await page.click("[data-zufall-farben]"); await sleep(300);
+await farbZeige(page, "[data-zufall-farben]"); await page.click("[data-zufall-farben]"); await sleep(300);
 z = await zufallsSchemata();
 const h2 = await variable("haupt");
 ok(z.length === 1 && h2 !== h1, `erneut 🎲: dasselbe Schema „Zufall“ mit neuen Farben (${h2})`);
@@ -47,8 +49,8 @@ ok(z.length === 1 && h2 !== h1, `erneut 🎲: dasselbe Schema „Zufall“ mit n
 await page.evaluate(id => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen")); e.eigeneSchemata = e.eigeneSchemata.map(x => x.id === id ? { ...x, name: "Mein Zufall" } : x); localStorage.setItem("vokabel_einstellungen", JSON.stringify(e)); }, z[0].id);
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
-await page.click('[data-einst-kopf="app"]'); await sleep(300);
-await page.click("[data-zufall-farben]"); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector('[data-einst-kopf="farben"]'); if (k.dataset.offen !== "ja") k.click(); }); await sleep(300);
+await farbZeige(page, "[data-zufall-farben]"); await page.click("[data-zufall-farben]"); await sleep(300);
 const namen = ((await einst()).eigeneSchemata || []).map(x => x.name);
 ok(namen.includes("Mein Zufall") && namen.includes("Zufall"), `umbenanntes bleibt, neues „Zufall“ (${namen.join(", ")})`);
 // Lesbarkeit: dunkle Schrift auf den hellen Pastell-Knöpfen
@@ -64,8 +66,8 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
-await page.click('[data-einst-kopf="app"]'); await sleep(300);
-await page.click("[data-farbmodus-start]"); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector('[data-einst-kopf="farben"]'); if (k.dataset.offen !== "ja") k.click(); }); await sleep(300);
+await farbZeige(page, "[data-farbmodus-start]"); await page.click("[data-farbmodus-start]"); await sleep(300);
 const leiste = await page.evaluate(() => ["[data-farbmodus-uebernehmen]", "[data-farbmodus-zuruecksetzen]"].map(sel => { const c = getComputedStyle(document.querySelector(sel)); return [c.color, c.backgroundColor]; }));
 console.log("     Leiste:", JSON.stringify(leiste));
 ok(leiste.every(([fg, bg]) => fg !== bg) && leiste[0][1] === "rgb(45, 106, 79)" && leiste[1][0] === "rgb(45, 106, 79)", "Farbmodus-Leiste in festen, lesbaren Farben (Übernehmen grün, Zurücksetzen grün auf weiß)");

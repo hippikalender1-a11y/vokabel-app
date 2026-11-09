@@ -78,6 +78,7 @@ ok(!(await tafel()) && await gewaehlt() === "", "Tippen auf die Tafel beendet di
 await kontext(kachel("s1"));
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "☑ Auswählen").click()); await sleep(300);
 ok(!(await tafel()) && await gewaehlt() === "s1" && await page.$("[data-wahl-fertig]"), "„☑ Auswählen“: Tafel zu, Auswahl-Modus bleibt (Fertig)");
+await page.click(kachel("s1")); await sleep(250);   // abwählen – „Fertig“ ohne Auswahl beendet nur (mit Auswahl würde es laden)
 await page.click("[data-wahl-fertig]"); await sleep(300);
 
 // ── Einsammeln: Lang-Druck auf freie Stelle, dann über Kacheln ziehen ──
@@ -172,16 +173,16 @@ d = await slots();
 ok(d.gespeichert.find(x => x.id === "s2").ordner === g.id, "Session auf der Gruppe verweilt → in der Gruppe");
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(b => b.textContent.trim() === "Fertig")?.click()); await sleep(200);
 
-// ── aus der Gruppe ziehen, Auflösen bei einer Session ──
+// ── aus der Gruppe ziehen: die Gruppe bleibt auch mit einer Session bestehen ──
 await page.click(`[data-ordner-id="${g.id}"]`); await sleep(300);
 await ziehe(kachel("s2"), "[data-ordner-zurueck]", 0);
 d = await slots();
 ok(!d.gespeichert.find(x => x.id === "s2").ordner, "auf „← Alle Sessions“ gezogen: Teil 2 aus der Gruppe");
 await ziehe(kachel("s3"), "[data-ordner-zurueck]", 0);
 d = await slots();
-ok(!(d.ordner || []).length && d.gespeichert.every(x => !x.ordner), "nur noch eine Session: Gruppe hat sich aufgelöst");
-ok(d.gespeichert.find(x => x.id === "s4").platz?.z === 2, "die verbliebene Session steht am Platz der Gruppe");
-ok(!(await page.$("[data-ordner-zurueck]")), "aufgelöste Gruppe: zurück auf der obersten Ebene");
+ok((d.ordner || []).length === 1 && d.gespeichert.find(x => x.id === "s4").ordner === g.id && !d.gespeichert.find(x => x.id === "s3").ordner, "nur noch eine Session: Gruppe bleibt bestehen");
+ok(await page.$("[data-ordner-zurueck]"), "Gruppe bleibt offen");
+await page.click("[data-ordner-zurueck]"); await sleep(300);
 
 // ── Listen-Raster: dieselbe Auswahl-Tafel ──
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(b => b.textContent.trim() === "Fertig")?.click()); await sleep(200);
@@ -189,7 +190,7 @@ await zuListen(page);
 await kontext('[data-liste-id="l_a"]');
 ok((await tafel())?.startsWith("Unité 1") && (await menue()).includes("▦ In Sessions aufteilen"), "Listen: Lang-Druck → Tafel mit dem Listen-Menü");
 await page.click('[data-liste-id="l_c"]'); await sleep(300);
-ok(/^2 ausgewählt/.test(await tafel() || "") && (await menue()).includes("JSON exportieren"), `Listen: Antippen wählt mit aus (${await tafel()})`);
+ok(/^2 ausgewählt/.test(await tafel() || "") && (await menue()).includes("📤 Exportieren (2)"), `Listen: Antippen wählt mit aus (${await tafel()})`);
 ok(await page.evaluate(() => !document.querySelector("[data-vokabel-liste], .liste-detail-header")), "Listen: Antippen öffnet die Liste nicht");
 await page.click("[data-info-blase]"); await sleep(300);
 ok(!(await tafel()) && !(await page.$("[data-wahl-nr]")), "Listen: Tafel beendet die Auswahl");

@@ -62,12 +62,12 @@ let k = await kasten();
 console.log("     Kasten:", JSON.stringify(k));
 ok(k?.zustand === "zu" && /^Info/i.test(k.text) && !/Paris|demain|voit/.test(k.text), "Karte: Info-Kasten eingeklappt, nur „Info“");
 ok(await schalter() === "an", "Kopfzeile: „i“-Knopf vorhanden (an)");
-ok(await page.evaluate(() => document.querySelector(".karte-aufdecken") !== null), "Antippen des Kastens deckt die Karte nicht auf");
+ok(await page.evaluate(() => document.querySelector("[data-karte-verdeckt]") !== null), "Antippen des Kastens deckt die Karte nicht auf");
 
 await page.click("[data-karte-info]"); await sleep(200);
 k = await kasten();
 ok(k?.zustand === "offen" && /Paris|demain|voit/.test(k.text), "Antippen: Kasten aufgeklappt mit Info-Text");
-ok(await page.evaluate(() => document.querySelector(".karte-aufdecken") !== null), "Karte bleibt verdeckt");
+ok(await page.evaluate(() => document.querySelector("[data-karte-verdeckt]") !== null), "Karte bleibt verdeckt");
 await page.screenshot({ path: "karteninfo_offen.png" });
 await page.click("[data-karte-info]"); await sleep(200);
 ok((await kasten())?.zustand === "zu", "nochmal antippen: wieder eingeklappt");

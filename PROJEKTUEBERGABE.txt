@@ -1911,6 +1911,36 @@ BESTÄTIGEN-KNÖPFE: Listen-Kopf rechts – keine Liste: Hinweis „Bitte Liste 
 RASTER OHNE ZEILEN-EINSTELLUNG: rasterGroesse liefert zeilen = RASTER_ZEILEN_OFFEN (100000, gespeicherte Zeilen werden
   ignoriert); Einstellung zeigt nur Spalten. Verschieben-Modus (Listen und Sessions, auch in Gruppen) zeigt belegte Zeilen
   + RASTER_FREI_ZEILEN (2) freie; setzt man etwas hinein, wachsen sie mit, nach „Fertig“ nur belegte Zeilen.
+EXPORTIEREN (Punkt 11): ein Knopf „📤 Exportieren“ (Listen-Menü, Auswahl „📤 Exportieren (n)“) → oeffneExport(ids, art); Art-Wahl
+  JSON | TXT | Kopieren oben in jedem Export-Fenster (renderExportArtWahl, data-export-art); zuletzt gewählte Art in
+  einstellungen.exportArt. Kopieren: Fenster modal "kopier-export" (data-kopier-export). Gesamtsicherung unverändert.
+LISTEN-MENÜ (Punkt 12): Aktionszeile in der geöffneten Liste entfernt (kein Pfeil-Knopf). listenMenue(l, imKopf): Umbenennen,
+  Duplizieren, Exportieren, ＋ Vokabeln importieren, ( ) → Info, [Verschieben, Auswählen nur auf der Kachel], Aufteilen,
+  Lernstand zurücksetzen, Löschen. Lang drücken auf den Listennamen im Kopf (data-liste-kopf-name) zeigt es ebenfalls.
+MULTIQUIZ EINSTELLEN (Punkt 13): stelleMultiquizEin(ids, starten) legt Verlauf-Eintrag mit multi an; Quiz: ladeSlot +
+  setMultiStart({id, starten}) (Effekt legt die Konfiguration ab, startet nur bei starten); Statistik: ladeSlotStatistik.
+  „Fertig“ im Auswahl-Modus: ≥2 → Multiquiz einstellen, 1 → onLaden, 0 → nur beenden. Statistik-Menü: „🧩 Multiquiz (n)“.
+KEINE ERKLÄRZEILEN (Punkt 14): sichtbare Bedienungs-Hinweise entfernt (Raster, Auswahl/Verschieben nur Zustand, Tafel-
+  Zusatzzeile, Farbschema, Kreis-Legende, Regeln-Unterzeilen, Lernen-Fenster, Karte/Lernen/Akzent-Aufforderungen); Texte
+  stehen im tt() (lang drücken). Karte verdeckt: unsichtbarer Platzhalter .karte-aufdecken, Antwort-Box data-karte-verdeckt.
+  Info-Modus und Info-Seite bleiben (Info-Seite wird später als Anleitung neu geschrieben, wenn die App fertig ist).
+GELADENE SESSION IM RASTER (Punkt 15): Effekt auf [slotSektionAufgeklappt, tab, rasterSlot] öffnet die Gruppe der
+  geladenen gespeicherten Session (bzw. oberste Ebene) und scrollt die Kachel in den Blick; nicht im Auswahl-/Verschieben-Modus.
+GRUPPEN BLEIBEN (Punkt 16): loeseKleineGruppen entfernt – Gruppen bleiben auch mit 1 oder 0 Sessions; leere Gruppe:
+  Menü „🗑 Gruppe löschen“ statt „📤 Gruppe auflösen“.
+BEREICH GESPEICHERTER SESSION (Punkt 17): „Alle | Bereich“ und Vokabelliste auch bei geladener gespeicherter Session (Listen
+  bleiben ausgeblendet). Geändert → Name-Knopf rot (data-geaendert); lang drücken: „💾 Überspeichern „Name““
+  (ueberspeichereSession: Session-Fortschritt je Art auf den neuen Bereich angepasst), „Als neue Session speichern“, „↺ Verwerfen“.
+SPEICHERN-FENSTER (Punkt 18): Namensfeld (data-slot-name-feld, Eingabetaste speichert), direkt darunter Abbrechen/Speichern
+  (data-slot-speichern-neu); darunter „Session ersetzen“ mit eigener Scroll-Leiste (data-ersetzen-liste, max 30vh).
+ANTIPPEN LIEST VOR (Punkt 19): Frage-/Antworttext (vorlesenKlick, data-vorlesen) liest in der Sprache der Spalte vor,
+  stopPropagation (Karte deckt nicht auf); Lautsprecher-Knöpfe daneben entfernt (Diktat- und Akzent-Lösung behalten ihren).
+STIMMEN (Punkt 20): Einstellungen › Stimmen – je Sprache Auswahl (Automatisch + Stimmen des Geräts ohne Effekt-Stimmen),
+  ▶ Probe, Tempo 0,6–1,4. Gespeichert je Gerät unter localStorage „geraet_stimmen“ (nicht in der Sicherung);
+  stimmeFuer nimmt die gewählte, aeusserung setzt rate; Diktat „andere Stimme“ beginnt mit der gewählten.
+FARBEN-BEREICH (Punkt 21/22): Einstellungen › Farben (eigener Kopf) mit Tabs Vorlagen | Eigene | Werkzeuge (farbTab;
+  Bearbeiten zeigt „Eigene“). 10 neue Vorlagen: Kirschblüte, Tiefsee, Herbstlaub, Gletscher, Terrakotta, Retro 70er, Neon,
+  Matcha, Tinte & Papier, Sonnenuntergang (31 insgesamt). Tests: hilfen.mjs farbZeige(page, sel) sucht den Tab.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

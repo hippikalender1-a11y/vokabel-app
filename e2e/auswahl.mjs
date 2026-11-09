@@ -60,7 +60,7 @@ await klick("[data-wahl-alle]");
 ok(await anzahl() === "3", "„Alle“: drei ausgewählt");
 await langDruck('[data-liste-id="l_c"]');
 ok(/3 ausgewählt/.test(await blase()), `Menü-Kopf: „3 ausgewählt: …“ (${await blase()})`);
-ok(await menue() === "JSON exportieren|TXT exportieren|📋 Kopieren|⇄ Verschieben|🗑 Löschen (3)|✕ Auswahl beenden", `Aktionen für die Auswahl (${await menue()})`);
+ok(await menue() === "📤 Exportieren (3)|⇄ Verschieben|🗑 Löschen (3)|✕ Auswahl beenden", `Aktionen für die Auswahl (${await menue()})`);
 await aktion("✕ Auswahl beenden");
 ok(await anzahl() === null, "„Auswahl beenden“");
 

@@ -28,7 +28,7 @@ const frage = () => page.evaluate(() => document.querySelector(".quiz-frage-text
 // alle Karten des Pakets: „nicht“ = Wörter, die nicht gewusst werden
 const paket = async (nicht = []) => {
   for (let i = 0; i < 20; i++) {
-    const f = await frage(); if (!f || !(await page.$(".karte-aufdecken"))) break;
+    const f = await frage(); if (!f || !(await page.$("[data-karte-verdeckt]"))) break;
     await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(150);
     await page.click(nicht.includes(f) ? ".karte-btn-nein" : ".karte-btn-ja"); await sleep(150);
     await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(250);   // Pause per Antippen beenden

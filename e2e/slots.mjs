@@ -103,8 +103,8 @@ ok(await page.evaluate(() => getComputedStyle(document.querySelector(".slot-rast
 ok(await page.evaluate(() => { const neu = document.querySelector("[data-neue-session]"); return !!neu && !neu.closest(".slot-raster"); }),
   "„＋ Neue Session aus Listen“ oben, nicht im Raster");
 t = await page.evaluate(() => document.body.innerText);
-ok(!t.includes("⇄ Verschieben") && /Lang drücken: Menü, danach weitere antippen wählt mehrere aus/.test(t) && !(await page.$("svg + svg")),
-  "Kein Verschieben-Knopf mehr, stattdessen Hinweis auf den Lang-Druck");
+ok(!t.includes("⇄ Verschieben") && !/Lang drücken: Menü/.test(t) && !(await page.$("svg + svg")),
+  "Kein Verschieben-Knopf und keine Erklärzeile");
 // Lang-Druck (am Rechner: Rechtsklick) → Erklärung mit Menü
 const menue = async key => { await page.evaluate(k => { const el = document.querySelector(`[data-raster-zelle="${k}"]`); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, key); await sleep(200); };
@@ -116,7 +116,7 @@ console.log("     Menü:", knoepfe.join(" | "));
 ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|☑ Auswählen|📁 In Gruppe…|📝 Listen/Vokabeln ändern|🗑 Löschen", "Lang-Druck: voller Name + Umbenennen / Duplizieren / Verschieben / Listen ändern / Löschen");
 await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
-ok(!(await page.$('[role="status"]')) && /1 markiert – freien Platz antippen/.test(await page.evaluate(() => document.body.innerText)),
+ok(!(await page.$('[role="status"]')) && /1 markiert/.test(await page.evaluate(() => document.body.innerText)),
   "„Verschieben“: Menü zu, Verschieben-Modus mit diesem Paket markiert");
 await tippZelle("3|1"); await sleep(250);
 pl = await plaetze();

@@ -84,8 +84,8 @@ for (const id of ["l_fr", "l_es"]) { await page.click(`[data-liste-id="${id}"]`)
 ok(await page.evaluate(() => document.querySelector("[data-wahl-anzahl]")?.dataset.wahlAnzahl) === "3", "drei Listen ausgewählt");
 let vorher = fs.readdirSync(DL);
 await langDruckListe("l_es");
-ok(await menueLabels() === "JSON exportieren|TXT exportieren|📋 Kopieren|⇄ Verschieben|🗑 Löschen (3)|✕ Auswahl beenden", `Lang-Druck in der Auswahl: JSON, TXT, Kopieren, Verschieben, Löschen (${await menueLabels()})`);
-await menueAktion("TXT exportieren");
+ok(await menueLabels() === "📤 Exportieren (3)|⇄ Verschieben|🗑 Löschen (3)|✕ Auswahl beenden", `Lang-Druck in der Auswahl: Exportieren, Verschieben, Löschen (${await menueLabels()})`);
+await menueAktion("📤 Exportieren"); await page.click('[data-export-art="txt"]'); await sleep(300);
 ok(await page.evaluate(() => document.querySelector("[data-datei-export] [data-export-name]")?.value) === "3 Listen - TXT", "TXT: Fenster mit Dateiname, Vorschlag „3 Listen - TXT“");
 await page.click("[data-datei-export-ok]"); await sleep(300);
 const txtAlle = await warteAufDatei(" - TXT.txt", vorher);
@@ -97,7 +97,7 @@ ok(txtInhalt.includes("# Unité 1 {fr}") && txtInhalt.includes("# Unidad 1 {es}"
 // ── Export 2: alle drei als JSON ──
 vorher = fs.readdirSync(DL);
 ok(await page.evaluate(() => document.querySelector("[data-wahl-anzahl]")?.dataset.wahlAnzahl) === "3", "Auswahl bleibt nach dem Export");
-await langDruckListe("l_en"); await menueAktion("JSON exportieren");
+await langDruckListe("l_en"); await menueAktion("📤 Exportieren"); await page.click('[data-export-art="json"]'); await sleep(300);
 await clickText(".modal button", "Exportieren", true);
 const jsonAlle = await warteAufDatei(" - JSON.txt", vorher);
 ok(!!jsonAlle && path.basename(jsonAlle) === "3 Listen - JSON.txt", `JSON (alle) heruntergeladen: ${jsonAlle && path.basename(jsonAlle)}`);
@@ -106,7 +106,7 @@ ok(jsonDaten.map(l => l.sprache).join(",") === "en,fr,es", `JSON enthält Sprach
 
 // ── Export 2b: JSON mit eigenem Namen (unerlaubte Zeichen werden zu „-“) ──
 vorher = fs.readdirSync(DL);
-await langDruckListe("l_en"); await menueAktion("JSON exportieren");
+await langDruckListe("l_en"); await menueAktion("📤 Exportieren"); await page.click('[data-export-art="json"]'); await sleep(300);
 ok(await page.evaluate(() => document.querySelector(".modal [data-export-name]")?.value) === "3 Listen - JSON", "JSON: Dateiname mit Vorschlag „3 Listen - JSON“");
 await page.click(".modal [data-export-name]", { clickCount: 3 }); await page.keyboard.press("Backspace");
 await page.type(".modal [data-export-name]", "Französisch Klasse 7: Teil/1");
@@ -119,10 +119,10 @@ ok(jsonEigen && JSON.parse(fs.readFileSync(jsonEigen, "utf8")).length === 3, "Da
 await page.reload(); await sleep(500);
 await zuListen(page);
 await clickText(".karte-zeile", "Unité 1");
-await page.evaluate(() => [...document.querySelectorAll(".btn-toggle")].find(b => /Aktionen/.test(b.getAttribute("title") || ""))?.click());
 await sleep(300);
 vorher = fs.readdirSync(DL);
-await clickText("button", "TXT", true);
+await page.evaluate(() => { const el = document.querySelector("[data-liste-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(300);
+await menueAktion("📤 Exportieren"); await page.click('[data-export-art="txt"]'); await sleep(300);
 await page.click("[data-datei-export-ok]"); await sleep(300);
 const txtFr = await warteAufDatei(" - TXT.txt", vorher);
 ok(!!txtFr && path.basename(txtFr) === "Unité 1 - TXT.txt", `TXT (Unité 1) heruntergeladen: ${txtFr && path.basename(txtFr)}`);
