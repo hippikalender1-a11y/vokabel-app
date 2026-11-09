@@ -34,7 +34,7 @@ export async function bereichZu(page) {
   if (zu) await new Promise(r => setTimeout(r, 350));
   return zu;
 }
-// Einstellungen › Farben: Bereich öffnen und den Tab (Vorlagen | Eigene | Werkzeuge) zeigen, in dem sel liegt
+// Einstellungen › Farben: Bereich öffnen und den Tab (Vorlagen | Eigene | Sprachen | Werkzeuge) zeigen, in dem sel liegt
 export async function farbZeige(page, sel) {
   const warte = ms => new Promise(r => setTimeout(r, ms));
   if (await page.$(sel)) return true;
@@ -42,7 +42,7 @@ export async function farbZeige(page, sel) {
     await page.evaluate(() => { const k = document.querySelector('[data-einst-kopf="farben"]'); if (k && k.dataset.offen !== "ja") k.click(); });
     await warte(300);
   }
-  for (const t of [null, "vorlagen", "eigene", "werkzeuge"]) {
+  for (const t of [null, "vorlagen", "eigene", "sprachen", "werkzeuge"]) {
     if (t) { await page.evaluate(t => document.querySelector(`[data-farb-tab="${t}"]`)?.click(), t); await warte(250); }
     if (await page.$(sel)) return true;
   }

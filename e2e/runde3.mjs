@@ -196,7 +196,7 @@ ok(await page.evaluate(() => JSON.parse(localStorage.getItem("geraet_stimmen") |
 // ── 21 + 22: Farben als eigener Bereich mit Tabs, 31 Vorlagen ──
 await page.click('[data-einst-kopf="farben"]'); await sleep(300);
 const vorlagen = await page.evaluate(() => document.querySelectorAll("[data-farbschema]").length);
-ok(await page.$("[data-farb-tabs]") && vorlagen === 50, `Farben: Tabs, ${vorlagen} Vorlagen`);
+ok(await page.$("[data-farb-tabs]") && vorlagen === 60, `Farben: Tabs, ${vorlagen} Vorlagen`);
 ok(!(await page.$("[data-farbmodus-start]")), "Werkzeuge nur im Tab „Werkzeuge“");
 await page.click('[data-farbschema="neon"]'); await sleep(300);
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen")).farbschema === "neon"), "neue Vorlage „Neon“ wählbar");

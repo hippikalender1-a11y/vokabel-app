@@ -126,16 +126,16 @@ await farbZeige(page, "[data-farbmodus-start]"); await page.evaluate(() => docum
 const sektion = await page.evaluate(() => { const r = [...document.querySelectorAll(".tab")].find(t => t.textContent === "Einstellungen").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await rechtsklick(sektion.x, sektion.y);
 console.log("     Farbfeld Tab:", (await feldZeilen()).join(" | "));
-await setzeFarbe("haupt", "#123456"); await sleep(200);
+await setzeFarbe("tab-aktiv", "#123456"); await sleep(200);
 await clickText("[data-farbfeld] button", "Schließen", true);
 await page.click("[data-farbmodus-uebernehmen]"); await sleep(300);
 ok(await page.evaluate(() => document.querySelector("[data-farb-name] input")?.value) === "Natur (Kopie)", "Vorlage aktiv: Name für die Kopie vorgeschlagen");
 await page.click("[data-farb-name-speichern]"); await sleep(400);
 const eig = await eigene();
-ok(eig.length === 1 && eig[0].farben.haupt === "#123456" && await variable("haupt") === "#123456" && !(await page.$("[data-farbmodus-uebernehmen]")),
+ok(eig.length === 1 && eig[0].farben["tab-aktiv"] === "#123456" && await variable("tab-aktiv") === "#123456" && !(await page.$("[data-farbmodus-uebernehmen]")),
   "„Farben übernehmen“: neues Schema „Natur (Kopie)“ gespeichert und gewählt, Farbmodus aus");
 await page.reload(); await sleep(500);
-ok(await variable("haupt") === "#123456", "nach Neuladen: eigene Farben bleiben");
+ok(await variable("tab-aktiv") === "#123456", "nach Neuladen: eigene Farben bleiben");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

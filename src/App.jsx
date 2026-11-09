@@ -1012,7 +1012,7 @@ const FARB_ROLLEN = [
   ["auf-gelb", "Schrift auf Hervorhebung", "Text auf gelben Markierungen (Auswahl-Nummern, Info-Spalte)"],
   ["auf-haupt-hell", "Schrift auf Hauptfarbe hell", "Text auf hellen Haupt-Knöpfen (Antwortart der Spalte)"],
   ["auf-gelernt", "Schrift auf Statistik: Gelernt", "Häkchen auf 100 %-Kacheln"],
-  ["app-kopf-schrift", "Schrift im App-Kopf", "Titel „Vokabel-Trainer“"], ["app-kopf-schrift-leise", "Schrift im App-Kopf leise", "nicht gewählte Tabs"],
+  ["tab-aktiv", "Aktiver Tab", "Schrift und Unterstrich des gewählten Tabs"], ["app-kopf-schrift", "Schrift im App-Kopf", "Titel „Vokabel-Trainer“"], ["app-kopf-schrift-leise", "Schrift im App-Kopf leise", "nicht gewählte Tabs"],
   ["kopf-schrift", "Schrift auf Kopfzeilen", "Überschriften der Einstellungs-Köpfe, Session-, Listen- und Statistik-Kopf"],
   ["kopf-schrift-leise", "Schrift auf Kopfzeilen leise", "Unterzeilen und Pfeile der Kopfzeilen, Info-Zeile im Session-Kopf"],
   ["kopf-offen", "Geöffneter Kopf", "Hintergrund eines aufgeklappten Einstellungs-Kopfs"], ["kopf-offen-schrift", "Schrift auf geöffnetem Kopf", "Überschrift und Pfeil eines aufgeklappten Einstellungs-Kopfs"],
@@ -1221,6 +1221,47 @@ const FARB_VORLAGEN = [
     "start": "#ff5a36", "auf-start": "#1c0a05",
     "text-stark": "#f6f1ef", "text": "#e6dfdc", "text2": "#b5aaa6", "text3": "#8c817d", "richtig": "#5cc98a", "falsch": "#ff6b6b",
     "gelb": "#f4c542", "gelernt-effekt": "#fff176", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#5cc98a", "arbeit": "#d9b44a", "nie": "#4a413f", "negativ": "#e06c6c" }, dunkel: true },
+  // ── Länder-Vorlagen (Farben der Flagge) – Standard für „Farben je Sprache“ ──
+  { id: "sprache_en", name: "Englisch 🇬🇧", sprache: "en", farben: { "haupt": "#1d3c78", "haupt-hell": "#7b97cf", "auf-haupt": "#fff", "hintergrund": "#f5f7fb", "karte": "#ffffff", "flaeche": "#e9eef7", "rahmen": "#d3dcec",
+    "app-kopf": "#1d3c78", "app-kopf-schrift": "#ffffff", "tab-aktiv": "#ffffff", "app-kopf-schrift-leise": "#c9d6f0", "kopfzeile": "#e4eaf5", "haupt-flaeche": "#e1e8f5", "start": "#c8102e", "auf-start": "#fff",
+    "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#d3dcec", "negativ": "#e06c6c" } },
+  { id: "sprache_fr", name: "Französisch 🇫🇷", sprache: "fr", farben: { "haupt": "#0055a4", "haupt-hell": "#6f9fd6", "auf-haupt": "#fff", "hintergrund": "#f7f8fc", "karte": "#ffffff", "flaeche": "#eaf0f8", "rahmen": "#d6e0ef",
+    "app-kopf": "#ffffff", "app-kopf-schrift": "#0055a4", "app-kopf-schrift-leise": "#6f8fb3", "kopfzeile": "#eaf0f8", "haupt-flaeche": "#e3ecf8", "start": "#ef4135", "auf-start": "#fff",
+    "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#d6e0ef", "negativ": "#e06c6c" } },
+  { id: "sprache_es", name: "Spanisch 🇪🇸", sprache: "es", farben: { "haupt": "#c60b1e", "haupt-hell": "#e8707b", "auf-haupt": "#fff", "hintergrund": "#fffaf0", "karte": "#ffffff", "flaeche": "#fdf0d6", "rahmen": "#f1dcb0",
+    "app-kopf": "#c60b1e", "app-kopf-schrift": "#ffffff", "tab-aktiv": "#ffffff", "app-kopf-schrift-leise": "#ffd2d6", "kopfzeile": "#fff1cc", "haupt-flaeche": "#fde3e5", "start": "#ffc400", "auf-start": "#3a2200",
+    "text-stark": "#2a1508", "text": "#432a18", "text2": "#76604f", "text3": "#a69381", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#f1dcb0", "negativ": "#e06c6c" } },
+  { id: "sprache_it", name: "Italienisch 🇮🇹", sprache: "it", farben: { "haupt": "#008c45", "haupt-hell": "#5fbf8a", "auf-haupt": "#fff", "hintergrund": "#fbfaf6", "karte": "#ffffff", "flaeche": "#eef4ee", "rahmen": "#d8e5d9",
+    "app-kopf": "#ffffff", "app-kopf-schrift": "#008c45", "app-kopf-schrift-leise": "#6aa585", "kopfzeile": "#e9f4ec", "haupt-flaeche": "#e0f1e6", "start": "#cd212a", "auf-start": "#fff",
+    "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#d8e5d9", "negativ": "#e06c6c" } },
+  { id: "sprache_la", name: "Latein 🏛️", sprache: "la", farben: { "haupt": "#6b1f5c", "haupt-hell": "#b07aa3", "auf-haupt": "#fff", "hintergrund": "#f8f4ec", "karte": "#fffdf8", "flaeche": "#efe8da", "rahmen": "#e0d5c0",
+    "app-kopf": "#6b1f5c", "app-kopf-schrift": "#f6e7b0", "tab-aktiv": "#f6e7b0", "app-kopf-schrift-leise": "#d9b9cf", "kopfzeile": "#f1e6d0", "haupt-flaeche": "#f1e1ec", "start": "#c9a227", "auf-start": "#2a1d00",
+    "text-stark": "#24171f", "text": "#3d2c36", "text2": "#6f5d66", "text3": "#a08e97", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#e0d5c0", "negativ": "#e06c6c" } },
+  { id: "sprache_nl", name: "Niederländisch 🇳🇱", sprache: "nl", farben: { "haupt": "#e86a10", "haupt-hell": "#f4a76e", "auf-haupt": "#fff", "hintergrund": "#fff8f2", "karte": "#ffffff", "flaeche": "#fdeee2", "rahmen": "#f2d8c4",
+    "app-kopf": "#e86a10", "app-kopf-schrift": "#ffffff", "tab-aktiv": "#ffffff", "app-kopf-schrift-leise": "#ffe0c9", "kopfzeile": "#fde9da", "haupt-flaeche": "#fde5d3", "start": "#21468b", "auf-start": "#fff",
+    "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#f2d8c4", "negativ": "#e06c6c" } },
+  { id: "sprache_pt", name: "Portugiesisch 🇵🇹", sprache: "pt", farben: { "haupt": "#046a38", "haupt-hell": "#58ab7f", "auf-haupt": "#fff", "hintergrund": "#f7faf6", "karte": "#ffffff", "flaeche": "#e9f2ea", "rahmen": "#d2e3d5",
+    "app-kopf": "#046a38", "app-kopf-schrift": "#ffe08a", "tab-aktiv": "#ffe08a", "app-kopf-schrift-leise": "#b8dcc5", "kopfzeile": "#e7f1e8", "haupt-flaeche": "#dfeee3", "start": "#da291c", "auf-start": "#fff",
+    "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#d2e3d5", "negativ": "#e06c6c" } },
+  { id: "sprache_ru", name: "Russisch 🇷🇺", sprache: "ru", farben: { "haupt": "#0039a6", "haupt-hell": "#6f8fd4", "auf-haupt": "#fff", "hintergrund": "#f6f7fb", "karte": "#ffffff", "flaeche": "#e9eef8", "rahmen": "#d4dcee",
+    "app-kopf": "#ffffff", "app-kopf-schrift": "#0039a6", "app-kopf-schrift-leise": "#7d8fb8", "kopfzeile": "#e8edf8", "haupt-flaeche": "#e1e8f7", "start": "#d52b1e", "auf-start": "#fff",
+    "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#d4dcee", "negativ": "#e06c6c" } },
+  { id: "sprache_tr", name: "Türkisch 🇹🇷", sprache: "tr", farben: { "haupt": "#e30a17", "haupt-hell": "#f07a82", "auf-haupt": "#fff", "hintergrund": "#fff6f6", "karte": "#ffffff", "flaeche": "#fde7e8", "rahmen": "#f4cfd1",
+    "app-kopf": "#e30a17", "app-kopf-schrift": "#ffffff", "tab-aktiv": "#ffffff", "app-kopf-schrift-leise": "#ffd0d3", "kopfzeile": "#fde8e9", "haupt-flaeche": "#fde0e2", "start": "#a3000b", "auf-start": "#fff",
+    "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#f4cfd1", "negativ": "#e06c6c" } },
+  { id: "sprache_pl", name: "Polnisch 🇵🇱", sprache: "pl", farben: { "haupt": "#dc143c", "haupt-hell": "#ec8197", "auf-haupt": "#fff", "hintergrund": "#fdf7f8", "karte": "#ffffff", "flaeche": "#f8e9ec", "rahmen": "#efd3d9",
+    "app-kopf": "#ffffff", "app-kopf-schrift": "#dc143c", "app-kopf-schrift-leise": "#c98894", "kopfzeile": "#f9e8ec", "haupt-flaeche": "#fbe1e7", "start": "#dc143c", "auf-start": "#fff",
+    "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#efd3d9", "negativ": "#e06c6c" } },
 ];
 function hexZuRgb(h) {
   h = (h || "#000").replace("#", "");
@@ -1246,7 +1287,7 @@ function farbenAus(f) {
     "auf-haupt-hell": f["auf-haupt-hell"] || f["auf-haupt"], "auf-gelernt": f["auf-gelernt"] || f["auf-haupt"],
     "app-kopf-schrift": f["app-kopf-schrift"] || f["text-stark"], "app-kopf-schrift-leise": f["app-kopf-schrift-leise"] || f.text2,
     "kopf-schrift": f["kopf-schrift"] || f["text-stark"], "kopf-schrift-leise": f["kopf-schrift-leise"] || f.text2,
-    "kopf-offen-schrift": f["kopf-offen-schrift"] || f.haupt,
+    "kopf-offen-schrift": f["kopf-offen-schrift"] || f.haupt, "tab-aktiv": f["tab-aktiv"] || f.haupt,
     "fortschritt-balken": f["fortschritt-balken"] || f.flaeche, "fortschritt-gelernt": f["fortschritt-gelernt"] || f.gelernt,
     "fortschritt-arbeit": f["fortschritt-arbeit"] || f.arbeit, "fortschritt-nie": f["fortschritt-nie"] || f.nie, "fortschritt-negativ": f["fortschritt-negativ"] || f.negativ,
     "dialog-schrift": f["dialog-schrift"] || f["text-stark"],
@@ -1482,7 +1523,7 @@ const CSS_BASIS = `
   .statistik-listen-header{background:var(--kopfzeile);color:var(--kopf-schrift);border-bottom:1px solid var(--rahmen);padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;z-index:8;}
   .liste-detail-header{background:var(--kopfzeile);color:var(--kopf-schrift);border-bottom:1px solid var(--rahmen);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;z-index:9;}
   .tab{flex:1;padding:12px 4px;font-size:0.82rem;font-weight:600;color:var(--app-kopf-schrift-leise);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;}
-  .tab.aktiv{color:var(--haupt);border-bottom-color:var(--haupt);}
+  .tab.aktiv{color:var(--tab-aktiv);border-bottom-color:var(--tab-aktiv);}
   .sektion{padding:20px 16px 0;}
   .sektion-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
   .sektion-label{font-size:0.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text2);}
@@ -2913,6 +2954,24 @@ export default function VokabelApp() {
   // Gewählte Sprache nur wirksam, solange es Listen dieser Sprache gibt
   const sprachFilter = vorhandeneSprachen.some(s => s.code === einstellungen.sprache) ? einstellungen.sprache : "alle";
   const sichtbareListen = sprachFilter === "alle" ? listenIndex : listenIndex.filter(l => listeSprache(l) === sprachFilter);
+  // Farben je Sprache: in der Abfrage die Sprache ihrer Listen (nur eine), sonst der Sprachfilter; „standard“ = normales Schema
+  const sprachFarbKontext = (() => {
+    if (!einstellungen.sprachFarben?.an || farbModus) return null;
+    const q = (ansicht === "quiz" && quiz) || (lernen ? { vokabeln: lernen.voks || [] } : null);
+    if (q) {
+      const ids = new Set((q.vokabeln || []).map(v => v._listeId || q.liste?.id).filter(Boolean));
+      const sp = new Set([...ids].map(id => listeSprache(listenIndex.find(l => l.id === id))));
+      return sp.size === 1 ? [...sp][0] : null;
+    }
+    return sprachFilter !== "alle" ? sprachFilter : null;
+  })();
+  const sprachSchemaId = sprachFarbKontext ? (einstellungen.sprachFarben.zuordnung?.[sprachFarbKontext] ?? `sprache_${sprachFarbKontext}`) : null;
+  const sprachSchema = sprachSchemaId && sprachSchemaId !== "standard"
+    ? ((einstellungen.eigeneSchemata || []).find(x => x.id === sprachSchemaId) || FARB_VORLAGEN.find(x => x.id === sprachSchemaId)) : null;
+  if (sprachSchema) {
+    F = farbenAus(sprachSchema.farben);
+    CSS = farbVariablen(F, sprachSchema.dunkel) + CSS_BASIS + elementCSS(sprachSchema.elemente);
+  }
   const sichtbareIds = new Set(sichtbareListen.map(l => l.id));
   // Slot ist sichtbar, wenn alle seine (noch vorhandenen) Listen zur gewählten Sprache gehören
   const slotSichtbar = s => {
@@ -5171,14 +5230,46 @@ export default function VokabelApp() {
     const alle = ftab === "vorlagen" ? FARB_VORLAGEN : ftab === "eigene" ? eigeneSchemata.filter(x => x !== zufall) : [];
     return (<>
       <div className="toggle-btn" data-farb-tabs style={{display:"flex", marginBottom:10}}>
-        {[["vorlagen", `Vorlagen (${FARB_VORLAGEN.length})`, "Fertige Farbschemata – antippen verwendet sie; zum Anpassen duplizieren"],
-          ["eigene", `Eigene (${eigeneSchemata.length})`, "Deine eigenen Schemata – bearbeiten, umbenennen, löschen"],
-          ["werkzeuge", "Werkzeuge", "Farben bearbeiten, zufällige Farben, Farbmodus"]].map(([k, label, info]) => (
+        {[["vorlagen", "Vorlagen", `Fertige Farbschemata (${FARB_VORLAGEN.length}) – antippen verwendet sie; zum Anpassen duplizieren`],
+          ["eigene", "Eigene", `Deine eigenen Schemata (${eigeneSchemata.length}) – bearbeiten, umbenennen, löschen`],
+          ["sprachen", "Sprachen", "Farben je Sprache: eigenes Schema, sobald der Sprachfilter auf einer Sprache steht bzw. eine Liste dieser Sprache abgefragt wird"],
+          ["werkzeuge", "Werkzeuge", "Farben bearbeiten, Farbmodus"]].map(([k, label, info]) => (
           <button key={k} data-farb-tab={k} className={`toggle-opt${ftab === k ? " aktiv" : ""}`} style={{flex:1}}
             onClick={() => { setFarbTab(k); if (bearb && k !== "eigene") setSchemaBearbeiten(null); }} {...tt(info)}>{label}</button>
         ))}
       </div>
       <div className="karte" style={{padding:"12px 14px"}}>
+        {ftab === "sprachen" && (() => {
+          const sf = einstellungen.sprachFarben || {};
+          const setze = neu => speichereEinst({ ...einstellungen, sprachFarben: { ...sf, ...neu } });
+          const optionen = [...FARB_VORLAGEN, ...eigeneSchemata];
+          return (<div data-sprachfarben>
+            <label style={{display:"flex", alignItems:"center", gap:10, fontSize:"0.9rem", fontWeight:600, color:"var(--text)", cursor:"pointer", marginBottom:12}}
+              {...ttFeld("Ein: steht der Sprachfilter (🌐) auf einer Sprache oder wird eine Liste dieser Sprache abgefragt, gilt ihr Farbschema")}>
+              <input type="checkbox" data-sprachfarben-an checked={!!sf.an} onChange={e => setze({ an: e.target.checked })} style={{width:18, height:18}}/>
+              Farben je Sprache
+            </label>
+            {vorhandeneSprachen.length === 0 && <div className="karte-zeile-sub">Noch keine Listen.</div>}
+            {vorhandeneSprachen.map(sp => {
+              const wert = sf.zuordnung?.[sp.code] ?? `sprache_${sp.code}`;
+              const sch = optionen.find(x => x.id === wert);
+              return (
+                <div key={sp.code} style={{display:"flex", alignItems:"center", gap:8, marginBottom:8, opacity: sf.an ? 1 : 0.5}}>
+                  <span style={{minWidth:120, fontSize:"0.88rem"}}>{sp.flagge} {sp.name}</span>
+                  <span className="farb-streifen" style={{width:44, height:22, borderRadius:6, flexShrink:0, background: sch ? sch.farben.hintergrund : "var(--flaeche)"}}>
+                    {sch ? ["haupt", "start", "karte"].map(r => <span key={r} style={{background: sch.farben[r] || sch.farben.haupt}}/>) : null}
+                  </span>
+                  <select className="inp" data-sprachfarbe={sp.code} value={sch ? wert : "standard"} style={{flex:1, minWidth:0, padding:"6px 8px"}}
+                    onChange={e => setze({ zuordnung: { ...(sf.zuordnung || {}), [sp.code]: e.target.value } })}
+                    {...ttFeld(`Farbschema für ${sp.name}`)}>
+                    <option value="standard">wie Standard</option>
+                    {optionen.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+                  </select>
+                </div>
+              );
+            })}
+          </div>);
+        })()}
         {(alle.length > 0 || ftab === "eigene") && <div className="farb-raster">
           {ftab === "eigene" && (
             <button data-farbschema-zufall className={`farb-kachel${zufall && aktivId === zufall.id ? " aktiv" : ""}`} onClick={zufallsSchema}

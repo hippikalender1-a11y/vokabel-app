@@ -1971,6 +1971,11 @@ TESTS PARALLEL: node e2e/alle_parallel.mjs [n] (Standard 4) – Liste aus alle.s
   laufen am Ende einmal allein nach; Ausgabe wie alle.sh plus Dauer und langsamste Tests (75 Tests ≈ 5½ min statt ≈ 21 min nacheinander).
 STIMMEN-HILFE (Punkt 28): „＋ Weitere Stimmen laden“ (data-stimmen-hilfe) → Fenster modal "stimmen-hilfe" mit Weg je Gerät
   (iOS/Android/Mac/Windows, eigenes aufgeklappt). stimmeGeschlecht(v): ♀/♂ aus bekannten Namen. Karten-Knopf zeigt „n/m“ statt 🔁.
+FARBEN JE SPRACHE (Punkt 29): einst.sprachFarben = { an, zuordnung: { fr: schemaId | "standard" } }; ohne Eintrag gilt die
+  Länder-Vorlage sprache_<code> (10 Vorlagen in Flaggenfarben, auch unter „Vorlagen“ – 60 insgesamt). Wirksam (nach
+  sprachFilter berechnet, überschreibt F/CSS): in der Abfrage/beim Lernen die Sprache der Listen (nur eine), sonst der
+  Sprachfilter; nicht im Farbmodus. Tab „Sprachen“ unter Einstellungen › Farben (data-sprachfarben, data-sprachfarbe).
+  Neue Farbrolle „tab-aktiv“ (Standard: haupt) für den gewählten Tab. Test e2e/sprachfarben.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),
