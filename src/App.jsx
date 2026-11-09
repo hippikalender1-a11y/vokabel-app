@@ -344,6 +344,11 @@ function naechsteStimme(basis) {
   setzeStimmenWahl({ ...STIMMEN_WAHL, sprachen: { ...(STIMMEN_WAHL.sprachen || {}), [basis]: neu.voiceURI } });
   return neu;
 }
+// Geschlecht bekannter Stimmnamen (iOS/macOS, Windows, einige Android) – unbekannt: nichts anzeigen
+const STIMMEN_W = new Set("anna helena petra marlene vicki katja hedda katharina sabina kate samantha karen moira tessa fiona veena serena allison ava susan victoria zoe nicky joelle amélie amelie audrey aurélie aurelie marie virginie julie hortense monica mónica paulina marisol alice federica paola elsa ellen claire joana luciana catarina milena katya yelda zosia ewa agata laura isabela francesca sara lekha grandma flo sandy shelley martha kathy princess hazel zira linda heather".split(" "));
+const STIMMEN_M = new Set("markus martin viktor yannick stefan daniel alex fred aaron arthur oliver gordon lee rishi tom evan nathan thomas jacques nicolas jorge diego juan carlos luca paolo xander felipe yuri maged cem krzysztof guy george david mark ryan eddy reed rocko grandpa ralph albert junior jamie aidan malcolm".split(" "));
+const stimmeGeschlecht = v => { const w = (v?.name || "").toLowerCase().split(/[^a-zà-ÿ]+/).filter(Boolean);
+  return w.some(x => STIMMEN_W.has(x)) ? "♀" : w.some(x => STIMMEN_M.has(x)) ? "♂" : ""; };
 // Variante als Text mit Flagge: en-GB → 🇬🇧 Britisch
 const VARIANTE_NAMEN = { GB: "Britisch", US: "Amerikanisch", AU: "Australisch", IE: "Irisch", IN: "Indisch", ZA: "Südafrikanisch", NZ: "Neuseeland", CA: "Kanada",
   FR: "Frankreich", BE: "Belgien", CH: "Schweiz", DE: "Deutschland", AT: "Österreich", ES: "Spanien", MX: "Mexiko", AR: "Argentinien", CO: "Kolumbien",
@@ -796,7 +801,7 @@ function akzentOhneAnteil(einst) {
 }
 // Regeln der aktuell gewählten Stufe (gespeicherte Haken, sonst Standard)
 // Zuordnung je Stufe: Vokabeln je Runde, Zeitmodus (aus | runde | vokabel), Sekunden je Vokabel
-const ZUORDNUNG_ZEITEN = [["aus", "aus"], ["runde", "Runde"], ["vokabel", "je Vok."]];
+const ZUORDNUNG_ZEITEN = [["aus", "aus"], ["an", "an"]];
 const ZUORDNUNG_SEKUNDEN = [3, 5, 8, 10, 15];
 // Gruppenfarben ohne Rot/Grün (die stehen für falsch/richtig)
 const ZUORDNUNG_FARBEN = ["#4363d8", "#f58231", "#911eb4", "#16a5c4", "#f032e6", "#9a6324", "#000075", "#808000", "#e377c2", "#469990", "#b8860b", "#7f7f7f"];
@@ -804,7 +809,8 @@ const ZUORDNUNG_ZEITFAKTOR = { 2: 1, 3: 1.6, 4: 2 };
 function zuordnungEinst(einst) {
   const stufe = einst?.modus === "einfach" ? "einfach" : "schwer";
   const st = einst?.stufen?.[stufe] || {};
-  return { paare: st.zuordnungPaare ?? (stufe === "einfach" ? 5 : 7), zeit: st.zuordnungZeit ?? (stufe === "einfach" ? "aus" : "vokabel"), sek: st.zuordnungSek ?? 8 };
+  const zeit = st.zuordnungZeit ?? (stufe === "einfach" ? "aus" : "an");
+  return { paare: st.zuordnungPaare ?? (stufe === "einfach" ? 5 : 7), zeit: zeit === "aus" ? "aus" : "an", sek: st.zuordnungSek ?? 8 };
 }
 function stufenRegeln(einst) {
   const stufe = einst?.modus === "einfach" ? "einfach" : "schwer";
@@ -1773,8 +1779,8 @@ const CSS_BASIS = `
   .zuo-karte{position:relative;min-height:46px;padding:6px 6px;border-radius:10px;border:2px solid var(--rahmen);background:var(--abfrage-karte, var(--karte));color:var(--abfrage-schrift, var(--text));
     font-family:inherit;font-weight:600;line-height:1.2;overflow-wrap:anywhere;cursor:pointer;transition:background .15s,border-color .15s,opacity .3s;}
   .zuo-karte.wahl{border-color:var(--haupt);background:var(--haupt-flaeche);}
-  .zuo-karte.ok{border-color:var(--richtig);background:var(--richtig-zart, var(--haupt-flaeche));opacity:0.55;cursor:default;}
-  .zuo-karte.falsch-erl{border-color:var(--falsch);opacity:0.55;cursor:default;}
+  .zuo-karte.ok,.zuo-karte.falsch-erl{cursor:default;}
+  .zuo-karte.offen-geblieben{opacity:0.5;border-style:dashed;}
   .zuo-karte.blink{animation:zuoBlink .6s;}
   @keyframes zuoBlink{0%,100%{border-color:var(--rahmen);}30%,70%{border-color:var(--falsch);background:var(--falsch-zart, #fde2e2);}}
   .zuo-nr{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;border-radius:9px;color:#fff;font-size:0.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px;}
@@ -6380,7 +6386,7 @@ export default function VokabelApp() {
   function zuordnungZeitBis(z, k) {
     if (z.zeit === "aus") return null;
     const proVok = z.sek * (ZUORDNUNG_ZEITFAKTOR[z.spalten.length] || 1) * 1000;
-    return Date.now() + (z.zeit === "runde" ? proVok * k : proVok);
+    return Date.now() + (z.amEnde ? proVok * k : proVok);
   }
   // Ergebnis einer Vokabel speichern (nur vollständig Beantwortetes): richtig +1, falsch nach Regel −1
   function zuordnungWerte(q, id, ergebnis) {
@@ -6394,21 +6400,12 @@ export default function VokabelApp() {
       quizFalschAnzahl: (q.quizFalschAnzahl || 0) + (erst && ergebnis !== "richtig" ? 1 : 0),
       zuordnung: { ...q.zuordnung, erledigt: { ...q.zuordnung.erledigt, [id]: ergebnis }, beantwortet: [...q.zuordnung.beantwortet, id] } };
   }
-  const zuoTimerRef = useRef(null);
-  function zuordnungWeiter(ms) {
-    clearTimeout(zuoTimerRef.current);
-    zuoTimerRef.current = setTimeout(() => setQuiz(prev => prev?.phase === "zuordnung" ? zuordnungRunde(prev) : prev), ms);
-  }
-  // Lösung kurz zeigen (Karten je Vokabel gleich gefärbt), dann nächste Runde; nicht Beantwortete kommen wieder
-  function zuordnungRundeEnde(q, extraAnzeige = null) {
+  // Rundenende: das Ergebnis bleibt stehen (✓ / ✗ je Paar), weiter mit „Weiter →“; „Lösung zeigen“ färbt die richtigen Paare.
+  // Nicht Beantwortete kommen in der nächsten Runde wieder
+  function zuordnungRundeEnde(q) {
     const z = q.zuordnung;
     const offen = z.ids.filter(id => !(id in z.erledigt));
-    const neu = { ...q, zuordnung: { ...z, queue: [...offen, ...z.queue], zeitBis: null, offen: null, offeneGruppe: null, anzeige: extraAnzeige || (offen.length ? "loesung" : "fertig") } };
-    if (extraAnzeige === "geprueft") {
-      clearTimeout(zuoTimerRef.current);
-      zuoTimerRef.current = setTimeout(() => { setQuiz(prev => prev?.phase === "zuordnung" ? { ...prev, zuordnung: { ...prev.zuordnung, anzeige: "loesung" } } : prev); zuordnungWeiter(1600); }, 1400);
-    } else zuordnungWeiter(offen.length ? 1800 : 700);
-    return neu;
+    return { ...q, zuordnung: { ...z, queue: [...offen, ...z.queue], zeitBis: null, offen: null, offeneGruppe: null, anzeige: "ergebnis" } };
   }
   function zuordnungTippe(s, i) {
     const q = quiz, z = q?.zuordnung;
@@ -6416,7 +6413,12 @@ export default function VokabelApp() {
     const karte = z.karten[s][i];
     if (karte.id in z.erledigt) return;
     if (einstellungen.autoplay && z.spalten[s].startsWith("E")) { const v = q.vokabeln.find(x => x.id === karte.id); sprich(karte.text, vokLang(v, z.spalten[s])); }
-    if (z.amEnde) { setQuiz({ ...q, zuordnung: zuordnungGruppeTippe(z, s, i) }); return; }
+    if (z.amEnde) {
+      const nz = zuordnungGruppeTippe(z, s, i);
+      const alles = nz.gruppen.length === nz.ids.length && nz.gruppen.every(g => Object.keys(g.wahl).length === nz.spalten.length);
+      setQuiz(alles ? zuordnungPruefe({ ...q, zuordnung: nz }) : { ...q, zuordnung: nz });
+      return;
+    }
     const o = z.offen;
     if (!o) { setQuiz({ ...q, zuordnung: { ...z, offen: { id: karte.id, wahl: { [s]: i }, erst: s } } }); return; }
     if (o.wahl[s] === i) {   // dieselbe Karte nochmal: erste → Gruppe aufheben, sonst nur diese abwählen
@@ -6435,8 +6437,9 @@ export default function VokabelApp() {
     const wahl = { ...o.wahl, [s]: i };
     if (Object.keys(wahl).length < z.spalten.length) { setQuiz({ ...q, zuordnung: { ...z, offen: { ...o, wahl } } }); return; }
     // Gruppe vollständig
-    let neu = zuordnungWerte({ ...q, zuordnung: { ...z, offen: null } }, o.id, z.fehler[o.id] ? "falsch" : "richtig");
-    if (z.zeit === "vokabel") neu = { ...neu, zuordnung: { ...neu.zuordnung, zeitBis: zuordnungZeitBis(z, 1) } };
+    let neu = zuordnungWerte({ ...q, zuordnung: { ...z, offen: null, paarFarbe: { ...(z.paarFarbe || {}), [o.id]: Object.keys(z.paarFarbe || {}).length % ZUORDNUNG_FARBEN.length } } },
+      o.id, z.fehler[o.id] ? "falsch" : "richtig");
+    if (z.zeit !== "aus") neu = { ...neu, zuordnung: { ...neu.zuordnung, zeitBis: zuordnungZeitBis(z, 1) } };
     if (neu.zuordnung.ids.every(id => id in neu.zuordnung.erledigt)) neu = zuordnungRundeEnde(neu);
     setQuiz(neu);
   }
@@ -6454,7 +6457,7 @@ export default function VokabelApp() {
     if (offen != null && gruppen[offen]) {
       gruppen[offen].wahl[s] = i;
       const voll = Object.keys(gruppen[offen].wahl).length === z.spalten.length;
-      return { ...z, gruppen, offeneGruppe: voll ? null : offen, ...(voll && z.zeit === "vokabel" ? { zeitBis: zuordnungZeitBis(z, 1) } : {}) };
+      return { ...z, gruppen, offeneGruppe: voll ? null : offen };
     }
     const belegt = new Set(gruppen.map(g => g.farbe));
     const farbe = ZUORDNUNG_FARBEN.findIndex((_, k) => !belegt.has(k));
@@ -6475,7 +6478,7 @@ export default function VokabelApp() {
       if (!(erstId in neu.zuordnung.erledigt)) neu = zuordnungWerte(neu, erstId, richtig ? "richtig" : "falsch");
     });
     neu = { ...neu, zuordnung: { ...neu.zuordnung, geprueft: ergebnis } };
-    return zuordnungRundeEnde(neu, "geprueft");
+    return zuordnungRundeEnde(neu);
   }
   // Zeit abgelaufen
   useEffect(() => {
@@ -6487,7 +6490,7 @@ export default function VokabelApp() {
     }), Math.max(0, z.zeitBis - Date.now()));
     return () => clearTimeout(t);
   }, [quiz?.phase, quiz?.zuordnung?.zeitBis, quiz?.zuordnung?.anzeige]);   // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => () => clearTimeout(zuoTimerRef.current), []);
+
 
   function getAktVok() {
     if (!quiz) return null;
@@ -7514,7 +7517,7 @@ export default function VokabelApp() {
       const fertigAnz = (z.beantwortet || []).length;
       const vokNr = Object.fromEntries(z.ids.map((id, k) => [id, k]));
       const loesung = z.anzeige === "loesung";
-      const allesVerteilt = z.amEnde && z.gruppen.length === z.ids.length && z.gruppen.every(g => Object.keys(g.wahl).length === n);
+      const nichtAlleRichtig = z.anzeige && z.ids.some(id => z.erledigt[id] !== "richtig");
       const dauer = z.zeitBis ? Math.max(0, z.zeitBis - Date.now()) : 0;
       const schrift = n === 2 ? "0.95rem" : n === 3 ? "0.85rem" : "0.78rem";
       return (
@@ -7538,25 +7541,37 @@ export default function VokabelApp() {
                   const gi = z.gruppen.findIndex(g => g.wahl[sp] === zeile);
                   const g = gi >= 0 ? z.gruppen[gi] : null;
                   const geprueft = g && z.geprueft ? z.geprueft[gi] : undefined;
-                  const farbe = loesung ? ZUORDNUNG_FARBEN[vokNr[k.id] % ZUORDNUNG_FARBEN.length] : g && geprueft === undefined ? ZUORDNUNG_FARBEN[g.farbe] : null;
+                  // Farbe: Lösung = je Vokabel; „am Ende“ = Farbe der Gruppe; „sofort“ = Farbe des gefundenen Paars
+                  const farbe = loesung ? ZUORDNUNG_FARBEN[vokNr[k.id] % ZUORDNUNG_FARBEN.length]
+                    : g ? ZUORDNUNG_FARBEN[g.farbe] : erl && z.paarFarbe?.[k.id] != null ? ZUORDNUNG_FARBEN[z.paarFarbe[k.id]] : null;
                   const wahl = !z.amEnde && z.offen?.wahl[sp] === zeile;
                   const blink = z.blink?.s === sp && z.blink?.i === zeile;
-                  const cls = ["zuo-karte", erl === "richtig" && !loesung ? "ok" : "", erl === "falsch" && !loesung ? "falsch-erl" : "", wahl ? "wahl" : "", blink ? "blink" : "",
-                    geprueft === true ? "ok" : "", geprueft === false ? "falsch-erl" : ""].filter(Boolean).join(" ");
+                  // ✓ / ✗: „sofort“ je gefundenem Paar, „am Ende“ nach dem Prüfen je Gruppe
+                  const marke = loesung ? null : z.amEnde ? (geprueft === true ? "✓" : geprueft === false ? "✗" : null) : erl === "richtig" ? "✓" : erl === "falsch" ? "✗" : null;
+                  const cls = ["zuo-karte", marke === "✓" ? "ok" : "", marke === "✗" ? "falsch-erl" : "", wahl ? "wahl" : "", blink ? "blink" : "",
+                    z.anzeige && !marke && !loesung ? "offen-geblieben" : ""].filter(Boolean).join(" ");
                   return (
                     <button key={`${sp}-${zeile}`} className={cls} data-zuo-karte={`${sp}:${zeile}`} data-zuo-id={k.id}
                       style={{fontSize: schrift, ...(farbe ? { borderColor: farbe, background: `${farbe}26` } : {})}}
                       onClick={() => zuordnungTippe(sp, zeile)}
                       {...tt(z.amEnde ? "Antippen: in die farbige Gruppe aufnehmen – eingefärbte Karte antippen nimmt sie wieder heraus" : "Antippen: Karte wählen – die erste bestimmt die Vokabel, weitere werden sofort geprüft")}>
-                      {g && !loesung && geprueft === undefined && <span className="zuo-nr" style={{background: farbe}}>{gi + 1}</span>}
+                      {marke ? <span className="zuo-nr" data-zuo-marke={marke === "✓" ? "richtig" : "falsch"} style={{background: marke === "✓" ? "var(--richtig)" : "var(--falsch)"}}>{marke}</span>
+                        : g && !loesung ? <span className="zuo-nr" style={{background: farbe}}>{gi + 1}</span> : null}
                       {mitHinweis(k.text)}
                     </button>
                   );
                 }))}
               </div>
-              {z.amEnde && !z.anzeige && (
-                <button className="btn btn-primary" data-zuo-pruefen disabled={!allesVerteilt} style={{width:"100%", marginTop:12, opacity: allesVerteilt ? 1 : 0.5}}
-                  onClick={() => setQuiz(zuordnungPruefe(quiz))} {...tt("Alle Gruppen prüfen – nur vollständige Gruppen zählen")}>Prüfen</button>
+              {z.anzeige && (
+                <div style={{display:"flex", gap:8, marginTop:12}}>
+                  {nichtAlleRichtig && (
+                    <button className="btn btn-ghost" data-zuo-loesung style={{flex:1}}
+                      onClick={() => setQuiz({ ...quiz, zuordnung: { ...z, anzeige: loesung ? "ergebnis" : "loesung" } })}
+                      {...tt(loesung ? "Zurück zum Ergebnis (✓ / ✗)" : "Lösung zeigen: zusammengehörige Karten gleich eingefärbt")}>{loesung ? "Ergebnis" : "Lösung zeigen"}</button>
+                  )}
+                  <button className="btn btn-primary" data-zuo-weiter style={{flex:1}} onClick={() => setQuiz(zuordnungRunde(quiz))}
+                    {...tt(z.queue.length ? "Nächste Runde – nicht Beantwortete kommen wieder" : "Zur Auswertung")}>Weiter →</button>
+                </div>
               )}
             </div>
           </div>
@@ -7598,9 +7613,14 @@ export default function VokabelApp() {
       format: v => `${v.toFixed(1).replace(".", ",")}×`,
       aendern: v => aendereStimmen({ ...STIMMEN_WAHL, tempo: v === 1 ? undefined : v }), fertig: () => sprich(text, vokLang(aktVok, typ)) });
     const basisVon = typ => normLang(vokLang(aktVok, typ)).split("-")[0];
-    const stimmeKnopf = (text, typ, wo) => aktiveStimmen(basisVon(typ)).length > 1 && (
-      <button className="stimme-wechsel" data-stimme-wechsel={wo} onClick={e => { e.stopPropagation(); wechsleStimme(text, vokLang(aktVok, typ)); }}
-        {...tt("Andere Stimme: mit der nächsten aktivierten Stimme vorlesen – sie bleibt dann für diese Sprache eingestellt")}>🔁</button>);
+    const stimmeKnopf = (text, typ, wo) => {
+      const aktiv = aktiveStimmen(basisVon(typ));
+      if (aktiv.length < 2) return null;
+      const nr = Math.max(0, aktiv.indexOf(gewaehlteStimme(basisVon(typ)) || stimmeFuer(vokLang(aktVok, typ)))) + 1;
+      return (
+        <button className="stimme-wechsel" data-stimme-wechsel={wo} data-stimme-nr={`${nr}/${aktiv.length}`} onClick={e => { e.stopPropagation(); wechsleStimme(text, vokLang(aktVok, typ)); }}
+          {...tt(`Stimme ${nr} von ${aktiv.length} – antippen: mit der nächsten aktivierten Stimme vorlesen (bleibt dann für diese Sprache eingestellt)`)}>{nr}/{aktiv.length}</button>);
+    };
     const antwortSichtbar = quiz.phase !== "eingabe" && !quiz.flash;
     const antwortBearbeiten = tt(antwortSichtbar ? "Antippen: Antwort vorlesen – lang drücken: Tempo, richtige Antwort bearbeiten" : "Lang drücken: Tempo, richtige Antwort bearbeiten", [
       { label: "✎ Richtige Antwort bearbeiten", fn: () => bearbeite(aktAntwortTyp) },
@@ -10307,7 +10327,11 @@ export default function VokabelApp() {
               const w = stimmenWahl;
               const setze = (feld, b, wert) => aendereStimmen({ ...w, [feld]: { ...(w[feld] || {}), [b]: wert } });
               const regler = { width:"100%" };
+              const hilfeKnopf = (b, klein) => (
+                <button className={klein ? "btn btn-ghost btn-sm" : "btn btn-ghost"} data-stimmen-hilfe={b || ""} style={klein ? { alignSelf:"flex-start" } : { width:"100%", marginBottom:10 }}
+                  onClick={() => setModal("stimmen-hilfe")} {...tt("Anleitung: weitere Stimmen auf dem Gerät laden (z. B. männliche und weibliche, „Erweitert“/„Premium“)")}>＋ Weitere Stimmen laden</button>);
               return (<>
+              {hilfeKnopf(null, false)}
               {zeilen.map(c => {
                 const b = basisVon(c), alle = stimmenFuerSprache(b), varianten = stimmenVarianten(b);
                 const name = c === "de" ? "Deutsch" : sprachInfo(c).name;
@@ -10322,6 +10346,7 @@ export default function VokabelApp() {
                   <div key={b} className="karte" data-stimme-sprache={b}>
                     <div className="karte-zeile" style={{flexDirection:"column", alignItems:"stretch", gap:8}}>
                       <div className="karte-zeile-name">{c === "de" ? "🇩🇪" : sprachInfo(c).flagge} {name}</div>
+                      {alle.length <= 1 && hilfeKnopf(b, true)}
                       {alle.length === 0 ? <div className="karte-zeile-sub">Keine Stimme auf diesem Gerät</div> : (<>
                         {varianten.length > 1 && (
                           <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
@@ -10344,7 +10369,7 @@ export default function VokabelApp() {
                                 <span style={{flex:1, opacity: an ? 1 : 0.45, fontWeight: ist ? 700 : 400, cursor: an ? "pointer" : "default"}} data-stimme-wahl={v.voiceURI}
                                   onClick={() => { if (!an) return; setze("sprachen", b, v.voiceURI); sprichMit(v); }}
                                   {...tt(an ? "Antippen: diese Stimme verwenden" : "abgeschaltet")}>
-                                  {v.name} <span style={{fontSize:"0.72rem", color:"var(--text3)"}}>{v.lang}</span>{ist && an ? " ✓" : ""}
+                                  {v.name}{stimmeGeschlecht(v) && <span data-stimme-geschlecht style={{marginLeft:4}}>{stimmeGeschlecht(v)}</span>} <span style={{fontSize:"0.72rem", color:"var(--text3)"}}>{v.lang}</span>{ist && an ? " ✓" : ""}
                                 </span>
                                 <button className="btn btn-ghost btn-sm" data-stimme-probe={v.voiceURI} onClick={() => sprichMit(v)} {...tt(`Probe: ${v.name}`)}>▶</button>
                               </div>
@@ -10931,8 +10956,8 @@ export default function VokabelApp() {
                               {r.key === "zuordnungAmEnde" && [
                                 ["zuordnungPaare", "… Vokabeln je Runde", "Wie viele Vokabeln eine Zuordnungs-Runde hat (passt nicht alles auf den Bildschirm, werden es automatisch weniger)",
                                   [3, 4, 5, 6, 7, 8, 9, 10, 12].map(x => [x, String(x)]), st => st === "einfach" ? 5 : 7],
-                                ["zuordnungZeit", "… Zeit", "aus · Runde: eine Zeit für die ganze Runde · je Vokabel: nach jedem gefundenen Paar beginnt die Zeit neu",
-                                  ZUORDNUNG_ZEITEN, st => st === "einfach" ? "aus" : "vokabel"],
+                                ["zuordnungZeit", "… Zeit", "Prüfen sofort: Zeit je Paar (beginnt nach jedem gefundenen Paar neu) · am Ende: Zeit für die ganze Runde (Sekunden × Vokabeln)",
+                                  ZUORDNUNG_ZEITEN, st => st === "einfach" ? "aus" : "an"],
                                 ["zuordnungSek", "… Sekunden je Vokabel", "Zeit je Vokabel; bei 3 Spalten ×1,6, bei 4 Spalten ×2",
                                   ZUORDNUNG_SEKUNDEN.map(x => [x, `${x} s`]), () => 8],
                               ].map(([key, label, info, werte, std]) => (<Fragment key={key}>
@@ -11120,6 +11145,34 @@ export default function VokabelApp() {
         </div>
       )}
 
+      {modal === "stimmen-hilfe" && (() => {
+        const ua = navigator.userAgent;
+        const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        const geraet = ios ? "ios" : /Android/.test(ua) ? "android" : /Mac/.test(ua) ? "mac" : /Windows/.test(ua) ? "windows" : "ios";
+        const wege = [
+          ["ios", "iPhone / iPad", ["Einstellungen öffnen", "Bedienungshilfen", "Gesprochene Inhalte", "Stimmen", "Sprache wählen (z. B. Deutsch, Englisch)", "Stimme antippen und laden – „Erweitert“ oder „Premium“ klingen am natürlichsten"]],
+          ["android", "Android", ["Einstellungen öffnen", "System › Sprachen (bzw. Bedienungshilfen)", "Sprachausgabe (Text-in-Sprache)", "Bevorzugtes Modul › Einstellungen", "Sprachdaten installieren", "Sprache wählen und Stimmen laden"]],
+          ["mac", "Mac", ["Systemeinstellungen", "Bedienungshilfen", "Gesprochene Inhalte", "Systemstimme › Stimmen verwalten", "Stimmen auswählen und laden"]],
+          ["windows", "Windows", ["Einstellungen", "Zeit und Sprache › Sprache und Region", "Sprache hinzufügen bzw. Sprachoptionen", "Sprachausgabe (Text-to-Speech) installieren"]],
+        ].sort((a, b) => (a[0] === geraet ? -1 : 0) - (b[0] === geraet ? -1 : 0));
+        return (
+          <div className="overlay" onClick={() => setModal(null)}>
+            <div className="modal" data-stimmen-hilfe-fenster={geraet} onClick={e => e.stopPropagation()} style={{maxHeight:"88vh", overflowY:"auto"}}>
+              <div className="modal-titel">＋ Weitere Stimmen laden</div>
+              {wege.map(([k, name, schritte], i) => (
+                <details key={k} open={i === 0} data-stimmen-weg={k} style={{marginBottom:10}}>
+                  <summary style={{fontWeight:700, cursor:"pointer", marginBottom:6}}>{name}{k === geraet ? " (dieses Gerät)" : ""}</summary>
+                  <ol style={{margin:"4px 0 0 18px", padding:0, fontSize:"0.88rem", lineHeight:1.6, color:"var(--text)"}}>
+                    {schritte.map(x => <li key={x}>{x}</li>)}
+                  </ol>
+                </details>
+              ))}
+              <div style={{fontSize:"0.85rem", color:"var(--text2)", margin:"6px 0 12px"}}>Danach die App einmal ganz schließen und neu öffnen – die neuen Stimmen stehen dann hier mit Haken.</div>
+              <div className="modal-actions"><button className="btn btn-primary" onClick={() => setModal(null)} {...tt("Fenster schließen")}>OK</button></div>
+            </div>
+          </div>
+        );
+      })()}
       {modal === "kopier-export" && kopierExportIds && (
         <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" data-kopier-export onClick={e => e.stopPropagation()}>

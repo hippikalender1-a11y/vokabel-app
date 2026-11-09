@@ -48,6 +48,12 @@ ok(sprachen === "de,fr", `Sprachen der Listen + Deutsch (${sprachen})`);
 const varianten = await page.evaluate(() => [...document.querySelectorAll('[data-stimme-sprache="fr"] [data-stimme-variante]')].map(b => b.textContent.trim()));
 ok(varianten.join("|") === "Alle|🇨🇦 Kanada|🇫🇷 Frankreich", `Französisch: Varianten (${varianten.join(" | ")})`);
 ok(await page.evaluate(() => document.querySelectorAll('[data-stimmen-liste="de"] [data-stimme]').length) === 2, "Deutsch: 2 Stimmen mit Haken");
+const geschlecht = await page.evaluate(() => [...document.querySelectorAll('[data-stimmen-liste="de"] [data-stimme]')].map(z => z.querySelector("[data-stimme-geschlecht]")?.textContent || "-").join(""));
+ok(geschlecht === "♀♂", `bekannte Namen mit ♀/♂ (Anna, Markus: ${geschlecht})`);
+await page.click('[data-stimmen-hilfe=""]'); await sleep(300);
+ok(await page.evaluate(() => { const f = document.querySelector("[data-stimmen-hilfe-fenster]"); return f && f.querySelector("details[open]")?.dataset.stimmenWeg === f.dataset.stimmenHilfeFenster && f.querySelectorAll("details").length === 4; }),
+  "„＋ Weitere Stimmen laden“: Anleitung, der passende Weg aufgeklappt");
+await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b => b.textContent.trim() === "OK")?.click()); await sleep(300);
 // Stimme abschalten
 await page.click('[data-stimme-an="v1"]'); await sleep(200);
 ok((await wahl()).aus?.de?.includes("v1"), "Markus abgeschaltet");
@@ -80,14 +86,15 @@ ok(await page.$("[data-karte-verdeckt]"), "Antippen der Frage deckt die Karte ni
 ok(!(await page.$('[data-stimme-wechsel="frage"]')), "Deutsch: nur 1 aktive Stimme → kein „🔁“");
 // aufdecken → Antwort (Französisch, 2 aktive Stimmen)
 await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click()); await sleep(400);
-ok(await page.$('[data-stimme-wechsel="antwort"]'), "Antwort Französisch: „🔁 Stimme“ sichtbar");
+ok(await page.evaluate(() => document.querySelector('[data-stimme-wechsel="antwort"]')?.textContent.trim()) === "1/2", "Antwort Französisch: Stimmen-Knopf „1/2“ statt Pfeil");
 const antwort = await page.evaluate(() => document.querySelector("[data-karte-antwort] .quiz-frage-text")?.textContent.trim());
 await page.click("[data-karte-antwort]"); await sleep(200);
 const vorher = (await letztes())?.voice;
 ok((await letztes())?.text === antwort, `Antwort-Karte antippen liest vor („${antwort}“, ${vorher})`);
 await page.click('[data-stimme-wechsel="antwort"]'); await sleep(200);
 l = await letztes();
-ok(l.text === antwort && l.voice && l.voice !== vorher && (await wahl()).sprachen?.fr, `„🔁“: andere Stimme (${vorher} → ${l.voice}), bleibt eingestellt`);
+ok(l.text === antwort && l.voice && l.voice !== vorher && (await wahl()).sprachen?.fr, `Stimmen-Knopf: andere Stimme (${vorher} → ${l.voice}), bleibt eingestellt`);
+ok(await page.evaluate(() => document.querySelector('[data-stimme-wechsel="antwort"]')?.textContent.trim()) === "2/2", "Knopf zeigt jetzt „2/2“");
 // lang drücken: Tafel mit Gesamt-Tempo
 await page.evaluate(() => { const el = document.querySelector("[data-karte-antwort]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 30, clientY: r.y + 20 })); }); await sleep(300);
 ok(await page.$("[data-info-regler]") && await page.$('[data-info-aktion="✎ Richtige Antwort bearbeiten"]'), "lang drücken: Tafel mit Tempo-Regler und „bearbeiten“");

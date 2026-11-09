@@ -1953,6 +1953,10 @@ ZUORDNUNG (Punkt 25): Antwortart „zuordnung“ (Modus-Knopf, exklusiv für all
   Vokabel × ZUORDNUNG_ZEITFAKTOR (Spalten); Ablauf → nur Vollständiges zählt, Rest vorne in die Warteschlange.
   Einstellungen je Stufe in einst.stufen[st]: zuordnungPaare/Zeit/Sek (zuordnungEinst), Regeln zuordnungAbzug/AmEnde.
   Abbrechen: beantwortet zählt für den Session-Fortschritt. Test e2e/zuordnung.mjs.
+  Überarbeitet: Zeit nur aus/an – sofort: je Paar (neu nach jedem gefundenen Paar), am Ende: für die Runde. „am Ende“ prüft
+  automatisch, sobald alle Karten verteilt sind (kein Prüfen-Knopf). Rundenende: Ergebnis bleibt stehen (anzeige "ergebnis"),
+  „Lösung zeigen“ (anzeige "loesung", Farbe je Vokabel) und „Weiter →“ (data-zuo-weiter). Gefundene Paare in eigener Farbe
+  (paarFarbe) mit ✓ / ✗ (data-zuo-marke), nicht mehr alle grün; offen Gebliebene gestrichelt.
 PAKET „ALLE“ (Punkt 26): STANDARD_PAKET_GROESSE = PAKET_ALLE (10000) – ein Paket mit allen Vokabeln, Session-Fortschritt
   bleibt. „Alle“ im Umfang setzt pakete + PAKET_ALLE (der frühere Modus ohne Session ist nicht mehr wählbar).
   Tests: hilfen.mjs paketGroesse(page, n).
@@ -1963,6 +1967,10 @@ VORLESEN (Punkt 27): geraet_stimmen = { sprachen, variante, aus, tempoSprache, t
   Abfrage-Karte: ganze Frage-Karte spielt ab (Antwort-Karte, sobald sichtbar); „🔁“ (data-stimme-wechsel) bei ≥2 aktiven
   Stimmen → naechsteStimme (bleibt eingestellt); lang drücken: Tafel mit Regler (tt opts.regler → InfoTafel TafelRegler,
   data-info-regler) für das Gesamt-Tempo, beim Loslassen vorlesen. Test e2e/stimmen.mjs (gefälschte Stimmen).
+TESTS PARALLEL: node e2e/alle_parallel.mjs [n] (Standard 4) – Liste aus alle.sh, eigener Browser je Test, Fehlschläge
+  laufen am Ende einmal allein nach; Ausgabe wie alle.sh plus Dauer und langsamste Tests (75 Tests ≈ 5½ min statt ≈ 21 min nacheinander).
+STIMMEN-HILFE (Punkt 28): „＋ Weitere Stimmen laden“ (data-stimmen-hilfe) → Fenster modal "stimmen-hilfe" mit Weg je Gerät
+  (iOS/Android/Mac/Windows, eigenes aufgeklappt). stimmeGeschlecht(v): ♀/♂ aus bekannten Namen. Karten-Knopf zeigt „n/m“ statt 🔁.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),
