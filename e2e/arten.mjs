@@ -66,6 +66,7 @@ ok(!/Akzente/.test(await modusName()), "Übersetzung ohne Akzente-Modus (gemisch
 // Ü: Reihenfolge ändern
 await page.click("[data-reihenfolge]"); await sleep(300);
 await clickText(".toggle-opt", "Zufällig", true);
+await page.click("[data-reihenfolge]"); await sleep(300);   // „Bestätigen“
 ok(await reihenfolge() === "Zufällige Reihenfolge", "Übersetzung: Reihenfolge auf Zufällig gestellt");
 
 // D: eigene Einstellungen (Standard), Diktat-Konfiguration

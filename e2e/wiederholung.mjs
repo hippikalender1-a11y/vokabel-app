@@ -99,7 +99,7 @@ await clickText(".typ-btn", "Score", true);
 await page.evaluate(() => { const r = [...document.querySelectorAll('input[type="range"]')].pop(); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(r, "2"); r.dispatchEvent(new Event("input", { bubbles: true })); r.dispatchEvent(new Event("change", { bubbles: true })); });
 await sleep(300);
 const zielText = await page.evaluate(() => document.querySelector("[data-abfrageziel]")?.textContent.trim());
-ok(zielText === "Score < +2", `Knopf Abfrage-Ziel: „Score < +2“ (${zielText})`);
+ok(zielText === "Score < +2Bestätigen", `Knopf Abfrage-Ziel (aufgeklappt): „Score < +2“ / „Bestätigen“ (${zielText})`);
 const scoreRunde = async () => {
   await clickText("[data-start-knopf]", "");
   await sleep(400);

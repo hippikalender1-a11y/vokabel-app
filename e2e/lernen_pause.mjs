@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { stufeWaehlen } from "./hilfen.mjs";
 
 // Lernen pausieren: Schließen merkt den Lernstand je Konfiguration (getrennt vom Abfrage-Fortschritt);
 // „Weiter lernen“ macht an derselben Stelle weiter – auch nach einer anderen Liste; alles angesehen → von vorn;
@@ -47,7 +48,7 @@ await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
 await ladeSlot("Verben");
 await page.click("[data-umfang]"); await sleep(200); await page.click('[data-umfang-wahl="5"]'); await sleep(300);
-await page.click("[data-stufe]"); await sleep(200);   // Schwer → Lernen
+await stufeWaehlen(page, "lernen");   // Schwer → Lernen
 ok((await knopf()).art === "neu", "Verben: „Lernen starten“");
 
 // lernen, zwei weiter, schließen

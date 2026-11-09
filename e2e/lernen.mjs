@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { stufeAuf, stufeZu, stufeWaehlen, stufeFenster } from "./hilfen.mjs";
 
 // Lernen: Stufe Lernen → Leicht → Schwer; „Lernen starten“ zeigt Wort (vorgelesen), nach der Pause die Übersetzung + Info,
 // dann die nächste Vokabel; antippen überspringt, Pause / zurück / vor / beenden; kein Score, kein Session-Fortschritt
@@ -59,22 +60,25 @@ await page.click("[data-umfang]"); await sleep(200); await page.click('[data-umf
 
 // Stufe: Schwer → Lernen → Leicht → Schwer → Lernen
 ok(await stufe() === "schwer|Schwer", "Start: Schwer");
-await page.click("[data-stufe]"); await sleep(200);
-ok(await stufe() === "lernen|Lernen", "antippen: Lernen");
-await page.click("[data-stufe]"); await sleep(200);
-ok(await stufe() === "einfach|Leicht", "antippen: Leicht");
-await page.click("[data-stufe]"); await sleep(200);
-ok(await stufe() === "schwer|Schwer", "antippen: Schwer");
-await page.click("[data-stufe]"); await sleep(200);
+await stufeAuf(page);
+ok(await page.evaluate(() => [...document.querySelectorAll("[data-stufe-wahl]")].map(b => b.textContent.trim()).join("|")) === "Lernen|Leicht|Schwer"
+  && /Schwer\s*Bestätigen/.test(await page.evaluate(() => document.querySelector("[data-stufe]").textContent)), "Stufe aufgeklappt: Lernen | Leicht | Schwer, Knopf „Schwer / Bestätigen“");
+await stufeZu(page);
+await stufeWaehlen(page, "lernen");
+ok(await stufe() === "lernen|Lernen", "gewählt: Lernen");
+await stufeWaehlen(page, "einfach");
+ok(await stufe() === "einfach|Leicht", "gewählt: Leicht");
+await stufeWaehlen(page, "schwer");
+ok(await stufe() === "schwer|Schwer", "gewählt: Schwer");
+await stufeWaehlen(page, "lernen");
 const start = await page.evaluate(() => document.querySelector("[data-start-knopf]")?.textContent.trim());
 ok(start === "Lernen starten7 Vokabeln", `Start-Knopf: „Lernen starten / 7 Vokabeln“ – ganze Session (${start})`);
 ok(await page.evaluate(() => document.querySelector("[data-start-titel]")?.textContent.trim()) === "Lernen mit 7 Vokabeln", "Überschrift: „Lernen mit 7 Vokabeln“");
 
-// Lang-Druck: „Lernen einstellen“
-await langDruck("[data-stufe]");
-const menue = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
-ok(menue.includes("🎬 Lernen einstellen") && menue.includes("⚙ Regeln Leicht / Schwer") && menue.includes("🔊 Vorlesen"), `Lang-Druck: Regeln, Lernen, Vorlesen (${menue.join(" | ")})`);
-await page.evaluate(() => document.querySelector('[data-info-aktion="🎬 Lernen einstellen"]').click()); await sleep(300);
+// Stufe aufgeklappt: „Lernen einstellen“, Regeln, Vorlesen als Knöpfe
+await stufeAuf(page);
+ok(await page.$("[data-stufe-lernen]") && await page.$("[data-stufe-regeln]") && await page.$("[data-stufe-vorlesen]"), "Stufe aufgeklappt: Regeln, Lernen einstellen, Vorlesen");
+await stufeFenster(page, "lernen");
 ok(await page.$("[data-lernen-einst]") && await page.$('[data-lernen-zuerst="fremd"].aktiv') && await page.$('[data-lernen-vorlesen1="true"].aktiv'), "Fenster „Lernen einstellen“: zuerst Fremdsprache, Wort vorlesen");
 await page.evaluate(() => document.querySelector("[data-lernen-einst]").closest(".overlay").click()); await sleep(200);
 
@@ -232,8 +236,7 @@ await page.click("[data-lernen-beenden]"); await sleep(300);
 ok(await page.$("[data-stufe]") && !(await page.$("[data-lernen-karte]")), "Beenden: zurück im Quiz-Tab");
 
 // Zuerst Deutsch
-await langDruck("[data-stufe]");
-await page.evaluate(() => document.querySelector('[data-info-aktion="🎬 Lernen einstellen"]').click()); await sleep(300);
+await stufeFenster(page, "lernen");
 await page.click('[data-lernen-zuerst="deutsch"]'); await sleep(200);
 await page.evaluate(() => document.querySelector("[data-lernen-einst]").closest(".overlay").click()); await sleep(200);
 await page.click("[data-start-knopf]"); await sleep(250);

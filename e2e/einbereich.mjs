@@ -16,6 +16,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 // welche Bereiche sind offen?
 const offen = () => page.evaluate(() => [
   document.querySelector("[data-slot-kopf]")?.dataset.slotKopf === "offen" && "kopf",
+  document.querySelector("[data-stufe]")?.classList.contains("offen") && "stufe",
   document.querySelector("[data-abfragemodus]")?.classList.contains("offen") && "modus",
   document.querySelector("[data-reihenfolge]")?.classList.contains("offen") && "reihenfolge",
   document.querySelector("[data-umfang]")?.classList.contains("offen") && "umfang",
@@ -60,7 +61,9 @@ await tippe("[data-slot-kopf-name]");
 await tippe("[data-reihenfolge]");
 ok(await offen() === "reihenfolge", `Kopf zu, Reihenfolge auf (${await offen()})`);
 await tippe("[data-stufe]");
-ok(await offen() === "", `Leicht/Schwer antippen schließt den offenen Bereich (${await offen()})`);
+ok(await offen() === "stufe", `Stufe antippen: Reihenfolge zu, Stufe auf (${await offen()})`);
+await tippe("[data-stufe]");
+ok(await offen() === "", `Stufe nochmal antippen („Bestätigen“): zu (${await offen()})`);
 const titel = () => page.evaluate(() => document.querySelector("[data-start-titel]")?.textContent.trim());
 const startRest = () => page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl);
 ok(/ mit 9 Vokabeln$/.test(await titel()) && await startRest() === "9", `Überschrift „… mit 9 Vokabeln“, Start 9 (3 gelernte ausgeblendet) (${await titel()})`);

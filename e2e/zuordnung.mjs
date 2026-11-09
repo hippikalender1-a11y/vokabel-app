@@ -32,9 +32,33 @@ const vorbereiten = async stufe => {
   await listenZu(page);
   await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
   const da = await page.evaluate(() => { const b = document.querySelector('[data-modus-knopf$=":zuordnung"]'); b?.click(); return !!b; }); await sleep(250);
+  await page.evaluate(() => document.querySelector('[data-modus-knopf$=":karte"].aktiv')?.click()); await sleep(250);   // nur Zuordnung
   await bereichZu(page);
   await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(700);
   return da;
+};
+const vorbereitenMix = async () => {
+  await page.evaluate(() => {
+    localStorage.clear();
+    const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
+    const vokabeln = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, E1: { wert: `mot${i + 1}`, falsch: [] }, D1: { wert: `Wort${i + 1}`, falsch: [] } }));
+    localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unité 1", sprache:"fr", spalten: sp, naechste_id: 13, vokabeln }));
+    localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
+    localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus: "schwer", stufen: { schwer: { zuordnungAmEnde: false, zuordnungZeit: "aus", zuordnungPaare: 5 } },
+      antwortGewichte: { karte: 0, zuordnung: 100 } }));
+  });
+  await page.reload(); await sleep(700);
+  await neueEineSession(page);
+  await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(300);
+  await listenZu(page);
+  await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
+  await page.evaluate(() => document.querySelector('[data-modus-knopf$=":zuordnung"]')?.click()); await sleep(250);
+  const modi = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf].aktiv")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
+  ok(modi === "karte,zuordnung", `Karte + Zuordnung gleichzeitig angehakt (${modi})`);
+  ok(/Gemischt\s*Bestätigen/.test(await page.evaluate(() => document.querySelector("[data-abfragemodus]").innerText)), "offener Modus-Knopf: „Gemischt / Bestätigen“");
+  await bereichZu(page);
+  ok(/Gemischt\s*Karte – Zuordnung/.test(await page.evaluate(() => document.querySelector("[data-abfragemodus]").innerText)), "zugeklappt: „Gemischt / Karte – Zuordnung“");
+  await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(700);
 };
 const karten = () => page.evaluate(() => [...document.querySelectorAll("[data-zuo-karte]")].map(b => { const [s, i] = b.dataset.zuoKarte.split(":").map(Number); return { s, i, id: b.dataset.zuoId, cls: b.className }; }));
 const tippe = async (s, i) => { await page.click(`[data-zuo-karte="${s}:${i}"]`); await sleep(120); };
@@ -61,18 +85,18 @@ ok((await karten()).find(x => x.s === 0 && x.i === 0).cls.includes("falsch-erl")
 const geloest = [];
 for (const z of [1, 2, 3]) geloest.push(await loese(z));
 ok((await Promise.all(geloest.map(score))).every(x => x === 1), "richtig zugeordnet: +1");
-// Rundenende: Ergebnis bleibt stehen, Paare in eigenen Farben mit ✓ / ✗
+// Rundenende: Ergebnis in Zeilen – je Zeile ein richtiges Paar, ✗ zuerst, dann ✓
 await sleep(400);
-const ergebnis = await page.evaluate(() => {
-  const k = [...document.querySelectorAll('[data-zuo-karte^="0:"]')];
-  return { weiter: !!document.querySelector("[data-zuo-weiter]"), marken: k.map(b => b.querySelector("[data-zuo-marke]")?.dataset.zuoMarke).sort().join(","),
-    farben: new Set(k.map(b => b.style.borderColor)).size };
-});
-ok(ergebnis.weiter && ergebnis.marken === "falsch,richtig,richtig,richtig" && ergebnis.farben === 4,
-  `Rundenende: „Weiter →“, je Paar ✓ bzw. ✗ und eigene Farbe statt alles grün (${JSON.stringify(ergebnis)})`);
-ok(await fortschritt() === "4 / 12" && (await karten()).length === 8 && await page.$("[data-zuo-marke]"), "bleibt stehen, bis „Weiter →“ getippt wird");
+const zeilen = () => page.evaluate(() => [...document.querySelectorAll("[data-zuo-reihe]")].map(r => ({ st: r.dataset.zuoStatus,
+  texte: [...r.querySelectorAll(".zuo-karte")].map(b => b.textContent.trim()), wahl: r.querySelector("[data-zuo-wahl]")?.textContent || null })));
+let zl = await zeilen();
+const paarOk = z => z.texte.length === 2 && z.texte[0].replace("Wort", "") === z.texte[1].replace("mot", "");
+ok(zl.length === 4 && zl.map(z => z.st).join(",") === "falsch,richtig,richtig,richtig" && zl.every(paarOk) && await page.$("[data-zuo-weiter]"),
+  `Rundenende: Zeilen mit dem richtigen Paar, ✗ oben (${zl.map(z => z.st + ":" + z.texte.join("=")).join(" | ")})`);
+ok(!(await page.$("[data-zuo-eigene]")), "sofort: kein Umschalter „Meine Zuordnung“");
+ok(await fortschritt() === "4 / 12", "bleibt stehen, bis „Weiter →“ getippt wird");
 await page.click("[data-zuo-weiter]"); await sleep(300);
-ok(!(await page.$("[data-zuo-marke]")) && (await karten()).length === 8, "„Weiter →“: nächste Runde");
+ok(!(await page.$("[data-zuo-reihe]")) && (await karten()).length === 8, "„Weiter →“: nächste Runde");
 // Abwählen ohne Fehlgriff: erste Karte nochmal antippen
 await tippe(0, 0); await tippe(0, 0);
 ok(!(await karten()).some(x => x.cls.includes("wahl")), "erste Karte nochmal antippen: Gruppe aufgehoben");
@@ -81,7 +105,7 @@ await page.click("[data-zuo-weiter]"); await sleep(300);
 k = await karten();
 ok(k.length === 8, `letzte Runde: 4 Vokabeln (${k.length / 2})`);
 for (const z of [0, 1, 2, 3]) await loese(z);
-ok(!(await page.$("[data-zuo-loesung]")), "alles richtig: kein „Lösung zeigen“");
+ok((await zeilen()).every(z => z.st === "richtig"), "alles richtig: nur ✓-Zeilen");
 await page.click("[data-zuo-weiter]"); await sleep(600);
 ok(!(await page.$("[data-zuordnung]")), "alle beantwortet: Zuordnung beendet (Auswertung)");
 
@@ -102,11 +126,15 @@ await tippe(1, b(z0.id));
 await tippe(0, 2); await tippe(1, b(z2.id));   // richtig – letzte Karte verteilt → automatisch geprüft
 await sleep(300);
 ok(await score(z2.id) === 1 && await score(z0.id) === -1 && await score(z1.id) === -1, `automatisch geprüft: richtige Gruppe +1, falsche: Vokabel der ersten Karte −1 (${await score(z2.id)}, ${await score(z0.id)}, ${await score(z1.id)})`);
+zl = await zeilen();
+const textVon = id => k.find(x => x.s === 1 && x.id === id)?.text;
+ok(zl.map(z => z.st).join(",") === "falsch,falsch,richtig" && zl.every(paarOk), `Ergebnis-Zeilen: zwei ✗ oben, richtige Paare (${zl.map(z => z.st).join(",")})`);
+ok(zl.filter(z => z.st === "falsch").every(z => /^deine Wahl: mot\d+$/.test(z.wahl || "") && z.wahl !== `deine Wahl: ${z.texte[1]}`), `bei ✗: „deine Wahl“ (${zl.map(z => z.wahl).join(" | ")})`);
+await page.click("[data-zuo-eigene]"); await sleep(200);
 const marken = await page.evaluate(() => [...document.querySelectorAll("[data-zuo-marke]")].map(e => e.dataset.zuoMarke).sort().join(","));
-ok(marken === "falsch,falsch,falsch,falsch,richtig,richtig", `Gruppenfarben bleiben, dazu ✓ / ✗ (${marken})`);
-await page.click("[data-zuo-loesung]"); await sleep(200);
-const loesung = await page.evaluate(() => { const k = [...document.querySelectorAll("[data-zuo-karte]")]; const f = {}; k.forEach(b => { (f[b.dataset.zuoId] ||= new Set()).add(b.style.borderColor); }); return Object.values(f).every(s => s.size === 1) && !document.querySelector("[data-zuo-marke]"); });
-ok(loesung, "„Lösung zeigen“: zusammengehörige Karten gleich gefärbt");
+ok(marken === "falsch,falsch,falsch,falsch,richtig,richtig", `„Meine Zuordnung“: eigene Gruppen mit ✓ / ✗ (${marken})`);
+await page.click("[data-zuo-eigene]"); await sleep(200);
+ok((await zeilen()).length === 3, "zurück zur Lösung in Zeilen");
 await page.click("[data-zuo-weiter]"); await sleep(300);
 ok(await fortschritt() === "3 / 12" && (await karten()).length === 6, `„Weiter →“: nächste Runde (${await fortschritt()})`);
 
@@ -120,7 +148,7 @@ await tippe(0, k.find(x => x.s === 0 && x.id === offen[0]).i);   // angefangen, 
 await sleep(4500);
 ok(await score(erste) === 1 && await score(offen[0]) === null && await score(offen[1]) === null && await page.$("[data-zuo-weiter]"),
   "Zeit je Paar abgelaufen: nur die vollständige Gruppe ist gewertet, Ergebnis bleibt stehen");
-ok((await karten()).filter(x => x.cls.includes("offen-geblieben")).length === 4, "offen Gebliebene markiert");
+ok((await zeilen()).filter(z => z.st === "offen").length === 2, "offen Gebliebene als „–“-Zeilen");
 await page.click("[data-zuo-weiter]"); await sleep(300);
 k = await karten();
 ok(offen.every(id => k.some(x => x.id === id)) && await fortschritt() === "1 / 12", `nicht beantwortete kommen in der nächsten Runde wieder (${await fortschritt()})`);
@@ -134,6 +162,20 @@ await sleep(5000);
 ok(!(await page.$("[data-zuo-weiter]")), "nach 5 s noch Zeit (Runde: 9 s)");
 await sleep(5000);
 ok(await page.$("[data-zuo-weiter]") && await score(y0.id) === 1, "Zeit der Runde abgelaufen: vollständige Gruppe geprüft und gewertet");
+
+// ── 5) gemischt: Karte + Zuordnung, Gewichte Zuordnung 100 / Karte 0 → Runden zu 5, Rest (2) als Karte ──
+await page.goto(URL);
+await vorbereitenMix();
+k = await karten();
+ok(await page.$("[data-zuordnung]") && k.length === 10 && await fortschritt() === "0 / 5", `gemischt: Zuordnungs-Runde mitten in der Abfrage (5 Vokabeln, ${await fortschritt()})`);
+for (const z of [0, 1, 2, 3, 4]) await loese(z);
+await page.click("[data-zuo-weiter]"); await sleep(400);
+ok(await page.$("[data-zuordnung]") && (await karten()).length === 10, "nächste Ziehung: wieder Zuordnung (Gewicht 100 %)");
+for (const z of [0, 1, 2, 3, 4]) await loese(z);
+await page.click("[data-zuo-weiter]"); await sleep(400);
+ok(!(await page.$("[data-zuordnung]")) && await page.$("[data-karte-frage]"), "nur noch 2 übrig: normale Karte statt Zuordnung");
+const plus = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_liste_l_a")).vokabeln.filter(v => v.fortschritt?.score === 1).length);
+ok(plus === 10, `10 per Zuordnung richtig: je +1 (${plus})`);
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();

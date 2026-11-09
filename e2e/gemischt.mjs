@@ -45,7 +45,11 @@ for (const m of ["tippen", "mc", "karte"]) { await page.click(`[data-modus-knopf
 const rest = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf].aktiv")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
 ok(rest === "karte,akzent", `letzte Art außer Akzente lässt sich nicht abwählen (${rest})`);
 for (const m of ["tippen", "mc"]) { await page.click(`[data-modus-knopf="E1:${m}"]`); await sleep(100); }
+const offenKnopf = await page.evaluate(() => { const b = document.querySelector("[data-abfragemodus]"); return `${b.querySelector(".zeile1")?.textContent}|${b.querySelector(".zeile2")?.textContent}`; });
+ok(offenKnopf === "Gemischt|Bestätigen", `aufgeklappt: „Gemischt“ / „Bestätigen“ (${offenKnopf})`);
+await page.click("[data-abfragemodus]"); await sleep(300);
 const knopf = await page.evaluate(() => { const b = document.querySelector("[data-abfragemodus]"); return `${b.querySelector(".zeile1")?.textContent}|${b.querySelector(".zeile2")?.textContent}`; });
+await page.click("[data-abfragemodus]"); await sleep(300);
 ok(knopf === "Gemischt|Karte – MC – Tastatur – Akzente", `Knopf: „Gemischt“ / „Karte – MC – Tastatur – Akzente“ (${knopf})`);
 await page.click("[data-abfragemodus]"); await sleep(300);
 

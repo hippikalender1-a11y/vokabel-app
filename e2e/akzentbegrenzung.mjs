@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, stufeFenster } from "./hilfen.mjs";
 
 // Akzente mit Wörtern ohne Akzent: höchstens Faktor × so viele wie mit Akzent (je Stufe einstellbar),
 // bevorzugt schwächster / kein Akzent-Score, gleichmäßig verteilt
@@ -36,9 +36,7 @@ const anzeige = () => page.evaluate(() => ({
 const setzeAnteil = async (st, wert) => {
   // Regeln: Lang-Druck auf die Stufe → „Regeln Leicht / Schwer“
   if (!(await page.$("[data-akzent-ohne-anteil]"))) {
-    await page.evaluate(() => { const el = document.querySelector("[data-stufe]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); });
-    await sleep(250);
-    await page.evaluate(() => document.querySelector('[data-info-aktion="⚙ Regeln Leicht / Schwer"]').click());
+    await stufeFenster(page, "regeln");
   }
   await sleep(300);
   await page.select(`[data-akzent-ohne-anteil="${st}"]`, wert); await sleep(300);

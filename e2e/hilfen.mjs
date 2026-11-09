@@ -54,3 +54,26 @@ export async function paketGroesse(page, n) {
   await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await warte(250);
   await page.evaluate(n => document.querySelector(`[data-umfang-wahl="${n}"]`)?.click(), String(n)); await warte(300);
 }
+// Stufe (Zeile 1): aufklappen, wählen, zuklappen („Bestätigen“ = Stufen-Knopf nochmal)
+export async function stufeAuf(page) {
+  await page.evaluate(() => { if (!document.querySelector("[data-stufe-auswahl]")) document.querySelector("[data-stufe]")?.click(); });
+  await new Promise(r => setTimeout(r, 250));
+}
+export async function stufeZu(page) {
+  await page.evaluate(() => { if (document.querySelector("[data-stufe-auswahl]")) document.querySelector("[data-stufe]")?.click(); });
+  await new Promise(r => setTimeout(r, 250));
+}
+export async function stufeWaehlen(page, k) {
+  await stufeAuf(page);
+  await page.evaluate(k => document.querySelector(`[data-stufe-wahl="${k}"]`)?.click(), k);
+  await new Promise(r => setTimeout(r, 200));
+  await stufeZu(page);
+}
+// Fenster aus der Stufe öffnen (regeln | lernen | vorlesen) – die Stufe klappt danach wieder zu
+export async function stufeFenster(page, was) {
+  await stufeAuf(page);
+  await page.evaluate(w => document.querySelector(`[data-stufe-${w}]`)?.click(), was);
+  await new Promise(r => setTimeout(r, 250));
+  await page.evaluate(() => { if (document.querySelector("[data-stufe-auswahl]")) document.querySelector("[data-stufe]")?.click(); });
+  await new Promise(r => setTimeout(r, 250));
+}

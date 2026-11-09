@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, stufeFenster } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -75,7 +75,7 @@ const startAnzahl = () => page.evaluate(() => document.querySelector("[data-star
 let t = await text();
 ok(await startAnzahl() === "4", "Stufe „Schwer“ (Standard): auch Wörter ohne Akzent → 4 Wörter");
 // Regel in der Schwierigkeits-Tabelle für "Schwer" ausschalten (Lang-Druck auf Leicht/Schwer)
-await page.evaluate(() => { const el = document.querySelector("[data-stufe]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(250); await page.evaluate(() => document.querySelector('[data-info-aktion="⚙ Regeln Leicht / Schwer"]').click());
+await stufeFenster(page, "regeln");
 await sleep(300);
 await page.evaluate(() => {
   const zeile = [...document.querySelectorAll("div")].filter(d => d.textContent.trim() === "Akzent-Modus: auch Wörter ohne Akzent abfragen").pop();
@@ -213,7 +213,7 @@ const starteUndZaehle = async () => {
 ok(await starteUndZaehle() === 0, "Stufe „Schwer“ (Standard): Akzent-Buchstaben nicht hervorgehoben");
 ok(zaehlerDa === false, "Stufe „Schwer“: kein Akzent-Zähler");
 const oeffneEinst = async () => {
-  if (!(await text()).includes("Was gilt als leicht / schwer?")) { await page.evaluate(() => { const el = document.querySelector("[data-stufe]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(250); await page.evaluate(() => document.querySelector('[data-info-aktion="⚙ Regeln Leicht / Schwer"]').click()); }
+  if (!(await text()).includes("Was gilt als leicht / schwer?")) { await stufeFenster(page, "regeln"); }
   await sleep(300);
 };
 await oeffneEinst();

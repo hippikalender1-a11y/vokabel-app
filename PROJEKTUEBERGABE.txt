@@ -1976,6 +1976,22 @@ FARBEN JE SPRACHE (Punkt 29): einst.sprachFarben = { an, zuordnung: { fr: schema
   sprachFilter berechnet, überschreibt F/CSS): in der Abfrage/beim Lernen die Sprache der Listen (nur eine), sonst der
   Sprachfilter; nicht im Farbmodus. Tab „Sprachen“ unter Einstellungen › Farben (data-sprachfarben, data-sprachfarbe).
   Neue Farbrolle „tab-aktiv“ (Standard: haupt) für den gewählten Tab. Test e2e/sprachfarben.mjs.
+ZUORDNUNG ERGEBNIS IN ZEILEN (Punkt 30): anzeige "ergebnis" = je Zeile das richtige Paar (data-zuo-reihe, data-zuo-status
+  falsch/offen/richtig, in dieser Reihenfolge), bei ✗ (am Ende) „deine Wahl: …“ (data-zuo-wahl); am Ende Umschalter
+  „Meine Zuordnung“ (data-zuo-eigene, anzeige "eigene" = Gruppen-Raster mit ✓/✗). Antippen liest vor.
+ANTWORTARTEN MISCHEN (Punkt 31): STANDARD_ANTWORT_GEWICHTE {karte 50, mc 30, akzent 30, tippen 15, zuordnung 5},
+  einst.antwortGewichte (Einstellungen › Lernen, data-gewicht); loeseSpaltenModusAuf zieht gewichtet (gewichtetWaehlen),
+  Zuordnung einmal je Frage (gilt dann für alle Spalten mit Zuordnung). Zuordnung nicht mehr exklusiv; nur Zuordnung →
+  reine Zuordnung, gemischt → quiz.zuordnungMix: mitZuordnungMix (aus naechsteVokabelState/starteWiederholung/Start)
+  macht aus einer gezogenen Zuordnung eine Runde mit dieser und den nächsten Vokabeln (z.mix {start, ende}); < 3 übrig →
+  andere Art. zuordnungMixWeiter: Beantwortete bleiben, offene ans Ende, weiter mit naechsteVokabelState. richtigMap zählt mit.
+STUFE AUFKLAPPBAR (Punkt 32): quizStufeAufgeklappt, Fokus zeile1 (data-quiz-offen "stufe"), data-stufe-auswahl mit
+  data-stufe-wahl (lernen/einfach/schwer) und Knöpfen data-stufe-regeln/-lernen/-vorlesen. Tests: hilfen stufeAuf/Zu/Waehlen/Fenster.
+MODUS-KNOPF (Punkt 33): MODI_REIHENFOLGE enthält zuordnung → „Zuordnung“ statt „Frage – Antwort“.
+BESTÄTIGEN-KNÖPFE (Punkt 34): offene Zeilen-Knöpfe (Stufe, Modus, Reihenfolge, Umfang, Ziel) zeigen offenText(): Kurzwert /
+  „Bestätigen“ (zweizeilig), gleiche Farbe wie zu (.quiz-zeile-knopf.offen ohne Umfärben).
+START SPEICHERN (Punkt 35): sessionSpeicherAktionen() – Menü beim langen Drücken auf Session-Name und Start-Knopf.
+  Test e2e/knoepfe.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),
