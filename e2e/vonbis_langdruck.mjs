@@ -50,15 +50,21 @@ const kopf = await page.evaluate(() => { const k = document.querySelector("[data
 ok(/^Neues Quiz/.test(kopf.text) && kopf.ng, `Kopf: „Neues Quiz“ + „nicht gespeichert“ (${kopf.text})`);
 const rechts = () => page.evaluate(() => { const h = document.querySelector(".liste-detail-header"); return { hinweis: h.querySelector("[data-listen-hinweis]")?.textContent ?? null, knopf: h.querySelector(".zeile-rechts")?.textContent ?? null }; });
 let re = await rechts();
-ok(re.hinweis === "Liste auswählen" && re.knopf === null && await page.$(".quiz-setup-check"), `ohne Liste: rechts nur Hinweis, kein Knopf, Listen offen (${JSON.stringify(re)})`);
+ok(re.hinweis === "Bitte Liste auswählen" && re.knopf === null && await page.$(".quiz-setup-check"), `ohne Liste: rechts nur Hinweis, kein Knopf, Listen offen (${JSON.stringify(re)})`);
 await page.evaluate(() => document.querySelector("[data-listen-hinweis]").click()); await sleep(300);
-ok(await page.$(".quiz-setup-check") && !/Bitte Liste auswählen/.test(await page.evaluate(() => document.body.innerText)), "Hinweis antippen schließt nichts");
+ok(await page.$(".quiz-setup-check") && (await rechts()).hinweis === "Bitte Liste auswählen", "Hinweis antippen schließt nichts");
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(400);
 re = await rechts();
-ok(re.knopf === "Unité 1" && re.hinweis === null, `Liste gewählt: Knopf mit dem Namen (${JSON.stringify(re)})`);
+ok(re.knopf === "Bestätigen" && re.hinweis === null, `Liste gewählt, Auswahl offen: Knopf „Bestätigen“ (${JSON.stringify(re)})`);
 await page.evaluate(() => document.querySelector(".liste-detail-header .zeile-rechts").click()); await sleep(400);
-ok(!(await page.$(".quiz-setup-check")), "Knopf antippen klappt die Listen-Auswahl zu");
+re = await rechts();
+ok(!(await page.$(".quiz-setup-check")) && re.knopf === "Unité 1", `„Bestätigen“ klappt die Listen-Auswahl zu, danach steht der Name da (${JSON.stringify(re)})`);
+await page.evaluate(() => document.querySelector(".liste-detail-header .zeile-rechts").click()); await sleep(400);
+re = await rechts();
+ok(await page.$(".quiz-setup-check") && re.knopf === "Bestätigen", `Name antippen öffnet die Auswahl wieder – „Bestätigen“ (${JSON.stringify(re)})`);
+await page.evaluate(() => document.querySelector(".liste-detail-header .zeile-rechts").click()); await sleep(400);
 await klickText(".toggle-opt", "Bereich"); await sleep(400);
+ok(await page.$("[data-vok-bestaetigen]") && !(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => /^(Alle|Bereich)$/.test(b.textContent.trim())))), "Vokabelliste offen: „Bestätigen“ statt „Alle | Bereich“");
 // ── Lang-Druck auf eine Vokabel startet Von–Bis ──
 const cdp = await page.createCDPSession();
 const finger = (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
@@ -136,10 +142,14 @@ await page.evaluate(s => { const el = document.querySelector(s); const b = el.ge
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: b.x + 20, clientY: b.y + 10 })); }, zeile("quiz", 3)); await sleep(400);
 await klickText(".btn", "…Bis");
 ok(!(await gelb("quiz", 3)) && !(await tafel()), "„…Bis“-Knopf oben beendet Von–Bis, Tafel zu");
-// Bereich antippen schließt die Liste, die Session-Optionen sind wieder da
-await klickText(".toggle-opt", "Bereich"); await sleep(400);
+// „Bestätigen“ schließt die Liste, die Session-Optionen sind wieder da – mit „Alle | Bereich“
+await page.click("[data-vok-bestaetigen]"); await sleep(400);
 ok(!(await page.$('[data-suchleiste="quiz"]')) && await page.$("[data-start-knopf]") && await sichtbar("[data-slot-kopf]") && await sichtbar(".liste-detail-header"),
-  "„Bereich“ antippen: Liste zu, Session-Leiste, Listen-Auswahl und Start wieder sichtbar");
+  "„Bestätigen“: Liste zu, Session-Leiste, Listen-Auswahl und Start wieder sichtbar");
+ok(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv")].some(b => b.textContent.trim() === "Bereich")), "Vokabeln angehakt: nach „Bestätigen“ bleibt „Bereich“ gewählt");
+await klickText(".toggle-opt", "Bereich"); await sleep(400);
+ok(await page.$('[data-suchleiste="quiz"]') && await page.$("[data-vok-bestaetigen]"), "„Bereich“ öffnet die Liste wieder");
+await page.click("[data-vok-bestaetigen]"); await sleep(400);
 
 // ── Statistik ──
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => /Statistik/.test(t.textContent)).click()); await sleep(500);

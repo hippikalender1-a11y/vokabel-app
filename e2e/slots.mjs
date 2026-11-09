@@ -195,28 +195,36 @@ ok(pl["Meine Verben 2"] === "4|0" && pl["Meine Verben"] === platzN1, `Duplikat u
 // für den weiteren Ablauf wieder entfernen
 await menue("4|0"); await aktion("🗑 Löschen"); await clickText(".modal .btn-danger", "Löschen", true);
 
-// Einstellungen: 3 Spalten, Zeilen verkleinern → Einträge rücken nach, voll → beim Speichern automatisch eine Zeile mehr
+// Einstellungen: nur noch Spalten (3); Zeilen wachsen von selbst – neuer Eintrag kommt unter den untersten
 await clickText(".tab", "Einstellungen"); await oeffneEinst("raster");
 await page.evaluate(() => document.querySelector('[data-raster-spalten="3"]').click()); await sleep(200);
-for (let i = 0; i < 12; i++) { const weiter = await page.evaluate(() => { const b = [...document.querySelectorAll("button")].find(x => x.textContent.trim() === "−" && x.nextElementSibling?.hasAttribute("data-raster-zeilen")); if (!b || b.disabled) return false; b.click(); return true; }); if (!weiter) break; await sleep(80); }
-const zeilen = await page.evaluate(() => document.querySelector("[data-raster-zeilen]").textContent.trim());
-pl = await plaetze();
-console.log("     1 Zeile × 3:", JSON.stringify(pl));
-ok(zeilen === "1" && Object.values(pl).every(p => p.startsWith("0|")) && new Set(Object.values(pl)).size === 3, "Verkleinern auf 1 × 3: alle Einträge in Zeile 1, keiner doppelt");
+ok(!(await page.$("[data-raster-zeilen]")) && !/Zeilen ×/.test(await page.evaluate(() => document.body.innerText)), "Raster-Einstellung: nur Spalten, keine Zeilen-Einstellung");
+const plVor = await plaetze();
+const unten = Math.max(...Object.values(plVor).map(p => +p.split("|")[0]));
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await speichern();
-const einst = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen")).slotRaster);
 pl = await plaetze();
-console.log("     nach 4. Speichern:", JSON.stringify(einst), JSON.stringify(pl));
-ok(einst.zeilen === 2 && Object.values(pl).includes("1|0"), "Raster voll: neuer Eintrag → automatisch eine Zeile mehr (1|0)");
-// Löschen über das Menü (mit Rückfrage)
-if (!(await page.$('[data-raster-zelle="1|0"]'))) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
+const neuName = Object.keys(pl).find(n => !(n in plVor));
+console.log("     nach 4. Speichern:", JSON.stringify(pl));
+ok(neuName && pl[neuName] === `${unten + 1}|0`, `neuer Eintrag unter dem untersten (${pl[neuName]})`);
+if (!(await page.$("[data-raster-zelle]"))) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
-await menue("1|0");
+// Verschieben: unter dem untersten Eintrag immer zwei freie Zeilen – setzt man etwas hinein, wächst das Raster mit
+const maxZeile = () => page.evaluate(() => Math.max(...[...document.querySelectorAll("[data-raster-zelle]")].map(e => +e.dataset.rasterZelle.split("|")[0])));
+ok(await maxZeile() === unten + 1, `ohne Verschieben: nur belegte Zeilen (bis ${await maxZeile()})`);
+await menue(pl[neuName]); await aktion("⇄ Verschieben");
+ok(await maxZeile() === unten + 3, `Verschieben: zwei freie Zeilen darunter (bis ${await maxZeile()})`);
+await page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), `${unten + 3}|1`); await sleep(300);
+pl = await plaetze();
+ok(pl[neuName] === `${unten + 3}|1` && await maxZeile() === unten + 5, `in die unterste freie Zeile gesetzt (${pl[neuName]}) → wieder zwei freie darunter (bis ${await maxZeile()})`);
+await clickText("button", "Fertig", true);
+ok(await maxZeile() === unten + 3, `„Fertig“: freie Zeilen verschwinden (bis ${await maxZeile()})`);
+// Löschen über das Menü (mit Rückfrage)
+await menue(pl[neuName]);
 await aktion("🗑 Löschen");
 await clickText(".modal .btn-danger", "Löschen", true);
 pl = await plaetze();
-ok(Object.keys(pl).length === 3 && !Object.values(pl).includes("1|0"), "Löschen über das Menü: Eintrag weg");
+ok(Object.keys(pl).length === 3 && !(neuName in pl), "Löschen über das Menü: Eintrag weg");
 // für den Statistik-Teil wieder Standard (10 × 2)
 await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen")); e.slotRaster = { zeilen: 10, spalten: 2 }; localStorage.setItem("vokabel_einstellungen", JSON.stringify(e)); });
 await page.reload(); await sleep(400);

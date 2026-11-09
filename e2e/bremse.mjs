@@ -53,13 +53,14 @@ await sleep(600);
 let z = await liste();
 ok(z.offen && z.letzteUnten > z.hoehe, `Lange Vokabel-Auswahl offen, Ende nicht sichtbar (${z.letzteUnten} > ${z.hoehe})`);
 
-// 0) Quiz: maximierte Vokabelliste klappt beim Scrollen nicht von selbst zu (nur „Bereich“ schließt sie)
+// 0) Quiz: maximierte Vokabelliste klappt beim Scrollen nicht von selbst zu (nur „Bestätigen“ schließt sie)
 await wisch(6000); await sleep(1200);
 z = await liste();
 ok(z.offen && !z.hinweis, "Quiz-Liste (maximiert): Schwung über das Ende – bleibt offen, kein Hinweis");
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);
-await clickText("button", "Bereich", true); await sleep(400);
-ok(!(await liste()).offen, "Quiz: „Bereich“ antippen schließt die Liste");
+ok(!(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Bereich"))), "Quiz: bei offener Liste statt „Alle | Bereich“ nur „Bestätigen“");
+await page.click("[data-vok-bestaetigen]"); await sleep(400);
+ok(!(await liste()).offen && await page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv")].some(b => b.textContent.trim() === "Alle")), "Quiz: „Bestätigen“ schließt die Liste – nichts angehakt → wieder „Alle“");
 
 // Bremse an der langen Vokabel-Auswahl der Statistik
 await clickText(".tab", "Statistik"); await sleep(500);

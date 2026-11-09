@@ -70,10 +70,10 @@ await page.screenshot({ path: "info_modus.png" });
 await page.evaluate(() => [...document.querySelectorAll("button")].find(x => /Info-Modus beenden/.test(x.textContent)).click()); await sleep(300);
 ok(!(await page.evaluate(() => document.body.classList.contains("info-modus"))) && !(await tafel()), "„Info-Modus beenden“: Modus aus, Tafel weg");
 await page.evaluate(() => [...document.querySelectorAll("button")].find(x => x.textContent.trim() === "Bereich").click()); await sleep(300);
-ok(await page.evaluate(() => [...document.querySelectorAll(".aktiv")].some(b => b.textContent.trim() === "Bereich")), "Danach funktionieren Knöpfe wieder normal");
+ok(await page.evaluate(() => !!document.querySelector("[data-vok-bestaetigen]")), "Danach funktionieren Knöpfe wieder normal (Bereich öffnet die Vokabelliste)");
 
 // 3) Im Quiz (bisher keine Erklärung möglich): Lang drücken unten → Tafel OBEN
-await page.evaluate(() => [...document.querySelectorAll("button")].find(x => x.textContent.trim() === "Alle" && x.getAttribute("data-info"))?.click()); await sleep(200);
+await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]")?.click()); await sleep(300);   // nichts angehakt → wieder „Alle“
 await page.evaluate(() => document.querySelector("[data-start-knopf]").click()); await sleep(500);
 await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click()); await sleep(300);
 const gewusst = await page.evaluate(() => { const b = [...document.querySelectorAll(".karte-btn")].find(x => /Gewusst/.test(x.textContent) && !/Nicht/.test(x.textContent)); const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });

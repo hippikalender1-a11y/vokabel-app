@@ -80,11 +80,13 @@ ok(!(await page.$("[data-listen-fertig]")), "nach dem Ablegen ist der Verschiebe
 // Verschieben-Modus: antippen, dann freien Platz antippen
 await sleep(500);   // der Klick direkt nach dem Ziehen wird verschluckt
 await menue("Beta"); await aktion("⇄ Verschieben");   // markiert Beta, Verschieben-Modus bleibt bis „Fertig“
-await page.evaluate(() => document.querySelector('[data-raster-zelle="5|0"]').click()); await sleep(300);
+const maxZ = () => page.evaluate(() => Math.max(...[...document.querySelectorAll("[data-raster-zelle]")].map(e => +e.dataset.rasterZelle.split("|")[0])));
+ok(await maxZ() === 4, `Verschieben: unter dem untersten Eintrag (Zeile 3) zwei freie Zeilen (bis ${await maxZ()})`);
+await page.evaluate(() => document.querySelector('[data-raster-zelle="4|0"]').click()); await sleep(300);
 pl = await plaetze();
-ok(pl.Beta === "5|0", `Antippen + freien Platz antippen: Beta auf 5|0 (${pl.Beta})`);
+ok(pl.Beta === "4|0" && await maxZ() === 6, `Antippen + freien Platz antippen: Beta auf 4|0 (${pl.Beta}), Raster wächst mit (bis ${await maxZ()})`);
 await page.click("[data-listen-fertig]"); await sleep(300);
-ok(!(await page.$("[data-listen-fertig]")), "„Fertig“ beendet das Verschieben");
+ok(!(await page.$("[data-listen-fertig]")) && await maxZ() === 4, `„Fertig“ beendet das Verschieben, freie Zeilen verschwinden (bis ${await maxZ()})`);
 
 // Reihenfolge auch im Quiz-Tab
 await clickText(".tab", "Quiz"); await sleep(300); await quizEinstellungen(page);
@@ -106,7 +108,7 @@ await clickText(".modal button", "Duplizieren", true);
 pl = await plaetze();
 console.log("     nach Duplizieren:", JSON.stringify(pl));
 const kopie = await page.evaluate(() => { const idx = JSON.parse(localStorage.getItem("vokabel_listen_index")); const k = idx.find(l => l.name === "Gamma (Kopie)"); const l = JSON.parse(localStorage.getItem("vokabel_liste_" + k.id)); const orig = JSON.parse(localStorage.getItem("vokabel_liste_l_c")); return { origScore: orig.vokabeln[0].fortschritt?.score, id: k.id, n: l.vokabeln.length, score: l.vokabeln[0].fortschritt?.score, sprache: l.sprache }; });
-ok(pl["Gamma (Kopie)"] === "6|0" && kopie.id !== "l_c" && kopie.n === 1 && kopie.score === undefined && kopie.sprache === "en", "Kopie untereinander unter der untersten Liste (6|0), mit Vokabeln, Lernstand neu");
+ok(pl["Gamma (Kopie)"] === "5|0" && kopie.id !== "l_c" && kopie.n === 1 && kopie.score === undefined && kopie.sprache === "en", "Kopie untereinander unter der untersten Liste (5|0), mit Vokabeln, Lernstand neu");
 ok(kopie.origScore === 2, "Original behält seinen Lernstand");
 
 // Lernstand zurücksetzen: nur Übersetzung, Diktat bleibt
@@ -140,7 +142,7 @@ await page.evaluate(() => document.querySelector(".topbar-back")?.click()); awai
 // Einstellungen → Listen: 2 Spalten
 await clickText(".tab", "Einstellungen"); await oeffneEinst("raster");
 await page.evaluate(() => document.querySelector('[data-listen-raster-spalten="2"]').click()); await sleep(200);
-ok(await page.evaluate(() => document.querySelector("[data-listen-raster-zeilen]").textContent.trim()) === "10", "Einstellungen → Listen: Raster 10 Zeilen");
+ok(!(await page.$("[data-listen-raster-zeilen]")), "Einstellungen → Listen: keine Zeilen-Einstellung mehr (nur Spalten)");
 await zuListen(page);
 pl = await plaetze();
 const spalten = await page.evaluate(() => getComputedStyle(document.querySelector(".listen-raster")).gridTemplateColumns.split(" ").length);

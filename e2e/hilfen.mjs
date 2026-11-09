@@ -27,7 +27,7 @@ export async function listenZu(page) {
 export async function bereichZu(page) {
   const zu = await page.evaluate(() => {
     const o = document.querySelector("[data-quiz-offen]")?.dataset.quizOffen;
-    if (o === "einzel") { const b = [...document.querySelectorAll(".toggle-opt")].find(b => b.textContent.trim() === "Bereich"); b?.click(); return !!b; }
+    if (o === "einzel") { const b = document.querySelector("[data-vok-bestaetigen]"); b?.click(); return !!b; }
     const sel = { modus: "[data-abfragemodus]", reihenfolge: "[data-reihenfolge]", umfang: "[data-umfang]", ziel: "[data-abfrageziel]", listen: ".liste-detail-header .zeile-rechts" }[o];
     const k = sel && document.querySelector(sel); k?.click(); return !!k;
   });

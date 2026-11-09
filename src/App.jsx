@@ -88,11 +88,13 @@ const SLOT_ZU_VERZOEGERUNG = 400;   // ms: gewählte Kachel kurz sichtbar, dann 
 function defaultSlots() { return { verlauf: [], gespeichert: [] }; }
 function neuerSlotId(typ) { return `${typ}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`; }
 // ── Raster der gespeicherten Konfigurationen und der Listen: jeder Eintrag hat einen Platz {z, s} ──
-const RASTER_MAX_SPALTEN = 4, RASTER_MAX_ZEILEN = 100;
+// Zeilen gibt es nicht als Einstellung: das Raster ist nach unten offen; beim Verschieben stehen unter dem
+// untersten Eintrag immer RASTER_FREI_ZEILEN freie Zeilen bereit (wachsen mit, verschwinden danach wieder)
+const RASTER_MAX_SPALTEN = 4, RASTER_ZEILEN_OFFEN = 100000, RASTER_FREI_ZEILEN = 2;
 function rasterGroesse(einst, schluessel = "slotRaster") {
   const r = einst?.[schluessel] || {};
   const spalten = r.spalten ?? (schluessel === "listenRaster" ? 1 : 2);
-  return { zeilen: Math.min(RASTER_MAX_ZEILEN, Math.max(1, r.zeilen ?? 10)), spalten: Math.min(RASTER_MAX_SPALTEN, Math.max(1, spalten)) };
+  return { zeilen: RASTER_ZEILEN_OFFEN, spalten: Math.min(RASTER_MAX_SPALTEN, Math.max(1, spalten)) };
 }
 const nachPlatz = (a, b) => a.platz.z - b.platz.z || a.platz.s - b.platz.s;
 // Liste in Session-Gruppen aufteilen: Nummern von..bis (1-basiert) in Gruppen zu je groesse;
@@ -5291,15 +5293,14 @@ export default function VokabelApp() {
     </div>, document.body) : null;
 
   // Einstellung der Rastergröße (gespeicherte Konfigurationen bzw. Listen)
-  function rasterEinstellung(g, anzahl, setze, sub, hinweis, art) {
-    const minZeilen = Math.max(1, Math.ceil(anzahl / g.spalten));
+  function rasterEinstellung(g, setze, sub, hinweis, art) {
     const attr = (name, wert) => ({ [`data-${art ? art + "-" : ""}raster-${name}`]: wert });
     return (
       <div className="karte">
         <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:8}}>
           <div>
             <div className="karte-zeile-name">Raster</div>
-            <div className="karte-zeile-sub">{g.zeilen} Zeilen × {g.spalten} Spalten – {sub}</div>
+            <div className="karte-zeile-sub">{g.spalten} Spalte{g.spalten > 1 ? "n" : ""} – {sub}</div>
           </div>
           <div style={{display:"flex", alignItems:"center", gap:6, flexWrap:"wrap"}}>
             <span style={{fontSize:"0.8rem", color:"var(--text2)", minWidth:56}}>Spalten</span>
@@ -5308,16 +5309,6 @@ export default function VokabelApp() {
                 onClick={() => setze(g.zeilen, n)}
                 {...tt(`${n} Spalte${n > 1 ? "n" : ""} nebeneinander (höchstens 4)`)}>{n}</button>
             ))}
-          </div>
-          <div style={{display:"flex", alignItems:"center", gap:6}}>
-            <span style={{fontSize:"0.8rem", color:"var(--text2)", minWidth:56}}>Zeilen</span>
-            <button className="toggle-opt" disabled={g.zeilen <= minZeilen} onClick={() => setze(g.zeilen - 1, g.spalten)}
-              {...tt("Eine Zeile weniger – nur bis alle Einträge noch Platz haben")}>−</button>
-            <span {...attr("zeilen", true)} style={{minWidth:32, textAlign:"center", fontWeight:700}}>{g.zeilen}</span>
-            <button className="toggle-opt" disabled={g.zeilen >= RASTER_MAX_ZEILEN} onClick={() => setze(g.zeilen + 1, g.spalten)}
-              {...tt("Eine Zeile mehr (höchstens 100)")}>+</button>
-            <button className="toggle-opt" disabled={g.zeilen >= RASTER_MAX_ZEILEN} onClick={() => setze(Math.min(RASTER_MAX_ZEILEN, g.zeilen + 10), g.spalten)}
-              {...tt("Zehn Zeilen mehr")}>+10</button>
           </div>
           <div style={{fontSize:"0.72rem", color:"var(--text3)"}}>{hinweis}</div>
         </div>
@@ -5437,7 +5428,7 @@ export default function VokabelApp() {
     } else {
       const platzMap = new Map(listenIndex.filter(l => l.platz).map(l => [`${l.platz.z}|${l.platz.s}`, l]));
       const belegtBis = listenIndex.reduce((m, l) => Math.max(m, (l.platz?.z ?? 0) + 1), 0);
-      const zeilenAnzeige = sortModus ? Math.max(groesse.zeilen, belegtBis) : belegtBis;
+      const zeilenAnzeige = sortModus ? belegtBis + RASTER_FREI_ZEILEN : belegtBis;
       for (let z = 0; z < zeilenAnzeige; z++) for (let sp = 0; sp < groesse.spalten; sp++) {
         const key = `${z}|${sp}`;
         const l = platzMap.get(key);
@@ -5606,7 +5597,8 @@ export default function VokabelApp() {
     const sichtbarE = x => x.istOrdner ? (sprachFilter === "alle" || kinderVon(x.id).length === 0 || kinderVon(x.id).some(slotSichtbar)) : slotSichtbar(x);
     const platzMap = new Map(raster.gespeichert.map(x => [`${x.platz.z}|${x.platz.s}`, x]));
     const sichtbar = raster.gespeichert.filter(x => sichtbarE(x) && !x.istOrdner);
-    const zeilenAnzeige = slotSortModus ? raster.zeilen : raster.gespeichert.filter(sichtbarE).reduce((m, x) => Math.max(m, x.platz.z + 1), 0);
+    const zeilenAnzeige = slotSortModus ? raster.gespeichert.reduce((m, x) => Math.max(m, x.platz.z + 1), 0) + RASTER_FREI_ZEILEN
+      : raster.gespeichert.filter(sichtbarE).reduce((m, x) => Math.max(m, x.platz.z + 1), 0);
     const sfVon = x => slotSFAlle(x)[aktiverSlot?.id === x.id ? quizAbfrageArt : slotKonfigArt(x)];
     // Auswahl-Modus: Aktionen für die Auswahl (Lang-Druck auf eine nicht gewählte Kachel nimmt sie dazu)
     const wahlMit = x => multiAuswahl.includes(x.id) ? multiAuswahl : [...multiAuswahl, x.id];
@@ -8207,12 +8199,19 @@ export default function VokabelApp() {
                       <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                         {n === 0 ? (
                           <span data-listen-hinweis style={{fontSize:"0.85rem", fontWeight:600, color:"var(--text3)", padding:"6px 4px"}}
-                            {...tt("Liste(n) unten antippen – danach steht hier ihr Name; antippen klappt die Auswahl zu")}>Liste auswählen</span>
+                            {...tt("Liste(n) unten antippen – danach steht hier „Bestätigen“")}>Bitte Liste auswählen</span>
+                        ) : listenAuswahlAufgeklappt ? (
+                          <button data-listen-bestaetigen
+                            className="toggle-opt aktiv zeile-rechts"
+                            onClick={toggleListenAuswahl}
+                            {...tt("Auswahl bestätigen – klappt die Listen-Auswahl zu; danach steht hier der Name der Auswahl")}>
+                            Bestätigen
+                          </button>
                         ) : (
                           <button
                             className="toggle-opt aktiv zeile-rechts"
                             onClick={toggleListenAuswahl}
-                            {...tt("Gewählte Listen – antippen klappt die Listen-Auswahl auf bzw. zu")}>
+                            {...tt("Gewählte Listen – antippen öffnet die Listen-Auswahl")}>
                             {chipText}
                           </button>
                         )}
@@ -8296,6 +8295,13 @@ export default function VokabelApp() {
                       {...tt(quizBereichTyp === "bereich" ? "Anzahl der im Bereich ausgewählten Vokabeln" : "Anzahl der Vokabeln, die zur Auswahl stehen (alle Vokabeln der Listen mit den gewählten Spalten)")}>({quizGefilterteVoks.length} V.)</span>
                     {/* RECHTS */}
                     <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
+                      {quizBereichTyp === "bereich" && quizListeAufgeklappt ? (
+                        <button data-vok-bestaetigen className="toggle-opt aktiv zeile-rechts"
+                          onClick={() => { if (quizCheckboxAuswahl.size === 0) setQuizBereichTyp("alle"); setQuizListeAufgeklappt(false); }}
+                          {...tt("Auswahl bestätigen – schließt die Vokabelliste (nichts angehakt: wieder alle Vokabeln)")}>
+                          Bestätigen
+                        </button>
+                      ) : (
                       <div className="toggle-btn zeile-rechts">
                         <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
                           onClick={() => { setQuizBereichTyp("alle"); setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}
@@ -8307,10 +8313,11 @@ export default function VokabelApp() {
                             if (quizBereichTyp !== "bereich") { setQuizBereichTyp("bereich"); if (quizCheckboxAuswahl.size === 0) { schliesseQuizBereiche("einzel"); setQuizListeAufgeklappt(true); } }
                             else { toggleEinzelauswahl(); }
                           }}
-                          {...tt("Einzelne Vokabeln per Checkbox oder Von–Bis-Bereich auswählen")}>
+                          {...tt("Einzelne Vokabeln per Checkbox oder Von–Bis-Bereich auswählen – antippen öffnet die Vokabelliste")}>
                           Bereich
                         </button>
                       </div>
+                      )}
                     </span>
                     </>)}
                   </div>
@@ -9643,7 +9650,7 @@ export default function VokabelApp() {
               </div>
               {[
                 {titel:"Listen (Einstellungen › Listen)", inhalt:[
-                  {k:"Übersicht", v:"Einstellungen › Listen zeigt alle Vokabellisten in einem Raster (Größe unter Einstellungen → Raster, bis 100 Zeilen × 4 Spalten). Tippe eine Liste an, um sie bildschirmfüllend zu öffnen; der Pfeil oben links führt zurück. „+ Neu“ öffnet den Import. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „☑ Auswählen“, „In Sessions aufteilen“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. „In Sessions aufteilen“ öffnet den Quiz-Tab mit dieser Liste und einem gelben Kasten: Name (vorgegeben: Listenname), Gruppengröße (10, 20, 25, 50, 75, 100 oder eigene), Bereich von–bis (Vokabel-Nummern) und bei Rest „eigene Gruppe“ oder „an letzte anhängen“; die Vorschau zeigt die Namen, z. B. „Verbes (21 - 40)“. Darunter alle Einstellungen wie gewohnt wählen, dann „Sessions anlegen“: je Gruppe eine gespeicherte Konfiguration, untereinander in der ersten Spalte unter dem untersten Eintrag. Namen, die es schon gibt, werden übersprungen. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Im Verschieben-Modus lassen sich mehrere Listen markieren und gemeinsam verschieben. „☑ Auswählen“ startet den Auswahl-Modus: weitere Listen antippen (nummeriert, nochmal antippen nimmt heraus, „Alle“ wählt alle sichtbaren, „Fertig“ beendet); lang drücken zeigt dann die Aktionen für die ganze Auswahl – „JSON exportieren“, „TXT exportieren“ (Dateiname änderbar), „📋 Kopieren“, „⇄ Verschieben“, „🗑 Löschen“ (Rückfrage mit allen Namen, „Vorher sichern“) und „Auswahl beenden“. Lang drücken auf eine nicht gewählte Liste nimmt sie dazu. Neue Listen (auch per Import) kommen untereinander in die erste Spalte. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
+                  {k:"Übersicht", v:"Einstellungen › Listen zeigt alle Vokabellisten in einem Raster (Spalten unter Einstellungen → Raster, bis 4; Zeilen wachsen von selbst, beim Verschieben stehen unten immer zwei freie Zeilen bereit). Tippe eine Liste an, um sie bildschirmfüllend zu öffnen; der Pfeil oben links führt zurück. „+ Neu“ öffnet den Import. Lang drücken zeigt den vollen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie mit allen Vokabeln, Lernstände beginnen neu), „Verschieben“, „☑ Auswählen“, „In Sessions aufteilen“, „Lernstand zurücksetzen“ (Scores für Übersetzung, Diktat und/oder Akzente löschen, mit Rückfrage) und „Löschen“. „In Sessions aufteilen“ öffnet den Quiz-Tab mit dieser Liste und einem gelben Kasten: Name (vorgegeben: Listenname), Gruppengröße (10, 20, 25, 50, 75, 100 oder eigene), Bereich von–bis (Vokabel-Nummern) und bei Rest „eigene Gruppe“ oder „an letzte anhängen“; die Vorschau zeigt die Namen, z. B. „Verbes (21 - 40)“. Darunter alle Einstellungen wie gewohnt wählen, dann „Sessions anlegen“: je Gruppe eine gespeicherte Konfiguration, untereinander in der ersten Spalte unter dem untersten Eintrag. Namen, die es schon gibt, werden übersprungen. Lang drücken und ziehen verschiebt die Liste direkt; auf einem belegten Platz tauschen die beiden. Im Verschieben-Modus lassen sich mehrere Listen markieren und gemeinsam verschieben. „☑ Auswählen“ startet den Auswahl-Modus: weitere Listen antippen (nummeriert, nochmal antippen nimmt heraus, „Alle“ wählt alle sichtbaren, „Fertig“ beendet); lang drücken zeigt dann die Aktionen für die ganze Auswahl – „JSON exportieren“, „TXT exportieren“ (Dateiname änderbar), „📋 Kopieren“, „⇄ Verschieben“, „🗑 Löschen“ (Rückfrage mit allen Namen, „Vorher sichern“) und „Auswahl beenden“. Lang drücken auf eine nicht gewählte Liste nimmt sie dazu. Neue Listen (auch per Import) kommen untereinander in die erste Spalte. Die Reihenfolge gilt auch in Quiz- und Statistik-Tab. Mit Sprachfilter rücken die sichtbaren Listen zusammen – verschoben wird unter „Alle“."},
                   {k:"[+] Neue Liste", v:"Legt eine leere Liste mit eigenem Namen an."},
                   {k:"💾 Alles sichern", v:"Einstellungen → Listen → Sicherung: eine Datei (Vorschlag „Vokabel-App Sicherung Datum.txt“, Name änderbar) mit allem – Listen mit Scores, Einstellungen, Farben, gespeicherte Quiz. Der Browser kann gespeicherte Daten löschen (Speicher aufräumen, Browserdaten löschen); mit der Datei holst du alles zurück: „Laden“ in den Einstellungen oder als Datei im Import („Alles wiederherstellen“). Oben in der Session-Auswahl (Quiz-Tab) erinnert die App, wenn die letzte Sicherung älter ist als eingestellt (Standard 7 Tage)."},
                   {k:"▲/▼ Aktionszeile", v:"Öffnet Aktionen zur Liste: Kopieren, JSON, TXT, Löschen. JSON = vollständige Sicherung mit Lernstand (Vorschlag „Name - JSON.txt“), TXT = nur die Vokabeln als Text ohne Scores (Vorschlag „Name - TXT.txt“); den Dateinamen kannst du vor dem Speichern ändern. Auf iPad/iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, Mail, AirDrop), sonst wird die Datei heruntergeladen. Beim Import ist die Endung egal – die App erkennt den Inhalt."},
@@ -9659,13 +9666,13 @@ export default function VokabelApp() {
                   {k:"Import", v:"Vokabeln aus einer TXT-Datei oder JSON-Datei importieren."},
                 ]},
                 {titel:"Quiz-Tab", inhalt:[
-                  {k:"Kopfzeile (Session-Auswahl)", v:"Oben im Tab steht der Name der geladenen Session („Neu“, wenn keine geladen ist). Die App startet in der Auswahl: gespeicherte Sessions und Verlauf – die Einstellungen darunter sind dann ausgeblendet. Antippen des Namens schaltet um zwischen Auswahl und Einstellungen (kein Aufklappen); eine Session antippen lädt sie und zeigt ihre Einstellungen. In der Auswahl stehen rechts die Kreise Ü, D und A und darunter eine Info-Zeile (z. B. „Englisch 6 · Nr. 1–25 · 25 Vokabeln“); eine gespeicherte Konfiguration erscheint dann in einer grünen Kopfzeile. Lang drücken auf den Namen: „Speichern“. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt. Gespeicherte Konfigurationen liegen in einem Raster (Größe unter Einstellungen → Raster, bis 100 Zeilen × 4 Spalten); jede Kachel zeigt unten einen Balken mit dem Lernfortschritt Übersetzung (✓ bei 100 %), die geladene Kachel ist in der Hauptfarbe gefüllt. Lang drücken auf eine Kachel zeigt den vollständigen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie unter neuem Namen, mit eigenem Fortschritt), „Verschieben“, „Listen/Vokabeln ändern“ und „Löschen“. „Verschieben“: Einträge antippen markiert sie (nummeriert, mehrere möglich), ein freier Platz setzt die markierten dort untereinander ein; oder direkt ziehen – ein markierter Eintrag nimmt alle markierten mit, auf einem belegten Platz rücken die Einträge auf die frei gewordenen Plätze (einzeln: die beiden tauschen); „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt untereinander in die erste Spalte unter den untersten Eintrag; das Raster wächst bei Bedarf."},
+                  {k:"Kopfzeile (Session-Auswahl)", v:"Oben im Tab steht der Name der geladenen Session („Neu“, wenn keine geladen ist). Die App startet in der Auswahl: gespeicherte Sessions und Verlauf – die Einstellungen darunter sind dann ausgeblendet. Antippen des Namens schaltet um zwischen Auswahl und Einstellungen (kein Aufklappen); eine Session antippen lädt sie und zeigt ihre Einstellungen. In der Auswahl stehen rechts die Kreise Ü, D und A und darunter eine Info-Zeile (z. B. „Englisch 6 · Nr. 1–25 · 25 Vokabeln“); eine gespeicherte Konfiguration erscheint dann in einer grünen Kopfzeile. Lang drücken auf den Namen: „Speichern“. Jede Konfiguration führt für Übersetzung, Diktat und Akzente einen eigenen Paket-Fortschritt. Gespeicherte Konfigurationen liegen in einem Raster (Spalten unter Einstellungen → Raster, bis 4; Zeilen wachsen von selbst, beim Verschieben stehen unten immer zwei freie Zeilen bereit); jede Kachel zeigt unten einen Balken mit dem Lernfortschritt Übersetzung (✓ bei 100 %), die geladene Kachel ist in der Hauptfarbe gefüllt. Lang drücken auf eine Kachel zeigt den vollständigen Namen und darunter „Umbenennen“, „Duplizieren“ (Kopie unter neuem Namen, mit eigenem Fortschritt), „Verschieben“, „Listen/Vokabeln ändern“ und „Löschen“. „Verschieben“: Einträge antippen markiert sie (nummeriert, mehrere möglich), ein freier Platz setzt die markierten dort untereinander ein; oder direkt ziehen – ein markierter Eintrag nimmt alle markierten mit, auf einem belegten Platz rücken die Einträge auf die frei gewordenen Plätze (einzeln: die beiden tauschen); „Fertig“ beendet das Verschieben. Neu Gespeichertes kommt untereinander in die erste Spalte unter den untersten Eintrag; das Raster wächst bei Bedarf."},
                   {k:"📁 Gruppen", v:"Sessions lassen sich in Gruppen (Ordner) zusammenfassen: lang drücken → „📁 In Gruppe…“ (vorhandene Gruppe oder neue mit Namen), im Auswahl-Modus für mehrere auf einmal, oder eine Session auf eine Gruppen-Kachel ziehen. Eine Gruppen-Kachel zeigt 📁, Namen, Anzahl und den mittleren Lernfortschritt; antippen öffnet sie, oben führt „← Alle Sessions“ zurück. In der Gruppe: lang drücken → „↑ Aus der Gruppe“. Lang drücken auf die Gruppe: Öffnen, „🧩 Multiquiz der Gruppe“, Umbenennen, Verschieben, „Gruppe auflösen“ (die Sessions kommen zurück). „Mehrere Sessions“ (Aufteilen) legt die neuen Sessions auf Wunsch gleich in eine Gruppe. Gilt auch im Statistik-Tab."},
                   {k:"＋ Neue Session aus Listen", v:"Oben in der Auswahl. „Eine Session“: Listen und Vokabeln wählen, dann wie gewohnt einstellen und starten (lang auf den Namen drücken → Speichern). „Mehrere Sessions“: eine Liste wählen und in Pakete aufteilen (Name, Gruppengröße, Bereich von–bis, Rest) – je Paket eine gespeicherte Session."},
                   {k:"Slot laden", v:"Tippe auf einen Chip, um eine gespeicherte Konfiguration (Listen, Vokabelauswahl, Einstellungen) zu laden."},
-                  {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl. Ist eine gespeicherte Konfiguration geladen, sind Listen- und Vokabel-Auswahl festgelegt und ausgeblendet – zum Ändern lang auf die Kachel drücken und „Listen/Vokabeln ändern“ wählen."},
+                  {k:"Listen-Auswahl", v:"Wähle eine oder mehrere Listen für das Quiz. [Alle] wählt alle Listen, [X] leert die Auswahl. Ohne Liste steht oben rechts „Bitte Liste auswählen“; ist eine gewählt, schließt „Bestätigen“ die Auswahl – danach steht dort ihr Name (bzw. „n Listen“), antippen öffnet sie wieder. Ist eine gespeicherte Konfiguration geladen, sind Listen- und Vokabel-Auswahl festgelegt und ausgeblendet – zum Ändern lang auf die Kachel drücken und „Listen/Vokabeln ändern“ wählen."},
                   {k:"Vokabel-Auswahl [Alle]", v:"Alle Vokabeln der gewählten Listen werden abgefragt."},
-                  {k:"Vokabel-Auswahl [Bereich]", v:"Öffnet eine Checkbox-Liste. Einzelne Vokabeln an-/abwählen. [Von–Bis] ermöglicht Bereichsauswahl per 2 Klicks – oder lang auf die erste Vokabel drücken und die letzte antippen. Solange die Liste offen ist, ist der Rest der Session ausgeblendet; „Bereich“ antippen schließt die Liste."},
+                  {k:"Vokabel-Auswahl [Bereich]", v:"Öffnet eine Checkbox-Liste. Einzelne Vokabeln an-/abwählen. [Von–Bis] ermöglicht Bereichsauswahl per 2 Klicks – oder lang auf die erste Vokabel drücken und die letzte antippen. Solange die Liste offen ist, ist der Rest der Session ausgeblendet; „Bestätigen“ oben rechts schließt die Liste (ist nichts angehakt, gilt wieder „Alle“), „Bereich“ öffnet sie wieder."},
                   {k:"Ü | D | A", v:"Abfrageart: Übersetzung, Diktat oder Akzente. Die Kreise unten über „Quiz mit … Vokabeln“ zeigen den Lernfortschritt der Auswahl je Art – die gewählte Art groß mit Name und Prozent, die anderen kleiner; antippen schaltet die Art um (auch über die Kreise der aufgeklappten Kopfzeile). In der Statistik wechselt man die Art über die Mitte des großen Kreisdiagramms. Eine Art ohne passende Vokabeln wird nicht angezeigt. Auch die Listen unter Einstellungen › Listen zeigen die drei Kreise. Jede Art hat eigene Einstellungen (Spalten, Modus, Reihenfolge …), einen eigenen Session-Fortschritt und eigene Scores; beim Umschalten bleiben die Einstellungen der anderen Arten erhalten und werden mit der Konfiguration gespeichert. Übersetzung: Frage–Antwort (feste Frage-Spalte) oder wechselnd, je Antwortspalte Karte, MC, Tastatur und (bei Sprachen mit Akzenten) Akzente – mehrere angehakt heißt „Gemischt“: je Frage und Spalte wird zufällig eine der Arten gewählt, Akzente nur bei Wörtern mit Akzent; sie zählen dann für den Übersetzungs-Score. Diktat: Wort wird vorgelesen, du tippst die Lösung. Akzente: nur Fremdsprachen-Spalten als Antwort, immer im Akzente-Modus."},
                   {k:"Akzente", v:"Eigene Abfrageart (A): Das Wort steht ohne Akzente in großen Buchstaben da. Buchstaben antippen und darunter den richtigen Akzent wählen (é è ê ë, ç, à, œ …). Richtige Akzente werden sofort grün, ein Buchstabe ohne Akzent oder eine falsche Variante leuchtet kurz rot. Sind alle Akzente richtig, wird die Antwort automatisch übernommen oder mit „Prüfen“ bestätigt (je nach Schwierigkeitsgrad). Nach einem Fehlgriff zählt die Vokabel als nicht gewusst. Eigener Akzent-Score (+1 richtig, −1 falsch). Ob auch Wörter ohne Akzent abgefragt werden, legst du beim Schwierigkeitsgrad fest."},
                   {k:"Zeile 1: Stufe · Modus · Reihenfolge", v:"Erster Knopf: Stufe Lernen, Leicht oder Schwer – antippen wechselt der Reihe nach. Zweiter Knopf: Abfrage-Modus der gewählten Art (z. B. „Karte“) – antippen öffnet die Spalten- und Modus-Einstellungen. Dritter Knopf: Reihenfolge – „Zufällige Reihenfolge“, „Schlechteste zuerst“ (nach Score sortiert) oder „Nach Listen-Platz“ (Originalreihenfolge), dazu Score-Filter und „Unbeantwortete zuerst“. Es ist immer nur ein Bereich offen. Ein neues Quiz (ohne geladene Konfiguration) beginnt immer in Übersetzung. Lang drücken: „Regeln Leicht / Schwer“, bei Lernen „Lernen einstellen“ und „Vorlesen“."},
@@ -9840,11 +9847,11 @@ export default function VokabelApp() {
             {einstKopf("raster", "Raster", "Plätze für Sessions und Listen")}
             {einstBereich === "raster" && (<div className="einst-inhalt">
             <div className="sektion-label einst-unterkopf">Sessions (gespeicherte Konfigurationen)</div>
-            {rasterEinstellung(rasterGroesse(einstellungen), slots.gespeichert.length, setzeRasterGroesse,
-              "Plätze für gespeicherte Konfigurationen im Quiz- und Statistik-Tab", "Ist das Raster beim Speichern voll, kommt automatisch eine Zeile dazu.", "")}
+            {rasterEinstellung(rasterGroesse(einstellungen), setzeRasterGroesse,
+              "Plätze für gespeicherte Konfigurationen im Quiz- und Statistik-Tab", "Zeilen wachsen von selbst: beim Verschieben stehen unten immer zwei freie Zeilen bereit.", "")}
             <div className="sektion-label einst-unterkopf">Listen</div>
-            {rasterEinstellung(rasterGroesse(einstellungen, "listenRaster"), listenIndex.length, setzeListenRasterGroesse,
-              "Plätze der Listen unter Einstellungen › Listen – die Reihenfolge gilt in der ganzen App", "Ist das Raster bei einer neuen Liste voll, kommt automatisch eine Zeile dazu.", "listen")}
+            {rasterEinstellung(rasterGroesse(einstellungen, "listenRaster"), setzeListenRasterGroesse,
+              "Plätze der Listen unter Einstellungen › Listen – die Reihenfolge gilt in der ganzen App", "Zeilen wachsen von selbst: beim Verschieben stehen unten immer zwei freie Zeilen bereit.", "listen")}
             </div>)}
             {einstKopf("app", "App", "Aktualisieren, Farbschema, Info")}
             {einstBereich === "app" && (<div className="einst-inhalt">

@@ -53,7 +53,7 @@ await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 await clickText("button", "Bereich", true);
 await page.evaluate(() => [...document.querySelectorAll(".vok-nr")].slice(0, 2).forEach(z => z.parentElement.click()));
 await sleep(300);
-await clickText("button", "Bereich", true); await sleep(300);   // Liste zu → Session-Optionen wieder sichtbar
+await page.click("[data-vok-bestaetigen]"); await sleep(300);   // Liste zu → Session-Optionen wieder sichtbar
 await page.click("[data-reihenfolge]"); await sleep(300);
 await clickText(".toggle-opt", "Zufällig", true);
 await bereichZu(page);   // Reihenfolge zu → Start wieder sichtbar

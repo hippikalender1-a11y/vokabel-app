@@ -26,12 +26,13 @@ const clickText = async (sel, text, exact = false) => {
   await sleep(300);
 };
 // Kopfzeile: Zustand + Name; Listen-Chip (rechte Spalte der Listen-Auswahl)
-const stand = () => page.evaluate(() => {
+const stand = async () => { if (await page.evaluate(() => { const b = document.querySelector("[data-listen-bestaetigen]"); b?.click(); return !!b; })) await sleep(300);   // offene Listen-Auswahl: erst bestätigen, dann steht der Name da
+  return page.evaluate(() => {
   const k = document.querySelector("[data-slot-kopf]");
   const listen = [...document.querySelectorAll("button.zeile-rechts")].find(b => /Listen für|Gewählte Listen/.test(b.getAttribute("title") || ""));
   // gespeicherte Konfiguration: Listen-Auswahl ausgeblendet
   return { kopf: k?.dataset.slotKopf, name: k?.querySelector("button.toggle-opt.aktiv")?.textContent.trim(), listen: listen ? listen.textContent.trim() : "(ausgeblendet)" };
-});
+}); };
 const oeffneKopf = async () => { await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300); };
 
 await page.goto(URL);

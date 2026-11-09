@@ -1904,6 +1904,13 @@ QUIZ-FOKUS: quizFokus = "listen" | "einzel" | "zeile1" (Modus/Reihenfolge) | "ze
   Fokuswechsel → scrollTo(0,0); Höhen-Effekte (alleBereichH, abfrageModusH, sessionH) hängen an quizFokus (Zeilen werden
   neu eingehängt). listenAuswahlAufgeklappt startet false (ohne Liste öffnet der Effekt sie). Sektion trägt
   data-quiz-fokus / data-quiz-offen (Tests: hilfen.mjs listenZu, bereichZu; clickText-Fallback klappt offenen Bereich zu).
+BESTÄTIGEN-KNÖPFE: Listen-Kopf rechts – keine Liste: Hinweis „Bitte Liste auswählen“ (data-listen-hinweis); Auswahl offen:
+  „Bestätigen“ (data-listen-bestaetigen, klappt zu); zu: Name bzw. „n Listen“ (öffnet). Vokabelliste (Bereich) offen: rechts
+  „Bestätigen“ (data-vok-bestaetigen) statt „Alle | Bereich“; schließt die Liste, nichts angehakt → wieder „Alle“; „Bereich“
+  öffnet sie wieder. hilfen.mjs bereichZu klickt data-vok-bestaetigen.
+RASTER OHNE ZEILEN-EINSTELLUNG: rasterGroesse liefert zeilen = RASTER_ZEILEN_OFFEN (100000, gespeicherte Zeilen werden
+  ignoriert); Einstellung zeigt nur Spalten. Verschieben-Modus (Listen und Sessions, auch in Gruppen) zeigt belegte Zeilen
+  + RASTER_FREI_ZEILEN (2) freie; setzt man etwas hinein, wachsen sie mit, nach „Fertig“ nur belegte Zeilen.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

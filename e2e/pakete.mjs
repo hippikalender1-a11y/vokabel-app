@@ -66,7 +66,7 @@ if (start === "preset") {
     zeilen.forEach(z => z.parentElement.click());
   });
   await sleep(300);
-  await clickText("button", "Bereich", true); await sleep(300);   // Liste zu → Session-Optionen wieder sichtbar
+  await page.click("[data-vok-bestaetigen]"); await sleep(300);   // Liste zu → Session-Optionen wieder sichtbar
 }
 await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await sleep(300);
 await page.click('[data-umfang-wahl="5"]'); await sleep(300);
