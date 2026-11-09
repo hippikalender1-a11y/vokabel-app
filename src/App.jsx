@@ -316,14 +316,40 @@ if (typeof window !== "undefined" && window.speechSynthesis) {
   ladeStimmen();
   window.speechSynthesis.addEventListener?.("voiceschanged", ladeStimmen);
 }
-// Gewählte Stimme je Sprache ({ sprachen: { de: voiceURI, … }, tempo }) – je Gerät, fehlt sie: automatisch
+// Vorlesen je Gerät: { sprachen: { de: voiceURI }, variante: { en: "en-GB" }, aus: { en: [voiceURI…] },
+// tempoSprache: { de: 1.2 }, tempo: Gesamt-Multiplikator } – fehlt etwas: automatisch
 const STIMMEN_KEY = "geraet_stimmen";
 let STIMMEN_WAHL = (() => { try { return JSON.parse(localStorage.getItem(STIMMEN_KEY)) || {}; } catch { return {}; } })();
 function setzeStimmenWahl(neu) { STIMMEN_WAHL = neu; try { localStorage.setItem(STIMMEN_KEY, JSON.stringify(neu)); } catch { /* egal */ } }
 // Spaß-/Effekt-Stimmen (iOS/macOS) nicht anbieten
 const STIMMEN_NOVELTY = /bad news|boing|bubbles|cellos|good news|jester|organ|trinoids|whisper|zarvox|albert|deranged|fred|hysterical|junior|kathy|princess|ralph|wobble|superstar|bells/i;
 const stimmenFuerSprache = basis => { if (!STIMMEN.length) ladeStimmen(); return STIMMEN.filter(v => (v.lang || "").toLowerCase().replace("_", "-").split("-")[0] === basis && !STIMMEN_NOVELTY.test(v.name)); };
-const gewaehlteStimme = basis => { const uri = STIMMEN_WAHL.sprachen?.[basis]; return uri ? stimmenFuerSprache(basis).find(v => v.voiceURI === uri) || null : null; };
+const normLang = x => (x || "").toLowerCase().replace("_", "-");
+// Varianten einer Sprache (en-GB, en-US …), die das Gerät hat
+const stimmenVarianten = basis => [...new Set(stimmenFuerSprache(basis).map(v => normLang(v.lang)))].sort();
+// Stimmen der gewählten Variante ohne die abgeschalteten
+const aktiveStimmen = basis => {
+  const vr = STIMMEN_WAHL.variante?.[basis], aus = STIMMEN_WAHL.aus?.[basis] || [];
+  return stimmenFuerSprache(basis).filter(v => (!vr || normLang(v.lang) === vr) && !aus.includes(v.voiceURI));
+};
+const gewaehlteStimme = basis => { const uri = STIMMEN_WAHL.sprachen?.[basis]; return uri ? aktiveStimmen(basis).find(v => v.voiceURI === uri) || null : null; };
+// Sprechtempo: Tempo der Sprache × Gesamt-Tempo
+const sprechTempo = basis => (STIMMEN_WAHL.tempoSprache?.[basis] || 1) * (STIMMEN_WAHL.tempo || 1);
+// nächste aktive Stimme der Sprache wird die eingestellte (für „🔁 Stimme“)
+function naechsteStimme(basis) {
+  const aktiv = aktiveStimmen(basis);
+  if (aktiv.length < 2) return aktiv[0] || null;
+  const jetzt = gewaehlteStimme(basis) || stimmeFuer(basis);
+  const neu = aktiv[(aktiv.indexOf(jetzt) + 1) % aktiv.length];
+  setzeStimmenWahl({ ...STIMMEN_WAHL, sprachen: { ...(STIMMEN_WAHL.sprachen || {}), [basis]: neu.voiceURI } });
+  return neu;
+}
+// Variante als Text mit Flagge: en-GB → 🇬🇧 Britisch
+const VARIANTE_NAMEN = { GB: "Britisch", US: "Amerikanisch", AU: "Australisch", IE: "Irisch", IN: "Indisch", ZA: "Südafrikanisch", NZ: "Neuseeland", CA: "Kanada",
+  FR: "Frankreich", BE: "Belgien", CH: "Schweiz", DE: "Deutschland", AT: "Österreich", ES: "Spanien", MX: "Mexiko", AR: "Argentinien", CO: "Kolumbien",
+  PT: "Portugal", BR: "Brasilien", IT: "Italien", NL: "Niederlande", RU: "Russland", TR: "Türkei", PL: "Polen", SG: "Singapur" };
+const varianteText = vr => { const r = (vr.split("-")[1] || "").toUpperCase(); const flagge = r.length === 2 ? String.fromCodePoint(...[...r].map(c => 127397 + c.charCodeAt(0))) : "";
+  return `${flagge} ${VARIANTE_NAMEN[r] || r || vr}`.trim(); };
 const STIMMEN_PROBE = { de: "Hallo! So klingt diese Stimme.", en: "Hello! This is how this voice sounds.", fr: "Bonjour ! Voici comment sonne cette voix.",
   es: "¡Hola! Así suena esta voz.", it: "Ciao! Ecco come suona questa voce.", nl: "Hallo! Zo klinkt deze stem.", pt: "Olá! É assim que esta voz soa.",
   ru: "Привет! Так звучит этот голос.", tr: "Merhaba! Bu ses böyle duyuluyor.", pl: "Cześć! Tak brzmi ten głos." };
@@ -333,17 +359,22 @@ function stimmeFuer(lang) {
   const l = norm(lang), basis = l.split("-")[0];
   const gewaehlt = gewaehlteStimme(basis);
   if (gewaehlt) return gewaehlt;
+  const wahl = liste => liste.find(v => v.default) || liste.find(v => v.localService) || liste[0];
+  const aktiv = aktiveStimmen(basis);
+  if (aktiv.length) return wahl(aktiv.filter(v => norm(v.lang) === l)) || wahl(aktiv);
   const exakt = STIMMEN.filter(v => norm(v.lang) === l);
   const gleich = STIMMEN.filter(v => norm(v.lang).split("-")[0] === basis);
-  const wahl = liste => liste.find(v => v.default) || liste.find(v => v.localService) || liste[0];
   return wahl(exakt) || wahl(gleich) || null;
 }
 function aeusserung(text, lang, stimme = null) {
   const u = new SpeechSynthesisUtterance(ohneHinweis(text) || text);
   u.lang = lang || "de-DE";
+  const basis = normLang(u.lang).split("-")[0];
+  if (STIMMEN_WAHL.variante?.[basis]) u.lang = STIMMEN_WAHL.variante[basis];
   const v = stimme || stimmeFuer(u.lang);
-  if (v) u.voice = v;
-  if (STIMMEN_WAHL.tempo) u.rate = STIMMEN_WAHL.tempo;
+  if (v) { u.voice = v; u.lang = v.lang || u.lang; }
+  const rate = sprechTempo(basis);
+  if (rate !== 1) u.rate = rate;
   return u;
 }
 // Reihenfolge der Abfrage (Quiz, Diktat, Lernen): Schlechteste / Zufällig / Listen-Nr., ggf. unbeantwortete zuerst
@@ -676,7 +707,7 @@ function istRichtigeAntwort(eingabe, wert, akzentTolerant = false) {
 }
 // Antwort-Modus, wenn für eine Spalte nichts festgelegt ist (Karte aufdecken)
 const STANDARD_ANTWORT_MODUS = "karte";
-const ANTWORT_MODUS_NAMEN = { karte: "Karte", mc: "MC", tippen: "Tastatur", akzent: "Akzente" };
+const ANTWORT_MODUS_NAMEN = { karte: "Karte", mc: "MC", tippen: "Tastatur", akzent: "Akzente", zuordnung: "Zuordnung" };
 // Abfrageart einer Quiz-Konfiguration: eigener Session-Fortschritt je Art
 function abfrageArtVon(modus, antwortTypen, spalteModus) {
   if (modus === "diktat") return "diktat";
@@ -737,7 +768,9 @@ const STANDARD_SESSION_MODUS = "pakete";
 const STANDARD_REIHENFOLGE = "schlechteste";
 const STANDARD_MAX_SCORE = "3";
 const STANDARD_UNBEANTWORTET_ZUERST = { zufall: true, schlechteste: true, listennr: true };
-const STANDARD_PAKET_GROESSE = 10;
+// „Alle“: ein Paket mit allen Vokabeln der Session (Fortschritt, Fortsetzen und Auswertung bleiben) – Standard
+const PAKET_ALLE = 10000;
+const STANDARD_PAKET_GROESSE = PAKET_ALLE;
 // Abfrage-Ziel-Standard: jede Vokabel wird wiederholt, bis sie 1× richtig war
 const STANDARD_ABFRAGE_ZIEL = "wiederholung";
 const AKZENT_HINWEIS = "Richtig – achte auf die Akzente.";
@@ -751,6 +784,8 @@ const STUFEN_REGELN = [
   { key: "akzentHervorheben", label: "Akzent-Modus: Buchstaben mit Akzent hervorheben", sub: "zeigt, wo ein Akzent hingehört; Tippen auf andere Buchstaben zählt dann nicht als Fehler", einfach: true, schwer: true },
   { key: "akzentZaehler", label: "Akzent-Modus: anzeigen, wie viele Akzente noch fehlen", sub: "z. B. „Akzente 2 / 3“", einfach: true, schwer: true },
   { key: "akzentAutoUebernahme", label: "Akzent-Modus: alle Akzente richtig → automatisch übernehmen", sub: "sonst muss man „Prüfen“ antippen", einfach: true, schwer: true },
+  { key: "zuordnungAbzug", label: "Zuordnung: Fehlgriff zieht 1 Punkt ab", sub: "bewertet wird die Vokabel der zuerst angetippten Karte", einfach: false, schwer: true },
+  { key: "zuordnungAmEnde", label: "Zuordnung: erst am Ende prüfen", sub: "Gruppen werden farbig markiert und mit „Prüfen“ ausgewertet; sonst wird jede Karte sofort geprüft", einfach: false, schwer: true },
 ];
 // Akzent-Modus mit Wörtern ohne Akzent: höchstens so viele (Faktor × Wörter mit Akzent) – je Stufe; "alle" = unbegrenzt
 const AKZENT_OHNE_ANTEILE = [[0.25, "¼×"], [0.5, "½×"], [1, "1×"], [2, "2×"], ["alle", "∞"]];
@@ -760,6 +795,17 @@ function akzentOhneAnteil(einst) {
   return w === "alle" ? null : w;
 }
 // Regeln der aktuell gewählten Stufe (gespeicherte Haken, sonst Standard)
+// Zuordnung je Stufe: Vokabeln je Runde, Zeitmodus (aus | runde | vokabel), Sekunden je Vokabel
+const ZUORDNUNG_ZEITEN = [["aus", "aus"], ["runde", "Runde"], ["vokabel", "je Vok."]];
+const ZUORDNUNG_SEKUNDEN = [3, 5, 8, 10, 15];
+// Gruppenfarben ohne Rot/Grün (die stehen für falsch/richtig)
+const ZUORDNUNG_FARBEN = ["#4363d8", "#f58231", "#911eb4", "#16a5c4", "#f032e6", "#9a6324", "#000075", "#808000", "#e377c2", "#469990", "#b8860b", "#7f7f7f"];
+const ZUORDNUNG_ZEITFAKTOR = { 2: 1, 3: 1.6, 4: 2 };
+function zuordnungEinst(einst) {
+  const stufe = einst?.modus === "einfach" ? "einfach" : "schwer";
+  const st = einst?.stufen?.[stufe] || {};
+  return { paare: st.zuordnungPaare ?? (stufe === "einfach" ? 5 : 7), zeit: st.zuordnungZeit ?? (stufe === "einfach" ? "aus" : "vokabel"), sek: st.zuordnungSek ?? 8 };
+}
 function stufenRegeln(einst) {
   const stufe = einst?.modus === "einfach" ? "einfach" : "schwer";
   return Object.fromEntries(STUFEN_REGELN.map(r => [r.key, einst?.stufen?.[stufe]?.[r.key] ?? r[stufe]]));
@@ -1092,6 +1138,83 @@ const FARB_VORLAGEN = [
     "abfrage-karte": "#fffaf6", "haupt-flaeche": "#efe0fa", "start": "#e8567a", "auf-start": "#fff", "kopf-offen": "#c39be3", "kopf-offen-schrift": "#2e1048",
     "text-stark": "#2a1426", "text": "#45283e", "text2": "#7d5e72", "text3": "#ad93a3", "richtig": "#3f9e7a", "falsch": "#d33c5a",
     "gelb": "#ffb547", "gelernt-effekt": "#ffd9a8", "orange": "#ff8a4c", "info": "#6a3d9a", "gelernt": "#6cbc96", "arbeit": "#ffc977", "nie": "#f1e1e0", "negativ": "#ee7f95" } },
+  // ── 19 experimentelle Vorlagen: kräftig farbige bzw. farbig-dunkle Hintergründe ──
+  { id: "senf", name: "Senf", farben: { "haupt": "#2f4858", "haupt-hell": "#6e8fa3", "auf-haupt": "#fff", "hintergrund": "#e3b23c", "karte": "#fff8e6", "flaeche": "#f7ecd0", "rahmen": "#e6cf9a",
+    "app-kopf": "#fff8e6", "kopfzeile": "#f7ecd0", "haupt-flaeche": "#f7ecd0", "start": "#2f4858", "auf-start": "#fff",
+    "text-stark": "#1f1a0e", "text": "#3a3020", "text2": "#4f4428", "text3": "#6b5d3a", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#e6cf9a", "negativ": "#e06c6c" } },
+  { id: "flamingo", name: "Flamingo", farben: { "haupt": "#1b7f5f", "haupt-hell": "#62b89a", "auf-haupt": "#fff", "hintergrund": "#f4a3b1", "karte": "#fff5f7", "flaeche": "#fde5ea", "rahmen": "#f1c4cd",
+    "app-kopf": "#fff5f7", "kopfzeile": "#fde5ea", "haupt-flaeche": "#fde5ea", "start": "#1b7f5f", "auf-start": "#fff",
+    "text-stark": "#2a1018", "text": "#45222c", "text2": "#5c3440", "text3": "#7a5260", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#f1c4cd", "negativ": "#e06c6c" } },
+  { id: "pistazie", name: "Pistazie", farben: { "haupt": "#6b2d5c", "haupt-hell": "#b07aa3", "auf-haupt": "#fff", "hintergrund": "#b5d99c", "karte": "#fbfff5", "flaeche": "#edf6e2", "rahmen": "#d3e6c0",
+    "app-kopf": "#fbfff5", "kopfzeile": "#edf6e2", "haupt-flaeche": "#edf6e2", "start": "#6b2d5c", "auf-start": "#fff",
+    "text-stark": "#18220f", "text": "#2e3b22", "text2": "#3f4f31", "text3": "#5a6b4b", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#d3e6c0", "negativ": "#e06c6c" } },
+  { id: "himmel", name: "Himmelblau", farben: { "haupt": "#d9481f", "haupt-hell": "#f08b66", "auf-haupt": "#fff", "hintergrund": "#9ecff0", "karte": "#f7fcff", "flaeche": "#e4f2fc", "rahmen": "#c3e0f4",
+    "app-kopf": "#f7fcff", "kopfzeile": "#e4f2fc", "haupt-flaeche": "#e4f2fc", "start": "#d9481f", "auf-start": "#fff",
+    "text-stark": "#0e1d2a", "text": "#20384c", "text2": "#2f4d66", "text3": "#4d6b85", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#c3e0f4", "negativ": "#e06c6c" } },
+  { id: "lachs", name: "Lachs", farben: { "haupt": "#2b4162", "haupt-hell": "#6c84a8", "auf-haupt": "#fff", "hintergrund": "#f4a582", "karte": "#fff6f0", "flaeche": "#fde6da", "rahmen": "#f2c7b1",
+    "app-kopf": "#fff6f0", "kopfzeile": "#fde6da", "haupt-flaeche": "#fde6da", "start": "#2b4162", "auf-start": "#fff",
+    "text-stark": "#2a140a", "text": "#46281a", "text2": "#5c3828", "text3": "#7a5544", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#f2c7b1", "negativ": "#e06c6c" } },
+  { id: "lavendelfeld", name: "Lavendelfeld", farben: { "haupt": "#b86e00", "haupt-hell": "#e0a54d", "auf-haupt": "#fff", "hintergrund": "#b8a9e3", "karte": "#faf8ff", "flaeche": "#ece7fa", "rahmen": "#d6ccf0",
+    "app-kopf": "#faf8ff", "kopfzeile": "#ece7fa", "haupt-flaeche": "#ece7fa", "start": "#b86e00", "auf-start": "#fff",
+    "text-stark": "#1c1530", "text": "#30284a", "text2": "#41385e", "text3": "#5d5478", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#d6ccf0", "negativ": "#e06c6c" } },
+  { id: "zitrone", name: "Zitrone", farben: { "haupt": "#5a189a", "haupt-hell": "#9b6ad0", "auf-haupt": "#fff", "hintergrund": "#f5e65a", "karte": "#fffde8", "flaeche": "#fbf5c4", "rahmen": "#ece08c",
+    "app-kopf": "#fffde8", "kopfzeile": "#fbf5c4", "haupt-flaeche": "#fbf5c4", "start": "#5a189a", "auf-start": "#fff",
+    "text-stark": "#211d05", "text": "#3b3610", "text2": "#514a1c", "text3": "#6d6533", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#ece08c", "negativ": "#e06c6c" } },
+  { id: "koralle", name: "Koralle", farben: { "haupt": "#134e6f", "haupt-hell": "#4f8fb3", "auf-haupt": "#fff", "hintergrund": "#ff7f6b", "karte": "#fff3f0", "flaeche": "#ffe1da", "rahmen": "#f6b9ad",
+    "app-kopf": "#fff3f0", "kopfzeile": "#ffe1da", "haupt-flaeche": "#ffe1da", "start": "#134e6f", "auf-start": "#fff",
+    "text-stark": "#2b0d08", "text": "#45180f", "text2": "#55211a", "text3": "#6e3a31", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#f6b9ad", "negativ": "#e06c6c" } },
+  { id: "tuerkis", name: "Türkis", farben: { "haupt": "#8e2c48", "haupt-hell": "#c46d88", "auf-haupt": "#fff", "hintergrund": "#48c9b0", "karte": "#f0fffb", "flaeche": "#d9f6ef", "rahmen": "#a9e4d6",
+    "app-kopf": "#f0fffb", "kopfzeile": "#d9f6ef", "haupt-flaeche": "#d9f6ef", "start": "#8e2c48", "auf-start": "#fff",
+    "text-stark": "#06231d", "text": "#103a31", "text2": "#164a3f", "text3": "#2a6357", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#a9e4d6", "negativ": "#e06c6c" } },
+  { id: "pfirsich", name: "Pfirsich & Petrol", farben: { "haupt": "#00606f", "haupt-hell": "#4aa3b0", "auf-haupt": "#fff", "hintergrund": "#ffd3b5", "karte": "#fffaf6", "flaeche": "#ffeadb", "rahmen": "#f3cdb2",
+    "app-kopf": "#fffaf6", "kopfzeile": "#ffeadb", "haupt-flaeche": "#ffeadb", "start": "#00606f", "auf-start": "#fff",
+    "text-stark": "#2b1608", "text": "#47301e", "text2": "#5e4430", "text3": "#7e634d", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#f3cdb2", "negativ": "#e06c6c" } },
+  { id: "kaugummi", name: "Kaugummi", farben: { "haupt": "#3a0ca3", "haupt-hell": "#7b5ce0", "auf-haupt": "#fff", "hintergrund": "#ff9ecd", "karte": "#fff4fa", "flaeche": "#ffe0ef", "rahmen": "#f7bcd8",
+    "app-kopf": "#fff4fa", "kopfzeile": "#ffe0ef", "haupt-flaeche": "#ffe0ef", "start": "#3a0ca3", "auf-start": "#fff",
+    "text-stark": "#2c0718", "text": "#47142c", "text2": "#5c2340", "text3": "#7a3f5c", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#f7bcd8", "negativ": "#e06c6c" } },
+  { id: "mintschoko", name: "Mint & Schoko", farben: { "haupt": "#5d3a1a", "haupt-hell": "#9a6e48", "auf-haupt": "#fff", "hintergrund": "#a8e6cf", "karte": "#f6fffb", "flaeche": "#e2f7ee", "rahmen": "#bfe8d6",
+    "app-kopf": "#f6fffb", "kopfzeile": "#e2f7ee", "haupt-flaeche": "#e2f7ee", "start": "#5d3a1a", "auf-start": "#fff",
+    "text-stark": "#0d2219", "text": "#1d3a2d", "text2": "#2b4c3d", "text3": "#476b5a", "richtig": "#2e8b57", "falsch": "#c0392b",
+    "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#bfe8d6", "negativ": "#e06c6c" } },
+  { id: "aubergine", name: "Aubergine", farben: { "leiste": "#2d1b33", "haupt": "#f2a541", "haupt-hell": "#f7c47f", "auf-haupt": "#2d1b33", "hintergrund": "#2d1b33", "karte": "#3d2645", "flaeche": "#4a3054", "rahmen": "#5a3d66",
+    "start": "#f2a541", "auf-start": "#2d1b33",
+    "text-stark": "#f7eefa", "text": "#eadff0", "text2": "#c4b0cf", "text3": "#9b86a8", "richtig": "#5cc98a", "falsch": "#ff6b6b",
+    "gelb": "#f4c542", "gelernt-effekt": "#fff176", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#5cc98a", "arbeit": "#d9b44a", "nie": "#5a4566", "negativ": "#e06c6c" }, dunkel: true },
+  { id: "tanne", name: "Tannengrün", farben: { "leiste": "#13291f", "haupt": "#e9c46a", "haupt-hell": "#f2d996", "auf-haupt": "#13291f", "hintergrund": "#13291f", "karte": "#1c3a2c", "flaeche": "#244634", "rahmen": "#2f5643",
+    "start": "#e9c46a", "auf-start": "#13291f",
+    "text-stark": "#eef6f0", "text": "#dcebe0", "text2": "#a9c4b2", "text3": "#7f9c89", "richtig": "#5cc98a", "falsch": "#ff6b6b",
+    "gelb": "#f4c542", "gelernt-effekt": "#fff176", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#5cc98a", "arbeit": "#d9b44a", "nie": "#35584a", "negativ": "#e06c6c" }, dunkel: true },
+  { id: "petrol", name: "Petrol", farben: { "leiste": "#0b3c49", "haupt": "#ffb4a2", "haupt-hell": "#ffd0c4", "auf-haupt": "#3a120a", "hintergrund": "#0b3c49", "karte": "#12505f", "flaeche": "#185e6f", "rahmen": "#22707f",
+    "start": "#ffb4a2", "auf-start": "#3a120a",
+    "text-stark": "#eefafc", "text": "#d9eef2", "text2": "#a6cbd3", "text3": "#7aa6b0", "richtig": "#5cc98a", "falsch": "#ff6b6b",
+    "gelb": "#f4c542", "gelernt-effekt": "#fff176", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#5cc98a", "arbeit": "#d9b44a", "nie": "#2b6c7a", "negativ": "#e06c6c" }, dunkel: true },
+  { id: "pflaume", name: "Pflaume", farben: { "leiste": "#4a1942", "haupt": "#9be3c4", "haupt-hell": "#c2f0dc", "auf-haupt": "#14382a", "hintergrund": "#4a1942", "karte": "#5e2453", "flaeche": "#6b2d60", "rahmen": "#7c3a70",
+    "start": "#9be3c4", "auf-start": "#14382a",
+    "text-stark": "#fbeef8", "text": "#f0dcec", "text2": "#d1b0ca", "text3": "#aa86a3", "richtig": "#5cc98a", "falsch": "#ff6b6b",
+    "gelb": "#f4c542", "gelernt-effekt": "#fff176", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#5cc98a", "arbeit": "#d9b44a", "nie": "#7a4a72", "negativ": "#e06c6c" }, dunkel: true },
+  { id: "ochsenblut", name: "Ochsenblut", farben: { "leiste": "#3b0d11", "haupt": "#f4d58d", "haupt-hell": "#f8e5b6", "auf-haupt": "#3b0d11", "hintergrund": "#3b0d11", "karte": "#521419", "flaeche": "#5e1a20", "rahmen": "#702229",
+    "start": "#f4d58d", "auf-start": "#3b0d11",
+    "text-stark": "#fbeeee", "text": "#f0dcdc", "text2": "#d2aeb0", "text3": "#ad8487", "richtig": "#5cc98a", "falsch": "#ff6b6b",
+    "gelb": "#f4c542", "gelernt-effekt": "#fff176", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#5cc98a", "arbeit": "#d9b44a", "nie": "#6e3036", "negativ": "#e06c6c" }, dunkel: true },
+  { id: "indigo", name: "Indigo", farben: { "leiste": "#1e1b4b", "haupt": "#ffd166", "haupt-hell": "#ffe29e", "auf-haupt": "#1e1b4b", "hintergrund": "#1e1b4b", "karte": "#2a2766", "flaeche": "#332f75", "rahmen": "#3f3a88",
+    "start": "#ffd166", "auf-start": "#1e1b4b",
+    "text-stark": "#f0efff", "text": "#dedcf7", "text2": "#aeabd8", "text3": "#8582b5", "richtig": "#5cc98a", "falsch": "#ff6b6b",
+    "gelb": "#f4c542", "gelernt-effekt": "#fff176", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#5cc98a", "arbeit": "#d9b44a", "nie": "#45428a", "negativ": "#e06c6c" }, dunkel: true },
+  { id: "vulkan", name: "Vulkan", farben: { "leiste": "#1c1a1a", "haupt": "#ff5a36", "haupt-hell": "#ff8c70", "auf-haupt": "#1c0a05", "hintergrund": "#1c1a1a", "karte": "#2a2626", "flaeche": "#332e2d", "rahmen": "#433b39",
+    "start": "#ff5a36", "auf-start": "#1c0a05",
+    "text-stark": "#f6f1ef", "text": "#e6dfdc", "text2": "#b5aaa6", "text3": "#8c817d", "richtig": "#5cc98a", "falsch": "#ff6b6b",
+    "gelb": "#f4c542", "gelernt-effekt": "#fff176", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#5cc98a", "arbeit": "#d9b44a", "nie": "#4a413f", "negativ": "#e06c6c" }, dunkel: true },
 ];
 function hexZuRgb(h) {
   h = (h || "#000").replace("#", "");
@@ -1639,6 +1762,22 @@ const CSS_BASIS = `
   .karte-btn-ja{background:var(--haupt);color:var(--auf-haupt);}
   .karte-btn-nein{background:var(--falsch);color:var(--auf-falsch);}
   .karte-aufdecken{text-align:center;padding:20px 0;color:var(--text3);font-size:0.9rem;font-style:italic;}
+  .stimme-wechsel{position:absolute;top:6px;right:6px;z-index:2;border:1.5px solid var(--rahmen);background:var(--karte);border-radius:16px;padding:2px 8px;font-size:0.9rem;cursor:pointer;line-height:1.4;}
+  .stimme-zeile{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.88rem;}
+  .zuo-zeit{height:8px;border-radius:4px;background:var(--flaeche);overflow:hidden;margin:4px 0 12px;}
+  .zuo-zeit[data-zuo-zeit="aus"]{visibility:hidden;}
+  .zuo-zeit-balken{height:100%;width:100%;transform-origin:left;animation-name:zuoZeit;animation-timing-function:linear;animation-fill-mode:forwards;}
+  @keyframes zuoZeit{0%{transform:scaleX(1);background:var(--richtig);}60%{background:var(--richtig);}80%{background:var(--orange);}100%{transform:scaleX(0);background:var(--falsch);}}
+  .zuo-raster{display:grid;gap:8px;}
+  .zuo-kopf{font-size:0.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.04em;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .zuo-karte{position:relative;min-height:46px;padding:6px 6px;border-radius:10px;border:2px solid var(--rahmen);background:var(--abfrage-karte, var(--karte));color:var(--abfrage-schrift, var(--text));
+    font-family:inherit;font-weight:600;line-height:1.2;overflow-wrap:anywhere;cursor:pointer;transition:background .15s,border-color .15s,opacity .3s;}
+  .zuo-karte.wahl{border-color:var(--haupt);background:var(--haupt-flaeche);}
+  .zuo-karte.ok{border-color:var(--richtig);background:var(--richtig-zart, var(--haupt-flaeche));opacity:0.55;cursor:default;}
+  .zuo-karte.falsch-erl{border-color:var(--falsch);opacity:0.55;cursor:default;}
+  .zuo-karte.blink{animation:zuoBlink .6s;}
+  @keyframes zuoBlink{0%,100%{border-color:var(--rahmen);}30%,70%{border-color:var(--falsch);background:var(--falsch-zart, #fde2e2);}}
+  .zuo-nr{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;border-radius:9px;color:#fff;font-size:0.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px;}
   .score-slider{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;outline:none;cursor:pointer;}
   .score-slider::-webkit-slider-runnable-track{height:4px;background:var(--rahmen);border-radius:2px;}
   .score-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;background:var(--haupt);border-radius:6px;cursor:pointer;margin-top:-12px;}
@@ -1916,7 +2055,14 @@ export default function VokabelApp() {
     s.addEventListener("voiceschanged", neu);
     return () => s.removeEventListener("voiceschanged", neu);
   }, []);
-  const aendereStimmen = neu => { setzeStimmenWahl(neu); setStimmenWahlState(neu); };   // Einstellungen: aufgeklappter Bereich (immer nur einer)
+  const aendereStimmen = neu => { setzeStimmenWahl(neu); setStimmenWahlState(neu); };
+  function wechsleStimme(text, lang) {
+    const v = naechsteStimme(normLang(lang).split("-")[0]);
+    setStimmenWahlState(STIMMEN_WAHL);
+    if (!text || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(aeusserung(text.split('/')[0].trim(), lang, v));
+  }   // Einstellungen: aufgeklappter Bereich (immer nur einer)
   const infoKontextContainerRef = useRef(null);
   const tooltipTimer = useRef(null);
   const tooltipShown = useRef(false);
@@ -1933,7 +2079,7 @@ export default function VokabelApp() {
       // Rechtsklick = langer Druck: Menü bzw. Erklärung (mit „🎨 Farbe ändern“)
       // verschachtelt: ein inneres Element mit eigenem Menü hat Vorrang vor dem äußeren (sonst gewinnt wie bisher das äußere)
       onContextMenu(e) { e.preventDefault(); if (e.nativeEvent._ttMenue) return; if (aktionen) e.nativeEvent._ttMenue = true;
-        if (aktionen) opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen, opts.auswahl && { auswahl: opts.auswahl }); },
+        if (aktionen) opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen, { ...(opts.auswahl ? { auswahl: opts.auswahl } : {}), ...(opts.regler ? { regler: opts.regler() } : {}) }); },
       title: text,
       "data-info": text,
       onTouchStart(e) {
@@ -1947,7 +2093,7 @@ export default function VokabelApp() {
         tooltipTimer.current = setTimeout(() => {
           if (slotZiehenRef.current?.aktiv) return;   // beim Verschieben im Raster keine Erklärung einblenden
           if (farbModusRef.current) return;            // Farbmodus: langer Druck öffnet das Farbfeld
-          tooltipShown.current = true; zeigeInfo(langText, t.clientX, t.clientY, aktionen, opts.auswahl && { auswahl: opts.auswahl });
+          tooltipShown.current = true; zeigeInfo(langText, t.clientX, t.clientY, aktionen, { ...(opts.auswahl ? { auswahl: opts.auswahl } : {}), ...(opts.regler ? { regler: opts.regler() } : {}) });
           if (aktionen) opts.beimMenue?.();
           opts.beimZeigen?.(t.clientX, t.clientY);
         }, 500);
@@ -5015,7 +5161,8 @@ export default function VokabelApp() {
     const vorlageVon = sch => FARB_VORLAGEN.find(v => v.id === sch.basis) || FARB_VORLAGEN[0];
     // Tab: zuletzt gewählter, sonst der des aktiven Schemas; beim Bearbeiten „Eigene“
     const ftab = bearb ? "eigene" : farbTab || (FARB_VORLAGEN.includes(schemaVon(einstellungen)) ? "vorlagen" : "eigene");
-    const alle = ftab === "vorlagen" ? FARB_VORLAGEN : ftab === "eigene" ? eigeneSchemata : [];
+    const zufall = eigeneSchemata.find(x => x.zufall && x.name === "Zufall");
+    const alle = ftab === "vorlagen" ? FARB_VORLAGEN : ftab === "eigene" ? eigeneSchemata.filter(x => x !== zufall) : [];
     return (<>
       <div className="toggle-btn" data-farb-tabs style={{display:"flex", marginBottom:10}}>
         {[["vorlagen", `Vorlagen (${FARB_VORLAGEN.length})`, "Fertige Farbschemata – antippen verwendet sie; zum Anpassen duplizieren"],
@@ -5026,8 +5173,18 @@ export default function VokabelApp() {
         ))}
       </div>
       <div className="karte" style={{padding:"12px 14px"}}>
-        {ftab === "eigene" && eigeneSchemata.length === 0 && <div className="karte-zeile-sub" data-keine-eigenen>Noch keine eigenen Schemata.</div>}
-        {alle.length > 0 && <div className="farb-raster">
+        {(alle.length > 0 || ftab === "eigene") && <div className="farb-raster">
+          {ftab === "eigene" && (
+            <button data-farbschema-zufall className={`farb-kachel${zufall && aktivId === zufall.id ? " aktiv" : ""}`} onClick={zufallsSchema}
+              {...tt("Zufall – antippen: neue zufällige Farben erzeugen und verwenden; zum Behalten lang drücken und duplizieren",
+                zufall ? [{ label: "🎨 Bearbeiten", fn: () => { speichereEinst({ ...einstellungen, farbschema: zufall.id }); setSchemaBearbeiten(zufall.id); } },
+                          { label: "⧉ Duplizieren", fn: () => dupliziereSchema(zufall) }] : [], { langText: "🎲 Zufall" })}>
+              <span className="farb-streifen" style={{background: zufall ? zufall.farben.hintergrund : "var(--flaeche)"}}>
+                {zufall ? ["haupt", "haupt-hell", "gelb", "falsch", "karte"].map(r => <span key={r} style={{background: zufall.farben[r]}}/>) : null}
+              </span>
+              <span className="farb-name">{zufall && aktivId === zufall.id ? "✓ " : ""}🎲 Zufall</span>
+            </button>
+          )}
           {alle.map(sch => {
             const eigen = !FARB_VORLAGEN.includes(sch);
             const menue = [
@@ -5058,10 +5215,6 @@ export default function VokabelApp() {
             🎨 Farben bearbeiten{FARB_VORLAGEN.includes(schemaVon(einstellungen)) ? " (als Kopie)" : ""}
           </button>
         )}
-        <button data-zufall-farben className="btn btn-ghost" style={{width:"100%", marginTop:10}} onClick={zufallsSchema}
-          {...tt("Zufälliges Pastell-Schema „Zufall“ erzeugen und verwenden – jeder Tipp ein neues; zum Behalten umbenennen oder duplizieren")}>
-          🎲 Zufällige Farben
-        </button>
         <label style={{display:"flex", alignItems:"center", gap:10, marginTop:12, fontSize:"0.85rem", color:"var(--text)", cursor:"pointer"}} {...ttFeld("Jedes Lang-Druck-Menü und jede Erklärung bekommt „🎨 Farbe ändern“ – startet den Farbmodus für genau diese Stelle")}>
           <input type="checkbox" data-farbe-im-menue checked={einstellungen.farbeImMenue !== false} onChange={e => speichereEinst({ ...einstellungen, farbeImMenue: e.target.checked })} style={{width:18, height:18}}/>
           „🎨 Farbe ändern“ im Lang-Druck-Menü
@@ -5675,6 +5828,9 @@ export default function VokabelApp() {
     const aktiv = modiVon(quizSpalteModus[typ]);
     const akzentMoeglich = typ.startsWith("E") && quizTabListen.some(id => AKZENTE_FUER_LISTE(id));
     const umschalten = m => setQuizSpalteModus(p => {
+      const spalten = quizAntwortTypenGeordnet.length ? quizAntwortTypenGeordnet : [typ];
+      if (m === "zuordnung") { const an = !modiVon(p[typ]).includes("zuordnung"); const neu = { ...p }; spalten.forEach(t => { neu[t] = an ? "zuordnung" : STANDARD_ANTWORT_MODUS; }); return neu; }
+      if (modiVon(p[typ]).includes("zuordnung")) { const neu = { ...p }; spalten.forEach(t => { neu[t] = m; }); return neu; }
       const alt = modiVon(p[typ]);
       const neu = MODI_REIHENFOLGE.filter(x => alt.includes(x) !== (x === m));
       if (!neu.some(x => x !== "akzent")) return p;
@@ -5682,8 +5838,9 @@ export default function VokabelApp() {
     });
     return [["tippen", "Tastatur", "Antwort eintippen"], ["mc", "MC", "Antwort aus mehreren Vorschlägen wählen (Multiple Choice)"],
       ["karte", "Karte", "Karte aufdecken und selbst bewerten: gewusst / nicht gewusst"],
-      ...(akzentMoeglich ? [["akzent", "Akzente", "Akzente setzen – nur bei Wörtern mit Akzent, zählt hier für die Übersetzung"]] : [])].map(([m, label, text]) => (
-      <button key={m} {...tt(`${text} – mehrere angehakt: je Frage zufällig eine davon`)} data-modus-knopf={`${typ}:${m}`}
+      ...(akzentMoeglich ? [["akzent", "Akzente", "Akzente setzen – nur bei Wörtern mit Akzent, zählt hier für die Übersetzung"]] : []),
+      ...(quizModus !== "rotierend" ? [["zuordnung", "Zuordnung", "Zuordnen: Kacheln der Frage- und der Antwort-Spalten einander zuordnen, mehrere Vokabeln je Runde – gilt für alle Antwort-Spalten"]] : [])].map(([m, label, text]) => (
+      <button key={m} {...tt(m === "zuordnung" ? text : `${text} – mehrere angehakt: je Frage zufällig eine davon`)} data-modus-knopf={`${typ}:${m}`}
         className={`spalten-modus-btn${aktiv.includes(m) ? " aktiv" : ""}`} onClick={() => umschalten(m)}>{label}</button>
     ));
   }
@@ -5956,7 +6113,7 @@ export default function VokabelApp() {
     if (!quiz) { beendeQuiz(); return; }
     if (quiz.istSessionModus) {
       // In der Wiederholung wurde das ganze Paket bereits einmal abgefragt
-      const answeredIds = quiz.wiederholungDurchgang ? (quiz.sessionVokIds || []) : [...new Set(
+      const answeredIds = quiz.zuordnung ? [...new Set(quiz.zuordnung.beantwortet || [])] : quiz.wiederholungDurchgang ? (quiz.sessionVokIds || []) : [...new Set(
         (quiz.vokabeln || []).slice(0, quiz.index || 0).map(v => v.id)
       )];
       if (answeredIds.length > 0) updateSessionSlotFortschritt(answeredIds, false);
@@ -6177,7 +6334,7 @@ export default function VokabelApp() {
       : null;
 
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    setQuiz({
+    const neuQuiz = {
       sitzungsInfoTypen, modus: quizModus, spalteModus: spalteModus0, spalteModusBasis: quizSpalteModus,
       liste: kombiListe, vokabeln: voks, index: 0,
       frageTyp, antwortTypen, antwortTypIndex: 0, basisFA, akzentOhneAuslassen,
@@ -6193,9 +6350,144 @@ export default function VokabelApp() {
       sessionGesamt, sessionIds, abfrageZiel,
       rundeStartScores: Object.fromEntries(voks.map(v => [v.id, v[scoreFeld]?.score ?? null])), rundeStartZeit: Date.now(),
       gruppeVokIds, scoreFeld,
-    });
+    };
+    // Zuordnung: Runden zu mehreren Vokabeln (Frage-Spalte + Antwort-Spalten, höchstens 4)
+    const zuordnungAn = !gruppe && quizModus !== "rotierend" && quizAntwortTypenGeordnet.some(t => modiVon(quizSpalteModus[t]).includes("zuordnung"));
+    if (zuordnungAn) {
+      const ze = zuordnungEinst(einstellungen), r = quizRegeln();
+      const spalten = [quizFrageTyp, ...quizAntwortTypenGeordnet].slice(0, 4);
+      const grenze = Math.max(3, Math.min(window.innerWidth > 700 ? 12 : 10, Math.floor((window.innerHeight - 250) / 52)));
+      neuQuiz.abfrageZiel = null;
+      neuQuiz.zuordnung = { spalten, paare: Math.max(3, Math.min(ze.paare, grenze)), zeit: ze.zeit, sek: ze.sek, amEnde: !!r.zuordnungAmEnde, abzug: !!r.zuordnungAbzug,
+        queue: voks.map(v => v.id), runde: 0, beantwortet: [] };
+      setQuiz(zuordnungRunde(neuQuiz));
+    } else setQuiz(neuQuiz);
     setAnsicht("quiz");
   }
+
+  // ── Zuordnung: nächste Runde aus der Warteschlange (nicht beantwortete kommen vorne wieder hinein) ──
+  function zuordnungRunde(q) {
+    const z = q.zuordnung;
+    if (!z.queue.length) return { ...q, phase: "fertig" };
+    const k = Math.min(z.paare, z.queue.length);
+    const ids = z.queue.slice(0, k);
+    const vok = id => q.vokabeln.find(v => v.id === id);
+    const mische = a => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+    const karten = z.spalten.map(t => mische(ids.map(id => ({ id, text: vok(id)?.[t]?.wert || "" }))));
+    return { ...q, phase: "zuordnung", zuordnung: { ...z, ids, queue: z.queue.slice(k), karten, runde: z.runde + 1,
+      erledigt: {}, fehler: {}, offen: null, gruppen: [], offeneGruppe: null, blink: null, anzeige: null, zeitBis: zuordnungZeitBis(z, k) } };
+  }
+  function zuordnungZeitBis(z, k) {
+    if (z.zeit === "aus") return null;
+    const proVok = z.sek * (ZUORDNUNG_ZEITFAKTOR[z.spalten.length] || 1) * 1000;
+    return Date.now() + (z.zeit === "runde" ? proVok * k : proVok);
+  }
+  // Ergebnis einer Vokabel speichern (nur vollständig Beantwortetes): richtig +1, falsch nach Regel −1
+  function zuordnungWerte(q, id, ergebnis) {
+    const lv = q.liste.vokabeln.find(v => v.id === id) || q.vokabeln.find(v => v.id === id);
+    const r = quizRegeln();
+    const neu = berechneNeuenScore(lv?.fortschritt, ergebnis, r.aufdeckenAbzug ? "schwer" : "einfach", q.zuordnung.abzug);
+    const erst = !(id in (q.gewertet || {}));
+    return { ...q, liste: speichereScore(q.liste, id, neu),
+      gewertet: erst ? { ...(q.gewertet || {}), [id]: ergebnis } : q.gewertet,
+      quizRichtigAnzahl: (q.quizRichtigAnzahl || 0) + (erst && ergebnis === "richtig" ? 1 : 0),
+      quizFalschAnzahl: (q.quizFalschAnzahl || 0) + (erst && ergebnis !== "richtig" ? 1 : 0),
+      zuordnung: { ...q.zuordnung, erledigt: { ...q.zuordnung.erledigt, [id]: ergebnis }, beantwortet: [...q.zuordnung.beantwortet, id] } };
+  }
+  const zuoTimerRef = useRef(null);
+  function zuordnungWeiter(ms) {
+    clearTimeout(zuoTimerRef.current);
+    zuoTimerRef.current = setTimeout(() => setQuiz(prev => prev?.phase === "zuordnung" ? zuordnungRunde(prev) : prev), ms);
+  }
+  // Lösung kurz zeigen (Karten je Vokabel gleich gefärbt), dann nächste Runde; nicht Beantwortete kommen wieder
+  function zuordnungRundeEnde(q, extraAnzeige = null) {
+    const z = q.zuordnung;
+    const offen = z.ids.filter(id => !(id in z.erledigt));
+    const neu = { ...q, zuordnung: { ...z, queue: [...offen, ...z.queue], zeitBis: null, offen: null, offeneGruppe: null, anzeige: extraAnzeige || (offen.length ? "loesung" : "fertig") } };
+    if (extraAnzeige === "geprueft") {
+      clearTimeout(zuoTimerRef.current);
+      zuoTimerRef.current = setTimeout(() => { setQuiz(prev => prev?.phase === "zuordnung" ? { ...prev, zuordnung: { ...prev.zuordnung, anzeige: "loesung" } } : prev); zuordnungWeiter(1600); }, 1400);
+    } else zuordnungWeiter(offen.length ? 1800 : 700);
+    return neu;
+  }
+  function zuordnungTippe(s, i) {
+    const q = quiz, z = q?.zuordnung;
+    if (!z || q.phase !== "zuordnung" || z.anzeige) return;
+    const karte = z.karten[s][i];
+    if (karte.id in z.erledigt) return;
+    if (einstellungen.autoplay && z.spalten[s].startsWith("E")) { const v = q.vokabeln.find(x => x.id === karte.id); sprich(karte.text, vokLang(v, z.spalten[s])); }
+    if (z.amEnde) { setQuiz({ ...q, zuordnung: zuordnungGruppeTippe(z, s, i) }); return; }
+    const o = z.offen;
+    if (!o) { setQuiz({ ...q, zuordnung: { ...z, offen: { id: karte.id, wahl: { [s]: i }, erst: s } } }); return; }
+    if (o.wahl[s] === i) {   // dieselbe Karte nochmal: erste → Gruppe aufheben, sonst nur diese abwählen
+      if (s === o.erst) { setQuiz({ ...q, zuordnung: { ...z, offen: null } }); return; }
+      const wahl = { ...o.wahl }; delete wahl[s];
+      setQuiz({ ...q, zuordnung: { ...z, offen: { ...o, wahl } } }); return;
+    }
+    if (s === o.erst && Object.keys(o.wahl).length === 1) {   // andere Karte in der Spalte der ersten: neu anfangen, kein Fehlgriff
+      setQuiz({ ...q, zuordnung: { ...z, offen: { id: karte.id, wahl: { [s]: i }, erst: s } } }); return;
+    }
+    if (karte.id !== o.id) {   // Fehlgriff: zählt für die Vokabel der zuerst angetippten Karte
+      setQuiz({ ...q, zuordnung: { ...z, fehler: { ...z.fehler, [o.id]: true }, blink: { s, i, t: Date.now() } } });
+      setTimeout(() => setQuiz(prev => prev?.zuordnung?.blink?.s === s && prev.zuordnung.blink.i === i ? { ...prev, zuordnung: { ...prev.zuordnung, blink: null } } : prev), 650);
+      return;
+    }
+    const wahl = { ...o.wahl, [s]: i };
+    if (Object.keys(wahl).length < z.spalten.length) { setQuiz({ ...q, zuordnung: { ...z, offen: { ...o, wahl } } }); return; }
+    // Gruppe vollständig
+    let neu = zuordnungWerte({ ...q, zuordnung: { ...z, offen: null } }, o.id, z.fehler[o.id] ? "falsch" : "richtig");
+    if (z.zeit === "vokabel") neu = { ...neu, zuordnung: { ...neu.zuordnung, zeitBis: zuordnungZeitBis(z, 1) } };
+    if (neu.zuordnung.ids.every(id => id in neu.zuordnung.erledigt)) neu = zuordnungRundeEnde(neu);
+    setQuiz(neu);
+  }
+  // „am Ende“: Karten bilden farbige Gruppen in Tipp-Reihenfolge; eingefärbte Karte antippen nimmt sie heraus
+  function zuordnungGruppeTippe(z, s, i) {
+    let gruppen = z.gruppen.map(g => ({ ...g, wahl: { ...g.wahl } }));
+    let offen = z.offeneGruppe;
+    const gi = gruppen.findIndex(g => g.wahl[s] === i);
+    if (gi >= 0) {
+      delete gruppen[gi].wahl[s];
+      if (!Object.keys(gruppen[gi].wahl).length) { gruppen.splice(gi, 1); offen = offen === gi ? null : offen != null && offen > gi ? offen - 1 : offen; }
+      else { if (gruppen[gi].erst === s) gruppen[gi].erst = Number(Object.keys(gruppen[gi].wahl)[0]); offen = gi; }
+      return { ...z, gruppen, offeneGruppe: offen };
+    }
+    if (offen != null && gruppen[offen]) {
+      gruppen[offen].wahl[s] = i;
+      const voll = Object.keys(gruppen[offen].wahl).length === z.spalten.length;
+      return { ...z, gruppen, offeneGruppe: voll ? null : offen, ...(voll && z.zeit === "vokabel" ? { zeitBis: zuordnungZeitBis(z, 1) } : {}) };
+    }
+    const belegt = new Set(gruppen.map(g => g.farbe));
+    const farbe = ZUORDNUNG_FARBEN.findIndex((_, k) => !belegt.has(k));
+    gruppen.push({ wahl: { [s]: i }, erst: s, farbe: farbe < 0 ? gruppen.length % ZUORDNUNG_FARBEN.length : farbe });
+    return { ...z, gruppen, offeneGruppe: gruppen.length - 1 };
+  }
+  // „Prüfen“ (oder Zeit abgelaufen bei „am Ende“): nur vollständige Gruppen zählen
+  function zuordnungPruefe(q) {
+    const z = q.zuordnung;
+    let neu = q;
+    const ergebnis = {};
+    z.gruppen.forEach((g, gi) => {
+      if (Object.keys(g.wahl).length !== z.spalten.length) return;
+      const ids = Object.entries(g.wahl).map(([sp, k]) => z.karten[sp][k].id);
+      const erstId = z.karten[g.erst][g.wahl[g.erst]].id;
+      const richtig = ids.every(id => id === ids[0]);
+      ergebnis[gi] = richtig;
+      if (!(erstId in neu.zuordnung.erledigt)) neu = zuordnungWerte(neu, erstId, richtig ? "richtig" : "falsch");
+    });
+    neu = { ...neu, zuordnung: { ...neu.zuordnung, geprueft: ergebnis } };
+    return zuordnungRundeEnde(neu, "geprueft");
+  }
+  // Zeit abgelaufen
+  useEffect(() => {
+    const z = quiz?.zuordnung;
+    if (quiz?.phase !== "zuordnung" || !z?.zeitBis || z.anzeige) return;
+    const t = setTimeout(() => setQuiz(prev => {
+      if (prev?.phase !== "zuordnung" || prev.zuordnung.anzeige || !prev.zuordnung.zeitBis || Date.now() < prev.zuordnung.zeitBis - 30) return prev;
+      return prev.zuordnung.amEnde ? zuordnungPruefe(prev) : zuordnungRundeEnde(prev);
+    }), Math.max(0, z.zeitBis - Date.now()));
+    return () => clearTimeout(t);
+  }, [quiz?.phase, quiz?.zuordnung?.zeitBis, quiz?.zuordnung?.anzeige]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => clearTimeout(zuoTimerRef.current), []);
 
   function getAktVok() {
     if (!quiz) return null;
@@ -6706,7 +6998,7 @@ export default function VokabelApp() {
     if (!window.speechSynthesis) return;
     const langCode = lang.split('-')[0].toLowerCase();
     // Novelty/effects Stimmen aussortieren (iOS/macOS); die gewählte Stimme kommt zuerst
-    const alle = stimmenFuerSprache(langCode), gew = gewaehlteStimme(langCode);
+    const alle = aktiveStimmen(langCode).length ? aktiveStimmen(langCode) : stimmenFuerSprache(langCode), gew = gewaehlteStimme(langCode);
     const voices = gew ? [gew, ...alle.filter(v => v !== gew)] : alle;
     diktatPlayCountRef.current += 1;
     setDiktatManualPlays(p => p + 1);
@@ -7215,6 +7507,63 @@ export default function VokabelApp() {
       );
     }
 
+    if (quiz.phase === "zuordnung" && quiz.zuordnung) {
+      const z = quiz.zuordnung;
+      const n = z.spalten.length;
+      const gesamt = (z.beantwortet || []).length + z.ids.filter(id => !(id in z.erledigt)).length + z.queue.length;
+      const fertigAnz = (z.beantwortet || []).length;
+      const vokNr = Object.fromEntries(z.ids.map((id, k) => [id, k]));
+      const loesung = z.anzeige === "loesung";
+      const allesVerteilt = z.amEnde && z.gruppen.length === z.ids.length && z.gruppen.every(g => Object.keys(g.wahl).length === n);
+      const dauer = z.zeitBis ? Math.max(0, z.zeitBis - Date.now()) : 0;
+      const schrift = n === 2 ? "0.95rem" : n === 3 ? "0.85rem" : "0.78rem";
+      return (
+        <>
+          <style>{CSS}</style>{farbModusUI}{farbRadUI}
+          <div className="app">
+            <div className="topbar">
+              <button {...tt("Abfrage beenden – Beantwortetes bleibt gewertet")} className="topbar-back" onClick={brecheQuizAb}>Beenden</button>
+              <span className="topbar-title">Zuordnung</span>
+              <span className="quiz-fortschritt" data-zuo-fortschritt>{fertigAnz} / {gesamt}</span>
+            </div>
+            <div className="sektion" data-zuordnung={z.amEnde ? "am-ende" : "sofort"}>
+              <div className="zuo-zeit" data-zuo-zeit={z.zeitBis ? "an" : "aus"}>
+                {z.zeitBis && !z.anzeige && <div key={z.zeitBis} className="zuo-zeit-balken" style={{animationDuration:`${dauer}ms`}}/>}
+              </div>
+              <div className="zuo-raster" style={{gridTemplateColumns:`repeat(${n}, minmax(0, 1fr))`}}>
+                {z.spalten.map(t => <div key={t} className="zuo-kopf">{quiz.liste.spalten[t]?.name || t}</div>)}
+                {z.ids.map((_, zeile) => z.spalten.map((t, sp) => {
+                  const k = z.karten[sp][zeile];
+                  const erl = z.erledigt[k.id];
+                  const gi = z.gruppen.findIndex(g => g.wahl[sp] === zeile);
+                  const g = gi >= 0 ? z.gruppen[gi] : null;
+                  const geprueft = g && z.geprueft ? z.geprueft[gi] : undefined;
+                  const farbe = loesung ? ZUORDNUNG_FARBEN[vokNr[k.id] % ZUORDNUNG_FARBEN.length] : g && geprueft === undefined ? ZUORDNUNG_FARBEN[g.farbe] : null;
+                  const wahl = !z.amEnde && z.offen?.wahl[sp] === zeile;
+                  const blink = z.blink?.s === sp && z.blink?.i === zeile;
+                  const cls = ["zuo-karte", erl === "richtig" && !loesung ? "ok" : "", erl === "falsch" && !loesung ? "falsch-erl" : "", wahl ? "wahl" : "", blink ? "blink" : "",
+                    geprueft === true ? "ok" : "", geprueft === false ? "falsch-erl" : ""].filter(Boolean).join(" ");
+                  return (
+                    <button key={`${sp}-${zeile}`} className={cls} data-zuo-karte={`${sp}:${zeile}`} data-zuo-id={k.id}
+                      style={{fontSize: schrift, ...(farbe ? { borderColor: farbe, background: `${farbe}26` } : {})}}
+                      onClick={() => zuordnungTippe(sp, zeile)}
+                      {...tt(z.amEnde ? "Antippen: in die farbige Gruppe aufnehmen – eingefärbte Karte antippen nimmt sie wieder heraus" : "Antippen: Karte wählen – die erste bestimmt die Vokabel, weitere werden sofort geprüft")}>
+                      {g && !loesung && geprueft === undefined && <span className="zuo-nr" style={{background: farbe}}>{gi + 1}</span>}
+                      {mitHinweis(k.text)}
+                    </button>
+                  );
+                }))}
+              </div>
+              {z.amEnde && !z.anzeige && (
+                <button className="btn btn-primary" data-zuo-pruefen disabled={!allesVerteilt} style={{width:"100%", marginTop:12, opacity: allesVerteilt ? 1 : 0.5}}
+                  onClick={() => setQuiz(zuordnungPruefe(quiz))} {...tt("Alle Gruppen prüfen – nur vollständige Gruppen zählen")}>Prüfen</button>
+              )}
+            </div>
+          </div>
+        </>
+      );
+    }
+
     const aktVokRaw = quiz.vokabeln[quiz.index];
     const aktVok = getAktVok();
     const frageLabel = quiz.liste.spalten[quiz.frageTyp]?.name || quiz.frageTyp;
@@ -7244,12 +7593,21 @@ export default function VokabelApp() {
     const spaltenName = t => quiz.liste.spalten[t]?.name || t;
     const vorlesenKlick = (text, typ) => ({ "data-vorlesen": typ, style: { cursor: "pointer" },
       onClick: e => { e.stopPropagation(); sprich(text, vokLang(aktVok, typ)); } });
-    const antwortBearbeiten = tt("Antippen: Antwort vorlesen – lang drücken: richtige Antwort bearbeiten", [
+    // Gesamt-Tempo als Regler in der Tafel (lang drücken auf eine Karte); beim Loslassen mit neuem Tempo vorlesen
+    const tempoRegler = (text, typ) => () => ({ label: "Tempo (alle Sprachen)", min: 0.6, max: 1.4, step: 0.1, wert: STIMMEN_WAHL.tempo || 1,
+      format: v => `${v.toFixed(1).replace(".", ",")}×`,
+      aendern: v => aendereStimmen({ ...STIMMEN_WAHL, tempo: v === 1 ? undefined : v }), fertig: () => sprich(text, vokLang(aktVok, typ)) });
+    const basisVon = typ => normLang(vokLang(aktVok, typ)).split("-")[0];
+    const stimmeKnopf = (text, typ, wo) => aktiveStimmen(basisVon(typ)).length > 1 && (
+      <button className="stimme-wechsel" data-stimme-wechsel={wo} onClick={e => { e.stopPropagation(); wechsleStimme(text, vokLang(aktVok, typ)); }}
+        {...tt("Andere Stimme: mit der nächsten aktivierten Stimme vorlesen – sie bleibt dann für diese Sprache eingestellt")}>🔁</button>);
+    const antwortSichtbar = quiz.phase !== "eingabe" && !quiz.flash;
+    const antwortBearbeiten = tt(antwortSichtbar ? "Antippen: Antwort vorlesen – lang drücken: Tempo, richtige Antwort bearbeiten" : "Lang drücken: Tempo, richtige Antwort bearbeiten", [
       { label: "✎ Richtige Antwort bearbeiten", fn: () => bearbeite(aktAntwortTyp) },
-    ], { langText: `${antwortLabel}: richtige Antwort bearbeiten` });
-    const frageBearbeiten = tt("Antippen: Frage vorlesen – lang drücken: Frage bearbeiten", [
+    ], { langText: `${antwortLabel}: richtige Antwort bearbeiten`, regler: tempoRegler(quiz.antwortTeile?.[0] || "", aktAntwortTyp) });
+    const frageBearbeiten = tt("Antippen: Frage vorlesen – lang drücken: Tempo, Frage bearbeiten", [
       { label: "✎ Frage bearbeiten", fn: () => bearbeite(quiz.frageTyp) },
-    ], { langText: `${frageLabel}: Frage bearbeiten` });
+    ], { langText: `${frageLabel}: Frage bearbeiten`, regler: tempoRegler(frageWert, quiz.frageTyp) });
     const infoAktionen = typen => typen.map(t => ({ label: `✎ ${spaltenName(t)} bearbeiten`, fn: () => bearbeite(t) }));
     const eigeneFalsche = aktVokRaw[aktAntwortTyp]?.falsch || [];
 
@@ -7332,10 +7690,12 @@ export default function VokabelApp() {
                 <div style={{display:"flex", gap:10, alignItems:"stretch", marginBottom:14}}>
                   {/* Linke Spalte */}
                   <div style={{flex:1, display:"flex", flexDirection:"column", gap:10}}>
-                    <div className="quiz-frage-box" style={{marginBottom:0}} data-karte-frage {...frageBearbeiten}>
+                    <div className="quiz-frage-box" style={{marginBottom:0, cursor:"pointer", position:"relative"}} data-karte-frage data-vorlesen={quiz.frageTyp} {...frageBearbeiten}
+                      onClick={e => { e.stopPropagation(); sprich(frageWert, vokLang(aktVok, quiz.frageTyp)); }}>
+                      {stimmeKnopf(frageWert, quiz.frageTyp, "frage")}
                       <div className="quiz-label">{frageLabel}</div>
                       <div style={{display:"flex", alignItems:"baseline", gap:8, justifyContent:"center"}}>
-                        <div className="quiz-frage-text" {...vorlesenKlick(frageWert, quiz.frageTyp)} style={{textAlign:"center", cursor:"pointer"}}>{mitHinweis(frageWert)}</div>
+                        <div className="quiz-frage-text" style={{textAlign:"center"}}>{mitHinweis(frageWert)}</div>
                       </div>
                     </div>
 
@@ -7349,7 +7709,9 @@ export default function VokabelApp() {
                       </div>
                     ))}
 
-                    <div className={antwortBoxKlasse} style={{marginBottom:0}} data-karte-antwort data-karte-verdeckt={isKarteEingabe ? "" : undefined} {...antwortBearbeiten}>
+                    <div className={antwortBoxKlasse} style={{marginBottom:0, position:"relative", ...(antwortSichtbar ? { cursor:"pointer" } : {})}} data-karte-antwort data-karte-verdeckt={isKarteEingabe ? "" : undefined} {...antwortBearbeiten}
+                      {...(antwortSichtbar ? { onClick: e => { e.stopPropagation(); sprich(quiz.antwortTeile?.[0] || "", vokLang(aktVok, aktAntwortTyp)); } } : {})}>
+                      {antwortSichtbar && stimmeKnopf(quiz.antwortTeile?.[0] || "", aktAntwortTyp, "antwort")}
                       {antwortBoxKlasse.includes("gelernt-blitz") && <GelerntSterne/>}
                       <div className="quiz-label" style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
                         <span>{antwortLabel}{isWeitere && <span style={{color:"var(--info)", marginLeft:8}}>— weitere Antwort</span>}</span>
@@ -8732,7 +9094,7 @@ export default function VokabelApp() {
                     <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "umfang" ? " offen" : ""}`} data-umfang
                       onClick={() => toggleSessionBereich("umfang")}
                       {...tt("Umfang: alle Vokabeln auf einmal oder in Paketen – antippen zum Einstellen")}>
-                      {isPakete && quizPaketGroesse != null ? `Je ${quizPaketGroesse} Vokabeln` : "Alle Vokabeln"}
+                      {isPakete && quizPaketGroesse != null && quizPaketGroesse < PAKET_ALLE ? `Je ${quizPaketGroesse} Vokabeln` : "Alle Vokabeln"}
                     </button>
                     <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "ziel" ? " offen" : ""}`} data-abfrageziel
                       onClick={() => toggleSessionBereich("ziel")}
@@ -8753,9 +9115,9 @@ export default function VokabelApp() {
                   <div ref={sessionContainerRef} className="karte" style={{marginBottom:8, marginTop:8}}>
                     {quizSessionAufgeklappt === "umfang" ? (
                       <div className="umfang-raster" data-umfang-auswahl>
-                        <button className={`typ-btn${!isPakete ? " aktiv" : ""}`} data-umfang-wahl="alle"
-                          onClick={() => { setQuizSessionModus("alle"); setQuizSessionAufgeklappt(false); }}
-                          {...tt("Alle verfügbaren Vokabeln in einem Durchgang abfragen")}>Alle</button>
+                        <button className={`typ-btn${!isPakete || quizPaketGroesse >= PAKET_ALLE ? " aktiv" : ""}`} data-umfang-wahl="alle"
+                          onClick={() => { setQuizSessionModus("pakete"); setQuizPaketGroesse(PAKET_ALLE); setQuizSessionAufgeklappt(false); }}
+                          {...tt("Alle Vokabeln der Session in einem Paket – der Fortschritt bleibt gespeichert")}>Alle</button>
                         {[5,10,15,20,25,30,40,50].map(n => (
                           <button key={n} className={`typ-btn${isPakete && quizPaketGroesse === n ? " aktiv" : ""}`} data-umfang-wahl={n}
                             onClick={() => { setQuizSessionModus("pakete"); setQuizPaketGroesse(n); setQuizSessionAufgeklappt(false); }}
@@ -8925,7 +9287,7 @@ export default function VokabelApp() {
                       ) : (
                         <button className="btn btn-primary start-knopf" data-start-knopf data-start-anzahl={verfuegbar} data-start-rest={startRest}
                           onClick={() => starteQuiz()} disabled={!kannStarten || verfuegbar === 0}
-                          {...tt(isPakete ? `${START_TEXT[quizArt] || "Quiz starten"} – in dieser Session sind noch ${startRest} Vokabeln übrig; abgefragt wird in Paketen zu ${quizPaketGroesse}` : `${START_TEXT[quizArt] || "Quiz starten"} – die Zahl nennt die Vokabeln dieser Fragerunde`)}>
+                          {...tt(isPakete ? `${START_TEXT[quizArt] || "Quiz starten"} – in dieser Session sind noch ${startRest} Vokabeln übrig; abgefragt wird ${quizPaketGroesse >= PAKET_ALLE ? "alles in einem Paket" : `in Paketen zu ${quizPaketGroesse}`}` : `${START_TEXT[quizArt] || "Quiz starten"} – die Zahl nennt die Vokabeln dieser Fragerunde`)}>
                           <b>{START_TEXT[quizArt] || "Quiz starten"}</b><span>{startRest} Vokabel{startRest !== 1 ? "n" : ""}</span>
                         </button>
                       )}
@@ -9942,38 +10304,70 @@ export default function VokabelApp() {
               const ttsVon = c => c === "de" ? "de-DE" : sprachInfo(c).tts;
               const gesehen = new Set();
               const zeilen = codes.filter(c => { const b = basisVon(c); if (gesehen.has(b)) return false; gesehen.add(b); return true; });
-              const tempo = stimmenWahl.tempo || 1;
+              const w = stimmenWahl;
+              const setze = (feld, b, wert) => aendereStimmen({ ...w, [feld]: { ...(w[feld] || {}), [b]: wert } });
+              const regler = { width:"100%" };
               return (<>
-              <div className="karte">
-                {zeilen.map(c => {
-                  const b = basisVon(c), stimmen = stimmenFuerSprache(b);
-                  const name = c === "de" ? "Deutsch" : sprachInfo(c).name;
-                  const wert = stimmen.some(v => v.voiceURI === stimmenWahl.sprachen?.[b]) ? stimmenWahl.sprachen[b] : "";
-                  return (
-                    <div key={b} className="karte-zeile" data-stimme-sprache={b} style={{flexDirection:"column", alignItems:"stretch", gap:6}}>
+              {zeilen.map(c => {
+                const b = basisVon(c), alle = stimmenFuerSprache(b), varianten = stimmenVarianten(b);
+                const name = c === "de" ? "Deutsch" : sprachInfo(c).name;
+                const vr = w.variante?.[b] && varianten.includes(w.variante[b]) ? w.variante[b] : null;
+                const liste = alle.filter(v => !vr || normLang(v.lang) === vr);
+                const aus = w.aus?.[b] || [];
+                const aktuell = gewaehlteStimme(b) || stimmeFuer(ttsVon(c));
+                const probe = STIMMEN_PROBE[b] || STIMMEN_PROBE[c] || "Test";
+                const sprichMit = v => { if (!window.speechSynthesis) return; window.speechSynthesis.cancel(); window.speechSynthesis.speak(aeusserung(probe, v ? v.lang : ttsVon(c), v)); };
+                const tempo = w.tempoSprache?.[b] || 1;
+                return (
+                  <div key={b} className="karte" data-stimme-sprache={b}>
+                    <div className="karte-zeile" style={{flexDirection:"column", alignItems:"stretch", gap:8}}>
                       <div className="karte-zeile-name">{c === "de" ? "🇩🇪" : sprachInfo(c).flagge} {name}</div>
-                      {stimmen.length === 0 ? <div className="karte-zeile-sub">Keine Stimme auf diesem Gerät</div> : (
-                        <div style={{display:"flex", gap:8, alignItems:"center"}}>
-                          <select className="inp" data-stimme-wahl={b} value={wert} style={{flex:1, minWidth:0}}
-                            onChange={e => aendereStimmen({ ...stimmenWahl, sprachen: { ...(stimmenWahl.sprachen || {}), [b]: e.target.value || undefined } })}
-                            {...ttFeld(`Stimme für ${name} – „Automatisch“ nimmt die Standard-Stimme des Geräts. Weitere Stimmen: iPhone unter Einstellungen › Bedienungshilfen › Gesprochene Inhalte › Stimmen, Android unter Sprachausgabe`)}>
-                            <option value="">Automatisch</option>
-                            {stimmen.map(v => <option key={v.voiceURI} value={v.voiceURI}>{v.name}{v.lang ? ` (${v.lang})` : ""}</option>)}
-                          </select>
-                          <button className="btn btn-ghost btn-sm" data-stimme-probe={b} onClick={() => sprich(STIMMEN_PROBE[b] || STIMMEN_PROBE[c] || "Test", ttsVon(c))}
-                            {...tt(`Probe: so klingt die gewählte Stimme für ${name}`)}>▶</button>
+                      {alle.length === 0 ? <div className="karte-zeile-sub">Keine Stimme auf diesem Gerät</div> : (<>
+                        {varianten.length > 1 && (
+                          <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
+                            <button className={`typ-btn${!vr ? " aktiv" : ""}`} data-stimme-variante={`${b}:alle`} onClick={() => setze("variante", b, undefined)}
+                              {...tt(`${name}: Stimmen aller Varianten verwenden`)}>Alle</button>
+                            {varianten.map(x => (
+                              <button key={x} className={`typ-btn${vr === x ? " aktiv" : ""}`} data-stimme-variante={`${b}:${x}`} onClick={() => setze("variante", b, x)}
+                                {...tt(`${name}: Variante ${varianteText(x)} – Aussprache und Stimmen dieser Variante`)}>{varianteText(x)}</button>
+                            ))}
+                          </div>
+                        )}
+                        <div data-stimmen-liste={b} style={{display:"flex", flexDirection:"column", gap:2}}>
+                          {liste.map(v => {
+                            const an = !aus.includes(v.voiceURI), ist = aktuell === v;
+                            return (
+                              <div key={v.voiceURI} className="stimme-zeile" data-stimme={v.voiceURI}>
+                                <input type="checkbox" checked={an} data-stimme-an={v.voiceURI} style={{width:18, height:18}}
+                                  onChange={() => setze("aus", b, an ? [...aus, v.voiceURI] : aus.filter(x => x !== v.voiceURI))}
+                                  {...ttFeld(an ? "Stimme abschalten – wird nicht mehr verwendet" : "Stimme einschalten – wird beim „🔁 Stimme“ durchgewechselt")}/>
+                                <span style={{flex:1, opacity: an ? 1 : 0.45, fontWeight: ist ? 700 : 400, cursor: an ? "pointer" : "default"}} data-stimme-wahl={v.voiceURI}
+                                  onClick={() => { if (!an) return; setze("sprachen", b, v.voiceURI); sprichMit(v); }}
+                                  {...tt(an ? "Antippen: diese Stimme verwenden" : "abgeschaltet")}>
+                                  {v.name} <span style={{fontSize:"0.72rem", color:"var(--text3)"}}>{v.lang}</span>{ist && an ? " ✓" : ""}
+                                </span>
+                                <button className="btn btn-ghost btn-sm" data-stimme-probe={v.voiceURI} onClick={() => sprichMit(v)} {...tt(`Probe: ${v.name}`)}>▶</button>
+                              </div>
+                            );
+                          })}
                         </div>
-                      )}
+                        <div style={{display:"flex", alignItems:"center", gap:8}}>
+                          <span style={{fontSize:"0.8rem", color:"var(--text2)", minWidth:92}}>Tempo <b data-stimme-tempo-wert={b}>{tempo.toFixed(1).replace(".", ",")}×</b></span>
+                          <input type="range" min="0.6" max="1.6" step="0.1" value={tempo} data-stimme-tempo={b} style={regler}
+                            onChange={e => setze("tempoSprache", b, Number(e.target.value) === 1 ? undefined : Number(e.target.value))}
+                            onPointerUp={() => sprichMit(aktuell)} {...ttFeld(`Tempo für ${name} – zum Ausgleich zwischen den Sprachen; wird mit dem Gesamt-Tempo multipliziert`)}/>
+                        </div>
+                      </>)}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
               <div className="karte">
                 <div className="karte-zeile" style={{flexDirection:"column", alignItems:"stretch", gap:6}}>
-                  <div className="karte-zeile-name">Tempo <span data-stimmen-tempo style={{fontWeight:400, color:"var(--text2)"}}>{tempo.toFixed(1).replace(".", ",")}×</span></div>
-                  <input type="range" min="0.6" max="1.4" step="0.1" value={tempo} data-stimmen-tempo-regler
-                    onChange={e => aendereStimmen({ ...stimmenWahl, tempo: Number(e.target.value) === 1 ? undefined : Number(e.target.value) })}
-                    {...ttFeld("Sprechtempo für alle Sprachen: links langsamer, rechts schneller")}/>
+                  <div className="karte-zeile-name">Gesamt-Tempo <span data-stimmen-tempo style={{fontWeight:400, color:"var(--text2)"}}>{(w.tempo || 1).toFixed(1).replace(".", ",")}×</span></div>
+                  <input type="range" min="0.6" max="1.4" step="0.1" value={w.tempo || 1} data-stimmen-tempo-regler style={regler}
+                    onChange={e => aendereStimmen({ ...w, tempo: Number(e.target.value) === 1 ? undefined : Number(e.target.value) })}
+                    {...ttFeld("Gesamt-Tempo für alle Sprachen (multipliziert mit dem Tempo der Sprache) – auch über lang drücken auf eine Abfrage-Karte")}/>
                 </div>
               </div>
               </>);
@@ -10534,6 +10928,32 @@ export default function VokabelApp() {
                                   );
                                 })}
                               </>)}
+                              {r.key === "zuordnungAmEnde" && [
+                                ["zuordnungPaare", "… Vokabeln je Runde", "Wie viele Vokabeln eine Zuordnungs-Runde hat (passt nicht alles auf den Bildschirm, werden es automatisch weniger)",
+                                  [3, 4, 5, 6, 7, 8, 9, 10, 12].map(x => [x, String(x)]), st => st === "einfach" ? 5 : 7],
+                                ["zuordnungZeit", "… Zeit", "aus · Runde: eine Zeit für die ganze Runde · je Vokabel: nach jedem gefundenen Paar beginnt die Zeit neu",
+                                  ZUORDNUNG_ZEITEN, st => st === "einfach" ? "aus" : "vokabel"],
+                                ["zuordnungSek", "… Sekunden je Vokabel", "Zeit je Vokabel; bei 3 Spalten ×1,6, bei 4 Spalten ×2",
+                                  ZUORDNUNG_SEKUNDEN.map(x => [x, `${x} s`]), () => 8],
+                              ].map(([key, label, info, werte, std]) => (<Fragment key={key}>
+                                <div style={{paddingLeft:12}}>
+                                  <div style={{fontSize:"0.8rem", fontWeight:600, color:"var(--text)"}} {...tt(info)}>{label}</div>
+                                </div>
+                                {["einfach", "schwer"].map(st => {
+                                  const wert = einstellungen.stufen?.[st]?.[key] ?? std(st);
+                                  return (
+                                    <div key={st} style={{display:"flex", justifyContent:"center"}}>
+                                      <select data-zuordnung-einst={`${key}:${st}`} value={String(wert)}
+                                        style={{fontFamily:"inherit", fontSize:"0.8rem", padding:"3px 2px", borderRadius:6, border:"1.5px solid var(--rahmen)", background:"var(--karte)", width:56}}
+                                        onChange={e => { const v = typeof werte[0][0] === "number" ? Number(e.target.value) : e.target.value;
+                                          speichereEinst({...einstellungen, stufen: {...(einstellungen.stufen || {}), [st]: {...(einstellungen.stufen?.[st] || {}), [key]: v}}}); }}
+                                        {...ttFeld(`${label.replace("… ", "")} – Stufe „${st === "einfach" ? "Leicht" : "Schwer"}“`)}>
+                                        {werte.map(([w, t]) => <option key={String(w)} value={String(w)}>{t}</option>)}
+                                      </select>
+                                    </div>
+                                  );
+                                })}
+                              </Fragment>))}
                             </Fragment>))}
                           </div>
                         </div>

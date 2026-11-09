@@ -48,3 +48,9 @@ export async function farbZeige(page, sel) {
   }
   return false;
 }
+// Quiz-Tab: Paketgröße wählen (Standard ist „Alle“ = ein Paket); danach den Umfang-Bereich wieder zuklappen
+export async function paketGroesse(page, n) {
+  const warte = ms => new Promise(r => setTimeout(r, ms));
+  await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await warte(250);
+  await page.evaluate(n => document.querySelector(`[data-umfang-wahl="${n}"]`)?.click(), String(n)); await warte(300);
+}

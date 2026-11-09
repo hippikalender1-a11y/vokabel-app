@@ -80,10 +80,10 @@ await clickText("button", "Zur Statistik");
 await sleep(500);
 t = await text();
 console.log("     Runde:", (t.match(/Lernfortschritt[\s\S]{0,90}/) || [""])[0].replace(/\n/g, " | "));
-// partir 2→3 (100 %), sortir –→1 (33 %): (100+33)/2 = 67 %, vorher (67+0)/2 = 33 % → +33
+// „Alle“ ist ein Session-Paket: danach Statistik der ganzen Session (4 Verben, aller + venir + jetzt partir gelernt)
 const kopfR = (t.match(/Lernfortschritt[\s\S]{0,60}/) || [""])[0];
-ok(/67 %/.test(kopfR) && !/\+33|Session|Global/.test(kopfR), "Runden-Statistik: nur Prozent (67 %), kein „+“ und kein Global/Session");
-ok(/1 \/ 2 gelernt/.test(t), "Runde: „1 / 2 gelernt“");
+ok(/83 %/.test(kopfR) && !/Global/.test(kopfR), "Session-Statistik nach der Runde: 83 %, kein Global");
+ok(/3 \/ 4 gelernt/.test(t), "Session: „3 / 4 gelernt“");
 await page.screenshot({ path: "fortschritt_runde.png" });
 
 await browser.close();

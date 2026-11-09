@@ -51,8 +51,8 @@ await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
 
 const namen = await page.evaluate(() => [...document.querySelectorAll("[data-farbschema]")].map(b => b.querySelector(".farb-name").textContent.replace("✓ ", "").trim()));
 console.log("     Schemata:", namen.join(" | "));
-ok(namen.join("|") === "Natur|Freudig|Pastelle|Mädchen|Jungs|Dunkel|Ozean|Lavendel|Minze|Sand|Beere|Olive|Graphit|Kontrast|Mitternacht|Espresso|Sorbet|Lagune|Blumenwiese|Nordlicht|Sommerfest|Kirschblüte|Tiefsee|Herbstlaub|Gletscher|Terrakotta|Retro 70er|Neon|Matcha|Tinte & Papier|Sonnenuntergang",
-  "31 Vorlagen (zehn neue: Kirschblüte … Sonnenuntergang): Natur, Freudig, Pastelle, Mädchen, Jungs, Dunkel, Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht, Espresso, Sorbet, Lagune, Blumenwiese, Nordlicht, Sommerfest");
+ok(namen.join("|") === "Natur|Freudig|Pastelle|Mädchen|Jungs|Dunkel|Ozean|Lavendel|Minze|Sand|Beere|Olive|Graphit|Kontrast|Mitternacht|Espresso|Sorbet|Lagune|Blumenwiese|Nordlicht|Sommerfest|Kirschblüte|Tiefsee|Herbstlaub|Gletscher|Terrakotta|Retro 70er|Neon|Matcha|Tinte & Papier|Sonnenuntergang|Senf|Flamingo|Pistazie|Himmelblau|Lachs|Lavendelfeld|Zitrone|Koralle|Türkis|Pfirsich & Petrol|Kaugummi|Mint & Schoko|Aubergine|Tannengrün|Petrol|Pflaume|Ochsenblut|Indigo|Vulkan",
+  "50 Vorlagen (19 experimentelle: Senf … Vulkan): Natur, Freudig, Pastelle, Mädchen, Jungs, Dunkel, Ozean, Lavendel, Minze, Sand, Beere, Olive, Graphit, Kontrast, Mitternacht, Espresso, Sorbet, Lagune, Blumenwiese, Nordlicht, Sommerfest");
 ok(await variable("haupt") === "#2d6a4f" && await page.evaluate(() => document.querySelector('[data-farbschema="natur"]').classList.contains("aktiv")), "Standard: Natur (Hauptfarbe #2d6a4f)");
 
 for (const id of ["freudig", "pastelle", "maedchen", "jungs", "dunkel"]) {

@@ -46,7 +46,7 @@ await sleep(300);
 const aktiv = await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].map(b => b.textContent.trim()));
 console.log("     aktive Knöpfe:", aktiv.join(" | "));
 ok(aktiv.includes("Mit Wiederholung") && aktiv.includes("1×"), "Standard: Abfrage-Ziel „Mit Wiederholung“ 1×");
-ok(await page.evaluate(() => document.querySelector("[data-umfang]")?.textContent.trim()) === "Je 10 Vokabeln", "Standard: Paketgröße 10");
+ok(await page.evaluate(() => document.querySelector("[data-umfang]")?.textContent.trim()) === "Alle Vokabeln", "Standard: Paketgröße „Alle“ (ein Paket)");
 
 // Quiz: gehen gewusst, sehen beim 1. Mal nicht, danach gewusst
 await clickText("[data-start-knopf]", "");

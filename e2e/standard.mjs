@@ -45,14 +45,14 @@ await clickText(".quiz-setup-check", "Vocabulaire");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 let i = await info();
 console.log("     Start:", JSON.stringify(i));
-ok(i.session === "Je 10 Vokabeln" && i.start === 10, "App-Start: Pakete mit 10 Vokabeln");
+ok(i.session === "Alle Vokabeln" && i.start === 25, "App-Start: alle Vokabeln in einem Paket");
 
-// "Alle" wählen, dann "Neu" → wieder 10
+// 10 wählen, dann "Neu" → wieder „Alle“
 await page.click("[data-umfang]"); await sleep(200);
-await page.click('[data-umfang-wahl="alle"]');
+await page.click('[data-umfang-wahl="10"]');
 await sleep(300);
 i = await info();
-ok(i.session === "Alle Vokabeln" && i.start === 25, "„Alle“ gewählt: 25 Vokabeln");
+ok(i.session === "Je 10 Vokabeln" && i.start === 10, "10 gewählt: Pakete mit 10");
 await page.evaluate(() => window.scrollTo(0, 0));
 if (!(await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].some(c => c.textContent.trim() === "Neu"))))
   await page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv")].find(b => b.textContent.trim().startsWith("Neues Quiz"))?.click());
@@ -61,14 +61,14 @@ await neueEineSession(page);
 await clickText(".quiz-setup-check", "Vocabulaire");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 i = await info();
-ok(i.session === "Je 10 Vokabeln" && i.start === 10, "Nach „Neu“: wieder Pakete mit 10");
+ok(i.session === "Alle Vokabeln" && i.start === 25, "Nach „Neu“: wieder alle in einem Paket");
 
 // Start aus der Liste
 await zuListen(page);
 await clickText(".karte-zeile", "Vocabulaire");
 await clickText("button", "Quiz starten", true);
 i = await info();
-ok(i.session === "Je 10 Vokabeln" && i.start === 10, "Quiz aus der Liste: Pakete mit 10");
+ok(i.session === "Alle Vokabeln" && i.start === 25, "Quiz aus der Liste: alle in einem Paket");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

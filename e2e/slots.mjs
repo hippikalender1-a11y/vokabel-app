@@ -61,7 +61,7 @@ const quizRunde = async () => {
 };
 await quizRunde();
 let sl = await slots();
-ok(sl.verlauf?.length === 1 && sl.verlauf[0].startScores && Object.keys(sl.verlauf[0].startScores).length === 3, "Normales Quiz: Verlauf-Eintrag mit Start-Scores");
+ok(sl.verlauf?.length === 1 && sl.verlauf[0].konfiguration, "Quiz („Alle“ = ein Paket): ein Verlauf-Eintrag mit der Konfiguration");
 await quizRunde();
 sl = await slots();
 ok(sl.verlauf.length === 1, `Gleiche Konfiguration nochmal: kein doppelter Eintrag (${sl.verlauf.length})`);

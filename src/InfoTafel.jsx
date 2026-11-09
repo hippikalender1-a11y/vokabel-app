@@ -58,7 +58,7 @@ export default function InfoTafel() {
     const klick = e => {
       // Nachzügler-Klick vom Loslassen des Lang-Drucks: verschlucken, Tafel bleibt offen
       if (info && (haltenRef.current || Date.now() < sperreBisRef.current)) { e.preventDefault(); e.stopPropagation(); return; }
-      if (e.target.closest("[data-info-schalter]") || e.target.closest("[data-info-aktion]") || e.target.closest("[data-info-farbe]")) return;
+      if (e.target.closest("[data-info-schalter]") || e.target.closest("[data-info-aktion]") || e.target.closest("[data-info-farbe]") || e.target.closest("[data-info-regler]")) return;
       // Auswahl-Tafel: Kacheln wählen weiter aus, die Tafel selbst beendet die Auswahl, sonst passiert nichts
       if (info?.auswahl) {
         if (e.target.closest("[data-auswahl-durchlass]")) return;
@@ -109,7 +109,7 @@ export default function InfoTafel() {
   // Menü: Aktionen des Elements, dazu „🎨 Farbe ändern“ (startet den Farbmodus an dieser Stelle)
   const menue = info ? [...(info.aktionen || []), ...(!modus && farbeImMenueAn() && info.x != null ? [{ label: "🎨 Farbe ändern", farbe: true, fn: () => farbeHier(info.x, info.y) }] : [])] : [];
   const mitMenue = menue.length > 0;
-  const darueber = info && info.y > (mitMenue ? 330 : 150);
+  const darueber = info && info.y > (mitMenue ? 330 : 150) + (info?.regler ? 80 : 0);
   return (
     <>
       {info && (
@@ -125,6 +125,7 @@ export default function InfoTafel() {
           }}>
             <div style={{ fontSize: mitMenue ? "1.05rem" : "0.95rem", fontWeight: mitMenue ? 700 : 400, lineHeight: 1.5, overflowWrap: "anywhere" }}>{info.text}</div>
           </div>}
+          {info.regler && <TafelRegler key={info.text} regler={info.regler}/>}
           {mitMenue && (
             <div data-info-menue style={{ display: "flex", flexDirection: unten ? "row" : "column", flexWrap: unten ? "wrap" : undefined, gap: unten ? 6 : 8 }}>
               {menue.map(a => (
@@ -149,5 +150,20 @@ export default function InfoTafel() {
         }}>ⓘ Info-Modus beenden</button>
       )}
     </>
+  );
+}
+
+// Regler in der Tafel (z. B. Gesamt-Tempo beim Vorlesen): ändert sofort, beim Loslassen „fertig“ (z. B. Probe vorlesen)
+function TafelRegler({ regler }) {
+  const [wert, setWert] = useState(regler.wert);
+  return (
+    <div data-info-regler style={{ background: "rgba(28,24,20,0.95)", color: "#fff", borderRadius: 14, padding: "10px 14px", boxSizing: "border-box", boxShadow: "0 6px 24px rgba(0,0,0,0.3)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", fontWeight: 700, marginBottom: 6 }}>
+        <span>{regler.label}</span><span data-info-regler-wert>{regler.format ? regler.format(wert) : wert}</span>
+      </div>
+      <input type="range" min={regler.min} max={regler.max} step={regler.step} value={wert} style={{ width: "100%" }}
+        onChange={e => { const v = Number(e.target.value); setWert(v); regler.aendern?.(v); }}
+        onPointerUp={() => regler.fertig?.()} />
+    </div>
   );
 }

@@ -153,11 +153,11 @@ ok(name === "S1", `„Fertig“ mit einer Session lädt sie (${name})`);
 await page.evaluate(() => { window.__gesprochen = []; window.speechSynthesis.speak = u => window.__gesprochen.push(u.text); });
 await page.evaluate(() => { if (document.querySelector("[data-quiz-ansicht='auswahl']")) document.querySelector("[data-slot-kopf-name]")?.click(); }); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(800);
-const frage = await page.evaluate(() => document.querySelector("[data-vorlesen]")?.textContent.trim());
-await page.evaluate(() => document.querySelector("[data-karte-frage] [data-vorlesen]")?.click()); await sleep(300);
+const frage = await page.evaluate(() => document.querySelector("[data-karte-frage] .quiz-frage-text")?.textContent.trim());
+await page.evaluate(() => document.querySelector("[data-karte-frage]")?.click()); await sleep(300);
 const gesprochen = await page.evaluate(() => window.__gesprochen);
 ok(frage && gesprochen.some(t => t === frage), `Frage antippen liest vor („${frage}“ → ${JSON.stringify(gesprochen)})`);
-ok(!(await page.evaluate(() => [...document.querySelectorAll("[data-karte-frage] button")].some(b => /vorlesen/i.test(b.getAttribute("data-info") || "")))), "kein Vorlese-Knopf in der Frage-Karte");
+ok(!(await page.evaluate(() => [...document.querySelectorAll("[data-karte-frage] button:not([data-stimme-wechsel])")].some(b => /vorlesen/i.test(b.getAttribute("data-info") || "")))), "kein Lautsprecher-Knopf in der Frage-Karte (nur ggf. „🔁 Stimme“)");
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Beenden|✕/.test(b.textContent) && b.closest(".topbar"))?.click()); await sleep(300);
 await page.goto(URL); await sleep(800);
 
@@ -196,14 +196,17 @@ ok(await page.evaluate(() => JSON.parse(localStorage.getItem("geraet_stimmen") |
 // ── 21 + 22: Farben als eigener Bereich mit Tabs, 31 Vorlagen ──
 await page.click('[data-einst-kopf="farben"]'); await sleep(300);
 const vorlagen = await page.evaluate(() => document.querySelectorAll("[data-farbschema]").length);
-ok(await page.$("[data-farb-tabs]") && vorlagen === 31, `Farben: Tabs, ${vorlagen} Vorlagen`);
+ok(await page.$("[data-farb-tabs]") && vorlagen === 50, `Farben: Tabs, ${vorlagen} Vorlagen`);
 ok(!(await page.$("[data-farbmodus-start]")), "Werkzeuge nur im Tab „Werkzeuge“");
 await page.click('[data-farbschema="neon"]'); await sleep(300);
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen")).farbschema === "neon"), "neue Vorlage „Neon“ wählbar");
 await page.click('[data-farb-tab="werkzeuge"]'); await sleep(300);
-ok(await page.$("[data-farbmodus-start]") && await page.$("[data-zufall-farben]") && !(await page.$("[data-farbschema]")), "Tab „Werkzeuge“: Farbmodus, Zufallsfarben");
+ok(await page.$("[data-farbmodus-start]") && !(await page.$("[data-farbschema]")), "Tab „Werkzeuge“: Farbmodus");
 await page.click('[data-farb-tab="eigene"]'); await sleep(300);
-ok(await page.$("[data-keine-eigenen]"), "Tab „Eigene“: noch keine eigenen Schemata");
+const ersteEigene = await page.evaluate(() => document.querySelector("[data-farb-tabs] ~ .karte .farb-raster")?.firstElementChild?.hasAttribute("data-farbschema-zufall"));
+ok(ersteEigene, "Tab „Eigene“: „🎲 Zufall“ steht an erster Stelle");
+await page.click("[data-farbschema-zufall]"); await sleep(300);
+ok(await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen")); return e.eigeneSchemata.some(x => x.zufall && x.id === e.farbschema); }), "„🎲 Zufall“ antippen: Zufallsschema erzeugt und verwendet");
 await page.click('[data-einst-kopf="app"]'); await sleep(300);
 ok(!(await page.$("[data-farbschema]")), "App-Bereich ohne Farbschemata");
 

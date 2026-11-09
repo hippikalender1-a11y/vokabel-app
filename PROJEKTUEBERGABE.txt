@@ -1941,6 +1941,28 @@ STIMMEN (Punkt 20): Einstellungen › Stimmen – je Sprache Auswahl (Automatisc
 FARBEN-BEREICH (Punkt 21/22): Einstellungen › Farben (eigener Kopf) mit Tabs Vorlagen | Eigene | Werkzeuge (farbTab;
   Bearbeiten zeigt „Eigene“). 10 neue Vorlagen: Kirschblüte, Tiefsee, Herbstlaub, Gletscher, Terrakotta, Retro 70er, Neon,
   Matcha, Tinte & Papier, Sonnenuntergang (31 insgesamt). Tests: hilfen.mjs farbZeige(page, sel) sucht den Tab.
+19 EXPERIMENTELLE VORLAGEN (Punkt 23): kräftige bzw. farbig-dunkle Hintergründe (Senf … Vulkan), nur Einzelfarben – 50 Vorlagen.
+ZUFALL-KACHEL (Punkt 24): unter „Eigene“ immer zuerst „🎲 Zufall“ (data-farbschema-zufall): antippen = zufallsSchema();
+  lang drücken: Bearbeiten / Duplizieren. Knopf „Zufällige Farben“ unter Werkzeuge entfernt.
+ZUORDNUNG (Punkt 25): Antwortart „zuordnung“ (Modus-Knopf, exklusiv für alle Antwort-Spalten, nicht bei rotierend/Diktat).
+  starteQuiz baut neuQuiz.zuordnung {spalten (Frage + Antwort, max 4), paare, zeit, sek, amEnde, abzug, queue, beantwortet};
+  zuordnungRunde() nimmt die nächsten k aus der Warteschlange (phase "zuordnung"), Karten je Spalte gemischt.
+  sofort: erste Karte bestimmt die Vokabel, falsche Karte blinkt, fehler[id]; vollständig → zuordnungWerte (richtig +1 /
+  falsch nach Regel zuordnungAbzug). am Ende: farbige nummerierte Gruppen (ZUORDNUNG_FARBEN ohne Rot/Grün), „Prüfen“
+  (zuordnungPruefe, nur vollständige Gruppen; falsch = Vokabel der ersten Karte). Zeit: aus | runde | vokabel, Sekunden je
+  Vokabel × ZUORDNUNG_ZEITFAKTOR (Spalten); Ablauf → nur Vollständiges zählt, Rest vorne in die Warteschlange.
+  Einstellungen je Stufe in einst.stufen[st]: zuordnungPaare/Zeit/Sek (zuordnungEinst), Regeln zuordnungAbzug/AmEnde.
+  Abbrechen: beantwortet zählt für den Session-Fortschritt. Test e2e/zuordnung.mjs.
+PAKET „ALLE“ (Punkt 26): STANDARD_PAKET_GROESSE = PAKET_ALLE (10000) – ein Paket mit allen Vokabeln, Session-Fortschritt
+  bleibt. „Alle“ im Umfang setzt pakete + PAKET_ALLE (der frühere Modus ohne Session ist nicht mehr wählbar).
+  Tests: hilfen.mjs paketGroesse(page, n).
+VORLESEN (Punkt 27): geraet_stimmen = { sprachen, variante, aus, tempoSprache, tempo }. aktiveStimmen(basis) = Stimmen der
+  Variante ohne abgeschaltete; stimmeFuer nimmt gewählte bzw. aktive; aeusserung: Variante als lang, rate = sprechTempo(basis)
+  (Tempo der Sprache × Gesamt-Tempo). Einstellungen › Stimmen: je Sprache Varianten-Chips (varianteText mit Flagge), Stimmen
+  mit Haken (an/aus), Name antippen = verwenden, ▶ Probe, Tempo je Sprache 0,6–1,6; darunter Gesamt-Tempo 0,6–1,4.
+  Abfrage-Karte: ganze Frage-Karte spielt ab (Antwort-Karte, sobald sichtbar); „🔁“ (data-stimme-wechsel) bei ≥2 aktiven
+  Stimmen → naechsteStimme (bleibt eingestellt); lang drücken: Tafel mit Regler (tt opts.regler → InfoTafel TafelRegler,
+  data-info-regler) für das Gesamt-Tempo, beim Loslassen vorlesen. Test e2e/stimmen.mjs (gefälschte Stimmen).
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

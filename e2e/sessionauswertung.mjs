@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, bereichZu } from "./hilfen.mjs";
+import { zuListen, bereichZu, paketGroesse } from "./hilfen.mjs";
 
 // Session-Auswertung über mehrere Pakete: Balken Start/Ende, Lernfortschritt, neu gelernt, Zusatzdaten;
 // nach „Nochmal!“ beginnt die Auswertung mit neuen Start-Werten
@@ -62,6 +62,8 @@ await clickText("button", "Quiz starten", true);
 await page.click("[data-reihenfolge]"); await sleep(300);
 await clickText(".toggle-opt", "Listen-Nr.", true);
 await page.evaluate(() => { const r = document.querySelector('input[type="range"]'); });
+await bereichZu(page);
+await paketGroesse(page, 10);
 await clickText("[data-start-knopf]", "");
 await sleep(300);
 const titel1 = await page.evaluate(() => document.querySelector(".topbar-title")?.textContent.trim());
