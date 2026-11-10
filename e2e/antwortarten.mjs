@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu, bereichZu } from "./hilfen.mjs";
+import { neueEineSession, listenZu, bereichZu, fremdAlsFrage } from "./hilfen.mjs";
 
 // Neue Antwortarten: „Hören“ (Frage verdeckt + vorgelesen, Antwort per MC), „Puzzle“ (Buchstaben-Kacheln),
 // „Lücken“ (fehlende Buchstaben ergänzen, der erste bleibt stehen)
@@ -34,7 +34,9 @@ const starte = async (art, woerter = WOERTER) => {
   await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(300);
   await listenZu(page);
   await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
-  const da = await page.evaluate(a => { const b = document.querySelector(`[data-modus-knopf="E1:${a}"]`); b?.click(); return !!b; }, art); await sleep(200);
+  if (art === "hoeren") await fremdAlsFrage(page);   // Hören gibt es nur mit deutscher Antwort
+  const sp = art === "hoeren" ? "D1" : "E1";
+  const da = await page.evaluate((a, sp) => { const b = document.querySelector(`[data-modus-knopf="${sp}:${a}"]`); b?.click(); return !!b; }, art, sp); await sleep(200);
   await page.evaluate(() => document.querySelector('[data-modus-knopf$=":karte"].aktiv')?.click()); await sleep(200);
   await bereichZu(page);
   await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(800);
@@ -43,7 +45,7 @@ const starte = async (art, woerter = WOERTER) => {
 const frageText = () => page.evaluate(() => document.querySelector("[data-karte-frage] .quiz-frage-text")?.textContent.trim());
 
 // ── Hören ──
-// „Hören“ wählen dreht die Richtung: Französisch wird vorgelesen, Deutsch gewählt
+// „Hören“ (Französisch → Deutsch): Französisch wird vorgelesen, Deutsch gewählt
 ok(await starte("hoeren"), "Modus-Knopf „Hören“");
 ok(await page.$("[data-hoer-verdeckt]"), "Frage verdeckt (🔊)");
 const gehoert = await page.evaluate(() => window.__gesprochen[window.__gesprochen.length - 1]);

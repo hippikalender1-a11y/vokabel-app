@@ -77,3 +77,15 @@ export async function stufeFenster(page, was) {
   await page.evaluate(() => { if (document.querySelector("[data-stufe-auswahl]")) document.querySelector("[data-stufe]")?.click(); });
   await new Promise(r => setTimeout(r, 250));
 }
+
+// Modus-Fenster (offen): Richtung drehen – Frage = Fremdsprache (E1), Antwort = Deutsch (D1)
+export async function fremdAlsFrage(page) {
+  const rolle = (typ, art) => page.evaluate((typ, art) => {
+    const b = [...document.querySelectorAll(".spalten-rolle-btn")].find(x => x.closest('div[style*="border-bottom"]')?.textContent.includes(typ) && x.textContent.trim().startsWith(art));
+    b?.click(); return !!b;
+  }, typ, art);
+  await rolle("D1", "Frage"); await new Promise(r => setTimeout(r, 150));
+  await rolle("E1", "Antwort"); await new Promise(r => setTimeout(r, 150));
+  await rolle("E1", "Frage"); await new Promise(r => setTimeout(r, 150));
+  await rolle("D1", "Antwort"); await new Promise(r => setTimeout(r, 200));
+}

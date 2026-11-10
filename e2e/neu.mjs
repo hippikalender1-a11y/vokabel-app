@@ -62,7 +62,7 @@ await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].
 await sleep(400);
 let z = await zustand();
 console.log("     Preset aktiv:", JSON.stringify(z));
-ok(z.start === "2" && z.reihenfolge === "Zufällige Reihenfolge", "Preset: 2 Vokabeln, Zufällig");
+ok(z.start === "2" && z.reihenfolge === "Zufällig", "Preset: 2 Vokabeln, Zufällig");
 
 // Neu
 await page.evaluate(() => window.scrollTo(0, 0));

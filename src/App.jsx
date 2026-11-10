@@ -589,6 +589,10 @@ function passtRichtung(m, antwortTyp, frageTyp) {
   if (m === "memory") return fremd(antwortTyp) || fremd(frageTyp);
   return true;
 }
+// Antwortarten, die nur mit einer Antwort in der Fremdsprache (E-Spalte) bzw. auf Deutsch Sinn ergeben
+const NUR_FREMD = ["tippen", "akzent", "puzzle", "luecke", "artikel", "satzfinden", "satzbauen", "lueckensatz"];
+const NUR_DEUTSCH = ["hoeren"];
+const modusErlaubt = (antwortTyp, m) => antwortTyp.startsWith("E") ? !NUR_DEUTSCH.includes(m) : !NUR_FREMD.includes(m);
 function loeseSpaltenModusAuf(basis, vok, frageTyp) {
   const r = {};
   const artikelOk = t => !!artikelInfo(vok?.[t]?.wert, vokSprache(vok));
@@ -613,6 +617,10 @@ function loeseSpaltenModusAuf(basis, vok, frageTyp) {
   return r;
 }
 
+function antwortStatus(klasse) {
+  const st = /gelernt-blitz| richtig/.test(klasse) ? "richtig" : / falsch/.test(klasse) ? "falsch" : / aufgedeckt/.test(klasse) ? "aufgedeckt" : null;
+  return st ? <span className={`antwort-status ${st}`} data-antwort-status={st} aria-label={st}>{st === "richtig" ? "✓" : st === "falsch" ? "✗" : "👁"}</span> : null;
+}
 function sprich(text, lang) {
   if (!text || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
@@ -1751,7 +1759,10 @@ const CSS_BASIS = `
   .typ-btn{font-size:0.78rem;font-weight:600;padding:5px 10px;border-radius:6px;border:1.5px solid var(--rahmen);background:var(--knopf);color:var(--text2);cursor:pointer;font-family:inherit;}
   .typ-btn.aktiv{background:var(--haupt);color:var(--auf-haupt);border-color:var(--haupt);}
   .typ-btn:disabled{opacity:0.3;cursor:not-allowed;}
-  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;}
+  .toggle-row > :first-child:not(.toggle-btn){flex:1 1 auto;min-width:0;}
+  .toggle-row > .toggle-btn{flex-shrink:0;}
+  .toggle-row > .toggle-btn .toggle-opt{min-height:40px;padding:8px 16px;font-size:0.9rem;}
   .toggle-label{font-weight:600;font-size:0.9rem;}
   .toggle-sub{font-size:0.78rem;color:var(--text2);margin-top:2px;}
   .toggle-btn{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid var(--rahmen);}
@@ -1778,7 +1789,10 @@ const CSS_BASIS = `
   .slot-chip.leer{opacity:0.35;cursor:default;}
   .slot-raster{display:grid;gap:6px;}
   .quiz-zeile{position:sticky;z-index:7;display:flex;gap:8px;background:var(--karte);border-bottom:1px solid var(--rahmen);padding:10px 16px;margin:0 -16px;}
-  .quiz-zeile-knopf{flex:1;min-width:0;padding:9px 6px;border-radius:10px;border:1.5px solid var(--haupt);background:var(--haupt);color:var(--auf-haupt);font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .quiz-zeile-zelle{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .quiz-zeile-zelle.schmal{flex:0 0 auto;}
+  .quiz-zeile-label{font-size:0.66rem;font-weight:600;color:var(--text3);padding-left:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.2px;}
+  .quiz-zeile-knopf{flex:1 1 auto;min-height:40px;width:100%;min-width:0;padding:9px 6px;border-radius:10px;border:1.5px solid var(--haupt);background:var(--haupt);color:var(--auf-haupt);font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .quiz-zeile-knopf.zweizeilig{padding:4px 6px;line-height:1.2;}
   .quiz-zeile-knopf.umbruch{white-space:normal;line-height:1.2;padding:4px 6px;}
   .quiz-zeile-knopf .zeile1,.quiz-zeile-knopf .zeile2{display:block;overflow:hidden;text-overflow:ellipsis;}
@@ -1998,6 +2012,10 @@ const CSS_BASIS = `
   .karte-aufdecken{text-align:center;padding:20px 0;color:var(--text3);font-size:0.9rem;font-style:italic;}
   .stimme-wechsel{position:absolute;top:6px;right:6px;z-index:2;border:1.5px solid var(--rahmen);background:var(--karte);border-radius:16px;padding:2px 8px;font-size:0.9rem;cursor:pointer;line-height:1.4;}
   .stimme-zeile{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.88rem;}
+  .antwort-status{display:inline-flex;align-items:center;justify-content:center;width:1.6em;height:1.6em;border-radius:50%;margin-right:8px;font-size:0.95rem;font-weight:900;letter-spacing:0;line-height:1;}
+  .antwort-status.richtig{background:var(--richtig);color:#fff;}
+  .antwort-status.falsch{background:var(--falsch);color:#fff;}
+  .antwort-status.aufgedeckt{background:var(--flaeche);font-size:0.85rem;}
   .satz-band{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;border-radius:12px;background:var(--flaeche);padding:10px;margin:4px 0 8px;max-width:100%;box-sizing:border-box;}
   .satz-wort{min-width:2.6em;max-width:100%;overflow-wrap:anywhere;border:1.5px solid var(--rahmen);background:var(--karte);border-radius:10px;padding:8px 10px;font-family:inherit;font-size:1.05rem;font-weight:700;color:var(--text-stark);cursor:pointer;}
   .satz-text{font-size:1.1rem;line-height:1.6;text-align:center;color:var(--abfrage-schrift, var(--text-stark));}
@@ -3037,6 +3055,20 @@ export default function VokabelApp() {
       setQuizSpalteModus(Object.fromEntries(neuAntw.map(t => [t, quizArt === "akzente" ? 'akzent' : 'karte'])));
     }
   }, [quizListenKey, listenIndex]);
+
+  useEffect(() => {
+    let geaendert = false;
+    const neu = {};
+    Object.entries(quizSpalteModus || {}).forEach(([t, m]) => {
+      const alt = modiVon(m);
+      let ok = alt.filter(x => modusErlaubt(t, x));
+      if (ok.length === alt.length) return void (neu[t] = m);   // alles passt – unverändert (auch „nur Akzente“)
+      if (!ok.some(x => x !== "akzent")) ok = [STANDARD_ANTWORT_MODUS, ...ok];
+      if (ok.length !== alt.length || ok.some((x, i) => x !== alt[i])) geaendert = true;
+      neu[t] = ok.length === 1 ? ok[0] : ok;
+    });
+    if (geaendert) setQuizSpalteModus(neu);
+  }, [quizSpalteModus]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Nach der Zwischenkarte "Wiederholung" die erste Frage erneut vorlesen
   const quizWiederholungHinweis = quiz?.phase === "wiederholungHinweis";
@@ -6215,7 +6247,7 @@ export default function VokabelApp() {
     const aktiv = modiVon(quizSpalteModus[typ]);
     const akzentMoeglich = typ.startsWith("E") && quizTabListen.some(id => AKZENTE_FUER_LISTE(id));
     const umschalten = m => setQuizSpalteModus(p => {
-      const spalten = quizAntwortTypenGeordnet.length ? quizAntwortTypenGeordnet : [typ];
+      const spalten = quizModus === "rotierend" ? (quizAusgewaehlt.length ? quizAusgewaehlt : [typ]) : quizAntwortTypenGeordnet.length ? quizAntwortTypenGeordnet : [typ];
       if (istRunde(m)) {
         const an = !modiVon(p[typ]).includes(m); const neu = { ...p };
         spalten.forEach(t => { const alt = modiVon(p[t]).filter(x => x !== m);
@@ -6228,25 +6260,26 @@ export default function VokabelApp() {
       if (!neu.some(x => x !== "akzent")) return p;
       return { ...p, [typ]: neu.length === 1 ? neu[0] : neu };
     });
-    const umschaltenMitRichtung = m => {
-      umschalten(m);
-      if (quizModus !== "sequenziell" || !["hoeren", "luecke"].includes(m) || aktiv.includes(m)) return;
-      const f = quizFrageTyp;
-      if (!f || quizAntwortTypenGeordnet.length !== 1 || quizAntwortTypenGeordnet[0] !== typ || passtRichtung(m, typ, f)) return;
-      if (!passtRichtung(m, f, typ)) return;   // auch umgedreht passt es nicht
-      const neutral = ["karte", "mc", "tippen", "puzzle", "zuordnung", "memory", m];
-      if (!aktiv.every(x => neutral.includes(x))) return;   // andere Arten brauchen die jetzige Richtung
-      // Frage und Antwort tauschen; die Antwortarten wandern mit
-      setQuizFrageTyp(typ);
-      setQuizAntwortTypenGeordnet([f]);
-      setQuizSpalteModus(p => ({ ...p, [f]: p[typ] }));
-    };
     const knopf = ([m, label, text]) => (
       <button key={m} {...tt(istRunde(m) ? text : `${text} – mehrere angehakt: je Frage eine davon nach der Gewichtung (Einstellungen › Lernen)`)} data-modus-knopf={`${typ}:${m}`}
-        className={`spalten-modus-btn${aktiv.includes(m) ? " aktiv" : ""}`} onClick={() => umschaltenMitRichtung(m)}>{label}</button>
+        className={`spalten-modus-btn${aktiv.includes(m) ? " aktiv" : ""}`} onClick={() => umschalten(m)}>{label}</button>
     );
-    const basis = [["karte", "Karte", "Karte aufdecken und selbst bewerten: gewusst / nicht gewusst"],
-      ["mc", "MC", "Antwort aus mehreren Vorschlägen wählen (Multiple Choice)"], ["tippen", "Tastatur", "Antwort eintippen"]].map(knopf);
+    const ARTEN = {
+      karte: ["Karte", "Karte aufdecken und selbst bewerten: gewusst / nicht gewusst"],
+      mc: ["MC", "Antwort aus mehreren Vorschlägen wählen (Multiple Choice)"],
+      tippen: ["Tastatur", "Antwort eintippen"],
+      akzent: ["Akzente", "Akzente setzen – nur bei Wörtern mit Akzent, zählt hier für die Übersetzung"],
+      hoeren: ["Hören", "Hören und wählen: die fremdsprachige Frage wird nur vorgelesen (antippen: nochmal), die deutsche Antwort aus Vorschlägen wählen"],
+      puzzle: ["Puzzle", "Buchstaben-Puzzle: die Antwort aus gemischten Buchstaben in der richtigen Reihenfolge antippen"],
+      luecke: ["Lücken", "Lückenwort: fehlende Buchstaben ergänzen – Lücken bevorzugt an typischen Stolperstellen, mehr bei höherem Score"],
+      artikel: ["Artikel", "Artikel: das Wort ohne Artikel – le oder la (der/die/das, el/la …) antippen; nur Wörter mit erkennbarem Artikel, sonst eine andere Art"],
+      satzfinden: ["Satz finden", "Satz finden: im Beispielsatz das gesuchte Wort antippen (braucht Beispielsätze)"],
+      satzbauen: ["Satz bauen", "Satz bauen: die Wörter des Beispielsatzes in die richtige Reihenfolge bringen (braucht Beispielsätze)"],
+      lueckensatz: ["Lückensatz", "Lückensatz: das Wort in der passenden Form in den Beispielsatz eintippen (braucht Beispielsätze)"],
+      zuordnung: ["Zuordnung", "Zuordnen: Kacheln der Spalten einander zuordnen, mehrere Vokabeln je Runde – gilt für alle Spalten; bei „wechselnd“ steht die Fremdsprache je Zeile zufällig links oder rechts; mit anderen Arten gemischt startet je Ziehung eine Runde"],
+      memory: ["Memory", "Memory: verdeckte Karten (Frage und Antwort) aufdecken und Paare finden – mehrere Vokabeln je Runde; gefundene Paare +1, Fehlversuche kosten nichts"],
+    };
+    const gruppe = ms => ms.filter(m => modusErlaubt(typ, m) && (m !== "akzent" || akzentMoeglich)).map(m => knopf([m, ...ARTEN[m]]));
     // Übersetzung des Beispielsatzes während der Frage (Satz finden / Lückensatz) – einstellbar
     const uebArten = [["satzfinden", "Satz finden", "satzUebFinden", false], ["lueckensatz", "Lückensatz", "satzUebLuecke", true]].filter(([m]) => aktiv.includes(m));
     const ueb = uebArten.length ? (
@@ -6256,17 +6289,23 @@ export default function VokabelApp() {
           <button key={m} data-satz-ueb={m} className={`spalten-modus-btn${an ? " aktiv" : ""}`} onClick={() => speichereEinst({ ...einstellungen, [k]: !an })}
             {...tt(`${label}: deutsche Übersetzung des Satzes während der Frage ${an ? "ausblenden" : "zeigen"}`)}>{an ? "✓ " : ""}{label}</button>); })}
       </div>) : null;
-    const weitere = [["hoeren", "Hören", "Hören und wählen: die Frage wird nur vorgelesen (antippen: nochmal), die Antwort aus Vorschlägen wählen"],
-      ["puzzle", "Puzzle", "Buchstaben-Puzzle: die Antwort aus gemischten Buchstaben in der richtigen Reihenfolge antippen"],
-      ["luecke", "Lücken", "Lückenwort: fehlende Buchstaben ergänzen – Lücken bevorzugt an typischen Stolperstellen, mehr bei höherem Score"],
-      ...(typ.startsWith("E") ? [["satzfinden", "Satz finden", "Satz finden: im Beispielsatz das gesuchte Wort antippen (braucht Beispielsätze)"],
-        ["lueckensatz", "Lückensatz", "Lückensatz: das Wort in der passenden Form in den Beispielsatz eintippen (braucht Beispielsätze)"],
-        ["satzbauen", "Satz bauen", "Satz bauen: die Wörter des Beispielsatzes in die richtige Reihenfolge bringen (braucht Beispielsätze)"]] : []),
-      ...(typ.startsWith("E") ? [["artikel", "Artikel", "Artikel: das Wort ohne Artikel – le oder la (der/die/das, el/la …) antippen; nur Wörter mit erkennbarem Artikel, sonst eine andere Art"]] : []),
-      ...(quizModus !== "rotierend" ? [["zuordnung", "Zuordnung", "Zuordnen: Kacheln der Frage- und der Antwort-Spalten einander zuordnen, mehrere Vokabeln je Runde – gilt für alle Antwort-Spalten; mit anderen Arten gemischt startet je Ziehung eine Runde"],
-        ["memory", "Memory", "Memory: verdeckte Karten (Frage und Antwort) aufdecken und Paare finden – mehrere Vokabeln je Runde; gefundene Paare +1, Fehlversuche kosten nichts"]] : []),
-      ...(akzentMoeglich ? [["akzent", "Akzente", "Akzente setzen – nur bei Wörtern mit Akzent, zählt hier für die Übersetzung"]] : [])].map(knopf);
-    return { basis, weitere, ueb };
+    // Gruppen: Grundarten · Wort-Übungen · Satz-Arten · Runden (leere Gruppen entfallen)
+    const zeilen = [
+      { key: "grund", knoepfe: gruppe(["karte", "mc", "tippen", "akzent"]) },
+      { key: "wort", knoepfe: gruppe(["hoeren", "puzzle", "luecke", "artikel"]) },
+      { key: "satz", knoepfe: gruppe(["satzfinden", "satzbauen", "lueckensatz"]), extra: ueb },
+      { key: "runde", knoepfe: gruppe(["zuordnung", "memory"]) },
+    ].filter(z => z.knoepfe.length);
+    return (
+      <div data-modus-gruppen>
+        {zeilen.map((z, i) => (
+          <div key={z.key} data-modus-gruppe={z.key} style={{marginTop: i ? 14 : 0}}>
+            <div style={{display:"flex", gap:4, flexWrap:"wrap"}}>{z.knoepfe}</div>
+            {z.extra}
+          </div>
+        ))}
+      </div>
+    );
   }
 
   // Mini-Kreise Ü D A (zum Anzeigen; mit beiKlick zum Umschalten)
@@ -6778,13 +6817,15 @@ export default function VokabelApp() {
       ...(abfrageZiel?.modus === "blitz" || abfrageZiel?.modus === "serie" ? { spielZaehler: 0, spielBeantwortet: [], spielBasis: voks } : {}),
     };
     // Zuordnung: Runden zu mehreren Vokabeln (Frage-Spalte + Antwort-Spalten, höchstens 4)
-    const mitZuo = !gruppe && quizModus !== "rotierend" ? quizAntwortTypenGeordnet.filter(t => modiVon(quizSpalteModus[t]).some(istRunde)) : [];
-    const nurZuordnung = mitZuo.length > 0 && quizAntwortTypenGeordnet.every(t => modiVon(quizSpalteModus[t]).every(istRunde));
+    const wechselnd = quizModus === "rotierend";
+    const zuoTypen = wechselnd ? alleAbfragbar : quizAntwortTypenGeordnet;
+    const mitZuo = !gruppe ? zuoTypen.filter(t => modiVon(quizSpalteModus[t]).some(istRunde)) : [];
+    const nurZuordnung = mitZuo.length > 0 && zuoTypen.every(t => modiVon(quizSpalteModus[t]).every(istRunde));
     const rundenArten = mitZuo.length ? modiVon(quizSpalteModus[mitZuo[0]]).filter(istRunde) : [];
     if (mitZuo.length) {
       const ze = zuordnungEinst(einstellungen), r = quizRegeln();
       const grenze = Math.max(3, Math.min(window.innerWidth > 700 ? 12 : 10, Math.floor((window.innerHeight - 250) / 52)));
-      const basis = { spalten: [quizFrageTyp, ...quizAntwortTypenGeordnet].slice(0, 4), paare: Math.max(3, Math.min(ze.paare, grenze)), zeit: ze.zeit, sek: ze.sek,
+      const basis = { spalten: (wechselnd ? alleAbfragbar : [quizFrageTyp, ...quizAntwortTypenGeordnet]).slice(0, 4), wechselnd, paare: Math.max(3, Math.min(ze.paare, grenze)), zeit: ze.zeit, sek: ze.sek,
         amEnde: !!r.zuordnungAmEnde, abzug: !!r.zuordnungAbzug, runde: 0, arten: rundenArten };
       if (nurZuordnung) {
         neuQuiz.abfrageZiel = null;
@@ -6810,7 +6851,9 @@ export default function VokabelApp() {
     const spalten = art !== "memory" ? alleSpalten : !fremdSp || alleSpalten.slice(0, 2).includes(fremdSp) ? alleSpalten.slice(0, 2) : [alleSpalten[0], fremdSp];
     const vok = id => q.vokabeln.find(v => v.id === id);
     const mische = a => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
-    const karten = spalten.map(t => mische(ids.map(id => ({ id, text: vok(id)?.[t]?.wert || "" }))));
+    // „wechselnd“: je Zeile zufällig, welche Spalte links steht (bei zwei Spalten: Seiten getauscht oder nicht)
+    const n = spalten.length, dreh = Object.fromEntries(ids.map(id => [id, z.wechselnd ? Math.floor(Math.random() * n) : 0]));
+    const karten = spalten.map((_, sp) => mische(ids.map(id => { const t = spalten[(sp + dreh[id]) % n]; return { id, typ: t, text: vok(id)?.[t]?.wert || "" }; })));
     // Memory: je Vokabel zwei verdeckte Karten (Frage und Antwort), gemischt
     const mKarten = art === "memory" ? mische(ids.flatMap(id => spalten.map((t, seite) => ({ id, seite, text: vok(id)?.[t]?.wert || "" })))) : null;
     return { ...q, phase: "zuordnung", zuordnung: { ...z, art, alleSpalten, spalten, ids, karten, mKarten, mOffen: [], mZuege: 0, runde: z.runde + 1,
@@ -6849,7 +6892,7 @@ export default function VokabelApp() {
     }
     const k = Math.min(art === "memory" ? Math.min(q.zuordnungMix.paare, 8) : q.zuordnungMix.paare, rest);
     const ids = q.vokabeln.slice(q.index, q.index + k).map(v => v.id);
-    const spalten = [q.frageTyp, ...typen].slice(0, 4);
+    const spalten = q.zuordnungMix.wechselnd ? q.zuordnungMix.spalten : [q.frageTyp, ...typen].slice(0, 4);
     return zuordnungRundeAus({ ...q, zuordnung: { ...q.zuordnungMix, spalten, alleSpalten: spalten, mix: { start: q.index, ende: q.index + k }, queue: [],
       beantwortet: q.vokabeln.slice(0, q.index).map(v => v.id) } }, ids, art);
   }
@@ -6892,7 +6935,8 @@ export default function VokabelApp() {
     if (!z || q.phase !== "zuordnung" || z.anzeige) return;
     const karte = z.karten[s][i];
     if (karte.id in z.erledigt) return;
-    if (einstellungen.autoplay && z.spalten[s].startsWith("E")) { const v = q.vokabeln.find(x => x.id === karte.id); sprich(karte.text, vokLang(v, z.spalten[s])); }
+    const kt = karte.typ || z.spalten[s];
+    if (einstellungen.autoplay && kt.startsWith("E")) { const v = q.vokabeln.find(x => x.id === karte.id); sprich(karte.text, vokLang(v, kt)); }
     if (z.amEnde) {
       const nz = zuordnungGruppeTippe(z, s, i);
       const alles = nz.gruppen.length === nz.ids.length && nz.gruppen.every(g => Object.keys(g.wahl).length === nz.spalten.length);
@@ -8133,7 +8177,7 @@ export default function VokabelApp() {
                 </div>
               ) : (
               <div className="zuo-raster" style={{gridTemplateColumns:`repeat(${n}, minmax(0, 1fr))`}}>
-                {z.spalten.map(t => <div key={t} className="zuo-kopf">{quiz.liste.spalten[t]?.name || t}</div>)}
+                {!z.wechselnd && z.spalten.map(t => <div key={t} className="zuo-kopf">{quiz.liste.spalten[t]?.name || t}</div>)}
                 {z.ids.map((_, zeile) => z.spalten.map((t, sp) => {
                   const k = z.karten[sp][zeile];
                   const erl = z.erledigt[k.id];
@@ -8343,7 +8387,7 @@ export default function VokabelApp() {
                       {antwortSichtbar && stimmeKnopf(quiz.antwortTeile?.[0] || "", aktAntwortTyp, "antwort")}
                       {antwortBoxKlasse.includes("gelernt-blitz") && <GelerntSterne/>}
                       <div className="quiz-label" style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-                        <span>{antwortLabel}{isWeitere && <span style={{color:"var(--info)", marginLeft:8}}>— weitere Antwort</span>}</span>
+                        <span style={{display:"inline-flex", alignItems:"center"}}>{antwortStatus(antwortBoxKlasse)}{antwortLabel}{isWeitere && <span style={{color:"var(--info)", marginLeft:8}}>— weitere Antwort</span>}</span>
                         {(isKarteEingabe || isKarteAufgedeckt || quiz.karteNeinFlash) && (
                           <span className={`score-badge ${score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null"}`} style={{fontSize:"0.88rem", padding:"2px 9px"}}>
                             {score > 0 ? "+" : ""}{score}
@@ -9586,11 +9630,13 @@ export default function VokabelApp() {
                 {/* ZEILE 1: Stufe (Lernen/Leicht/Schwer) | Abfrage-Modus | Reihenfolge – je ein Bereich klappt darunter auf */}
                 {kombiListe && fokusZeigt("zeile1") && (
                   <div ref={abfrageModusRef} className={`quiz-zeile${quizStufeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt ? " hat-offen" : ""}`} style={{position: quizFokus === "zeile1" ? "sticky" : "relative", top: quizFokus === "zeile1" ? headerH + slotH : 0}}>
+                    <div className={`quiz-zeile-zelle${quizStufeAufgeklappt ? " offen" : ""}`}><span className="quiz-zeile-label">Lern-Modus</span>
                     <button className={`quiz-zeile-knopf stufe${quizStufeAufgeklappt ? " offen bestaetigen-knopf" : ""}`} data-stufe={lernAktiv ? "lernen" : einstellungen.modus === "einfach" ? "einfach" : "schwer"}
                       onClick={() => { const auf = !quizStufeAufgeklappt; if (auf) schliesseQuizBereiche("stufe"); setQuizStufeAufgeklappt(auf); }}
                       {...tt(quizStufeAufgeklappt ? "Bestätigen – klappt die Stufe zu" : "Stufe: Lernen, Leicht oder Schwer – antippen zum Einstellen (dort auch Regeln, Lernen und Vorlesen)")}>
                       {offenText(quizStufeAufgeklappt, lernAktiv ? "Lernen" : einstellungen.modus === "einfach" ? "Leicht" : "Schwer")}
-                    </button>
+                    </button></div>
+                    <div className={`quiz-zeile-zelle${quizAbfrageModusAufgeklappt ? " offen" : ""}`}><span className="quiz-zeile-label">Art der Antwort</span>
                     <button className={`quiz-zeile-knopf${quizAbfrageModusAufgeklappt ? " offen bestaetigen-knopf" : ""}${!quizAbfrageModusAufgeklappt && !istDiktat && (quizModus === "rotierend" || gemischt) ? " zweizeilig" : ""}`} data-abfragemodus onClick={toggleAbfrageModus}
                       {...tt(quizAbfrageModusAufgeklappt ? "Bestätigen – klappt den Abfrage-Modus zu" : "Abfrage-Modus: Spalten, Karte/MC/Tastatur, Frage–Antwort oder wechselnd – antippen zum Einstellen")}>
                       {/* wechselnd: zweizeilig, damit die Antwort-Arten Platz haben */}
@@ -9598,12 +9644,13 @@ export default function VokabelApp() {
                         : !istDiktat && (quizModus === "rotierend" || gemischt)
                         ? <><span className="zeile1">{quizModus === "rotierend" ? (gemischt ? "wechselnd · gemischt" : "wechselnd") : "Gemischt"}</span><span className="zeile2">{antwortArten.join(" – ") || "keine Spalte"}</span></>
                         : abfrageModusName}
-                    </button>
+                    </button></div>
+                    <div className={`quiz-zeile-zelle${quizReihenfolgeAufgeklappt ? " offen" : ""}`}><span className="quiz-zeile-label">Reihenfolge</span>
                     <button className={`quiz-zeile-knopf umbruch${quizReihenfolgeAufgeklappt ? " offen bestaetigen-knopf" : ""}`} data-reihenfolge onClick={toggleReihenfolge}
                       {...tt(quizReihenfolgeAufgeklappt ? "Bestätigen – klappt die Reihenfolge zu" : "Reihenfolge: zufällig, schlechteste zuerst oder nach Listen-Platz – antippen zum Einstellen")}>
                       {quizReihenfolgeAufgeklappt ? offenText(true, quizReihenfolge === "zufall" ? "Zufällig" : quizReihenfolge === "schlechteste" ? "Schlechteste" : "Listen-Platz")
-                        : quizReihenfolge === "zufall" ? "Zufällige Reihenfolge" : quizReihenfolge === "schlechteste" ? "Schlechteste zuerst" : "Nach Listen-Platz"}
-                    </button>
+                        : quizReihenfolge === "zufall" ? "Zufällig" : quizReihenfolge === "schlechteste" ? "Schlechteste zuerst" : "Nach Listen-Platz"}
+                    </button></div>
                   </div>
                 )}
                 {kombiListe && quizStufeAufgeklappt && (
@@ -9615,8 +9662,8 @@ export default function VokabelApp() {
                           const aktiv = k === "lernen" ? lernAktiv : !lernAktiv && (einstellungen.modus === "einfach" ? "einfach" : "schwer") === k;
                           return (
                             <button key={k} data-stufe-wahl={k} className={`toggle-opt${aktiv ? " aktiv" : ""}`} style={{flex:1}}
-                              onClick={() => speichereEinst(k === "lernen" ? { ...einstellungen, lernen: { ...lernEinstellungen(), aktiv: true } }
-                                : { ...einstellungen, modus: k, lernen: { ...lernEinstellungen(), aktiv: false } })}
+                              onClick={() => { if (aktiv) return; speichereEinst(k === "lernen" ? { ...einstellungen, lernen: { ...lernEinstellungen(), aktiv: true } }
+                                : { ...einstellungen, modus: k, lernen: { ...lernEinstellungen(), aktiv: false } }); setQuizStufeAufgeklappt(false); }}
                               {...tt(info)}>{label}</button>
                           );
                         })}
@@ -9739,22 +9786,14 @@ export default function VokabelApp() {
                                       <span className="spalten-modus-btn aktiv" style={{marginLeft:4, cursor:"default"}}
                                         {...tt("Akzente üben: für jeden Buchstaben den richtigen Akzent wählen – eigener Akzent-Score")}>Akzente</span>
                                     )}
-                                    {isAntwort && quizArt !== "akzente" && (
-                                      <div data-modus-basis style={{display:"flex", gap:4, marginLeft:10, flexWrap:"nowrap"}}>{renderModusKnoepfe(typ).basis}</div>
-                                    )}
                                   </div>
                                 )}
-                                {checked && quizModus === "sequenziell" && isAntwort && quizArt !== "akzente" && (() => { const k = renderModusKnoepfe(typ); return (
-                                  <div style={{marginTop:6, marginLeft:30}}>
-                                    <div data-modus-weitere style={{display:"flex", gap:4, flexWrap:"wrap"}}>{k.weitere}</div>
-                                    {k.ueb}
-                                  </div>); })()}
-                                {checked && quizModus === "rotierend" && (() => { const k = renderModusKnoepfe(typ); return (
-                                  <div style={{marginTop:8, marginLeft:30}}>
-                                    <div data-modus-basis style={{display:"flex", gap:4, flexWrap:"nowrap"}}>{k.basis}</div>
-                                    <div data-modus-weitere style={{display:"flex", gap:4, flexWrap:"wrap", marginTop:6}}>{k.weitere}</div>
-                                    {k.ueb}
-                                  </div>); })()}
+                                {checked && quizModus === "sequenziell" && isAntwort && quizArt !== "akzente" && (
+                                  <div style={{marginTop:12, marginLeft:30}}>{renderModusKnoepfe(typ)}</div>
+                                )}
+                                {checked && quizModus === "rotierend" && (
+                                  <div style={{marginTop:10, marginLeft:30}}>{renderModusKnoepfe(typ)}</div>
+                                )}
                               </div>
                             );
                           })}
@@ -9787,9 +9826,9 @@ export default function VokabelApp() {
                       <div className="karte" style={{marginBottom:16}}>
                         <div className="toggle-row">
                           <div className="toggle-btn">
-                            <button className={`toggle-opt${quizReihenfolge==="zufall"?" aktiv":""}`} onClick={() => setQuizReihenfolge("zufall")} {...tt("Vokabeln zufällig mischen")}>Zufällig</button>
-                            <button className={`toggle-opt${quizReihenfolge==="schlechteste"?" aktiv":""}`} onClick={() => setQuizReihenfolge("schlechteste")} {...tt("Vokabeln mit niedrigstem Score zuerst abfragen")}>Schlechteste</button>
-                            <button className={`toggle-opt${quizReihenfolge==="listennr"?" aktiv":""}`} onClick={() => setQuizReihenfolge("listennr")} {...tt("Vokabeln in der Reihenfolge der Liste abfragen")}>Listen-Nr.</button>
+                            <button className={`toggle-opt${quizReihenfolge==="zufall"?" aktiv":""}`} data-reihenfolge-wahl="zufall" onClick={() => { if (quizReihenfolge === "zufall") return; setQuizReihenfolge("zufall"); setQuizReihenfolgeAufgeklappt(false); }} {...tt("Vokabeln zufällig mischen")}>Zufällig</button>
+                            <button className={`toggle-opt${quizReihenfolge==="schlechteste"?" aktiv":""}`} data-reihenfolge-wahl="schlechteste" onClick={() => { if (quizReihenfolge === "schlechteste") return; setQuizReihenfolge("schlechteste"); setQuizReihenfolgeAufgeklappt(false); }} {...tt("Vokabeln mit niedrigstem Score zuerst abfragen")}>Schlechteste</button>
+                            <button className={`toggle-opt${quizReihenfolge==="listennr"?" aktiv":""}`} data-reihenfolge-wahl="listennr" onClick={() => { if (quizReihenfolge === "listennr") return; setQuizReihenfolge("listennr"); setQuizReihenfolgeAufgeklappt(false); }} {...tt("Vokabeln in der Reihenfolge der Liste abfragen")}>Listen-Nr.</button>
                           </div>
                         </div>
                         {quizReihenfolge === "schlechteste" && (
@@ -9856,24 +9895,27 @@ export default function VokabelApp() {
                 {/* ZEILE 2: Umfang | Abfrage-Ziel | Gelernte */}
                 {kombiListe && fokusZeigt("zeile2") && (
                   <div ref={sessionRef} className={`quiz-zeile${quizSessionAufgeklappt === "umfang" || quizSessionAufgeklappt === "ziel" ? " hat-offen" : ""}`} style={{position: quizFokus === "zeile2" ? "sticky" : "relative", top: quizFokus === "zeile2" ? headerH + slotH : 0, zIndex:6}}>
+                    <div className={`quiz-zeile-zelle${quizSessionAufgeklappt === "umfang" ? " offen" : ""}`}><span className="quiz-zeile-label">Anzahl je Runde</span>
                     <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "umfang" ? " offen bestaetigen-knopf" : ""}`} data-umfang
                       onClick={() => toggleSessionBereich("umfang")}
                       {...tt(quizSessionAufgeklappt === "umfang" ? "Bestätigen – klappt den Umfang zu" : "Umfang: alle Vokabeln auf einmal oder in Paketen – antippen zum Einstellen")}>
                       {quizSessionAufgeklappt === "umfang" ? offenText(true, isPakete && quizPaketGroesse != null && quizPaketGroesse < PAKET_ALLE ? `Je ${quizPaketGroesse}` : "Alle")
                         : isPakete && quizPaketGroesse != null && quizPaketGroesse < PAKET_ALLE ? `Je ${quizPaketGroesse} Vokabeln` : "Alle Vokabeln"}
-                    </button>
+                    </button></div>
+                    <div className={`quiz-zeile-zelle${quizSessionAufgeklappt === "ziel" ? " offen" : ""}`}><span className="quiz-zeile-label">Wie oft</span>
                     <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "ziel" ? " offen bestaetigen-knopf" : ""}`} data-abfrageziel
                       onClick={() => toggleSessionBereich("ziel")}
                       {...tt(quizSessionAufgeklappt === "ziel" ? "Bestätigen – klappt das Abfrage-Ziel zu" : "Abfrage-Ziel: wie oft bzw. bis wann jede Vokabel abgefragt wird – antippen zum Einstellen")}>
                       {offenText(quizSessionAufgeklappt === "ziel", abfrageZielModus === "blitz" ? "⚡ Blitz 60 s" : abfrageZielModus === "serie" ? "🔥 Serie" : abfrageZielModus === "wiederholung" ? `${abfrageZielWiederholung}× richtig`
                         : abfrageZielModus === "score" ? (abfrageZielScoreTyp === "session" ? `Session ${abfrageZielScore > 0 ? "+" : ""}${abfrageZielScore}` : `Score < ${abfrageZielScore > 0 ? "+" : ""}${abfrageZielScore}`) : `${abfrageZielAnzahl}×`)}
-                    </button>
+                    </button></div>
                     {schwelle > 0 && gelernteAnzahl > 0 && (
+                      <div className="quiz-zeile-zelle schmal"><span className="quiz-zeile-label">Gelernte</span>
                       <button className={`quiz-zeile-knopf${quizGelerntEinschliessen ? " an" : ""}`} data-gelernte={quizGelerntEinschliessen ? "an" : "aus"}
                         onClick={() => { schliesseQuizBereiche(null); setQuizGelerntEinschliessen(v => !v); }}
                         {...tt(quizGelerntEinschliessen ? `${gelernteAnzahl} gelernte Vokabeln werden mit abgefragt – antippen zum Ausblenden` : `${gelernteAnzahl} gelernte Vokabeln sind ausgeblendet – antippen zum Einschließen`)}>
                         {quizGelerntEinschliessen ? `+ ${gelernteAnzahl} gelernte` : `${gelernteAnzahl} gelernte`}
-                      </button>
+                      </button></div>
                     )}
                   </div>
                 )}
@@ -9968,6 +10010,7 @@ export default function VokabelApp() {
                       // Abfrageart wählen: gewählte Art groß (mit Name und Lernfortschritt), die anderen kleiner
                       const ls = lernstandJeArt(quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0 ? kombiListe.vokabeln.filter(v => quizCheckboxAuswahl.has(v.id)) : kombiListe.vokabeln);
                       return (
+                        <><div data-start-fortschritt style={{fontWeight:600, fontSize:"0.85rem", color:"var(--text)", marginBottom:4}}>Fortschritt</div>
                         <div className="start-arten" data-start-arten>
                           {QUIZ_ARTEN.filter(a => !ls[a].aus).map(a => {
                             const akt = a === quizArt, pct = Math.round(ls[a].pct);
@@ -9979,7 +10022,7 @@ export default function VokabelApp() {
                               </button>
                             );
                           })}
-                        </div>
+                        </div></>
                       );
                     })()}
                     <div className="start-titel" data-start-titel>{lernAktiv ? "Lernen" : "Quiz"} mit {sessionAnzahl} Vokabel{sessionAnzahl !== 1 ? "n" : ""}</div>
@@ -11795,9 +11838,8 @@ export default function VokabelApp() {
             <div className="modal-titel">Vorlesen</div>
                       <div className="karte" style={{marginBottom:16}}>
                         <div className="toggle-row">
-                          <div>
+                          <div {...tt("Frage beim Erscheinen und Antwort beim Aufdecken automatisch vorlesen")}>
                             <div className="toggle-label">Auto-Play</div>
-                            <div className="toggle-sub">Frage beim Erscheinen und Antwort beim Aufdecken automatisch vorlesen</div>
                           </div>
                           <div className="toggle-btn">
                             <button className={`toggle-opt${!einstellungen.autoplay?" aktiv":""}`} onClick={() => speichereEinst({...einstellungen, autoplay:false})} {...tt("Kein automatisches Vorlesen")}>Aus</button>
@@ -11806,7 +11848,7 @@ export default function VokabelApp() {
                         </div>
                         {einstellungen.autoplay && (
                           <div style={{padding:"12px 16px 16px", borderTop:"1px solid var(--rahmen)"}}>
-                            <div className="inp-label" style={{marginBottom:8}}>Spalten automatisch vorlesen</div>
+                            <div className="inp-label" style={{marginBottom:8}} {...tt("Vorgelesen werden nur Frage und Antworten aus diesen Spalten")}>Spalten automatisch vorlesen</div>
                             <div style={{display:"flex", gap:6, flexWrap:"wrap"}}>
                               {TYPEN.map(typ => {
                                 const vorlesen = einstellungen.vorlesen || ["E1"];
@@ -11818,9 +11860,6 @@ export default function VokabelApp() {
                                   </button>
                                 );
                               })}
-                            </div>
-                            <div style={{fontSize:"0.75rem", color:"var(--text2)", marginTop:8}}>
-                              Vorgelesen werden nur Frage und Antworten aus diesen Spalten
                             </div>
                           </div>
                         )}

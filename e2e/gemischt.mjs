@@ -36,7 +36,7 @@ await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c =>
 // Abfrage-Modus öffnen: Tastatur, MC und Akzente dazu anhaken
 await page.click("[data-abfragemodus]"); await sleep(300);
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf]")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
-ok(knoepfe === "karte,mc,tippen,hoeren,puzzle,luecke,satzfinden,lueckensatz,satzbauen,artikel,zuordnung,memory,akzent", `Antwortarten für E1: Karte, MC, Tastatur, dann die weiteren, Akzente zuletzt (${knoepfe})`);
+ok(knoepfe === "karte,mc,tippen,akzent,puzzle,luecke,artikel,satzfinden,satzbauen,lueckensatz,zuordnung,memory", `Antwortarten für E1 (Fremdsprache): Grund + Akzente, Wort, Satz, Runde – ohne Hören (${knoepfe})`);
 for (const m of ["tippen", "mc", "akzent"]) { await page.click(`[data-modus-knopf="E1:${m}"]`); await sleep(100); }
 const an = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf].aktiv")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
 ok(an === "karte,mc,tippen,akzent", `alle vier angehakt (${an})`);

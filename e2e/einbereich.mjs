@@ -87,7 +87,7 @@ ok(n.kopf === v.kopf && n.listen === v.listen - 150 && n.zeile1 === v.zeile1 - 1
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 await tippe("[data-reihenfolge]");
 await page.evaluate(() => window.scrollTo(0, 150)); await sleep(300);
-const z1 = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]").getBoundingClientRect(); const z = document.querySelector("[data-reihenfolge]").getBoundingClientRect(); return Math.round(z.top - k.bottom); });
+const z1 = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]").getBoundingClientRect(); const z = document.querySelector("[data-reihenfolge]").closest(".quiz-zeile").getBoundingClientRect(); return Math.round(z.top - k.bottom); });
 ok(Math.abs(z1) <= 12, `offener Bereich: seine Zeile klebt unter der Session-Leiste (Abstand ${z1})`);
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

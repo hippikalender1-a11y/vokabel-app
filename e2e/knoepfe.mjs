@@ -46,9 +46,24 @@ ok(await text("[data-abfrageziel]") === "Bestätigen" && !(await sichtbar("[data
 await page.click("[data-abfrageziel]"); await sleep(300);
 await page.click("[data-stufe]"); await sleep(300);
 ok(await text("[data-stufe]") === "Bestätigen" && await page.$("[data-stufe-auswahl]"), "Stufe offen: „Bestätigen“ mit Auswahl darunter");
-await page.click('[data-stufe-wahl="einfach"]'); await sleep(200);
-await page.click("[data-stufe]"); await sleep(300);
-ok(await text("[data-stufe]") === "Leicht" && !(await page.$("[data-stufe-auswahl]")), "„Bestätigen“: Stufe zu");
+await page.click('[data-stufe-wahl="schwer"]'); await sleep(200);
+ok(await page.$("[data-stufe-auswahl]"), "die schon gewählte Stufe antippen: bleibt offen (Regeln, Vorlesen erreichbar)");
+await page.click('[data-stufe-wahl="einfach"]'); await sleep(300);
+ok(await text("[data-stufe]") === "Leicht" && !(await page.$("[data-stufe-auswahl]")), "andere Stufe antippen: übernommen und zu");
+// Reihenfolge: Wahl antippen schließt
+await page.click("[data-reihenfolge]"); await sleep(300);
+await page.click('[data-reihenfolge-wahl="zufall"]'); await sleep(300);
+ok(await text("[data-reihenfolge]") === "Zufällig" && !(await page.$('[data-reihenfolge-wahl]')), `Reihenfolge „Zufällig“ antippen: übernommen und zu (${await text("[data-reihenfolge]")})`);
+// Beschriftungen über den Knöpfen, gleich hohe Knöpfe
+const labels = await page.evaluate(() => [...document.querySelectorAll(".quiz-zeile-label")].map(l => l.textContent).join("|"));
+ok(labels.startsWith("Lern-Modus|Art der Antwort|Reihenfolge|Anzahl je Runde|Wie oft"), `Beschriftungen (${labels})`);
+const hoehe = s => page.evaluate(s => Math.round(document.querySelector(s).getBoundingClientRect().height), s);
+const zu1 = [await hoehe("[data-stufe]"), await hoehe("[data-abfragemodus]"), await hoehe("[data-reihenfolge]"), await hoehe("[data-umfang]")];
+await page.click("[data-reihenfolge]"); await sleep(300);
+const offen1 = await hoehe("[data-reihenfolge]");
+ok(zu1.every(h => h === zu1[0]) && offen1 === zu1[0], `alle Knöpfe gleich hoch, Bestätigen auch (${zu1} / ${offen1})`);
+await page.click("[data-reihenfolge]"); await sleep(300);
+ok(await page.evaluate(() => document.querySelector("[data-start-fortschritt]")?.textContent) === "Fortschritt", "„Fortschritt“ über den Kreisen");
 
 // Start: lang drücken → Speichern
 await page.evaluate(() => { const el = document.querySelector("[data-start-knopf]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 10 })); }); await sleep(300);
