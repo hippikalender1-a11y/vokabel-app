@@ -63,6 +63,8 @@ function satzPrompt(sprachName, zeilen, n, alsDatei = false) {
     ...zeilen,
   ].join("\n");
 }
+// Kurzer Begleitsatz zur Prompt-Datei (die KI braucht eine Nachricht zur angehängten Datei)
+const SATZ_BEGLEITSATZ = "Bitte führe die Anweisungen in der angehängten Datei aus.";
 // KI-Antwort lesen: „ID // Satz // Übersetzung“ (auch mit | als Trenner)
 function saetzeAusAntwort(text) {
   const erg = {};
@@ -139,6 +141,7 @@ function defaultEinstellungen() { return { modus: "schwer", autoplay: false, vor
 function defaultSessionSlots() {
   return [{ slot: 6, name: "Zuletzt verwendet", konfiguration: null, fortschritt: null }];
 }
+const BLITZ_MS = 700;   // ms: Aufleuchten nach Auswahl / Zuklappen
 const SLOT_ZU_VERZOEGERUNG = 400;   // ms: gewählte Kachel kurz sichtbar, dann klappt die Auswahl zu
 function defaultSlots() { return { verlauf: [], gespeichert: [] }; }
 function neuerSlotId(typ) { return `${typ}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`; }
@@ -1585,7 +1588,7 @@ function teilName(el, teil) {
 // Schlüssel einer Element-Art: kennzeichnendes data-Attribut, sonst die Klassen (ohne Zustände), sonst Eltern-Schlüssel > Tag
 const SCHLUESSEL_OHNE = new Set(["data-info", "data-liste-id", "data-slot-id", "data-raster-zelle", "data-multi-nr", "data-wahl-nr", "data-auswahl-nr",
   "data-statistik-vok", "data-offen", "data-anzahl", "data-pct", "data-kachel-balken", "data-sichtbar", "data-lernen-phase"]);
-const ZUSTAND_KLASSEN = new Set(["aktiv", "offen", "checked", "richtig", "falsch", "aufgedeckt", "weitere", "gelernt-blitz", "aktiv-kachel", "voll", "spalte-ok", "sichtbar", "lernen-ein"]);
+const ZUSTAND_KLASSEN = new Set(["aktiv", "offen", "checked", "richtig", "falsch", "aufgedeckt", "weitere", "gelernt-blitz", "aktiv-kachel", "voll", "spalte-ok", "sichtbar", "lernen-ein", "leuchten"]);
 function elementSchluessel(el, tiefe = 0) {
   if (!el || el === document.body || el === document.documentElement) return "body";
   const attr = [...el.attributes].map(a => a.name).find(n => n.startsWith("data-") && !SCHLUESSEL_OHNE.has(n));
@@ -1793,7 +1796,6 @@ const CSS_BASIS = `
   .quiz-zeile{position:sticky;z-index:7;display:flex;gap:8px;background:var(--karte);border-bottom:1px solid var(--rahmen);padding:10px 16px;margin:0 -16px;}
   .quiz-zeile-zelle{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
   .quiz-zeile-zelle.schmal{flex:0 0 auto;}
-  .quiz-zeile.lernen-aktiv .quiz-zeile-zelle:not(.lern-zelle):not(.offen){opacity:0.45;}
   .quiz-zeile-label{font-size:0.66rem;font-weight:600;color:var(--text3);padding-left:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.2px;}
   .quiz-zeile-knopf{flex:1 1 auto;min-height:40px;width:100%;min-width:0;padding:9px 6px;border-radius:10px;border:1.5px solid var(--haupt);background:var(--haupt);color:var(--auf-haupt);font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .quiz-zeile-knopf.zweizeilig{padding:4px 6px;line-height:1.2;}
@@ -1804,8 +1806,8 @@ const CSS_BASIS = `
   .quiz-zeile.hat-offen > :not(.offen){display:none;}
   .bestaetigen-knopf,.toggle-opt.bestaetigen-knopf,.quiz-zeile-knopf.bestaetigen-knopf{background:var(--bestaetigen);color:var(--auf-bestaetigen);border-color:var(--bestaetigen);font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,0.22);}
   .bestaetigen-knopf::before{content:"✓ ";}
-  .quiz-zeile-knopf.leuchten{animation:knopfLeuchten 1s ease-out forwards;}
-  @keyframes knopfLeuchten{0%,50%{background:var(--bestaetigen);color:var(--auf-bestaetigen);border-color:var(--bestaetigen);}}
+  .leuchten,.toggle-opt.leuchten,.quiz-zeile-knopf.leuchten,.slot-chip.leuchten{background:var(--bestaetigen) !important;color:var(--auf-bestaetigen) !important;border-color:var(--bestaetigen) !important;}
+  .leuchten .raster-name,.quiz-setup-check.leuchten > div > div{color:inherit !important;}
   .quiz-zeile-knopf[data-gelernte]{background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);flex:0 0 auto;padding-left:12px;padding-right:12px;}
   .quiz-zeile-knopf[data-gelernte].an{background:var(--haupt);color:var(--auf-haupt);}
   .quiz-zeile-hinweis{font-size:0.75rem;color:var(--text3);text-align:center;padding:6px 0 0;}
@@ -1935,6 +1937,7 @@ const CSS_BASIS = `
   .kachel-balken.voll > span{background:var(--gelernt);}
   .kachel-voll{font-size:0.7rem;font-weight:900;color:var(--auf-gelernt);background:var(--gelernt);border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .raster-chip.aktiv-kachel{background:var(--haupt) !important;border-color:var(--haupt) !important;color:var(--auf-haupt) !important;}
+  .raster-chip.aktiv-kachel.leuchten{background:var(--bestaetigen) !important;border-color:var(--bestaetigen) !important;color:var(--auf-bestaetigen) !important;}
   .raster-chip.aktiv-kachel .kachel-balken{background:rgba(255,255,255,0.35);}
   .raster-chip.aktiv-kachel .kachel-balken > span{background:var(--auf-haupt);}
   .mini-kreise{display:flex;gap:3px;}
@@ -2455,16 +2458,22 @@ export default function VokabelApp() {
   const offenerKnopf = quizStufeAufgeklappt ? "stufe" : quizAbfrageModusAufgeklappt ? "modus" : quizReihenfolgeAufgeklappt ? "reihenfolge"
     : quizSessionAufgeklappt === "umfang" ? "umfang" : quizSessionAufgeklappt === "ziel" ? "ziel" : null;
   const vorigerKnopfRef = useRef(null);
-  const [leuchtKnopf, setLeuchtKnopf] = useState(null);
+  // Kurzes Aufleuchten in der Bestätigen-Farbe – schaltet sofort an und aus (keine Überblendung)
+  const [blitz, setBlitz] = useState({});
+  const blitzTimer = useRef({});
+  const leuchte = k => {
+    clearTimeout(blitzTimer.current[k]);
+    setBlitz(b => ({ ...b, [k]: true }));
+    blitzTimer.current[k] = setTimeout(() => setBlitz(b => { const n = { ...b }; delete n[k]; return n; }), BLITZ_MS);
+  };
+  const blitzt = k => blitz[k] ? " leuchten" : "";
   useEffect(() => {
     const vorher = vorigerKnopfRef.current;
     vorigerKnopfRef.current = offenerKnopf;
     if (!vorher || offenerKnopf) return;
-    setLeuchtKnopf(vorher);
-    const t = setTimeout(() => setLeuchtKnopf(k => k === vorher ? null : k), 1100);
-    return () => clearTimeout(t);
-  }, [offenerKnopf]);
-  const leuchtet = k => leuchtKnopf === k && !offenerKnopf ? " leuchten" : "";
+    leuchte(vorher);
+  }, [offenerKnopf]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const leuchtet = k => blitz[k] && !offenerKnopf ? " leuchten" : "";
   useEffect(() => { if (tab === "quiz") window.scrollTo(0, 0); }, [quizFokus]);   // Bereich auf/zu: von oben
   kontexteRef.current = () => {
     const q = headerH + slotH + listenauswahlHeaderH;
@@ -4293,7 +4302,7 @@ export default function VokabelApp() {
   // Nach dem Antippen einer Kachel bleibt die Auswahl einen Moment offen, damit man die neu markierte Kachel sieht
   function schliesseSlotsVerzoegert() {
     clearTimeout(slotZuTimerRef.current);
-    slotZuTimerRef.current = setTimeout(() => setSlotSektionAufgeklappt(false), SLOT_ZU_VERZOEGERUNG);
+    slotZuTimerRef.current = setTimeout(() => { setSlotSektionAufgeklappt(false); leuchte("slotkopf"); }, SLOT_ZU_VERZOEGERUNG);
   }
 
   function ladeSlot(typ, id, art = null) {
@@ -4809,6 +4818,7 @@ export default function VokabelApp() {
   }
 
   function toggleQuizTabListe(id) {
+    if (!quizTabListen.includes(id)) leuchte(`liste:${id}`);
     setQuizTabListen(prev => {
       const neueListen = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
       if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
@@ -4847,6 +4857,7 @@ export default function VokabelApp() {
   function toggleListenAuswahl() {
     const opening = !listenAuswahlAufgeklappt;
     if (opening) schliesseQuizBereiche("listen");
+    else leuchte("listenkopf");
     setListenAuswahlAufgeklappt(v => !v);
     if (opening) {
       dropdownImmuneRef.current = true;
@@ -4942,6 +4953,7 @@ export default function VokabelApp() {
     const opening = !slotSektionAufgeklappt;
     clearTimeout(slotZuTimerRef.current);
     if (opening && tab === "quiz") schliesseQuizBereiche("slots");
+    if (!opening) leuchte("slotkopf");
     setSlotSektionAufgeklappt(v => !v);
     setSlotSortModus(false); setSlotAuswahl([]); setMultiAuswahl(null);
     if (opening) {
@@ -6252,7 +6264,7 @@ export default function VokabelApp() {
       <div ref={slotSektionRef} data-slot-kopf={zu ? (gruen ? "gruen" : "zu") : "offen"} className={`slot-kopf${gruen ? " gruen" : ""}`}
         style={{top:headerH, ...(statistik ? {} : {marginLeft:"-16px", marginRight:"-16px"}), ...(!statistik && quizVokMax ? {display:"none"} : {})}}>
         <div style={{display:"flex", alignItems:"center", gap:8}}>
-          <button onClick={toggleSlotSektion} className="toggle-opt aktiv slot-kopf-name" data-slot-kopf-name data-geaendert={geaendert ? "" : undefined}
+          <button onClick={toggleSlotSektion} className={`toggle-opt aktiv slot-kopf-name${zu ? blitzt("slotkopf") : ""}`} data-slot-kopf-name data-geaendert={geaendert ? "" : undefined}
             style={geaendert ? {background:"var(--falsch)", color:"var(--auf-falsch)"} : undefined}
             {...tt(geaendert ? `${name} – Vokabelauswahl geändert, noch nicht gespeichert; lang drücken: überspeichern, als neue Session speichern oder verwerfen`
               : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, aktionen, { langText: name })}>
@@ -6477,11 +6489,11 @@ export default function VokabelApp() {
         ) : (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-multi-nr={multiNr || undefined} data-auswahl-durchlass
             data-kachel-geste="slot" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined}
-            className={`slot-chip belegt raster-chip${!multiAuswahl && slotRef?.typ === "gespeichert" && slotRef?.id === x.id ? " aktiv-kachel" : ""}`}
+            className={`slot-chip belegt raster-chip${!multiAuswahl && slotRef?.typ === "gespeichert" && slotRef?.id === x.id ? " aktiv-kachel" : ""}${blitzt(`slot:${x.id}`)}`}
             style={{...chipStil('gespeichert', x.id, slotRef), position:"relative", ...(multiNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {})}}
             onClick={() => multiAuswahl
               ? setMultiAuswahl(a => a.includes(x.id) ? a.filter(v => v !== x.id) : [...a, x.id])
-              : onLaden('gespeichert', x.id)}
+              : (leuchte(`slot:${x.id}`), onLaden('gespeichert', x.id))}
             {...(() => {
               // Lang-Druck (Maus: Rechtsklick): Session kommt in die Auswahl, die Tafel bleibt unten offen (weitere antippen wählt mit aus);
               // Touch: Haltestufen (kurz halten + ziehen verschiebt, lang halten + fahren wählt aus)
@@ -9496,8 +9508,8 @@ export default function VokabelApp() {
                             Bestätigen
                           </button>
                         ) : (
-                          <button
-                            className="toggle-opt aktiv zeile-rechts"
+                          <button data-listen-kopf
+                            className={`toggle-opt aktiv zeile-rechts${blitzt("listenkopf")}`}
                             onClick={toggleListenAuswahl}
                             {...tt("Gewählte Listen – antippen öffnet die Listen-Auswahl")}>
                             {chipText}
@@ -9522,8 +9534,8 @@ export default function VokabelApp() {
                           const anzahl = ll ? ll.vokabeln.length : 0;
                           const gewaehlt = quizTabListen.includes(l.id);
                           return (
-                            <div {...tt("Liste für das Quiz aus- oder abwählen")} key={l.id} className="quiz-setup-check" style={{padding:"10px 16px"}}
-                              onClick={() => toggleQuizTabListe(l.id)}>
+                            <div {...tt("Liste für das Quiz aus- oder abwählen")} key={l.id} className={`quiz-setup-check${blitzt(`liste:${l.id}`)}`} style={{padding:"10px 16px"}}
+                              data-quiz-liste={l.id} onClick={() => toggleQuizTabListe(l.id)}>
                               <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
                               <div style={{flex:1}}>
                                 <div style={{fontWeight:600, fontSize:"0.9rem"}}>{listenFlagge(l)}{l.name}</div>
@@ -9585,18 +9597,18 @@ export default function VokabelApp() {
                     <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
                       {quizBereichTyp === "bereich" && quizListeAufgeklappt ? (
                         <button data-vok-bestaetigen className="toggle-opt aktiv zeile-rechts bestaetigen-knopf"
-                          onClick={() => { if (quizCheckboxAuswahl.size === 0) setQuizBereichTyp("alle"); setQuizListeAufgeklappt(false); }}
+                          onClick={() => { if (quizCheckboxAuswahl.size === 0) setQuizBereichTyp("alle"); setQuizListeAufgeklappt(false); leuchte("vokwahl"); }}
                           {...tt("Auswahl bestätigen – schließt die Vokabelliste (nichts angehakt: wieder alle Vokabeln)")}>
                           Bestätigen
                         </button>
                       ) : (
                       <div className="toggle-btn zeile-rechts">
-                        <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv":""}`}
+                        <button className={`toggle-opt${quizBereichTyp==="alle"?" aktiv" + blitzt("vokwahl"):""}`} data-vokwahl="alle"
                           onClick={() => { setQuizBereichTyp("alle"); setQuizListeAufgeklappt(false); setQuizVonBisModus(false); setQuizVonBisErster(null); }}
                           {...tt("Alle Vokabeln der gewählten Listen abfragen")}>
                           Alle
                         </button>
-                        <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv":""}`}
+                        <button className={`toggle-opt${quizBereichTyp==="bereich"?" aktiv" + blitzt("vokwahl"):""}`} data-vokwahl="bereich"
                           onClick={() => {
                             if (quizBereichTyp !== "bereich") { setQuizBereichTyp("bereich"); if (quizCheckboxAuswahl.size === 0) { schliesseQuizBereiche("einzel"); setQuizListeAufgeklappt(true); } }
                             else { toggleEinzelauswahl(); }
@@ -9666,8 +9678,8 @@ export default function VokabelApp() {
                 {!quizVokMax && (<>
                 {/* ZEILE 1: Stufe (Lernen/Leicht/Schwer) | Abfrage-Modus | Reihenfolge – je ein Bereich klappt darunter auf */}
                 {kombiListe && fokusZeigt("zeile1") && (
-                  <div ref={abfrageModusRef} className={`quiz-zeile${lernAktiv ? " lernen-aktiv" : ""}${quizStufeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt ? " hat-offen" : ""}`} style={{position: quizFokus === "zeile1" ? "sticky" : "relative", top: quizFokus === "zeile1" ? headerH + slotH : 0}}>
-                    <div className={`quiz-zeile-zelle lern-zelle${quizStufeAufgeklappt ? " offen" : ""}`}><span className="quiz-zeile-label">Lern-Modus</span>
+                  <div ref={abfrageModusRef} className={`quiz-zeile${quizStufeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt ? " hat-offen" : ""}`} style={{position: quizFokus === "zeile1" ? "sticky" : "relative", top: quizFokus === "zeile1" ? headerH + slotH : 0}}>
+                    <div className={`quiz-zeile-zelle${quizStufeAufgeklappt ? " offen" : ""}`}><span className="quiz-zeile-label">Lern-Modus</span>
                     <button className={`quiz-zeile-knopf stufe${quizStufeAufgeklappt ? " offen bestaetigen-knopf" : ""}${leuchtet("stufe")}`} data-stufe={lernAktiv ? "lernen" : einstellungen.modus === "einfach" ? "einfach" : "schwer"}
                       onClick={() => { const auf = !quizStufeAufgeklappt; if (auf) schliesseQuizBereiche("stufe"); setQuizStufeAufgeklappt(auf); }}
                       {...tt(quizStufeAufgeklappt ? "Bestätigen – klappt die Stufe zu" : "Stufe: Lernen, Leicht oder Schwer – antippen zum Einstellen (dort auch Regeln, Lernen und Vorlesen)")}>
@@ -9931,7 +9943,7 @@ export default function VokabelApp() {
 
                 {/* ZEILE 2: Umfang | Abfrage-Ziel | Gelernte */}
                 {kombiListe && fokusZeigt("zeile2") && (
-                  <div ref={sessionRef} className={`quiz-zeile${lernAktiv ? " lernen-aktiv" : ""}${quizSessionAufgeklappt === "umfang" || quizSessionAufgeklappt === "ziel" ? " hat-offen" : ""}`} style={{position: quizFokus === "zeile2" ? "sticky" : "relative", top: quizFokus === "zeile2" ? headerH + slotH : 0, zIndex:6}}>
+                  <div ref={sessionRef} className={`quiz-zeile${quizSessionAufgeklappt === "umfang" || quizSessionAufgeklappt === "ziel" ? " hat-offen" : ""}`} style={{position: quizFokus === "zeile2" ? "sticky" : "relative", top: quizFokus === "zeile2" ? headerH + slotH : 0, zIndex:6}}>
                     <div className={`quiz-zeile-zelle${quizSessionAufgeklappt === "umfang" ? " offen" : ""}`}><span className="quiz-zeile-label">Anzahl je Runde</span>
                     <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "umfang" ? " offen bestaetigen-knopf" : ""}${leuchtet("umfang")}`} data-umfang
                       onClick={() => toggleSessionBereich("umfang")}
@@ -12046,11 +12058,21 @@ export default function VokabelApp() {
                       onClick={() => speichereEinst({ ...einstellungen, satzWeg: w })} {...tt(info)}>{label}</button>
                   ))}
                 </div>
-                <div className="inp-label">1. Prompt kopieren – {portion.teil.length} Vokabeln{portion.offen > portion.teil.length ? ` (noch ${portion.offen} offen, in Portionen)` : ""}</div>
+                <div className="inp-label">1. Prompt {portion.alsDatei ? "als Datei" : "kopieren"} – {portion.teil.length} Vokabeln{portion.offen > portion.teil.length ? ` (noch ${portion.offen} offen, in Portionen)` : ""}</div>
                 <textarea className="inp" readOnly value={portion.prompt} data-satz-prompt rows={4} style={{fontSize:"0.75rem", marginBottom:6}}/>
-                <button className="btn btn-ghost btn-sm" data-satz-prompt-kopieren style={{marginBottom:12}}
-                  onClick={async () => { try { await navigator.clipboard.writeText(portion.prompt); setSatzFenster(f => ({ ...f, meldung: "Prompt kopiert – jetzt in die KI einfügen." })); } catch { /* manuell kopieren */ } }}
-                  {...tt("Prompt in die Zwischenablage kopieren und in ChatGPT, Claude o. Ä. einfügen")}>📋 Prompt kopieren</button>
+                <div style={{display:"flex", gap:6, marginBottom:12, flexWrap:"wrap"}}>
+                  <button className={`btn btn-sm ${portion.alsDatei ? "btn-ghost" : "btn-primary"}`} data-satz-prompt-kopieren
+                    onClick={async () => { try { await navigator.clipboard.writeText(portion.prompt); setSatzFenster(f => ({ ...f, meldung: "Prompt kopiert – jetzt in die KI einfügen." })); } catch { /* manuell kopieren */ } }}
+                    {...tt("Prompt in die Zwischenablage kopieren und in ChatGPT, Claude o. Ä. einfügen")}>📋 Prompt kopieren</button>
+                  <button className={`btn btn-sm ${portion.alsDatei ? "btn-primary" : "btn-ghost"}`} data-satz-prompt-datei
+                    onClick={() => {
+                      // Begleitsatz (kurz – passt sicher in die Zwischenablage) und Datei im selben Antippen anstoßen
+                      navigator.clipboard?.writeText(SATZ_BEGLEITSATZ).catch(() => {});
+                      teileAlsDatei(portion.prompt, dateiName(`Beispielsätze – ${portion.liste.name}`, "Beispielsätze"));
+                      setSatzFenster(f => ({ ...f, meldung: "Prompt-Datei erstellt – in der KI anhängen und den kurzen Begleitsatz aus der Zwischenablage einfügen." }));
+                    }}
+                    {...tt("Prompt als Textdatei – sicher auch bei langen Listen; auf dem iPhone direkt an ChatGPT, Claude o. Ä. teilen oder in „Dateien“ sichern. Der Begleitsatz für die KI liegt danach in der Zwischenablage")}>📄 Prompt als Datei</button>
+                </div>
                 <div className="inp-label">2. Antwort der KI übernehmen</div>
                 <div style={{display:"flex", gap:6, marginBottom:6, flexWrap:"wrap"}}>
                   <button className="btn btn-ghost btn-sm" data-satz-einfuegen

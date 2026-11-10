@@ -50,8 +50,11 @@ await page.click('[data-stufe-wahl="schwer"]'); await sleep(200);
 ok(await page.$("[data-stufe-auswahl]"), "die schon gewählte Stufe antippen: bleibt offen (Regeln, Vorlesen erreichbar)");
 await page.click('[data-stufe-wahl="einfach"]'); await sleep(300);
 ok(await text("[data-stufe]") === "Leicht" && !(await page.$("[data-stufe-auswahl]")), "andere Stufe antippen: übernommen und zu");
-ok(await page.evaluate(() => document.querySelector("[data-stufe]").classList.contains("leuchten")), "zugeklappt: Knopf leuchtet kurz in der Bestätigen-Farbe");
-await sleep(1300);
+ok(await page.evaluate(() => document.querySelector("[data-stufe]").classList.contains("leuchten")) && await farbe("[data-stufe]") === bestFarbe,
+  `zugeklappt: Knopf sofort voll in der Bestätigen-Farbe (${await farbe("[data-stufe]")})`);
+ok(await page.evaluate(() => getComputedStyle(document.querySelector("[data-stufe]")).animationName === "none" && getComputedStyle(document.querySelector("[data-stufe]")).transitionDuration === "0s"),
+  "ohne Überblendung (keine Animation, kein Übergang)");
+await sleep(900);
 ok(!(await page.evaluate(() => document.querySelector("[data-stufe]").classList.contains("leuchten"))) && await farbe("[data-stufe]") === zu, "danach wieder die normale Farbe");
 // Reihenfolge: Wahl antippen schließt
 await page.click("[data-reihenfolge]"); await sleep(300);

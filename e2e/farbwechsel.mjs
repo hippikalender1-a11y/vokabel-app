@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer-core";
 import { neueEineSession, listenZu, farbZeige, stufeWaehlen } from "./hilfen.mjs";
 
-// Zufallsfarben je Abschnitt (schließt „Farben je Sprache“ aus) und Stufe „Lernen“: Quiz-Knöpfe schwächer
+// Zufallsfarben je Abschnitt (schließt „Farben je Sprache“ aus); Stufe „Lernen“: Knöpfe normal (nicht abgeschwächt)
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -62,13 +62,11 @@ await farbZeige(page, "[data-sprachfarben]");
 await page.click("[data-sprachfarben-an]"); await sleep(300);
 ok(JSON.stringify(await zust()) === '{"sprache":true,"wechsel":false}', `Farben je Sprache an → Zufallsfarben aus (${JSON.stringify(await zust())})`);
 
-// Stufe „Lernen“: alle Knöpfe außer Lern-Modus schwächer
+// Stufe „Lernen“: Knöpfe normal (Abschwächen wieder zurückgenommen)
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
 await stufeWaehlen(page, "lernen");
 const op = await page.evaluate(() => [...document.querySelectorAll(".quiz-zeile-zelle")].map(z => `${z.querySelector(".quiz-zeile-label").textContent}=${getComputedStyle(z).opacity}`));
-ok(op[0] === "Lern-Modus=1" && op.slice(1).every(x => x.endsWith("=0.45")), `Lernen: nur Lern-Modus voll (${op.join(", ")})`);
-await stufeWaehlen(page, "schwer");
-ok(await page.evaluate(() => [...document.querySelectorAll(".quiz-zeile-zelle")].every(z => getComputedStyle(z).opacity === "1")), "Schwer: alle Knöpfe voll");
+ok(op.length > 1 && op.every(x => x.endsWith("=1")), `Lernen: alle Knöpfe normal (${op.join(", ")})`);
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();
