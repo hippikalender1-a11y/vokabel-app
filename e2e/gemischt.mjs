@@ -36,17 +36,17 @@ await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c =>
 // Abfrage-Modus öffnen: Tastatur, MC und Akzente dazu anhaken
 await page.click("[data-abfragemodus]"); await sleep(300);
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf]")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
-ok(knoepfe === "tippen,mc,hoeren,puzzle,luecke,satzfinden,lueckensatz,satzbauen,artikel,karte,akzent,zuordnung,memory", `Antwortarten für E1: Tastatur, MC, Hören, Puzzle, Lücken, Karte, Akzente, Zuordnung, Memory (${knoepfe})`);
+ok(knoepfe === "karte,mc,tippen,hoeren,puzzle,luecke,satzfinden,lueckensatz,satzbauen,artikel,zuordnung,memory,akzent", `Antwortarten für E1: Karte, MC, Tastatur, dann die weiteren, Akzente zuletzt (${knoepfe})`);
 for (const m of ["tippen", "mc", "akzent"]) { await page.click(`[data-modus-knopf="E1:${m}"]`); await sleep(100); }
 const an = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf].aktiv")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
-ok(an === "tippen,mc,karte,akzent", `alle vier angehakt (${an})`);
+ok(an === "karte,mc,tippen,akzent", `alle vier angehakt (${an})`);
 // nur Akzente übrig lassen geht nicht (mindestens eine andere Art bleibt)
 for (const m of ["tippen", "mc", "karte"]) { await page.click(`[data-modus-knopf="E1:${m}"]`); await sleep(100); }
 const rest = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf].aktiv")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
 ok(rest === "karte,akzent", `letzte Art außer Akzente lässt sich nicht abwählen (${rest})`);
 for (const m of ["tippen", "mc"]) { await page.click(`[data-modus-knopf="E1:${m}"]`); await sleep(100); }
-const offenKnopf = await page.evaluate(() => { const b = document.querySelector("[data-abfragemodus]"); return `${b.querySelector(".zeile1")?.textContent}|${b.querySelector(".zeile2")?.textContent}`; });
-ok(offenKnopf === "Gemischt|Bestätigen", `aufgeklappt: „Gemischt“ / „Bestätigen“ (${offenKnopf})`);
+const offenKnopf = await page.evaluate(() => document.querySelector("[data-abfragemodus]").innerText.trim());
+ok(offenKnopf === "Bestätigen", `aufgeklappt: „Bestätigen“ (${offenKnopf})`);
 await page.click("[data-abfragemodus]"); await sleep(300);
 const knopf = await page.evaluate(() => { const b = document.querySelector("[data-abfragemodus]"); return `${b.querySelector(".zeile1")?.textContent}|${b.querySelector(".zeile2")?.textContent}`; });
 await page.click("[data-abfragemodus]"); await sleep(300);
@@ -57,6 +57,7 @@ await page.click("[data-abfragemodus]"); await sleep(300);
 await page.click("[data-abfrageziel]"); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].find(b => b.textContent.trim() === "Anzahl").click()); await sleep(200);
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].find(b => b.textContent.trim() === "3×").click()); await sleep(200);
+await page.click("[data-abfrageziel]"); await sleep(300);   // „Bestätigen“ – erst dann ist „Umfang“ wieder da
 await page.click("[data-umfang]"); await sleep(200); await page.click('[data-umfang-wahl="alle"]'); await sleep(300);
 await page.click("[data-start-knopf]"); await sleep(500);
 

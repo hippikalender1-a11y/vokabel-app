@@ -62,7 +62,7 @@ await page.click("[data-umfang]"); await sleep(200); await page.click('[data-umf
 ok(await stufe() === "schwer|Schwer", "Start: Schwer");
 await stufeAuf(page);
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-stufe-wahl]")].map(b => b.textContent.trim()).join("|")) === "Lernen|Leicht|Schwer"
-  && /Schwer\s*Bestätigen/.test(await page.evaluate(() => document.querySelector("[data-stufe]").textContent)), "Stufe aufgeklappt: Lernen | Leicht | Schwer, Knopf „Schwer / Bestätigen“");
+  && /^\s*Bestätigen\s*$/.test(await page.evaluate(() => document.querySelector("[data-stufe]").textContent)), "Stufe aufgeklappt: Lernen | Leicht | Schwer, Knopf „Bestätigen“");
 await stufeZu(page);
 await stufeWaehlen(page, "lernen");
 ok(await stufe() === "lernen|Lernen", "gewählt: Lernen");

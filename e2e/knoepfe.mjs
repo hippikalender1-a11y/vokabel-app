@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer-core";
 import { neueEineSession, listenZu } from "./hilfen.mjs";
 
-// Zeilen-Knöpfe im Quiz-Tab: aufgeklappt „Kurzwert / Bestätigen“, gleiche Farbe wie zugeklappt;
+// Zeilen-Knöpfe im Quiz-Tab: aufgeklappt nur „✓ Bestätigen“ in eigener Farbe, übrige Knöpfe der Zeile ausgeblendet;
 // Stufe aufklappbar; lang drücken auf „Start“: Speichern-Menü wie beim Session-Namen
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
@@ -13,6 +13,8 @@ const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FA
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const text = sel => page.evaluate(s => document.querySelector(s)?.innerText.replace(/\s+/g, " ").trim(), sel);
 const farbe = sel => page.evaluate(s => getComputedStyle(document.querySelector(s)).backgroundColor, sel);
+const sichtbar = sel => page.evaluate(s => { const e = document.querySelector(s); return !!e && e.offsetParent !== null; }, sel);
+const haken = sel => page.evaluate(s => getComputedStyle(document.querySelector(s), "::before").content, sel);
 
 await page.goto(URL);
 await page.evaluate(() => {
@@ -29,19 +31,22 @@ await listenZu(page);
 
 const zu = await farbe("[data-reihenfolge]");
 await page.click("[data-reihenfolge]"); await sleep(300);
-ok(await text("[data-reihenfolge]") === "Schlechteste Bestätigen" && await farbe("[data-reihenfolge]") === zu, `Reihenfolge offen: „Schlechteste / Bestätigen“, gleiche Farbe (${await text("[data-reihenfolge]")})`);
+const bestFarbe = await farbe("[data-reihenfolge]");
+ok(await text("[data-reihenfolge]") === "Bestätigen" && bestFarbe !== zu && /✓/.test(await haken("[data-reihenfolge]")),
+  `Reihenfolge offen: nur „✓ Bestätigen“ in eigener Farbe (${await text("[data-reihenfolge]")}, ${zu} → ${bestFarbe})`);
+ok(!(await sichtbar("[data-stufe]")) && !(await sichtbar("[data-abfragemodus]")) && await sichtbar("[data-reihenfolge]"), "übrige Knöpfe der Zeile ausgeblendet");
 await page.click("[data-reihenfolge]"); await sleep(300);
-ok(await text("[data-reihenfolge]") === "Schlechteste zuerst", "„Bestätigen“ klappt zu, wieder der volle Text");
+ok(await text("[data-reihenfolge]") === "Schlechteste zuerst" && await farbe("[data-reihenfolge]") === zu && await sichtbar("[data-stufe]") && await sichtbar("[data-abfragemodus]"),
+  "„Bestätigen“ klappt zu: wieder der volle Text, alte Farbe, alle Knöpfe da");
 await page.click("[data-umfang]"); await sleep(300);
-ok(await text("[data-umfang]") === "Alle Bestätigen", `Umfang offen: „Alle / Bestätigen“ (${await text("[data-umfang]")})`);
+ok(await text("[data-umfang]") === "Bestätigen" && await farbe("[data-umfang]") === bestFarbe && !(await sichtbar("[data-abfrageziel]")), `Umfang offen: „Bestätigen“, Abfrage-Ziel ausgeblendet (${await text("[data-umfang]")})`);
 await page.click("[data-umfang]"); await sleep(300);
 await page.click("[data-abfrageziel]"); await sleep(300);
-ok(/Bestätigen$/.test(await text("[data-abfrageziel]")), `Abfrage-Ziel offen: „… / Bestätigen“ (${await text("[data-abfrageziel]")})`);
+ok(await text("[data-abfrageziel]") === "Bestätigen" && !(await sichtbar("[data-umfang]")), `Abfrage-Ziel offen: „Bestätigen“ (${await text("[data-abfrageziel]")})`);
 await page.click("[data-abfrageziel]"); await sleep(300);
 await page.click("[data-stufe]"); await sleep(300);
-ok(await text("[data-stufe]") === "Schwer Bestätigen" && await page.$("[data-stufe-auswahl]"), "Stufe offen: „Schwer / Bestätigen“ mit Auswahl darunter");
+ok(await text("[data-stufe]") === "Bestätigen" && await page.$("[data-stufe-auswahl]"), "Stufe offen: „Bestätigen“ mit Auswahl darunter");
 await page.click('[data-stufe-wahl="einfach"]'); await sleep(200);
-ok(await text("[data-stufe]") === "Leicht Bestätigen", "Auswahl ändert den Kurzwert sofort");
 await page.click("[data-stufe]"); await sleep(300);
 ok(await text("[data-stufe]") === "Leicht" && !(await page.$("[data-stufe-auswahl]")), "„Bestätigen“: Stufe zu");
 

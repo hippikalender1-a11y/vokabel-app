@@ -35,7 +35,7 @@ const starte = async (art, woerter = WOERTER) => {
   await listenZu(page);
   await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
   const da = await page.evaluate(a => { const b = document.querySelector(`[data-modus-knopf="E1:${a}"]`); b?.click(); return !!b; }, art); await sleep(200);
-  await page.evaluate(() => document.querySelector('[data-modus-knopf="E1:karte"].aktiv')?.click()); await sleep(200);
+  await page.evaluate(() => document.querySelector('[data-modus-knopf$=":karte"].aktiv')?.click()); await sleep(200);
   await bereichZu(page);
   await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(800);
   return da;
@@ -43,13 +43,14 @@ const starte = async (art, woerter = WOERTER) => {
 const frageText = () => page.evaluate(() => document.querySelector("[data-karte-frage] .quiz-frage-text")?.textContent.trim());
 
 // ── Hören ──
+// „Hören“ wählen dreht die Richtung: Französisch wird vorgelesen, Deutsch gewählt
 ok(await starte("hoeren"), "Modus-Knopf „Hören“");
 ok(await page.$("[data-hoer-verdeckt]"), "Frage verdeckt (🔊)");
 const gehoert = await page.evaluate(() => window.__gesprochen[window.__gesprochen.length - 1]);
-ok(/^Wort\d$/.test(gehoert || ""), `Frage wird beim Erscheinen vorgelesen (${gehoert})`);
-await page.evaluate(z => [...document.querySelectorAll("[data-mc-raster] button")].find(b => b.textContent.trim() === z)?.click(), zielVon(gehoert)); await sleep(400);
+ok(WOERTER.includes(gehoert), `die französische Frage wird beim Erscheinen vorgelesen (${gehoert})`);
+await page.evaluate(z => [...document.querySelectorAll("[data-mc-raster] button")].find(b => b.textContent.trim() === z)?.click(), `Wort${WOERTER.indexOf(gehoert) + 1}`); await sleep(400);
 ok(!(await page.$("[data-hoer-verdeckt]")) && await frageText() === gehoert, "richtig gewählt: Frage wird sichtbar");
-ok(await score(zielVon(gehoert)) === 1, "Hören: richtig +1");
+ok(await score(gehoert) === 1, "Hören: richtig +1");
 
 // ── Puzzle ──
 ok(await starte("puzzle"), "Modus-Knopf „Puzzle“");

@@ -99,7 +99,12 @@ const weiter = async () => { await page.evaluate(() => document.querySelector(".
 
 await starte("satzfinden");
 let f = await frage();
-ok(await page.$("[data-satzfinden] .satz-lauf") && await page.evaluate(() => [...document.querySelectorAll("[data-satz-wort]")].map(b => b.textContent).join(" ")) === SATZ[f], `Satz finden: „${SATZ[f]}“ läuft durchs Bild`);
+ok(await page.evaluate(() => [...document.querySelectorAll("[data-satz-wort]")].map(b => b.textContent).join(" ")) === SATZ[f], `Satz finden: „${SATZ[f]}“`);
+const lage = await page.evaluate(() => ({ breit: document.documentElement.scrollWidth, fenster: innerWidth, lauf: !!document.querySelector(".satz-lauf"),
+  drin: [...document.querySelectorAll("[data-satz-wort]")].every(b => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }),
+  ueb: !!document.querySelector("[data-satzfinden] .satz-ueb") }));
+ok(!lage.lauf && lage.drin && lage.breit <= lage.fenster, `Satz steht komplett im Bild, kein Laufband, keine Überbreite (${JSON.stringify(lage)})`);
+ok(!lage.ueb, "Satz finden: keine Übersetzung (Standard)");
 await page.evaluate(() => [...document.querySelectorAll("[data-satz-wort]")].find(b => !b.hasAttribute("data-satz-ziel"))?.click()); await sleep(300);
 ok(/Nicht richtig/.test(await page.evaluate(() => document.body.innerText)) && await score(f) === null, "falsches Wort: Fehlversuch");
 await sleep(1600);
@@ -109,6 +114,7 @@ ok(await score(f) === 1 && await page.evaluate(() => document.querySelector("[da
 await starte("lueckensatz");
 f = await frage();
 ok(/_{4,}/.test(await page.evaluate(() => document.querySelector("[data-lueckensatz-text]")?.textContent)), "Lückensatz: Satz mit Lücke");
+ok(await page.$("[data-lueckensatz] .satz-ueb"), "Lückensatz: Übersetzung (Standard: an)");
 await page.focus("[data-lueckensatz-eingabe]"); await page.keyboard.type(FORM[f]); await page.keyboard.press("Enter"); await sleep(400);
 ok(await score(f) === 2 || await score(f) === 1, `Form „${FORM[f]}“ eingetippt: richtig (${await score(f)})`);
 
