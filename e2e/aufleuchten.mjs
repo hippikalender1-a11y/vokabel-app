@@ -70,6 +70,8 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 await page.click('[data-slot-id="g"]'); await sleep(80);
 z = await zustand('[data-slot-id="g"]');
 ok(z?.an && z.farbe === B, `Session-Kachel geladen: leuchtet (${JSON.stringify(z)})`);
+z = await zustand("[data-slot-kopf-name]");
+ok(z?.an && z.farbe === B && /Meine Session/.test(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent)), `gleichzeitig: neuer Session-Name im Kopf leuchtet (${JSON.stringify(z)})`);
 await sleep(450);
 z = await zustand("[data-slot-kopf-name]");
 ok(z?.an && z.farbe === B && /Meine Session/.test(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent)), `Übersicht zu: Session-Name leuchtet nach (${JSON.stringify(z)})`);

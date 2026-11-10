@@ -6259,15 +6259,24 @@ export default function VokabelApp() {
       bereichText = nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}–${nr[nr.length - 1]}` : "Auswahl";
     } else if (bereichAktiv) bereichText = "Auswahl";
     const info = [multi ? `🧩 ${multi.map(t => t.name).join(" + ")}` : listenText, multi ? "" : bereichText, `${voks.length} Vokabel${voks.length !== 1 ? "n" : ""}`].filter(Boolean).join(" · ");
-    const aktionen = !statistik ? sessionSpeicherAktionen() : null;
+    // Lang-Druck (Quiz): Speichern und – bei einer gespeicherten Session – dieselbe Verwaltung wie auf ihrer Kachel
+    const eintrag = !statistik && gespeichert ? getSlotEintrag("gespeichert", slot.id) : null;
+    const verwaltung = eintrag ? [
+      { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: eintrag.id, name: eintrag.name }) },
+      { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: eintrag.id, name: kopieName(eintrag.name), kopie: true }) },
+      { label: "📝 Listen/Vokabeln ändern", fn: () => { setListenAendern(true); setSlotSektionAufgeklappt(false); } },
+      { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: "gespeichert", id: eintrag.id }) },
+    ] : [];
+    const alleAktionen = [...(!statistik ? sessionSpeicherAktionen() || [] : []), ...verwaltung];
+    const aktionen = alleAktionen.length ? alleAktionen : null;
     return (
       <div ref={slotSektionRef} data-slot-kopf={zu ? (gruen ? "gruen" : "zu") : "offen"} className={`slot-kopf${gruen ? " gruen" : ""}`}
         style={{top:headerH, ...(statistik ? {} : {marginLeft:"-16px", marginRight:"-16px"}), ...(!statistik && quizVokMax ? {display:"none"} : {})}}>
         <div style={{display:"flex", alignItems:"center", gap:8}}>
-          <button onClick={toggleSlotSektion} className={`toggle-opt aktiv slot-kopf-name${zu ? blitzt("slotkopf") : ""}`} data-slot-kopf-name data-geaendert={geaendert ? "" : undefined}
+          <button onClick={toggleSlotSektion} className={`toggle-opt aktiv slot-kopf-name${blitzt("slotkopf")}`} data-slot-kopf-name data-geaendert={geaendert ? "" : undefined}
             style={geaendert ? {background:"var(--falsch)", color:"var(--auf-falsch)"} : undefined}
-            {...tt(geaendert ? `${name} – Vokabelauswahl geändert, noch nicht gespeichert; lang drücken: überspeichern, als neue Session speichern oder verwerfen`
-              : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, aktionen, { langText: name })}>
+            {...tt(geaendert ? `${name} – Vokabelauswahl geändert, noch nicht gespeichert; lang drücken: überspeichern, als neue Session speichern, verwerfen, umbenennen, duplizieren, Vokabeln ändern oder löschen`
+              : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern, umbenennen, duplizieren, Vokabeln ändern, löschen" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, aktionen, { langText: name })}>
             {name}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}
           </button>
           {voks.length > 0 && !zu && (
@@ -6493,7 +6502,7 @@ export default function VokabelApp() {
             style={{...chipStil('gespeichert', x.id, slotRef), position:"relative", ...(multiNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) ? {outline:"3px solid var(--gelb)", outlineOffset:1} : {})}}
             onClick={() => multiAuswahl
               ? setMultiAuswahl(a => a.includes(x.id) ? a.filter(v => v !== x.id) : [...a, x.id])
-              : (leuchte(`slot:${x.id}`), onLaden('gespeichert', x.id))}
+              : (leuchte(`slot:${x.id}`), leuchte("slotkopf"), onLaden('gespeichert', x.id))}
             {...(() => {
               // Lang-Druck (Maus: Rechtsklick): Session kommt in die Auswahl, die Tafel bleibt unten offen (weitere antippen wählt mit aus);
               // Touch: Haltestufen (kurz halten + ziehen verschiebt, lang halten + fahren wählt aus)
