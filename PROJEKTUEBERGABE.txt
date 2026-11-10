@@ -1992,6 +1992,31 @@ BESTÄTIGEN-KNÖPFE (Punkt 34): offene Zeilen-Knöpfe (Stufe, Modus, Reihenfolge
   „Bestätigen“ (zweizeilig), gleiche Farbe wie zu (.quiz-zeile-knopf.offen ohne Umfärben).
 START SPEICHERN (Punkt 35): sessionSpeicherAktionen() – Menü beim langen Drücken auf Session-Name und Start-Knopf.
   Test e2e/knoepfe.mjs.
+NEUE ANTWORTARTEN (Punkte 36/40/41): MODI_REIHENFOLGE + hoeren, puzzle, luecke (Namen Hören/Puzzle/Lücken, Gewichte je 15).
+  hoeren = MC (istMC) mit verdeckter Frage (data-hoer-verdeckt), Effekt hoerFrage liest sie beim Erscheinen vor.
+  puzzle: puzzleKacheln(wort, seed) gemischt (FESTES_ZEICHEN bleiben stehen), quiz.puzzleKey/puzzleWahl; voll → pruefeAntwort(wort).
+  luecke: lueckenPositionen(wort, score, schwer, seed) – gewichtet nach Akzenten, LUECKEN_GRUPPEN, Doppelkonsonanten, Endungen;
+  Anteil 20/35/50 % nach Score (+10 % Schwer), erster Buchstabe bleibt; Eingabe der fehlenden Buchstaben (lueckeText), voll →
+  pruefeAntwort. pruefeAntwort(eingabeArg) nimmt eine zusammengesetzte Eingabe. Test e2e/antwortarten.mjs.
+  Lernkarte: Stimmen-Knopf „n/m“ (data-stimme-wechsel="lernen").
+MEMORY (Punkt 37): RUNDEN_ARTEN [zuordnung, memory] (istRunde) – eine Ziehung je Frage; z.art; Memory nutzt Frage + erste
+  Antwort-Spalte (z.spalten, z.alleSpalten bleibt), höchstens 8 Paare, mKarten verdeckt (data-memory-karte), memoryTippe:
+  Paar → +1 (zuordnungWerte), sonst nach 1,1 s wieder zu (kein Abzug). Ende → Ergebnis-Zeilen wie Zuordnung.
+BLITZRUNDE / SERIE (Punkte 45/46): Abfrage-Ziele "blitz" (BLITZ_SEKUNDEN 60, abfrageZiel.ende, Effekt → spielBeenden) und
+  "serie" (erster Fehler → spielBeenden). quiz.spielZaehler/spielBeantwortet/spielBasis; naechsteVokabelState zählt und hängt
+  gemischte Vokabeln an (kommen immer wieder). Phase "spielEnde" (data-spiel-ende/-ergebnis/-rekord), Rekorde in
+  localStorage „vokabel_rekorde“ je Art und Session/Liste. Kopf zeigt ⚡/🔥 n, Blitz mit Zeitbalken (data-blitz-zeit).
+ARTIKEL (Punkt 39): Antwortart "artikel" (istMC) – ARTIKEL_KAT je Sprache (fr le/la, es el/la, it il/lo|la, pt o/a, nl de/het,
+  de der/die/das), artikelInfo(wert, sprache) aus dem ersten Wort, vokSprache(vok) aus dem Listen-Index; generiereButtons(…, modus)
+  liefert die Kategorien; ohne erkennbaren Artikel (z. B. l') zieht loeseSpaltenModusAuf eine andere Art. Anzeige data-artikel-wort.
+BEISPIELSÄTZE (Punkt 47/50): IndexedDB „vokabel_saetze“ (Store saetze, Schlüssel listeId__vokId → [{s mit *Wort*, u}]), saetzeLaden/
+  saetzeSpeichern; SATZ_CACHE für das Quiz (Effekt lädt die Quiz-Listen). Fenster modal "saetze" (oeffneSatzFenster, Listen-Menü
+  „✨ Beispielsätze ergänzen“, Liste: Bereich „Beispielsätze“ mit Anzahl + „Sätze ansehen“): Anzahl 1/3/6/10 (einst.satzAnzahl),
+  Weg „Antwort im Chat“ (Portionen SATZ_PORTION) oder „Als Datei“ (einst.satzWeg, ganze Liste), Prompt kopieren, „📋 Einfügen“
+  (Zwischenablage), „📄 Datei laden“ (mehrere .txt), Textfeld; saetzeAusAntwort liest „ID // Satz // Übersetzung“ (auch |).
+SATZ-ANTWORTARTEN (Punkte 38/42/43): satzfinden (Satz läuft durchs Bild, data-satz-wort/-ziel), lueckensatz (Form eintippen,
+  istRichtigeAntwort gegen die markierte Form), satzbauen (Wort-Kacheln); satzFuer(vok, seed) wählt den Satz; richtig/falsch über
+  pruefeAntwort(antwortTeile[0] bzw. " "). Danach Satz mit fettem Wort + Übersetzung (data-satz-loesung). Test e2e/saetze.mjs.
   Start-Knopf zeigt den Session-Rest (startRest = sessionAnzahl − abgefragt,
   data-start-rest); data-start-anzahl bleibt die Größe der nächsten Runde.
   Gelernte-Knopf: aus = haupt-flaeche mit Hauptfarben-Rand, an = gefüllt (--haupt),

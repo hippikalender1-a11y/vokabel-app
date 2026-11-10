@@ -189,6 +189,7 @@ await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(
 await zuListen(page);
 await kontext('[data-liste-id="l_a"]');
 ok((await tafel())?.startsWith("Unité 1") && (await menue()).includes("▦ In Sessions aufteilen"), "Listen: Lang-Druck → Tafel mit dem Listen-Menü");
+await page.evaluate(() => document.querySelector('[data-liste-id="l_c"]').scrollIntoView({ block: "center" })); await sleep(300);   // Kachel über die Tafel scrollen
 await page.click('[data-liste-id="l_c"]'); await sleep(300);
 ok(/^2 ausgewählt/.test(await tafel() || "") && (await menue()).includes("📤 Exportieren (2)"), `Listen: Antippen wählt mit aus (${await tafel()})`);
 ok(await page.evaluate(() => !document.querySelector("[data-vokabel-liste], .liste-detail-header")), "Listen: Antippen öffnet die Liste nicht");

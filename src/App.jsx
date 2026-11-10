@@ -17,6 +17,61 @@ const SK = {
   sicherungSpaeter: "vokabel_sicherung_spaeter", // Erinnerung „Später“ gedrückt (für einen Tag still)
   liste: (id)  => `vokabel_liste_${id}`,
 };
+// Beispielsätze: Schlüssel „listeId__vokId“ → [{ s: Satz mit *Wort*, u: Übersetzung }]
+const SATZ_DB = "vokabel_saetze", SATZ_STORE = "saetze";
+const SATZ_ANZAHLEN = [1, 3, 6, 10];
+const SATZ_PORTION = { 1: 120, 3: 50, 6: 25, 10: 15 };   // Vokabeln je KI-Antwort
+let satzDbPromise = null;
+function satzDb() {
+  if (!satzDbPromise) satzDbPromise = new Promise((res, rej) => {
+    const r = indexedDB.open(SATZ_DB, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(SATZ_STORE);
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+  return satzDbPromise;
+}
+async function saetzeLaden(listeId) {
+  try {
+    const db = await satzDb(), praefix = `${listeId}__`;
+    return await new Promise(res => {
+      const erg = {}, req = db.transaction(SATZ_STORE).objectStore(SATZ_STORE).openCursor(IDBKeyRange.bound(praefix, praefix + "\uffff"));
+      req.onsuccess = () => { const c = req.result; if (c) { erg[c.key] = c.value; c.continue(); } else res(erg); };
+      req.onerror = () => res(erg);
+    });
+  } catch { return {}; }
+}
+async function saetzeSpeichern(eintraege) {
+  try {
+    const db = await satzDb();
+    return await new Promise(res => {
+      const tx = db.transaction(SATZ_STORE, "readwrite"), st = tx.objectStore(SATZ_STORE);
+      Object.entries(eintraege).forEach(([k, v]) => st.put(v, k));
+      tx.oncomplete = () => res(true); tx.onerror = () => res(false);
+    });
+  } catch { return false; }
+}
+// Prompt: je Vokabel n Beispielsätze, Vokabelwort mit *Sternchen* markiert, Zeilen „ID // Satz // Übersetzung“
+function satzPrompt(sprachName, zeilen, n, alsDatei = false) {
+  return [
+    ...(alsDatei ? [`Erstelle eine Textdatei (.txt, UTF-8) zum Herunterladen. Schreibe den Inhalt NICHT in den Chat, sondern nur in die Datei.`, ``] : []),
+    `Erstelle für jede der folgenden ${sprachName}-Vokabeln genau ${n} kurze, natürliche Beispielsätze auf ${sprachName} (Schulniveau, abwechslungsreich: verschiedene Situationen und – wo möglich – verschiedene Formen des Wortes) und zu jedem Satz die deutsche Übersetzung.`,
+    `Markiere in jedem ${sprachName}-Satz das Vokabelwort bzw. seine gebeugte Form mit Sternchen, z. B.: Je vais à la *maison*.`,
+    `${alsDatei ? "Die Datei enthält NUR Zeilen" : "Antworte NUR mit Zeilen"} in genau diesem Format – eine Zeile pro Satz, ohne Nummerierung, ohne Überschriften, ohne Leerzeilen:`,
+    `ID // Satz // Übersetzung`,
+    ``,
+    `Vokabeln (ID // ${sprachName} // Deutsch):`,
+    ...zeilen,
+  ].join("\n");
+}
+// KI-Antwort lesen: „ID // Satz // Übersetzung“ (auch mit | als Trenner)
+function saetzeAusAntwort(text) {
+  const erg = {};
+  (text || "").split(/\r?\n/).forEach(z => {
+    const m = z.match(/^\s*(\d+)\s*(?:\/\/|\|)\s*(.+?)\s*(?:\/\/|\|)\s*(.+?)\s*$/);
+    if (m && m[2].includes("*")) (erg[m[1]] ||= []).push({ s: m[2], u: m[3] });
+  });
+  return erg;
+}
 function lsGet(key, fallback = null) {
   try {
     const v = localStorage.getItem(key);
@@ -261,7 +316,11 @@ function splitInSeiten(text, maxChars = 120) {
 // ── MC-Buttons generieren ─────────────────────────────────────────────────
 // Multiple Choice: immer 4 Antworten (2×2-Raster) – alle richtigen Teile, mit falschen aufgefüllt
 const MC_ANZAHL = 4;
-function generiereButtons(vokabeln, aktVok, antwortTyp) {
+function generiereButtons(vokabeln, aktVok, antwortTyp, modus) {
+  if (modus === "artikel") {
+    const info = artikelInfo(aktVok[antwortTyp]?.wert, vokSprache(aktVok));
+    if (info) return { buttons: info.kategorien.map(k => ({ text: k, korrekt: k === info.kat, status: "neutral" })), richtig: [info.kat] };
+  }
   const richtigTeile = (aktVok[antwortTyp]?.wert || "").split('/').map(s => s.trim()).filter(Boolean);
   const richtigLower = richtigTeile.map(r => r.toLowerCase());
   const nFalsch = Math.max(0, MC_ANZAHL - richtigTeile.length);
@@ -420,16 +479,98 @@ function GelerntSterne() {
   );
 }
 
+const BLITZ_SEKUNDEN = 60;
+const REKORDE_KEY = "vokabel_rekorde";   // Rekorde Blitzrunde / Serie je Session bzw. Liste
 // Antwortarten einer Spalte: eine (Text) oder mehrere (Liste – je Frage wird zufällig eine gewählt)
 // Start-Knopf im Quiz-Tab: nennt die gewählte Abfrageart
 const START_TEXT = { uebersetzung: "Übersetzung starten", diktat: "Diktat starten", akzente: "Akzente starten" };
-const MODI_REIHENFOLGE = ["karte", "mc", "tippen", "akzent", "zuordnung"];
+const MODI_REIHENFOLGE = ["karte", "mc", "hoeren", "tippen", "puzzle", "luecke", "artikel", "satzfinden", "lueckensatz", "satzbauen", "akzent", "zuordnung", "memory"];
+// Satz-Arten brauchen Beispielsätze (SATZ_CACHE, aus IndexedDB geladen); ohne Sätze wird eine andere Art gezogen
+const SATZ_ARTEN = ["satzfinden", "lueckensatz", "satzbauen"];
+let SATZ_CACHE = {};
+const hatSaetze = vok => (SATZ_CACHE[vok?.id] || []).length > 0;
+// Satz für eine Frage (gleicher Satz beim Neuzeichnen): Wörter mit Satzzeichen, markiertes Wort, Übersetzung
+function satzFuer(vok, seed) {
+  const liste = SATZ_CACHE[vok?.id] || [];
+  if (!liste.length) return null;
+  const x = liste[Math.floor(zufallMitSeed(seed)() * liste.length)];
+  const woerter = x.s.replace(/\*([^*]+)\*/g, (m, w) => `*${w.replace(/\s+/g, "\u00a0")}*`).split(/\s+/).filter(Boolean)
+    .map(w => ({ text: w.replace(/\*/g, "").replace(/\u00a0/g, " "), ziel: w.includes("*"), kern: (w.match(/\*([^*]+)\*/) || [])[1]?.replace(/\u00a0/g, " ") || null }));
+  const form = (x.s.match(/\*([^*]+)\*/) || [])[1] || "";
+  return { satz: x.s.replace(/\*/g, ""), woerter, form, ueb: x.u };
+}
+// Runden-Arten: eine Ziehung startet eine Runde mit mehreren Vokabeln
+const RUNDEN_ARTEN = ["zuordnung", "memory"];
+const istRunde = m => RUNDEN_ARTEN.includes(m);
+const istMC = m => m === "mc" || m === "hoeren" || m === "artikel";   // „Hören“ = MC mit verdeckter Frage, „Artikel“ = MC mit den Artikeln
+// Artikel je Sprache: Kategorien (Knöpfe) und welche Artikel dazu gehören; „l'“ u. Ä. verraten das Geschlecht nicht
+const ARTIKEL_KAT = {
+  fr: { kat: ["le", "la"], map: { le: "le", un: "le", la: "la", une: "la" } },
+  es: { kat: ["el", "la"], map: { el: "el", un: "el", la: "la", una: "la" } },
+  it: { kat: ["il / lo", "la"], map: { il: "il / lo", lo: "il / lo", un: "il / lo", uno: "il / lo", la: "la", una: "la" } },
+  pt: { kat: ["o", "a"], map: { o: "o", um: "o", a: "a", uma: "a" } },
+  nl: { kat: ["de", "het"], map: { de: "de", het: "het" } },
+  de: { kat: ["der", "die", "das"], map: { der: "der", die: "die", das: "das" } },
+};
+function artikelInfo(wert, sprache) {
+  const def = ARTIKEL_KAT[sprache];
+  if (!def) return null;
+  const m = ohneHinweis((wert || "").split("/")[0]).trim().match(/^(\S+)\s+(.+)$/);
+  const kat = m && def.map[m[1].toLowerCase()];
+  return kat ? { kat, rest: m[2], kategorien: def.kat } : null;
+}
+// Sprache einer Vokabel aus ihrer Liste (Index im Speicher)
+function vokSprache(vok) {
+  const id = vok?._listeId;
+  if (!id) return null;
+  try { return (JSON.parse(localStorage.getItem("vokabel_listen_index")) || []).find(l => l.id === id)?.sprache || "en"; } catch { return null; }
+}
 const modiVon = m => Array.isArray(m) ? m : [m || STANDARD_ANTWORT_MODUS];
 // je Frage und Spalte: aus mehreren angehakten Antwortarten gleich verteilt eine wählen;
 // Akzente nur bei Wörtern mit Akzent (und eingeschalteten Akzenten der Sprache)
 // Gewichtung der Antwortarten beim Mischen (Prozent, werden auf die angehakten Arten umgerechnet);
 // Zuordnung: Anteil je Ziehung (eine Ziehung startet eine Runde mit mehreren Vokabeln)
-const STANDARD_ANTWORT_GEWICHTE = { karte: 50, mc: 30, akzent: 30, tippen: 15, zuordnung: 5 };
+const STANDARD_ANTWORT_GEWICHTE = { karte: 50, mc: 30, hoeren: 15, akzent: 30, tippen: 15, puzzle: 15, luecke: 15, artikel: 15, satzfinden: 10, lueckensatz: 15, satzbauen: 10, zuordnung: 5, memory: 5 };
+
+// ── Puzzle / Lücken: gleiche Zufallsfolge je Frage (Seed), damit sich beim Neuzeichnen nichts verschiebt ──
+function zufallMitSeed(text) {
+  let h = 2166136261;
+  for (const c of text) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  return () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const FESTES_ZEICHEN = /[\s'’\-.,!?;:()]/;   // bleibt stehen (keine Kachel, keine Lücke)
+// Lücken: typische Stolperstellen werden bevorzugt (Akzente, Buchstabengruppen, Doppelkonsonanten, stumme Endungen);
+// Anzahl wächst mit dem Score (Schwer: eine Stufe mehr); der erste Buchstabe bleibt stehen
+const LUECKEN_GRUPPEN = ["eau", "aux", "eux", "ou", "ai", "ei", "oi", "au", "eu", "ie", "ea", "ee", "oo", "ph", "th", "ch", "sh", "gh", "gn", "qu", "ck", "tion"];
+function lueckenPositionen(wort, score, schwer, seed) {
+  const zufall = zufallMitSeed(seed);
+  const w = wort.toLowerCase();
+  const kand = [...wort].map((c, i) => i).filter(i => !FESTES_ZEICHEN.test(wort[i]) && (i > 0 || wort.length <= 2));
+  if (!kand.length) return [];
+  const gewicht = i => {
+    let g = 1;
+    if (/[àâäéèêëîïôöûùüÿçœæñßáíóú]/i.test(wort[i])) g += 5;
+    if (LUECKEN_GRUPPEN.some(gr => { for (let a = Math.max(0, i - gr.length + 1); a <= i; a++) if (w.startsWith(gr, a)) return true; return false; })) g += 2;
+    if (w[i] === w[i - 1] || w[i] === w[i + 1]) g += 2;
+    if (i >= w.length - 3 && /(e|es|s|t|x|d|ent)$/.test(w)) g += 1;
+    return g;
+  };
+  const anteil = (score <= 0 ? 0.2 : score <= 2 ? 0.35 : 0.5) + (schwer ? 0.1 : 0);
+  const n = Math.max(1, Math.min(kand.length, Math.round(kand.length * anteil)));
+  const pool = kand.map(i => [i, gewicht(i)]), gewaehlt = [];
+  while (gewaehlt.length < n && pool.length) {
+    let r = zufall() * pool.reduce((x, [, g]) => x + g, 0), k = 0;
+    while (k < pool.length - 1 && (r -= pool[k][1]) >= 0) k++;
+    gewaehlt.push(pool[k][0]); pool.splice(k, 1);
+  }
+  return gewaehlt.sort((a, b) => a - b);
+}
+function puzzleKacheln(wort, seed) {
+  const zufall = zufallMitSeed(seed);
+  const k = [...wort].map((z, i) => ({ z, i })).filter(x => !FESTES_ZEICHEN.test(x.z));
+  for (let i = k.length - 1; i > 0; i--) { const j = Math.floor(zufall() * (i + 1)); [k[i], k[j]] = [k[j], k[i]]; }
+  return k;
+}
 let ANTWORT_GEWICHTE = { ...STANDARD_ANTWORT_GEWICHTE };
 const gewichtVon = m => Math.max(0, ANTWORT_GEWICHTE[m] ?? STANDARD_ANTWORT_GEWICHTE[m] ?? 0);
 function gewichtetWaehlen(kand) {
@@ -441,18 +582,20 @@ function gewichtetWaehlen(kand) {
 }
 function loeseSpaltenModusAuf(basis, vok) {
   const r = {};
+  const artikelOk = t => !!artikelInfo(vok?.[t]?.wert, vokSprache(vok));
   const kandidaten = (t, m) => {
-    let kand = m.filter(x => x !== "akzent" || (t.startsWith("E") && hatAkzente(vok?.[t]?.wert) && AKZENTE_FUER_LISTE(vok?._listeId)));
+    let kand = m.filter(x => (x !== "akzent" || (t.startsWith("E") && hatAkzente(vok?.[t]?.wert) && AKZENTE_FUER_LISTE(vok?._listeId))) && (x !== "artikel" || artikelOk(t)) && (!SATZ_ARTEN.includes(x) || hatSaetze(vok)));
     if (!kand.length) kand = m.filter(x => x !== "akzent");
     return kand;
   };
-  // Zuordnung: eine Ziehung je Frage – gilt dann für alle Spalten mit Zuordnung
-  const mitZ = Object.entries(basis || {}).find(([, m]) => Array.isArray(m) && m.includes("zuordnung"));
-  const zuo = !!mitZ && gewichtetWaehlen(kandidaten(mitZ[0], mitZ[1])) === "zuordnung";
+  // Runden-Arten (Zuordnung, Memory): eine Ziehung je Frage – gilt dann für alle Spalten mit dieser Art
+  const mitZ = Object.entries(basis || {}).find(([, m]) => Array.isArray(m) && m.some(istRunde));
+  const gezogen = mitZ ? gewichtetWaehlen(kandidaten(mitZ[0], mitZ[1])) : null;
+  const zuo = istRunde(gezogen) ? gezogen : null;
   Object.entries(basis || {}).forEach(([t, m]) => {
-    if (!Array.isArray(m)) { r[t] = m; return; }
-    if (zuo && m.includes("zuordnung")) { r[t] = "zuordnung"; return; }
-    let kand = kandidaten(t, m).filter(x => x !== "zuordnung");
+    if (!Array.isArray(m)) { r[t] = (m === "artikel" && !artikelOk(t)) || (SATZ_ARTEN.includes(m) && !hatSaetze(vok)) ? STANDARD_ANTWORT_MODUS : m; return; }
+    if (zuo && m.includes(zuo)) { r[t] = zuo; return; }
+    let kand = kandidaten(t, m).filter(x => !istRunde(x));
     if (!kand.length) kand = [STANDARD_ANTWORT_MODUS];
     r[t] = gewichtetWaehlen(kand);
   });
@@ -732,7 +875,7 @@ function istRichtigeAntwort(eingabe, wert, akzentTolerant = false) {
 }
 // Antwort-Modus, wenn für eine Spalte nichts festgelegt ist (Karte aufdecken)
 const STANDARD_ANTWORT_MODUS = "karte";
-const ANTWORT_MODUS_NAMEN = { karte: "Karte", mc: "MC", tippen: "Tastatur", akzent: "Akzente", zuordnung: "Zuordnung" };
+const ANTWORT_MODUS_NAMEN = { karte: "Karte", mc: "MC", hoeren: "Hören", tippen: "Tastatur", puzzle: "Puzzle", luecke: "Lücken", artikel: "Artikel", satzfinden: "Satz finden", lueckensatz: "Lückensatz", satzbauen: "Satz bauen", akzent: "Akzente", zuordnung: "Zuordnung", memory: "Memory" };
 // Abfrageart einer Quiz-Konfiguration: eigener Session-Fortschritt je Art
 function abfrageArtVon(modus, antwortTypen, spalteModus) {
   if (modus === "diktat") return "diktat";
@@ -1831,11 +1974,35 @@ const CSS_BASIS = `
   .karte-aufdecken{text-align:center;padding:20px 0;color:var(--text3);font-size:0.9rem;font-style:italic;}
   .stimme-wechsel{position:absolute;top:6px;right:6px;z-index:2;border:1.5px solid var(--rahmen);background:var(--karte);border-radius:16px;padding:2px 8px;font-size:0.9rem;cursor:pointer;line-height:1.4;}
   .stimme-zeile{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.88rem;}
+  .satz-band{overflow:hidden;border-radius:12px;background:var(--flaeche);padding:10px 0;margin:4px 0 8px;}
+  .satz-lauf{display:inline-flex;gap:6px;white-space:nowrap;padding-left:100%;animation:satzLauf linear infinite;}
+  @keyframes satzLauf{from{transform:translateX(0);}to{transform:translateX(-100%);}}
+  .satz-wort{border:1.5px solid var(--rahmen);background:var(--karte);border-radius:10px;padding:8px 10px;font-family:inherit;font-size:1.05rem;font-weight:700;color:var(--text-stark);cursor:pointer;}
+  .satz-text{font-size:1.1rem;line-height:1.6;text-align:center;color:var(--abfrage-schrift, var(--text-stark));}
+  .satz-gebaut{min-height:2.2em;border-bottom:2px solid var(--rahmen);margin-bottom:10px;}
+  .satz-luecke{color:var(--haupt);font-weight:800;letter-spacing:1px;}
+  .satz-ueb{text-align:center;font-size:0.85rem;color:var(--text2);margin-top:4px;}
+  .satz-kachel{font-size:0.95rem;padding:0 10px;}
+  .artikel-wort{text-align:center;font-size:1.5rem;font-weight:800;margin:4px 0 12px;color:var(--abfrage-schrift, var(--text-stark));}
+  .hoer-symbol{font-size:2.6rem;line-height:1;display:inline-block;padding:6px 0;}
+  .puzzle-zeile{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin:4px 0 10px;}
+  .puzzle-feld{min-width:24px;height:34px;border-bottom:2.5px solid var(--haupt);display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;color:var(--abfrage-schrift, var(--text-stark));}
+  .puzzle-feld.frei{border-bottom-color:var(--rahmen);}
+  .puzzle-feld.fest{border-bottom-color:transparent;}
+  .puzzle-feld.luecke-leer{min-width:12px;border-bottom-color:transparent;}
+  .puzzle-kacheln{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;}
+  .puzzle-kachel{min-width:40px;height:44px;border-radius:10px;border:1.5px solid var(--haupt);background:var(--knopf);color:var(--text-stark);font-family:inherit;font-size:1.15rem;font-weight:700;cursor:pointer;}
+  .puzzle-kachel:disabled{opacity:0.25;cursor:default;}
   .zuo-zeit{height:8px;border-radius:4px;background:var(--flaeche);overflow:hidden;margin:4px 0 12px;}
   .zuo-zeit[data-zuo-zeit="aus"]{visibility:hidden;}
   .zuo-zeit-balken{height:100%;width:100%;transform-origin:left;animation-name:zuoZeit;animation-timing-function:linear;animation-fill-mode:forwards;}
   @keyframes zuoZeit{0%{transform:scaleX(1);background:var(--richtig);}60%{background:var(--richtig);}80%{background:var(--orange);}100%{transform:scaleX(0);background:var(--falsch);}}
   .zuo-raster{display:grid;gap:8px;}
+  .memory-raster{display:grid;gap:8px;}
+  .memory-karte{position:relative;min-height:64px;padding:6px;border-radius:12px;border:2px solid var(--haupt);background:var(--haupt);color:var(--auf-haupt);font-family:inherit;font-weight:700;line-height:1.2;overflow-wrap:anywhere;cursor:pointer;transition:background .2s,color .2s;}
+  .memory-karte.auf{background:var(--abfrage-karte, var(--karte));color:var(--abfrage-schrift, var(--text-stark));border-color:var(--rahmen);}
+  .memory-karte.falsch{border-color:var(--falsch);}
+  .memory-rueck{font-size:1.4rem;opacity:0.7;}
   .zuo-ergebnis{display:flex;flex-direction:column;gap:8px;}
   .zuo-reihe{position:relative;border:2px solid var(--rahmen);border-radius:12px;padding:6px;animation:zuoEin .35s ease-out;}
   .zuo-reihe.richtig{border-color:var(--richtig);}
@@ -1976,6 +2143,8 @@ export default function VokabelApp() {
   const [letzterPrompt, setLetzterPrompt] = useState("");
   const [exportKopiert, setExportKopiert] = useState(false);
   const [kopierExportIds, setKopierExportIds] = useState(null);   // Export-Fenster „Kopieren“
+  const [satzFenster, setSatzFenster] = useState(null);   // { listeId, antwort, meldung }
+  const [listenSaetze, setListenSaetze] = useState({ listeId: null, saetze: {} });   // Beispielsätze der geöffneten Liste
   const [statistikSort, setStatistikSort] = useState("score-asc");
   const [statistikArt, setStatistikArt] = useState("uebersetzung");   // uebersetzung / diktat / akzente
   const [statistikFilter, setStatistikFilter] = useState(new Set(['negativ', 'nie', 'arbeit', 'gelernt'])); // Gruppen: negativ / nie / arbeit / gelernt
@@ -3014,6 +3183,15 @@ export default function VokabelApp() {
   const spracheVonListe = id => listeSprache(listenIndex.find(l => l.id === id));
   // Vorlese-Sprache einer Vokabel (Quiz-Vokabeln tragen _listeId)
   const vokLang = (vok, typ) => spalteLang(typ, vok?._listeId ? spracheVonListe(vok._listeId) : listeSprache(aktiveListe));
+  // „Hören“: die Frage beim Erscheinen vorlesen (sie ist verdeckt)
+  const hoerFrage = quiz && quiz.phase === "eingabe" && !quiz.flash && quiz.spalteModus?.[quiz.antwortTypen?.[quiz.antwortTypIndex]] === "hoeren"
+    ? `${quiz.index}|${quiz.antwortTypIndex}` : null;
+  useEffect(() => {
+    if (!hoerFrage || !quiz) return;
+    const v = quiz.vokabeln[quiz.index];
+    const t = setTimeout(() => sprich(v?.[quiz.frageTyp]?.wert || "", vokLang(v, quiz.frageTyp)), 250);
+    return () => clearTimeout(t);
+  }, [hoerFrage]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   function wechsleSprache(code) {
     setSprachMenuOffen(false);
@@ -5725,6 +5903,52 @@ export default function VokabelApp() {
     return { spalten, plaetze };
   }
 
+  // ── Beispielsätze ergänzen: Prompt für die nächste Portion, KI-Antwort einfügen, übernehmen ──
+  async function oeffneSatzFenster(listeId) {
+    setListenSaetze({ listeId, saetze: await saetzeLaden(listeId) });
+    setSatzFenster({ listeId, antwort: "", meldung: "" });
+    setModal("saetze");
+  }
+  function satzPortion(listeId, saetze, n) {
+    const liste = lsGet(SK.liste(listeId));
+    if (!liste) return null;
+    const fremd = TYPEN.find(t => t.startsWith("E") && liste.spalten[t]?.aktiv), deutsch = TYPEN.find(t => t.startsWith("D") && liste.spalten[t]?.aktiv);
+    const offen = liste.vokabeln.filter(v => v[fremd]?.wert && (saetze[`${listeId}__${v.id}`] || []).length < n);
+    const alsDatei = einstellungen.satzWeg === "datei";
+    const teil = offen.slice(0, alsDatei ? 2000 : SATZ_PORTION[n] || 30);
+    const sprachName = sprachInfo(listeSprache(liste)).name;
+    return { liste, offen: offen.length, gesamt: liste.vokabeln.length, teil, alsDatei,
+      prompt: satzPrompt(sprachName, teil.map(v => `${v.id} // ${ohneHinweis(v[fremd].wert)} // ${ohneHinweis(v[deutsch]?.wert || "")}`), n, alsDatei) };
+  }
+  async function uebernehmeSaetze(text) {
+    const f = satzFenster;
+    if (!f) return;
+    const neu = saetzeAusAntwort(typeof text === "string" ? text : f.antwort), liste = lsGet(SK.liste(f.listeId));
+    const eintraege = {};
+    let anzSaetze = 0;
+    Object.entries(neu).forEach(([id, liste2]) => {
+      if (!liste?.vokabeln.some(v => String(v.id) === id)) return;
+      const key = `${f.listeId}__${id}`, alt = listenSaetze.saetze[key] || [];
+      const zusammen = [...alt, ...liste2.filter(x => !alt.some(a => a.s === x.s))].slice(0, 10);
+      anzSaetze += zusammen.length - alt.length;
+      eintraege[key] = zusammen;
+    });
+    await saetzeSpeichern(eintraege);
+    const saetze = await saetzeLaden(f.listeId);
+    setListenSaetze({ listeId: f.listeId, saetze });
+    setSatzFenster({ ...f, antwort: "", meldung: Object.keys(eintraege).length ? `${anzSaetze} Sätze für ${Object.keys(eintraege).length} Vokabeln übernommen.` : "Keine passenden Zeilen gefunden – Format „ID // Satz // Übersetzung“ mit *Wort*." });
+  }
+  // Sätze der Listen im Quiz-Tab für die Satz-Antwortarten bereithalten
+  useEffect(() => {
+    const ids = [...new Set([...quizTabListen, ...(aktiveListeId ? [aktiveListeId] : [])])];
+    Promise.all(ids.map(id => saetzeLaden(id))).then(alle => { alle.forEach(x => Object.assign(SATZ_CACHE, x)); });
+  }, [quizTabListen.join(), aktiveListeId, listenSaetze]);   // eslint-disable-line react-hooks/exhaustive-deps
+  // Sätze der geöffneten Liste laden
+  useEffect(() => {
+    if (ansicht !== "liste-detail" || !aktiveListeId || listenSaetze.listeId === aktiveListeId) return;
+    saetzeLaden(aktiveListeId).then(saetze => setListenSaetze({ listeId: aktiveListeId, saetze }));
+  }, [ansicht, aktiveListeId]);   // eslint-disable-line react-hooks/exhaustive-deps
+
   // Menü einer Liste (lang drücken auf die Kachel bzw. auf den Namen im Listenkopf); imKopf: ohne Verschieben/Auswählen
   function oeffneListeDetail(id) {
     setAktiveListeId(id); setTab("listen"); setAnsicht("liste-detail"); window.scrollTo(0, 0); setVokabelAufgeklappt(false);
@@ -5735,6 +5959,7 @@ export default function VokabelApp() {
       { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
       { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
       { label: "📤 Exportieren", fn: () => oeffneExport([l.id]) },
+      { label: "✨ Beispielsätze ergänzen", fn: () => oeffneSatzFenster(l.id) },
       { label: "＋ Vokabeln importieren", fn: () => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(l.id); setTab("listen"); setAnsicht("import"); } },
       { label: "( ) → Info", fn: () => {
         const ll = lsGet(SK.liste(l.id));
@@ -5968,10 +6193,10 @@ export default function VokabelApp() {
     const akzentMoeglich = typ.startsWith("E") && quizTabListen.some(id => AKZENTE_FUER_LISTE(id));
     const umschalten = m => setQuizSpalteModus(p => {
       const spalten = quizAntwortTypenGeordnet.length ? quizAntwortTypenGeordnet : [typ];
-      if (m === "zuordnung") {
-        const an = !modiVon(p[typ]).includes("zuordnung"); const neu = { ...p };
-        spalten.forEach(t => { const alt = modiVon(p[t]).filter(x => x !== "zuordnung");
-          const liste = MODI_REIHENFOLGE.filter(x => (an && x === "zuordnung") || alt.includes(x));
+      if (istRunde(m)) {
+        const an = !modiVon(p[typ]).includes(m); const neu = { ...p };
+        spalten.forEach(t => { const alt = modiVon(p[t]).filter(x => x !== m);
+          const liste = MODI_REIHENFOLGE.filter(x => (an && x === m) || alt.includes(x));
           neu[t] = !liste.length ? STANDARD_ANTWORT_MODUS : liste.length === 1 ? liste[0] : liste; });
         return neu;
       }
@@ -5981,10 +6206,18 @@ export default function VokabelApp() {
       return { ...p, [typ]: neu.length === 1 ? neu[0] : neu };
     });
     return [["tippen", "Tastatur", "Antwort eintippen"], ["mc", "MC", "Antwort aus mehreren Vorschlägen wählen (Multiple Choice)"],
+      ["hoeren", "Hören", "Hören und wählen: die Frage wird nur vorgelesen (antippen: nochmal), die Antwort aus Vorschlägen wählen"],
+      ["puzzle", "Puzzle", "Buchstaben-Puzzle: die Antwort aus gemischten Buchstaben in der richtigen Reihenfolge antippen"],
+      ["luecke", "Lücken", "Lückenwort: fehlende Buchstaben ergänzen – Lücken bevorzugt an typischen Stolperstellen, mehr bei höherem Score"],
+      ...(typ.startsWith("E") ? [["satzfinden", "Satz finden", "Satz finden: ein Beispielsatz läuft durchs Bild – das gesuchte Wort darin antippen (braucht Beispielsätze)"],
+        ["lueckensatz", "Lückensatz", "Lückensatz: das Wort in der passenden Form in den Beispielsatz eintippen (braucht Beispielsätze)"],
+        ["satzbauen", "Satz bauen", "Satz bauen: die Wörter des Beispielsatzes in die richtige Reihenfolge bringen (braucht Beispielsätze)"]] : []),
+      ...(typ.startsWith("E") ? [["artikel", "Artikel", "Artikel: das Wort ohne Artikel – le oder la (der/die/das, el/la …) antippen; nur Wörter mit erkennbarem Artikel, sonst eine andere Art"]] : []),
       ["karte", "Karte", "Karte aufdecken und selbst bewerten: gewusst / nicht gewusst"],
       ...(akzentMoeglich ? [["akzent", "Akzente", "Akzente setzen – nur bei Wörtern mit Akzent, zählt hier für die Übersetzung"]] : []),
-      ...(quizModus !== "rotierend" ? [["zuordnung", "Zuordnung", "Zuordnen: Kacheln der Frage- und der Antwort-Spalten einander zuordnen, mehrere Vokabeln je Runde – gilt für alle Antwort-Spalten; mit anderen Arten gemischt startet je Ziehung eine Runde"]] : [])].map(([m, label, text]) => (
-      <button key={m} {...tt(m === "zuordnung" ? text : `${text} – mehrere angehakt: je Frage eine davon nach der Gewichtung (Einstellungen › Lernen)`)} data-modus-knopf={`${typ}:${m}`}
+      ...(quizModus !== "rotierend" ? [["zuordnung", "Zuordnung", "Zuordnen: Kacheln der Frage- und der Antwort-Spalten einander zuordnen, mehrere Vokabeln je Runde – gilt für alle Antwort-Spalten; mit anderen Arten gemischt startet je Ziehung eine Runde"],
+        ["memory", "Memory", "Memory: verdeckte Karten (Frage und Antwort) aufdecken und Paare finden – mehrere Vokabeln je Runde; gefundene Paare +1, Fehlversuche kosten nichts"]] : [])].map(([m, label, text]) => (
+      <button key={m} {...tt(istRunde(m) ? text : `${text} – mehrere angehakt: je Frage eine davon nach der Gewichtung (Einstellungen › Lernen)`)} data-modus-knopf={`${typ}:${m}`}
         className={`spalten-modus-btn${aktiv.includes(m) ? " aktiv" : ""}`} onClick={() => umschalten(m)}>{label}</button>
     ));
   }
@@ -6466,15 +6699,16 @@ export default function VokabelApp() {
     const erstesTeile = voks[0][antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
     const spalteModus0 = loeseSpaltenModusAuf(quizSpalteModus, voks[0]);
     const ersterModusTyp0 = spalteModus0[antwortTypen[0]] || STANDARD_ANTWORT_MODUS;
-    const erstesMC = ersterModusTyp0 === "mc"
-      ? generiereButtons(voks, voks[0], antwortTypen[0]) : null;
+    const erstesMC = istMC(ersterModusTyp0)
+      ? generiereButtons(voks, voks[0], antwortTypen[0], ersterModusTyp0) : null;
 
     const startScoresZiel = abfrageZielModus === "score" && abfrageZielScoreTyp === "session"
       ? Object.fromEntries(voks.map(v => [v.id, Math.min(10, Math.max(-10, v[scoreFeld]?.score ?? 0))]))
       : null;
     const abfrageZiel = abfrageZielModus !== "anzahl" || abfrageZielAnzahl > 1
       ? { modus: abfrageZielModus, anzahl: abfrageZielAnzahl, wiederholung: abfrageZielWiederholung,
-          score: abfrageZielScore, scoreTyp: abfrageZielScoreTyp, runde: 0, startScoresZiel }
+          score: abfrageZielScore, scoreTyp: abfrageZielScoreTyp, runde: 0, startScoresZiel,
+          ...(abfrageZielModus === "blitz" ? { sek: BLITZ_SEKUNDEN, ende: Date.now() + BLITZ_SEKUNDEN * 1000 } : {}) }
       : null;
 
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
@@ -6494,15 +6728,17 @@ export default function VokabelApp() {
       sessionGesamt, sessionIds, abfrageZiel,
       rundeStartScores: Object.fromEntries(voks.map(v => [v.id, v[scoreFeld]?.score ?? null])), rundeStartZeit: Date.now(),
       gruppeVokIds, scoreFeld,
+      ...(abfrageZiel?.modus === "blitz" || abfrageZiel?.modus === "serie" ? { spielZaehler: 0, spielBeantwortet: [], spielBasis: voks } : {}),
     };
     // Zuordnung: Runden zu mehreren Vokabeln (Frage-Spalte + Antwort-Spalten, höchstens 4)
-    const mitZuo = !gruppe && quizModus !== "rotierend" ? quizAntwortTypenGeordnet.filter(t => modiVon(quizSpalteModus[t]).includes("zuordnung")) : [];
-    const nurZuordnung = mitZuo.length > 0 && quizAntwortTypenGeordnet.every(t => modiVon(quizSpalteModus[t]).join() === "zuordnung");
+    const mitZuo = !gruppe && quizModus !== "rotierend" ? quizAntwortTypenGeordnet.filter(t => modiVon(quizSpalteModus[t]).some(istRunde)) : [];
+    const nurZuordnung = mitZuo.length > 0 && quizAntwortTypenGeordnet.every(t => modiVon(quizSpalteModus[t]).every(istRunde));
+    const rundenArten = mitZuo.length ? modiVon(quizSpalteModus[mitZuo[0]]).filter(istRunde) : [];
     if (mitZuo.length) {
       const ze = zuordnungEinst(einstellungen), r = quizRegeln();
       const grenze = Math.max(3, Math.min(window.innerWidth > 700 ? 12 : 10, Math.floor((window.innerHeight - 250) / 52)));
       const basis = { spalten: [quizFrageTyp, ...quizAntwortTypenGeordnet].slice(0, 4), paare: Math.max(3, Math.min(ze.paare, grenze)), zeit: ze.zeit, sek: ze.sek,
-        amEnde: !!r.zuordnungAmEnde, abzug: !!r.zuordnungAbzug, runde: 0 };
+        amEnde: !!r.zuordnungAmEnde, abzug: !!r.zuordnungAbzug, runde: 0, arten: rundenArten };
       if (nurZuordnung) {
         neuQuiz.abfrageZiel = null;
         neuQuiz.zuordnung = { ...basis, queue: voks.map(v => v.id), beantwortet: [] };
@@ -6516,33 +6752,58 @@ export default function VokabelApp() {
   function zuordnungRunde(q) {
     const z = q.zuordnung;
     if (!z.queue.length) return { ...q, phase: "fertig" };
-    const k = Math.min(z.paare, z.queue.length);
-    return zuordnungRundeAus({ ...q, zuordnung: { ...z, queue: z.queue.slice(k) } }, z.queue.slice(0, k));
+    const art = gewichtetWaehlen(z.arten?.length ? z.arten : ["zuordnung"]);
+    const k = Math.min(art === "memory" ? Math.min(z.paare, 8) : z.paare, z.queue.length);
+    return zuordnungRundeAus({ ...q, zuordnung: { ...z, queue: z.queue.slice(k) } }, z.queue.slice(0, k), art);
   }
-  function zuordnungRundeAus(q, ids) {
+  function zuordnungRundeAus(q, ids, art = "zuordnung") {
     const z = q.zuordnung, k = ids.length;
+    const alleSpalten = z.alleSpalten || z.spalten;
+    const spalten = art === "memory" ? alleSpalten.slice(0, 2) : alleSpalten;
     const vok = id => q.vokabeln.find(v => v.id === id);
     const mische = a => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
-    const karten = z.spalten.map(t => mische(ids.map(id => ({ id, text: vok(id)?.[t]?.wert || "" }))));
-    return { ...q, phase: "zuordnung", zuordnung: { ...z, ids, karten, runde: z.runde + 1,
-      erledigt: {}, fehler: {}, offen: null, gruppen: [], offeneGruppe: null, blink: null, anzeige: null, zeitBis: zuordnungZeitBis(z, k) } };
+    const karten = spalten.map(t => mische(ids.map(id => ({ id, text: vok(id)?.[t]?.wert || "" }))));
+    // Memory: je Vokabel zwei verdeckte Karten (Frage und Antwort), gemischt
+    const mKarten = art === "memory" ? mische(ids.flatMap(id => spalten.map((t, seite) => ({ id, seite, text: vok(id)?.[t]?.wert || "" })))) : null;
+    return { ...q, phase: "zuordnung", zuordnung: { ...z, art, alleSpalten, spalten, ids, karten, mKarten, mOffen: [], mZuege: 0, runde: z.runde + 1,
+      erledigt: {}, fehler: {}, offen: null, gruppen: [], offeneGruppe: null, blink: null, anzeige: null, zeitBis: art === "memory" ? null : zuordnungZeitBis({ ...z, spalten }, k) } };
+  }
+  // Memory: zwei Karten aufdecken; Frage + Antwort derselben Vokabel → Paar gefunden (+1), sonst nach kurzer Zeit wieder zu
+  function memoryTippe(i) {
+    const q = quiz, z = q?.zuordnung;
+    if (!z || z.art !== "memory" || z.anzeige || z.mOffen.length >= 2) return;
+    const k = z.mKarten[i];
+    if (k.id in z.erledigt || z.mOffen.includes(i)) return;
+    if (einstellungen.autoplay && z.spalten[k.seite].startsWith("E")) { const v = q.vokabeln.find(x => x.id === k.id); sprich(k.text, vokLang(v, z.spalten[k.seite])); }
+    const offen = [...z.mOffen, i];
+    if (offen.length < 2) { setQuiz({ ...q, zuordnung: { ...z, mOffen: offen } }); return; }
+    const [a, b] = offen.map(x => z.mKarten[x]);
+    if (a.id === b.id && a.seite !== b.seite) {
+      let neu = zuordnungWerte({ ...q, zuordnung: { ...z, mOffen: [], mZuege: z.mZuege + 1, paarFarbe: { ...(z.paarFarbe || {}), [a.id]: Object.keys(z.paarFarbe || {}).length % ZUORDNUNG_FARBEN.length } } }, a.id, "richtig");
+      if (neu.zuordnung.ids.every(id => id in neu.zuordnung.erledigt)) neu = zuordnungRundeEnde(neu);
+      setQuiz(neu);
+      return;
+    }
+    setQuiz({ ...q, zuordnung: { ...z, mOffen: offen, mZuege: z.mZuege + 1 } });
+    setTimeout(() => setQuiz(prev => prev?.zuordnung?.mOffen?.length === 2 && prev.zuordnung.mOffen[1] === i ? { ...prev, zuordnung: { ...prev.zuordnung, mOffen: [] } } : prev), 1100);
   }
   function mitZuordnungMix(q) {
     if (!q?.zuordnungMix || q.phase !== "eingabe") return q;
     const typen = q.antwortTypen || [];
-    if (!typen.some(t => q.spalteModus?.[t] === "zuordnung")) return q;
+    const art = typen.map(t => q.spalteModus?.[t]).find(istRunde);
+    if (!art) return q;
     const rest = q.vokabeln.length - q.index;
     if (rest < 3) {   // zu wenige für eine Runde: eine andere angehakte Art ziehen
       const sp = { ...q.spalteModus };
-      typen.forEach(t => { if (sp[t] !== "zuordnung") return; const andere = modiVon(q.spalteModusBasis?.[t]).filter(x => x !== "zuordnung" && x !== "akzent"); sp[t] = andere.length ? gewichtetWaehlen(andere) : STANDARD_ANTWORT_MODUS; });
-      const mc = sp[typen[0]] === "mc" ? generiereButtons(q.vokabeln, q.vokabeln[q.index], typen[0]) : null;
+      typen.forEach(t => { if (!istRunde(sp[t])) return; const andere = modiVon(q.spalteModusBasis?.[t]).filter(x => !istRunde(x) && x !== "akzent"); sp[t] = andere.length ? gewichtetWaehlen(andere) : STANDARD_ANTWORT_MODUS; });
+      const mc = istMC(sp[typen[0]]) ? generiereButtons(q.vokabeln, q.vokabeln[q.index], typen[0], sp[typen[0]]) : null;
       return { ...q, spalteModus: sp, ...(mc ? { mcButtons: mc.buttons, mcRichtig: mc.richtig } : {}) };
     }
-    const k = Math.min(q.zuordnungMix.paare, rest);
+    const k = Math.min(art === "memory" ? Math.min(q.zuordnungMix.paare, 8) : q.zuordnungMix.paare, rest);
     const ids = q.vokabeln.slice(q.index, q.index + k).map(v => v.id);
     const spalten = [q.frageTyp, ...typen].slice(0, 4);
-    return zuordnungRundeAus({ ...q, zuordnung: { ...q.zuordnungMix, spalten, mix: { start: q.index, ende: q.index + k }, queue: [],
-      beantwortet: q.vokabeln.slice(0, q.index).map(v => v.id) } }, ids);
+    return zuordnungRundeAus({ ...q, zuordnung: { ...q.zuordnungMix, spalten, alleSpalten: spalten, mix: { start: q.index, ende: q.index + k }, queue: [],
+      beantwortet: q.vokabeln.slice(0, q.index).map(v => v.id) } }, ids, art);
   }
   // gemischt, Runde zu Ende: Beantwortete bleiben an ihrer Stelle, offen Gebliebene kommen ans Ende; weiter mit der nächsten Frage
   function zuordnungMixWeiter(q) {
@@ -6566,6 +6827,7 @@ export default function VokabelApp() {
     return { ...q, liste: speichereScore(q.liste, id, neu),
       gewertet: erst ? { ...(q.gewertet || {}), [id]: ergebnis } : q.gewertet,
       ...(ergebnis === "richtig" ? { richtigMap: { ...(q.richtigMap || {}), [id]: ((q.richtigMap || {})[id] || 0) + 1 } } : {}),
+      ...(q.spielZaehler != null && ergebnis === "richtig" ? { spielZaehler: q.spielZaehler + 1 } : {}),
       quizRichtigAnzahl: (q.quizRichtigAnzahl || 0) + (erst && ergebnis === "richtig" ? 1 : 0),
       quizFalschAnzahl: (q.quizFalschAnzahl || 0) + (erst && ergebnis !== "richtig" ? 1 : 0),
       zuordnung: { ...q.zuordnung, erledigt: { ...q.zuordnung.erledigt, [id]: ergebnis }, beantwortet: [...q.zuordnung.beantwortet, id] } };
@@ -6669,7 +6931,39 @@ export default function VokabelApp() {
   }
 
   // Berechnet den nächsten Vokabel-State als reines Objekt (kein setQuiz)
-  function naechsteVokabelState(prev) { return mitZuordnungMix(naechsteVokabelState0(prev)); }
+  function naechsteVokabelState(prev) {
+    const sp = prev?.abfrageZiel?.modus, spiel = sp === "blitz" || sp === "serie";
+    if (spiel && prev.vokErgebnis) {
+      const richtig = prev.vokErgebnis === "richtig", id = prev.vokabeln[prev.index]?.id;
+      prev = { ...prev, spielZaehler: (prev.spielZaehler || 0) + (richtig ? 1 : 0), spielBeantwortet: [...new Set([...(prev.spielBeantwortet || []), id])] };
+      if (sp === "serie" && !richtig) return spielBeenden(prev);
+    }
+    if (spiel && prev.index + 1 >= prev.vokabeln.length) {
+      const basis = prev.spielBasis || prev.vokabeln, b = [...basis];
+      for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; }
+      prev = { ...prev, vokabeln: [...prev.vokabeln, ...b] };
+    }
+    return mitZuordnungMix(naechsteVokabelState0(prev));
+  }
+  // Blitzrunde / Serie zu Ende: Rekord je Art und Session (bzw. Liste) festhalten
+  function spielBeenden(q) {
+    const art = q.abfrageZiel?.modus, n = q.spielZaehler || 0;
+    const key = `${art}|${aktiverSlot?.typ === "gespeichert" ? aktiverSlot.id : (q.liste?.id || "liste")}`;
+    let rekorde = {};
+    try { rekorde = JSON.parse(localStorage.getItem(REKORDE_KEY)) || {}; } catch { /* leer */ }
+    const alt = rekorde[key] || 0;
+    if (n > alt) { rekorde[key] = n; try { localStorage.setItem(REKORDE_KEY, JSON.stringify(rekorde)); } catch { /* egal */ } }
+    return { ...q, phase: "spielEnde", spielRekord: { alt, neu: n > alt },
+      ...(q.istSessionModus ? { sessionVokIds: q.spielBeantwortet || [] } : {}) };
+  }
+  // Blitzrunde: Zeit abgelaufen
+  useEffect(() => {
+    const ende = quiz?.abfrageZiel?.modus === "blitz" ? quiz.abfrageZiel.ende : null;
+    if (!ende || quiz.phase === "spielEnde" || quiz.phase === "fertig") return;
+    const t = setTimeout(() => setQuiz(prev => prev && prev.abfrageZiel?.modus === "blitz" && prev.phase !== "spielEnde" && prev.phase !== "fertig" ? spielBeenden(prev) : prev),
+      Math.max(0, ende - Date.now()));
+    return () => clearTimeout(t);
+  }, [quiz?.abfrageZiel?.ende, quiz?.phase === "spielEnde"]);   // eslint-disable-line react-hooks/exhaustive-deps
   function naechsteVokabelState0(prev) {
     const naechsterIdx = prev.index + 1;
     const aktVokId = prev.vokabeln[prev.index]?.id;
@@ -6699,7 +6993,7 @@ export default function VokabelApp() {
       const vok = voks[idx];
       const teile = vok[antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
       const sp = prev.spalteModusBasis ? loeseSpaltenModusAuf(prev.spalteModusBasis, vok) : prev.spalteModus;
-      const mc = (sp[antwortTypen[0]] || STANDARD_ANTWORT_MODUS) === "mc" ? generiereButtons(voks, vok, antwortTypen[0]) : null;
+      const mc = istMC(sp[antwortTypen[0]] || STANDARD_ANTWORT_MODUS) ? generiereButtons(voks, vok, antwortTypen[0], sp[antwortTypen[0]]) : null;
       return { ...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, erstbewertung: null, flash: false, index: idx,
         vokabeln: voks, frageTyp, antwortTypen, antwortTypIndex: 0,
         phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
@@ -6751,7 +7045,7 @@ export default function VokabelApp() {
     const spalteModus = prev.spalteModusBasis ? loeseSpaltenModusAuf(prev.spalteModusBasis, naechsteVok)
       : prev.mcWechsel ? {...prev.spalteModus, [antwortTypen[0]]: "tippen"} : prev.spalteModus;
     const modusTyp0 = spalteModus[antwortTypen[0]] || STANDARD_ANTWORT_MODUS;
-    const mc = modusTyp0 === "mc" ? generiereButtons(prev.vokabeln, naechsteVok, antwortTypen[0]) : null;
+    const mc = istMC(modusTyp0) ? generiereButtons(prev.vokabeln, naechsteVok, antwortTypen[0], modusTyp0) : null;
     return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, erstbewertung: null, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
       phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
       mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
@@ -6797,7 +7091,7 @@ export default function VokabelApp() {
     const nt = prev.antwortTypen[naechsterIdx];
     const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
     const ntModus = prev.mcWechsel ? "mc" : (prev.spalteModus?.[nt] || STANDARD_ANTWORT_MODUS);
-    const mc = ntModus === "mc" ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt) : null;
+    const mc = istMC(ntModus) ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt, ntModus) : null;
     return {...prev, flash: false, karteNeinFlash: false, phase: "eingabe", eingabe: "", antwortTypIndex: naechsterIdx,
       antwortTeile: teile, mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
       weitereIndices: [], weiterePos: 0, infoSichtbar: false, richtigAufgedeckt: false,
@@ -6875,9 +7169,9 @@ export default function VokabelApp() {
   // Kennung der aktuellen Frage für das Gelernt-Aufleuchten (gilt nur für diese Karte)
   const blitzKey = q => `${q.wiederholungDurchgang || 0}|${q.index}|${q.vokabeln[q.index]?.id}`;
 
-  function pruefeAntwort() {
-    if (!quiz || !quiz.eingabe.trim()) return;
-    const eingabe = quiz.eingabe.trim();
+  function pruefeAntwort(eingabeArg) {
+    const eingabe = (typeof eingabeArg === "string" ? eingabeArg : quiz?.eingabe || "").trim();
+    if (!quiz || !eingabe) return;
 
     // Modus "Einfach": fehlende/falsche Akzente zählen als richtig (mit Hinweis); ebenso, wenn die Akzente der Sprache aus sind
     const vokJetzt = quiz.vokabeln[quiz.index], spalteJetzt = quiz.antwortTypen[quiz.antwortTypIndex];
@@ -6986,7 +7280,7 @@ export default function VokabelApp() {
     const schonFalsch = quiz.spaltenErgebnisse?.[quiz.antwortTypIndex] === "falsch";
     const abschluss = spaltenAbschluss(schonFalsch ? "falsch" : "aufgedeckt");
     const aktModus = quiz.spalteModus?.[quiz.antwortTypen?.[quiz.antwortTypIndex]] || STANDARD_ANTWORT_MODUS;
-    const mcUpd = aktModus === "mc"
+    const mcUpd = istMC(aktModus)
       ? { mcButtons: quiz.mcButtons.map(b => b.korrekt ? {...b, status: "richtig"} : b) }
       : {};
     setQuiz(prev => ({...prev, ...abschluss, eingabe: "", flash: false, phase: "aufgedeckt",
@@ -7257,6 +7551,15 @@ export default function VokabelApp() {
             </>) : (<>
               <div className="quiz-frage-box lernen-karte" data-lernen-karte data-lernen-phase={lernen.phase} onClick={lernenWeiter}
                 {...tt(lernen.phase === 0 ? "Antippen: Übersetzung sofort zeigen" : "Antippen: sofort weiter (Zusatzinfo bzw. nächste Vokabel)")}>
+                {(() => {   // Stimme wechseln (Fremdsprache dieser Vokabel), wie auf der Abfrage-Karte
+                  const t = [...lernen.zuerst, ...lernen.danach].find(x => x.startsWith("E") && v?.[x]?.wert);
+                  if (!t) return null;
+                  const lang = vokLang(v, t), basis = normLang(lang).split("-")[0], aktiv = aktiveStimmen(basis);
+                  if (aktiv.length < 2) return null;
+                  const nr = Math.max(0, aktiv.indexOf(gewaehlteStimme(basis) || stimmeFuer(lang))) + 1;
+                  return <button className="stimme-wechsel" data-stimme-wechsel="lernen" style={{left:6, right:"auto"}} onClick={e => { e.stopPropagation(); wechsleStimme(v[t].wert, lang); }}
+                    {...tt(`Stimme ${nr} von ${aktiv.length} – antippen: mit der nächsten aktivierten Stimme vorlesen (bleibt dann für diese Sprache eingestellt)`)}>{nr}/{aktiv.length}</button>;
+                })()}
                 {lernen.pausiert && <div className="lernen-pausiert" aria-hidden="true">⏸</div>}
                 {!lernen.pausiert && lernPause(lernen, v) >= LERNEN_TIPPEN && <div className="lernen-tippen" data-lernen-tippen>▸</div>}
                 {/* je Vokabel neu aufgebaut: das Wort blendet ein; Übersetzung und Zusatzinfo belegen ihren Platz schon vorher */}
@@ -7645,6 +7948,34 @@ export default function VokabelApp() {
       }
     }
 
+    if (quiz.phase === "spielEnde") {
+      const blitz = quiz.abfrageZiel?.modus === "blitz", n = quiz.spielZaehler || 0, rek = quiz.spielRekord || {};
+      return (
+        <>
+          <style>{CSS}</style>{farbModusUI}{farbRadUI}
+          <div className="app">
+            <div className="topbar">
+              <span className="topbar-back" style={{visibility:"hidden"}}>·</span>
+              <span className="topbar-title">{blitz ? "⚡ Blitzrunde" : "🔥 Serie"}</span>
+              <span className="quiz-fortschritt"/>
+            </div>
+            <div className="sektion">
+              <div className="quiz-frage-box" data-spiel-ende style={{padding:"34px 16px", textAlign:"center"}}>
+                <div style={{fontSize:"2.4rem", lineHeight:1}}>{rek.neu && n > 0 ? "🏆" : blitz ? "⚡" : "🔥"}</div>
+                <div data-spiel-ergebnis style={{fontSize:"3rem", fontWeight:800, color:"var(--haupt)", marginTop:8}}>{n}</div>
+                <div style={{fontSize:"1rem", color:"var(--text2)"}}>{blitz ? `richtig in ${quiz.abfrageZiel.sek || BLITZ_SEKUNDEN} Sekunden` : "am Stück richtig"}</div>
+                <div data-spiel-rekord style={{marginTop:14, fontWeight:700, color: rek.neu && n > 0 ? "var(--richtig)" : "var(--text2)"}}>
+                  {rek.neu && n > 0 ? (rek.alt ? `Neuer Rekord! (bisher ${rek.alt})` : "Erster Rekord!") : `Rekord: ${rek.alt || 0}`}
+                </div>
+              </div>
+              <button className="btn btn-primary" data-spiel-weiter style={{width:"100%", marginTop:14}} onClick={() => setQuiz(prev => ({ ...prev, phase: "fertig" }))}
+                {...tt("Weiter zur Auswertung")}>Weiter →</button>
+            </div>
+          </div>
+        </>
+      );
+    }
+
     if (quiz.phase === "wiederholungHinweis") {
       const n = quiz.vokabeln.length;
       const grund = quiz.abfrageZiel?.modus === "score"
@@ -7708,14 +8039,30 @@ export default function VokabelApp() {
           <div className="app">
             <div className="topbar">
               <button {...tt("Abfrage beenden – Beantwortetes bleibt gewertet")} className="topbar-back" onClick={brecheQuizAb}>Beenden</button>
-              <span className="topbar-title">Zuordnung</span>
+              <span className="topbar-title">{z.art === "memory" ? "Memory" : "Zuordnung"}</span>
               <span className="quiz-fortschritt" data-zuo-fortschritt>{fertigAnz} / {gesamt}</span>
             </div>
             <div className="sektion" data-zuordnung={z.amEnde ? "am-ende" : "sofort"}>
               <div className="zuo-zeit" data-zuo-zeit={z.zeitBis ? "an" : "aus"}>
                 {z.zeitBis && !z.anzeige && <div key={z.zeitBis} className="zuo-zeit-balken" style={{animationDuration:`${dauer}ms`}}/>}
               </div>
-              {zeilenAnsicht ? (
+              {z.art === "memory" && !z.anzeige ? (
+                <div className="memory-raster" data-memory style={{gridTemplateColumns:`repeat(${z.mKarten.length > 12 ? 4 : 3}, minmax(0, 1fr))`}}>
+                  {z.mKarten.map((k, i) => {
+                    const gefunden = k.id in z.erledigt, auf = gefunden || z.mOffen.includes(i);
+                    const farbe = gefunden && z.paarFarbe?.[k.id] != null ? ZUORDNUNG_FARBEN[z.paarFarbe[k.id]] : null;
+                    const falsch = z.mOffen.length === 2 && z.mOffen.includes(i) && z.mKarten[z.mOffen[0]].id !== z.mKarten[z.mOffen[1]].id;
+                    return (
+                      <button key={i} className={`memory-karte${auf ? " auf" : ""}${falsch ? " falsch" : ""}`} data-memory-karte={i} data-memory-id={k.id} data-memory-seite={k.seite}
+                        style={{fontSize: schrift, ...(farbe ? { borderColor: farbe, background: `${farbe}26` } : {})}} onClick={() => memoryTippe(i)}
+                        {...tt("Antippen: Karte aufdecken – zwei zusammengehörige (Frage und Antwort) bilden ein Paar")}>
+                        {gefunden && <span className="zuo-nr" style={{background:"var(--richtig)"}}>✓</span>}
+                        {auf ? mitHinweis(k.text) : <span className="memory-rueck">?</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : zeilenAnsicht ? (
                 <div className="zuo-ergebnis" data-zuo-ergebnis>
                   <div className="zuo-raster" style={{gridTemplateColumns:`repeat(${n}, minmax(0, 1fr))`, marginBottom:6}}>
                     {z.spalten.map(t => <div key={t} className="zuo-kopf">{quiz.liste.spalten[t]?.name || t}</div>)}
@@ -7769,7 +8116,7 @@ export default function VokabelApp() {
               )}
               {z.anzeige && (
                 <div style={{display:"flex", gap:8, marginTop:12}}>
-                  {z.amEnde && (
+                  {z.amEnde && z.art !== "memory" && (
                     <button className="btn btn-ghost" data-zuo-eigene style={{flex:1}}
                       onClick={() => setQuiz({ ...quiz, zuordnung: { ...z, anzeige: zeilenAnsicht ? "eigene" : "ergebnis" } })}
                       {...tt(zeilenAnsicht ? "Meine Zuordnung: die eigenen Gruppen mit ✓ / ✗" : "Zurück zur Lösung (ein richtiges Paar je Zeile)")}>{zeilenAnsicht ? "Meine Zuordnung" : "Lösung"}</button>
@@ -7883,11 +8230,17 @@ export default function VokabelApp() {
             })()}
             <span className="topbar-title">
               {quiz.wiederholungDurchgang ? <span className="wiederholung-marke" {...tt("Diese Vokabeln werden wiederholt, weil sie noch nicht sicher sitzen")}>🔁 Wiederholung </span> : null}
-              <span>{quiz.index + 1} / {quiz.vokabeln.length}</span>
-              {renderKopfFortschritt(quiz)}
+              {quiz.spielZaehler != null ? <span data-spiel-zaehler>{quiz.abfrageZiel?.modus === "blitz" ? "⚡" : "🔥"} {quiz.spielZaehler}</span>
+                : <span>{quiz.index + 1} / {quiz.vokabeln.length}</span>}
+              {quiz.spielZaehler == null && renderKopfFortschritt(quiz)}
             </span>
             <span className="quiz-fortschritt" {...tt(akz ? "Eigener Akzent-Score dieser Vokabel" : "Score dieser Vokabel")}>{akz ? "Akzente" : "Score"}: {score > 0 ? "+" : ""}{score}</span>
           </div>
+          {quiz.abfrageZiel?.modus === "blitz" && quiz.abfrageZiel.ende && (
+            <div className="zuo-zeit" data-blitz-zeit style={{margin:"8px 16px 0"}}>
+              <div key={quiz.abfrageZiel.ende} className="zuo-zeit-balken" style={{animationDuration:`${Math.max(0, quiz.abfrageZiel.ende - Date.now())}ms`}}/>
+            </div>
+          )}
           <div className="sektion"
             onClick={(quiz.flash || quiz.karteNeinFlash) ? beendeVerzoegerung : isKarteEingabe ? deckeKarteAuf : richtigAufgedeckt ? naechsteVokabel : undefined}
             style={(quiz.flash || quiz.karteNeinFlash) ? {cursor:"pointer", minHeight:"70vh"}
@@ -7920,7 +8273,10 @@ export default function VokabelApp() {
                       {stimmeKnopf(frageWert, quiz.frageTyp, "frage")}
                       <div className="quiz-label">{frageLabel}</div>
                       <div style={{display:"flex", alignItems:"baseline", gap:8, justifyContent:"center"}}>
-                        <div className="quiz-frage-text" style={{textAlign:"center"}}>{mitHinweis(frageWert)}</div>
+                        <div className="quiz-frage-text" style={{textAlign:"center"}}>
+                          {aktSpaltModus === "hoeren" && quiz.phase === "eingabe" && !quiz.flash
+                            ? <span className="hoer-symbol" data-hoer-verdeckt>🔊</span> : mitHinweis(frageWert)}
+                        </div>
                       </div>
                     </div>
 
@@ -7949,7 +8305,11 @@ export default function VokabelApp() {
                       {/* Karte-Modus: Platzhalter in Höhe der Antwort (ohne Text), damit beim Aufdecken nichts springt */}
                       {isKarteEingabe && <div className="karte-aufdecken" aria-hidden="true" style={{visibility:"hidden"}}>&nbsp;</div>}
                       {/* MC */}
-                      {aktSpaltModus === "mc" && !quiz.flash && quiz.phase === "eingabe" && (
+                      {aktSpaltModus === "artikel" && !quiz.flash && quiz.phase === "eingabe" && (() => {
+                        const info = artikelInfo(aktVokRaw?.[aktAntwortTyp]?.wert, vokSprache(aktVokRaw));
+                        return info ? <div className="artikel-wort" data-artikel-wort>{info.rest}</div> : null;
+                      })()}
+                      {istMC(aktSpaltModus) && !quiz.flash && quiz.phase === "eingabe" && (
                         <div className="mc-raster" data-mc-raster>
                           {(quiz.mcButtons || []).map((btn, idx) => (
                             <button {...tt("Diese Antwort wählen – nur ein Treffer ohne Fehlklick zählt als gewusst",
@@ -7983,6 +8343,113 @@ export default function VokabelApp() {
                           style={{marginTop:4}}
                         />
                       )}
+                      {SATZ_ARTEN.includes(aktSpaltModus) && !quiz.flash && quiz.phase === "eingabe" && (() => {
+                        const key = `${quiz.index}|${quiz.antwortTypIndex}|${quiz.aktuelleFehlversuche || 0}`;
+                        const satz = satzFuer(aktVokRaw, `${quiz.index}|${quiz.antwortTypIndex}`);
+                        if (!satz) return null;
+                        const antworte = richtig => { setQuiz(prev => ({ ...prev, puzzleKey: key, puzzleWahl: [], lueckeText: "" })); pruefeAntwort(richtig ? quiz.antwortTeile[0] : "\u0000"); };
+                        const wahl = quiz.puzzleKey === key ? (quiz.puzzleWahl || []) : [];
+                        if (aktSpaltModus === "satzfinden") return (
+                          <div data-satzfinden onClick={e => e.stopPropagation()} style={{marginTop:6}}>
+                            <div className="satz-band"><div key={key} className="satz-lauf" style={{animationDuration:`${Math.max(9, satz.woerter.length * 1.6)}s`}}>
+                              {satz.woerter.map((w, i) => <button key={i} className="satz-wort" data-satz-wort={i} data-satz-ziel={w.ziel ? "" : undefined}
+                                onClick={() => antworte(w.ziel)} {...tt("Antippen, wenn das das gesuchte Wort ist")}>{w.text}</button>)}
+                            </div></div>
+                            <div className="satz-ueb">{satz.ueb}</div>
+                          </div>
+                        );
+                        if (aktSpaltModus === "lueckensatz") {
+                          const txt = quiz.puzzleKey === key ? (quiz.lueckeText || "") : "";
+                          const pruefe = () => { const t = txt.trim(); if (!t) return; antworte(!!istRichtigeAntwort(t, satz.form, quizRegeln().akzenteTolerant)); };
+                          return (
+                            <div data-lueckensatz onClick={e => e.stopPropagation()} style={{marginTop:6}}>
+                              <div className="satz-text" data-lueckensatz-text>{satz.woerter.map((w, i) => <span key={i}>{w.ziel ? <>{w.text.split(w.kern)[0]}<span className="satz-luecke">{"_".repeat(Math.max(4, w.kern.length))}</span>{w.text.split(w.kern).slice(1).join(w.kern)}</> : w.text}{" "}</span>)}</div>
+                              <div className="satz-ueb">{satz.ueb}</div>
+                              <input ref={eingabeRef} className="inp" data-lueckensatz-eingabe value={txt} autoCapitalize="none" autoCorrect="off" spellCheck={false}
+                                placeholder="fehlendes Wort eintippen…" onChange={e => setQuiz(prev => ({ ...prev, puzzleKey: key, lueckeText: e.target.value }))}
+                                onKeyDown={e => { if (e.key === "Enter") pruefe(); }} {...ttFeld("Das fehlende Wort in der passenden Form eintippen, Enter prüft")}/>
+                              <button className="btn btn-primary btn-sm" data-lueckensatz-pruefen style={{marginTop:6}} onClick={pruefe} {...tt("Prüfen")}>Prüfen</button>
+                            </div>
+                          );
+                        }
+                        // Satz bauen: Wörter gemischt, der Reihe nach antippen
+                        const kacheln = satz.woerter.map((w, i) => ({ ...w, i }));
+                        const z = zufallMitSeed(key + satz.satz);
+                        for (let i = kacheln.length - 1; i > 0; i--) { const j = Math.floor(z() * (i + 1)); [kacheln[i], kacheln[j]] = [kacheln[j], kacheln[i]]; }
+                        const tippe = k => {
+                          const neu = [...wahl, k];
+                          if (neu.length < kacheln.length) { setQuiz(prev => ({ ...prev, puzzleKey: key, puzzleWahl: neu })); return; }
+                          antworte(neu.map(x => kacheln[x].text).join(" ") === satz.woerter.map(w => w.text).join(" "));
+                        };
+                        return (
+                          <div data-satzbauen onClick={e => e.stopPropagation()} style={{marginTop:6}}>
+                            <div className="satz-ueb" style={{marginBottom:8}}>{satz.ueb}</div>
+                            <div className="satz-text satz-gebaut" data-satzbauen-text>{wahl.map(x => kacheln[x].text).join(" ") || " "}</div>
+                            <div className="puzzle-kacheln">
+                              {kacheln.map((w, i) => <button key={i} className="puzzle-kachel satz-kachel" data-satz-kachel={i} disabled={wahl.includes(i)} onClick={() => tippe(i)} {...tt("Wort als nächstes einsetzen")}>{w.text}</button>)}
+                            </div>
+                            {wahl.length > 0 && <button className="btn btn-ghost btn-sm" style={{marginTop:6}} onClick={() => setQuiz(prev => ({ ...prev, puzzleKey: key, puzzleWahl: wahl.slice(0, -1) }))} {...tt("Letztes Wort zurücknehmen")}>⌫ zurück</button>}
+                          </div>
+                        );
+                      })()}
+                      {SATZ_ARTEN.includes(aktSpaltModus) && quiz.phase !== "eingabe" && !quiz.flash && (() => {
+                        const satz = satzFuer(aktVokRaw, `${quiz.index}|${quiz.antwortTypIndex}`);
+                        return satz ? <div className="satz-text" data-satz-loesung style={{marginTop:8}}>{satz.woerter.map((w, i) => <span key={i}>{w.ziel ? <>{w.text.split(w.kern)[0]}<b>{w.kern}</b>{w.text.split(w.kern).slice(1).join(w.kern)}</> : w.text}{" "}</span>)}<div className="satz-ueb">{satz.ueb}</div></div> : null;
+                      })()}
+                      {(aktSpaltModus === "puzzle" || aktSpaltModus === "luecke") && !quiz.flash && (quiz.phase === "eingabe" || isWeitere) && (() => {
+                        const ziel = ohneHinweis(isWeitere ? quiz.antwortTeile[quiz.weitereIndices[quiz.weiterePos]] : quiz.antwortTeile[0]) || "";
+                        const key = `${quiz.index}|${quiz.antwortTypIndex}|${quiz.weiterePos || 0}|${quiz.aktuelleFehlversuche || 0}`;
+                        const wahl = quiz.puzzleKey === key ? (quiz.puzzleWahl || []) : [];
+                        if (aktSpaltModus === "puzzle") {
+                          const kacheln = puzzleKacheln(ziel, key + ziel);
+                          const n = kacheln.length;
+                          const gelegt = wahl.map(k => kacheln[k].z);
+                          let p = 0;
+                          const anzeige = [...ziel].map(c => FESTES_ZEICHEN.test(c) ? c : (gelegt[p++] ?? "_"));
+                          const tippe = k => {
+                            const neu = [...wahl, k];
+                            if (neu.length < n) { setQuiz(prev => ({ ...prev, puzzleKey: key, puzzleWahl: neu })); return; }
+                            let q = 0; const wort = [...ziel].map(c => FESTES_ZEICHEN.test(c) ? c : kacheln[neu[q++]].z).join("");
+                            setQuiz(prev => ({ ...prev, puzzleKey: key, puzzleWahl: [] }));
+                            pruefeAntwort(wort);
+                          };
+                          return (
+                            <div data-puzzle onClick={e => e.stopPropagation()} style={{marginTop:6}}>
+                              <div className="puzzle-zeile" data-puzzle-wort>{anzeige.map((c, i) => <span key={i} className={`puzzle-feld${c === "_" ? " frei" : ""}${c === " " ? " luecke-leer" : ""}`}>{c === "_" ? "" : c}</span>)}</div>
+                              <div className="puzzle-kacheln">
+                                {kacheln.map((k, i) => (
+                                  <button key={i} className="puzzle-kachel" data-puzzle-kachel={i} disabled={wahl.includes(i)} onClick={() => tippe(i)} {...tt("Buchstabe als nächsten einsetzen")}>{k.z}</button>
+                                ))}
+                              </div>
+                              {wahl.length > 0 && <button className="btn btn-ghost btn-sm" data-puzzle-zurueck style={{marginTop:6}}
+                                onClick={() => setQuiz(prev => ({ ...prev, puzzleKey: key, puzzleWahl: wahl.slice(0, -1) }))} {...tt("Letzten Buchstaben zurücknehmen")}>⌫ zurück</button>}
+                            </div>
+                          );
+                        }
+                        // Lücken
+                        const vokJetzt = quiz.vokabeln[quiz.index];
+                        const pos = lueckenPositionen(ziel, vokJetzt?.fortschritt?.score ?? 0, einstellungen.modus !== "einfach", key + ziel);
+                        const eingabe = quiz.puzzleKey === key ? (quiz.lueckeText || "") : "";
+                        const buchst = [...eingabe.replace(/\s/g, "")];
+                        const zusammen = () => { let q = 0; return [...ziel].map((c, i) => pos.includes(i) ? (buchst[q++] || "") : c).join(""); };
+                        const pruefe = text => { const b = [...text.replace(/\s/g, "")]; let q = 0; const wort = [...ziel].map((c, i) => pos.includes(i) ? (b[q++] || "") : c).join("");
+                          setQuiz(prev => ({ ...prev, puzzleKey: key, lueckeText: "" })); pruefeAntwort(wort); };
+                        let q = 0;
+                        return (
+                          <div data-luecke onClick={e => e.stopPropagation()} style={{marginTop:6}}>
+                            <div className="puzzle-zeile" data-luecke-wort>{[...ziel].map((c, i) => {
+                              if (!pos.includes(i)) return <span key={i} className={`puzzle-feld fest${c === " " ? " luecke-leer" : ""}`}>{c}</span>;
+                              const b = buchst[q++];
+                              return <span key={i} className={`puzzle-feld${b ? "" : " frei"}`} data-luecke-feld>{b || ""}</span>;
+                            })}</div>
+                            <input ref={eingabeRef} className="inp" data-luecke-eingabe value={eingabe} autoCapitalize="none" autoCorrect="off" spellCheck={false}
+                              placeholder={pos.length === 1 ? "1 fehlenden Buchstaben eintippen…" : `${pos.length} fehlende Buchstaben eintippen…`}
+                              onChange={e => { const t = e.target.value; if ([...t.replace(/\s/g, "")].length >= pos.length) pruefe(t); else setQuiz(prev => ({ ...prev, puzzleKey: key, lueckeText: t })); }}
+                              onKeyDown={e => { if (e.key === "Enter") pruefe(zusammen() ? eingabe : eingabe); }}
+                              {...ttFeld("Die fehlenden Buchstaben der Reihe nach eintippen – ist die letzte Lücke gefüllt, wird geprüft")}/>
+                          </div>
+                        );
+                      })()}
                       {aktSpaltModus === "tippen" && !quiz.flash && isWeitere && (
                         <input {...ttFeld("Weitere richtige Antwort eintippen (z. B. bei was/were)")} ref={eingabeRef} className="inp"
                           value={quiz.eingabe}
@@ -8060,7 +8527,7 @@ export default function VokabelApp() {
                       )}
                       {/* Lösung: Aufgedeckt */}
                       {!quiz.flash && quiz.phase === "aufgedeckt" && !akzLoesung && (
-                        aktSpaltModus === "mc"
+                        istMC(aktSpaltModus)
                           ? <div style={{display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginTop:8, minHeight:60}}>
                               <div className="quiz-frage-text" {...vorlesenKlick(quiz.antwortTeile[0], aktAntwortTyp)} style={{textAlign:"center", cursor:"pointer"}}>{mitHinweis(quiz.antwortTeile.join(" / "))}</div>
                             </div>
@@ -9342,7 +9809,7 @@ export default function VokabelApp() {
                     <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "ziel" ? " offen zweizeilig" : ""}`} data-abfrageziel
                       onClick={() => toggleSessionBereich("ziel")}
                       {...tt(quizSessionAufgeklappt === "ziel" ? "Bestätigen – klappt das Abfrage-Ziel zu" : "Abfrage-Ziel: wie oft bzw. bis wann jede Vokabel abgefragt wird – antippen zum Einstellen")}>
-                      {offenText(quizSessionAufgeklappt === "ziel", abfrageZielModus === "wiederholung" ? `${abfrageZielWiederholung}× richtig`
+                      {offenText(quizSessionAufgeklappt === "ziel", abfrageZielModus === "blitz" ? "⚡ Blitz 60 s" : abfrageZielModus === "serie" ? "🔥 Serie" : abfrageZielModus === "wiederholung" ? `${abfrageZielWiederholung}× richtig`
                         : abfrageZielModus === "score" ? (abfrageZielScoreTyp === "session" ? `Session ${abfrageZielScore > 0 ? "+" : ""}${abfrageZielScore}` : `Score < ${abfrageZielScore > 0 ? "+" : ""}${abfrageZielScore}`) : `${abfrageZielAnzahl}×`)}
                     </button>
                     {schwelle > 0 && gelernteAnzahl > 0 && (
@@ -9370,7 +9837,9 @@ export default function VokabelApp() {
                     ) : (<>
                     <div style={{padding:"12px 16px 8px", fontWeight:600, fontSize:"0.82rem", color:"var(--text2)"}}>Abfrage-Ziel</div>
                     <div style={{display:"flex", gap:6, flexWrap:"wrap", padding:"0 16px 8px"}}>
-                      {[["anzahl","Anzahl","Jede Vokabel 1–3× pro Runde abfragen"],["wiederholung","Mit Wiederholung","Vokabeln wiederholen bis jede N-mal in Folge richtig beantwortet wurde"],["score","Score","Vokabeln wiederholen bis ihr Score das Ziel erreicht"]].map(([m, label, tip]) => (
+                      {[["anzahl","Anzahl","Jede Vokabel 1–3× pro Runde abfragen"],["wiederholung","Mit Wiederholung","Vokabeln wiederholen bis jede N-mal in Folge richtig beantwortet wurde"],["score","Score","Vokabeln wiederholen bis ihr Score das Ziel erreicht"],
+                        ["blitz","⚡ Blitzrunde","Möglichst viele richtig in 60 Sekunden – die Vokabeln kommen immer wieder, mit Rekord"],
+                        ["serie","🔥 Serie","So viele wie möglich am Stück richtig – der erste Fehler beendet die Serie, mit Rekord"]].map(([m, label, tip]) => (
                         <button key={m} className={`typ-btn${abfrageZielModus===m?" aktiv":""}`}
                           onClick={() => setAbfrageZielModus(m)} {...tt(tip)}>{label}</button>
                       ))}
@@ -9617,6 +10086,36 @@ export default function VokabelApp() {
               <div className="karte" style={{padding:"12px 16px"}}>
                 {renderSprachAuswahl(listeSprache(aktiveListe), setzeListenSprache)}
               </div>
+
+              {(() => {
+                const saetze = listenSaetze.listeId === aktiveListeId ? listenSaetze.saetze : {};
+                const mit = aktiveListe.vokabeln.filter(v => (saetze[`${aktiveListeId}__${v.id}`] || []).length > 0);
+                const fremd = TYPEN.find(t => t.startsWith("E") && aktiveListe.spalten[t]?.aktiv);
+                return (<>
+                  <div className="sektion-label" style={{marginBottom:10}}>Beispielsätze</div>
+                  <div className="karte" data-liste-saetze style={{padding:"12px 16px"}}>
+                    <div style={{display:"flex", alignItems:"center", gap:8}}>
+                      <span style={{flex:1, fontSize:"0.88rem"}} data-liste-saetze-anzahl>💬 {mit.length} von {aktiveListe.vokabeln.length} Vokabeln</span>
+                      <button className="btn btn-ghost btn-sm" data-saetze-ergaenzen onClick={() => oeffneSatzFenster(aktiveListeId)} {...tt("Beispielsätze per KI ergänzen (Prompt kopieren, Antwort einfügen)")}>✨ Ergänzen</button>
+                    </div>
+                    {mit.length > 0 && (
+                      <details style={{marginTop:8}}>
+                        <summary style={{cursor:"pointer", fontSize:"0.85rem", color:"var(--text2)"}}>Sätze ansehen</summary>
+                        {mit.slice(0, 60).map(v => (
+                          <div key={v.id} style={{marginTop:8}} data-satz-vok={v.id}>
+                            <div style={{fontWeight:700, fontSize:"0.88rem"}}>{ohneHinweis(v[fremd]?.wert || "")}</div>
+                            {(saetze[`${aktiveListeId}__${v.id}`] || []).map((x, i) => (
+                              <div key={i} style={{fontSize:"0.82rem", margin:"2px 0 0 8px"}}>
+                                {x.s.split(/\*([^*]+)\*/).map((t, k) => k % 2 ? <b key={k}>{t}</b> : t)} <span style={{color:"var(--text3)"}}>– {x.u}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </details>
+                    )}
+                  </div>
+                </>);
+              })()}
 
               <div className="sektion-label" style={{marginBottom:10}}>Spalten</div>
               <div className="karte">
@@ -10501,7 +11000,7 @@ export default function VokabelApp() {
             {einstBereich === "lernen" && (<div className="einst-inhalt">
             {(() => {
               const g = { ...STANDARD_ANTWORT_GEWICHTE, ...(einstellungen.antwortGewichte || {}) };
-              const arten = [["karte", "Karte"], ["mc", "MC"], ["akzent", "Akzente"], ["tippen", "Tastatur"], ["zuordnung", "Zuordnung"]];
+              const arten = [["karte", "Karte"], ["mc", "MC"], ["hoeren", "Hören"], ["akzent", "Akzente"], ["tippen", "Tastatur"], ["puzzle", "Puzzle"], ["luecke", "Lücken"], ["artikel", "Artikel"], ["satzfinden", "Satz finden"], ["lueckensatz", "Lückensatz"], ["satzbauen", "Satz bauen"], ["zuordnung", "Zuordnung"], ["memory", "Memory"]];
               const summe = arten.reduce((x, [k]) => x + (g[k] || 0), 0);
               const setze = (k, v) => speichereEinst({ ...einstellungen, antwortGewichte: { ...(einstellungen.antwortGewichte || {}), [k]: Math.max(0, Math.min(100, v)) } });
               return (
@@ -11392,6 +11891,58 @@ export default function VokabelApp() {
         </div>
       )}
 
+      {modal === "saetze" && satzFenster && (() => {
+        const n = einstellungen.satzAnzahl || 3;
+        const portion = satzPortion(satzFenster.listeId, listenSaetze.listeId === satzFenster.listeId ? listenSaetze.saetze : {}, n);
+        if (!portion) return null;
+        const mitSaetzen = portion.gesamt - portion.offen;
+        return (
+          <div className="overlay" onClick={() => setModal(null)}>
+            <div className="modal" data-saetze-fenster onClick={e => e.stopPropagation()} style={{maxHeight:"90vh", overflowY:"auto"}}>
+              <div className="modal-titel">✨ Beispielsätze ergänzen</div>
+              <p style={{fontSize:"0.85rem", color:"var(--text2)", margin:"0 0 10px"}} data-saetze-stand>{portion.liste.name}: {mitSaetzen} von {portion.gesamt} Vokabeln haben {n} Sätze</p>
+              <div className="inp-label">Sätze je Vokabel</div>
+              <div style={{display:"flex", gap:6, marginBottom:12}}>
+                {SATZ_ANZAHLEN.map(a => <button key={a} className={`typ-btn${a === n ? " aktiv" : ""}`} data-satz-anzahl={a}
+                  onClick={() => speichereEinst({ ...einstellungen, satzAnzahl: a })} {...tt(`${a} Beispielsätze je Vokabel`)}>{a}</button>)}
+              </div>
+              {portion.offen === 0 ? <div style={{fontWeight:700, color:"var(--richtig)", marginBottom:12}} data-saetze-fertig>✓ Alle Vokabeln haben {n} Sätze.</div> : (<>
+                <div className="toggle-btn" data-satz-weg style={{display:"flex", marginBottom:10}}>
+                  {[["chat", "Antwort im Chat", "Die KI antwortet im Chat – Antwort kopieren und unten einfügen (in Portionen)"],
+                    ["datei", "Als Datei", "Die KI liefert eine Textdatei für die ganze Liste – unten mit „📄 Datei laden“ einlesen"]].map(([w, label, info]) => (
+                    <button key={w} data-satz-weg-wahl={w} className={`toggle-opt${(einstellungen.satzWeg || "chat") === w ? " aktiv" : ""}`} style={{flex:1}}
+                      onClick={() => speichereEinst({ ...einstellungen, satzWeg: w })} {...tt(info)}>{label}</button>
+                  ))}
+                </div>
+                <div className="inp-label">1. Prompt kopieren – {portion.teil.length} Vokabeln{portion.offen > portion.teil.length ? ` (noch ${portion.offen} offen, in Portionen)` : ""}</div>
+                <textarea className="inp" readOnly value={portion.prompt} data-satz-prompt rows={4} style={{fontSize:"0.75rem", marginBottom:6}}/>
+                <button className="btn btn-ghost btn-sm" data-satz-prompt-kopieren style={{marginBottom:12}}
+                  onClick={async () => { try { await navigator.clipboard.writeText(portion.prompt); setSatzFenster(f => ({ ...f, meldung: "Prompt kopiert – jetzt in die KI einfügen." })); } catch { /* manuell kopieren */ } }}
+                  {...tt("Prompt in die Zwischenablage kopieren und in ChatGPT, Claude o. Ä. einfügen")}>📋 Prompt kopieren</button>
+                <div className="inp-label">2. Antwort der KI übernehmen</div>
+                <div style={{display:"flex", gap:6, marginBottom:6, flexWrap:"wrap"}}>
+                  <button className="btn btn-ghost btn-sm" data-satz-einfuegen
+                    onClick={async () => { try { const t = await navigator.clipboard.readText(); if (t) await uebernehmeSaetze(t); else setSatzFenster(f => ({ ...f, meldung: "Die Zwischenablage ist leer." })); }
+                      catch { setSatzFenster(f => ({ ...f, meldung: "Kein Zugriff auf die Zwischenablage – bitte ins Textfeld einfügen." })); } }}
+                    {...tt("Antwort direkt aus der Zwischenablage übernehmen")}>📋 Einfügen</button>
+                  <label className="btn btn-ghost btn-sm" style={{cursor:"pointer"}} {...tt("Eine oder mehrere Textdateien der KI einlesen (Format „ID // Satz // Übersetzung“)")}>
+                    📄 Datei laden
+                    <input type="file" data-satz-datei accept=".txt,.csv,text/plain" multiple style={{display:"none"}}
+                      onChange={async e => { const dateien = [...(e.target.files || [])]; e.target.value = "";
+                        const texte = await Promise.all(dateien.map(d => d.text())); await uebernehmeSaetze(texte.join("\n")); }}/>
+                  </label>
+                </div>
+                <textarea className="inp" data-satz-antwort rows={3} value={satzFenster.antwort} placeholder="… oder hier einfügen: 12 // Je vais à la *maison*. // Ich gehe nach Hause."
+                  onChange={e => setSatzFenster(f => ({ ...f, antwort: e.target.value }))} style={{fontSize:"0.8rem", marginBottom:6}}/>
+                <button className="btn btn-primary" data-satz-uebernehmen disabled={!satzFenster.antwort.trim()} style={{width:"100%"}} onClick={() => uebernehmeSaetze()}
+                  {...tt("Sätze übernehmen – danach steht hier die nächste Portion")}>Übernehmen</button>
+              </>)}
+              {satzFenster.meldung && <div data-satz-meldung style={{marginTop:10, fontSize:"0.85rem", fontWeight:600, color:"var(--text)"}}>{satzFenster.meldung}</div>}
+              <div className="modal-actions"><button className="btn btn-ghost" onClick={() => setModal(null)} {...tt("Fenster schließen")}>Schließen</button></div>
+            </div>
+          </div>
+        );
+      })()}
       {modal === "stimmen-hilfe" && (() => {
         const ua = navigator.userAgent;
         const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);

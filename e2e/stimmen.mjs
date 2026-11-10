@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu } from "./hilfen.mjs";
+import { neueEineSession, listenZu, stufeWaehlen } from "./hilfen.mjs";
 
 // Vorlesen: Einstellungen › Stimmen (Variante, Stimmen an/aus, Tempo je Sprache, Gesamt-Tempo),
 // auf der Abfrage-Karte: ganze Karte spielt ab, „🔁 Stimme“ bei mehreren aktiven Stimmen, Gesamt-Tempo per langem Druck.
@@ -103,6 +103,20 @@ l = await letztes();
 ok((await wahl()).tempo === 0.8 && await page.evaluate(() => document.querySelector("[data-info-regler-wert]").textContent) === "0,8×" && l.text === antwort,
   `Regler: Gesamt-Tempo 0,8× gespeichert, beim Loslassen vorgelesen (rate ${l.rate})`);
 ok(await page.$("[data-info-regler]"), "Tafel bleibt beim Ziehen offen");
+
+// Lernen-Modus: Stimmen-Knopf auch auf der Lernkarte
+await page.mouse.click(5, 300); await sleep(200);
+await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(500);
+await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht|Beenden/.test(b.textContent))?.click()); await sleep(400);
+await stufeWaehlen(page, "lernen");
+await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);
+const lk = await page.evaluate(() => document.querySelector('[data-stimme-wechsel="lernen"]')?.textContent.trim());
+ok(lk === "2/2" || lk === "1/2", `Lernkarte: Stimmen-Knopf (${lk})`);
+const vorL = (await letztes())?.voice;
+await page.click('[data-stimme-wechsel="lernen"]'); await sleep(200);
+l = await letztes();
+ok(l.voice && l.voice !== vorL && /^mot\d$/.test(l.text) && await page.evaluate(() => document.querySelector("[data-lernen-karte]")?.dataset.lernenPhase) === "0",
+  `Lernkarte: andere Stimme (${vorL} → ${l.voice}), Karte bleibt stehen`);
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();

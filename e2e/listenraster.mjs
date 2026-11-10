@@ -64,7 +64,7 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); const ziel = await mitte("0|0");
 await finger("touchStart", p.x, p.y); await sleep(1000); await finger("touchEnd"); await sleep(400);
-ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|☑ Auswählen|▦ In Sessions aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
+ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|✨ Beispielsätze ergänzen|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|☑ Auswählen|▦ In Sessions aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
 await page.evaluate(() => document.querySelector("[data-info-blase]").click()); await sleep(300);
 // kurz halten (angehoben) und ziehen: verschieben
 await finger("touchStart", p.x, p.y); await sleep(400);
