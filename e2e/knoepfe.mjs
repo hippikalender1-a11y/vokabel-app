@@ -35,7 +35,7 @@ const bestFarbe = await farbe("[data-reihenfolge]");
 ok(await text("[data-reihenfolge]") === "Bestätigen" && bestFarbe !== zu && /✓/.test(await haken("[data-reihenfolge]")),
   `Reihenfolge offen: nur „✓ Bestätigen“ in eigener Farbe (${await text("[data-reihenfolge]")}, ${zu} → ${bestFarbe})`);
 ok(!(await sichtbar("[data-stufe]")) && !(await sichtbar("[data-abfragemodus]")) && await sichtbar("[data-reihenfolge]"), "übrige Knöpfe der Zeile ausgeblendet");
-await page.click("[data-reihenfolge]"); await sleep(300);
+await page.click("[data-reihenfolge]"); await sleep(1300);   // nach dem kurzen Aufleuchten
 ok(await text("[data-reihenfolge]") === "Schlechteste zuerst" && await farbe("[data-reihenfolge]") === zu && await sichtbar("[data-stufe]") && await sichtbar("[data-abfragemodus]"),
   "„Bestätigen“ klappt zu: wieder der volle Text, alte Farbe, alle Knöpfe da");
 await page.click("[data-umfang]"); await sleep(300);
@@ -50,6 +50,9 @@ await page.click('[data-stufe-wahl="schwer"]'); await sleep(200);
 ok(await page.$("[data-stufe-auswahl]"), "die schon gewählte Stufe antippen: bleibt offen (Regeln, Vorlesen erreichbar)");
 await page.click('[data-stufe-wahl="einfach"]'); await sleep(300);
 ok(await text("[data-stufe]") === "Leicht" && !(await page.$("[data-stufe-auswahl]")), "andere Stufe antippen: übernommen und zu");
+ok(await page.evaluate(() => document.querySelector("[data-stufe]").classList.contains("leuchten")), "zugeklappt: Knopf leuchtet kurz in der Bestätigen-Farbe");
+await sleep(1300);
+ok(!(await page.evaluate(() => document.querySelector("[data-stufe]").classList.contains("leuchten"))) && await farbe("[data-stufe]") === zu, "danach wieder die normale Farbe");
 // Reihenfolge: Wahl antippen schließt
 await page.click("[data-reihenfolge]"); await sleep(300);
 await page.click('[data-reihenfolge-wahl="zufall"]'); await sleep(300);

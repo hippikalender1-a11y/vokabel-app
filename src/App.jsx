@@ -614,6 +614,8 @@ function loeseSpaltenModusAuf(basis, vok, frageTyp) {
     if (!kand.length) kand = [STANDARD_ANTWORT_MODUS];
     r[t] = gewichtetWaehlen(kand);
   });
+  // Absicherung (auch für Quiz aus Statistik, Multiquiz, nach dem Lernen): nie Deutsch eintippen, nie Hören bei fremder Antwort
+  Object.keys(r).forEach(t => { if (!modusErlaubt(t, r[t])) r[t] = ["tippen", "puzzle", "luecke", "hoeren"].includes(r[t]) ? "mc" : STANDARD_ANTWORT_MODUS; });
   return r;
 }
 
@@ -1405,43 +1407,43 @@ const FARB_VORLAGEN = [
     "text-stark": "#f6f1ef", "text": "#e6dfdc", "text2": "#b5aaa6", "text3": "#8c817d", "richtig": "#5cc98a", "falsch": "#ff6b6b",
     "gelb": "#f4c542", "gelernt-effekt": "#fff176", "orange": "#f39c4a", "info": "#b58ad6", "gelernt": "#5cc98a", "arbeit": "#d9b44a", "nie": "#4a413f", "negativ": "#e06c6c" }, dunkel: true },
   // ── Länder-Vorlagen (Farben der Flagge) – Standard für „Farben je Sprache“ ──
-  { id: "sprache_en", name: "Englisch 🇬🇧", sprache: "en", farben: { "haupt": "#1d3c78", "haupt-hell": "#7b97cf", "auf-haupt": "#fff", "hintergrund": "#f5f7fb", "karte": "#ffffff", "flaeche": "#e9eef7", "rahmen": "#d3dcec",
+  { id: "sprache_en", name: "Englisch 🇬🇧", sprache: "en", farben: { "haupt": "#1d3c78", "haupt-hell": "#7b97cf", "auf-haupt": "#fff", "hintergrund": "#eff6ef", "karte": "#ffffff", "flaeche": "#e9eef7", "rahmen": "#d3dcec",
     "app-kopf": "#1d3c78", "app-kopf-schrift": "#ffffff", "tab-aktiv": "#ffffff", "app-kopf-schrift-leise": "#c9d6f0", "kopfzeile": "#e4eaf5", "haupt-flaeche": "#e1e8f5", "start": "#c8102e", "auf-start": "#fff",
     "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
     "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#d3dcec", "negativ": "#e06c6c" } },
-  { id: "sprache_fr", name: "Französisch 🇫🇷", sprache: "fr", farben: { "haupt": "#0055a4", "haupt-hell": "#6f9fd6", "auf-haupt": "#fff", "hintergrund": "#f7f8fc", "karte": "#ffffff", "flaeche": "#eaf0f8", "rahmen": "#d6e0ef",
+  { id: "sprache_fr", name: "Französisch 🇫🇷", sprache: "fr", farben: { "haupt": "#0055a4", "haupt-hell": "#6f9fd6", "auf-haupt": "#fff", "hintergrund": "#fcf0f3", "karte": "#ffffff", "flaeche": "#eaf0f8", "rahmen": "#d6e0ef",
     "app-kopf": "#ffffff", "app-kopf-schrift": "#0055a4", "app-kopf-schrift-leise": "#6f8fb3", "kopfzeile": "#eaf0f8", "haupt-flaeche": "#e3ecf8", "start": "#ef4135", "auf-start": "#fff",
     "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
     "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#d6e0ef", "negativ": "#e06c6c" } },
-  { id: "sprache_es", name: "Spanisch 🇪🇸", sprache: "es", farben: { "haupt": "#c60b1e", "haupt-hell": "#e8707b", "auf-haupt": "#fff", "hintergrund": "#fffaf0", "karte": "#ffffff", "flaeche": "#fdf0d6", "rahmen": "#f1dcb0",
+  { id: "sprache_es", name: "Spanisch 🇪🇸", sprache: "es", farben: { "haupt": "#c60b1e", "haupt-hell": "#e8707b", "auf-haupt": "#fff", "hintergrund": "#fdf3e8", "karte": "#ffffff", "flaeche": "#fdf0d6", "rahmen": "#f1dcb0",
     "app-kopf": "#c60b1e", "app-kopf-schrift": "#ffffff", "tab-aktiv": "#ffffff", "app-kopf-schrift-leise": "#ffd2d6", "kopfzeile": "#fff1cc", "haupt-flaeche": "#fde3e5", "start": "#ffc400", "auf-start": "#3a2200",
     "text-stark": "#2a1508", "text": "#432a18", "text2": "#76604f", "text3": "#a69381", "richtig": "#2e8b57", "falsch": "#c0392b",
     "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#f1dcb0", "negativ": "#e06c6c" } },
-  { id: "sprache_it", name: "Italienisch 🇮🇹", sprache: "it", farben: { "haupt": "#008c45", "haupt-hell": "#5fbf8a", "auf-haupt": "#fff", "hintergrund": "#fbfaf6", "karte": "#ffffff", "flaeche": "#eef4ee", "rahmen": "#d8e5d9",
+  { id: "sprache_it", name: "Italienisch 🇮🇹", sprache: "it", farben: { "haupt": "#008c45", "haupt-hell": "#5fbf8a", "auf-haupt": "#fff", "hintergrund": "#eef4fb", "karte": "#ffffff", "flaeche": "#eef4ee", "rahmen": "#d8e5d9",
     "app-kopf": "#ffffff", "app-kopf-schrift": "#008c45", "app-kopf-schrift-leise": "#6aa585", "kopfzeile": "#e9f4ec", "haupt-flaeche": "#e0f1e6", "start": "#cd212a", "auf-start": "#fff",
     "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
     "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#d8e5d9", "negativ": "#e06c6c" } },
-  { id: "sprache_la", name: "Latein 🏛️", sprache: "la", farben: { "haupt": "#6b1f5c", "haupt-hell": "#b07aa3", "auf-haupt": "#fff", "hintergrund": "#f8f4ec", "karte": "#fffdf8", "flaeche": "#efe8da", "rahmen": "#e0d5c0",
+  { id: "sprache_la", name: "Latein 🏛️", sprache: "la", farben: { "haupt": "#6b1f5c", "haupt-hell": "#b07aa3", "auf-haupt": "#fff", "hintergrund": "#f4effa", "karte": "#fffdf8", "flaeche": "#efe8da", "rahmen": "#e0d5c0",
     "app-kopf": "#6b1f5c", "app-kopf-schrift": "#f6e7b0", "tab-aktiv": "#f6e7b0", "app-kopf-schrift-leise": "#d9b9cf", "kopfzeile": "#f1e6d0", "haupt-flaeche": "#f1e1ec", "start": "#c9a227", "auf-start": "#2a1d00",
     "text-stark": "#24171f", "text": "#3d2c36", "text2": "#6f5d66", "text3": "#a08e97", "richtig": "#2e8b57", "falsch": "#c0392b",
     "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#e0d5c0", "negativ": "#e06c6c" } },
-  { id: "sprache_nl", name: "Niederländisch 🇳🇱", sprache: "nl", farben: { "haupt": "#e86a10", "haupt-hell": "#f4a76e", "auf-haupt": "#fff", "hintergrund": "#fff8f2", "karte": "#ffffff", "flaeche": "#fdeee2", "rahmen": "#f2d8c4",
+  { id: "sprache_nl", name: "Niederländisch 🇳🇱", sprache: "nl", farben: { "haupt": "#e86a10", "haupt-hell": "#f4a76e", "auf-haupt": "#fff", "hintergrund": "#f6f0e9", "karte": "#ffffff", "flaeche": "#fdeee2", "rahmen": "#f2d8c4",
     "app-kopf": "#e86a10", "app-kopf-schrift": "#ffffff", "tab-aktiv": "#ffffff", "app-kopf-schrift-leise": "#ffe0c9", "kopfzeile": "#fde9da", "haupt-flaeche": "#fde5d3", "start": "#21468b", "auf-start": "#fff",
     "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
     "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#f2d8c4", "negativ": "#e06c6c" } },
-  { id: "sprache_pt", name: "Portugiesisch 🇵🇹", sprache: "pt", farben: { "haupt": "#046a38", "haupt-hell": "#58ab7f", "auf-haupt": "#fff", "hintergrund": "#f7faf6", "karte": "#ffffff", "flaeche": "#e9f2ea", "rahmen": "#d2e3d5",
+  { id: "sprache_pt", name: "Portugiesisch 🇵🇹", sprache: "pt", farben: { "haupt": "#046a38", "haupt-hell": "#58ab7f", "auf-haupt": "#fff", "hintergrund": "#ecf7f6", "karte": "#ffffff", "flaeche": "#e9f2ea", "rahmen": "#d2e3d5",
     "app-kopf": "#046a38", "app-kopf-schrift": "#ffe08a", "tab-aktiv": "#ffe08a", "app-kopf-schrift-leise": "#b8dcc5", "kopfzeile": "#e7f1e8", "haupt-flaeche": "#dfeee3", "start": "#da291c", "auf-start": "#fff",
     "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
     "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#d2e3d5", "negativ": "#e06c6c" } },
-  { id: "sprache_ru", name: "Russisch 🇷🇺", sprache: "ru", farben: { "haupt": "#0039a6", "haupt-hell": "#6f8fd4", "auf-haupt": "#fff", "hintergrund": "#f6f7fb", "karte": "#ffffff", "flaeche": "#e9eef8", "rahmen": "#d4dcee",
+  { id: "sprache_ru", name: "Russisch 🇷🇺", sprache: "ru", farben: { "haupt": "#0039a6", "haupt-hell": "#6f8fd4", "auf-haupt": "#fff", "hintergrund": "#eff2f6", "karte": "#ffffff", "flaeche": "#e9eef8", "rahmen": "#d4dcee",
     "app-kopf": "#ffffff", "app-kopf-schrift": "#0039a6", "app-kopf-schrift-leise": "#7d8fb8", "kopfzeile": "#e8edf8", "haupt-flaeche": "#e1e8f7", "start": "#d52b1e", "auf-start": "#fff",
     "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
     "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#d4dcee", "negativ": "#e06c6c" } },
-  { id: "sprache_tr", name: "Türkisch 🇹🇷", sprache: "tr", farben: { "haupt": "#e30a17", "haupt-hell": "#f07a82", "auf-haupt": "#fff", "hintergrund": "#fff6f6", "karte": "#ffffff", "flaeche": "#fde7e8", "rahmen": "#f4cfd1",
+  { id: "sprache_tr", name: "Türkisch 🇹🇷", sprache: "tr", farben: { "haupt": "#e30a17", "haupt-hell": "#f07a82", "auf-haupt": "#fff", "hintergrund": "#f3eff5", "karte": "#ffffff", "flaeche": "#fde7e8", "rahmen": "#f4cfd1",
     "app-kopf": "#e30a17", "app-kopf-schrift": "#ffffff", "tab-aktiv": "#ffffff", "app-kopf-schrift-leise": "#ffd0d3", "kopfzeile": "#fde8e9", "haupt-flaeche": "#fde0e2", "start": "#a3000b", "auf-start": "#fff",
     "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
     "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#f4cfd1", "negativ": "#e06c6c" } },
-  { id: "sprache_pl", name: "Polnisch 🇵🇱", sprache: "pl", farben: { "haupt": "#dc143c", "haupt-hell": "#ec8197", "auf-haupt": "#fff", "hintergrund": "#fdf7f8", "karte": "#ffffff", "flaeche": "#f8e9ec", "rahmen": "#efd3d9",
+  { id: "sprache_pl", name: "Polnisch 🇵🇱", sprache: "pl", farben: { "haupt": "#dc143c", "haupt-hell": "#ec8197", "auf-haupt": "#fff", "hintergrund": "#f7eeee", "karte": "#ffffff", "flaeche": "#f8e9ec", "rahmen": "#efd3d9",
     "app-kopf": "#ffffff", "app-kopf-schrift": "#dc143c", "app-kopf-schrift-leise": "#c98894", "kopfzeile": "#f9e8ec", "haupt-flaeche": "#fbe1e7", "start": "#dc143c", "auf-start": "#fff",
     "text-stark": "#1b1d24", "text": "#33363f", "text2": "#626673", "text3": "#9599a6", "richtig": "#2e8b57", "falsch": "#c0392b",
     "gelb": "#f2b134", "gelernt-effekt": "#fff176", "orange": "#e67e22", "info": "#6a4c93", "gelernt": "#2e8b57", "arbeit": "#efc35a", "nie": "#efd3d9", "negativ": "#e06c6c" } },
@@ -1791,6 +1793,7 @@ const CSS_BASIS = `
   .quiz-zeile{position:sticky;z-index:7;display:flex;gap:8px;background:var(--karte);border-bottom:1px solid var(--rahmen);padding:10px 16px;margin:0 -16px;}
   .quiz-zeile-zelle{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
   .quiz-zeile-zelle.schmal{flex:0 0 auto;}
+  .quiz-zeile.lernen-aktiv .quiz-zeile-zelle:not(.lern-zelle):not(.offen){opacity:0.45;}
   .quiz-zeile-label{font-size:0.66rem;font-weight:600;color:var(--text3);padding-left:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.2px;}
   .quiz-zeile-knopf{flex:1 1 auto;min-height:40px;width:100%;min-width:0;padding:9px 6px;border-radius:10px;border:1.5px solid var(--haupt);background:var(--haupt);color:var(--auf-haupt);font-family:inherit;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .quiz-zeile-knopf.zweizeilig{padding:4px 6px;line-height:1.2;}
@@ -1801,6 +1804,8 @@ const CSS_BASIS = `
   .quiz-zeile.hat-offen > :not(.offen){display:none;}
   .bestaetigen-knopf,.toggle-opt.bestaetigen-knopf,.quiz-zeile-knopf.bestaetigen-knopf{background:var(--bestaetigen);color:var(--auf-bestaetigen);border-color:var(--bestaetigen);font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,0.22);}
   .bestaetigen-knopf::before{content:"✓ ";}
+  .quiz-zeile-knopf.leuchten{animation:knopfLeuchten 1s ease-out forwards;}
+  @keyframes knopfLeuchten{0%,50%{background:var(--bestaetigen);color:var(--auf-bestaetigen);border-color:var(--bestaetigen);}}
   .quiz-zeile-knopf[data-gelernte]{background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);flex:0 0 auto;padding-left:12px;padding-right:12px;}
   .quiz-zeile-knopf[data-gelernte].an{background:var(--haupt);color:var(--auf-haupt);}
   .quiz-zeile-hinweis{font-size:0.75rem;color:var(--text3);text-align:center;padding:6px 0 0;}
@@ -2446,6 +2451,20 @@ export default function VokabelApp() {
     : quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt || quizStufeAufgeklappt ? "zeile1"
     : quizSessionAufgeklappt ? "zeile2" : null;
   const fokusZeigt = k => !quizFokus || quizFokus === k;
+  // Zuklappen (Wahl übernommen bzw. „Bestätigen“): der Knopf leuchtet kurz in der Bestätigen-Farbe – nicht, wenn ein anderer Bereich aufgeht
+  const offenerKnopf = quizStufeAufgeklappt ? "stufe" : quizAbfrageModusAufgeklappt ? "modus" : quizReihenfolgeAufgeklappt ? "reihenfolge"
+    : quizSessionAufgeklappt === "umfang" ? "umfang" : quizSessionAufgeklappt === "ziel" ? "ziel" : null;
+  const vorigerKnopfRef = useRef(null);
+  const [leuchtKnopf, setLeuchtKnopf] = useState(null);
+  useEffect(() => {
+    const vorher = vorigerKnopfRef.current;
+    vorigerKnopfRef.current = offenerKnopf;
+    if (!vorher || offenerKnopf) return;
+    setLeuchtKnopf(vorher);
+    const t = setTimeout(() => setLeuchtKnopf(k => k === vorher ? null : k), 1100);
+    return () => clearTimeout(t);
+  }, [offenerKnopf]);
+  const leuchtet = k => leuchtKnopf === k && !offenerKnopf ? " leuchten" : "";
   useEffect(() => { if (tab === "quiz") window.scrollTo(0, 0); }, [quizFokus]);   // Bereich auf/zu: von oben
   kontexteRef.current = () => {
     const q = headerH + slotH + listenauswahlHeaderH;
@@ -3225,6 +3244,16 @@ export default function VokabelApp() {
   if (sprachSchema) {
     F = farbenAus(sprachSchema.farben);
     CSS = farbVariablen(F, sprachSchema.dunkel) + CSS_BASIS + elementCSS(sprachSchema.elemente);
+  }
+  // Zufallsfarben je Abschnitt: neues Zufalls-Schema bei jedem Quiz (bzw. Paket), am Ende und zurück in der Übersicht
+  const farbWechselAn = !!einstellungen.farbWechsel && !einstellungen.sprachFarben?.an && !farbModus;
+  const abschnitt = ansicht === "quiz" && quiz ? `${quiz.phase === "fertig" || quiz.phase === "spielEnde" ? "ende" : "quiz"}:${quiz.rundeStartZeit || ""}`
+    : lernen ? `lernen:${lernen.start ?? ""}:${lernen.groesse ?? ""}` : "uebersicht";
+  const [wechselFarben, setWechselFarben] = useState(null);
+  useEffect(() => { if (farbWechselAn) setWechselFarben(zufallsFarben()); }, [abschnitt, farbWechselAn]);   // eslint-disable-line react-hooks/exhaustive-deps
+  if (farbWechselAn && wechselFarben) {
+    F = farbenAus(wechselFarben);
+    CSS = farbVariablen(F, false) + CSS_BASIS;
   }
   const sichtbareIds = new Set(sichtbareListen.map(l => l.id));
   // Slot ist sichtbar, wenn alle seine (noch vorhandenen) Listen zur gewählten Sprache gehören
@@ -5507,9 +5536,15 @@ export default function VokabelApp() {
       <div className="karte" style={{padding:"12px 14px"}}>
         {ftab === "sprachen" && (() => {
           const sf = einstellungen.sprachFarben || {};
-          const setze = neu => speichereEinst({ ...einstellungen, sprachFarben: { ...sf, ...neu } });
+          const setze = neu => speichereEinst({ ...einstellungen, sprachFarben: { ...sf, ...neu }, ...(neu.an ? { farbWechsel: false } : {}) });
           const optionen = [...FARB_VORLAGEN, ...eigeneSchemata];
           return (<div data-sprachfarben>
+            <label style={{display:"flex", alignItems:"center", gap:10, fontSize:"0.9rem", fontWeight:600, color:"var(--text)", cursor:"pointer", marginBottom:12}}
+              {...ttFeld("Ein: bei jedem Quiz bzw. Paket, am Ende und zurück in der Übersicht ein neues Zufalls-Farbschema – schaltet „Farben je Sprache“ aus")}>
+              <input type="checkbox" data-farbwechsel-an checked={!!einstellungen.farbWechsel && !sf.an}
+                onChange={e => speichereEinst({ ...einstellungen, farbWechsel: e.target.checked, ...(e.target.checked ? { sprachFarben: { ...sf, an: false } } : {}) })} style={{width:18, height:18}}/>
+              Zufallsfarben je Abschnitt
+            </label>
             <label style={{display:"flex", alignItems:"center", gap:10, fontSize:"0.9rem", fontWeight:600, color:"var(--text)", cursor:"pointer", marginBottom:12}}
               {...ttFeld("Ein: steht der Sprachfilter (🌐) auf einer Sprache oder wird eine Liste dieser Sprache abgefragt, gilt ihr Farbschema")}>
               <input type="checkbox" data-sprachfarben-an checked={!!sf.an} onChange={e => setze({ an: e.target.checked })} style={{width:18, height:18}}/>
@@ -5529,7 +5564,9 @@ export default function VokabelApp() {
                     onChange={e => setze({ zuordnung: { ...(sf.zuordnung || {}), [sp.code]: e.target.value } })}
                     {...ttFeld(`Farbschema für ${sp.name}`)}>
                     <option value="standard">wie Standard</option>
-                    {optionen.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+                    {[["Meine Farben", eigeneSchemata], ["Länder", FARB_VORLAGEN.filter(x => x.id.startsWith("sprache_"))], ["Vorlagen", FARB_VORLAGEN.filter(x => !x.id.startsWith("sprache_"))]]
+                      .filter(([, l]) => l.length).map(([titel, l]) => (
+                        <optgroup key={titel} label={titel}>{l.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</optgroup>))}
                   </select>
                 </div>
               );
@@ -9629,15 +9666,15 @@ export default function VokabelApp() {
                 {!quizVokMax && (<>
                 {/* ZEILE 1: Stufe (Lernen/Leicht/Schwer) | Abfrage-Modus | Reihenfolge – je ein Bereich klappt darunter auf */}
                 {kombiListe && fokusZeigt("zeile1") && (
-                  <div ref={abfrageModusRef} className={`quiz-zeile${quizStufeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt ? " hat-offen" : ""}`} style={{position: quizFokus === "zeile1" ? "sticky" : "relative", top: quizFokus === "zeile1" ? headerH + slotH : 0}}>
-                    <div className={`quiz-zeile-zelle${quizStufeAufgeklappt ? " offen" : ""}`}><span className="quiz-zeile-label">Lern-Modus</span>
-                    <button className={`quiz-zeile-knopf stufe${quizStufeAufgeklappt ? " offen bestaetigen-knopf" : ""}`} data-stufe={lernAktiv ? "lernen" : einstellungen.modus === "einfach" ? "einfach" : "schwer"}
+                  <div ref={abfrageModusRef} className={`quiz-zeile${lernAktiv ? " lernen-aktiv" : ""}${quizStufeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt ? " hat-offen" : ""}`} style={{position: quizFokus === "zeile1" ? "sticky" : "relative", top: quizFokus === "zeile1" ? headerH + slotH : 0}}>
+                    <div className={`quiz-zeile-zelle lern-zelle${quizStufeAufgeklappt ? " offen" : ""}`}><span className="quiz-zeile-label">Lern-Modus</span>
+                    <button className={`quiz-zeile-knopf stufe${quizStufeAufgeklappt ? " offen bestaetigen-knopf" : ""}${leuchtet("stufe")}`} data-stufe={lernAktiv ? "lernen" : einstellungen.modus === "einfach" ? "einfach" : "schwer"}
                       onClick={() => { const auf = !quizStufeAufgeklappt; if (auf) schliesseQuizBereiche("stufe"); setQuizStufeAufgeklappt(auf); }}
                       {...tt(quizStufeAufgeklappt ? "Bestätigen – klappt die Stufe zu" : "Stufe: Lernen, Leicht oder Schwer – antippen zum Einstellen (dort auch Regeln, Lernen und Vorlesen)")}>
                       {offenText(quizStufeAufgeklappt, lernAktiv ? "Lernen" : einstellungen.modus === "einfach" ? "Leicht" : "Schwer")}
                     </button></div>
                     <div className={`quiz-zeile-zelle${quizAbfrageModusAufgeklappt ? " offen" : ""}`}><span className="quiz-zeile-label">Art der Antwort</span>
-                    <button className={`quiz-zeile-knopf${quizAbfrageModusAufgeklappt ? " offen bestaetigen-knopf" : ""}${!quizAbfrageModusAufgeklappt && !istDiktat && (quizModus === "rotierend" || gemischt) ? " zweizeilig" : ""}`} data-abfragemodus onClick={toggleAbfrageModus}
+                    <button className={`quiz-zeile-knopf${quizAbfrageModusAufgeklappt ? " offen bestaetigen-knopf" : ""}${leuchtet("modus")}${!quizAbfrageModusAufgeklappt && !istDiktat && (quizModus === "rotierend" || gemischt) ? " zweizeilig" : ""}`} data-abfragemodus onClick={toggleAbfrageModus}
                       {...tt(quizAbfrageModusAufgeklappt ? "Bestätigen – klappt den Abfrage-Modus zu" : "Abfrage-Modus: Spalten, Karte/MC/Tastatur, Frage–Antwort oder wechselnd – antippen zum Einstellen")}>
                       {/* wechselnd: zweizeilig, damit die Antwort-Arten Platz haben */}
                       {quizAbfrageModusAufgeklappt ? offenText(true, !istDiktat && (quizModus === "rotierend" || gemischt) ? (quizModus === "rotierend" ? "wechselnd" : "Gemischt") : abfrageModusName)
@@ -9646,7 +9683,7 @@ export default function VokabelApp() {
                         : abfrageModusName}
                     </button></div>
                     <div className={`quiz-zeile-zelle${quizReihenfolgeAufgeklappt ? " offen" : ""}`}><span className="quiz-zeile-label">Reihenfolge</span>
-                    <button className={`quiz-zeile-knopf umbruch${quizReihenfolgeAufgeklappt ? " offen bestaetigen-knopf" : ""}`} data-reihenfolge onClick={toggleReihenfolge}
+                    <button className={`quiz-zeile-knopf umbruch${quizReihenfolgeAufgeklappt ? " offen bestaetigen-knopf" : ""}${leuchtet("reihenfolge")}`} data-reihenfolge onClick={toggleReihenfolge}
                       {...tt(quizReihenfolgeAufgeklappt ? "Bestätigen – klappt die Reihenfolge zu" : "Reihenfolge: zufällig, schlechteste zuerst oder nach Listen-Platz – antippen zum Einstellen")}>
                       {quizReihenfolgeAufgeklappt ? offenText(true, quizReihenfolge === "zufall" ? "Zufällig" : quizReihenfolge === "schlechteste" ? "Schlechteste" : "Listen-Platz")
                         : quizReihenfolge === "zufall" ? "Zufällig" : quizReihenfolge === "schlechteste" ? "Schlechteste zuerst" : "Nach Listen-Platz"}
@@ -9894,16 +9931,16 @@ export default function VokabelApp() {
 
                 {/* ZEILE 2: Umfang | Abfrage-Ziel | Gelernte */}
                 {kombiListe && fokusZeigt("zeile2") && (
-                  <div ref={sessionRef} className={`quiz-zeile${quizSessionAufgeklappt === "umfang" || quizSessionAufgeklappt === "ziel" ? " hat-offen" : ""}`} style={{position: quizFokus === "zeile2" ? "sticky" : "relative", top: quizFokus === "zeile2" ? headerH + slotH : 0, zIndex:6}}>
+                  <div ref={sessionRef} className={`quiz-zeile${lernAktiv ? " lernen-aktiv" : ""}${quizSessionAufgeklappt === "umfang" || quizSessionAufgeklappt === "ziel" ? " hat-offen" : ""}`} style={{position: quizFokus === "zeile2" ? "sticky" : "relative", top: quizFokus === "zeile2" ? headerH + slotH : 0, zIndex:6}}>
                     <div className={`quiz-zeile-zelle${quizSessionAufgeklappt === "umfang" ? " offen" : ""}`}><span className="quiz-zeile-label">Anzahl je Runde</span>
-                    <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "umfang" ? " offen bestaetigen-knopf" : ""}`} data-umfang
+                    <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "umfang" ? " offen bestaetigen-knopf" : ""}${leuchtet("umfang")}`} data-umfang
                       onClick={() => toggleSessionBereich("umfang")}
                       {...tt(quizSessionAufgeklappt === "umfang" ? "Bestätigen – klappt den Umfang zu" : "Umfang: alle Vokabeln auf einmal oder in Paketen – antippen zum Einstellen")}>
                       {quizSessionAufgeklappt === "umfang" ? offenText(true, isPakete && quizPaketGroesse != null && quizPaketGroesse < PAKET_ALLE ? `Je ${quizPaketGroesse}` : "Alle")
                         : isPakete && quizPaketGroesse != null && quizPaketGroesse < PAKET_ALLE ? `Je ${quizPaketGroesse} Vokabeln` : "Alle Vokabeln"}
                     </button></div>
                     <div className={`quiz-zeile-zelle${quizSessionAufgeklappt === "ziel" ? " offen" : ""}`}><span className="quiz-zeile-label">Wie oft</span>
-                    <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "ziel" ? " offen bestaetigen-knopf" : ""}`} data-abfrageziel
+                    <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "ziel" ? " offen bestaetigen-knopf" : ""}${leuchtet("ziel")}`} data-abfrageziel
                       onClick={() => toggleSessionBereich("ziel")}
                       {...tt(quizSessionAufgeklappt === "ziel" ? "Bestätigen – klappt das Abfrage-Ziel zu" : "Abfrage-Ziel: wie oft bzw. bis wann jede Vokabel abgefragt wird – antippen zum Einstellen")}>
                       {offenText(quizSessionAufgeklappt === "ziel", abfrageZielModus === "blitz" ? "⚡ Blitz 60 s" : abfrageZielModus === "serie" ? "🔥 Serie" : abfrageZielModus === "wiederholung" ? `${abfrageZielWiederholung}× richtig`

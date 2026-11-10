@@ -42,9 +42,13 @@ ok(await haupt() === "#2d6a4f", "an, Sprachfilter „Alle“: Standard-Schema");
 // Sprachfilter Französisch → französisches Schema
 await einst({ sprache: "fr" }); await page.reload(); await sleep(600);
 ok(await haupt() === "#0055a4", `Sprachfilter Französisch: Schema „Französisch 🇫🇷“ (${await haupt()})`);
+const bg = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--hintergrund").trim());
+ok(bg === "#fcf0f3", `Französisch: Hintergrund dezent rosa (${bg})`);
 // eigene Wahl: Neon für Französisch
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
 await farbZeige(page, "[data-sprachfarben]");
+const gruppenLabels = await page.evaluate(() => [...document.querySelector('[data-sprachfarbe="fr"]').querySelectorAll("optgroup")].map(g => g.label).join("|"));
+ok(gruppenLabels === "Länder|Vorlagen" || gruppenLabels === "Meine Farben|Länder|Vorlagen", `Auswahl gegliedert (${gruppenLabels})`);
 await page.select('[data-sprachfarbe="fr"]', "neon"); await sleep(300);
 ok(await haupt() === "#ff3fb4", `Französisch auf „Neon“ gestellt: sofort sichtbar (${await haupt()})`);
 await page.select('[data-sprachfarbe="fr"]', "standard"); await sleep(300);
