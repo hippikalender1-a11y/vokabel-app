@@ -94,3 +94,38 @@ export async function listeBereich(page, k) {
   await page.evaluate(k => { const b = document.querySelector(`[data-liste-bereich="${k}"]`); if (b && !b.classList.contains("offen")) b.click(); }, k);
   await new Promise(r => setTimeout(r, 300));
 }
+// Einstellungen: Bereich (listen | lernen | stimmen | raster | farben | app) öffnen und darin den Knopf der Knopfzeile (k) aufklappen
+export async function einstUnter(page, bereich, k) {
+  const warte = ms => new Promise(r => setTimeout(r, ms));
+  await page.evaluate(() => { const t = [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")); if (!t.classList.contains("aktiv") || !document.querySelector("[data-einst-bereiche]")) t.click(); });
+  await warte(250);
+  await page.evaluate(b => { const k = document.querySelector(`[data-einst-kopf="${b}"]`); if (k && k.dataset.offen !== "ja") k.click(); }, bereich);
+  await warte(250);
+  if (k) {
+    await page.evaluate(k => { const b = document.querySelector(`[data-einst-unter="${k}"]`); if (b && !b.closest(".quiz-zeile-zelle").classList.contains("offen")) b.click(); }, k);
+    await warte(250);
+  }
+}
+// Antwort-Arten: Mehrfach-Auswahl für die Spalte des Knopfs (data-modus-knopf="typ:art") per lang drücken › „☑ Mehrere wählen“
+export async function artenMehrfach(page, knopf) {
+  await page.evaluate(s => { const el = document.querySelector(`[data-modus-knopf="${s}"]`); const r = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }, knopf);
+  await new Promise(r => setTimeout(r, 250));
+  await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "☑ Mehrere wählen")?.click());
+  await new Promise(r => setTimeout(r, 250));
+}
+// Rolle „Antwort“ dazunehmen (Spalte nach Namen): in der Mehrfach-Auswahl antippen, sonst lang drücken › „☑ Mehrere wählen“
+export async function antwortDazu(page, name) {
+  const art = await page.evaluate(n => {
+    const z = [...document.querySelectorAll("div")].find(d => d.style.padding === "10px 16px" && d.textContent.includes(n) && d.querySelector(".checkbox"));
+    const b = z?.querySelector("[data-rolle-antwort]");
+    if (!b) return null;
+    if (b.classList.contains("mehrfach")) { b.click(); return "tippen"; }
+    const r = b.getBoundingClientRect();
+    b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 }));
+    return "lang";
+  }, name);
+  if (!art) throw new Error(`Antwort-Knopf fehlt: ${name}`);
+  await new Promise(r => setTimeout(r, 250));
+  if (art === "lang") { await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "☑ Mehrere wählen")?.click()); await new Promise(r => setTimeout(r, 250)); }
+}

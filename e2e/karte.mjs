@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, bereichZu } from "./hilfen.mjs";
+import { zuListen, bereichZu, antwortDazu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -55,7 +55,7 @@ await clickText(".karte-zeile", "Irregular Verbs");
 await clickText("button", "Quiz starten", true);
 await page.click("[data-abfragemodus]"); await sleep(300);
 await zeile("Simple Past", "__check");
-await zeile("Simple Past", "Antwort");
+await antwortDazu(page, "Simple Past");
 ok(await aktiverModus("Infinitive") === "Karte", "Infinitive: Karte");
 ok(await aktiverModus("Simple Past") === "Karte", `Neu hinzugefügte Antwort-Spalte: Karte (${await aktiverModus("Simple Past")})`);
 

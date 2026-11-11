@@ -15,6 +15,8 @@ const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FA
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // Einstellungen: Bereich aufklappen (immer nur einer offen)
 const oeffneEinst = async key => { await page.evaluate(k => { const b = document.querySelector(`[data-einst-kopf="${k}"]`); if (b && b.dataset.offen !== "ja") b.click(); }, key); await new Promise(r => setTimeout(r, 250)); };
+// Lernen: die Akzente liegen hinter dem Knopf „Akzente“ der Knopfzeile
+const oeffneEinstAkz = async () => { await oeffneEinst("lernen"); await page.evaluate(() => { if (!document.querySelector("[data-akzent-sprachen]")) document.querySelector('[data-einst-unter="akzente"]').click(); }); await new Promise(r => setTimeout(r, 250)); };
 const tab = async name => { await page.evaluate(n => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes(n)).click(), name); await sleep(400); };
 const arten = () => page.evaluate(() => [...document.querySelectorAll("[data-start-arten] [data-quiz-art]")].map(b => b.dataset.quizArt).join(","));
 const ladeSlot = async name => {
@@ -52,7 +54,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 
 // Einstellungen: Französisch an, Spanisch aus
-await tab("Einstellungen"); await oeffneEinst("lernen");
+await tab("Einstellungen"); await oeffneEinstAkz();
 const stand = () => page.evaluate(() => [...document.querySelectorAll("[data-akzent-sprache].aktiv")].map(b => b.dataset.akzentSprache).join(","));
 console.log("     Akzente:", await stand());
 ok(/fr:an/.test(await stand()) && /es:aus/.test(await stand()), "Einstellungen → Akzente: Französisch an, Spanisch aus (Standard)");
@@ -68,7 +70,7 @@ await ladeSlot("Franz");
 ok(await arten() === "uebersetzung,diktat,akzente", `Französisch (Akzente an): Ü, D und A (${await arten()})`);
 
 // Spanisch einschalten → „A“ da, Akzente müssen stimmen (Stufe Schwer)
-await tab("Einstellungen"); await oeffneEinst("lernen");
+await tab("Einstellungen"); await oeffneEinstAkz();
 await page.click('[data-akzent-sprache="es:an"]'); await sleep(200);
 ok(/es:an/.test(await stand()), "Spanisch eingeschaltet");
 await tab("Quiz");
@@ -80,7 +82,7 @@ ok(!r.richtig, `Akzente an (Schwer): „${r.frage}“ ohne Akzent gilt nicht als
 
 // in A wechseln, dann Spanisch wieder ausschalten → zurück zu Übersetzung
 await page.click('[data-start-arten] [data-quiz-art="akzente"]'); await sleep(300);
-await tab("Einstellungen"); await oeffneEinst("lernen");
+await tab("Einstellungen"); await oeffneEinstAkz();
 await page.click('[data-akzent-sprache="es:aus"]'); await sleep(200);
 await tab("Quiz");
 ok(await page.evaluate(() => document.querySelector("[data-start-arten] [data-quiz-art].aktiv")?.dataset.quizArt) === "uebersetzung", "Akzente wieder aus, während „A“ gewählt war: zurück zu Übersetzung");

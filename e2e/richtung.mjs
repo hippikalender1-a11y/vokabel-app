@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu, bereichZu, fremdAlsFrage } from "./hilfen.mjs";
+import { neueEineSession, listenZu, bereichZu, fremdAlsFrage, artenMehrfach } from "./hilfen.mjs";
 
 // Antwortarten je Antwortsprache: nur passende werden angeboten (kein automatischer Richtungswechsel), in Gruppen
 // Grund · Wort · Satz · Runde; nicht mehr passende werden beim Rollenwechsel abgewählt; Hören liest die Frage nur einmal vor;
@@ -53,7 +53,7 @@ ok(abst >= 12, `Abstand zwischen den Gruppen (${abst}px)`);
 
 // ── Übersetzung-Schalter erscheinen nur mit Satz finden / Lückensatz ──
 ok(!(await page.$("[data-satz-ueb-schalter]")), "ohne Satz-Arten kein Übersetzungs-Schalter");
-await page.click('[data-modus-knopf="E1:satzfinden"]'); await sleep(150);
+await artenMehrfach(page, "E1:satzfinden");
 await page.click('[data-modus-knopf="E1:lueckensatz"]'); await sleep(150);
 const ueb = await page.evaluate(() => [...document.querySelectorAll("[data-satz-ueb]")].map(b => `${b.dataset.satzUeb}:${b.classList.contains("aktiv")}`).join(","));
 ok(ueb === "satzfinden:false,lueckensatz:true", `Übersetzung: Satz finden aus, Lückensatz an (${ueb})`);
@@ -72,8 +72,7 @@ ok(/D1:hoeren/.test(await aktiv()) && await knoepfe("E1") === "", `Hören angeha
 // ── Hören liest die Frage genau einmal vor – auch mit Auto-Vorlesen; Antwortkarte mit ✓ ──
 await vorbereiten({ autoplay: true, vorlesen: ["E1", "D1"] });
 await fremdAlsFrage(page);
-await page.click('[data-modus-knopf="D1:hoeren"]'); await sleep(200);
-await page.click('[data-modus-knopf="D1:karte"]'); await sleep(200);
+await page.click('[data-modus-knopf="D1:hoeren"]'); await sleep(200);   // antippen: nur Hören
 await bereichZu(page);
 await page.evaluate(() => { window.__gesprochen = []; document.querySelector("[data-start-knopf]")?.click(); }); await sleep(1200);
 const gesp = await page.evaluate(() => window.__gesprochen.filter(x => x !== "|abbruch|"));

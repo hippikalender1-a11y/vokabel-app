@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu, bereichZu } from "./hilfen.mjs";
+import { neueEineSession, listenZu, bereichZu, artenMehrfach } from "./hilfen.mjs";
 
 // Antwortart „Zuordnung“: Kacheln der Frage- und Antwort-Spalte zuordnen. Sofort-Prüfung (Fehlgriff zählt für die Vokabel
 // der ersten Karte, −1 nach Regel), Runden aus der Warteschlange, „am Ende“ mit farbigen Gruppen + „Prüfen“,
@@ -52,10 +52,10 @@ const vorbereitenMix = async () => {
   await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(300);
   await listenZu(page);
   await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
-  await page.evaluate(() => document.querySelector('[data-modus-knopf$=":zuordnung"]')?.click()); await sleep(250);
+  await artenMehrfach(page, "E1:zuordnung");   // Karte bleibt, Zuordnung dazu
   const modi = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf].aktiv")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
   ok(modi === "karte,zuordnung", `Karte + Zuordnung gleichzeitig angehakt (${modi})`);
-  ok(/^\s*Bestätigen\s*$/.test(await page.evaluate(() => document.querySelector("[data-abfragemodus]").innerText)), "offener Modus-Knopf: „Bestätigen“");
+  ok(/2 Arten\s+✓ Bestätigen/.test(await page.evaluate(() => document.querySelector("[data-abfragemodus]").innerText)), "offener Modus-Knopf: „2 Arten / ✓ Bestätigen“");
   await bereichZu(page);
   ok(/Gemischt\s*Karte – Zuordnung/.test(await page.evaluate(() => document.querySelector("[data-abfragemodus]").innerText)), "zugeklappt: „Gemischt / Karte – Zuordnung“");
   await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(700);

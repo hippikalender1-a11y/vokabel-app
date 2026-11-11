@@ -101,6 +101,7 @@ ok(await farbe('[data-einst-kopf="lernen"]') === "rgb(255, 255, 255)" && await v
 // allgemeinen Text ändern → Kopf-Schrift bleibt weiß
 if (await page.$("[data-farbfeld]")) await clickText("[data-farbfeld] button", "Schließen", true);
 await oeffneEinst("lernen");
+await page.evaluate(() => document.querySelector('[data-einst-unter="akzente"]').click()); await sleep(250);
 const z = await mitte("[data-akzent-sprachen] .toggle-label");
 await rechtsklick(z.x, z.y);
 await setzeFarbe("text-stark", "#003300");

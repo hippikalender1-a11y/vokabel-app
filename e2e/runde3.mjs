@@ -196,12 +196,14 @@ await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b
 // ── 20: Einstellungen › Stimmen ──
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
 await page.click('[data-einst-kopf="stimmen"]'); await sleep(300);
-ok(await page.$('[data-stimme-sprache="de"]') && await page.$('[data-stimme-sprache="fr"]'), "Stimmen: Deutsch und Französisch");
+ok(await page.$('[data-einst-unter="sp:de"]') && await page.$('[data-einst-unter="sp:fr"]'), "Stimmen: Knöpfe Deutsch und Französisch");
+await page.click('[data-einst-unter="tempo"]'); await sleep(250);
 await page.evaluate(() => { const r = document.querySelector("[data-stimmen-tempo-regler]"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(r, "1.3"); r.dispatchEvent(new Event("input", { bubbles: true })); r.dispatchEvent(new Event("change", { bubbles: true })); }); await sleep(300);
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem("geraet_stimmen") || "{}").tempo === 1.3 && document.querySelector("[data-stimmen-tempo]").textContent === "1,3×"), "Tempo 1,3× gespeichert (je Gerät)");
 
 // ── 21 + 22: Farben als eigener Bereich mit Tabs, 31 Vorlagen ──
 await page.click('[data-einst-kopf="farben"]'); await sleep(300);
+await page.click('[data-farb-tab="vorlagen"]'); await sleep(250);   // Knopfzeile: anfangs nichts offen
 const vorlagen = await page.evaluate(() => document.querySelectorAll("[data-farbschema]").length);
 ok(await page.$("[data-farb-tabs]") && vorlagen === 60, `Farben: Tabs, ${vorlagen} Vorlagen`);
 ok(!(await page.$("[data-farbmodus-start]")), "Werkzeuge nur im Tab „Werkzeuge“");

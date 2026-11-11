@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, quizEinstellungen, bereichZu } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen, bereichZu, einstUnter } from "./hilfen.mjs";
 
 // Listen-Tab als Raster: Lang-Druck → Menü (Umbenennen, Duplizieren, Verschieben, Löschen),
 // Lang-Druck + Ziehen verschiebt (belegt → tauschen), Größe unter Einstellungen → Listen, Sprachfilter rückt zusammen
@@ -62,10 +62,11 @@ console.log("     Start:", JSON.stringify(pl));
 ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen bekommen Plätze in bisheriger Reihenfolge (1 Spalte)");
 
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
-let p = await mitte("2|0"); const ziel = await mitte("0|0");
+let p = await mitte("2|0"); let ziel = await mitte("0|0");
 await finger("touchStart", p.x, p.y); await sleep(1000); await finger("touchEnd"); await sleep(400);
 ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|✨ Beispielsätze ergänzen|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|☑ Auswählen|▦ In Sessions aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
 await page.evaluate(() => document.querySelector("[data-info-blase]").click()); await sleep(300);
+p = await mitte("2|0"); ziel = await mitte("0|0");   // die Auswahl-Tafel kann die Seite verschoben haben
 // kurz halten (angehoben) und ziehen: verschieben
 await finger("touchStart", p.x, p.y); await sleep(400);
 for (let i = 1; i <= 8; i++) { await finger("touchMove", p.x, p.y + (ziel.y - p.y) * i / 8); await sleep(40); }
@@ -140,7 +141,7 @@ ok(await page.evaluate(() => /Gamma/.test(document.body.innerText) && !document.
 await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(300);
 
 // Einstellungen → Listen: 2 Spalten
-await clickText(".tab", "Einstellungen"); await oeffneEinst("raster");
+await einstUnter(page, "raster", "listenraster");
 await page.evaluate(() => document.querySelector('[data-listen-raster-spalten="2"]').click()); await sleep(200);
 ok(!(await page.$("[data-listen-raster-zeilen]")), "Einstellungen → Listen: keine Zeilen-Einstellung mehr (nur Spalten)");
 await zuListen(page);

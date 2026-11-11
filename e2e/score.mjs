@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, bereichZu } from "./hilfen.mjs";
+import { zuListen, bereichZu, antwortDazu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -59,10 +59,10 @@ async function vorbereiten(modus) {
   await clickText(".karte-zeile", "Irregular Verbs");
   await clickText("button", "Quiz starten", true);
   await page.click("[data-abfragemodus]"); await sleep(300);
-  await zeile("Simple Past", "__check"); await zeile("Simple Past", "Antwort");
-  await zeile("Past Participle", "__check"); await zeile("Past Participle", "Antwort");
-  // Antwortarten sind Mehrfach-Schalter: gewünschte Art an, Karte (Standard) wieder aus
-  for (const n of ["Infinitive", "Simple Past", "Past Participle"]) { await zeile(n, modus); if (modus !== "Karte") await zeile(n, "Karte"); }
+  await zeile("Simple Past", "__check"); await antwortDazu(page, "Simple Past");
+  await zeile("Past Participle", "__check"); await antwortDazu(page, "Past Participle");
+  // Antwortart antippen: sie ersetzt die bisherige (Karte)
+  for (const n of ["Infinitive", "Simple Past", "Past Participle"]) await zeile(n, modus);
   await bereichZu(page);   // Abfrage-Modus zu → Zeile 2 sichtbar
   // Abfrage-Ziel "Anzahl" (ein Durchgang) – dieser Test prüft die Punkte eines einzelnen Durchgangs
   if (!(await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].some(b => b.textContent.trim() === "Anzahl"))))

@@ -27,19 +27,19 @@ ok(await offen() === "" && !(await page.$("[data-farbschema]")) && !(await page.
 
 // Listen: Raster der Listen, „+ Neu“ und die Sicherung
 await kopf("listen");
-ok(await offen() === "listen" && await page.$("[data-liste-neu]") && await page.$("[data-alles-sichern]"), "Listen: „+ Neu“ und Sicherung");
+ok(await offen() === "listen" && await page.$("[data-liste-neu]") && await page.$('[data-einst-unter="sicherung"]') && await page.$('[data-einst-unter="erinnerung"]'), "Listen: Knopfzeile Sicherung · Erinnerung · ＋ Neu");
 // Lernen: Gelernt-Schwelle und Akzente
 await kopf("lernen");
-ok(await offen() === "lernen" && await page.$("[data-akzent-sprachen]") && !(await page.$("[data-alles-sichern]")), "Lernen mit Akzenten; Listen zu (nur einer offen)");
+ok(await offen() === "lernen" && await page.$('[data-einst-unter="akzente"]') && !(await page.$('[data-einst-unter="sicherung"]')), "Lernen mit Knopf „Akzente“; Listen zu (nur einer offen)");
 // Raster: beide Raster-Einstellungen
 await kopf("raster");
-ok(await offen() === "raster" && await page.evaluate(() => [...document.querySelectorAll(".einst-unterkopf")].map(d => d.textContent).join("|")) === "Sessions (gespeicherte Konfigurationen)|Listen", "Raster: Sessions und Listen");
+ok(await offen() === "raster" && await page.evaluate(() => [...document.querySelectorAll("[data-einst-unter]")].map(d => d.dataset.einstUnter).join("|")) === "sessions|listenraster", "Raster: Knöpfe Sessions und Listen");
 // Farben: eigener Bereich mit Tabs
 await kopf("farben");
-ok(await offen() === "farben" && await page.$("[data-farb-tabs]") && await page.$("[data-farbschema]"), "Farben: Tabs und Vorlagen");
+ok(await offen() === "farben" && await page.$("[data-farb-tabs]") && !(await page.$("[data-farbschema]")), "Farben: Knopfzeile, nichts offen");
 // App: Aktualisieren, Info (ohne Farbschemata)
 await kopf("app");
-ok(await offen() === "app" && !(await page.$("[data-farbschema]")) && await page.$("[data-info-oeffnen]") && /App aktualisieren/.test(await page.evaluate(() => document.body.innerText)), "App: Aktualisieren, Info");
+ok(await offen() === "app" && !(await page.$("[data-farbschema]")) && await page.$("[data-info-oeffnen]") && await page.$('[data-einst-unter="version"]'), "App: Version, Info");
 await kopf("app");
 ok(await offen() === "", "erneut antippen: zugeklappt");
 

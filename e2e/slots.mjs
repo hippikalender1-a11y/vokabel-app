@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, einstUnter } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -196,7 +196,7 @@ ok(pl["Meine Verben 2"] === "4|0" && pl["Meine Verben"] === platzN1, `Duplikat u
 await menue("4|0"); await aktion("🗑 Löschen"); await clickText(".modal .btn-danger", "Löschen", true);
 
 // Einstellungen: nur noch Spalten (3); Zeilen wachsen von selbst – neuer Eintrag kommt unter den untersten
-await clickText(".tab", "Einstellungen"); await oeffneEinst("raster");
+await einstUnter(page, "raster", "sessions");
 await page.evaluate(() => document.querySelector('[data-raster-spalten="3"]').click()); await sleep(200);
 ok(!(await page.$("[data-raster-zeilen]")) && !/Zeilen ×/.test(await page.evaluate(() => document.body.innerText)), "Raster-Einstellung: nur Spalten, keine Zeilen-Einstellung");
 const plVor = await plaetze();

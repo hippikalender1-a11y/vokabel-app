@@ -43,14 +43,18 @@ await page.reload(); await sleep(700);
 // ── Einstellungen › Stimmen ──
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
 await page.click('[data-einst-kopf="stimmen"]'); await sleep(300);
-const sprachen = await page.evaluate(() => [...document.querySelectorAll("[data-stimme-sprache]")].map(e => e.dataset.stimmeSprache).join(","));
-ok(sprachen === "de,fr", `Sprachen der Listen + Deutsch (${sprachen})`);
+// Knopfzeile: ein Knopf je Sprache + Tempo; ein offener Knopf zeigt die Stimmen dieser Sprache
+const unter = async k => { await page.evaluate(k => { const b = document.querySelector(`[data-einst-unter="${k}"]`); if (!b.closest(".quiz-zeile-zelle").classList.contains("offen")) b.click(); }, k); await sleep(250); };
+const sprachen = await page.evaluate(() => [...document.querySelectorAll("[data-einst-unter]")].map(e => e.dataset.einstUnter).join(","));
+ok(sprachen === "sp:de,sp:fr,tempo", `Sprachen der Listen + Deutsch, dazu Tempo (${sprachen})`);
+await unter("sp:fr");
 const varianten = await page.evaluate(() => [...document.querySelectorAll('[data-stimme-sprache="fr"] [data-stimme-variante]')].map(b => b.textContent.trim()));
 ok(varianten.join("|") === "Alle|🇨🇦 Kanada|🇫🇷 Frankreich", `Französisch: Varianten (${varianten.join(" | ")})`);
+await unter("sp:de");
 ok(await page.evaluate(() => document.querySelectorAll('[data-stimmen-liste="de"] [data-stimme]').length) === 2, "Deutsch: 2 Stimmen mit Haken");
 const geschlecht = await page.evaluate(() => [...document.querySelectorAll('[data-stimmen-liste="de"] [data-stimme]')].map(z => z.querySelector("[data-stimme-geschlecht]")?.textContent || "-").join(""));
 ok(geschlecht === "♀♂", `bekannte Namen mit ♀/♂ (Anna, Markus: ${geschlecht})`);
-await page.click('[data-stimmen-hilfe=""]'); await sleep(300);
+await page.click('[data-stimmen-hilfe="de"]'); await sleep(300);
 ok(await page.evaluate(() => { const f = document.querySelector("[data-stimmen-hilfe-fenster]"); return f && f.querySelector("details[open]")?.dataset.stimmenWeg === f.dataset.stimmenHilfeFenster && f.querySelectorAll("details").length === 4; }),
   "„＋ Weitere Stimmen laden“: Anleitung, der passende Weg aufgeklappt");
 await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b => b.textContent.trim() === "OK")?.click()); await sleep(300);
@@ -58,16 +62,21 @@ await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b
 await page.click('[data-stimme-an="v1"]'); await sleep(200);
 ok((await wahl()).aus?.de?.includes("v1"), "Markus abgeschaltet");
 // Variante wählen: nur deren Stimmen
+await unter("sp:fr");
 await page.click('[data-stimme-variante="fr:fr-fr"]'); await sleep(200);
 ok((await wahl()).variante?.fr === "fr-fr" && await page.evaluate(() => [...document.querySelectorAll('[data-stimmen-liste="fr"] [data-stimme]')].map(e => e.dataset.stimme).join(",")) === "v4",
   "Variante Frankreich: nur Thomas");
 await page.click('[data-stimme-variante="fr:alle"]'); await sleep(200);
 // Tempo je Sprache × Gesamt-Tempo
+await unter("sp:de");
 await regler('[data-stimme-tempo="de"]', 1.3); await sleep(200);
+await unter("tempo");
 await regler("[data-stimmen-tempo-regler]", 1.2); await sleep(200);
+await unter("sp:de");
 await page.click('[data-stimme-probe="v0"]'); await sleep(150);
 let l = await letztes();
 ok((await wahl()).tempoSprache?.de === 1.3 && Math.abs(l.rate - 1.56) < 0.001 && l.voice === "Anna", `Probe Deutsch: Tempo 1,3 × 1,2 = ${l.rate}, Stimme ${l.voice}`);
+await unter("sp:fr");
 await page.click('[data-stimme-probe="v4"]'); await sleep(150);
 l = await letztes();
 ok(Math.abs(l.rate - 1.2) < 0.001, `Französisch: nur Gesamt-Tempo (${l.rate})`);

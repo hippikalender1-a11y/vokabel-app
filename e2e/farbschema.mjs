@@ -48,6 +48,7 @@ await page.goto(URL);
 await page.evaluate(() => localStorage.clear());
 await page.reload(); await sleep(500);
 await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
+await page.click('[data-farb-tab="vorlagen"]'); await sleep(200);   // Knopfzeile: anfangs ist nichts offen
 
 const namen = await page.evaluate(() => [...document.querySelectorAll("[data-farbschema]")].map(b => b.querySelector(".farb-name").textContent.replace("✓ ", "").trim()));
 console.log("     Schemata:", namen.join(" | "));
