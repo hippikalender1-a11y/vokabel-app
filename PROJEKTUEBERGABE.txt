@@ -2307,8 +2307,11 @@ Gesammelt nach Test (noch NICHT umsetzen, Nutzer sammelt):
 - 104 Vorlesen je Spalte: oberer Lautsprecher bleibt Hauptschalter; jedes Feld (Frage, frühere Spalten, Antwort) eigener Lautsprecher-Knopf = einstellungen.vorlesen umschalten (gilt dauerhaft).
 - 105 Stimmen-Knopf „n/m“ größer (~40 px), neben dem Lautsprecher-Knopf.
 - 106 Frühere Spalten (quiz-vorig): ganzes Feld antippen liest vor, dazu Stimmen- und Lautsprecher-Knopf.
-- 107 Eine Vokabel gewusst/nicht gewusst (ist bereits so: spaltenAbschluss) – offen: Akzent-Score auch zusammenlegen? (Frage a)
-- 108 Weiterklicken ruckelig: Vorschlag feste Plätze aller Spalten (verdeckt, aktive hervorgehoben) – Fragen b (was ruckelt?), c (kommende Spalten leer zeigen?).
+- 107 Eine Vokabel gewusst/nicht gewusst (ist bereits so: spaltenAbschluss); Akzente behalten eigene Wertung (a) – Akzent-Bewertungen fließen nur in den Akzent-Score.
+- 108 Karten-Fluss bei mehreren Spalten (z. B. unregelmäßige Verben): keine Pausen. Frage (Auto-Vorlesen) → leere Antwortkarte antippen → Spalte 1 sofort
+  aufgedeckt + vorgelesen, darunter „Weiter“ → Spalte 2 erscheint darunter (sofort vorgelesen, laufendes Vorlesen abbrechen), „Weiter“ → … nach der letzten
+  Spalte „Gewusst / Nicht gewusst“ für die ganze Vokabel. Klick in den freien Hintergrund = Weiter, solange es nur weiterzuschalten gibt; bei
+  Gewusst/Nicht gewusst zählt ein Klick ins Freie nicht. Darüberliegende Felder verschieben sich nicht (b, c).
 - 109 Session-Auswahl: antippen wählt nur aus (Kachel leuchtet, Auswahl bleibt offen, Info darunter); Laden über grünen Kopf-Knopf „✓ ‹Name› laden“ (d: nur Kopf-Knopf);
   auch Verlauf-Chips so (e). Mehrfach-Auswahl bleibt.
 - 110 Info zur gewählten Session: Listen + Bereich, Vokabelzahl, gelernt/in Arbeit/nie/negativ (Balken), Ü/D/A, zuletzt abgefragt, ggf. laufende Runde,
