@@ -2384,3 +2384,6 @@ Gesammelt (noch NICHT umsetzen):
 - 124 Mehrfach-Auswahl (Sessions, Listen): gewählte Kacheln mit dem Bestätigen-Grün (var(--bestaetigen)) statt Gelb markieren – Rahmen und Nummern-Kreis
   (.auswahl-nr). Entschieden: ALLES, was zur Bedienung/Selektion gehört, in dieser Farbe – auch Lasso-Vorschau, Verschieben-Markierung, Ziel-Rahmen;
   die Farbe ist die Farbrolle „bestaetigen“ (Einstellungen › Farben) – Name dort ggf. auf „Auswahl / Bestätigen“ ändern.
+- 125 Mehrfach-Auswahl per Lang-Druck beenden: in der Mehrfach-Auswahl lang drücken auf ein Element → es ist (bzw. bleibt) ausgewählt und die
+  Mehrfach-Auswahl endet (Auswahl bleibt bestehen, danach wieder Einfachwahl). Offen (p): nur Antwortarten oder auch Sessions/Listen
+  (dort öffnet Lang-Druck heute die Aktions-Tafel: Multiquiz, Gruppe, Verschieben, Löschen)?
