@@ -2402,3 +2402,5 @@ Gesammelt (noch NICHT umsetzen):
   deutlich waagerecht (≥ 60 px, Winkel flach), nicht vom Bildschirmrand (iOS-Zurück-Geste), nicht auf Reglern, Eingabefeldern, Farbkreis,
   ziehbaren Kacheln/Verschieben-Modus, Lasso. (s) mit Gleit-Animation. Bereich: zunächst ganze Fläche unterhalb von Kopf/Tab-Leiste;
   falls beim Testen versehentlich ausgelöst → auf unteres Drittel begrenzen (Nutzer-Idee, zurückgestellt).
+- 133 Session-Auswahl offen: Kopf-Knopf immer grün (Bestätigen-Farbe), auch ohne angetippte Session – „✓ ‹geladene Session›“ führt zurück zu den
+  Quiz-Einstellungen (wie bisher Zuklappen). Gilt auch für „Neues Quiz“/ungespeichert und im Statistik-Tab; Listen (131) analog.
