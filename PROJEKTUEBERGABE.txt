@@ -2314,6 +2314,9 @@ Gesammelt nach Test (noch NICHT umsetzen, Nutzer sammelt):
   Gewusst/Nicht gewusst zählt ein Klick ins Freie nicht. Darüberliegende Felder verschieben sich nicht (b, c).
   Klick-Regeln: verdeckte Karte – Klick auf die Karte ODER ins Freie dreht um (Auto-Vorlesen an: liest dann sofort vor; aus: nur umdrehen).
   Aufgedeckte Karte – Klick auf die Karte liest (erneut) vor, Klick ins Freie = Weiter.
+  Gilt auch gemischt: Karten-Spalten wie oben; Spalten mit Eingabe (Tastatur, MC …) warten auf die Antwort, danach ohne Pause weiter
+  (Klick ins Freie überspringt keine Eingabe). Gesamtwertung: eine falsch beantwortete Eingabe-Spalte → nicht gewusst; sonst entscheidet
+  „Gewusst / Nicht gewusst“ (nur nötig, wenn Karten-Spalten dabei sind).
 - 109 Session-Auswahl: antippen wählt nur aus (Kachel leuchtet, Auswahl bleibt offen, Info darunter); Laden über grünen Kopf-Knopf „✓ ‹Name› laden“ (d: nur Kopf-Knopf);
   auch Verlauf-Chips so (e). Mehrfach-Auswahl bleibt.
 - 110 Info zur gewählten Session: Listen + Bereich, Vokabelzahl, gelernt/in Arbeit/nie/negativ (Balken), Ü/D/A, zuletzt abgefragt, ggf. laufende Runde,
