@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, bereichZu } from "./hilfen.mjs";
+import { zuListen, bereichZu, listeBereich } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -105,8 +105,9 @@ await page.goto(URL); await sleep(500);
 // 4) Vorlesen in Liste-Detail mit fr-FR
 await zuListen(page);
 await clickText(".karte-zeile", "Unité 1");
+await listeBereich(page, "vokabeln");
 t = await bodyText();
-ok(/fremdsprache/i.test(t), "Sprachauswahl in Liste-Detail");
+ok(await page.$('[data-liste-bereich="sprache"]'), "Sprachauswahl in Liste-Detail");
 // Vokabeln aufklappen und ersten Lautsprecher drücken
 await page.evaluate(() => {
   const b = [...document.querySelectorAll("button")].find(b => /Vokabeln/.test(b.textContent) && b.closest(".sektion-header, .liste-detail-header, div"));
@@ -128,11 +129,14 @@ const gesprochen = await page.evaluate(async () => {
 ok(gesprochen?.[0]?.[0]?.lang === "fr-FR", `Vorlesen fr-FR: ${JSON.stringify(gesprochen)}`);
 
 // 5) Sprache der Liste wechseln → Filter folgt
+await page.click('[data-liste-bereich="vokabeln"]'); await sleep(200);
+await listeBereich(page, "sprache");
 await clickText(".typ-btn", "Spanisch");
 const nachher = await page.evaluate(() => ({
   einst: JSON.parse(localStorage.getItem("vokabel_einstellungen")).sprache,
   idx: JSON.parse(localStorage.getItem("vokabel_listen_index")).find(l => l.name === "Unité 1").sprache }));
 ok(nachher.idx === "es" && nachher.einst === "es", `Listensprache geändert, Filter folgt: ${JSON.stringify(nachher)}`);
+await listeBereich(page, "sprache");
 await clickText(".typ-btn", "Französisch");
 
 // 6) Zurück auf Alle

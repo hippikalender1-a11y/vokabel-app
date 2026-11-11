@@ -69,7 +69,7 @@ ok(/2 ausgewählt · 5 Vokabeln/.test(await hinweis() || ""), `Teil B dazu: 2 au
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId + ":" + b.dataset.multiNr).join(",")) === "g_a:1,g_b:2", "Kacheln nummeriert (1, 2)");
 await page.click('[data-slot-id="g_b"]'); await sleep(250);
 ok(/1 ausgewählt/.test(await hinweis() || ""), "nochmal antippen nimmt die Kachel heraus");
-ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf) === "offen" && !(await page.evaluate(() => !document.querySelector("[data-slot-kopf-name]").textContent.trim().startsWith("Neues Quiz"))), "Antippen lädt im Auswahl-Modus nichts");
+ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf) === "offen" && /ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent)), "Antippen lädt im Auswahl-Modus nichts");
 // Lang-Druck auf eine nicht gewählte Kachel: kommt dazu, Menü für die Auswahl
 await langDruck('[data-slot-id="g_b"]');
 const wahlMenue = await aktionen();

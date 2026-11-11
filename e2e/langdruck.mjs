@@ -57,8 +57,8 @@ console.log("     Erklärung:", blase);
 ok(blase === "Unregelmäßige Verben Kapitel 3 – Wiederholung", "Lang-Druck zeigt den vollen Namen");
 ok(getrennt, "Menü-Knöpfe schweben getrennt von der Erklärung");
 // Auswahl-Tafel: Tipp daneben bewirkt nichts, Tipp auf die Tafel schließt
-{ const k = await page.evaluate(() => { const r = document.querySelector("[data-slot-kopf]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
-  await page.touchscreen.tap(k.x, k.y); await sleep(300); }   // eindeutig neben den Kacheln (Session-Leiste)
+{ const k = await page.evaluate(() => { const r = document.querySelector("[data-kopf-info]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  await page.touchscreen.tap(k.x, k.y); await sleep(300); }   // eindeutig neben den Kacheln (Info-Zeile der Session-Leiste; der Name ist in der Auswahl der Bestätigen-Knopf)
 ok(await page.$('[role="status"]') && await page.$("[data-info-menue]"), "Tipp daneben: Auswahl-Tafel bleibt offen");
 const tb = await page.evaluate(() => { const r = document.querySelector("[data-info-blase]").getBoundingClientRect(); return { x: r.x + 20, y: r.y + 10 }; });
 await page.touchscreen.tap(tb.x, tb.y); await sleep(300);

@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { zuListen, neueEineSession, listenZu, bereichZu } from "./hilfen.mjs";
+import { zuListen, neueEineSession, listenZu, bereichZu, listeBereich } from "./hilfen.mjs";
 
 // Beispielsätze: „✨ Ergänzen“ in der Liste – Prompt je Portion, KI-Antwort einfügen („ID // Satz // Übersetzung“, *Wort*),
 // gespeichert in IndexedDB (bleibt nach Neuladen), Anzeige „n von m Vokabeln“ und „Sätze ansehen“
@@ -30,6 +30,7 @@ await page.evaluate(async () => {
 await page.reload(); await sleep(700);
 await zuListen(page);
 await page.click('[data-liste-id="l_a"]'); await sleep(600);
+await listeBereich(page, "saetze");
 ok(/0 von 4/.test(await page.evaluate(() => document.querySelector("[data-liste-saetze-anzahl]")?.textContent)), "Liste: 💬 0 von 4 Vokabeln");
 await page.click("[data-saetze-ergaenzen]"); await sleep(400);
 await page.click('[data-satz-anzahl="1"]'); await sleep(200);
@@ -50,8 +51,9 @@ ok(/4 von 4/.test(await page.evaluate(() => document.querySelector("[data-liste-
 await page.reload(); await sleep(800);
 await zuListen(page);
 await page.click('[data-liste-id="l_a"]'); await sleep(800);
+await listeBereich(page, "saetze");
 ok(/4 von 4/.test(await page.evaluate(() => document.querySelector("[data-liste-saetze-anzahl]")?.textContent)), "nach Neuladen: Sätze bleiben (IndexedDB)");
-await page.evaluate(() => document.querySelector("[data-liste-saetze] summary")?.click()); await sleep(200);
+await listeBereich(page, "saetze");
 ok(await page.evaluate(() => document.querySelector('[data-satz-vok="3"] b')?.textContent) === "vais", "„Sätze ansehen“: markiertes Wort fett (vais)");
 ok(!(await page.evaluate(() => Object.keys(localStorage).some(k => (localStorage.getItem(k) || "").includes("*maison*")))), "Sätze liegen nicht im normalen Speicher (nur IndexedDB)");
 
@@ -60,6 +62,7 @@ await page.evaluate(async () => { await new Promise(r => { const d = indexedDB.d
 await page.reload(); await sleep(800);
 await zuListen(page);
 await page.click('[data-liste-id="l_a"]'); await sleep(600);
+await listeBereich(page, "saetze");
 await page.click("[data-saetze-ergaenzen]"); await sleep(400);
 await page.click('[data-satz-weg-wahl="datei"]'); await sleep(200);
 let p2 = await page.evaluate(() => document.querySelector("[data-satz-prompt]").value);

@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, neueEineSession, listenZu } from "./hilfen.mjs";
+import { zuListen, neueEineSession, listenZu, listeBereich } from "./hilfen.mjs";
 
 // Vokabel-Suche: Einzelauswahl (Quiz + Statistik), Aufteilen (🔍 bei Von/Bis), Listenansicht.
 // Nur Fremdsprache + Deutsch, „enthält“, Groß/klein + Akzente egal, Wortanfang zuerst; springen ‹ › oder „nur Treffer“
@@ -112,7 +112,7 @@ await page.click("[data-aufteilen-abbrechen]"); await sleep(300);
 // ── Listenansicht ──
 await zuListen(page);
 await page.click('[data-liste-id="l_a"]'); await sleep(500);
-await page.evaluate(() => { const k = [...document.querySelectorAll(".sektion-label")].find(e => /^Vokabeln/.test(e.textContent)); if (!document.querySelector('[data-suchleiste="liste"]')) k.click(); }); await sleep(400);
+await listeBereich(page, "vokabeln");
 ok(await page.$('[data-suchleiste="liste"]'), "Listenansicht: Suchleiste über den Vokabeln");
 await tippe('[data-suchleiste="liste"] [data-such-feld]', "schule");
 a = await aktuell("liste");

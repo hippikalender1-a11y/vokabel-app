@@ -56,7 +56,7 @@ await kopf("lernen");
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
 ok(await offen() === "lernen", "nach Tab-Wechsel: Lernen noch offen");
-ok(await page.evaluate(() => [...document.querySelectorAll(".tab")].map(t => t.textContent).join(",")) === "Quiz,Statistik,Einstellungen", "Tabs: Quiz, Statistik, Einstellungen");
+ok(await page.evaluate(() => [...document.querySelectorAll(".tab")].map(t => t.textContent).join(",")) === "Statistik,Quiz,Einstellungen", "Tabs: Statistik, Quiz, Einstellungen");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

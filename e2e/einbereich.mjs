@@ -44,8 +44,8 @@ const da = sel => page.evaluate(sel => !!document.querySelector(sel), sel);
 const fokus = () => page.evaluate(() => document.querySelector("[data-quiz-fokus]")?.dataset.quizFokus);
 await tippe("[data-umfang]");
 ok(await offen() === "umfang", `Umfang offen (${await offen()})`);
-ok(await fokus() === "zeile2" && !(await da("[data-reihenfolge]")) && !(await da("[data-start-knopf]")) ,
-  "Fokus: nur Zeile 2 + Umfang, Zeile 1 und Start ausgeblendet");
+ok(await fokus() === "zeile2" && await da("[data-reihenfolge]") && !(await da("[data-start-knopf]")) ,
+  "Fokus: Zeile 1 bleibt darüber, Start darunter ausgeblendet");
 await tippe("[data-abfrageziel]");
 ok(await offen() === "ziel", `Abfrage-Ziel (gleiche Zeile) wechselt von Umfang (${await offen()})`);
 await tippe("[data-abfrageziel]");

@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, zuListen } from "./hilfen.mjs";
+import { neueEineSession, zuListen, listeBereich } from "./hilfen.mjs";
 
 // Kurzes Aufleuchten in der Bestätigen-Farbe (sofort an und aus, ohne Überblendung): gewählte Listen-Kachel,
 // Listen-Name im Kopf nach dem Zuklappen, „Alle | Bereich“ nach dem Bestätigen, geladene Session-Kachel und
@@ -81,6 +81,7 @@ ok(!(await zustand("[data-slot-kopf-name]")).an, "… und hört wieder auf");
 // ── Beispielsätze: Prompt als Datei ──
 await zuListen(page);
 await page.click('[data-liste-id="l_a"]'); await sleep(600);
+await listeBereich(page, "saetze");
 await page.click("[data-saetze-ergaenzen]"); await sleep(400);
 const kl = () => page.evaluate(() => ({ kopieren: document.querySelector("[data-satz-prompt-kopieren]").className, datei: document.querySelector("[data-satz-prompt-datei]")?.className }));
 ok(/btn-primary/.test((await kl()).kopieren) && /btn-ghost/.test((await kl()).datei), "Weg „Antwort im Chat“: Kopieren hervorgehoben, Datei daneben");

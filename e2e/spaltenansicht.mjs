@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, bereichZu } from "./hilfen.mjs";
+import { zuListen, bereichZu, listeBereich } from "./hilfen.mjs";
 
 // Listenansicht: angezeigte Spalten wählbar (je Liste gemerkt); Statistik: Vokabelliste einklappbar
 const URL = "http://localhost:4199/vokabel-app/";
@@ -30,7 +30,7 @@ const knopf = typ => page.$eval(`[data-ansicht-spalte="${typ}"]`, b => b.classLi
 const oeffneListe = async () => {
   await zuListen(page);
   await clickText(".karte-zeile", "Verbes");
-  await clickText(".sektion-label", "Vokabeln (");
+  await listeBereich(page, "vokabeln");
 };
 
 await page.goto(URL);

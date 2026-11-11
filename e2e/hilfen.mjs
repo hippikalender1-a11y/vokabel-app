@@ -89,3 +89,8 @@ export async function fremdAlsFrage(page) {
   await rolle("E1", "Frage"); await new Promise(r => setTimeout(r, 150));
   await rolle("D1", "Antwort"); await new Promise(r => setTimeout(r, 200));
 }
+// Geöffnete Liste: Bereich (sprache | saetze | spalten | vokabeln) über die Knopfzeile aufklappen
+export async function listeBereich(page, k) {
+  await page.evaluate(k => { const b = document.querySelector(`[data-liste-bereich="${k}"]`); if (b && !b.classList.contains("offen")) b.click(); }, k);
+  await new Promise(r => setTimeout(r, 300));
+}

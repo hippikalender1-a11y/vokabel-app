@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer-core";
 import { neueEineSession, listenZu } from "./hilfen.mjs";
 
-// Zeilen-Knöpfe im Quiz-Tab: aufgeklappt nur „✓ Bestätigen“ in eigener Farbe, übrige Knöpfe der Zeile ausgeblendet;
+// Zeilen-Knöpfe im Quiz-Tab: aufgeklappt „✓ Bestätigen“ in eigener Farbe, gleiche Größe und Position, übrige Knöpfe der Zeile bleiben;
 // Stufe aufklappbar; lang drücken auf „Start“: Speichern-Menü wie beim Session-Namen
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
@@ -34,15 +34,16 @@ await page.click("[data-reihenfolge]"); await sleep(300);
 const bestFarbe = await farbe("[data-reihenfolge]");
 ok(await text("[data-reihenfolge]") === "Bestätigen" && bestFarbe !== zu && /✓/.test(await haken("[data-reihenfolge]")),
   `Reihenfolge offen: nur „✓ Bestätigen“ in eigener Farbe (${await text("[data-reihenfolge]")}, ${zu} → ${bestFarbe})`);
-ok(!(await sichtbar("[data-stufe]")) && !(await sichtbar("[data-abfragemodus]")) && await sichtbar("[data-reihenfolge]"), "übrige Knöpfe der Zeile ausgeblendet");
+ok(await sichtbar("[data-stufe]") && await sichtbar("[data-abfragemodus]") && await sichtbar("[data-reihenfolge]"), "übrige Knöpfe der Zeile bleiben sichtbar");
+ok(!(await sichtbar("[data-umfang]")) && !(await sichtbar("[data-start-knopf]")), "Zeilen darunter ausgeblendet");
 await page.click("[data-reihenfolge]"); await sleep(1300);   // nach dem kurzen Aufleuchten
 ok(await text("[data-reihenfolge]") === "Schlechteste zuerst" && await farbe("[data-reihenfolge]") === zu && await sichtbar("[data-stufe]") && await sichtbar("[data-abfragemodus]"),
   "„Bestätigen“ klappt zu: wieder der volle Text, alte Farbe, alle Knöpfe da");
 await page.click("[data-umfang]"); await sleep(300);
-ok(await text("[data-umfang]") === "Bestätigen" && await farbe("[data-umfang]") === bestFarbe && !(await sichtbar("[data-abfrageziel]")), `Umfang offen: „Bestätigen“, Abfrage-Ziel ausgeblendet (${await text("[data-umfang]")})`);
+ok(await text("[data-umfang]") === "Bestätigen" && await farbe("[data-umfang]") === bestFarbe && await sichtbar("[data-abfrageziel]") && await sichtbar("[data-stufe]"), `Umfang offen: „Bestätigen“, Abfrage-Ziel und Zeile darüber bleiben (${await text("[data-umfang]")})`);
 await page.click("[data-umfang]"); await sleep(300);
 await page.click("[data-abfrageziel]"); await sleep(300);
-ok(await text("[data-abfrageziel]") === "Bestätigen" && !(await sichtbar("[data-umfang]")), `Abfrage-Ziel offen: „Bestätigen“ (${await text("[data-abfrageziel]")})`);
+ok(await text("[data-abfrageziel]") === "Bestätigen" && await sichtbar("[data-umfang]"), `Abfrage-Ziel offen: „Bestätigen“ (${await text("[data-abfrageziel]")})`);
 await page.click("[data-abfrageziel]"); await sleep(300);
 await page.click("[data-stufe]"); await sleep(300);
 ok(await text("[data-stufe]") === "Bestätigen" && await page.$("[data-stufe-auswahl]"), "Stufe offen: „Bestätigen“ mit Auswahl darunter");

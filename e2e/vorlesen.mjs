@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, bereichZu } from "./hilfen.mjs";
+import { zuListen, bereichZu, listeBereich } from "./hilfen.mjs";
 
 // Vorlesen: jede Spalte mit einer Stimme ihrer Sprache (Deutsch nie mit französischer Stimme).
 // Sprachausgabe als Attrappe mit deutschen und französischen Stimmen; protokolliert Text, lang und Stimme.
@@ -59,7 +59,7 @@ await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.t
 if (await page.evaluate(() => /Zur Übersicht/.test(document.body.innerText))) await clickText("button", "Zur Übersicht");
 await zuListen(page);
 await clickText(".karte-zeile", "Verbes");
-await page.evaluate(() => { const b = document.querySelector('button[title="Vorlesen"]'); if (!b) [...document.querySelectorAll("button, div")].find(x => /^Vokabeln/.test(x.textContent.trim()) && x.onclick)?.click(); });
+await listeBereich(page, "vokabeln");
 await sleep(300);
 await page.evaluate(() => document.querySelector('button[title="Vorlesen"]')?.click()); await sleep(150);
 const g = await page.evaluate(() => window.__gesprochen);
