@@ -2339,3 +2339,5 @@ Gesammelt nach Test (noch NICHT umsetzen, Nutzer sammelt):
   (BLITZ_MS 700 bleibt fürs Zuklappen von Bereichen/Listen).
 - 119 Fehler: Antwortkarte (Karte-Modus) – Stimmen-Knopf .stimme-wechsel (absolut oben rechts) liegt über dem Score-Badge der Label-Zeile.
   Lösung mit 104/105: Knöpfe (Score, Stimme, Lautsprecher) als Reihe in der Label-Zeile statt absolut positioniert – nichts überlappt.
+- 120 Fehler: sprich/sprichAuto lesen nur text.split('/')[0] – künftig alle Teile vorlesen (je Teil eine Äußerung bzw. „/“ → kurze Pause),
+  gilt für Frage, Antwort und frühere Spalten (z. B. „Hallo! / Grüß dich! / Servus!“, „was / were“).
