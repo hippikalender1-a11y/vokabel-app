@@ -2287,3 +2287,11 @@ Sitzung 85–90 (Commit d7c74a6):
 - Tests: e2e/antwortwahl.mjs (86.); Helfer einstUnter, artenMehrfach, antwortDazu; angepasst: akzentsprachen, einst_bereiche, farbschema, gemischt, karte, listenraster
   (Positionen nach der Auswahl-Tafel neu messen – Seite jetzt scrollbar), richtung, runde3, schrift_hintergrund, score, sicherung, slots, stimmen, zuordnung.
 - Offen: Mehrfach-Auswahl der Listen (Einstellungen › Listen) noch mit „Fertig“ statt grünem Kopf-Knopf.
+
+MERKLISTE (vom Nutzer zurückgestellt, nicht umsetzen ohne Auftrag):
+- 96 Weitere Stimmen auf Android: Chrome-Android liefert per speechSynthesis nur 1 Stimme je Gebietsschema (die in Google-TTS gewählte),
+  „Stimme I–IX“ sind per Web nicht erreichbar. Wege: (A, empfohlen) App-Stimmen im Browser (z. B. Piper/WASM, Stimme je ~20–60 MB, offline,
+  kein Schlüssel; optional, Gerätestimmen bleiben) – zuerst als Probe für eine Sprache; (B) Online-TTS mit eigenem Schlüssel (nur optional, nie im Code);
+  (C) native Android-Hülle (Capacitor/TWA + TextToSpeech.getVoices()). Spaß-/Roboterstimmen: nein.
+- Gesammelt, noch nicht entschieden: 91 Android-Hilfetext korrigieren; 92 Tonhöhen-Variation als zusätzliche „Stimme“ im 🔁 (je Sprache schaltbar);
+  93 lang drücken auf Sprach-Knopf zeigt Anzahl gemeldeter/eingeschalteter Stimmen; 94 Sprach-Knopf zeigt Variante („🇬🇧 Britisch · 5“).
