@@ -106,15 +106,17 @@ export async function einstUnter(page, bereich, k) {
     await warte(250);
   }
 }
-// Antwort-Arten: Mehrfach-Auswahl für die Spalte des Knopfs (data-modus-knopf="typ:art") per lang drücken › „☑ Mehrere wählen“
+// Antwort-Arten: Mehrfach-Auswahl (alle Spalten) mit der Art des Knopfs (data-modus-knopf="typ:art"):
+// lang drücken auf die Art, dann eine schon gewählte Art derselben Spalte antippen (die bleibt gewählt) – die gedrückte kommt dazu
 export async function artenMehrfach(page, knopf) {
+  const [typ] = knopf.split(":");
   await page.evaluate(s => { const el = document.querySelector(`[data-modus-knopf="${s}"]`); const r = el.getBoundingClientRect();
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }, knopf);
   await new Promise(r => setTimeout(r, 250));
-  await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "☑ Mehrere wählen")?.click());
+  await page.evaluate((s, t) => { const b = [...document.querySelectorAll(`[data-modus-knopf^="${t}:"].aktiv`)].find(x => x.dataset.modusKnopf !== s && !x.dataset.modusKnopf.endsWith(":akzent")); b?.click(); }, knopf, typ);
   await new Promise(r => setTimeout(r, 250));
 }
-// Rolle „Antwort“ dazunehmen (Spalte nach Namen): in der Mehrfach-Auswahl antippen, sonst lang drücken › „☑ Mehrere wählen“
+// Rolle „Antwort“ dazunehmen (Spalte nach Namen): in der Mehrfach-Auswahl antippen, sonst lang drücken und eine schon gewählte Antwort antippen
 export async function antwortDazu(page, name) {
   const art = await page.evaluate(n => {
     const z = [...document.querySelectorAll("div")].find(d => d.style.padding === "10px 16px" && d.textContent.includes(n) && d.querySelector(".checkbox"));
@@ -123,9 +125,22 @@ export async function antwortDazu(page, name) {
     if (b.classList.contains("mehrfach")) { b.click(); return "tippen"; }
     const r = b.getBoundingClientRect();
     b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 }));
-    return "lang";
+    return b.dataset.rolleAntwort;
   }, name);
   if (!art) throw new Error(`Antwort-Knopf fehlt: ${name}`);
   await new Promise(r => setTimeout(r, 250));
-  if (art === "lang") { await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "☑ Mehrere wählen")?.click()); await new Promise(r => setTimeout(r, 250)); }
+  if (art !== "tippen") { await page.evaluate(t => [...document.querySelectorAll(".spalten-rolle-btn.antwort[data-rolle-antwort]")].find(b => b.dataset.rolleAntwort !== t)?.click(), art); await new Promise(r => setTimeout(r, 250)); }
+}
+// Gespeicherte Session laden: Quiz-Tab, Session-Kopf auf, Kachel/Chip antippen, ggf. mit dem grünen Kopf-Knopf bestätigen
+export async function sessionLaden(page, name) {
+  const s = ms => new Promise(r => setTimeout(r, ms));
+  await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await s(300);
+  await quizEinstellungen(page);
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv")?.click(); }); await s(300);
+  await page.evaluate(n => [...document.querySelectorAll(".slot-chip, [data-slot-id]")].find(e => e.textContent.includes(n))?.click(), name); await s(400);
+  if (await page.$("[data-slot-laden]")) { await page.evaluate(() => document.querySelector("[data-slot-laden]").click()); await s(500); }
+}
+// Session-Auswahl: angetippte Session mit dem grünen Kopf-Knopf („✓ … laden“) laden
+export async function slotLaden(page) {
+  if (await page.$("[data-slot-laden]")) { await page.evaluate(() => document.querySelector("[data-slot-laden]").click()); await new Promise(r => setTimeout(r, 600)); }
 }

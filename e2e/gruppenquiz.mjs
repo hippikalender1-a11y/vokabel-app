@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 import { quizEinstellungen, bereichZu } from "./hilfen.mjs";
 
 // Statistik: Lang-Druck auf eine Gruppe des Kreisdiagramms → Menü „Quiz mit n Vokabeln“ → Rückfrage → Quiz mit genau dieser Gruppe
@@ -103,7 +104,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
-await clickText(".slot-chip", "Mein Paket"); await sleep(500);
+await clickText(".slot-chip", "Mein Paket"); await sleep(500); await slotLaden(page);
 await clickText("[data-start-knopf]", "");
 for (let i = 0; i < 2; i++) {
   await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(250);

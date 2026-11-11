@@ -27,7 +27,7 @@ const clickText = async (sel, text, exact = false) => {
   await sleep(300);
 };
 const slots = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots") || "{}"));
-const heute = new Date().toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'});
+const heute = (() => { const d = new Date(); return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`; })();   // 112: Kürzel + Tag.Monat
 
 await page.goto(URL);
 await page.evaluate(() => {
@@ -75,9 +75,9 @@ const speichern = async () => {
   return vorschlag;
 };
 const v1 = await speichern();
-ok(v1 === `Französisch ${heute}`, `Namensvorschlag: „${v1}“`);
+ok(v1 === `Frz ${heute}`, `Namensvorschlag: „${v1}“`);
 const v2 = await speichern();
-ok(v2 === `Französisch ${heute} (2)`, `Zweiter Vorschlag eindeutig: „${v2}“`);
+ok(v2 === `Frz ${heute} (2)`, `Zweiter Vorschlag eindeutig: „${v2}“`);
 const v3 = await speichern();
 sl = await slots();
 console.log("     Gespeichert:", sl.gespeichert.map(x => x.name).join(" | "));
@@ -95,7 +95,7 @@ await page.screenshot({ path: "slots.png" });
 
 // ── 4) Raster: Plätze, Verschieben per Antippen und Ziehen (belegt → tauschen) ──
 const plaetze = async () => Object.fromEntries((await slots()).gespeichert.map(x => [x.name, x.platz ? `${x.platz.z}|${x.platz.s}` : "-"]));
-const [n1, n2, n3] = [v1, v2, `Französisch ${heute} (3)`];
+const [n1, n2, n3] = [v1, v2, `Frz ${heute} (3)`];
 let pl = await plaetze();
 console.log("     Plätze:", JSON.stringify(pl));
 ok(pl[n1] === "0|0" && pl[n2] === "1|0" && pl[n3] === "2|0", "Neue Einträge untereinander in der ersten Spalte (Raster 10 × 2)");
@@ -236,6 +236,7 @@ const offen = await page.evaluate(() => /🕘 Verlauf/i.test(document.body.inner
 // Kopf-Knopf öffnen (zeigt „Neu“ oder – nach Auto-Laden – den Namen der zuletzt gewählten Konfiguration)
 if (!offen) { await page.evaluate(() => [...document.querySelectorAll("div")].find(d => d.firstElementChild?.textContent.trim().startsWith("Verlauf & Gespeichert") && d.querySelector("button.toggle-opt.aktiv"))?.querySelector("button.toggle-opt.aktiv").click()); await sleep(300); }
 await page.evaluate(() => document.querySelector(".slot-chip.verlauf")?.click());
+await sleep(300); await page.evaluate(() => document.querySelector("[data-slot-laden]")?.click());
 await sleep(400);
 t = await page.evaluate(() => document.body.innerText);
 const kopf = (t.match(/(Lernfortschritt|Ø Score)[\s\S]{0,80}/) || [""])[0].split("\n").join(" | ");

@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 
 // Liste in Sessions aufteilen: Lang-Druck → „In Sessions aufteilen“ → Quiz-Tab mit gelbem Kasten
@@ -92,7 +93,7 @@ ok(g.every((x, i) => x.platz.z === i && x.platz.s === 0), "zusammen im Raster, u
 ok(!(await page.$("[data-aufteilen]")), "Kasten nach dem Anlegen weg");
 
 // Laden einer Gruppe: Quiz mit genau diesen 10
-await clickText(".slot-chip", "Verben Teil 2 (31 - 40)"); await sleep(500);
+await clickText(".slot-chip", "Verben Teil 2 (31 - 40)"); await sleep(500); await slotLaden(page);
 await clickText("[data-start-knopf]", "");
 ok(await page.evaluate(() => document.querySelector(".topbar-title")?.textContent.trim()) === "1 / 10", "geladene Gruppe: Quiz mit 10 Vokabeln");
 await clickText(".topbar-back", "Beenden"); await sleep(400);

@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 import { zuListen, quizEinstellungen, bereichZu } from "./hilfen.mjs";
 
 // Klammerhinweise: nicht vorlesen, nicht verlangen, dezent anzeigen; Aufräum-Werkzeug „( ) → Info“ mit Vorschau
@@ -46,7 +47,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
-await clickText(".slot-chip", "Words"); await sleep(500);
+await clickText(".slot-chip", "Words"); await sleep(500); await slotLaden(page);
 await clickText("[data-start-knopf]", "");
 await sleep(500);
 
@@ -54,7 +55,7 @@ await sleep(500);
 const frage = await page.evaluate(() => ({ text: document.querySelector(".quiz-frage-text").textContent, hinweis: document.querySelector(".quiz-frage-text .klammer-hinweis")?.textContent }));
 console.log("     Frage:", JSON.stringify(frage), "| gesprochen:", JSON.stringify(await page.evaluate(() => window.__gesprochen)));
 ok(frage.hinweis === "(bei Zahlenangaben)", "Anzeige: Klammerhinweis dezent (eigene, kleine Schrift)");
-ok(await page.evaluate(() => window.__gesprochen.includes("Punkt; Komma")), "Vorlesen ohne Klammerhinweis: „Punkt; Komma“");
+ok(await page.evaluate(() => window.__gesprochen.includes("Punkt") && window.__gesprochen.includes("Komma") && !window.__gesprochen.some(g => /Zahlenangaben/.test(g))), "Vorlesen ohne Klammerhinweis: „Punkt“, „Komma“ (Alternativen einzeln)");
 // Antwort „point“ ohne Klammer → richtig
 await page.type("input.inp", "point"); await page.keyboard.press("Enter"); await sleep(400);
 ok(await page.evaluate(() => document.querySelector(".quiz-antwort-box")?.className.includes("richtig")), "Antwort „point“ (ohne „(= Punkt)“) gilt als richtig");

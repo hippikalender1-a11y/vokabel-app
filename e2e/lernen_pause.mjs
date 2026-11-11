@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 import { stufeWaehlen } from "./hilfen.mjs";
 
 // Lernen pausieren: Schließen merkt den Lernstand je Konfiguration (getrennt vom Abfrage-Fortschritt);
@@ -21,7 +22,7 @@ await page.evaluateOnNewDocument(() => {
 });
 const ladeSlot = async name => {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-  await page.evaluate(n => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes(n)).click(), name); await sleep(700);
+  await page.evaluate(n => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes(n)).click(), name); await sleep(700); await slotLaden(page);
 };
 const knopf = () => page.evaluate(() => { const b = document.querySelector("[data-start-knopf]"); return { art: b?.dataset.lernenStart, text: b?.textContent.trim(), stand: document.querySelector('[data-anzahl="lernstand"]')?.textContent.trim() || null }; });
 const lernStand = () => page.evaluate(() => ({ stand: document.querySelector("[data-lernen-stand]")?.textContent.replace(/\s/g, ""), wort: document.querySelector("[data-lernen-wort] .lernen-wort")?.textContent.trim() }));

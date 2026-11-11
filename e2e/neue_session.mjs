@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 
 // Quiz-Tab: Kopf schaltet zwischen Auswahl (Sessions, Verlauf) und Einstellungen um; „＋ Neue Session aus Listen“:
 // Eine Session (Listen wählen, einstellen) oder Mehrere Sessions (Liste wählen → Aufteilen)
@@ -33,7 +34,7 @@ await page.reload(); await sleep(600);
 ok(await ansicht() === "auswahl" && await page.$("[data-neue-session]") && !(await sichtbar("[data-start-knopf]")) && !(await sichtbar(".quiz-setup-check")),
   "App-Start: Session-Auswahl ohne Einstellungen, Listen und Start-Knopf");
 // Session wählen → Einstellungen
-await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Mein Quiz")).click()); await sleep(900);
+await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Mein Quiz")).click()); await sleep(900); await slotLaden(page);
 ok(await ansicht() === "einstellungen" && await sichtbar("[data-start-knopf]"), "Session gewählt: Einstellungen mit Start-Knopf");
 // Kopf antippen → Auswahl, nochmal → zurück zu den Einstellungen (ohne Auswahl)
 await page.click("[data-slot-kopf-name]"); await sleep(300);

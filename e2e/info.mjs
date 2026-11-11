@@ -12,8 +12,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const tafel = () => page.evaluate(() => {
   const t = document.querySelector('[data-info-blase]');
   if (!t) return null;
-  const r = t.getBoundingClientRect();
-  return { text: t.firstElementChild.textContent, oben: r.top < innerHeight / 2, top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+  const r = t.parentElement.getBoundingClientRect();
+  return { text: t.firstElementChild.textContent, oben: r.top < innerHeight / 2, top: r.top, bottom: r.bottom, left: r.left, right: r.right, h: innerHeight };
 });
 const mitte = sel => page.evaluate(sel => { const r = (typeof sel === "string" ? document.querySelector(sel) : null)?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; }, sel);
 const knopfMitte = text => page.evaluate(t => { const b = [...document.querySelectorAll("button")].find(x => x.textContent.trim() === t); const r = b?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; }, text);
@@ -47,9 +47,9 @@ const bereich = await knopfMitte("Bereich");
 await langDruecken(bereich);
 let t = await tafel();
 console.log("     Tafel:", JSON.stringify(t));
-const amFinger = (t, p) => t && p.x >= t.left - 2 && p.x <= t.right + 2 &&
-  (p.y > 150 ? Math.abs(t.bottom - (p.y - 14)) < 3 : Math.abs(t.top - (p.y + 14)) < 3);
-ok(t && /Einzelne Vokabeln|Bereich/.test(t.text) && amFinger(t, bereich), "Lang drücken: Sprechblase direkt am Finger, bleibt nach dem Loslassen");
+// 114: Tafel weg vom Finger – Finger unten → Tafel oben am Rand, sonst unten am Rand; der Finger liegt nicht unter der Tafel
+const amFinger = (t, p) => t && !(p.y >= t.top && p.y <= t.bottom) && (p.y > t.h / 2 ? Math.abs(t.top - 12) < 3 : Math.abs(t.bottom - (t.h - 12)) < 3);
+ok(t && /Einzelne Vokabeln|Bereich/.test(t.text) && amFinger(t, bereich), "Lang drücken: Sprechblase weg vom Finger (andere Bildschirmhälfte), bleibt nach dem Loslassen");
 const bereichAktiv = await page.evaluate(() => [...document.querySelectorAll(".aktiv")].some(b => b.textContent.trim() === "Bereich"));
 ok(!bereichAktiv, "Lang drücken führt die Aktion nicht aus");
 await page.mouse.click(400, 600); await sleep(300);
@@ -82,7 +82,7 @@ const g2 = await page.evaluate(() => { const b = [...document.querySelectorAll("
 await langDruecken(g2);
 t = await tafel();
 console.log("     Quiz-Tafel:", JSON.stringify(t), "Knopf y", Math.round(g2.y), "von", g2.h);
-ok(t && /richtig/i.test(t.text) && amFinger(t, g2), "Im Quiz: Erklärung erscheint direkt am Finger");
+ok(t && /richtig/i.test(t.text) && amFinger(t, g2), "Im Quiz: Erklärung erscheint weg vom Finger");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

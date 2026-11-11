@@ -77,12 +77,11 @@ async function vorbereiten(modus) {
 await vorbereiten("Karte");
 const plan1 = { gehen: [true, true, true], sehen: [true, false, true] };
 const gefragt1 = { gehen: 0, sehen: 0 };
-for (let schritt = 0; schritt < 6; schritt++) {
+// mehrere Spalten: aufdecken und „Weiter“ (Tipp ins Freie) ohne Bewertung, am Ende ein Urteil für die ganze Vokabel
+for (let schritt = 0; schritt < 2; schritt++) {
   const v = await aktuelleFrage();
-  const gewusst = plan1[v][gefragt1[v]++];
-  await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click());
-  await sleep(300);
-  await clickText(".karte-btn", gewusst ? "Gewusst" : "Nicht gewusst");
+  for (let s = 0; s < 3; s++) { gefragt1[v]++; await page.evaluate(() => document.querySelector("[data-frei-klick]")?.click()); await sleep(250); }
+  await clickText(".karte-btn", plan1[v].every(Boolean) ? "Gewusst" : "Nicht gewusst");
   await sleep(1300);
 }
 let sc = await scores();

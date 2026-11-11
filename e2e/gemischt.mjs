@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 import { artenMehrfach } from "./hilfen.mjs";
 
 // Gemischte Antwortarten: Karte, MC, Tastatur und Akzente angehakt → je Frage zufällig eine;
@@ -32,7 +33,7 @@ await page.evaluate(W => {
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Mix")).click()); await sleep(700);
+await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Mix")).click()); await sleep(700); await slotLaden(page);
 
 // Abfrage-Modus öffnen: Tastatur, MC und Akzente dazu anhaken
 await page.click("[data-abfragemodus]"); await sleep(300);

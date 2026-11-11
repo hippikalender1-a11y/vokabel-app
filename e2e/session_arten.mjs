@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 import { quizEinstellungen, neueEineSession, bereichZu } from "./hilfen.mjs";
 
 // Gespeicherte Session: eigener Paket-Fortschritt je Abfrageart (Übersetzung / Akzente), Zurücksetzen,
@@ -57,7 +58,8 @@ if (!(await text()).includes("Mein Paket")) await page.evaluate(() => document.q
 await sleep(300);
 ok(!(await text()).includes("Verlauf & Gespeichert") && await page.$("[data-kopf-info]"), "Aufgeklappt: keine Überschrift mehr, dafür die Info-Zeile");
 await clickText(".slot-chip", "Mein Paket");
-ok(await kopf() === "offen" && await page.$(".aktiv-kachel"), "Kurz nach dem Antippen: Auswahl noch offen, gewählte Kachel markiert");
+ok(await kopf() === "offen" && await page.$("[data-vorschau]") && await page.$("[data-slot-laden]"), "Nach dem Antippen: Auswahl noch offen, gewählte Kachel markiert, grüner Lade-Knopf");
+await slotLaden(page);
 await sleep(400);
 const t0 = await text();
 ok(await kopf() === "gruen" && !t0.includes("Verlauf & Gespeichert") && !t0.includes("📌 Gespeichert"),
@@ -147,7 +149,7 @@ ok(await kopf() === "gruen" && !(await text()).includes("Verlauf & Gespeichert")
 await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
 ok(await kopf() === "offen" && await page.$("[data-kopf-info]"), "Statistik: Antippen öffnet die Auswahl (mit Info-Zeile)");
-await clickText(".slot-chip", "Mein Paket"); await sleep(500);
+await clickText(".slot-chip", "Mein Paket"); await sleep(500); await slotLaden(page);
 await sleep(300);
 ok(await kopf() === "gruen" && !(await page.$(".slot-raster")), "Statistik: nach Auswahl wieder zu und grün");
 await page.screenshot({ path: "statistik_kopf.png", clip: { x: 0, y: 0, width: 820, height: 300 } });

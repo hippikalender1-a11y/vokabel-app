@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 import { zuListen, listeBereich } from "./hilfen.mjs";
 
 // Vokabeln in der App bearbeiten: Abfrage – Lang-Druck auf die Karte → nur die richtige Antwort (falsche bleiben);
@@ -28,7 +29,7 @@ const feld = (typ, wert) => page.evaluate((typ, wert) => { const i = document.qu
 const vok = id => page.evaluate(id => JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.find(v => v.id === id), id);
 const ladeSlot = async (name, modus) => {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-  await page.evaluate(n => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes(n)).click(), name); await sleep(700);
+  await page.evaluate(n => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes(n)).click(), name); await sleep(700); await slotLaden(page);
 };
 
 await page.goto(URL);

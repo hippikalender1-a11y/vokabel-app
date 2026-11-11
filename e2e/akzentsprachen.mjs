@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 
 // Akzente je Sprache (Einstellungen): Standard nur Französisch. Aus → keine Abfrageart „A“,
 // fehlende Akzente beim Tippen gelten als richtig; an → „A“ da, Akzente müssen stimmen
@@ -21,7 +22,7 @@ const tab = async name => { await page.evaluate(n => [...document.querySelectorA
 const arten = () => page.evaluate(() => [...document.querySelectorAll("[data-start-arten] [data-quiz-art]")].map(b => b.dataset.quizArt).join(","));
 const ladeSlot = async name => {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-  await page.evaluate(n => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes(n)).click(), name); await sleep(700);
+  await page.evaluate(n => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes(n)).click(), name); await sleep(700); await slotLaden(page);
 };
 // Tastatur-Runde: „esta“ statt „está“ tippen → richtig?
 const tippeOhneAkzent = async () => {

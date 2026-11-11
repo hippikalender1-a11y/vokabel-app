@@ -70,7 +70,7 @@ await page.click(`[data-ordner-id="${ordner.id}"]`); await sleep(300);
 ok(await page.$("[data-ordner-zurueck]") && /Kapitel A/.test(await page.evaluate(() => document.querySelector("[data-ordner-pfad]").textContent)), "Gruppe geöffnet: „← Alle Sessions › 📁 Kapitel A“");
 k = await kacheln();
 ok(k.join("|") === "Teil 1|Teil 2|Teil 3", `in der Gruppe: Teil 1–3 (${k.join(" | ")})`);
-await page.click(kachel("s2")); await sleep(900);
+await page.click(kachel("s2")); await sleep(300); await page.click("[data-slot-laden]"); await sleep(900);
 ok(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Teil 2", "Session aus der Gruppe geladen");
 await page.click("[data-slot-kopf-name]"); await sleep(300);
 ok(await page.$("[data-ordner-zurueck]"), "Auswahl wieder offen: noch in der Gruppe");

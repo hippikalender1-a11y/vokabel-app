@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 import { quizEinstellungen, bereichZu } from "./hilfen.mjs";
 
 // Abfragearten getrennt: Ü|D|A-Umschalter im Quiz-Tab, je Art eigene Einstellungen (bleiben beim Umschalten
@@ -55,7 +56,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
-await clickText(".slot-chip", "Alt gemischt"); await sleep(500);
+await clickText(".slot-chip", "Alt gemischt"); await sleep(500); await slotLaden(page);
 
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-start-arten] [data-quiz-art]")].map(b => b.querySelector("svg text")?.textContent.trim()).join("|")) === "Ü|D|A", "Umschalter Ü | D | A im Quiz-Tab (Start-Sektion)");
 if (process.env.SHOT) { await page.evaluate(() => { const b = document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv"); b.textContent = "Unregelmäßige Verben Kapitel 3 – Wiederholung (21 - 40)"; }); await page.screenshot({ path: "lang_shot.png", clip: { x: 0, y: 0, width: 390, height: 160 } }); }
@@ -104,7 +105,7 @@ ok(neu && neu.konfiguration.art === "diktat" && neu.konfiguration.arten.ueberset
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
-await clickText(".slot-chip", "Drei Arten"); await sleep(500);
+await clickText(".slot-chip", "Drei Arten"); await sleep(500); await slotLaden(page);
 ok(await art() === "diktat", "geladen: zuletzt gewählte Art (Diktat)");
 await waehleArt("uebersetzung");
 ok(await reihenfolge() === "Zufällig", "geladen → Ü: Zufällig gespeichert");
@@ -119,7 +120,7 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 const bk = await balken("Alt gemischt");
 console.log("     Kachel-Balken:", bk);
 ok(bk === "33" && !(await page.$(".raster-chip [data-mini-kreis]")), "Kachel: Balken Übersetzung 33 %, keine Kreise mehr");
-await clickText(".slot-chip", "Alt gemischt"); await sleep(500);
+await clickText(".slot-chip", "Alt gemischt"); await sleep(500); await slotLaden(page);
 const kr = await kreise("data-quiz-art");
 console.log("     Kreise:", kr);
 ok(kr === "uebersetzung:33,diktat:0,akzente:50", "Kreise: Ü 33 %, D 0 %, A 50 % (nur Wörter mit Akzent)");
@@ -131,14 +132,14 @@ ok(await page.evaluate(() => { const b = document.querySelector('[data-start-art
 // Statistik: Kreis A zeigt die Akzente-Statistik
 await clickText(".tab", "Statistik"); await sleep(300);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv, button.toggle-opt")?.click(); }); await sleep(300);
-await clickText(".slot-chip", "Alt gemischt"); await sleep(500);
+await clickText(".slot-chip", "Alt gemischt"); await sleep(500); await slotLaden(page);
 await sleep(400);
 ok(!(await page.$("[data-slot-kopf] [data-statistik-art]")), "Statistik: zugeklappte Kopfzeile ohne Kreise");
 for (let i = 0; i < 3 && (await page.evaluate(() => document.querySelector("[data-kreismitte]")?.textContent.replace("⇄", "").trim())) !== "Akzente"; i++) { await page.click("[data-kreismitte]"); await sleep(300); }
 ok(await page.evaluate(() => document.querySelector("[data-kreismitte]")?.textContent.replace("⇄", "").trim()) === "Akzente", "Statistik: Wechsel über die Mitte des Kreisdiagramms zu Akzente");
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
-await clickText(".slot-chip", "Drei Arten"); await sleep(500);
+await clickText(".slot-chip", "Drei Arten"); await sleep(500); await slotLaden(page);
 
 // Quiz in A: Akzent-Abfrage
 await waehleArt("akzente");

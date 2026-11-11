@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 import { stufeAuf, stufeZu, stufeWaehlen, stufeFenster } from "./hilfen.mjs";
 
 // Lernen: Stufe Lernen → Leicht → Schwer; „Lernen starten“ zeigt Wort (vorgelesen), nach der Pause die Übersetzung + Info,
@@ -55,7 +56,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Verben")).click()); await sleep(600);
+await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Verben")).click()); await sleep(600); await slotLaden(page);
 await page.click("[data-umfang]"); await sleep(200); await page.click('[data-umfang-wahl="5"]'); await sleep(300);
 
 // Stufe: Schwer → Lernen → Leicht → Schwer → Lernen

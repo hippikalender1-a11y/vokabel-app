@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 
 // Lernen in der Abfrageart Akzente: das Quiz danach nutzt die Regeln der unter „Lernen einstellen“ gewählten Stufe
 // (Standard „Ohne Hilfen“: Akzent-Buchstaben nicht hervorgehoben, kein Zähler); „Wie Leicht“: hervorgehoben
@@ -36,7 +37,7 @@ const lernenUndQuiz = async quizStufe => {
   await page.reload(); await sleep(500);
   await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-  await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Akzente")).click()); await sleep(600);
+  await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Akzente")).click()); await sleep(600); await slotLaden(page);
   const art = await page.evaluate(() => document.querySelector("[data-start-arten] [data-quiz-art].aktiv")?.dataset.quizArt);
   await page.click("[data-start-knopf]"); await sleep(250);
   await page.click("[data-lernen-pause]"); await sleep(100);

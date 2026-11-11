@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 import { quizEinstellungen, neueEineSession, listenZu, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -66,7 +67,7 @@ ok(z.start === "2" && z.reihenfolge === "Zufällig", "Preset: 2 Vokabeln, Zufäl
 
 // Neu
 await page.evaluate(() => window.scrollTo(0, 0));
-if (!(await page.evaluate(() => /📌 Gespeichert/i.test(document.body.innerText)))) await clickText(".toggle-opt.aktiv", "Französisch");
+if (!(await page.evaluate(() => /📌 Gespeichert/i.test(document.body.innerText)))) await clickText(".toggle-opt.aktiv", "Frz");
 await neueEineSession(page);
 await sleep(400);
 z = await zustand();
@@ -88,7 +89,7 @@ await sleep(300);
 const offen = await page.evaluate(() => /📌 Gespeichert/i.test(document.body.innerText));
 if (!offen) await page.evaluate(() => document.querySelector(".toggle-opt.aktiv")?.click());
 await sleep(300);
-await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Französisch"))?.click());
+await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Frz"))?.click()); await slotLaden(page);
 await sleep(600)   // Auswahl klappt kurz verzögert zu;
 let t = await page.evaluate(() => document.body.innerText);
 ok(/GESAMT\s*\n?\s*2/i.test(t), "Statistik: Preset zeigt 2 Vokabeln");

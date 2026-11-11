@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 import { quizEinstellungen, bereichZu } from "./hilfen.mjs";
 
 // Mehrere Antworten in einer Frage-Runde: immer E1, dann E2, dann E3 – egal in welcher Reihenfolge gewählt, egal welcher Modus
@@ -45,16 +46,20 @@ for (const modus of ["karte", "tippen"]) {
   await page.reload(); await sleep(500);
   await clickText(".tab", "Quiz"); await quizEinstellungen(page);
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
-  await clickText(".slot-chip", "Drei Antworten"); await sleep(500);
+  await clickText(".slot-chip", "Drei Antworten"); await sleep(500); await slotLaden(page);
   await clickText("[data-start-knopf]", "");
   await sleep(300);
   const folge = [await noch()];
   if (modus === "karte") {
-    for (let i = 0; i < 2; i++) {
-      await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(250);
-      await clickText(".karte-btn-ja", "Gewusst"); await sleep(1200);
-      folge.push(await noch());
-    }
+    // Karten: aufdecken, dann „Weiter“ – die nächste Spalte erscheint gleich aufgedeckt; Reihenfolge an den Spalten-Namen
+    const label = () => page.evaluate(() => document.querySelector("[data-karte-antwort] .quiz-label")?.textContent || "");
+    const namen = [];
+    await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(250);
+    namen.push(await label());
+    for (let i = 0; i < 2; i++) { await page.evaluate(() => document.querySelector("[data-karte-weiter]")?.click()); await sleep(250); namen.push(await label()); }
+    console.log("     karte:", JSON.stringify(namen));
+    ok(/Wort/.test(namen[0]) && /Plural/.test(namen[1]) && /Genus/.test(namen[2]), "karte: Abfrage in der Reihenfolge Wort → Plural → Genus");
+    continue;
   } else {
     for (const w of ["cheval", "chevaux"]) {
       await page.type(".quiz-aktionen input.inp, input.inp", w); await page.keyboard.press("Enter"); await sleep(600);

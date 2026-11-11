@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 import { quizEinstellungen, bereichZu } from "./hilfen.mjs";
 
 // Mehrere Antworten: jede Antwort (gewusst ✓ oder nicht ✗) bleibt oben untereinander stehen,
@@ -49,33 +50,32 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
-await clickText(".slot-chip", "Drei Antworten"); await sleep(500);
+await clickText(".slot-chip", "Drei Antworten"); await sleep(500); await slotLaden(page);
 await clickText("[data-start-knopf]", "");
 await sleep(300);
 
 ok(await frage() === "Pferd", "erste Frage: Pferd");
-await aufdecken(); await karte(false);
+const weiter = async () => { await page.click("[data-karte-weiter]"); await sleep(80); };
+await aufdecken(); await weiter();
 let st = await stapel();
-console.log("     nach Nicht gewusst:", JSON.stringify(st));
-ok(JSON.stringify(st) === '["falsch:cheval"]', "nicht gewusste Antwort bleibt stehen (✗) – sofort weiter, ohne Pause");
-ok(await page.$("[data-karte-verdeckt]"), "nächste Antwort (Plural) wird sofort abgefragt");
-await aufdecken(); await karte(true);
+console.log("     nach Weiter:", JSON.stringify(st));
+ok(JSON.stringify(st) === '["offen:cheval"]', "aufgedeckte Antwort bleibt stehen (ohne ✓/✗) – sofort weiter, ohne Pause");
+ok(!(await page.$("[data-karte-verdeckt]")) && await page.$("[data-karte-weiter]"), "nächste Antwort (Plural) erscheint gleich aufgedeckt");
+await weiter();
 st = await stapel();
-console.log("     nach Gewusst:", JSON.stringify(st));
-ok(JSON.stringify(st) === '["falsch:cheval","richtig:chevaux"]', "Antworten untereinander: ✗ cheval, ✓ chevaux");
-ok(await page.evaluate(() => document.querySelector("[data-vorig=falsch] .quiz-vorig-label").textContent.startsWith("✗")), "nicht gewusst mit ✗ markiert");
+ok(JSON.stringify(st) === '["offen:cheval","offen:chevaux"]', `Antworten untereinander: cheval, chevaux (${JSON.stringify(st)})`);
+ok(await page.$(".karte-btn-ja") && !(await page.$("[data-karte-weiter]")), "letzte Spalte: Gewusst / Nicht gewusst für die ganze Vokabel");
 
-// letzte Antwort: Pause vor der nächsten Vokabel, Antippen beendet sie
-await aufdecken(); await karte(true);
-ok(await frage() === "Pferd", "nach der letzten Antwort kurze Pause (noch Pferd)");
+// Urteil: Pause vor der nächsten Vokabel, Antippen beendet sie
+await karte(true);
+ok(await frage() === "Pferd", "nach dem Urteil kurze Pause (noch Pferd)");
 await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(100);
 ok(await frage() === "Tisch", `Antippen: sofort nächste Vokabel (${await frage()})`);
 ok((await stapel()).length === 0, "neue Vokabel: Liste leer");
 
-// Nicht gewusst bei letzter Antwort: Pause ebenfalls per Antippen beendbar
-for (const ja of [true, true]) { await aufdecken(); await karte(ja); }
-await aufdecken(); await karte(false);
-ok(await page.evaluate(() => document.querySelector(".antwort-box, .sektion")?.innerText.includes("Tisch")), "letzte Antwort nicht gewusst: kurze Pause");
+// Nicht gewusst: Pause ebenfalls per Antippen beendbar
+await aufdecken(); await weiter(); await weiter(); await karte(false);
+ok(await page.evaluate(() => document.querySelector(".antwort-box, .sektion")?.innerText.includes("Tisch")), "nicht gewusst: kurze Pause");
 await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(200);
 const t = await page.evaluate(() => document.querySelector(".topbar-title")?.textContent.trim());
 ok(!/^2 \/ 2$/.test(t || ""), `Antippen: sofort weiter (${t})`);

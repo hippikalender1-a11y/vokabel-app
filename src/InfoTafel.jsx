@@ -74,13 +74,14 @@ export default function InfoTafel() {
         setInfo({ text: el.getAttribute("data-info"), x: r.left + r.width / 2, y: r.top + r.height / 2 });
         return;
       }
-      if (info) { e.preventDefault(); e.stopPropagation(); setInfo(null); }
+      // offene Erklärung: schließen; ein Knopf darunter bleibt antippbar (z. B. weitere Art bei der Mehrfach-Auswahl), sonst nichts auslösen
+      if (info) { setInfo(null); if (!e.target.closest("button, a, input, select, textarea, label, [role=button]")) { e.preventDefault(); e.stopPropagation(); } }
     };
     document.addEventListener("click", klick, true);
     return () => document.removeEventListener("click", klick, true);
   }, [info, modus]);
 
-  // Sprechblase an der Fingerstelle: knapp darüber, bei zu wenig Platz oben knapp darunter.
+  // Sprechblase weg vom Finger: Finger in der unteren Hälfte → oben am Rand, sonst unten am Rand (der Bereich um den Finger bleibt frei).
   // Menü-Knöpfe (aktionen) schweben getrennt unter der Blase.
   // Auswahl-Tafel: unten angedockt, damit die Kacheln darüber antippbar bleiben
   const unten = !!info?.auswahl;
@@ -109,13 +110,13 @@ export default function InfoTafel() {
   // Menü: Aktionen des Elements, dazu „🎨 Farbe ändern“ (startet den Farbmodus an dieser Stelle)
   const menue = info ? [...(info.aktionen || []), ...(!modus && farbeImMenueAn() && info.x != null ? [{ label: "🎨 Farbe ändern", farbe: true, fn: () => farbeHier(info.x, info.y) }] : [])] : [];
   const mitMenue = menue.length > 0;
-  const darueber = info && info.y > (mitMenue ? 330 : 150) + (info?.regler ? 80 : 0);
+  const obenHin = info && info.y != null && info.y > window.innerHeight / 2;
   return (
     <>
       {info && (
         <div ref={tafelRef} data-auswahl-tafel={unten ? "" : undefined} style={{
           position: "fixed", left: links, width: breite, zIndex: 10001,
-          ...(unten ? { bottom: 12 } : { top: darueber ? info.y - 14 : info.y + 14, transform: darueber ? "translateY(-100%)" : "none" }),
+          ...(unten ? { bottom: 12 } : obenHin ? { top: 12 } : { bottom: 12 }), maxHeight: "calc(100vh - 24px)", overflowY: "auto",
           display: "flex", flexDirection: "column", gap: unten ? 8 : 10,
           fontFamily: "system-ui,sans-serif",
         }}>

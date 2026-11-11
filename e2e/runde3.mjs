@@ -164,7 +164,7 @@ const frage = await page.evaluate(() => document.querySelector("[data-karte-frag
 await page.evaluate(() => document.querySelector("[data-karte-frage]")?.click()); await sleep(300);
 const gesprochen = await page.evaluate(() => window.__gesprochen);
 ok(frage && gesprochen.some(t => t === frage), `Frage antippen liest vor („${frage}“ → ${JSON.stringify(gesprochen)})`);
-ok(!(await page.evaluate(() => [...document.querySelectorAll("[data-karte-frage] button:not([data-stimme-wechsel])")].some(b => /vorlesen/i.test(b.getAttribute("data-info") || "")))), "kein Lautsprecher-Knopf in der Frage-Karte (nur ggf. „🔁 Stimme“)");
+ok(!(await page.evaluate(() => [...document.querySelectorAll("[data-karte-frage] button:not([data-stimme-wechsel]):not([data-spalte-vorlesen])")].some(b => /vorlesen/i.test(b.getAttribute("data-info") || "")))), "kein Vorlese-Knopf in der Frage-Karte außer Stimme und Lautsprecher je Spalte");
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Beenden|✕/.test(b.textContent) && b.closest(".topbar"))?.click()); await sleep(300);
 await page.goto(URL); await sleep(800);
 

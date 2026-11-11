@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { slotLaden } from "./hilfen.mjs";
 
 // Abfrage: per Lang-Druck alles einzeln bearbeitbar – Frage, richtige Antwort, Info, schon beantwortete Spalten,
 // eigene falsche MC-Antworten (falsche aus anderen Vokabeln nicht); jeweils nur das eine Feld
@@ -31,7 +32,7 @@ const speichern = async () => { await page.click("[data-vokabel-speichern]"); aw
 const vok = id => page.evaluate(id => JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.find(v => v.id === id), id);
 const ladeSlot = async name => {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-  await page.evaluate(n => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes(n)).click(), name); await sleep(700);
+  await page.evaluate(n => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes(n)).click(), name); await sleep(700); await slotLaden(page);
 };
 const beenden = async () => {
   await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Beenden")?.click()); await sleep(400);
@@ -78,7 +79,7 @@ await feld("i1", "unregelmäßig\nwie aller"); await speichern();
 ok((await vok(1)).i1.wert === "unregelmäßig\nwie aller" && /wie aller/.test(await page.evaluate(() => document.querySelector("[data-karte-info]").textContent)), "Info gespeichert und sichtbar");
 
 await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click()); await sleep(300);
-await page.evaluate(() => [...document.querySelectorAll(".karte-btn")].find(b => b.textContent.includes("Gewusst")).click()); await sleep(500);
+await page.evaluate(() => document.querySelector("[data-karte-weiter]").click()); await sleep(500);
 ok(await page.$("[data-vorig]"), "zweite Spalte: erste Antwort steht als beantwortet darüber");
 await langDruck("[data-vorig]");
 ok(await menue() === "✎ Antwort bearbeiten", `beantwortete Spalte: „✎ Antwort bearbeiten“ (${await menue()})`);
