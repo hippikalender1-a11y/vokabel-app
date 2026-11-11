@@ -90,6 +90,16 @@ ok(await page.$("[data-sicherung-tage]") && !(await page.$("[data-sicherung]")) 
 await klick('[data-sicherung-tage-wahl="14"]');
 ok(!(await page.$("[data-sicherung-tage]")) && /Erinnerung=nach 14 T/.test(await zeile()) && await leuchtet('[data-einst-unter="erinnerung"]'), `Wahl: übernommen, zu, leuchtet (${await zeile()})`);
 
+// ── 97: Listen-Auswahl – Kopf wird grüner Bestätigen-Knopf, „Keine“ statt „Fertig“ ──
+await lang('[data-liste-id="l_a"]'); await aktion("☑ Auswählen"); await sleep(400);
+const wahlKopf = () => page.evaluate(() => document.querySelector('[data-einst-zeile="listen-wahl"] [data-wahl-fertig]')?.innerText.replace(/\s+/g, " ").trim() || null);
+ok(/☑ 1 ausgewählt/.test(await wahlKopf() || "") && /Bestätigen/.test(await wahlKopf() || "") && !(await page.$('[data-einst-unter="sicherung"]')), `Listen-Auswahl: Kopf „☑ 1 ausgewählt / ✓ Bestätigen“ statt Knopfzeile (${await wahlKopf()})`);
+ok(await page.$("[data-wahl-keine]") && !(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Fertig"))), "„Keine“ statt „Fertig“");
+await klick("[data-wahl-keine]");
+ok(/Nichts ausgewählt/.test(await wahlKopf() || ""), `„Keine“: nichts ausgewählt, Auswahl bleibt (${await wahlKopf()})`);
+await klick("[data-wahl-fertig]");
+ok(!(await wahlKopf()) && await page.$('[data-einst-unter="sicherung"]'), "Bestätigen: Auswahl beendet, Knopfzeile wieder da");
+
 await einstUnter(page, "lernen");
 ok(/Arten mischen=\d+ Arten \| Gelernt ab=Score \+2 \| Akzente=/.test(await zeile()) && !(await page.$("[data-antwort-gewichte]")), `Lernen: Knopfzeile, nichts offen (${await zeile()})`);
 await klick('[data-einst-unter="gelernt"]');

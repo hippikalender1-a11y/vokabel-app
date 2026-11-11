@@ -6157,6 +6157,31 @@ export default function VokabelApp() {
   // Listen-Übersicht als Raster wie bei den gespeicherten Konfigurationen: Lang-Druck → Menü
   // (Umbenennen, Duplizieren, Verschieben, Löschen), Lang-Druck und ziehen → verschieben; belegter Platz: tauschen.
   // Mit Sprachfilter rücken die sichtbaren Listen zusammen (Verschieben dann nur unter „Alle“).
+  // Aktionen für eine Listen-Auswahl (Lang-Druck auf eine Kachel der Auswahl oder auf den Auswahl-Kopf)
+  function listenWahlMenue(ids) {
+    return [
+      { label: `📤 Exportieren (${ids.length})`, behalten: true, fn: () => oeffneExport(ids) },
+      ...(sprachFilter !== "alle" ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl(ids); } }]),
+      { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "liste", ids }) },
+      { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) },
+    ];
+  }
+  // Listen-Auswahl: die Knopfzeile oben wird zum grünen Bestätigen-Knopf („☑ n ausgewählt / ✓ Bestätigen“) – antippen beendet die Auswahl
+  function listenWahlKopf() {
+    const n = listenWahl.length;
+    return (
+      <div className="quiz-zeile" data-einst-zeile="listen-wahl" style={{top: headerH, marginBottom:12}}>
+        <div className="quiz-zeile-zelle offen"><span className="quiz-zeile-label">Auswahl</span>
+          <button className={`quiz-zeile-knopf offen bestaetigen-knopf zweizeilig${blitzt("wahl")}`} data-wahl-fertig data-wahl-hinweis data-auswahl-durchlass
+            onClick={() => setListenWahl(null)}
+            {...tt(n ? "Auswahl beenden; lang drücken: Exportieren, Verschieben, Löschen" : "Auswahl beenden", n ? listenWahlMenue(listenWahl) : null, { langText: `${n} ausgewählt` })}>
+            <span className="zeile1" data-wahl-anzahl={n}>{exportKopiert ? "✓ In die Zwischenablage kopiert" : n ? `☑ ${n} ausgewählt` : "Nichts ausgewählt"}</span>
+            <span className="zeile2" data-bestaetigen>✓ Bestätigen</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
   function renderListenRaster() {
     const groesse = rasterGroesse(einstellungen, "listenRaster");
     const gefiltert = sprachFilter !== "alle";
@@ -6179,12 +6204,7 @@ export default function VokabelApp() {
     const menue = l => listenMenue(l);
     // Auswahl-Modus: Aktionen für die Auswahl (Lang-Druck auf eine nicht gewählte Liste nimmt sie dazu)
     const wahlMit = l => listenWahl.includes(l.id) ? listenWahl : [...listenWahl, l.id];
-    const wahlMenue = ids => [
-      { label: `📤 Exportieren (${ids.length})`, behalten: true, fn: () => oeffneExport(ids) },
-      ...(gefiltert ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl(ids); } }]),
-      { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "liste", ids }) },
-      { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) },
-    ];
+    const wahlMenue = listenWahlMenue;
     const wahlNamen = ids => ids.map(id => listenIndex.find(x => x.id === id)?.name).filter(Boolean).join(", ");
     // Auswahl-Tafel: eine Liste → ihr Menü, mehrere → Aktionen für die Auswahl
     const tafelInhalt = ids => {
@@ -6262,20 +6282,17 @@ export default function VokabelApp() {
     }
     return (<>
       <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:6, minHeight:22}}>
-        <span className={listenWahl ? `wahl-hinweis${blitzt("wahl")}` : undefined} style={{fontSize:"0.72rem", color:"var(--text2)"}} {...(listenWahl ? { "data-wahl-hinweis": true } : {})}
-          {...(listenWahl ? tt(`Auswahl: antippen wählt aus oder ab, lang drücken: Exportieren${gefiltert ? "" : ", Verschieben"}, Löschen`)
-            : sortModus ? tt("Verschieben: Listen antippen markiert (mehrere möglich), dann freien Platz antippen – oder direkt ziehen; auf einem belegten Platz rücken die Einträge auf die frei gewordenen Plätze")
+        <span style={{fontSize:"0.72rem", color:"var(--text2)"}}
+          {...(sortModus ? tt("Verschieben: Listen antippen markiert (mehrere möglich), dann freien Platz antippen – oder direkt ziehen; auf einem belegten Platz rücken die Einträge auf die frei gewordenen Plätze")
             : {})}>
-          {listenWahl
-            ? (exportKopiert ? "✓ In die Zwischenablage kopiert" : <b data-wahl-anzahl={listenWahl.length}>☑ {listenWahl.length} ausgewählt</b>)
-            : sortModus && listenAuswahl.length ? `${listenAuswahl.length} markiert` : ""}
+          {!listenWahl && sortModus && listenAuswahl.length ? `${listenAuswahl.length} markiert` : ""}
         </span>
         {listenWahl && (<span style={{marginLeft:"auto", display:"flex", gap:6, flexShrink:0}}>
           <button className="typ-btn" data-wahl-alle data-auswahl-durchlass style={{fontSize:"0.7rem", padding:"2px 8px"}}
             onClick={() => setListenWahl(a => [...a, ...sichtbareListen.map(x => x.id).filter(id => !a.includes(id))])}
             {...tt("Alle sichtbaren Listen auswählen")}>Alle</button>
-          <button className="typ-btn aktiv" data-wahl-fertig data-auswahl-durchlass style={{fontSize:"0.7rem", padding:"2px 8px"}} onClick={() => setListenWahl(null)}
-            {...tt("Auswahl beenden")}>Fertig</button>
+          <button className="typ-btn" data-wahl-keine data-auswahl-durchlass style={{fontSize:"0.7rem", padding:"2px 8px"}} onClick={() => setListenWahl([])}
+            {...tt("Alle abwählen")}>Keine</button>
         </span>)}
         {sortModus && (
           <button data-listen-fertig className="typ-btn aktiv" style={{fontSize:"0.7rem", padding:"2px 8px", marginLeft:"auto"}}
@@ -11215,7 +11232,7 @@ export default function VokabelApp() {
           <div className="sektion" data-einst-bereiche style={einstBereich === "info" && infoModus !== "uebersicht" ? {paddingBottom:'100dvh'} : {}}>
             {einstKopf("listen", "Listen", "Listen öffnen, importieren, sichern")}
             {einstBereich === "listen" && (<div className="einst-inhalt" data-einst-listen>
-            {einstZeile([
+            {listenWahl && !einstUnter ? listenWahlKopf() : einstZeile([
               { k: "sicherung", label: "Sicherung", text: letzteSicherung ? `💾 ${formatTag(letzteSicherung).slice(0, 6)}` : "💾 nie",
                 hilfe: `Alles sichern, wiederherstellen, Speicher schützen · ${letzteSicherung ? `zuletzt am ${formatTag(letzteSicherung)}` : "noch nie gesichert"}` },
               { k: "erinnerung", label: "Erinnerung", text: sicherungTage ? `nach ${sicherungTage} T` : "Aus", wahl: true,
