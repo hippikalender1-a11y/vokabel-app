@@ -106,30 +106,23 @@ export async function einstUnter(page, bereich, k) {
     await warte(250);
   }
 }
-// Antwort-Arten: Mehrfach-Auswahl (alle Spalten) mit der Art des Knopfs (data-modus-knopf="typ:art"):
-// lang drücken auf die Art, dann eine schon gewählte Art derselben Spalte antippen (die bleibt gewählt) – die gedrückte kommt dazu
+// Antwort-Arten: Mehrfach-Auswahl (alle Spalten) mit der Art des Knopfs (data-modus-knopf="typ:art"): lang drücken wählt sie sofort aus
 export async function artenMehrfach(page, knopf) {
-  const [typ] = knopf.split(":");
   await page.evaluate(s => { const el = document.querySelector(`[data-modus-knopf="${s}"]`); const r = el.getBoundingClientRect();
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }, knopf);
   await new Promise(r => setTimeout(r, 250));
-  await page.evaluate((s, t) => { const b = [...document.querySelectorAll(`[data-modus-knopf^="${t}:"].aktiv`)].find(x => x.dataset.modusKnopf !== s && !x.dataset.modusKnopf.endsWith(":akzent")); b?.click(); }, knopf, typ);
-  await new Promise(r => setTimeout(r, 250));
 }
-// Rolle „Antwort“ dazunehmen (Spalte nach Namen): in der Mehrfach-Auswahl antippen, sonst lang drücken und eine schon gewählte Antwort antippen
+// Rolle „Antwort“ dazunehmen (Spalte nach Namen): jede Spalte einzeln an/aus – antippen, falls noch keine Antwort
 export async function antwortDazu(page, name) {
-  const art = await page.evaluate(n => {
+  const ok = await page.evaluate(n => {
     const z = [...document.querySelectorAll("div")].find(d => d.style.padding === "10px 16px" && d.textContent.includes(n) && d.querySelector(".checkbox"));
     const b = z?.querySelector("[data-rolle-antwort]");
-    if (!b) return null;
-    if (b.classList.contains("mehrfach")) { b.click(); return "tippen"; }
-    const r = b.getBoundingClientRect();
-    b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 }));
-    return b.dataset.rolleAntwort;
+    if (!b) return false;
+    if (!b.classList.contains("antwort")) b.click();
+    return true;
   }, name);
-  if (!art) throw new Error(`Antwort-Knopf fehlt: ${name}`);
+  if (!ok) throw new Error(`Antwort-Knopf fehlt: ${name}`);
   await new Promise(r => setTimeout(r, 250));
-  if (art !== "tippen") { await page.evaluate(t => [...document.querySelectorAll(".spalten-rolle-btn.antwort[data-rolle-antwort]")].find(b => b.dataset.rolleAntwort !== t)?.click(), art); await new Promise(r => setTimeout(r, 250)); }
 }
 // Gespeicherte Session laden: Quiz-Tab, Session-Kopf auf, Kachel/Chip antippen, ggf. mit dem grünen Kopf-Knopf bestätigen
 export async function sessionLaden(page, name) {

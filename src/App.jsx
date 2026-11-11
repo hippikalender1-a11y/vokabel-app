@@ -2232,17 +2232,10 @@ export default function VokabelApp() {
   const [quizAusgewaehlt, setQuizAusgewaehlt] = useState(["D1", "E1"]);
   const [quizFrageTyp, setQuizFrageTyp] = useState("D1");
   const [quizAntwortTypenGeordnet, setQuizAntwortTypenGeordnet] = useState(["E1"]);
-  // Mehrfach-Auswahl (lang drücken, dann eine weitere Art bzw. Antwort antippen): Antwort-Arten aller Spalten bzw. Antwort-Rollen;
+  // Mehrfach-Auswahl der Antwort-Arten (lang drücken wählt die Art und startet sie, weiteres Antippen nimmt dazu/weg) – für alle Spalten;
   // „Bestätigen“ im Zeilen-Knopf übernimmt und klappt zu
   const [artenMehrfach, setArtenMehrfach] = useState(null);
   const [antwortMehrfach, setAntwortMehrfach] = useState(false);
-  const mehrfachKandidat = useRef(null);   // lang gedrückte Art/Antwort: { art: "art"|"rolle", typ, m, zeit } – das nächste Antippen einer anderen startet die Mehrfach-Auswahl
-  useEffect(() => {
-    const klick = e => { if (!e.target.closest?.("[data-modus-knopf],[data-rolle-antwort]")) mehrfachKandidat.current = null; };
-    document.addEventListener("click", klick, true);
-    return () => document.removeEventListener("click", klick, true);
-  }, []);
-  const kandidatGilt = (art, typ, m) => { const k = mehrfachKandidat.current; return !!k && k.art === art && Date.now() - k.zeit < 20000 && !(k.typ === typ && k.m === m) ? k : null; };
   const [quizInfoTypenSession, setQuizInfoTypenSession] = useState([]);
   const [quizSpalteModus, setQuizSpalteModus] = useState({ E1: "karte" });
   const [quizZeigeInfo, setQuizZeigeInfo] = useState({ i1: true, i2: true });
@@ -4289,30 +4282,11 @@ export default function VokabelApp() {
     } else if (rolle === "antwort") {
       const ist = quizAntwortTypenGeordnet.includes(typ);
       const modusNeu = v => quizArt === "akzente" ? "akzent" : (v && v !== "akzent" ? v : STANDARD_ANTWORT_MODUS);
-      const k = !antwortMehrfach && !mehrfach ? kandidatGilt("rolle", typ) : null;
-      if (k) {
-        // vorher eine andere Antwort lang gedrückt: Mehrfach-Auswahl – erst die gedrückte, dann die angetippte dazu
-        mehrfachKandidat.current = null;
-        setArtenMehrfach(null); setAntwortMehrfach(true);
-        const dazu = [k.typ, typ].filter(x => !quizAntwortTypenGeordnet.includes(x));
-        if (dazu.includes(quizFrageTyp)) setQuizFrageTyp("");
-        setQuizInfoTypenSession(p => p.filter(x => !dazu.includes(x)));
-        setQuizAntwortTypenGeordnet(p => [...p, ...dazu.filter(x => !p.includes(x))]);
-        setQuizSpalteModus(p => ({ ...p, ...Object.fromEntries(dazu.map(x => [x, modusNeu(p[x])])) }));
-        leuchte(`rolle:${typ}`, BLITZ_MS / 2);
-      } else if (!antwortMehrfach && !mehrfach) {
-        // Antippen: diese Spalte wird die einzige Antwort (die übrigen bleiben angehakt, ohne Rolle)
-        if (ist && quizAntwortTypenGeordnet.length === 1) return;
-        leuchte(`rolle:${typ}`, BLITZ_MS / 2);
-        if (quizFrageTyp === typ) setQuizFrageTyp("");
-        setQuizInfoTypenSession(p => p.filter(t => t !== typ));
-        setQuizAntwortTypenGeordnet([typ]);
-        if (!ist) setQuizSpalteModus(p => ({...p, [typ]: modusNeu(p[typ])}));
-      } else if (ist) {
-        // Mehrfach-Auswahl: weglassen – eine Antwort bleibt
+      // Jede Spalte einzeln an/aus – andere Antworten bleiben unberührt; die Reihenfolge des Antippens ergibt Antwort 1, 2 … (eine bleibt)
+      if (ist) {
         if (quizAntwortTypenGeordnet.length > 1) setQuizAntwortTypenGeordnet(p => p.filter(t => t !== typ));
       } else {
-        // Mehrfach-Auswahl: dazunehmen – die Reihenfolge des Antippens ergibt Antwort 1, 2 …
+        leuchte(`rolle:${typ}`, BLITZ_MS / 2);
         if (quizFrageTyp === typ) setQuizFrageTyp("");
         setQuizInfoTypenSession(p => p.filter(t => t !== typ));
         setQuizAntwortTypenGeordnet(p => [...p, typ]);
@@ -6565,21 +6539,6 @@ export default function VokabelApp() {
     const spalten = quizModus === "rotierend" ? (quizAusgewaehlt.length ? quizAusgewaehlt : [typ]) : quizAntwortTypenGeordnet.length ? quizAntwortTypenGeordnet : [typ];
     const waehle = m => {
       if (mehrfach || m === "akzent") { umschalten(m); return; }
-      // vorher eine andere Art lang gedrückt: Mehrfach-Auswahl (alle Spalten) mit beiden Arten
-      const k = kandidatGilt("art", typ, m);
-      if (k) {
-        mehrfachKandidat.current = null;
-        setAntwortMehrfach(false); setArtenMehrfach(true);
-        leuchte(`art:${typ}:${m}`, BLITZ_MS / 2);
-        setQuizSpalteModus(p => {
-          const neu = { ...p };
-          const dazu = (t2, x) => { const alt = modiVon(neu[t2]); if (alt.includes(x)) return; const l = MODI_REIHENFOLGE.filter(y => alt.includes(y) || y === x); neu[t2] = l.length === 1 ? l[0] : l; };
-          // Runden (Zuordnung, Memory) gelten für alle Spalten
-          [[k.typ, k.m], [typ, m]].forEach(([t2, x]) => istRunde(x) ? spalten.forEach(s => dazu(s, x)) : dazu(t2, x));
-          return neu;
-        });
-        return;
-      }
       const ohneAkz = aktiv.filter(x => x !== "akzent");
       if (ohneAkz.length === 1 && ohneAkz[0] === m) return;
       leuchte(`art:${typ}:${m}`, BLITZ_MS / 2);
@@ -6597,6 +6556,17 @@ export default function VokabelApp() {
         return neu;
       });
     };
+    // lang drücken: sofort Mehrfach-Auswahl (alle Spalten) mit dieser Art – jedes weitere Antippen nimmt eine Art dazu bzw. weg
+    const mehrfachMit = m => {
+      setAntwortMehrfach(false); setArtenMehrfach(true);
+      leuchte(`art:${typ}:${m}`, BLITZ_MS / 2);
+      setQuizSpalteModus(p => {
+        const neu = { ...p };
+        const dazu = t2 => { const alt = modiVon(neu[t2]); if (alt.includes(m)) return; const l = MODI_REIHENFOLGE.filter(y => alt.includes(y) || y === m); neu[t2] = l.length === 1 ? l[0] : l; };
+        if (istRunde(m)) spalten.forEach(dazu); else dazu(typ);   // Runden (Zuordnung, Memory) gelten für alle Spalten
+        return neu;
+      });
+    };
     const umschalten = m => setQuizSpalteModus(p => {
       if (istRunde(m)) {
         const an = !modiVon(p[typ]).includes(m); const neu = { ...p };
@@ -6611,8 +6581,8 @@ export default function VokabelApp() {
       return { ...p, [typ]: neu.length === 1 ? neu[0] : neu };
     });
     const knopf = ([m, label, text]) => (
-      <button key={m} {...tt(istRunde(m) || m === "akzent" ? text : `${text} – mehrere wählen: lang drücken, dann weitere Arten antippen (alle Spalten); je Frage eine davon nach der Gewichtung (Einstellungen › Lernen)`,
-          null, { beimLang: () => { if (!mehrfach && m !== "akzent") mehrfachKandidat.current = { art: "art", typ, m, zeit: Date.now() }; } })}
+      <button key={m} {...tt(istRunde(m) || m === "akzent" ? text : `${text} – mehrere wählen: lang drücken wählt sie aus, jedes weitere Antippen nimmt eine dazu (alle Spalten); je Frage eine davon nach der Gewichtung (Einstellungen › Lernen)`,
+          null, { beimLang: () => { if (!mehrfach && m !== "akzent") mehrfachMit(m); } })}
         data-modus-knopf={`${typ}:${m}`}
         className={`spalten-modus-btn${aktiv.includes(m) ? " aktiv" : ""}${blitzt(`art:${typ}:${m}`)}`} onClick={() => waehle(m)}>{label}</button>
     );
@@ -10343,9 +10313,8 @@ export default function VokabelApp() {
                                         onClick={() => toggleSpalteRolle(typ,"frage")}>Frage</button>
                                     )}
                                     {!isFrage && !isInfo && (quizArt !== "akzente" || typ.startsWith('E')) && (
-                                      <button {...tt(antwortMehrfach ? "Antwort dazunehmen bzw. weglassen – die Reihenfolge des Antippens ergibt Antwort 1, 2 …" : "Diese Spalte muss beantwortet werden – antippen: sie wird die einzige Antwort; mehrere: lang drücken, dann weitere Antworten antippen",
-                                          null, { beimLang: () => { if (!antwortMehrfach) mehrfachKandidat.current = { art: "rolle", typ, zeit: Date.now() }; } })}
-                                        className={`spalten-rolle-btn${isAntwort?" antwort":""}${antwortMehrfach ? " mehrfach" : ""}${blitzt(`rolle:${typ}`)}`} data-rolle-antwort={typ}
+                                      <button {...tt("Antwort an/aus – jede Spalte einzeln; die Reihenfolge des Antippens ergibt Antwort 1, 2 …")}
+                                        className={`spalten-rolle-btn${isAntwort?" antwort":""}${blitzt(`rolle:${typ}`)}`} data-rolle-antwort={typ}
                                         onClick={() => toggleSpalteRolle(typ,"antwort")}>
                                         {isAntwort ? `Antwort ${antwortNr+1}` : "Antwort"}
                                       </button>
