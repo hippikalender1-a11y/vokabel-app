@@ -2343,4 +2343,4 @@ Gesammelt nach Test (noch NICHT umsetzen, Nutzer sammelt):
   gilt für Frage, Antwort und frühere Spalten (z. B. „Hallo! / Grüß dich! / Servus!“, „was / were“).
 - 121 Zwei Schreibweisen in einer Zelle: „/“ = alle Teile verlangt (was / were, wie bisher), „;“ = Alternativen, eine genügt (Hallo!; Servus!).
   Bei „;“: getippte Alternative zählt, übrige als „auch: …“ zeigen; MC zeigt eine Alternative; Vorlesen liest alle (120). KI-Prompt fordert
-  „;“ für gleichwertige Möglichkeiten an; Import/Export unverändert. Offen (o): Spalten-Einstellung „/ bedeutet: alle | eine genügt“ für bestehende Listen?
+  „;“ für gleichwertige Möglichkeiten an; Import/Export unverändert. (o) Bestehende Listen bleiben unverändert, keine Spalten-Einstellung.
