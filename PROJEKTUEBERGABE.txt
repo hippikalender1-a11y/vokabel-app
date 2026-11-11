@@ -2396,4 +2396,5 @@ Gesammelt (noch NICHT umsetzen):
 - 129 Überschrift „📌 Gespeichert“ entfällt.
 - 130 Verlauf zuklappbar, standardmäßig zu (selten genutzt).
 - 131 Listen (Einstellungen › Listen) so analog wie möglich: Info-Fläche oben, „＋ Neue Liste“ volle Breite, Raster direkt darunter.
-  Offen (q): Info-Fläche ohne angetippte Session = geladene Session? (r): Listen antippen = auswählen + Info, öffnen über grünen Kopf-Knopf?
+  (q) Info-Fläche zeigt immer die Session, die oben im Kopf steht: ohne Antippen die geladene, nach Antippen sofort die angetippte (Kopf grün „‹Name› laden“).
+  (r) Listen: antippen wählt aus und zeigt die Info, geöffnet wird mit dem grünen Kopf-Knopf („‹Name› öffnen“).
