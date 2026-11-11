@@ -134,10 +134,12 @@ await clickText(".modal .btn-danger", "Löschen", true);
 pl = await plaetze();
 ok(!pl["Gamma (Kopie)"] && pl.Gamma === "0|0" && await page.evaluate(() => !localStorage.getItem("vokabel_liste_" + JSON.parse(localStorage.getItem("vokabel_listen_index")).find(l => l.name === "Gamma (Kopie)")?.id)), "gelöscht, andere bleiben auf ihren Plätzen");
 
-// Antippen öffnet die Liste
+// 131: Antippen wählt die Liste aus (Info oben, grüner Knopf „Gamma öffnen“), der grüne Knopf öffnet sie
 await page.evaluate(() => [...document.querySelectorAll("[data-liste-id]")].find(d => d.textContent.includes("Gamma")).click()); await sleep(300);
+ok(await page.$("[data-liste-info]") && /Gamma öffnen/.test(await page.evaluate(() => document.querySelector("[data-liste-oeffnen]")?.innerText || "")), "Antippen: Liste ausgewählt, Info oben, grüner Knopf „Gamma öffnen“");
+await page.click("[data-liste-oeffnen]"); await sleep(400);
 console.log("     geöffnet:", await page.evaluate(() => document.querySelector(".topbar")?.innerText.replace(/\s+/g, " ")));
-ok(await page.evaluate(() => /Gamma/.test(document.body.innerText) && !document.querySelector("[data-liste-id]")), "Antippen öffnet die Liste");
+ok(await page.evaluate(() => /Gamma/.test(document.body.innerText) && !document.querySelector("[data-liste-id]")), "grüner Knopf öffnet die Liste");
 await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(300);
 
 // Einstellungen → Listen: 2 Spalten

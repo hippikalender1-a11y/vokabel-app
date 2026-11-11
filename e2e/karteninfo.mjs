@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 
 // Karten-Modus: gelber Info-Kasten unter der Antwort (eingeklappt „Info“), Pinnadel hält ihn offen,
@@ -34,7 +35,7 @@ const schalter = () => page.evaluate(() => document.querySelector("[data-karte-i
 const einst = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"));
 const starte = async () => {
   await zuListen(page);
-  await clickText(".karte-zeile", "Verbes");
+  await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
   await clickText("button", "Quiz starten", true);
   await clickText("[data-start-knopf]", "");
   await sleep(300);

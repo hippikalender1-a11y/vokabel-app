@@ -137,3 +137,7 @@ export async function sessionLaden(page, name) {
 export async function slotLaden(page) {
   if (await page.$("[data-slot-laden]")) { await page.evaluate(() => document.querySelector("[data-slot-laden]").click()); await new Promise(r => setTimeout(r, 600)); }
 }
+// Einstellungen › Listen: angetippte Liste mit dem grünen Knopf („‹Name› öffnen“) öffnen
+export async function listeOeffnen(page) {
+  if (await page.$("[data-liste-oeffnen]")) { await page.evaluate(() => document.querySelector("[data-liste-oeffnen]").click()); await new Promise(r => setTimeout(r, 500)); }
+}

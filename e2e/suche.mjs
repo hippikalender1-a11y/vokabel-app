@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, neueEineSession, listenZu, listeBereich } from "./hilfen.mjs";
 
 // Vokabel-Suche: Einzelauswahl (Quiz + Statistik), Aufteilen (🔍 bei Von/Bis), Listenansicht.
@@ -111,7 +112,7 @@ await page.click("[data-aufteilen-abbrechen]"); await sleep(300);
 
 // ── Listenansicht ──
 await zuListen(page);
-await page.click('[data-liste-id="l_a"]'); await sleep(500);
+await page.click('[data-liste-id="l_a"]'); await sleep(500); await listeOeffnen(page);
 await listeBereich(page, "vokabeln");
 ok(await page.$('[data-suchleiste="liste"]'), "Listenansicht: Suchleiste über den Vokabeln");
 await tippe('[data-suchleiste="liste"] [data-such-feld]', "schule");

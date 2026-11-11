@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { slotLaden } from "./hilfen.mjs";
 import { zuListen, listeBereich } from "./hilfen.mjs";
 
@@ -110,7 +111,7 @@ ok(await page.$('[data-statistik-vok="l_fr__3"]'), "Statistik zeigt die neue Vok
 
 // ── Listen: Bearbeiten erhält den Lernstand ──
 await zuListen(page);
-await page.evaluate(() => [...document.querySelectorAll(".karte-zeile")].find(z => z.textContent.includes("Verbes")).click()); await sleep(400);
+await page.evaluate(() => [...document.querySelectorAll(".karte-zeile")].find(z => z.textContent.includes("Verbes")).click()); await sleep(400); await listeOeffnen(page);
 await listeBereich(page, "vokabeln");
 await page.evaluate(() => document.querySelector('button[title="Vokabel bearbeiten"], .btn-icon[title="Bearbeiten"]').click()); await sleep(300);
 ok(await page.evaluate(() => document.querySelector("[data-vokabel-editor]")?.dataset.vokabelEditor) === "voll", "Listen: Bearbeiten-Dialog wie bisher");

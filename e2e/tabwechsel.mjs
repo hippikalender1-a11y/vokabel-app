@@ -70,7 +70,7 @@ await sleep(300);
 st = await stand();
 console.log("     Quiz:", JSON.stringify(st));
 ok(st.kopf === "gruen" && st.name === "Paket Farben" && st.listen === "(ausgeblendet)", "Statistik → Quiz: Paket Farben übernommen (Listen-Auswahl ausgeblendet)");
-ok(await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl) === "3" && /Farben · 3 Vokabeln/.test(await page.evaluate(() => { document.querySelector("[data-slot-kopf-name]").click(); return new Promise(r => setTimeout(() => { const t = document.querySelector("[data-kopf-info]")?.textContent || ""; document.querySelector("[data-slot-kopf-name]").click(); r(t); }, 300)); })), "Quiz: 3 Vokabeln aus Farben (Info-Zeile „Farben · 3 Vokabeln“)");
+ok(await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl) === "3" && /Farben.*3 Vokabeln/.test(await page.evaluate(() => { document.querySelector("[data-slot-kopf-name]").click(); return new Promise(r => setTimeout(() => { const t = document.querySelector("[data-slot-info]")?.innerText.replace(/\s+/g, " ") || ""; document.querySelector("[data-slot-kopf-name]").click(); r(t); }, 300)); })), "Quiz: 3 Vokabeln aus Farben (Info-Zeile „Farben · 3 Vokabeln“)");
 
 // Statistik: „Neu“ (alle Listen, keine Konfiguration) → Quiz ohne Konfiguration, beide Listen
 // vorher im Quiz auf Diktat wechseln – ein neues Quiz beginnt trotzdem in Übersetzung
@@ -78,7 +78,7 @@ await page.evaluate(() => document.querySelector('[data-start-arten] [data-quiz-
 const artVorher = await page.evaluate(() => document.querySelector("[data-start-arten] [data-quiz-art].aktiv")?.dataset.quizArt);
 await clickText(".tab", "Statistik");
 await oeffneKopf();
-await page.evaluate(() => [...document.querySelectorAll(".slot-kopf-knoepfe .slot-chip")].find(b => b.textContent.trim() === "Neu").click());
+await page.evaluate(() => document.querySelector("[data-alle-listen]").click());
 await sleep(300);
 await clickText(".tab", "Quiz");
 await sleep(300);

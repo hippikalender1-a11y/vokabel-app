@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, listeBereich, neueEineSession } from "./hilfen.mjs";
 
 // Tabs Statistik | Quiz | Einstellungen; geöffnete Liste: Kopf = Namens-Knopf (antippen zurück, lang drücken Menü) mit Info-Zeile;
@@ -34,7 +35,7 @@ ok(await page.evaluate(() => document.querySelector(".tab.aktiv")?.textContent.t
 
 // ── 76: Kopf ──
 await zuListen(page);
-await page.click('[data-liste-id="l_a"]'); await sleep(500);
+await page.click('[data-liste-id="l_a"]'); await sleep(500); await listeOeffnen(page);
 const kopf = await page.evaluate(() => ({ name: document.querySelector("[data-liste-kopf-name]")?.textContent, info: document.querySelector("[data-liste-kopf-info]")?.textContent,
   stift: !!document.querySelector(".liste-detail-header .btn-ghost-filled"), pfeil: !!document.querySelector(".liste-detail-header .btn-icon") }));
 ok(kopf.name === "Unit 1" && /Englisch · 60 Vokabeln/.test(kopf.info) && !kopf.stift && !kopf.pfeil, `Kopf: Namens-Knopf mit Info-Zeile, ohne Pfeil und Stift (${JSON.stringify(kopf)})`);
@@ -92,7 +93,7 @@ ok(await page.$('[data-liste-id="l_b"]'), "Namens-Knopf antippen: zurück zur Li
 // ── 81: Mehrfach-Auswahl leuchtet ──
 await langDruck('[data-liste-id="l_a"]'); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "☑ Auswählen")?.click()); await sleep(900);
-await page.click('[data-liste-id="l_b"]'); await sleep(60);
+await page.click('[data-liste-id="l_b"]'); await sleep(60); await listeOeffnen(page);
 const lw = await page.evaluate(() => ({ kachel: document.querySelector('[data-liste-id="l_b"]').classList.contains("leuchten"), hinweis: document.querySelector("[data-wahl-hinweis]")?.classList.contains("leuchten"), text: document.querySelector("[data-wahl-hinweis]")?.textContent }));
 ok(lw.kachel && lw.hinweis && /2 ausgewählt/.test(lw.text), `Listen-Auswahl: Kachel und „☑ 2 ausgewählt“ leuchten (${JSON.stringify(lw)})`);
 

@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu, listeBereich } from "./hilfen.mjs";
 
 // Listenansicht: angezeigte Spalten wählbar (je Liste gemerkt); Statistik: Vokabelliste einklappbar
@@ -29,7 +30,7 @@ const text = () => page.evaluate(() => document.body.innerText);
 const knopf = typ => page.$eval(`[data-ansicht-spalte="${typ}"]`, b => b.classList.contains("aktiv"));
 const oeffneListe = async () => {
   await zuListen(page);
-  await clickText(".karte-zeile", "Verbes");
+  await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
   await listeBereich(page, "vokabeln");
 };
 

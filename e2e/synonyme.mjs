@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { sessionLaden, zuListen, listeBereich } from "./hilfen.mjs";
 
 // 117: Synonyme (Info-Spalte mit Art „Synonyme“, eigener Kasten, getipptes Synonym kein Fehler, Synonyme ergänzen)
@@ -70,7 +71,7 @@ await beenden();
 
 // ── 117: Spalten-Art und Synonyme ergänzen ──
 await zuListen(page);
-await page.evaluate(() => [...document.querySelectorAll(".karte-zeile")].find(e => e.textContent.includes("Words"))?.click()); await sleep(400);
+await page.evaluate(() => [...document.querySelectorAll(".karte-zeile")].find(e => e.textContent.includes("Words"))?.click()); await sleep(400); await listeOeffnen(page);
 await listeBereich(page, "spalten");
 ok(await page.evaluate(() => document.querySelector('[data-spalten-art="i1"] .toggle-opt.aktiv')?.dataset.spaltenArtWahl) === "synonyme", "Spalten: i1 „Synonyme“ (am Namen erkannt)");
 await klick("[data-synonyme-ergaenzen]");

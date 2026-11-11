@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu, antwortDazu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -51,7 +52,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await zuListen(page);
-await clickText(".karte-zeile", "Irregular Verbs");
+await clickText(".karte-zeile", "Irregular Verbs"); await listeOeffnen(page);
 await clickText("button", "Quiz starten", true);
 await page.click("[data-abfragemodus]"); await sleep(300);
 await zeile("Simple Past", "__check");

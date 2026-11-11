@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -41,7 +42,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await zuListen(page);
-await clickText(".karte-zeile", "Englisch Buch 5. Klasse");
+await clickText(".karte-zeile", "Englisch Buch 5. Klasse"); await listeOeffnen(page);
 await sleep(300);
 await page.evaluate(() => { const el = document.querySelector("[data-liste-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(300);
 await page.evaluate(() => document.querySelector('[data-info-aktion="📤 Exportieren"]').click()); await sleep(300);

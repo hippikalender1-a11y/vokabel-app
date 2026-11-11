@@ -18,7 +18,7 @@ async function einfuegen(text) {
   await page.evaluate(() => localStorage.clear());
   await page.reload(); await sleep(400);
   await zuListen(page); await sleep(200);
-  await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim().endsWith("Neu"))?.click()); await sleep(300);
+  await page.evaluate(() => document.querySelector("[data-liste-neu]")?.click()); await sleep(300);
   await page.evaluate(t => {
     const ta = document.querySelector("textarea");
     Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(ta, t);

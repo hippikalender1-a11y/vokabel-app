@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 
 // Vokabel erreicht mit „Gewusst“ die Gelernt-Schwelle → Karte leuchtet kurz hellgelb; andere nicht.
@@ -42,7 +43,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await zuListen(page);
-await clickText(".karte-zeile", "Verbes");
+await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
 await clickText("button", "Quiz starten", true);
 await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].find(b => b.textContent.trim() === "Listen-Nr.")?.click());
 await clickText("[data-start-knopf]", "");

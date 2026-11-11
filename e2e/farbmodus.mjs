@@ -68,12 +68,12 @@ const knopf = await page.evaluate(() => { const b = document.querySelector("[dat
 await rechtsklick(knopf.x, knopf.y);
 let zeilen = await feldZeilen();
 console.log("     Farbfeld Knopf:", zeilen.join(" | "));
-ok(zeilen.some(z => /^Start-Knopf · Hintergrund gilt auch für: Liste & Start$/.test(z)) && zeilen.some(z => /^Start-Knopf · Text groß gilt auch für: Schrift auf Liste & Start$/.test(z)),
-  "Start-Knopf: „Start-Knopf · Hintergrund“ (Liste & Start), „Start-Knopf · Text groß“ (Schrift auf Liste & Start)");
-const startVorher = await variable("start");
+ok(zeilen.some(z => /^Start-Knopf · Hintergrund gilt auch für: Auswahl \/ Bestätigen$/.test(z)) && zeilen.some(z => /^Start-Knopf · Text groß gilt auch für: Schrift auf Auswahl \/ Bestätigen$/.test(z)),
+  "Start-Knopf: „Start-Knopf · Hintergrund“ (Auswahl / Bestätigen), „Start-Knopf · Text groß“ (Schrift auf Auswahl / Bestätigen)");
+const startVorher = await variable("bestaetigen");
 ok(!(await page.$('[role="status"]')), "keine Erklärung/kein Menü im Farbmodus");
 // Farbkreis: groß, Regler Helligkeit/Sättigung, live, Abbrechen
-await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="start"]').click()); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="bestaetigen"]').click()); await sleep(300);
 const kreisGr = await page.evaluate(() => { const c = document.querySelector("[data-farbrad-kreis]"); return c ? Math.round(c.getBoundingClientRect().width) : 0; });
 ok(kreisGr >= 130 && kreisGr <= 175 && await page.$("[data-farbrad-hell]") && await page.$("[data-farbrad-saett]"), `kompakter Farbkreis (${kreisGr} px) mit Reglern Helligkeit und Sättigung`);
 const lage = await page.evaluate(() => { const f = document.querySelector("[data-farbrad]").getBoundingClientRect();
@@ -84,19 +84,19 @@ ok(lage.seite === "oben" && lage.frei && lage.hoehe < 330, "Farbwähler als Leis
 ok(!lage.feld, "Farbfeld „Farben hier“ ausgeblendet, solange der Farbwähler offen ist");
 const kr = await page.evaluate(() => { const r = document.querySelector("[data-farbrad-kreis]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, r: r.width / 2 }; });
 await page.mouse.move(kr.x + kr.r * 0.9, kr.y); await page.mouse.down(); await page.mouse.move(kr.x + kr.r * 0.9, kr.y + 2); await sleep(150);
-const amRand = await variable("start");
+const amRand = await variable("bestaetigen");
 await page.mouse.move(kr.x + 2, kr.y + 1); await sleep(150);
-const kreisMitte = await variable("start");
+const kreisMitte = await variable("bestaetigen");
 await page.mouse.up();
 console.log("     Kreis Rand/Mitte:", amRand, kreisMitte);
 const satt = h => { const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); return (Math.max(r, g, b) - Math.min(r, g, b)) / Math.max(1, r, g, b); };
 ok(amRand !== startVorher && satt(amRand) > 0.8 && satt(kreisMitte) < 0.1, "Ziehen im Kreis: App färbt sich live um, außen kräftig, Mitte kaum gesättigt");
 await page.click("[data-farbrad-abbrechen]"); await sleep(300);
-ok(await variable("start") === startVorher && !(await page.$("[data-farbrad]")), "Abbrechen: alte Farbe wieder da");
+ok(await variable("bestaetigen") === startVorher && !(await page.$("[data-farbrad]")), "Abbrechen: alte Farbe wieder da");
 ok(await page.$("[data-farbfeld]"), "danach ist das Farbfeld wieder da");
-await setzeFarbe("start", "#aa0000");
-ok(await variable("start") === "#aa0000", "Anwenden: Farbe „Liste & Start“ geändert");
-await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="start"]').click()); await sleep(300);
+await setzeFarbe("bestaetigen", "#aa0000");
+ok(await variable("bestaetigen") === "#aa0000", "Anwenden: Farbe „Auswahl / Bestätigen“ geändert");
+await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="bestaetigen"]').click()); await sleep(300);
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-farbrad-verlauf] button")].map(b => b.title).join()) === "#aa0000", "Verlauf: zuletzt verwendete Farbe");
 if (process.env.SHOT) await page.screenshot({ path: "farbrad_shot.png" });
 await page.click("[data-farbrad-abbrechen]"); await sleep(200);

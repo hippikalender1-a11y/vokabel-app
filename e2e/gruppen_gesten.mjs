@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen } from "./hilfen.mjs";
 
 // Gesten im Session- und Listen-Raster: Lang-Druck öffnet die Auswahl-Tafel (unten, bleibt offen; weitere antippen
@@ -99,7 +100,7 @@ let h = await mitte(kachel("s1"));
 await finger("touchStart", h.x, h.y); await sleep(80);
 for (let i = 1; i <= 4; i++) { await finger("touchMove", h.x, h.y + i * 15); await sleep(30); }
 await finger("touchEnd"); await sleep(400);
-ok(!(await tafel()) && await gewaehlt() === "" && !(await page.$("[data-wahl-fertig]")) && !(await page.$(".slot-kopf-knoepfe .typ-btn.aktiv")), "sofort gewischt: weder verschoben noch ausgewählt");
+ok(!(await tafel()) && await gewaehlt() === "" && !(await page.$("[data-wahl-fertig]")) && !(await page.$("[data-slot-fertig]")), "sofort gewischt: weder verschoben noch ausgewählt");
 // lang halten und über weitere Kacheln fahren: auswählen
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 h = await mitte(kachel("s1")); const h3 = await mitte(kachel("s3"));
@@ -111,7 +112,7 @@ for (let i = 1; i <= 8; i++) { await finger("touchMove", h.x, h.y + (h3.y - h.y)
 await finger("touchEnd"); await sleep(400);
 ok(await gewaehlt() === "s1,s2,s3", `lang halten + fahren: Teil 1–3 ausgewählt (${await gewaehlt()})`);
 ok(/^3 ausgewählt/.test(await tafel() || ""), "danach Auswahl-Tafel „3 ausgewählt“");
-ok(!(await page.$(".slot-kopf-knoepfe .typ-btn.aktiv")) || await page.$("[data-wahl-fertig]"), "kein Verschieben-Modus");
+ok(!(await page.$("[data-slot-fertig]")) || await page.$("[data-wahl-fertig]"), "kein Verschieben-Modus");
 await page.click("[data-info-blase]"); await sleep(300);
 // lang halten, loslassen: Tafel mit dem Menü der Kachel
 await finger("touchStart", h.x, h.y); await sleep(1050); await finger("touchEnd"); await sleep(400);
@@ -134,7 +135,7 @@ for (let i = 1; i <= 8; i++) { await finger("touchMove", h.x + (rechts.x - h.x) 
 await finger("touchEnd"); await sleep(400);
 let d = await slots();
 ok(["s1", "s2"].every(id => d.gespeichert.find(x => x.id === id).platz.s === 1), `ganze Auswahl verschoben (Teil 1: ${JSON.stringify(d.gespeichert.find(x => x.id === "s1").platz)}, Teil 2: ${JSON.stringify(d.gespeichert.find(x => x.id === "s2").platz)})`);
-ok(!(await tafel()) && !(await page.$(".slot-kopf-knoepfe .typ-btn.aktiv")), "danach: Tafel zu, kein Verschieben-Modus");
+ok(!(await tafel()) && !(await page.$("[data-slot-fertig]")), "danach: Tafel zu, kein Verschieben-Modus");
 // zurück in die linke Spalte (für die folgenden Schritte)
 await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("vokabel_slots")); d.gespeichert.forEach(x => { if (x.id === "s1") x.platz = { z: 0, s: 0 }; if (x.id === "s2") x.platz = { z: 1, s: 0 }; }); localStorage.setItem("vokabel_slots", JSON.stringify(d)); });
 await page.reload(); await page.waitForSelector(kachel("s3")); await sleep(1200);
@@ -157,7 +158,7 @@ let ring = await ziehe(kachel("s3"), kachel("s4"), 0);
 d = await slots();
 ok(ring === "laeuft", "beim Darüberziehen läuft der Ring");
 ok(!(d.ordner || []).length && d.gespeichert.find(x => x.id === "s3").platz.z === 3, "schnell losgelassen: getauscht, keine Gruppe");
-ok(!(await page.$(".slot-kopf-knoepfe .typ-btn.aktiv")), "nach dem Ablegen ist der Verschieben-Modus wieder aus");
+ok(!(await page.$("[data-slot-fertig]")), "nach dem Ablegen ist der Verschieben-Modus wieder aus");
 ring = await ziehe(kachel("s3"), kachel("s4"), 2800);
 d = await slots();
 const g = (d.ordner || [])[0];
@@ -190,7 +191,7 @@ await zuListen(page);
 await kontext('[data-liste-id="l_a"]');
 ok((await tafel())?.startsWith("Unité 1") && (await menue()).includes("▦ In Sessions aufteilen"), "Listen: Lang-Druck → Tafel mit dem Listen-Menü");
 await page.evaluate(() => document.querySelector('[data-liste-id="l_c"]').scrollIntoView({ block: "center" })); await sleep(300);   // Kachel über die Tafel scrollen
-await page.click('[data-liste-id="l_c"]'); await sleep(300);
+await page.click('[data-liste-id="l_c"]'); await sleep(300); await listeOeffnen(page);
 ok(/^2 ausgewählt/.test(await tafel() || "") && (await menue()).includes("📤 Exportieren (2)"), `Listen: Antippen wählt mit aus (${await tafel()})`);
 ok(await page.evaluate(() => !document.querySelector("[data-vokabel-liste], .liste-detail-header")), "Listen: Antippen öffnet die Liste nicht");
 await page.click("[data-info-blase]"); await sleep(300);

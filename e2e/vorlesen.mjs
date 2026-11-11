@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu, listeBereich } from "./hilfen.mjs";
 
 // Vorlesen: jede Spalte mit einer Stimme ihrer Sprache (Deutsch nie mit französischer Stimme).
@@ -49,7 +50,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await zuListen(page);
-await clickText(".karte-zeile", "Verbes");
+await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
 await clickText("button", "Quiz starten", true);
 await clickText("[data-start-knopf]", "");
 await sleep(600);
@@ -58,7 +59,7 @@ await sleep(600);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Beenden")?.click()); await sleep(400);
 if (await page.evaluate(() => /Zur Übersicht/.test(document.body.innerText))) await clickText("button", "Zur Übersicht");
 await zuListen(page);
-await clickText(".karte-zeile", "Verbes");
+await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
 await listeBereich(page, "vokabeln");
 await sleep(300);
 await page.evaluate(() => document.querySelector('button[title="Vorlesen"]')?.click()); await sleep(150);

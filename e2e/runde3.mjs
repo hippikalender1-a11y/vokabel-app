@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, neueEineSession, listenZu, quizEinstellungen } from "./hilfen.mjs";
 
 // Runde 3: Speichern-Fenster (Knöpfe oben, Eingabetaste), Vokabelbereich einer gespeicherten Session ändern (rot,
@@ -184,7 +185,7 @@ await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b
 await lang("[data-liste-id]"); await aktion("📤 Exportieren");
 ok(await page.$("[data-kopier-export]"), "zuletzt gewählte Art (Kopieren) ist beim nächsten Mal vorausgewählt");
 await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b => b.textContent.trim() === "Abbrechen")?.click()); await sleep(300);
-await page.click("[data-liste-id]"); await sleep(500);
+await page.click("[data-liste-id]"); await sleep(300); await listeOeffnen(page); await sleep(200);
 ok(!(await page.$(".liste-detail-header .btn-toggle")) && !(await page.$("[data-klammern-werkzeug]")), "geöffnete Liste: keine Aktionszeile, kein Pfeil-Knopf");
 await lang("[data-liste-kopf-name]");
 ak = await aktionen();

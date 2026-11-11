@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu, listeBereich } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -80,7 +81,7 @@ ok(t.includes("🇬🇧 Englisch Unit 1") && t.includes("🇫🇷 Unité 1"), "F
 await clickText(".topbar button", "▾");
 t = await bodyText();
 ok(t.includes("Alle Sprachen") && t.includes("Französisch") && t.includes("Englisch"), "Sprachmenü geöffnet");
-await clickText(".karte-zeile", "Französisch");
+await clickText(".karte-zeile", "Französisch"); await listeOeffnen(page);
 t = await bodyText();
 ok(t.includes("Unité 1") && !t.includes("Englisch Unit 1"), "Filter Französisch: nur französische Liste");
 const einst = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen")).sprache);
@@ -104,7 +105,7 @@ await page.goto(URL); await sleep(500);
 
 // 4) Vorlesen in Liste-Detail mit fr-FR
 await zuListen(page);
-await clickText(".karte-zeile", "Unité 1");
+await clickText(".karte-zeile", "Unité 1"); await listeOeffnen(page);
 await listeBereich(page, "vokabeln");
 t = await bodyText();
 ok(await page.$('[data-liste-bereich="sprache"]'), "Sprachauswahl in Liste-Detail");
@@ -141,7 +142,7 @@ await clickText(".typ-btn", "Französisch");
 
 // 6) Zurück auf Alle
 await clickText(".topbar button", "▾");
-await clickText(".karte-zeile", "Alle Sprachen");
+await clickText(".karte-zeile", "Alle Sprachen"); await listeOeffnen(page);
 await zuListen(page);
 t = await bodyText();
 ok(t.includes("Englisch Unit 1") && t.includes("Unité 1"), "Alle Sprachen: beide Listen");

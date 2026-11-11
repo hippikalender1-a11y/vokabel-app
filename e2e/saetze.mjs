@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -29,7 +30,7 @@ await page.evaluate(async () => {
 });
 await page.reload(); await sleep(700);
 await zuListen(page);
-await page.click('[data-liste-id="l_a"]'); await sleep(600);
+await page.click('[data-liste-id="l_a"]'); await sleep(600); await listeOeffnen(page);
 await listeBereich(page, "saetze");
 ok(/0 von 4/.test(await page.evaluate(() => document.querySelector("[data-liste-saetze-anzahl]")?.textContent)), "Liste: 💬 0 von 4 Vokabeln");
 await page.click("[data-saetze-ergaenzen]"); await sleep(400);
@@ -50,7 +51,7 @@ await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b
 ok(/4 von 4/.test(await page.evaluate(() => document.querySelector("[data-liste-saetze-anzahl]")?.textContent)), "Liste: 💬 4 von 4");
 await page.reload(); await sleep(800);
 await zuListen(page);
-await page.click('[data-liste-id="l_a"]'); await sleep(800);
+await page.click('[data-liste-id="l_a"]'); await sleep(800); await listeOeffnen(page);
 await listeBereich(page, "saetze");
 ok(/4 von 4/.test(await page.evaluate(() => document.querySelector("[data-liste-saetze-anzahl]")?.textContent)), "nach Neuladen: Sätze bleiben (IndexedDB)");
 await listeBereich(page, "saetze");
@@ -61,7 +62,7 @@ ok(!(await page.evaluate(() => Object.keys(localStorage).some(k => (localStorage
 await page.evaluate(async () => { await new Promise(r => { const d = indexedDB.deleteDatabase("vokabel_saetze"); d.onsuccess = d.onerror = d.onblocked = () => r(); }); });
 await page.reload(); await sleep(800);
 await zuListen(page);
-await page.click('[data-liste-id="l_a"]'); await sleep(600);
+await page.click('[data-liste-id="l_a"]'); await sleep(600); await listeOeffnen(page);
 await listeBereich(page, "saetze");
 await page.click("[data-saetze-ergaenzen]"); await sleep(400);
 await page.click('[data-satz-weg-wahl="datei"]'); await sleep(200);

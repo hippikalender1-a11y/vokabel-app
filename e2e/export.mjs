@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 import fs from "node:fs";
 import path from "node:path";
@@ -118,7 +119,7 @@ ok(jsonEigen && JSON.parse(fs.readFileSync(jsonEigen, "utf8")).length === 3, "Da
 // ── Export 3: einzelne französische Liste als TXT ──
 await page.reload(); await sleep(500);
 await zuListen(page);
-await clickText(".karte-zeile", "Unité 1");
+await clickText(".karte-zeile", "Unité 1"); await listeOeffnen(page);
 await sleep(300);
 vorher = fs.readdirSync(DL);
 await page.evaluate(() => { const el = document.querySelector("[data-liste-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(300);

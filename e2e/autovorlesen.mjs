@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 
 // Auto-Vorlesen in der Kartenabfrage: 🔊 in der Kopfzeile schaltet es während der Abfrage an/aus (dauerhaft gespeichert);
@@ -51,7 +52,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await zuListen(page);
-await clickText(".karte-zeile", "Verbes");
+await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
 await clickText("button", "Quiz starten", true);
 await clickText("[data-start-knopf]", "");
 await sleep(500);

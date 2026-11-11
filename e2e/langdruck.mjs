@@ -57,8 +57,8 @@ console.log("     Erklärung:", blase);
 ok(blase === "Unregelmäßige Verben Kapitel 3 – Wiederholung", "Lang-Druck zeigt den vollen Namen");
 ok(getrennt, "Menü-Knöpfe schweben getrennt von der Erklärung");
 // Auswahl-Tafel: Tipp daneben bewirkt nichts, Tipp auf die Tafel schließt
-{ const k = await page.evaluate(() => { const r = document.querySelector("[data-kopf-info]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
-  await page.touchscreen.tap(k.x, k.y); await sleep(300); }   // eindeutig neben den Kacheln (Info-Zeile der Session-Leiste; der Name ist in der Auswahl der Bestätigen-Knopf)
+{ const k = await page.evaluate(() => { const r = document.querySelector("[data-slot-info-name]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  await page.touchscreen.tap(k.x, k.y); await sleep(300); }   // eindeutig neben den Kacheln (Name in der Info-Fläche)
 ok(await page.$('[role="status"]') && await page.$("[data-info-menue]"), "Tipp daneben: Auswahl-Tafel bleibt offen");
 const tb = await page.evaluate(() => { const r = document.querySelector("[data-info-blase]").getBoundingClientRect(); return { x: r.x + 20, y: r.y + 10 }; });
 await page.touchscreen.tap(tb.x, tb.y); await sleep(300);
@@ -74,7 +74,7 @@ await page.touchscreen.touchMove(p.x + 15, p.y + 20);   // sofort weiter: nach 0
 ok(angehoben, "Nach kurzem Halten: Kachel angehoben, kein Menü");
 await sleep(150);
 ok(!(await page.$('[role="status"]')) && !(await page.$("[data-info-menue]")) && !(await page.$("[data-angehoben]")), "Sobald gezogen wird: keine Erklärung, kein Menü")
-ok(await page.evaluate(() => /Fertig/.test(document.querySelector(".slot-kopf-knoepfe")?.innerText || "")), "… und Verschieben-Modus an");
+ok(await page.evaluate(() => /Fertig/.test(document.querySelector("[data-slot-fertig]")?.innerText || "")), "… und Verschieben-Modus an");
 const ziel = await mitte("2|1");
 for (let i = 1; i <= 8; i++) { await page.touchscreen.touchMove(p.x + (ziel.x - p.x) * i / 8, p.y + (ziel.y - p.y) * i / 8); await sleep(40); }
 await page.touchscreen.touchEnd();
@@ -84,7 +84,7 @@ console.log("     Plätze:", JSON.stringify(pl));
 ok(pl["Unregelmäßige Verben Kapitel 3 – Wiederholung"] === "2|1", "Lang-Druck + Ziehen: Eintrag auf den neuen Platz verschoben");
 
 // 3) Fenster oben (Umbenennen über das Menü)
-ok(!(await page.evaluate(() => /Fertig/.test(document.querySelector(".slot-kopf-knoepfe")?.innerText || ""))), "nach dem Ablegen ist der Verschieben-Modus wieder aus");
+ok(!(await page.evaluate(() => /Fertig/.test(document.querySelector("[data-slot-fertig]")?.innerText || ""))), "nach dem Ablegen ist der Verschieben-Modus wieder aus");
 p = await mitte("0|1");
 await page.touchscreen.touchStart(p.x, p.y);
 await sleep(1000);

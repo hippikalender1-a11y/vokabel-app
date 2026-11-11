@@ -53,6 +53,7 @@ const seed = async () => {
 const statistikInfo = async () => {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv")?.click(); });
   await sleep(300);
+  await page.evaluate(() => document.querySelector('[data-verlauf-kopf="zu"]')?.click()); await sleep(200);   // Verlauf ist anfangs zu
   return statistikInfoRoh();
 };
 const statistikInfoRoh = () => page.evaluate(() => ({

@@ -108,9 +108,10 @@ const kopfName = await page.evaluate(() => document.querySelector("[data-slot-ko
 ok(kopfName === "Multiquiz", `Kopfzeile: „Multiquiz“ (${kopfName})`);
 ok(await page.evaluate(() => document.querySelectorAll("[data-start-arten] [data-quiz-art]").length) >= 1, "Kreise der zusammengesetzten Auswahl");
 await oeffneKopf(); await sleep(300);
-const info = await page.evaluate(() => document.querySelector("[data-kopf-info]")?.textContent.trim());
+const info = await page.evaluate(() => document.querySelector("[data-slot-info]")?.innerText.replace(/\s+/g, " ").trim());
 console.log("     Info:", info);
-ok(info === "🧩 Teil A + Teil B · 5 Vokabeln", "Info-Zeile: Teile + Anzahl");
+ok(/Teil A \+ Teil B/.test(info) && /5 Vokabeln/.test(info), "Info-Fläche: Teile + Anzahl");
+await page.evaluate(() => document.querySelector('[data-verlauf-kopf="zu"]')?.click()); await sleep(200);
 const sl = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")));
 ok(sl.verlauf.length === 2 && sl.verlauf.every(v => v.multi?.map(t => t.name).join("+") === "Teil A+Teil B"), "je Multiquiz ein Verlauf-Eintrag mit den Teilen („Fertig“ + „Multiquiz starten“), die Runde legt keinen weiteren an");
 ok(await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].some(c => c.textContent.includes("🧩"))), "Verlauf-Chip mit 🧩");

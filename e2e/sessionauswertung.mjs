@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu, paketGroesse } from "./hilfen.mjs";
 
 // Session-Auswertung über mehrere Pakete: Balken Start/Ende, Lernfortschritt, neu gelernt, Zusatzdaten;
@@ -56,7 +57,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await zuListen(page);
-await clickText(".karte-zeile", "Verbes");
+await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
 await clickText("button", "Quiz starten", true);
 // Reihenfolge Listen-Nr., keine Score-Grenze → alle 12 in der Session, Pakete zu 10
 await page.click("[data-reihenfolge]"); await sleep(300);

@@ -53,12 +53,13 @@ await page.click('[data-umfang-wahl="5"]'); await sleep(500);
 
 // Start-Knopf: Abfrageart und Farbe
 ok(await startText() === "Übersetzung starten", `Start-Knopf „Übersetzung starten“ (${await startText()})`);
-const farben = await page.evaluate(() => { const v = n => getComputedStyle(document.documentElement).getPropertyValue("--" + n).trim(); return { haupt: v("haupt"), start: v("start"), aufStart: v("auf-start") }; });
+const farben = await page.evaluate(() => { const v = n => getComputedStyle(document.documentElement).getPropertyValue("--" + n).trim(); return { haupt: v("haupt"), start: v("start"), aufStart: v("auf-start"), gruen: v("bestaetigen") }; });
 console.log("     Farben:", JSON.stringify(farben));
 const startBg = await bg("[data-start-knopf]"), nameBg = await bg("[data-slot-kopf-name]");
 const andererBg = await page.evaluate(() => { const b = [...document.querySelectorAll(".btn-primary")].find(x => !x.matches("[data-start-knopf]") && x.offsetParent); return b ? getComputedStyle(b).backgroundColor : null; });
 console.log("     Start:", startBg, " Liste:", nameBg, " anderer Knopf:", andererBg);
-ok(farben.start && farben.start !== farben.haupt && startBg === nameBg, "Liste oben und Start-Knopf in der eigenen Farbe „Liste & Start“ (heller als die Hauptfarbe)");
+const gruenBg = await page.evaluate(f => { const d = document.createElement("div"); d.style.background = f; document.body.appendChild(d); const c = getComputedStyle(d).backgroundColor; d.remove(); return c; }, farben.gruen);
+ok(startBg === gruenBg, `134: Start-Knopf in der Farbe „Auswahl / Bestätigen“ (${startBg} = ${gruenBg})`);
 ok(!andererBg || andererBg !== startBg, "andere Knöpfe bleiben in der Hauptfarbe");
 await page.screenshot({ path: "uebersicht_farbe.png", clip: { x: 0, y: 0, width: 390, height: 900 } });
 await page.evaluate(() => document.querySelector('[data-quiz-art="diktat"]')?.click()); await sleep(400);

@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen } from "./hilfen.mjs";
 
 // Listen unter Einstellungen › Listen: Liste öffnet bildschirmfüllend (Tab „Einstellungen“ bleibt markiert),
@@ -36,7 +37,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500);
 ok(!(await page.$("[data-keine-listen]")), "mit Listen: kein Hinweis");
 await zuListen(page);
-await page.click('[data-liste-id="l_a"]'); await sleep(400);
+await page.click('[data-liste-id="l_a"]'); await sleep(400); await listeOeffnen(page);
 ok(await aktiverTab() === "Einstellungen" && await page.$("[data-zurueck-listen]") && /Unité 1/.test(await page.evaluate(() => document.querySelector(".liste-detail-header")?.textContent)),
   "Liste antippen: Liste bildschirmfüllend, Tab Einstellungen bleibt markiert");
 await page.click("[data-zurueck-listen]"); await sleep(400);

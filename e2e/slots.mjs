@@ -84,11 +84,12 @@ console.log("     Gespeichert:", sl.gespeichert.map(x => x.name).join(" | "));
 
 // ── 3) Trennung sichtbar ──
 await page.evaluate(() => window.scrollTo(0, 0));
-const sektionAuf = await page.evaluate(() => document.body.innerText.includes("📌 GESPEICHERT") || document.body.innerText.includes("📌 Gespeichert"));
+const sektionAuf = await page.evaluate(() => !!document.querySelector("[data-slot-info]"));
 if (!sektionAuf) await clickText("button", v3);
 await sleep(300);
 let t = await page.evaluate(() => document.body.innerText);
-ok(/📌 Gespeichert/i.test(t) && /🕘 Verlauf/i.test(t), "Bereiche „📌 Gespeichert“ und „🕘 Verlauf“ getrennt");
+ok(!/📌 Gespeichert/i.test(t) && /🕘 Verlauf/i.test(t), "ohne Überschrift „📌 Gespeichert“, Verlauf getrennt");
+await page.evaluate(() => document.querySelector('[data-verlauf-kopf="zu"]')?.click()); await sleep(200);
 const verlaufKlasse = await page.evaluate(() => [...document.querySelectorAll(".slot-chip.verlauf")].length);
 ok(verlaufKlasse === 1, "Verlauf-Chip mit eigenem Stil (gestrichelt)");
 await page.screenshot({ path: "slots.png" });

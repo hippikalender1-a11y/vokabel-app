@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { neueEineSession, zuListen, listeBereich } from "./hilfen.mjs";
 
 // Kurzes Aufleuchten in der Bestätigen-Farbe (sofort an und aus, ohne Überblendung): gewählte Listen-Kachel,
@@ -81,7 +82,7 @@ ok(!(await zustand("[data-slot-kopf-name]")).an, "… und hört wieder auf");
 
 // ── Beispielsätze: Prompt als Datei ──
 await zuListen(page);
-await page.click('[data-liste-id="l_a"]'); await sleep(600);
+await page.click('[data-liste-id="l_a"]'); await sleep(600); await listeOeffnen(page);
 await listeBereich(page, "saetze");
 await page.click("[data-saetze-ergaenzen]"); await sleep(400);
 const kl = () => page.evaluate(() => ({ kopieren: document.querySelector("[data-satz-prompt-kopieren]").className, datei: document.querySelector("[data-satz-prompt-datei]")?.className }));

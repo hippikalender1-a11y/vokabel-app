@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { slotLaden } from "./hilfen.mjs";
 import { zuListen, quizEinstellungen, bereichZu } from "./hilfen.mjs";
 
@@ -69,7 +70,7 @@ await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.t
 
 // Aufräum-Werkzeug
 await zuListen(page);
-await clickText(".karte-zeile", "Words");
+await clickText(".karte-zeile", "Words"); await listeOeffnen(page);
 await sleep(300);
 // „( ) → Info“ steckt im Menü der Liste (lang drücken auf den Namen im Listenkopf)
 await page.evaluate(() => { const el = document.querySelector("[data-liste-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(300);

@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 
 // Session-Durchlauf geschafft: große Überschrift („Geschafft!“ o. ä.) unter dem Balken, Knopf „Nochmal!“ startet die Session neu
@@ -46,7 +47,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await zuListen(page);
-await clickText(".karte-zeile", "Verbes");
+await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
 await clickText("button", "Quiz starten", true);
 await clickText("[data-start-knopf]", "");
 await sleep(300);

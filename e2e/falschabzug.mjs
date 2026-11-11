@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 
 // Regel „Nicht gewusst zieht 1 Punkt ab“ je Stufe: an → immer genau −1 (keine Staffelung mehr), aus → Score bleibt gleich
@@ -39,7 +40,7 @@ const runde = async (modus, regel) => {
   }, modus, regel);
   await page.reload(); await sleep(500);
   await zuListen(page);
-  await clickText(".karte-zeile", "Verbes");
+  await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
   await clickText("button", "Quiz starten", true);
   await clickText("[data-start-knopf]", "");
   await sleep(300);

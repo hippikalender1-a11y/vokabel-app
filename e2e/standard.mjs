@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, quizEinstellungen, neueEineSession, listenZu, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -65,7 +66,7 @@ ok(i.session === "Alle Vokabeln" && i.start === 25, "Nach „Neu“: wieder alle
 
 // Start aus der Liste
 await zuListen(page);
-await clickText(".karte-zeile", "Vocabulaire");
+await clickText(".karte-zeile", "Vocabulaire"); await listeOeffnen(page);
 await clickText("button", "Quiz starten", true);
 i = await info();
 ok(i.session === "Alle Vokabeln" && i.start === 25, "Quiz aus der Liste: alle in einem Paket");

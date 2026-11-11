@@ -64,24 +64,24 @@ const titel = await page.evaluate(() => [...document.querySelectorAll("[data-far
 console.log("     Zeilen:", titel.join(" | "));
 ok(["Start-Knopf · Text groß", "Start-Knopf · Text klein", "Start-Knopf · Hintergrund"].every(t => titel.includes(t)), "Zeilen nennen Element und Teil: Text groß, Text klein, Hintergrund");
 const unter = await page.evaluate(() => document.querySelector('[data-farbfeld-titel="Start-Knopf · Text groß"] .farb-rolle')?.textContent);
-ok(unter === "gilt auch für: Schrift auf Liste & Start", `darunter klein die Rolle (${unter})`);
+ok(unter === "gilt auch für: Schrift auf Auswahl / Bestätigen", `darunter klein die Rolle (${unter})`);
 const lage = await page.evaluate(() => { const f = document.querySelector("[data-farbfeld]").getBoundingClientRect(), k = document.querySelector("[data-start-knopf]").getBoundingClientRect();
   return { seite: document.querySelector("[data-farbfeld]").dataset.farbfeldSeite, frei: f.bottom <= k.top || f.top >= k.bottom, marke: !!document.querySelector("[data-farbfeld-ziel]") }; });
 console.log("     Lage:", JSON.stringify(lage));
 ok(lage.seite === "oben" && lage.frei && lage.marke, "Start-Knopf unten: Farbfeld oben, Knopf frei und markiert");
 
 // Schrift auf Liste & Start: gewählte Farbe gilt genau so (auch wenig Kontrast)
-await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="auf-start"]').click()); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-farbfeld-zeile="auf-bestaetigen"]').click()); await sleep(300);
 // Farbwähler: Leiste „In diesem Schema“ mit allen Farben des Schemas, ohne Doppelte; Tipp übernimmt die Farbe
 const schemaFarben = await page.evaluate(() => [...document.querySelectorAll("[data-farbrad-schema] button")].map(b => b.title));
 console.log("     In diesem Schema:", schemaFarben.length, "Farben");
 ok(schemaFarben.includes("#7d9d8c") && schemaFarben.includes("#24382d") && new Set(schemaFarben).size === schemaFarben.length && schemaFarben.every(f => /^#[0-9a-f]{6}$/.test(f)),
-  "Leiste „In diesem Schema“: Hauptfarbe und Schrift auf Liste & Start, keine Doppelten, 6-stellig");
+  "Leiste „In diesem Schema“: Hauptfarbe und Schrift auf Auswahl / Bestätigen, keine Doppelten, 6-stellig");
 await page.evaluate(() => document.querySelector('[data-farbrad-schema] button[title="#7d9d8c"]').click()); await sleep(200);
-ok(await page.evaluate(() => document.querySelector("[data-farbrad-hex]").value) === "#7d9d8c" && await variable("auf-start") === "#7d9d8c", "Tipp auf eine Schema-Farbe: übernommen (live)");
+ok(await page.evaluate(() => document.querySelector("[data-farbrad-hex]").value) === "#7d9d8c" && await variable("auf-bestaetigen") === "#7d9d8c", "Tipp auf eine Schema-Farbe: übernommen (live)");
 await farbradHex("#ffff00");
-ok(await variable("auf-start") === "#ffff00" && await page.evaluate(() => getComputedStyle(document.querySelector("[data-start-knopf] b")).color) === "rgb(255, 255, 0)",
-  "Schrift auf Liste & Start: Gelb wird unverändert übernommen (keine automatische Umstellung)");
+ok(await variable("auf-bestaetigen") === "#ffff00" && await page.evaluate(() => getComputedStyle(document.querySelector("[data-start-knopf] b")).color) === "rgb(255, 255, 0)",
+  "Schrift auf Auswahl / Bestätigen: Gelb wird unverändert übernommen (keine automatische Umstellung)");
 await clickText("[data-farbfeld] button", "Schließen", true).catch(() => {});
 
 // Element oben (Tab) → Farbfeld unten
