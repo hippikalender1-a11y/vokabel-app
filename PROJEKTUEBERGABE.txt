@@ -2382,4 +2382,5 @@ Punkte 122–123 (Commit eb8d0ae):
 
 Gesammelt (noch NICHT umsetzen):
 - 124 Mehrfach-Auswahl (Sessions, Listen): gewählte Kacheln mit dem Bestätigen-Grün (var(--bestaetigen)) statt Gelb markieren – Rahmen und Nummern-Kreis
-  (.auswahl-nr). Offen: auch Lasso-Vorschau und Verschieben-Markierung (bisher Gelb) grün?
+  (.auswahl-nr). Entschieden: ALLES, was zur Bedienung/Selektion gehört, in dieser Farbe – auch Lasso-Vorschau, Verschieben-Markierung, Ziel-Rahmen;
+  die Farbe ist die Farbrolle „bestaetigen“ (Einstellungen › Farben) – Name dort ggf. auf „Auswahl / Bestätigen“ ändern.
