@@ -2407,3 +2407,9 @@ Gesammelt (noch NICHT umsetzen):
 - 134 Start-Knopf (data-start-knopf, „Quiz starten“ bzw. Lernen/Fortsetzen) ebenfalls in der Bestätigen-Farbe (grün) inkl. Fortschrittsbalken darauf.
 - 135 Statistik-Tab: Session-Auswahl wie im Quiz (127–130, 133): Info-Fläche unter dem Kopf, „Neu“-Chip wird Knopf über die volle Breite
   („Alle Listen“ – alles anzeigen) direkt über dem Raster, Verlauf zuklappbar, Kopf grün.
+- 136 Info-Fläche neu geordnet: Zeile 1 Session-Name (+ Ü/D/A rechts); Zeile 2 in Klammern die Listen/Bereiche („(Englisch 5 · Nr. 151–175)“);
+  „25 Vokabeln“ links, „0 % gelernt“ rechtsbündig; Fortschrittsbalken; darunter „Zuletzt abgefragt …“ links, „25 nie abgefragt“ (Gruppen) rechtsbündig;
+  Einstellungs-Zeile („Deutsch → Englisch · Karte · Zufällig“) entfällt. ↑-Knopf bei langer Vokabel-Liste (vorhanden: erscheint ab 0,8 Bildschirmhöhen).
+- 137 Info-Fläche als feststehender, aufklappbarer Kopf: bleibt unter dem Kopf stehen (sticky), Sessions/Listen und die Vokabel-Liste scrollen darunter
+  hindurch; kleiner Pfeil klappt die Info ein (eine Zeile: Name · % gelernt) bzw. aus. „📋 Vokabeln ansehen/ausblenden“ gehört zur feststehenden Fläche;
+  die Vokabel-Liste verlängert die Info nach unten, am Listenende zusätzlich „▲ Vokabeln ausblenden“. Offen (t, u): siehe Rückfragen.
