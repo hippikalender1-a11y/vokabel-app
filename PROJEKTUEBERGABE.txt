@@ -2405,3 +2405,5 @@ Gesammelt (noch NICHT umsetzen):
 - 133 Session-Auswahl offen: Kopf-Knopf immer grün (Bestätigen-Farbe), auch ohne angetippte Session – „✓ ‹geladene Session›“ führt zurück zu den
   Quiz-Einstellungen (wie bisher Zuklappen). Gilt auch für „Neues Quiz“/ungespeichert und im Statistik-Tab; Listen (131) analog.
 - 134 Start-Knopf (data-start-knopf, „Quiz starten“ bzw. Lernen/Fortsetzen) ebenfalls in der Bestätigen-Farbe (grün) inkl. Fortschrittsbalken darauf.
+- 135 Statistik-Tab: Session-Auswahl wie im Quiz (127–130, 133): Info-Fläche unter dem Kopf, „Neu“-Chip wird Knopf über die volle Breite
+  („Alle Listen“ – alles anzeigen) direkt über dem Raster, Verlauf zuklappbar, Kopf grün.
