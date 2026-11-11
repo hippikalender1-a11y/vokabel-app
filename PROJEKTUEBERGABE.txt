@@ -2398,3 +2398,6 @@ Gesammelt (noch NICHT umsetzen):
 - 131 Listen (Einstellungen › Listen) so analog wie möglich: Info-Fläche oben, „＋ Neue Liste“ volle Breite, Raster direkt darunter.
   (q) Info-Fläche zeigt immer die Session, die oben im Kopf steht: ohne Antippen die geladene, nach Antippen sofort die angetippte (Kopf grün „‹Name› laden“).
   (r) Listen: antippen wählt aus und zeigt die Info, geöffnet wird mit dem grünen Kopf-Knopf („‹Name› öffnen“).
+- 132 Tabs per seitlichem Wischen wechseln (Statistik ↔ Quiz ↔ Einstellungen): nur in der Tab-Übersicht (nicht in Abfrage, Listen-Detail, Fenstern);
+  deutlich waagerecht (≥ 60 px, Winkel flach), nicht vom Bildschirmrand (iOS-Zurück-Geste), nicht auf Reglern, Eingabefeldern, Farbkreis,
+  ziehbaren Kacheln/Verschieben-Modus, Lasso. Offen (s): mit Gleit-Animation oder nur Umschalten (Tab leuchtet kurz)?
