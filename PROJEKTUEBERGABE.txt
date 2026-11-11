@@ -2329,3 +2329,6 @@ Gesammelt nach Test (noch NICHT umsetzen, Nutzer sammelt):
   nur lang drücken (Info lesen) ändert nichts. „☑ Mehrere wählen“ entfällt als Zwischenschritt. Gleiches Muster für Rolle „Antwort“.
 - 116 Mehrfach-Auswahl gilt für ALLE Spalten gleichzeitig (statt artenMehrfach je Spalte); ein gemeinsamer Abschluss; grüner Kopf-Knopf oben
   übernimmt die Auswahl und schließt den Bereich. Offen: zusätzlich ein Knopf im Bereich, der nur die Mehrfach-Auswahl beendet (Bereich bleibt offen)?
+- 117 Synonyme (nur Information, keine Abfrage): Info-Spalte (i1/i2) bekommt eine Art „Info“ | „Synonyme“ (z. B. spalten.i1.art = "synonyme").
+  Anzeige als „≈ Synonyme“ (Chips, Format tolerant: Trennung an , ; /); KI-Prompt kennt die Art und füllt sie. Offen: Anzeige-Ort (k),
+  getipptes Synonym → kein Fehler, Hinweis + nochmal (l), „Synonyme ergänzen“ per KI-Portion wie Beispielsätze (m).
