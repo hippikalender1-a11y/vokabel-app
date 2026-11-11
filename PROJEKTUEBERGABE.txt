@@ -2431,3 +2431,12 @@ Sitzung 124–137 (Commit 7c81e36):
 - 132 Wischen: Touch-Effekt (wischRef), ≥ 60 px waagerecht, < 800 ms, nicht 24 px vom Rand, nicht auf Feldern/Tafel/quer scrollbaren Bereichen, nicht bei Ziehen/Lasso;
   tabGleiten → .app.gleiten-links/-rechts (Animation 0,28 s). html,body overscroll-behavior-x:none (sonst Browser-„Zurück“).
 - Tests: wischen (89.), sessionwahl erweitert; Helfer listeOeffnen; angepasst u. a. farbmodus, farbfeld_namen, uebersicht_zurueck, statistik, slots, multiquiz, langdruck, listenraster.
+
+Gesammelt (noch NICHT umsetzen):
+- 139 Auswahl-Sektionen (Lern-Modus Lernen/Leicht/Schwer, Reihenfolge, Anzahl je Runde, Wie oft …, auch Einstellungen-Wahlen): beim Aufklappen ist die
+  aktuelle Wahl grün (Bestätigen-Farbe); antippen einer anderen → sie wird sichtbar grün (alte nicht mehr), kurze Pause, dann klappt die Sektion zu und
+  der Zeilen-Knopf blinkt grün mit dem neuen Namen. Offen (v): Pause ~0,3 s?
+- 140 Zeilen-Knopf „Art der Antwort“ heißt „Frage – Antwort“; Beschriftung mit Sprach-Kürzeln, z. B. „Deu – Frz“ bzw. „wechselnd“.
+  Offen (w): gleiche Sprache in mehreren Spalten (unregelmäßige Verben) – Spaltennamen? Antwortarten (Karte, MC …) noch auf dem Knopf (2. Zeile)?
+- 141 Beschriftungen in den Sektionen = Beschriftung auf dem Knopf (z. B. Reihenfolge „Schlechteste zuerst“, „Zufällig“, „Listenplatz“);
+  „Listen-Nr.“ heißt überall „Listenplatz“ (auch Statistik-Sortierung, Info-Texte).
