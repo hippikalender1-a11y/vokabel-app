@@ -2412,4 +2412,4 @@ Gesammelt (noch NICHT umsetzen):
   Einstellungs-Zeile („Deutsch → Englisch · Karte · Zufällig“) entfällt. ↑-Knopf bei langer Vokabel-Liste (vorhanden: erscheint ab 0,8 Bildschirmhöhen).
 - 137 Info-Fläche als feststehender, aufklappbarer Kopf: bleibt unter dem Kopf stehen (sticky), Sessions/Listen und die Vokabel-Liste scrollen darunter
   hindurch; kleiner Pfeil klappt die Info ein (eine Zeile: Name · % gelernt) bzw. aus. „📋 Vokabeln ansehen/ausblenden“ gehört zur feststehenden Fläche;
-  die Vokabel-Liste verlängert die Info nach unten, am Listenende zusätzlich „▲ Vokabeln ausblenden“. Offen (t, u): siehe Rückfragen.
+  die Vokabel-Liste verlängert die Info nach unten, am Listenende zusätzlich „▲ Vokabeln ausblenden“. (t) Einklappen nur über den Pfeil; (u) Zustand gespeichert.
