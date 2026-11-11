@@ -2389,3 +2389,4 @@ Gesammelt (noch NICHT umsetzen):
   Antwortarten: Auswahl bleibt, Übernehmen mit grünem Kopf-Knopf. Sessions/Listen: zusätzlich öffnet sich das Kontextmenü (Aktions-Tafel) für die
   aktuelle Auswahl; die Auswahl bleibt bestehen (grüner Kopf-Knopf „n ausgewählt“ bestätigt) – oder eine Aktion wird angewendet. Da der Modus beendet
   ist, wählt das nächste Antippen wieder ein einzelnes Element (ersetzt die Auswahl), falls nicht bestätigt wurde.
+- 126 Fehler: Kopf-Knopf „✓ ✓ irreg1 laden“ – doppeltes Häkchen (.bestaetigen-knopf::before + Text „✓“); nur eins zeigen.
