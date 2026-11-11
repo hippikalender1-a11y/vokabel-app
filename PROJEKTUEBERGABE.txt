@@ -2400,4 +2400,5 @@ Gesammelt (noch NICHT umsetzen):
   (r) Listen: antippen wählt aus und zeigt die Info, geöffnet wird mit dem grünen Kopf-Knopf („‹Name› öffnen“).
 - 132 Tabs per seitlichem Wischen wechseln (Statistik ↔ Quiz ↔ Einstellungen): nur in der Tab-Übersicht (nicht in Abfrage, Listen-Detail, Fenstern);
   deutlich waagerecht (≥ 60 px, Winkel flach), nicht vom Bildschirmrand (iOS-Zurück-Geste), nicht auf Reglern, Eingabefeldern, Farbkreis,
-  ziehbaren Kacheln/Verschieben-Modus, Lasso. Offen (s): mit Gleit-Animation oder nur Umschalten (Tab leuchtet kurz)?
+  ziehbaren Kacheln/Verschieben-Modus, Lasso. (s) mit Gleit-Animation. Bereich: zunächst ganze Fläche unterhalb von Kopf/Tab-Leiste;
+  falls beim Testen versehentlich ausgelöst → auf unteres Drittel begrenzen (Nutzer-Idee, zurückgestellt).
