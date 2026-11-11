@@ -2302,3 +2302,17 @@ Punkt 97 (Commit 9c71e9b):
   „✓ Bestätigen“; antippen beendet, lang drücken = listenWahlMenue. Raster-Zeile: „Alle“ + „Keine“ (data-wahl-keine). Test in e2e/antwortwahl.mjs.
 - Score-Konzept 98–103 vorgeschlagen (Grenze ±10 ohne −100, Wiederholungs-Termine 3/7/14/30/60 T, Fehler in Wiederholung → knapp unter Schwelle,
   fällige zählen weiter als gelernt, Einstreuen ≤ 20 %); Rückfragen a–e offen.
+
+Gesammelt nach Test (noch NICHT umsetzen, Nutzer sammelt):
+- 104 Vorlesen je Spalte: oberer Lautsprecher bleibt Hauptschalter; jedes Feld (Frage, frühere Spalten, Antwort) eigener Lautsprecher-Knopf = einstellungen.vorlesen umschalten (gilt dauerhaft).
+- 105 Stimmen-Knopf „n/m“ größer (~40 px), neben dem Lautsprecher-Knopf.
+- 106 Frühere Spalten (quiz-vorig): ganzes Feld antippen liest vor, dazu Stimmen- und Lautsprecher-Knopf.
+- 107 Eine Vokabel gewusst/nicht gewusst (ist bereits so: spaltenAbschluss) – offen: Akzent-Score auch zusammenlegen? (Frage a)
+- 108 Weiterklicken ruckelig: Vorschlag feste Plätze aller Spalten (verdeckt, aktive hervorgehoben) – Fragen b (was ruckelt?), c (kommende Spalten leer zeigen?).
+- 109 Session-Auswahl: antippen wählt nur aus (Kachel leuchtet, Auswahl bleibt offen, Info darunter); Laden über grünen Kopf-Knopf „✓ ‹Name› laden“ (d: nur Kopf-Knopf);
+  auch Verlauf-Chips so (e). Mehrfach-Auswahl bleibt.
+- 110 Info zur gewählten Session: Listen + Bereich, Vokabelzahl, gelernt/in Arbeit/nie/negativ (Balken), Ü/D/A, zuletzt abgefragt, ggf. laufende Runde,
+  Kurzfassung Einstellungen – Ziel: sehen, wie weit man ist und was drin ist (g: Tauglichkeit beim Testen prüfen).
+- 111 „📋 Vokabeln ansehen“: nur enthaltene Vokabeln mit Listen-Nr., Lücken als Trennzeile „⋯ Nr. 26–39 nicht enthalten ⋯“, Kopf „Nr. 12–25, 40–48“, je Liste gegliedert.
+- 112 Namensvorschlag: Kürzel (Engl, Frz, Span, Ital, Lat, Port, Ndl, Russ) + „dd.mm.“ ohne Jahr (f).
+- 113 Fehler: dupliziereSlot übernimmt ordner nicht – Kopie soll im selben Ordner neben dem Original landen.
