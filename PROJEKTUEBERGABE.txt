@@ -2390,3 +2390,10 @@ Gesammelt (noch NICHT umsetzen):
   aktuelle Auswahl; die Auswahl bleibt bestehen (grüner Kopf-Knopf „n ausgewählt“ bestätigt) – oder eine Aktion wird angewendet. Da der Modus beendet
   ist, wählt das nächste Antippen wieder ein einzelnes Element (ersetzt die Auswahl), falls nicht bestätigt wurde.
 - 126 Fehler: Kopf-Knopf „✓ ✓ irreg1 laden“ – doppeltes Häkchen (.bestaetigen-knopf::before + Text „✓“); nur eins zeigen.
+- 127 Session-Auswahl neu angeordnet: Info als weiße Fläche direkt unter dem Kopf (keine Karte, volle Breite), kleiner Abstand, darunter
+  „＋ Neue Session aus Listen“ über die volle Breite, direkt daran anschließend (wie zusammengehörig) das Session-Raster.
+- 128 Info-Zeile im Session-Kopf (data-kopf-info) entfällt – die Infos stehen in der Info-Fläche.
+- 129 Überschrift „📌 Gespeichert“ entfällt.
+- 130 Verlauf zuklappbar, standardmäßig zu (selten genutzt).
+- 131 Listen (Einstellungen › Listen) so analog wie möglich: Info-Fläche oben, „＋ Neue Liste“ volle Breite, Raster direkt darunter.
+  Offen (q): Info-Fläche ohne angetippte Session = geladene Session? (r): Listen antippen = auswählen + Info, öffnen über grünen Kopf-Knopf?
