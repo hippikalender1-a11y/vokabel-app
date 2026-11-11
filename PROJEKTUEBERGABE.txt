@@ -2324,3 +2324,8 @@ Gesammelt nach Test (noch NICHT umsetzen, Nutzer sammelt):
 - 111 „📋 Vokabeln ansehen“: nur enthaltene Vokabeln mit Listen-Nr., Lücken als Trennzeile „⋯ Nr. 26–39 nicht enthalten ⋯“, Kopf „Nr. 12–25, 40–48“, je Liste gegliedert.
 - 112 Namensvorschlag: Kürzel (Engl, Frz, Span, Ital, Lat, Port, Ndl, Russ) + „dd.mm.“ ohne Jahr (f).
 - 113 Fehler: dupliziereSlot übernimmt ordner nicht – Kopie soll im selben Ordner neben dem Original landen.
+- 114 Lang-Druck-Info weiter weg vom Finger (Finger untere Hälfte → Info oben, sonst unten) und nicht blockierend: Inhalt bleibt antippbar.
+- 115 Antwortarten: lang drücken + weitere Art antippen → Info verschwindet, Mehrfach-Auswahl startet automatisch (gedrückte + angetippte Art gewählt);
+  nur lang drücken (Info lesen) ändert nichts. „☑ Mehrere wählen“ entfällt als Zwischenschritt. Gleiches Muster für Rolle „Antwort“.
+- 116 Mehrfach-Auswahl gilt für ALLE Spalten gleichzeitig (statt artenMehrfach je Spalte); ein gemeinsamer Abschluss; grüner Kopf-Knopf oben
+  übernimmt die Auswahl und schließt den Bereich. Offen: zusätzlich ein Knopf im Bereich, der nur die Mehrfach-Auswahl beendet (Bereich bleibt offen)?
