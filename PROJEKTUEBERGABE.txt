@@ -2335,3 +2335,5 @@ Gesammelt nach Test (noch NICHT umsetzen, Nutzer sammelt):
      (Schalter wie „i“ + Pinnadel, dauerhaft gespeichert).
   l: getipptes Synonym statt gesuchtem Wort → kein Fehler, Hinweis „Synonym – gesucht ist ein anderes Wort“, nochmal versuchen.
   m: „＋ Synonyme ergänzen“ per KI-Portion wie Beispielsätze (fehlende portionsweise nachfüllen; Prompt-/Datei-Weg bleibt, KI optional).
+- 118 Aufleuchten beim Wählen einer Antwortart/Rolle halb so lang: leuchte(k, ms = BLITZ_MS) – art:<typ>:<m> und rolle:<typ> mit 350 ms
+  (BLITZ_MS 700 bleibt fürs Zuklappen von Bereichen/Listen).
