@@ -2312,6 +2312,8 @@ Gesammelt nach Test (noch NICHT umsetzen, Nutzer sammelt):
   aufgedeckt + vorgelesen, darunter „Weiter“ → Spalte 2 erscheint darunter (sofort vorgelesen, laufendes Vorlesen abbrechen), „Weiter“ → … nach der letzten
   Spalte „Gewusst / Nicht gewusst“ für die ganze Vokabel. Klick in den freien Hintergrund = Weiter, solange es nur weiterzuschalten gibt; bei
   Gewusst/Nicht gewusst zählt ein Klick ins Freie nicht. Darüberliegende Felder verschieben sich nicht (b, c).
+  Klick-Regeln: verdeckte Karte – Klick auf die Karte ODER ins Freie dreht um (Auto-Vorlesen an: liest dann sofort vor; aus: nur umdrehen).
+  Aufgedeckte Karte – Klick auf die Karte liest (erneut) vor, Klick ins Freie = Weiter.
 - 109 Session-Auswahl: antippen wählt nur aus (Kachel leuchtet, Auswahl bleibt offen, Info darunter); Laden über grünen Kopf-Knopf „✓ ‹Name› laden“ (d: nur Kopf-Knopf);
   auch Verlauf-Chips so (e). Mehrfach-Auswahl bleibt.
 - 110 Info zur gewählten Session: Listen + Bereich, Vokabelzahl, gelernt/in Arbeit/nie/negativ (Balken), Ü/D/A, zuletzt abgefragt, ggf. laufende Runde,
