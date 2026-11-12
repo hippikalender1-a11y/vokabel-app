@@ -2631,3 +2631,7 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   Entschieden: (a) ja – Vokabel bleibt in der Liste, wird überall nicht mehr abgefragt (Sessions, Multiquiz, Fällige, Lernen);
   (b) ja – Listenansicht ausgegraut mit 🚫, Lang-Druck-Menü der Liste „🚫 Herausgenommene (n)“ (nur diese zeigen),
   Lang-Druck auf die Vokabel „↩ Wieder abfragen“; (c) nicht im Fortschritt mitzählen; (d) ohne Rückfrage.
+- 177 FEHLER (Screenshot): lange Frage ohne Leerzeichen („nervös/verlegen/aufgeregt/verärgert“) bricht nicht um – die Seite
+  wird breiter, Kopfzeile verrutscht seitlich. Ursache: .quiz-frage-text ohne overflow-wrap. Vorschlag: Umbruch bevorzugt
+  nach „/“ (unsichtbarer Trennpunkt), notfalls mitten im Wort (overflow-wrap:anywhere); auch für aufgedeckte Antworten
+  und die übrigen Karten-Texte prüfen.
