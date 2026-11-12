@@ -2628,3 +2628,6 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   „🚫 Nicht mehr abfragen“. Dazu: herausgenommene Vokabeln anzeigen und wieder hineinnehmen können.
   Offene Fragen: (a) gilt überall (alle Sessions, Fortschritt) – Vokabel bleibt in der Liste; (b) Anzeige/Zurückholen
   in der Listenansicht; (c) nicht im Lernstand mitzählen; (d) ohne Rückfrage.
+  Entschieden: (a) ja – Vokabel bleibt in der Liste, wird überall nicht mehr abgefragt (Sessions, Multiquiz, Fällige, Lernen);
+  (b) ja – Listenansicht ausgegraut mit 🚫, Lang-Druck-Menü der Liste „🚫 Herausgenommene (n)“ (nur diese zeigen),
+  Lang-Druck auf die Vokabel „↩ Wieder abfragen“; (c) nicht im Fortschritt mitzählen; (d) ohne Rückfrage.
