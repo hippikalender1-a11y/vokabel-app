@@ -2470,5 +2470,8 @@ Sitzung 139–146 (Commit 8b4dbec):
 Gesammelt (noch NICHT umsetzen):
 - 147 Neues Auswahl-Modell (vom Nutzer gefunden, „funktioniert super“): Lang-Druck nimmt ein Objekt in die Auswahl auf bzw. heraus (jeder Lang-Druck
   einzeln); einfaches Antippen schaltet sofort auf Einzelauswahl (nur dieses Objekt). Kein dauerhafter Mehrfach-Modus mehr – Mehrfach-Auswahl besteht,
-  solange man per Lang-Druck sammelt; ersetzt 115/123/125. Offen (y): wo erscheint das Kontextmenü (Multiquiz, Gruppe, Löschen …)? (z): gilt auch für
-  Antwortarten und „Antwort“-Rollen?
+  solange man per Lang-Druck sammelt; ersetzt 115/123/125. (y) Kontextmenü nach jedem Lang-Druck unten als Tafel für die aktuelle Auswahl, Kacheln
+  darüber antippbar – OHNE die schwarze Textbox mit der Aufzählung der Elemente (nur die Aktions-Knöpfe). (z) Gilt auch für Antwortarten und „Antwort“-Rollen
+  (antippen = nur diese, lang drücken = dazu/weg).
+- 148 Info-Fläche während der Mehrfach-Auswahl: zeigt die zusammengefasste Info der ausgewählten Sessions/Listen (Anzahl Vokabeln, gelernt, Gruppen,
+  Fortschritt/Ø, zuletzt abgefragt, Listen und Bereiche); ein-/ausklappbar wie sonst; „📋 Vokabeln ansehen“ zeigt die Vokabeln der ganzen Auswahl.
