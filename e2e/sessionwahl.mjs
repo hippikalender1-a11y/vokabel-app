@@ -55,7 +55,7 @@ const info = await page.evaluate(() => ({
 console.log("     Info:", JSON.stringify(info));
 ok(/Unit 1/.test(info.listen) && /Nr\. 1–4, 8–9/.test(info.listen), "Info: Liste mit Bereichen „Nr. 1–4, 8–9“");
 ok(/6 Vokabeln/.test(info.zahlen) && /33 % gelernt/.test(info.zahlen), `Info: 6 Vokabeln, 33 % gelernt (${info.zahlen})`);
-ok(/2 gelernt/.test(info.gruppen) && /1 in Arbeit|3 nie/.test(info.gruppen) && /1 negativ/.test(info.gruppen), `Info: Gruppen (${info.gruppen})`);
+ok(/2 ✓/.test(info.gruppen) && /3 nie/.test(info.gruppen) && /1 −/.test(info.gruppen), `Info: Gruppen kurz (${info.gruppen})`);
 ok(/Zuletzt abgefragt/.test(info.zuletzt) && !/noch nie/.test(info.zuletzt), `Info: zuletzt abgefragt (${info.zuletzt})`);
 ok(!info.einst && info.oben && !info.kopfInfo && !info.gespeichert, "127–129: Info über dem Raster, ohne Einstellungs-Zeile, ohne Kopf-Info-Zeile, ohne „📌 Gespeichert“");
 ok(info.kreise >= 1, "Info: Ü/D/A-Kreise");
@@ -125,6 +125,14 @@ ok(/1 ausgewählt/.test(await kopf() || ""), "lang drücken auf ausgewählte Kac
 await rechts('[data-slot-id="g_2"]');
 await klick('[data-slot-id="g_1"]');
 ok(await kopf() === "Stücke laden" && !(await page.$("[data-multi-nr]")) && !(await page.$("[data-info-menue]")), `antippen: Einzelauswahl, Menü zu (${await kopf()})`);
+// 153: die letzte herausgenommen → bleibt als Einzelauswahl
+await rechts('[data-slot-id="g_2"]'); await rechts('[data-slot-id="g_1"]'); await rechts('[data-slot-id="g_2"]');
+ok(await kopf() === "Ganze Liste laden" && !(await page.$("[data-info-menue]")), `153: letzte herausgenommen – Einzelauswahl bleibt (${await kopf()})`);
+// 155: Antippen der Info-Fläche klappt sie ein und aus
+await klick("[data-slot-info-name]");
+ok(await page.$("[data-slot-info-zu]"), "155: Antippen der Fläche klappt die Info ein");
+await klick("[data-slot-info]");
+ok(!(await page.$("[data-slot-info-zu]")), "… und wieder aus");
 // 134: Start-Knopf grün
 await klick("[data-slot-laden]"); await sleep(400);
 const farben = await page.evaluate(() => ({ start: getComputedStyle(document.querySelector("[data-start-knopf]")).backgroundColor, gruen: getComputedStyle(document.documentElement).getPropertyValue("--bestaetigen").trim() }));

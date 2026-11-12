@@ -77,6 +77,16 @@ const auswahl = await page.evaluate(() => document.querySelector('[data-anzahl="
 ok(/\(39 V\.\)/.test(auswahl || ""), `Von–Bis über die Treffer wählt den ganzen Bereich 12–50 (${auswahl})`);
 await page.click('[data-suchleiste="quiz"] [data-nur-treffer]'); await sleep(300);
 ok(await zeilen("quiz") === 80, "„nur Treffer“ aus: wieder alle 80");
+// 151: Sprung zu den gewählten Stücken – ein Stück (12–50) dazu ein zweites (Nr. 70) anhaken
+await page.evaluate(() => [...document.querySelectorAll('[data-such-ziel="quiz"]')][69].click()); await sleep(900);   // Zeile bleibt erst im Blick
+ok(await page.evaluate(() => document.querySelector("[data-auswahl-sprung]")?.dataset.auswahlSprung) === "1/2", "151: Sprung-Knopf „⇣ 1/2“ (zwei Stücke)");
+await page.evaluate(() => window.scrollTo(0, 0)); await page.evaluate(() => document.querySelectorAll("[data-vok-scroller]").forEach(s => s.scrollTop = 0));
+await page.click("[data-auswahl-sprung]"); await sleep(700);
+const sichtbarNr = nr => page.evaluate(n => { const e = [...document.querySelectorAll('[data-such-ziel="quiz"]')][n - 1]; const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }, nr);
+ok(await sichtbarNr(12) && await page.evaluate(() => document.querySelector("[data-auswahl-sprung]").dataset.auswahlSprung) === "2/2", "Sprung: Anfang Stück 1 (Nr. 12) im Blick, Knopf zeigt jetzt 2/2");
+await page.click("[data-auswahl-sprung]"); await sleep(700);
+ok(await sichtbarNr(70), "nochmal: Stück 2 (Nr. 70) im Blick");
+await page.evaluate(() => [...document.querySelectorAll('[data-such-ziel="quiz"]')][69].click()); await sleep(200);
 ok(await page.evaluate(() => document.querySelector('[data-suchleiste="quiz"] [data-such-feld]').value) === "", "Von–Bis: Anfang gesetzt leert das Suchfeld");
 await tippe('[data-suchleiste="quiz"] [data-such-feld]', "maison");
 await page.click('[data-suchleiste="quiz"] [data-such-leeren]'); await sleep(300);

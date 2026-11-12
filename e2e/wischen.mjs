@@ -31,7 +31,7 @@ await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.tex
 ok(await tab() === "Quiz", "Start: Quiz");
 
 await wische(300, 600, 100, 610, 60);
-ok(await page.$("[data-tab-gleiten=links]"), "… gleitet von rechts herein");
+ok(await tab() === "Einstellungen" && !(await page.$("[data-tab-gleiten]")), "152: sofort gewechselt, ohne Gleiten");
 await sleep(300);
 ok(await tab() === "Einstellungen", `nach links wischen: Einstellungen (${await tab()})`);
 await sleep(400);

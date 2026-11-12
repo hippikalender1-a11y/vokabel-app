@@ -2091,6 +2091,9 @@ const CSS_BASIS = `
   .wahl-leiste .btn{flex:1;}
   .slot-info{position:sticky;z-index:8;background:var(--karte);background:color-mix(in srgb, var(--bestaetigen) 11%, var(--karte));border-bottom:1px solid var(--rahmen);padding:10px 16px;box-shadow:0 4px 8px -6px rgba(0,0,0,0.25);}
   .slot-info-pfeil{flex-shrink:0;width:34px;height:30px;border-radius:15px;border:1.5px solid var(--rahmen);background:var(--karte);color:var(--text2);cursor:pointer;font-size:0.75rem;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .info-zeile-klein{display:flex;justify-content:space-between;gap:8px;font-size:0.75rem;color:var(--text2);white-space:nowrap;}
+  .info-gruppen{min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:right;}
+  .slot-info{cursor:pointer;}
   .info-klapp-zeile{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:0.85rem;font-weight:600;color:var(--text-stark);cursor:pointer;}
   [data-wahl-bereich] .toggle-opt.aktiv,[data-wahl-bereich] .typ-btn.aktiv,[data-wahl-bereich].toggle-btn .toggle-opt.aktiv{background:var(--bestaetigen) !important;color:var(--auf-bestaetigen) !important;border-color:var(--bestaetigen) !important;}
   .kachel-gewaehlt{box-shadow:0 0 0 2px var(--karte),0 0 0 5px var(--bestaetigen) !important;}
@@ -2320,6 +2323,7 @@ export default function VokabelApp() {
   // Gespeicherte Konfiguration geladen: Listen-/Vokabel-Auswahl ausgeblendet – außer nach „Listen/Vokabeln ändern“
   const [listenAendern, setListenAendern] = useState(false);
   const slotSichtbarRef = useRef([]);
+  const [, setSprungTick] = useState(0);
   const neuImOrdnerRef = useRef(null);   // „Neue Session“ in einer geöffneten Gruppe begonnen → beim Speichern/Aufteilen dort anlegen   // sichtbare Session-Kacheln (für „Alle“ in der Mehrfach-Auswahl)
   const [slotVorschau, setSlotVorschau] = useState(null);           // Session-Auswahl: angetippte Session { typ, id } – Info darunter, laden über den Kopf
   const [slotVorschauListe, setSlotVorschauListe] = useState(false); // … deren Vokabeln als Liste
@@ -3061,10 +3065,15 @@ export default function VokabelApp() {
   // für die Gesten-Effekte (ohne Abhängigkeiten): Mehrfach-Auswahl beenden und die Tafel (Kontextmenü) zeigen
   // 147: lang drücken nimmt ein Objekt in die Auswahl auf bzw. heraus; die angetippte Einzelauswahl kommt beim ersten Mal mit hinein; leer → keine Auswahl
   wahlUmschaltenRef.current = (art, id) => {
-    const umschalten = (a, einzel) => { const basis = a || (einzel && einzel !== id ? [einzel] : []); const n = basis.includes(id) ? basis.filter(x => x !== id) : [...basis, id]; return n.length ? n : null; };
+    const umschalten = (a, einzel) => { const basis = a || (einzel && einzel !== id ? [einzel] : []); return basis.includes(id) ? basis.filter(x => x !== id) : [...basis, id]; };
     auswahlTafelRef.current = art;
-    if (art === "liste") { setListenSortModus(false); setListenWahl(a => umschalten(a, listeVorschau)); }
-    else { setSlotSortModus(false); setMultiAuswahl(a => umschalten(a, slotVorschau?.typ === "gespeichert" ? slotVorschau.id : null)); }
+    const n = umschalten(art === "liste" ? listenWahl : multiAuswahl, art === "liste" ? listeVorschau : slotVorschau?.typ === "gespeichert" ? slotVorschau.id : null);
+    if (!n.length) {   // die letzte herausgenommen: Mehrfach-Auswahl endet, diese bleibt als Einzelauswahl stehen
+      auswahlTafelRef.current = null; setTimeout(schliesseInfo, 0);   // nach dem Menü, das der Lang-Druck gleich öffnet
+      if (art === "liste") { setListenWahl(null); setTimeout(() => setListeVorschau(id), 0); }
+      else { setMultiAuswahl(null); setTimeout(() => setSlotVorschau({ typ: "gespeichert", id }), 0); }
+    } else if (art === "liste") { setListenSortModus(false); setListenWahl(n); }
+    else { setSlotSortModus(false); setMultiAuswahl(n); }
     leuchte(art === "liste" ? `lw:${id}` : `slot:${id}`, BLITZ_MS / 2);
     leuchte(art === "liste" ? "wahl" : "slotkopf", BLITZ_MS / 2);   // der grüne Kopf mit der Anzahl leuchtet mit
   };
@@ -3813,7 +3822,7 @@ export default function VokabelApp() {
   const wischRef = useRef({});
   wischRef.current.erlaubt = ansicht === "uebersicht" && !modal && !farbModus && !farbRad && !quizVokMax && !statistikVollbild && !slotSortModus && !listenSortModus;
   wischRef.current.tab = tab === "listen" ? "einstellungen" : tab;
-  wischRef.current.wechsel = (neu, richtung) => { setTabGleiten(richtung); handleTabWechsel(neu); window.scrollTo(0, 0); };
+  wischRef.current.wechsel = neu => { handleTabWechsel(neu); window.scrollTo(0, 0); };   // sofort, ohne Gleiten (das ließ die feststehenden Köpfe springen)
   useEffect(() => {
     const TABS = ["statistik", "quiz", "einstellungen"];
     let w = null;
@@ -5576,6 +5585,28 @@ export default function VokabelApp() {
 
   // Suchleiste über einer Vokabelliste (Einzelauswahl Quiz/Statistik, Listenansicht): Treffer anspringen (‹ ›, Enter)
   // oder mit „nur Treffer“ filtern. Zeilen tragen data-such-ziel={art} data-such-id={vok.id}.
+  // Vokabel-Auswahl: zum Anfang des nächsten zusammenhängenden gewählten Stücks springen (zyklisch)
+  const sprungRef = useRef({});
+  function auswahlStuecke(voks, auswahl) {
+    const anf = [];
+    voks.forEach((v, i) => { if (auswahl.has(v.id) && !(i > 0 && auswahl.has(voks[i - 1].id))) anf.push(v.id); });
+    return anf;
+  }
+  function sprungKnopf(art, voks, auswahl) {
+    const anf = auswahlStuecke(voks, auswahl);
+    if (!anf.length) return null;
+    const cur = sprungRef.current[art] ?? -1;
+    const naechst = (cur + 1) % anf.length;
+    return (
+      <button className="btn btn-ghost btn-sm" data-auswahl-sprung={`${naechst + 1}/${anf.length}`} data-auswahl-durchlass style={{padding:"6px 8px"}}
+        onClick={() => {
+          sprungRef.current[art] = naechst;
+          document.querySelector(`[data-such-ziel="${art}"][data-such-id="${window.CSS.escape(String(anf[naechst]))}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+          setSprungTick(x => x + 1);
+        }}
+        {...tt(`Zum Anfang des ${naechst + 1}. gewählten Stücks springen (${anf.length} zusammenhängende Stücke)`)}>⇣ {naechst + 1}/{anf.length}</button>
+    );
+  }
   function suchInfo(voks, such) {
     const treffer = sucheVokabeln(voks, such.text);
     const nr = Math.min(such.nr, Math.max(0, treffer.length - 1));
@@ -6372,7 +6403,7 @@ export default function VokabelApp() {
   function listenWahlKopf() {
     const n = listenWahl.length;
     return (
-      <div className="quiz-zeile" data-einst-zeile="listen-wahl" style={{top: headerH, marginBottom:12}}>
+      <div className="quiz-zeile" data-einst-zeile="listen-wahl" style={{top: headerH, marginBottom:0}}>
         <div className="quiz-zeile-zelle offen"><span className="quiz-zeile-label">Auswahl</span>
           <button className={`quiz-zeile-knopf offen bestaetigen-knopf zweizeilig${blitzt("wahl")}`} data-wahl-fertig data-wahl-hinweis data-auswahl-durchlass
             onClick={() => setListenWahl(null)}
@@ -6410,19 +6441,19 @@ export default function VokabelApp() {
     const zuletzt = voks.flatMap(v => [v.fortschritt, v.diktatFortschritt, v.akzentFortschritt].map(f => f?.letzteAbfrage).filter(Boolean)).sort().pop() || null;
     const pct = Math.round(lernProzent(voks.map(v => v.fortschritt?.score), schwelle));
     const spalten = mehrere ? gruppeL.map(y => y.x.name) : TYPEN.filter(x => liste.spalten[x]?.aktiv).map(x => liste.spalten[x].name || x);
-    const gruppenText = [["gelernt", "gelernt"], ["arbeit", "in Arbeit"], ["nie", "nie abgefragt"], ["negativ", "negativ"]].filter(([g]) => anz[g]).map(([g, x]) => `${anz[g]} ${x}`).join(" · ");
+    const gruppenText = gruppenKurz(anz);
     const zu = !!einstellungen.slotInfoZu;
     return (
-      <div className="slot-info" data-liste-info={mehrere ? "_wahl" : l.id} data-auswahl-durchlass data-slot-info-zu={zu ? "" : undefined} style={{position:"static", marginLeft:-16, marginRight:-16, boxShadow:"none"}}>
+      <div className="slot-info" data-liste-info={mehrere ? "_wahl" : l.id} data-auswahl-durchlass data-slot-info-zu={zu ? "" : undefined} onClick={infoKlapp} style={{position:"static", marginLeft:-16, marginRight:-16}}>
         <div style={{display:"flex", alignItems:"center", gap:8}}>
           <div style={{flex:1, minWidth:0}}>
             <div data-slot-info-name style={{fontWeight:800, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{mehrere ? `${mehrere.length} Listen ausgewählt` : `${sprachInfo(listeSprache(l)).flagge} ${l.name}`}
               {zu && schwelle > 0 && voks.length > 0 && <span style={{fontWeight:500, color:"var(--text2)"}}> · {pct} % gelernt</span>}</div>
-            {!zu && <div data-liste-info-spalten style={{fontSize:"0.8rem", color:"var(--text2)"}}>({spalten.join(" · ")})</div>}
+            {!zu && <div data-liste-info-spalten style={{fontSize:"0.8rem", color:"var(--text2)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>({spalten.join(" · ")})</div>}
           </div>
           {!zu && voks.length > 0 && schwelle > 0 && <span className="mini-kreise" style={{gap:4, flexShrink:0}}>{renderMiniKreise(lernstandJeArt(voks, mehrere ? null : l.id), { groesse: 26, nurVerfuegbar: true })}</span>}
-          <span className="slot-info-pfeil" data-slot-info-pfeil={zu ? "zu" : "auf"} onClick={() => speichereEinst({ ...einstellungen, slotInfoZu: !zu })}
-            {...tt(zu ? "Info aufklappen (bleibt so)" : "Info auf eine Zeile einklappen (bleibt so)")}>{zu ? "▼" : "▲"}</span>
+          <span className="slot-info-pfeil" data-slot-info-pfeil={zu ? "zu" : "auf"}
+            {...tt(zu ? "Info aufklappen – auch Antippen der Fläche (bleibt so)" : "Info auf eine Zeile einklappen – auch Antippen der Fläche (bleibt so)")}>{zu ? "▼" : "▲"}</span>
         </div>
         {!zu && (<>
           <div data-liste-info-zahlen={voks.length} style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:8, marginTop:8, fontSize:"0.85rem"}}>
@@ -6431,9 +6462,9 @@ export default function VokabelApp() {
           <div className="vorschau-balken" style={{display:"flex", height:8, borderRadius:4, overflow:"hidden", margin:"6px 0 4px", background:"var(--rahmen)"}}>
             {GRUPPE_BALKEN.filter(([g]) => anz[g]).map(([g, farbe]) => <span key={g} data-gruppe={g} style={{width:`${anz[g] / Math.max(1, voks.length) * 100}%`, background:farbe}}/>)}
           </div>
-          <div style={{display:"flex", justifyContent:"space-between", gap:8, fontSize:"0.75rem", color:"var(--text2)"}}>
-            <span>Zuletzt abgefragt: {zuletzt ? formatDatum(zuletzt) : "noch nie"}</span>
-            <span style={{textAlign:"right"}}>{gruppenText}</span>
+          <div className="info-zeile-klein">
+            <span style={{flexShrink:0}}>Zuletzt abgefragt: {zuletzt ? formatDatum(zuletzt) : "noch nie"}</span>
+            <span className="info-gruppen">{gruppenText}</span>
           </div>
         </>)}
       </div>
@@ -6878,6 +6909,9 @@ export default function VokabelApp() {
           ? (kinder.length ? Math.round(kinder.reduce((a, k) => a + lernstand(k).uebersetzung.pct, 0) / kinder.length) : 0)
           : Math.round(lernstand(x).uebersetzung.pct);
         const multiNr = multiAuswahl ? multiAuswahl.indexOf(x.id) + 1 : 0;
+        // geladenes Multiquiz (nichts angetippt): seine Sessions angewählt, mit Nummer
+        const multiTeile = !multiAuswahl && !slotVorschau ? (multiVonSlot(slotRef) || []).map(m => m.id) : [];
+        const teilNr = multiTeile.indexOf(x.id) + 1;
         const verweilen = ziel && gruppierbar && !ziehIds.includes(x.id);
         const inhalt = (<>
           <span className="raster-name">{x.istOrdner && <span aria-hidden="true">📁 </span>}{x.multi && <span aria-hidden="true">🧩 </span>}{x.name}{x.istOrdner && <span className="ordner-anzahl" data-ordner-anzahl={kinder.length}> · {kinder.length}</span>}</span>
@@ -6924,7 +6958,7 @@ export default function VokabelApp() {
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-multi-nr={multiNr || undefined} data-auswahl-durchlass
             data-kachel-geste="slot" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined}
             className={`slot-chip belegt raster-chip${pct >= 100 ? " aktiv-kachel" : ""}${
-              multiNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) || (!multiAuswahl && (slotVorschau ? slotVorschau.typ === "gespeichert" && slotVorschau.id === x.id : slotRef?.typ === "gespeichert" && slotRef?.id === x.id)) ? " kachel-gewaehlt" : ""}${blitzt(`slot:${x.id}`)}`}
+              multiNr || teilNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) || (!multiAuswahl && (slotVorschau ? slotVorschau.typ === "gespeichert" && slotVorschau.id === x.id : slotRef?.typ === "gespeichert" && slotRef?.id === x.id)) ? " kachel-gewaehlt" : ""}${blitzt(`slot:${x.id}`)}`}
             data-vorschau={slotVorschau?.typ === "gespeichert" && slotVorschau.id === x.id ? "" : undefined}
             style={{...chipStil('gespeichert', x.id, slotRef), position:"relative"}}
             onClick={() => multiAuswahl
@@ -6940,7 +6974,7 @@ export default function VokabelApp() {
                  eigeneGeste: true });
             })()}>
             {inhalt}
-            {multiNr ? <span className="auswahl-nr">{multiNr}</span> : null /* gleiche Kind-Struktur wie im Verschieben-Modus (Markierungsnummer) – sonst baut React den Inhalt neu auf und ein laufendes Ziehen verliert den Finger */}
+            {multiNr || teilNr ? <span className="auswahl-nr" data-teil-nr={teilNr || undefined}>{multiNr || teilNr}</span> : null /* gleiche Kind-Struktur wie im Verschieben-Modus (Markierungsnummer) – sonst baut React den Inhalt neu auf und ein laufendes Ziehen verliert den Finger */}
           </button>
         ));
       } else if (x) {
@@ -6994,6 +7028,11 @@ export default function VokabelApp() {
   }
   // feststehend unter dem Kopf (Sessions und Vokabel-Liste scrollen darunter hindurch), mit dem Pfeil auf eine Zeile einklappbar (gespeichert);
   // „📋 Vokabeln ansehen“ hängt die enthaltenen Vokabeln mit Listen-Nr. darunter an (Lücken als Trennzeile)
+  // Gruppen kurz und einzeilig (Info-Fläche bleibt gleich hoch): „112 ✓ · 98 in Arbeit · 2850 nie · 11 −“
+  function gruppenKurz(anz) {
+    return [["gelernt", "✓"], ["arbeit", "in Arbeit"], ["nie", "nie"], ["negativ", "−"]].filter(([g]) => anz[g]).map(([g, l]) => `${anz[g]} ${l}`).join(" · ");
+  }
+  const infoKlapp = () => speichereEinst({ ...einstellungen, slotInfoZu: !einstellungen.slotInfoZu });
   function renderSlotInfo(statistik) {
     const eintrag = infoEintrag(statistik);
     if (!eintrag) return null;
@@ -7018,39 +7057,41 @@ export default function VokabelApp() {
     const ls = lernstandJeArt(alle);
     const pct = Math.round(lernProzent(alle.map(v => v.fortschritt?.score), schwelle));
     const sf = eintrag.konfiguration ? slotSFAlle(eintrag)[slotKonfigArt(eintrag)] : null;
-    const gruppenText = [["gelernt", "gelernt"], ["arbeit", "in Arbeit"], ["nie", "nie abgefragt"], ["negativ", "negativ"]].filter(([g]) => anz[g]).map(([g, l]) => `${anz[g]} ${l}`).join(" · ");
+    const gruppenText = gruppenKurz(anz);
     const zu = !!einstellungen.slotInfoZu;
     // Name wie im Kopf: gespeicherte Session → ihr Name; Multiquiz aus dem Verlauf → seine Teile; Verlauf → Datum
     const gespeichert = slots.gespeichert.some(g => g.id === eintrag.id);
     const name = eintrag.id === "_wahl" ? eintrag.name : `${multi ? "🧩 " : ""}${gespeichert ? eintrag.name : multi ? multi.map(m => m.name).join(" + ") : eintrag.id === "_auswahl" ? eintrag.name : `🕘 ${eintrag.name || "Abfrage"}`}`;
     const listenText = teile.map(x => `${sprachInfo(listeSprache(x.idx)).flagge} ${x.liste.name} · ${x.ganz ? `alle ${x.voks.length}` : `Nr. ${nrText(x.voks.map(v => v._nr))}`}`).join(" + ");
     return (<>
-      <div className="slot-info" data-slot-info={eintrag.id} data-slot-vorschau={eintrag.id} data-slot-info-zu={zu ? "" : undefined} data-auswahl-durchlass
+      <div className="slot-info" data-slot-info={eintrag.id} data-slot-vorschau={eintrag.id} data-slot-info-zu={zu ? "" : undefined} data-auswahl-durchlass onClick={infoKlapp}
         style={{top: headerH + slotH, ...(statistik ? {} : {marginLeft:-16, marginRight:-16})}}>
         <div style={{display:"flex", alignItems:"center", gap:8}}>
           <div style={{flex:1, minWidth:0}}>
             <div data-slot-info-name style={{fontWeight:800, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
               {name}{zu && schwelle > 0 && alle.length > 0 && <span style={{fontWeight:500, color:"var(--text2)"}}> · {pct} % gelernt</span>}</div>
-            {!zu && teile.length > 0 && <div data-vorschau-listen style={{fontSize:"0.8rem", color:"var(--text2)", overflow:"hidden", textOverflow:"ellipsis"}}>({listenText})</div>}
+            {!zu && <div data-vorschau-listen style={{fontSize:"0.8rem", color:"var(--text2)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{teile.length ? `(${listenText})` : "\u00a0"}</div>}
           </div>
           {!zu && alle.length > 0 && <span className="mini-kreise" style={{gap:4, flexShrink:0}}>{renderMiniKreise(ls, { groesse: 26, nurVerfuegbar: true })}</span>}
-          <span className="slot-info-pfeil" data-slot-info-pfeil={zu ? "zu" : "auf"} onClick={() => speichereEinst({ ...einstellungen, slotInfoZu: !zu })}
-            {...tt(zu ? "Info aufklappen (bleibt so)" : "Info auf eine Zeile einklappen (bleibt so)")}>{zu ? "▼" : "▲"}</span>
+          <span className="slot-info-pfeil" data-slot-info-pfeil={zu ? "zu" : "auf"}
+            {...tt(zu ? "Info aufklappen – auch Antippen der Fläche (bleibt so)" : "Info auf eine Zeile einklappen – auch Antippen der Fläche (bleibt so)")}>{zu ? "▼" : "▲"}</span>
         </div>
         {!zu && (<>
           <div data-vorschau-zahlen={alle.length} style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:8, marginTop:8, fontSize:"0.85rem"}}>
-            <b>{alle.length} Vokabel{alle.length !== 1 ? "n" : ""}</b>{schwelle > 0 && alle.length > 0 && <span>{pct} % gelernt</span>}
+            <span style={{minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}><b>{alle.length} Vokabel{alle.length !== 1 ? "n" : ""}</b>
+              {sf && <span data-vorschau-runde style={{fontWeight:600}}> · ▶ {(sf.abgefragt || []).length}/{sf.gesamt || 0} abgefragt</span>}</span>
+            <span style={{flexShrink:0}}>{schwelle > 0 && alle.length > 0 ? `${pct} % gelernt` : ""}</span>
           </div>
           <div className="vorschau-balken" data-vorschau-balken style={{display:"flex", height:8, borderRadius:4, overflow:"hidden", margin:"6px 0 4px", background:"var(--rahmen)"}}>
             {GRUPPE_BALKEN.filter(([g]) => anz[g]).map(([g, farbe]) => <span key={g} data-gruppe={g} style={{width:`${anz[g] / Math.max(1, alle.length) * 100}%`, background:farbe}}/>)}
           </div>
-          <div style={{display:"flex", justifyContent:"space-between", gap:8, fontSize:"0.75rem", color:"var(--text2)"}}>
-            <span data-vorschau-zuletzt>Zuletzt abgefragt: {zuletzt ? formatDatum(zuletzt) : "noch nie"}</span>
-            <span data-vorschau-gruppen style={{textAlign:"right"}}>{gruppenText}</span>
+          <div className="info-zeile-klein">
+            <span data-vorschau-zuletzt style={{flexShrink:0}}>Zuletzt abgefragt: {zuletzt ? formatDatum(zuletzt) : "noch nie"}</span>
+            <span data-vorschau-gruppen className="info-gruppen">{gruppenText}</span>
           </div>
-          {sf && <div data-vorschau-runde style={{fontSize:"0.8rem", marginTop:6, fontWeight:600}}>▶ Runde läuft: {(sf.abgefragt || []).length} von {sf.gesamt || 0} abgefragt</div>}
-          {alle.length > 0 && (
-            <div className="info-klapp-zeile" data-vorschau-vokabeln={slotVorschauListe ? "auf" : "zu"} onClick={() => setSlotVorschauListe(v => !v)}
+          {(
+            <div className="info-klapp-zeile" data-vorschau-vokabeln={slotVorschauListe ? "auf" : "zu"} style={alle.length ? undefined : {opacity:0.4, pointerEvents:"none"}}
+              onClick={e => { e.stopPropagation(); setSlotVorschauListe(v => !v); }}
               {...tt(slotVorschauListe ? "Vokabel-Liste schließen" : "Die Vokabeln dieser Session mit ihrem Listenplatz anzeigen")}>
               <span>📋 Vokabeln ansehen</span>
               <span className="slot-info-pfeil">{slotVorschauListe ? "▲" : "▼"}</span>
@@ -10223,6 +10264,7 @@ export default function VokabelApp() {
                               <IcoX s={12}/>
                             </button>
                           )}
+                          {quizCheckboxAuswahl.size > 0 && sprungKnopf("quiz", quizBasisVoks, quizCheckboxAuswahl)}
                         </>
                       ) : (
                         <span style={{fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Vokabel-Auswahl</span>
@@ -11172,6 +11214,7 @@ export default function VokabelApp() {
                         <IcoX s={12}/>
                       </button>
                     )}
+                    {statistikCheckboxAuswahl.size > 0 && sprungKnopf("statistik", statistikBasisVoks || [], statistikCheckboxAuswahl)}
                   </>
                 ) : (
                   <span style={{fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Vokabel-Auswahl</span>
@@ -11733,7 +11776,7 @@ export default function VokabelApp() {
             {(() => {
               const vorschauL = !listenWahl && !einstUnter && listeVorschau ? listenIndex.find(x => x.id === listeVorschau) : null;
               return (
-                <div style={{position:"sticky", top: headerH, zIndex: 8, marginBottom: vorschauL || (listenWahl?.length && !einstUnter) ? 12 : 0}} data-listen-kopf-bereich>
+                <div style={{position:"sticky", top: headerH, zIndex: 8, marginBottom: vorschauL || (listenWahl?.length && !einstUnter) ? 12 : 0, background:"var(--hintergrund)"}} data-listen-kopf-bereich>
                   {listenWahl && !einstUnter ? listenWahlKopf() : vorschauL ? listeOeffnenKopf(vorschauL) : einstZeile([
                     { k: "sicherung", label: "Sicherung", text: letzteSicherung ? `💾 ${formatTag(letzteSicherung).slice(0, 6)}` : "💾 nie",
                       hilfe: `Alles sichern, wiederherstellen, Speicher schützen · ${letzteSicherung ? `zuletzt am ${formatTag(letzteSicherung)}` : "noch nie gesichert"}` },
