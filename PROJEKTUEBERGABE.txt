@@ -2435,8 +2435,8 @@ Sitzung 124–137 (Commit 7c81e36):
 Gesammelt (noch NICHT umsetzen):
 - 139 Auswahl-Sektionen (Lern-Modus Lernen/Leicht/Schwer, Reihenfolge, Anzahl je Runde, Wie oft …, auch Einstellungen-Wahlen): beim Aufklappen ist die
   aktuelle Wahl grün (Bestätigen-Farbe); antippen einer anderen → sie wird sichtbar grün (alte nicht mehr), kurze Pause, dann klappt die Sektion zu und
-  der Zeilen-Knopf blinkt grün mit dem neuen Namen. Offen (v): Pause ~0,3 s?
-- 140 Zeilen-Knopf „Art der Antwort“ heißt „Frage – Antwort“; Beschriftung mit Sprach-Kürzeln, z. B. „Deu – Frz“ bzw. „wechselnd“.
-  Offen (w): gleiche Sprache in mehreren Spalten (unregelmäßige Verben) – Spaltennamen? Antwortarten (Karte, MC …) noch auf dem Knopf (2. Zeile)?
+  der Zeilen-Knopf blinkt grün mit dem neuen Namen. (v) Pause 0,3 s.
+- 140 Zelle „Art der Antwort“: die kleine Beschriftung über dem Knopf zeigt die Sprachen – zuerst die Frage, dann die Sprache der ERSTEN Antwort-Spalte,
+  mehr nicht (z. B. „Deu – Frz“; ohne Auswahl „Frage – Antwort“; wechselnd z. B. „Deu ⇄ Frz“). Der Knopf zeigt weiterhin die gewählte Antwortart (w).
 - 141 Beschriftungen in den Sektionen = Beschriftung auf dem Knopf (z. B. Reihenfolge „Schlechteste zuerst“, „Zufällig“, „Listenplatz“);
   „Listen-Nr.“ heißt überall „Listenplatz“ (auch Statistik-Sortierung, Info-Texte).
