@@ -2557,9 +2557,12 @@ Gesammelt nach Test von 157 (noch NICHT umsetzen):
 - 162 Antwortkarte: statt Score-Zahl (+2) Symbole – 3 Kreise (normale Stufe: je richtiger Antwort bis Score 3 gefüllt) + 3 Rauten (auf der Spitze stehende
   Quadrate: je erfolgreicher Wiederholung, Stufe 2–4). Form statt Farbe unterscheidet (Farbe: das wiederkehrende Grün). (Frage C: negative Scores?
   dieselben Symbole statt ●●○○ in Listen/Statistik?)
-- 163 Quiz-Tab: große Kreisdiagramme (Umschalter Übersetzung/Diktat) entfernen; Diktat wird Antwortart im normalen Modus, rechts neben „Tastatur“.
-  (Frage D: Akzente-Abfrageart ebenso? Diktat zählt in den Diktat-Score oder den normalen?)
+- 163 Quiz-Tab: große Kreisdiagramme (Umschalter Übersetzung/Diktat/Akzente) entfernen; Diktat wird Antwortart im normalen Modus, rechts neben „Tastatur“;
+  Akzente bleibt Antwortart. (D) Diktat- und Akzent-Scores/-Statistik bleiben eigen, sichtbar nur noch im Statistik-Tab; gewählt wird über die Antwortarten.
 - 164 Session-Kopf (zu): Fortschrittsbalken (wie weit die Session gelernt ist) im Knopf; Auswahl offen: ohne Balken (flacher), die Kachel zeigt ihn;
   nach Bestätigen wieder mit Balken. Wirkung beim Testen prüfen.
-- 165 Info-Fläche der Session-Auswahl standardmäßig aufgeklappt (Frage E: bei jedem Öffnen aufgeklappt statt gemerkt?).
+- 165 Info-Fläche der Session-Auswahl standardmäßig ZUgeklappt; beim Wechsel des Tabs wieder zu; innerhalb eines Tabs bleibt die Wahl (nicht dauerhaft gemerkt).
 - 166 Tab-Wechsel bei offener Session-Auswahl (z. B. zu Statistik): Auswahl geschlossen zeigen, die im Kopf stehende (angetippte) Session wird übernommen.
+- 167 Mehrfach-Auswahl durch Ziehen von einer freien Stelle (Lasso) entfernen. Stattdessen im Lang-Druck-Menü „↔ Von–Bis“: Lang-Druck auf Kachel A,
+  „Von–Bis“, dann Lang-Druck auf Kachel B → alle Kacheln dazwischen ausgewählt. Reihenfolge spaltenweise: eine Spalte nach unten, dann nächste Spalte
+  von oben … bis B (rückwärts entsprechend, je nachdem ob A vor oder nach B liegt).
