@@ -51,11 +51,11 @@ ok(await page.evaluate(() => /Vokabel-Trainer/.test(document.body.innerText)), "
 await kopf("info");
 ok(await offen() === "app" && await page.$("[data-info-oeffnen]"), "„‹ Info“: zurück zu App");
 
-// geöffneter Bereich bleibt beim Tab-Wechsel offen
+// 174: beim Wechsel in den Einstellungen-Tab ist alles zugeklappt
 await kopf("lernen");
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
-ok(await offen() === "lernen", "nach Tab-Wechsel: Lernen noch offen");
+ok(!(await offen()), `174: nach Tab-Wechsel alles zugeklappt (${await offen()})`);
 ok(await page.evaluate(() => [...document.querySelectorAll(".tab")].map(t => t.textContent).join(",")) === "Statistik,Quiz,Einstellungen", "Tabs: Statistik, Quiz, Einstellungen");
 
 await browser.close();

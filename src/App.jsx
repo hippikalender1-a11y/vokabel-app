@@ -1118,14 +1118,27 @@ function stufenRegel(alt, neu, ereignis) {
   return neu;
 }
 // Score als Symbole: 3 Kreise (bis gelernt, je richtiger Antwort) + 3 Rauten (Wiederholungs-Stufen 2–4); negativ: alle leer, erster Kreis rot umrandet
+// 172: fällige Vokabeln zwischen die übrigen einstreuen – je Karte mit faelligAnteil() % eine fällige (Reihenfolge je Teil bleibt)
+const STANDARD_FAELLIG_ANTEIL = 30;
+const FAELLIG_ANTEIL_WAHL = [0, 10, 20, 30, 50, 70, 100];
+function faelligAnteil() { const a = lsGet(SK.einstellungen, {})?.faelligAnteil; return typeof a === "number" ? a : STANDARD_FAELLIG_ANTEIL; }
+function mischeFaellige(voks, feld) {
+  const f = voks.filter(v => istFaellig(v[feld])), n = voks.filter(v => !istFaellig(v[feld]));
+  if (!f.length || !n.length) return voks;
+  const p = Math.max(0, Math.min(100, faelligAnteil())) / 100, erg = [];
+  let i = 0, j = 0;
+  while (i < f.length && j < n.length) erg.push(Math.random() < p ? f[i++] : n[j++]);
+  return [...erg, ...f.slice(i), ...n.slice(j)];
+}
 function scoreSymbole(score, klein = false) {
   const s = score ?? 0;
   const st = stufeVon(s);
   const titel = s < 0 ? `Score ${s}` : st ? `Gelernt, Stufe ${st} von ${MAX_STUFE}` : `${Math.max(0, s)} von ${GELERNT_SCHWELLE} bis gelernt`;
   return (
     <span className={`score-symbole${klein ? " klein" : ""}`} data-score-symbole={s} title={titel}>
-      {[0, 1, 2].map(i => <span key={"k" + i} className={`sym kreis${s >= i + 1 ? " voll" : ""}${s < 0 && i === 0 ? " negativ" : ""}`}/>)}
-      {[0, 1, 2].map(i => <span key={"r" + i} className={`sym raute${s >= GELERNT_SCHWELLE + i + 1 ? " voll" : ""}`}/>)}
+      {s <= GELERNT_SCHWELLE
+        ? [0, 1, 2].map(i => <span key={"k" + i} className={`sym kreis${s >= i + 1 ? " voll" : ""}${s < 0 && i === 0 ? " negativ" : ""}`}/>)
+        : [0, 1, 2].map(i => <span key={"r" + i} className={`sym raute${s >= GELERNT_SCHWELLE + i + 1 ? " voll" : ""}`}/>)}
     </span>
   );
 }
@@ -2564,7 +2577,10 @@ export default function VokabelApp() {
     return {
       // Rechtsklick = langer Druck: Menü bzw. Erklärung (mit „🎨 Farbe ändern“)
       // verschachtelt: ein inneres Element mit eigenem Menü hat Vorrang vor dem äußeren (sonst gewinnt wie bisher das äußere)
-      onContextMenu(e) { e.preventDefault(); if (e.nativeEvent._ttMenue) return; if (aktionen) e.nativeEvent._ttMenue = true; opts.beimLang?.();
+      onContextMenu(e) { e.preventDefault(); if (e.nativeEvent._ttMenue) return; if (aktionen) e.nativeEvent._ttMenue = true;
+        // 171: Android meldet den Lang-Druck zusätzlich als Kontextmenü – bei Kacheln läuft schon die eigene Geste (sonst rein + wieder heraus)
+        if (opts.eigeneGeste && (kachelGesteRef.current || lassoRef.current?.aktiv || e.nativeEvent.sourceCapabilities?.firesTouchEvents || e.nativeEvent.pointerType === "touch")) return;
+        opts.beimLang?.();
         if (aktionen) opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen, { ...(opts.auswahl ? { auswahl: opts.auswahl } : {}), ...(opts.regler ? { regler: opts.regler() } : {}) }); },
       title: text,
       "data-info": text,
@@ -3513,6 +3529,17 @@ export default function VokabelApp() {
       const sp = new Set([...ids].map(id => listeSprache(listenIndex.find(l => l.id === id))));
       return sp.size === 1 ? [...sp][0] : null;
     }
+    // 168: gewählte Session (Vorschau, Mehrfachauswahl, geladene) bestimmt die Farbe – außer „erst im Quiz“
+    if (!einstellungen.sprachFarben.erstImQuiz && (tab === "quiz" || tab === "statistik")) {
+      const kIds = e => e?.konfiguration?.listenIds || [];
+      const eintrag = (typ, id) => (slots[typ] || []).find(s => s.id === id);
+      const ids = slotSektionAufgeklappt && multiAuswahl?.length ? multiAuswahl.flatMap(id => kIds(eintrag("gespeichert", id)))
+        : slotSektionAufgeklappt && slotVorschau ? kIds(eintrag(slotVorschau.typ, slotVorschau.id))
+        : tab === "statistik" ? (statistikListenIds ? [...statistikListenIds] : []) : quizTabListen;
+      const sp = new Set(ids.map(id => listenIndex.find(l => l.id === id)).filter(Boolean).map(l => listeSprache(l)));
+      if (sp.size === 1) return [...sp][0];
+      if (sp.size > 1) return sprachFilter !== "alle" ? sprachFilter : null;   // mehrere Sprachen: normale Farbe
+    }
     return sprachFilter !== "alle" ? sprachFilter : null;
   })();
   const sprachSchemaId = sprachFarbKontext ? (einstellungen.sprachFarben.zuordnung?.[sprachFarbKontext] ?? `sprache_${sprachFarbKontext}`) : null;
@@ -3987,6 +4014,7 @@ export default function VokabelApp() {
         setQuizCheckboxAuswahl(new Set(statistikBereichTyp === "bereich" ? statistikCheckboxAuswahl : []));
       }
     }
+    if (neuerTab === "einstellungen" && tab !== "einstellungen") { setEinstBereich(null); setEinstUnter(null); setFarbTab(null); }   // 174
     setTab(neuerTab);
     setListenWahl(null);
     setStatistikVollbild(false);
@@ -4673,6 +4701,9 @@ export default function VokabelApp() {
   }
   const faelligVonSlots = ids => faelligeSchluessel(ids.map(id => getSlotEintrag("gespeichert", id)?.konfiguration).filter(Boolean));
   const faelligVonListen = ids => faelligeSchluessel([{ listenIds: ids }]);
+  // 170: nichts fällig → inaktiver Knopf als Hinweis (man sieht dort nach)
+  const faelligAktion = keys => [keys.length ? { label: `🔁 Fällige wiederholen (${keys.length})`, fn: () => ladeFaellige(keys) }
+    : { label: "🔁 Keine fälligen Vokabeln", aus: true, fn: () => {} }];
   // fällige Vokabeln über alle sichtbaren Listen (für „🔁 Fällige wiederholen“) – beim Öffnen der Auswahl neu berechnet
   const faelligAlle = useMemo(() => slotSektionAufgeklappt && (tab === "quiz" || tab === "statistik") ? faelligeSchluessel([{ listenIds: sichtbareListen.map(l => l.id) }]) : [],
     [slotSektionAufgeklappt, tab, listenIndex, sprachFilter, quizArt, faelligTick]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -5999,9 +6030,14 @@ export default function VokabelApp() {
               Zufallsfarben je Abschnitt
             </label>
             <label style={{display:"flex", alignItems:"center", gap:10, fontSize:"0.9rem", fontWeight:600, color:"var(--text)", cursor:"pointer", marginBottom:12}}
-              {...ttFeld("Ein: steht der Sprachfilter (🌐) auf einer Sprache oder wird eine Liste dieser Sprache abgefragt, gilt ihr Farbschema")}>
+              {...ttFeld("Ein: steht der Sprachfilter (🌐) auf einer Sprache, ist eine Session dieser Sprache gewählt oder wird sie abgefragt, gilt ihr Farbschema")}>
               <input type="checkbox" data-sprachfarben-an checked={!!sf.an} onChange={e => setze({ an: e.target.checked })} style={{width:18, height:18}}/>
               Farben je Sprache
+            </label>
+            <label style={{display:"flex", alignItems:"center", gap:10, fontSize:"0.9rem", fontWeight:600, color:"var(--text)", cursor:"pointer", marginBottom:12, marginLeft:28, opacity: sf.an ? 1 : 0.5}}
+              {...ttFeld("Ein: die App behält ihre eigene Farbe, bis die Abfrage läuft – die Auswahl einer Session färbt noch nicht um (der Sprachfilter schon)")}>
+              <input type="checkbox" data-sprachfarben-quiz checked={!!sf.erstImQuiz} disabled={!sf.an} onChange={e => setze({ erstImQuiz: e.target.checked })} style={{width:18, height:18}}/>
+              Erst im Quiz wechseln
             </label>
             {vorhandeneSprachen.length === 0 && <div className="karte-zeile-sub">Noch keine Listen.</div>}
             {vorhandeneSprachen.map(sp => {
@@ -6500,7 +6536,7 @@ export default function VokabelApp() {
       { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
       { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
       { label: "📤 Exportieren", fn: () => oeffneExport([l.id]) },
-      ...(() => { const f = faelligVonListen([l.id]); return f.length ? [{ label: `🔁 Fällige wiederholen (${f.length})`, fn: () => ladeFaellige(f) }] : []; })(),
+      ...(() => { const f = faelligVonListen([l.id]); return faelligAktion(f); })(),
       { label: "✨ Beispielsätze ergänzen", fn: () => oeffneSatzFenster(l.id) },
       { label: "≈ Synonyme ergänzen", fn: () => oeffneSynFenster(l.id) },
       ...(imKopf && sichtbareListen.some(x => x.id !== l.id) ? [{ label: "⇲ Zusammenführen", fn: () => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); } }] : []),
@@ -6525,7 +6561,7 @@ export default function VokabelApp() {
   function listenWahlMenue(ids) {
     return [
       { label: `📤 Exportieren (${ids.length})`, behalten: true, fn: () => oeffneExport(ids) },
-      ...(() => { const f = faelligVonListen(ids); return f.length ? [{ label: `🔁 Fällige wiederholen (${f.length})`, fn: () => ladeFaellige(f) }] : []; })(),
+      ...(() => { const f = faelligVonListen(ids); return faelligAktion(f); })(),
       ...(sprachFilter !== "alle" ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl(ids); } }]),
       { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "liste", ids }) },
       { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "liste", id: ids[ids.length - 1] }) },
@@ -6779,6 +6815,14 @@ export default function VokabelApp() {
     const vorschauE = !zu && !wahl && slotVorschau ? getSlotEintrag(slotVorschau.typ, slotVorschau.id) : null;
     const vorschauName = vorschauE ? (vorschauE.multi ? `🧩 ${vorschauE.name}` : vorschauE.name || "Abfrage") : "";
     const wahlText = wahl ? (vonBis?.art === "slot" ? "Von–Bis: Ziel lang drücken" : multiAuswahl.length ? `${multiAuswahl.length} ausgewählt${multiAuswahl.length >= 2 ? ` · ${multiZusammenstellung(multiAuswahl)?.anzahl || 0} Vokabeln` : ""}` : "Nichts ausgewählt") : "";
+    // 169: Fortschrittsbalken immer – bei offener Auswahl für das, was der Kopf zeigt (Vorschau bzw. Mehrfachauswahl)
+    const kopfVoks = e => { const k = e?.konfiguration || {};
+      let v = (k.listenIds || []).flatMap(id => (lsGet(SK.liste(id))?.vokabeln || []).map(x => ({ ...x, _key: `${id}__${x.id}`, _listeId: id })));
+      if (k.bereichTyp === "bereich" && k.vokabelAuswahl?.length) { const a = new Set(k.vokabelAuswahl); v = v.filter(x => a.has(x._key)); }
+      return v; };
+    const balkenVoks = wahl && multiAuswahl.length ? [...new Map(multiAuswahl.flatMap(id => kopfVoks(getSlotEintrag("gespeichert", id))).map(v => [v._key, v])).values()]
+      : vorschauE ? kopfVoks(vorschauE) : voks;
+    const balkenPct = balkenVoks.length ? Math.round(lernstandJeArt(balkenVoks)[statistik ? statistikArt : quizArt]?.pct || 0) : null;
     const kopfKlick = wahl ? () => beendeMultiAuswahl(multiAuswahl, statistik ? ladeSlotStatistik : ladeSlot)
       : vorschauE ? () => { const s = slotVorschau; setSlotVorschau(null); setSlotVorschauListe(false); (statistik ? ladeSlotStatistik : ladeSlot)(s.typ, s.id); leuchte("slotkopf"); }
       : aendern ? () => { setListenAendern(false); setListenAuswahlAufgeklappt(false); setQuizListeAufgeklappt(false); leuchte("slotkopf"); }
@@ -6796,7 +6840,7 @@ export default function VokabelApp() {
               : aendern ? "Ändern beenden – Listen und Vokabeln übernehmen"
               : geaendert ? `${name} – Vokabelauswahl geändert, noch nicht gespeichert; lang drücken: überspeichern, als neue Session speichern, verwerfen, umbenennen, duplizieren, Vokabeln ändern oder löschen`
               : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern, umbenennen, duplizieren, Vokabeln ändern, löschen" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, (wahl ? (auswahlTafelDaten.current.slot?.()?.aktionen || null) : aktionen), { langText: name })}>
-            {zu && voks.length > 0 && <span className="kopf-balken" data-kopf-balken={Math.round(ls[statistik ? statistikArt : quizArt]?.pct || 0)}><span style={{width:`${Math.round(ls[statistik ? statistikArt : quizArt]?.pct || 0)}%`}}/></span>}
+            {balkenPct !== null && <span className="kopf-balken" data-kopf-balken={balkenPct}><span style={{width:`${balkenPct}%`}}/></span>}
             {wahl ? <span data-wahl-anzahl={multiAuswahl.length}>{wahlText}</span> : vorschauE ? <span data-bestaetigen>{vorschauName} laden</span> : aendern ? <span data-bestaetigen>Bestätigen</span>
               : <>{name}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}</>}
           </button>
@@ -6946,7 +6990,7 @@ export default function VokabelApp() {
   function ordnerNavi(stil, statistik = false) {
     const ordnerOffen = (slots.ordner || []).find(o => o.id === slotOrdner) || null;
     const neueSession = imOrdner => ({ label: "＋ Neue Session aus Listen", fn: () => { neuImOrdnerRef.current = imOrdner; setNeueSessionSchritt("art"); setModal("neue-session"); } });
-    const faellige = keys => keys.length ? [{ label: `🔁 Fällige wiederholen (${keys.length})`, fn: () => ladeFaellige(keys) }] : [];
+    const faellige = faelligAktion;
     const alleListen = { label: "▦ Alle Listen", fn: () => {
       setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setSlotSektionAufgeklappt(false);
       setStatistikListenIds(null); setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
@@ -7031,7 +7075,7 @@ export default function VokabelApp() {
     const wahlMit = x => multiAuswahl.includes(x.id) ? multiAuswahl : [...multiAuswahl, x.id];
     const wahlMenue = ids => [
       ...(ids.length >= 2 ? [tab === "quiz" ? { label: `🧩 Multiquiz starten (${ids.length})`, fn: () => starteMultiquiz(ids) } : { label: `🧩 Multiquiz (${ids.length})`, fn: () => stelleMultiquizEin(ids) }] : []),
-      ...(() => { const f = faelligVonSlots(ids); return f.length ? [{ label: `🔁 Fällige wiederholen (${f.length})`, fn: () => ladeFaellige(f) }] : []; })(),
+      ...(() => { const f = faelligVonSlots(ids); return faelligAktion(f); })(),
       { label: `📁 In Gruppe… (${ids.length})`, fn: () => setInGruppe({ ids, name: "" }) },
       ...(ordnerOffen ? [{ label: `↑ Aus der Gruppe (${ids.length})`, fn: () => verschiebeInOrdner(ids, null) }] : []),
       { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl(ids); } },
@@ -7048,7 +7092,7 @@ export default function VokabelApp() {
       { label: "📁 In Gruppe…", fn: () => setInGruppe({ ids: [x.id], name: "" }) },
       ...(ordnerOffen ? [{ label: "↑ Aus der Gruppe", fn: () => verschiebeInOrdner([x.id], null) }] : []),
       { label: "📝 Listen/Vokabeln ändern", fn: () => { if (slotRef?.id !== x.id) onLaden('gespeichert', x.id); setListenAendern(true); setSlotSektionAufgeklappt(false); } },
-      ...(() => { const f = faelligVonSlots([x.id]); return f.length ? [{ label: `🔁 Fällige wiederholen (${f.length})`, fn: () => ladeFaellige(f) }] : []; })(),
+      ...(() => { const f = faelligVonSlots([x.id]); return faelligAktion(f); })(),
       { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
     ];
     // Auswahl-Tafel: eine Session → ihr Menü, mehrere → Aktionen für die Auswahl
@@ -7414,6 +7458,7 @@ export default function VokabelApp() {
       voks = voks.filter(v => gelerntDabei(v) || (v.diktatFortschritt?.score ?? 0) < threshold);
     }
     voks = ordneVokabeln(voks, "diktatFortschritt", reihenfolgeQ, unbeantwortetQ);
+    if (!gruppe) voks = mischeFaellige(voks, "diktatFortschritt");
     if (isPakete) voks = voks.slice(0, quizPaketGroesse);
     if (voks.length === 0) return;
     if (!isPakete && !gruppe) merkeRundeImVerlauf(effSlot, Object.fromEntries(voks.map(v => [v.id, v.fortschritt?.score ?? null])));
@@ -7536,6 +7581,7 @@ export default function VokabelApp() {
     }
 
     voks = ordneVokabeln(voks, scoreFeld, reihenfolgeQ, unbeantwortetQ);
+    if (!gruppe) voks = mischeFaellige(voks, scoreFeld);
 
     if (nurAkzentQ && quizRegeln().akzentOhneMischen) voks = verteileOhneAkzent(voks, quizAntwortTypenGeordnet);
     if (isPakete) voks = voks.slice(0, quizPaketGroesse);
@@ -12008,8 +12054,8 @@ export default function VokabelApp() {
               return einstZeile([
                 { k: "mischen", label: "Arten mischen", text: `${MISCH_ARTEN.filter(([k]) => (g[k] || 0) > 0).length} Arten`,
                   hilfe: "Sind bei einer Spalte mehrere Antwortarten gewählt, wird je Frage eine davon gezogen – mit diesen Anteilen" },
-                { k: "wiederholen", label: "Wiederholen", text: `${wiederholTage().join("·")} T`,
-                  hilfe: `Score +${schw} = gelernt (Stufe 1). Gelernte werden nach diesen Abständen fällig – gewusst: nächste Stufe (bis Stufe ${MAX_STUFE})` },
+                { k: "wiederholen", label: "Wiederholen", text: `${wiederholTage().join("·")} T · ${faelligAnteil()} %`,
+                  hilfe: `Score +${schw} = gelernt (Stufe 1). Gelernte werden nach diesen Abständen fällig – gewusst: nächste Stufe (bis Stufe ${MAX_STUFE}). Fällige werden mit der gewählten Wahrscheinlichkeit zwischen die übrigen Vokabeln gemischt` },
                 { k: "akzente", label: "Akzente", text: akzAn.length ? `${akzAn.map(sp => sp.flagge).join(" ")} an` : "aus",
                   hilfe: "Akzente je Sprache – ausgeschaltet: keine Abfrageart „A“ und keine Akzent-Statistik; fehlende Akzente beim Tippen gelten als richtig" },
               ]);
@@ -12051,6 +12097,16 @@ export default function VokabelApp() {
                     </div>
                   </div>
                 ))}
+                <div style={{marginBottom:4}}>
+                  <div className="inp-label">Fällige einstreuen</div>
+                  <div style={{display:"flex", gap:5, flexWrap:"wrap"}} data-wahl-bereich>
+                    {FAELLIG_ANTEIL_WAHL.map(p => (
+                      <button key={p} className={`toggle-opt${faelligAnteil() === p ? " aktiv" : ""}`} data-faellig-anteil={p} style={{minWidth:44, padding:"6px 8px"}}
+                        onClick={() => speichereEinst({ ...einstellungen, faelligAnteil: p })}
+                        {...tt(p === 0 ? "Fällige erst nach allen anderen Vokabeln" : p === 100 ? "Fällige zuerst, dann die übrigen" : `Je Karte kommt mit ${p} % Wahrscheinlichkeit eine fällige Vokabel`)}>{p} %</button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
             {einstUnter === "gelernt" && (

@@ -59,7 +59,7 @@ await einst({ sprache: "alle" }); await page.reload(); await sleep(600);
 await neueEineSession(page);
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unit 1"))?.click()); await sleep(300);
 await listenZu(page);
-ok(await haupt() === "#2d6a4f", "Quiz-Einstellungen mit Filter „Alle“: Standard-Schema");
+ok(await haupt() === "#1d3c78", `168: englische Liste gewählt (Filter „Alle“): schon englisches Schema (${await haupt()})`);
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);
 ok(await haupt() === "#1d3c78", `Abfrage der englischen Liste: Schema „Englisch 🇬🇧“ (${await haupt()})`);
 

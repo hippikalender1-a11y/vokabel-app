@@ -131,10 +131,12 @@ export default function InfoTafel() {
             <div data-info-menue style={{ display: "flex", flexDirection: unten ? "row" : "column", flexWrap: unten ? "wrap" : undefined, gap: unten ? 6 : 8 }}>
               {menue.map(a => (
                 <button key={a.label} data-info-aktion={a.farbe ? undefined : a.label} data-info-farbe={a.farbe ? "" : undefined}
-                  onClick={() => { setInfo(null); info.auswahl?.zu?.(!!a.behalten); a.fn(); }} style={{
+                  disabled={a.aus} data-info-aus={a.aus ? "" : undefined}
+                  onClick={() => { if (a.aus) return; setInfo(null); info.auswahl?.zu?.(!!a.behalten); a.fn(); }} style={{
+                  opacity: a.aus ? 0.45 : 1,
                   background: "var(--karte)", color: a.gefahr ? "var(--falsch)" : a.farbe ? "var(--text2)" : "var(--haupt)", textAlign: "left", whiteSpace: "nowrap",
                   border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: unten ? "8px 12px" : "11px 18px",
-                  fontSize: unten ? "0.85rem" : "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: "pointer",
+                  fontSize: unten ? "0.85rem" : "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: a.aus ? "default" : "pointer",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.22)",
                 }}>{a.label}</button>
               ))}

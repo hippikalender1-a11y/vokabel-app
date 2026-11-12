@@ -64,7 +64,7 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); let ziel = await mitte("0|0");
 await finger("touchStart", p.x, p.y); await sleep(1000); await finger("touchEnd"); await sleep(400);
-ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|▦ In Sessions aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
+ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|🔁 Keine fälligen Vokabeln|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|▦ In Sessions aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
 await page.evaluate(() => document.querySelector('[data-info-aktion="✕ Auswahl beenden"]').click()); await sleep(300);
 p = await mitte("2|0"); ziel = await mitte("0|0");   // die Auswahl-Tafel kann die Seite verschoben haben
 // kurz halten (angehoben) und ziehen: verschieben
@@ -86,6 +86,7 @@ ok(await maxZ() === 4, `Verschieben: unter dem untersten Eintrag (Zeile 3) zwei 
 await page.evaluate(() => document.querySelector('[data-raster-zelle="4|0"]').click()); await sleep(300);
 pl = await plaetze();
 ok(pl.Beta === "4|0" && await maxZ() === 6, `Antippen + freien Platz antippen: Beta auf 4|0 (${pl.Beta}), Raster wächst mit (bis ${await maxZ()})`);
+await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);   // längeres Menü (170) scrollt weiter – der feste Kopf läge über „Fertig“
 await page.click("[data-listen-fertig]"); await sleep(300);
 ok(!(await page.$("[data-listen-fertig]")) && await maxZ() === 4, `„Fertig“ beendet das Verschieben, freie Zeilen verschwinden (bis ${await maxZ()})`);
 

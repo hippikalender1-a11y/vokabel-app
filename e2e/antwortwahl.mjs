@@ -102,7 +102,7 @@ await klick("[data-wahl-fertig]");
 ok(!(await wahlKopf()) && await page.$('[data-einst-unter="sicherung"]'), "Bestätigen: Auswahl beendet, Knopfzeile wieder da");
 
 await einstUnter(page, "lernen");
-ok(/Arten mischen=\d+ Arten \| Wiederholen=[\d·]+ T \| Akzente=/.test(await zeile()) && !(await page.$("[data-antwort-gewichte]")), `Lernen: Knopfzeile, nichts offen (${await zeile()})`);
+ok(/Arten mischen=\d+ Arten \| Wiederholen=[\d·]+ T · \d+ % \| Akzente=/.test(await zeile()) && !(await page.$("[data-antwort-gewichte]")), `Lernen: Knopfzeile, nichts offen (${await zeile()})`);
 await klick('[data-einst-unter="wiederholen"]');
 ok(await page.$("[data-wiederholen-einst]"), "157: „Wiederholen“ öffnet die Abstände je Stufe");
 await klick('[data-einst-unter="mischen"]');
