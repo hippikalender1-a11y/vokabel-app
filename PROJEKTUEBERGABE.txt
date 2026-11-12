@@ -2440,3 +2440,6 @@ Gesammelt (noch NICHT umsetzen):
   mehr nicht (z. B. „Deu – Frz“; ohne Auswahl „Frage – Antwort“; wechselnd z. B. „Deu ⇄ Frz“). Der Knopf zeigt weiterhin die gewählte Antwortart (w).
 - 141 Beschriftungen in den Sektionen = Beschriftung auf dem Knopf (z. B. Reihenfolge „Schlechteste zuerst“, „Zufällig“, „Listenplatz“);
   „Listen-Nr.“ heißt überall „Listenplatz“ (auch Statistik-Sortierung, Info-Texte).
+- 142 Ordner (Gruppe) geöffnet: Navigation „← Alle Sessions › 📁 Name“ über dem Knopf „＋ Neue Session aus Listen“, der Knopf schließt direkt an die
+  Kacheln an; in diesem Fall zweispaltig (Anordnung offen, x). Neue Session (auch „In Sessions aufteilen“) im geöffneten Ordner wird in diesem Ordner
+  angelegt; Duplizieren bleibt im Ordner (113, erledigt).
