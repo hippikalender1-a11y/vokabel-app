@@ -2545,3 +2545,21 @@ Sitzung 157 (Commit 32731b6) – Gelernt-Stufen:
   (Neues Quiz, Auswahl zu). Menüs: Session-Einzel, Session-Auswahl, Liste, Listen-Auswahl „🔁 Fällige wiederholen (n)“; Knopf data-faellig-alle
   (useMemo faelligAlle über sichtbare Listen) über „Neue Session“. Info: „🔁 n fällig · “ vor den Gruppen.
 - Tests: stufen.mjs (90.); alte Tests mit wiederholTage:[3650,…] in den Einstellungen (Fälligkeit neutral), export/sicherung/gruppen mit vokabel_stufen_v1.
+
+Gesammelt nach Test von 157 (noch NICHT umsetzen):
+- 158 Knopf „🔁 Fällige wiederholen“ in der Session-Auswahl entfernen (blendet sich ein/aus → Inhalt springt, Lang-Druck geht daneben).
+- 159 Lang-Druck: (a) angetippte Session lang drücken → Mehrfach-Auswahl beginnt mit ihr; (b) eine Session angetippt, Lang-Druck auf eine ANDERE →
+  diese ist die erste der Mehrfach-Auswahl (Frage A: die vorher angetippte nicht mit aufnehmen?). Funktioniert derzeit nicht (vermutlich wegen 158).
+- 160 Pfad-Zeile immer zeigen: „Alle Sessions“ (in einem Ordner: „Alle Sessions › 📁 Name“). Lang-Druck auf „Alle Sessions“: „＋ Neue Session aus Listen“,
+  „🔁 Fällige wiederholen (n)“ (alle); Lang-Druck auf den Ordner: dasselbe für den Ordner-Inhalt. Fällige einer Liste/Session: Lang-Druck auf die Kachel,
+  ebenso in der Mehrfach-Auswahl. Mehr Platz, nichts springt. (Frage B: großer Knopf „＋ Neue Session“ weg?)
+- 161 Fehler: komplett gelernte (dunkel gefüllte) Kachel – Fortschrittsbalken wirkt leer; muss gefüllt sichtbar sein.
+- 162 Antwortkarte: statt Score-Zahl (+2) Symbole – 3 Kreise (normale Stufe: je richtiger Antwort bis Score 3 gefüllt) + 3 Rauten (auf der Spitze stehende
+  Quadrate: je erfolgreicher Wiederholung, Stufe 2–4). Form statt Farbe unterscheidet (Farbe: das wiederkehrende Grün). (Frage C: negative Scores?
+  dieselben Symbole statt ●●○○ in Listen/Statistik?)
+- 163 Quiz-Tab: große Kreisdiagramme (Umschalter Übersetzung/Diktat) entfernen; Diktat wird Antwortart im normalen Modus, rechts neben „Tastatur“.
+  (Frage D: Akzente-Abfrageart ebenso? Diktat zählt in den Diktat-Score oder den normalen?)
+- 164 Session-Kopf (zu): Fortschrittsbalken (wie weit die Session gelernt ist) im Knopf; Auswahl offen: ohne Balken (flacher), die Kachel zeigt ihn;
+  nach Bestätigen wieder mit Balken. Wirkung beim Testen prüfen.
+- 165 Info-Fläche der Session-Auswahl standardmäßig aufgeklappt (Frage E: bei jedem Öffnen aufgeklappt statt gemerkt?).
+- 166 Tab-Wechsel bei offener Session-Auswahl (z. B. zu Statistik): Auswahl geschlossen zeigen, die im Kopf stehende (angetippte) Session wird übernommen.
