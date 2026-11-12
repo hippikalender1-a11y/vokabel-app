@@ -2492,5 +2492,5 @@ Sitzung 147–149 (Commit 3257528):
   angepasst u. a. auswahl, export (Menü über den Kopf), multiquiz, gruppen_gesten, gruppen_sessions, runde3, listenraster, langdruck, slots, statistik, gemischt.
 
 Gesammelt (noch NICHT umsetzen):
-- 150 Multiquiz: nach dem Einstellen/Starten (grüner Kopf bzw. „🧩 Multiquiz starten“) und Rückkehr zur Session-Auswahl sind die Sessions wieder
-  abgewählt (keine Nummern/Ringe mehr; Auswahl leer) – wie bei einer einzelnen Session.
+- 150 Multiquiz: nach dem Einstellen/Starten und Rückkehr zur Session-Auswahl sind dessen Sessions ANGEWÄHLT dargestellt (grüner Ring, Nummern
+  1, 2 …) – wie die geladene einzelne Session, wenn nichts angetippt ist; Kopf und Info zeigen das Multiquiz. (Bisher: abgewählt.)
