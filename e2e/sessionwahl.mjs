@@ -74,6 +74,10 @@ ok(!(await kopfOffen()) && /Ganze Liste/.test(await kopf() || ""), `grüner Knop
 // ── 113: Duplizieren im Ordner ──
 await klick("[data-slot-kopf-name]");
 await klick('[data-ordner-id="o_1"]');
+// 142: Ordner-Navigation über „＋ Neue Session“, das Raster schließt direkt an
+const lage = await page.evaluate(() => { const n = document.querySelector("[data-ordner-navi]"), b = document.querySelector("[data-neue-session]"), k = document.querySelector("[data-slot-id]");
+  return n && b && k ? { navOben: n.getBoundingClientRect().bottom <= b.getBoundingClientRect().top + 1, abstand: Math.round(k.getBoundingClientRect().top - b.getBoundingClientRect().bottom) } : null; });
+ok(lage?.navOben && lage.abstand <= 8, `142: Navigation über dem Knopf, Kacheln direkt darunter (${JSON.stringify(lage)})`);
 await page.evaluate(() => { const el = document.querySelector('[data-slot-id="g_3"]'); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "⧉ Duplizieren")?.click()); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b => /Duplizieren|Speichern|OK/.test(b.textContent))?.click()); await sleep(400);

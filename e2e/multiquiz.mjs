@@ -116,7 +116,7 @@ const sl = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_sl
 ok(sl.verlauf.length === 2 && sl.verlauf.every(v => v.multi?.map(t => t.name).join("+") === "Teil A+Teil B"), "je Multiquiz ein Verlauf-Eintrag mit den Teilen („Fertig“ + „Multiquiz starten“), die Runde legt keinen weiteren an");
 ok(await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].some(c => c.textContent.includes("🧩"))), "Verlauf-Chip mit 🧩");
 await page.click("[data-slot-kopf-name]"); await sleep(300);   // Auswahl zu → Einstellungen
-ok(await page.evaluate(() => document.querySelector("[data-reihenfolge]")?.textContent.trim()) === "Nach Listen-Platz", "Reihenfolge von Teil A übernommen");
+ok(await page.evaluate(() => document.querySelector("[data-reihenfolge]")?.textContent.trim()) === "Listenplatz", "Reihenfolge von Teil A übernommen");
 
 // Speichern: Name-Vorschlag „Multiquiz: Teil A + Teil B“
 await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(300);

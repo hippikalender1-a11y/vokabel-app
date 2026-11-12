@@ -59,11 +59,19 @@ await sleep(900);
 ok(!(await page.evaluate(() => document.querySelector("[data-stufe]").classList.contains("leuchten"))) && await farbe("[data-stufe]") === zu, "danach wieder die normale Farbe");
 // Reihenfolge: Wahl antippen schließt
 await page.click("[data-reihenfolge]"); await sleep(300);
-await page.click('[data-reihenfolge-wahl="zufall"]'); await sleep(300);
+await page.click('[data-reihenfolge-wahl="zufall"]'); await sleep(450);
 ok(await text("[data-reihenfolge]") === "Zufällig" && !(await page.$('[data-reihenfolge-wahl]')), `Reihenfolge „Zufällig“ antippen: übernommen und zu (${await text("[data-reihenfolge]")})`);
+// 139: aufgeklappt ist die aktuelle Wahl grün; neue Wahl bleibt 0,3 s sichtbar, dann zu
+await page.click("[data-reihenfolge]"); await sleep(300);
+const gruen = await page.evaluate(() => { const b = document.querySelector('[data-reihenfolge-wahl="zufall"]'); const d = document.createElement("div"); d.style.background = getComputedStyle(document.documentElement).getPropertyValue("--bestaetigen"); document.body.appendChild(d); const g = getComputedStyle(d).backgroundColor; d.remove(); return getComputedStyle(b).backgroundColor === g; });
+ok(gruen, "139: aktuelle Wahl in der Auswahl-Farbe");
+await page.evaluate(() => document.querySelector('[data-reihenfolge-wahl="listennr"]').click()); await new Promise(r => setTimeout(r, 120));
+ok(await page.$('[data-reihenfolge-wahl="listennr"].aktiv'), "139: neue Wahl kurz sichtbar (noch offen)");
+await new Promise(r => setTimeout(r, 400));
+ok(!(await page.$("[data-reihenfolge-wahl]")) && await text("[data-reihenfolge]") === "Listenplatz", `… dann zu, Knopf „Listenplatz“ (${await text("[data-reihenfolge]")})`);
 // Beschriftungen über den Knöpfen, gleich hohe Knöpfe
 const labels = await page.evaluate(() => [...document.querySelectorAll(".quiz-zeile-label")].map(l => l.textContent).join("|"));
-ok(labels.startsWith("Lern-Modus|Art der Antwort|Reihenfolge|Anzahl je Runde|Wie oft"), `Beschriftungen (${labels})`);
+ok(/^Lern-Modus\|\w+ – \w+\|Reihenfolge\|Anzahl je Runde\|Wie oft/.test(labels), `Beschriftungen, über „Art der Antwort“ die Sprachen Frage – Antwort (${labels})`);
 const hoehe = s => page.evaluate(s => Math.round(document.querySelector(s).getBoundingClientRect().height), s);
 const zu1 = [await hoehe("[data-stufe]"), await hoehe("[data-abfragemodus]"), await hoehe("[data-reihenfolge]"), await hoehe("[data-umfang]")];
 await page.click("[data-reihenfolge]"); await sleep(300);

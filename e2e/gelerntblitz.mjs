@@ -45,7 +45,7 @@ await page.reload(); await sleep(500);
 await zuListen(page);
 await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
 await clickText("button", "Quiz starten", true);
-await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].find(b => b.textContent.trim() === "Listen-Nr.")?.click());
+await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].find(b => b.textContent.trim() === "Listenplatz")?.click());
 await clickText("[data-start-knopf]", "");
 await sleep(300);
 

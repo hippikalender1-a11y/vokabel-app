@@ -61,7 +61,7 @@ await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
 await clickText("button", "Quiz starten", true);
 // Reihenfolge Listen-Nr., keine Score-Grenze → alle 12 in der Session, Pakete zu 10
 await page.click("[data-reihenfolge]"); await sleep(300);
-await clickText(".toggle-opt", "Listen-Nr.", true);
+await clickText(".toggle-opt", "Listenplatz", true);
 await page.evaluate(() => { const r = document.querySelector('input[type="range"]'); });
 await bereichZu(page);
 await paketGroesse(page, 10);

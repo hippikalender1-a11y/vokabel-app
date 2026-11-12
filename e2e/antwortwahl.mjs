@@ -91,7 +91,7 @@ await klick('[data-einst-unter="sicherung"]');
 ok(await page.$("[data-sicherung]") && !(await page.$('[data-liste-id="l_a"]')), "Sicherung offen: Listen ausgeblendet");
 await klick('[data-einst-unter="erinnerung"]');
 ok(await page.$("[data-sicherung-tage]") && !(await page.$("[data-sicherung]")) && /Bestätigen/.test(await zeile()), "Erinnerung offen: „Bestätigen“, nur ein Bereich offen");
-await klick('[data-sicherung-tage-wahl="14"]');
+await klick('[data-sicherung-tage-wahl="14"]'); await sleep(350);   // 139: Wahl kurz sichtbar, dann zu
 ok(!(await page.$("[data-sicherung-tage]")) && /Erinnerung=nach 14 T/.test(await zeile()) && await leuchtet('[data-einst-unter="erinnerung"]'), `Wahl: übernommen, zu, leuchtet (${await zeile()})`);
 
 // ── 97: Listen-Auswahl – Kopf wird grüner Bestätigen-Knopf, „Keine“ statt „Fertig“ ──
@@ -107,13 +107,13 @@ ok(!(await wahlKopf()) && await page.$('[data-einst-unter="sicherung"]'), "Best�
 await einstUnter(page, "lernen");
 ok(/Arten mischen=\d+ Arten \| Gelernt ab=Score \+2 \| Akzente=/.test(await zeile()) && !(await page.$("[data-antwort-gewichte]")), `Lernen: Knopfzeile, nichts offen (${await zeile()})`);
 await klick('[data-einst-unter="gelernt"]');
-await klick('[data-gelernt-wahl="4"]');
+await klick('[data-gelernt-wahl="4"]'); await sleep(350);
 ok(/Gelernt ab=Score \+4/.test(await zeile()) && !(await page.$("[data-gelernt-schwelle]")), "Gelernt-Schwelle: Wahl schließt");
 await klick('[data-einst-unter="mischen"]');
 ok(await page.$("[data-antwort-gewichte]") && (await zeile()).includes("▲"), "Arten mischen offen: Regler, Knopf mit ▲");
 
 await einstUnter(page, "raster", "sessions");
-await klick('[data-raster-spalten="3"]');
+await klick('[data-raster-spalten="3"]'); await sleep(350);
 ok(/Sessions=3 Spalten/.test(await zeile()), `Raster: Sessions 3 Spalten (${await zeile()})`);
 
 await einstUnter(page, "farben");
