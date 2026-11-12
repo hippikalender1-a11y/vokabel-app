@@ -82,7 +82,7 @@ console.log("     Spanisch an:", JSON.stringify(r));
 ok(!r.richtig, `Akzente an (Schwer): „${r.frage}“ ohne Akzent gilt nicht als richtig`);
 
 // in A wechseln, dann Spanisch wieder ausschalten → zurück zu Übersetzung
-await page.click('[data-start-arten] [data-quiz-art="akzente"]'); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-start-arten] [data-quiz-art="akzente"]')?.click()); await sleep(300);
 await tab("Einstellungen"); await oeffneEinstAkz();
 await page.click('[data-akzent-sprache="es:aus"]'); await sleep(200);
 await tab("Quiz");

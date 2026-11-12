@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { neueSessionMenue } from "./hilfen.mjs";
 
 // Session-Gruppen (Ordner): „📁 In Gruppe…“ (neu / vorhanden), Gruppen-Kachel öffnet die Gruppe („← Alle Sessions“),
 // „↑ Aus der Gruppe“, Gruppe umbenennen / auflösen, Multiquiz der Gruppe, Aufteilen legt eine Gruppe an
@@ -111,7 +112,7 @@ k = await kacheln();
 ok(["Teil 1", "Teil 2", "Teil 3"].every(n => k.includes(n)), `oberste Ebene: alle drei Teile (${k.join(" | ")})`);
 
 // Aufteilen legt gleich eine Gruppe an
-await page.click("[data-neue-session]"); await sleep(300);
+await neueSessionMenue(page); await sleep(300);
 await page.click('[data-neue-session-art="mehrere"]'); await sleep(300);
 await page.click('[data-aufteilen-liste="l_a"]'); await sleep(500);
 ok(await page.evaluate(() => document.querySelector("[data-aufteilen-gruppe]")?.checked), "Aufteilen: „In Gruppe zusammenfassen“ ist angehakt");

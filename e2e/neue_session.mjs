@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { neueSessionMenue } from "./hilfen.mjs";
 import { slotLaden } from "./hilfen.mjs";
 
 // Quiz-Tab: Kopf schaltet zwischen Auswahl (Sessions, Verlauf) und Einstellungen um; „＋ Neue Session aus Listen“:
@@ -31,7 +32,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(600);
 
 // Start: nur die Auswahl
-ok(await ansicht() === "auswahl" && await page.$("[data-neue-session]") && !(await sichtbar("[data-start-knopf]")) && !(await sichtbar(".quiz-setup-check")),
+ok(await ansicht() === "auswahl" && await page.$("[data-alle-sessions]") && !(await sichtbar("[data-start-knopf]")) && !(await sichtbar(".quiz-setup-check")),
   "App-Start: Session-Auswahl ohne Einstellungen, Listen und Start-Knopf");
 // Session wählen → Einstellungen
 await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Mein Quiz")).click()); await sleep(900); await slotLaden(page);
@@ -44,7 +45,7 @@ ok(await ansicht() === "einstellungen" && await page.evaluate(() => document.que
 
 // Neue Session: Eine
 await page.click("[data-slot-kopf-name]"); await sleep(300);
-await page.click("[data-neue-session]"); await sleep(300);
+await neueSessionMenue(page); await sleep(300);
 ok(await page.$('[data-neue-session-dialog="art"]') && await page.$('[data-neue-session-art="eine"]') && await page.$('[data-neue-session-art="mehrere"]'), "Dialog: Eine Session / Mehrere Sessions");
 await page.click('[data-neue-session-art="eine"]'); await sleep(400);
 ok(await ansicht() === "einstellungen" && await sichtbar(".quiz-setup-check") && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Neues Quiznicht gespeichert",
@@ -52,7 +53,7 @@ ok(await ansicht() === "einstellungen" && await sichtbar(".quiz-setup-check") &&
 
 // Neue Session: Mehrere → Liste wählen → Aufteilen
 await page.click("[data-slot-kopf-name]"); await sleep(300);
-await page.click("[data-neue-session]"); await sleep(300);
+await neueSessionMenue(page); await sleep(300);
 await page.click('[data-neue-session-art="mehrere"]'); await sleep(300);
 ok(await page.$('[data-neue-session-dialog="liste"]') && await page.$('[data-aufteilen-liste="l_a"]') && await page.$('[data-aufteilen-liste="l_b"]'), "Mehrere: Listen zur Wahl");
 await page.click('[data-aufteilen-liste="l_b"]'); await sleep(500);

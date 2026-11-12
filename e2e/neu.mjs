@@ -96,7 +96,8 @@ ok(/GESAMT\s*\n?\s*2/i.test(t), "Statistik: Preset zeigt 2 Vokabeln");
 // nach dem Laden ist der Bereich zu → wieder öffnen
 await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
-await page.evaluate(() => document.querySelector("[data-alle-listen]").click()); await sleep(300);   // Statistik: „▦ Alle Listen“ (früher „Neu“-Chip)
+await page.evaluate(() => { const el = document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(250);
+await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion.startsWith("▦ Alle Listen"))?.click()); await sleep(300);   // Statistik: „▦ Alle Listen“ (früher „Neu“-Chip)
 await sleep(300);
 t = await page.evaluate(() => document.body.innerText);
 ok(/GESAMT\s*\n?\s*3/i.test(t), "Statistik Neu: wieder alle 3 Vokabeln");

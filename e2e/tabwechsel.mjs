@@ -70,7 +70,14 @@ await sleep(300);
 st = await stand();
 console.log("     Quiz:", JSON.stringify(st));
 ok(st.kopf === "gruen" && st.name === "Paket Farben" && st.listen === "(ausgeblendet)", "Statistik → Quiz: Paket Farben übernommen (Listen-Auswahl ausgeblendet)");
-ok(await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl) === "3" && /Farben.*3 Vokabeln/.test(await page.evaluate(() => { document.querySelector("[data-slot-kopf-name]").click(); return new Promise(r => setTimeout(() => { const t = document.querySelector("[data-slot-info]")?.innerText.replace(/\s+/g, " ") || ""; document.querySelector("[data-slot-kopf-name]").click(); r(t); }, 300)); })), "Quiz: 3 Vokabeln aus Farben (Info-Zeile „Farben · 3 Vokabeln“)");
+{
+  const anzahl = await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl);
+  await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(300);
+  await page.evaluate(() => { if (document.querySelector("[data-slot-info-zu]")) document.querySelector("[data-slot-info]")?.click(); }); await sleep(300);
+  const infoText = await page.evaluate(() => document.querySelector("[data-slot-info]")?.innerText.replace(/\s+/g, " ") || "");
+  await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(300);
+  ok(anzahl === "3" && /Farben.*3 Vokabeln/.test(infoText), `Quiz: 3 Vokabeln aus Farben (Info-Zeile „Farben · 3 Vokabeln“) (${anzahl} | ${infoText.slice(0, 80)})`);
+}
 
 // Statistik: „Neu“ (alle Listen, keine Konfiguration) → Quiz ohne Konfiguration, beide Listen
 // vorher im Quiz auf Diktat wechseln – ein neues Quiz beginnt trotzdem in Übersetzung
@@ -78,7 +85,8 @@ await page.evaluate(() => document.querySelector('[data-start-arten] [data-quiz-
 const artVorher = await page.evaluate(() => document.querySelector("[data-start-arten] [data-quiz-art].aktiv")?.dataset.quizArt);
 await clickText(".tab", "Statistik");
 await oeffneKopf();
-await page.evaluate(() => document.querySelector("[data-alle-listen]").click());
+await page.evaluate(() => { const el = document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(250);
+await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion.startsWith("▦ Alle Listen"))?.click());
 await sleep(300);
 await clickText(".tab", "Quiz");
 await sleep(300);

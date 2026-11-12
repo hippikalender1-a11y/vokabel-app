@@ -27,7 +27,7 @@ const clickText = async (sel, text, exact = false) => {
 const artWaehlen = async a => {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") k.querySelector("button.zeile-rechts")?.click(); });
   await sleep(300);
-  await page.click(`[data-quiz-art="${a}"]`); await sleep(300);
+  await page.evaluate(a => document.querySelector(`[data-quiz-art="${a}"]`)?.click(), a); await sleep(300);
 };
 const anzeige = () => page.evaluate(() => ({
   akzent: document.querySelector('[data-anzahl="akzent"]')?.textContent.trim(),

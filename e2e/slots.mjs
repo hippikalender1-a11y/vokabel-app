@@ -101,7 +101,7 @@ let pl = await plaetze();
 console.log("     Plätze:", JSON.stringify(pl));
 ok(pl[n1] === "0|0" && pl[n2] === "1|0" && pl[n3] === "2|0", "Neue Einträge untereinander in der ersten Spalte (Raster 10 × 2)");
 ok(await page.evaluate(() => getComputedStyle(document.querySelector(".slot-raster")).gridTemplateColumns.split(" ").length === 2), "Raster mit 2 Spalten");
-ok(await page.evaluate(() => { const neu = document.querySelector("[data-neue-session]"); return !!neu && !neu.closest(".slot-raster"); }),
+ok(await page.evaluate(() => { const neu = document.querySelector("[data-alle-sessions]"); return !!neu && !neu.closest(".slot-raster"); }),
   "„＋ Neue Session aus Listen“ oben, nicht im Raster");
 t = await page.evaluate(() => document.body.innerText);
 ok(!t.includes("⇄ Verschieben") && !/Lang drücken: Menü/.test(t) && !(await page.$("svg + svg")),
@@ -114,10 +114,10 @@ await menue("2|0");
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.textContent.trim()));
 const blase = await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText || "");
 console.log("     Menü:", knoepfe.join(" | "));
-ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Gruppe…|📝 Listen/Vokabeln ändern|🗑 Löschen|✕ Auswahl beenden", `Lang-Druck: voller Name (Info oben) + Menü (${knoepfe.join("|")})`);
+ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Gruppe…|📝 Listen/Vokabeln ändern|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: voller Name (Info oben) + Menü (${knoepfe.join("|")})`);
 await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
-ok(!(await page.$('[role="status"]')) && /1 markiert/.test(await page.evaluate(() => document.body.innerText)),
+ok(!(await page.$('[role="status"]')) && /Fertig · 1/.test(await page.evaluate(() => document.querySelector("[data-slot-fertig]")?.innerText || "")),
   "„Verschieben“: Menü zu, Verschieben-Modus mit diesem Paket markiert");
 await tippZelle("3|1"); await sleep(250);
 pl = await plaetze();

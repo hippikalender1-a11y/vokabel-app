@@ -46,7 +46,7 @@ const vorbereiten = async (einst = {}) => {
 // ── Bestätigen (Listen-Auswahl) + Gruppen für die Fremdsprachen-Antwort ──
 const lk = await vorbereiten();
 ok(lk && lk.kl && lk.text === "Bestätigen", `Listen-Auswahl: „Bestätigen“ mit eigener Optik (${JSON.stringify(lk)})`);
-ok(await knoepfe("E1") === "karte,mc,tippen,akzent,puzzle,luecke,artikel,satzfinden,satzbauen,lueckensatz,zuordnung,memory", `Antwort Französisch: ohne Hören (${await knoepfe("E1")})`);
+ok(await knoepfe("E1") === "karte,mc,tippen,diktat,akzent,puzzle,luecke,artikel,satzfinden,satzbauen,lueckensatz,zuordnung,memory", `Antwort Französisch: ohne Hören (${await knoepfe("E1")})`);
 ok(await gruppen("E1") === "grund,wort,satz,runde", `Gruppen Grund · Wort · Satz · Runde (${await gruppen("E1")})`);
 const abst = await page.evaluate(() => { const g = [...document.querySelectorAll("[data-modus-gruppe]")]; return Math.round(g[1].getBoundingClientRect().top - g[0].getBoundingClientRect().bottom); });
 ok(abst >= 12, `Abstand zwischen den Gruppen (${abst}px)`);

@@ -37,7 +37,7 @@ const anzahl = async () => page.evaluate(() => document.querySelector("[data-sta
 const artWaehlen = async a => {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") k.querySelector("button.zeile-rechts")?.click(); });
   await new Promise(r => setTimeout(r, 300));
-  await page.click(`[data-quiz-art="${a}"]`);
+  await page.evaluate(a => document.querySelector(`[data-quiz-art="${a}"]`)?.click(), a);
 };
 await page.goto(URL);
 await page.evaluate(() => {

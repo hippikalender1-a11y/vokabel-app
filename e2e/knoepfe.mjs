@@ -78,7 +78,7 @@ await page.click("[data-reihenfolge]"); await sleep(300);
 const offen1 = await hoehe("[data-reihenfolge]");
 ok(zu1.every(h => h === zu1[0]) && offen1 === zu1[0], `alle Knöpfe gleich hoch, Bestätigen auch (${zu1} / ${offen1})`);
 await page.click("[data-reihenfolge]"); await sleep(300);
-ok(await page.evaluate(() => document.querySelector("[data-start-fortschritt]")?.textContent) === "Fortschritt", "„Fortschritt“ über den Kreisen");
+ok(!(await page.$("[data-start-fortschritt]")), "163: keine großen Kreise mehr im Quiz-Tab");
 
 // Start: lang drücken → Speichern
 await page.evaluate(() => { const el = document.querySelector("[data-start-knopf]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 10 })); }); await sleep(300);

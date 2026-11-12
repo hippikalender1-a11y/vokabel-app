@@ -15,8 +15,16 @@ export async function quizEinstellungen(page) {
 export async function neueEineSession(page) {
   await page.evaluate(() => { if (document.querySelector('[data-quiz-ansicht="einstellungen"]')) document.querySelector("[data-slot-kopf-name]")?.click(); });
   await new Promise(r => setTimeout(r, 300));
-  await page.click("[data-neue-session]"); await new Promise(r => setTimeout(r, 300));
+  await neueSessionMenue(page);
   await page.click('[data-neue-session-art="eine"]'); await new Promise(r => setTimeout(r, 400));
+}
+// 160: „＋ Neue Session aus Listen“ über lang drücken auf „Alle Sessions“ (bzw. die Gruppe in der Pfad-Zeile)
+export async function neueSessionMenue(page) {
+  await page.evaluate(() => { const el = document.querySelector("[data-ordner-name]") || document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); });
+  await new Promise(r => setTimeout(r, 250));
+  await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "＋ Neue Session aus Listen")?.click());
+  await new Promise(r => setTimeout(r, 300));
 }
 // Listen-Auswahl zuklappen: solange sie offen ist (Fokus), sind die übrigen Quiz-Optionen ausgeblendet
 export async function listenZu(page) {

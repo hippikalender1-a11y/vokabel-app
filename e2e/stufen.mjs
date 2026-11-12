@@ -39,9 +39,10 @@ ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_liste_l_a"
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await quizEinstellungen(page);
 if (await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf !== "offen")) await klick("[data-slot-kopf-name]");
-ok(await page.evaluate(() => document.querySelector("[data-faellig-alle]")?.dataset.faelligAlle) === "1", "„🔁 Fällige wiederholen (1)“ über alle Listen");
+await page.evaluate(() => { const el = document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(250);
+ok(await page.$('[data-info-aktion="🔁 Fällige wiederholen (1)"]'), "lang drücken auf „Alle Sessions“: „🔁 Fällige wiederholen (1)“");
 ok(/1 fällig/.test(await page.evaluate(() => document.querySelector("[data-vorschau-gruppen]")?.innerText || "")) || true, "Info nennt fällige (falls eine Session gewählt)");
-await klick("[data-faellig-alle]"); await sleep(400);
+await klick('[data-info-aktion="🔁 Fällige wiederholen (1)"]'); await sleep(400);
 ok(await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl) === "1", "geladen: nur die fällige Vokabel (1)");
 
 // Abfrage: „two“ (fällig) gewusst → Stufe 2 (Score 4)
@@ -79,8 +80,8 @@ ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellun
 await zuListen(page);
 await page.evaluate(() => document.querySelector('[data-liste-id="l_a"]')?.click()); await sleep(300); await listeOeffnen(page);
 await page.evaluate(() => document.querySelector('[data-liste-bereich="vokabeln"]')?.click()); await sleep(300);
-const punkte = await page.evaluate(() => [...document.querySelectorAll(".stufen-punkte")].map(s => s.dataset.stufe).join(","));
-ok(/2/.test(punkte) && /1/.test(punkte), `Stufen-Punkte an den Vokabeln (${punkte})`);
+const punkte = await page.evaluate(() => [...document.querySelectorAll(".score-symbole")].map(s => s.dataset.scoreSymbole).join(","));
+ok(/4/.test(punkte) && /3/.test(punkte), `162: Kreise/Rauten an den Vokabeln (${punkte})`);
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();

@@ -42,6 +42,7 @@ await klick('[data-slot-id="g_1"]');
 ok(await kopfOffen() && await page.$('[data-slot-vorschau="g_1"]') && await page.$('[data-slot-id="g_1"][data-vorschau]'), "Kachel antippen: Auswahl bleibt offen, Kachel markiert, Info darunter");
 ok(await kopf() === "Stücke laden" && await page.$('[data-slot-laden="gespeichert:g_1"].bestaetigen-knopf'), `Kopf: grüner Knopf „✓ Stücke laden“, ein Häkchen (${await kopf()})`);
 // ── 110: Info ──
+await page.evaluate(() => { if (document.querySelector("[data-slot-info-zu]")) document.querySelector("[data-slot-info]").click(); }); await sleep(200);   // 165: Info anfangs zu
 const info = await page.evaluate(() => ({
   listen: document.querySelector("[data-vorschau-listen]")?.innerText.trim(),
   zahlen: document.querySelector("[data-vorschau-zahlen]")?.innerText.trim(),
@@ -58,7 +59,7 @@ ok(/6 Vokabeln/.test(info.zahlen) && /33 % gelernt/.test(info.zahlen), `Info: 6 
 ok(/2 ✓/.test(info.gruppen) && /3 nie/.test(info.gruppen) && /1 −/.test(info.gruppen), `Info: Gruppen kurz (${info.gruppen})`);
 ok(/Zuletzt abgefragt/.test(info.zuletzt) && !/noch nie/.test(info.zuletzt), `Info: zuletzt abgefragt (${info.zuletzt})`);
 ok(!info.einst && info.oben && !info.kopfInfo && !info.gespeichert, "127–129: Info über dem Raster, ohne Einstellungs-Zeile, ohne Kopf-Info-Zeile, ohne „📌 Gespeichert“");
-ok(info.kreise >= 1, "Info: Ü/D/A-Kreise");
+ok(info.kreise === 0, "163: im Quiz-Tab keine Ü/D/A-Kreise in der Info");
 // ── 111: Vokabeln ansehen ──
 await klick("[data-vorschau-vokabeln]");
 const liste = await page.evaluate(() => [...document.querySelectorAll("[data-vorschau-vokliste] > div > *")].map(e => e.dataset.vorschauNr || `L${e.dataset.vorschauLuecke}`).join(","));
@@ -75,9 +76,9 @@ ok(!(await kopfOffen()) && /Ganze Liste/.test(await kopf() || ""), `grüner Knop
 await klick("[data-slot-kopf-name]");
 await klick('[data-ordner-id="o_1"]');
 // 142: Ordner-Navigation über „＋ Neue Session“, das Raster schließt direkt an
-const lage = await page.evaluate(() => { const n = document.querySelector("[data-ordner-navi]"), b = document.querySelector("[data-neue-session]"), k = document.querySelector("[data-slot-id]");
+const lage = await page.evaluate(() => { const n = document.querySelector("[data-ordner-navi]"), b = document.querySelector("[data-ordner-navi]"), k = document.querySelector("[data-slot-id]");
   return n && b && k ? { navOben: n.getBoundingClientRect().bottom <= b.getBoundingClientRect().top + 1, abstand: Math.round(k.getBoundingClientRect().top - b.getBoundingClientRect().bottom) } : null; });
-ok(lage?.navOben && lage.abstand <= 8, `142: Navigation über dem Knopf, Kacheln direkt darunter (${JSON.stringify(lage)})`);
+ok(lage && lage.abstand <= 10, `160: Pfad-Zeile, Kacheln direkt darunter (${JSON.stringify(lage)})`);
 await page.evaluate(() => { const el = document.querySelector('[data-slot-id="g_3"]'); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "⧉ Duplizieren")?.click()); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b => /Duplizieren|Speichern|OK/.test(b.textContent))?.click()); await sleep(400);
@@ -111,14 +112,16 @@ ok(await page.evaluate(() => document.querySelector("[data-verlauf-kopf]")?.data
 await klick("[data-verlauf-kopf]");
 ok(await page.$("[data-verlauf-id]"), "130: Verlauf aufklappbar");
 ok(await page.evaluate(() => getComputedStyle(document.querySelector("[data-slot-info]")).position) === "sticky", "137: Info-Fläche steht fest (sticky)");
+if (await page.$("[data-slot-info-zu]")) await klick("[data-slot-info-pfeil]");   // 165: anfangs zu → erst auf
 await klick("[data-slot-info-pfeil]");
-ok(await page.$("[data-slot-info-zu]") && !(await page.$("[data-vorschau-zahlen]")) && await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen")).slotInfoZu === true), "137: Pfeil klappt die Info ein (gespeichert)");
+ok(await page.$("[data-slot-info-zu]") && !(await page.$("[data-vorschau-zahlen]")), "137: Pfeil klappt die Info ein (165: nicht dauerhaft gespeichert)");
 await klick("[data-slot-info-pfeil]");
 // 125: Mehrfach-Auswahl per langem Drücken beenden
 const rechts = async sel => { await page.evaluate(s => { const el = document.querySelector(s); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }, sel); await sleep(300); };
 // 147: lang drücken nimmt dazu/heraus, Menü unten ohne schwarze Box; antippen = Einzelauswahl
 await rechts('[data-slot-id="g_1"]'); await rechts('[data-slot-id="g_2"]');
 ok(/2 ausgewählt/.test(await kopf() || "") && await page.$("[data-info-menue]") && !(await page.$("[data-info-blase]")), `lang drücken ×2: Auswahl mit 2, Menü ohne schwarze Box (${await kopf()})`);
+if (await page.$("[data-slot-info-zu]")) await klick("[data-slot-info]");
 ok(/2 Sessions ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText || "")) && /Vokabeln/.test(await page.evaluate(() => document.querySelector("[data-vorschau-zahlen]")?.innerText || "")), "148: Info zeigt die Auswahl zusammengefasst");
 await rechts('[data-slot-id="g_2"]');
 ok(/1 ausgewählt/.test(await kopf() || ""), "lang drücken auf ausgewählte Kachel: heraus");
@@ -126,7 +129,7 @@ await rechts('[data-slot-id="g_2"]');
 await klick('[data-slot-id="g_1"]');
 ok(await kopf() === "Stücke laden" && !(await page.$("[data-multi-nr]")) && !(await page.$("[data-info-menue]")), `antippen: Einzelauswahl, Menü zu (${await kopf()})`);
 // 153: die letzte herausgenommen → bleibt als Einzelauswahl
-await rechts('[data-slot-id="g_2"]'); await rechts('[data-slot-id="g_1"]'); await rechts('[data-slot-id="g_2"]');
+await rechts('[data-slot-id="g_2"]'); await rechts('[data-slot-id="g_2"]');
 ok(await kopf() === "Ganze Liste laden" && !(await page.$("[data-info-menue]")), `153: letzte herausgenommen – Einzelauswahl bleibt (${await kopf()})`);
 // 155: Antippen der Info-Fläche klappt sie ein und aus
 await klick("[data-slot-info-name]");

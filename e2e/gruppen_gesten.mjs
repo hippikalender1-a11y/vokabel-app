@@ -82,15 +82,18 @@ await kontext(kachel("s1")); await kontext(kachel("s2"));
 await page.click(kachel("s3")); await sleep(300);
 ok(!(await tafel()) && await gewaehlt() === "" && await page.$('[data-slot-laden="gespeichert:s3"]'), "antippen: Auswahl ersetzt durch Teil 3 (Einzelauswahl, Tafel zu)");
 
-// ── Einsammeln: Lang-Druck auf freie Stelle, dann über Kacheln ziehen ──
+// ── 167: kein Einsammeln von einer freien Stelle mehr – stattdessen „↔ Von–Bis“ (spaltenweise) ──
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 const a1 = await mitte(kachel("s1")), a3 = await mitte(kachel("s3"));
 const frei = { x: a1.x + a1.w + 6, y: a1.y };
 await finger("touchStart", frei.x, frei.y); await sleep(700);
-for (let i = 1; i <= 4; i++) { await finger("touchMove", frei.x - (frei.x - a1.x) * i / 4, frei.y); await sleep(40); }
 for (let i = 1; i <= 8; i++) { await finger("touchMove", a1.x, a1.y + (a3.y - a1.y) * i / 8); await sleep(40); }
 await finger("touchEnd"); await sleep(400);
-ok(await gewaehlt() === "s1,s2,s3", `Einsammeln: Teil 1–3 ausgewählt (${await gewaehlt()})`);
+ok(await gewaehlt() === "", `von freier Stelle ziehen: nichts ausgewählt (${await gewaehlt()})`);
+await kontext(kachel("s1"));
+await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "↔ Von–Bis")?.click()); await sleep(300);
+await kontext(kachel("s3"));
+ok(await gewaehlt() === "s1,s2,s3", `Von–Bis: Teil 1 bis 3 ausgewählt (${await gewaehlt()})`);
 ok(/^3 Sessions ausgewählt/.test(await tafel() || ""), `danach Auswahl-Tafel „3 ausgewählt“ (${await tafel()})`);
 await tafelZu();
 
@@ -198,14 +201,12 @@ await tafelZu();
 ok(!(await tafel()) && !(await page.$("[data-wahl-nr]")), "Listen: Tafel beendet die Auswahl");
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);   // Unité 1 nicht unter dem feststehenden Kopf
 const b1 = await mitte('[data-liste-id="l_a"]'), b3 = await mitte('[data-liste-id="l_c"]');
-// Einsammeln im Listen-Raster: Lang-Druck auf das leere Feld zwischen Unité 2 und 3, hoch bis Unité 1, dann runter zu Unité 3
-const leer = await page.evaluate(() => { const a = document.querySelector('[data-liste-id="l_b"]').getBoundingClientRect(), b = document.querySelector('[data-liste-id="l_c"]').getBoundingClientRect(); return { x: a.x + a.width / 2, y: (a.bottom + b.top) / 2 }; });
-await finger("touchStart", leer.x, leer.y); await sleep(700);
-for (let i = 1; i <= 8; i++) { await finger("touchMove", leer.x, leer.y + (b1.y - leer.y) * i / 8); await sleep(40); }
-for (let i = 1; i <= 10; i++) { await finger("touchMove", leer.x, b1.y + (b3.y - b1.y) * i / 10); await sleep(40); }
-await finger("touchEnd"); await sleep(400);
+// Listen: Von–Bis
+await kontext('[data-liste-id="l_a"]');
+await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "↔ Von–Bis")?.click()); await sleep(300);
+await kontext('[data-liste-id="l_c"]');
 const lw = await page.evaluate(() => [...document.querySelectorAll("[data-wahl-nr]")].map(e => e.closest("[data-liste-id]").dataset.listeId).join(","));
-ok(lw === "l_a,l_b,l_c", `Listen: Einsammeln vom leeren Feld aus (${lw})`);
+ok(lw === "l_a,l_b,l_c", `Listen: Von–Bis Unité 1 bis 3 (${lw})`);
 ok(/^3 Listen ausgewählt/.test(await tafel() || ""), "Listen: danach Auswahl-Tafel „3 ausgewählt“");
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");

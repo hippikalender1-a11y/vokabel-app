@@ -102,6 +102,7 @@ if (process.env.SHOT) await page.screenshot({ path: "farbrad_shot.png" });
 await page.click("[data-farbrad-abbrechen]"); await sleep(200);
 await clickText("[data-farbfeld] button", "Schließen", true);
 
+if (await page.$('[data-slot-kopf] [data-quiz-art]')) {   // 163: Mini-Kreise nur noch in der Statistik
 // Mini-Kreis in der Kopfzeile per Finger: Umkreis erfasst Ring und Buchstabe
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]")?.click(); }); await sleep(300);
 const kreis = await mitte('[data-quiz-art="uebersetzung"]');
@@ -113,8 +114,9 @@ if (process.env.SHOT) await page.screenshot({ path: "farbfeld_shot.png" });
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-farbfeld] .farb-zeile")].length) >= 3, "mehrere Teile im Umkreis zur Auswahl");
 await page.evaluate(() => document.querySelector("[data-farbfeld-zeile]").click()); await sleep(150);
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-farbmodus-ui], [data-farbmodus-ui] div")].some(d => d.style.border.includes("dashed"))), "gewählte Zeile: Element wird gestrichelt hervorgehoben");
+}
 if (await page.$("[data-farbrad]")) { await page.click("[data-farbrad-abbrechen]"); await sleep(200); }
-await clickText("[data-farbfeld] button", "Schließen", true);
+if (await page.$("[data-farbfeld]")) await clickText("[data-farbfeld] button", "Schließen", true);
 
 // Zurücksetzen: verwirft und beendet
 await page.click("[data-farbmodus-zuruecksetzen]"); await sleep(300);

@@ -68,7 +68,7 @@ ok(/2 ausgewählt · 5 Vokabeln/.test(await hinweis() || ""), `Lang-Druck auf Te
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId + ":" + b.dataset.multiNr).join(",")) === "g_a:1,g_b:2", "Kacheln nummeriert (1, 2)");
 const wahlMenue = await aktionen();
 console.log("     Auswahl-Menü:", wahlMenue.join(" | "));
-ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|📁 In Gruppe… (2)|⇄ Verschieben|🗑 Löschen (2)|✕ Auswahl beenden", "Menü der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
+ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|📁 In Gruppe… (2)|⇄ Verschieben|🗑 Löschen (2)|↔ Von–Bis|✕ Auswahl beenden", "Menü der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
 await langDruck('[data-slot-id="g_b"]');
 ok(/1 ausgewählt/.test(await hinweis() || ""), "nochmal lang drücken nimmt die Kachel heraus");
 await langDruck('[data-slot-id="g_b"]');
@@ -103,6 +103,7 @@ const kopfName = await page.evaluate(() => document.querySelector("[data-slot-ko
 ok(kopfName === "Multiquiz", `Kopfzeile: „Multiquiz“ (${kopfName})`);
 ok(await page.evaluate(() => document.querySelectorAll("[data-start-arten] [data-quiz-art]").length) >= 1, "Kreise der zusammengesetzten Auswahl");
 await oeffneKopf(); await sleep(300);
+await page.evaluate(() => { if (document.querySelector("[data-slot-info-zu]")) document.querySelector("[data-slot-info]").click(); }); await sleep(200);   // 165: Info anfangs zu
 const info = await page.evaluate(() => document.querySelector("[data-slot-info]")?.innerText.replace(/\s+/g, " ").trim());
 console.log("     Info:", info);
 ok(/Teil A \+ Teil B/.test(info) && /5 Vokabeln/.test(info), "Info-Fläche: Teile + Anzahl");

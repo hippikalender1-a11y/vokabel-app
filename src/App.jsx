@@ -279,7 +279,8 @@ const GRUPPE_VERWEILEN_MS = 1200;
 const KACHEL_ANHEBEN_MS = 250;
 // … und so lange halten wählt sie aus (weiterfahren sammelt weitere ein, loslassen öffnet die Auswahl-Tafel);
 // ist sie schon ausgewählt, bleibt sie angehoben – ziehen verschiebt dann die ganze Auswahl
-const KACHEL_AUSWAEHLEN_MS = 900;   // so lange über einer Kachel halten, bis Loslassen eine Gruppe bildet
+const KACHEL_AUSWAEHLEN_MS = 900;
+const KACHEL_LASSO_FREI = false;   // Einsammeln von einer freien Stelle aus (167: aus)   // so lange über einer Kachel halten, bis Loslassen eine Gruppe bildet
 // Vokabel-Suche: nur Fremdsprache (E1–E3) und Deutsch (D1–D2), „enthält“, Groß/klein und Akzente egal;
 // Treffer am Wortanfang zuerst, sonst in Listen-Reihenfolge. Ergebnis: [{ id, i (Position in voks), rang }]
 const SUCH_SPALTEN = ["E1", "E2", "E3", "D1", "D2"];
@@ -1115,6 +1116,18 @@ function stufenRegel(alt, neu, ereignis) {
     if (neu.score >= GELERNT_SCHWELLE) neu.stufeSeit = jetzt; else delete neu.stufeSeit;
   }
   return neu;
+}
+// Score als Symbole: 3 Kreise (bis gelernt, je richtiger Antwort) + 3 Rauten (Wiederholungs-Stufen 2–4); negativ: alle leer, erster Kreis rot umrandet
+function scoreSymbole(score, klein = false) {
+  const s = score ?? 0;
+  const st = stufeVon(s);
+  const titel = s < 0 ? `Score ${s}` : st ? `Gelernt, Stufe ${st} von ${MAX_STUFE}` : `${Math.max(0, s)} von ${GELERNT_SCHWELLE} bis gelernt`;
+  return (
+    <span className={`score-symbole${klein ? " klein" : ""}`} data-score-symbole={s} title={titel}>
+      {[0, 1, 2].map(i => <span key={"k" + i} className={`sym kreis${s >= i + 1 ? " voll" : ""}${s < 0 && i === 0 ? " negativ" : ""}`}/>)}
+      {[0, 1, 2].map(i => <span key={"r" + i} className={`sym raute${s >= GELERNT_SCHWELLE + i + 1 ? " voll" : ""}`}/>)}
+    </span>
+  );
 }
 // Stufen als Punkte (●●○○) neben dem Score
 function stufenPunkte(score) {
@@ -2044,7 +2057,7 @@ const CSS_BASIS = `
   .kachel-voll{font-size:0.7rem;font-weight:900;color:var(--auf-gelernt);background:var(--gelernt);border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .raster-chip.aktiv-kachel{background:var(--haupt) !important;border-color:var(--haupt) !important;color:var(--auf-haupt) !important;}
   .raster-chip.aktiv-kachel.leuchten{background:var(--bestaetigen) !important;border-color:var(--bestaetigen) !important;color:var(--auf-bestaetigen) !important;}
-  .raster-chip.aktiv-kachel .kachel-balken{background:rgba(255,255,255,0.35);}
+  .raster-chip.aktiv-kachel .kachel-balken{background:rgba(0,0,0,0.28);}
   .raster-chip.aktiv-kachel .kachel-balken > span{background:var(--auf-haupt);}
   .mini-kreise{display:flex;gap:3px;}
   .mini-kreise > span{border-radius:50%;}
@@ -2143,6 +2156,18 @@ const CSS_BASIS = `
   .wahl-leiste .btn{flex:1;}
   .slot-info{position:sticky;z-index:8;background:var(--karte);background:color-mix(in srgb, var(--bestaetigen) 11%, var(--karte));border-bottom:1px solid var(--rahmen);padding:10px 16px;box-shadow:0 4px 8px -6px rgba(0,0,0,0.25);}
   .slot-info-pfeil{flex-shrink:0;width:34px;height:30px;border-radius:15px;border:1.5px solid var(--rahmen);background:var(--karte);color:var(--text2);cursor:pointer;font-size:0.75rem;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .slot-kopf-name{position:relative;}
+  .kopf-balken{position:absolute;left:14px;right:14px;bottom:4px;height:4px;border-radius:2px;background:rgba(0,0,0,0.18);overflow:hidden;}
+  .kopf-balken > span{display:block;height:100%;background:currentColor;opacity:0.85;}
+  .score-symbole{display:inline-flex;align-items:center;gap:4px;margin-right:4px;}
+  .score-symbole .sym{width:10px;height:10px;box-sizing:border-box;border:1.6px solid var(--bestaetigen);display:inline-block;}
+  .score-symbole .sym.kreis{border-radius:50%;}
+  .score-symbole .sym.raute{width:8px;height:8px;transform:rotate(45deg);margin:0 1px;}
+  .score-symbole .sym.voll{background:var(--bestaetigen);}
+  .score-symbole .sym.negativ{border-color:var(--falsch);}
+  .score-symbole.klein{gap:3px;}
+  .score-symbole.klein .sym{width:7px;height:7px;border-width:1.3px;}
+  .score-symbole.klein .sym.raute{width:6px;height:6px;}
   .stufen-punkte{font-size:0.62rem;letter-spacing:1px;color:var(--gelernt);margin-right:4px;white-space:nowrap;}
   .info-zeile-klein{display:flex;justify-content:space-between;gap:8px;font-size:0.75rem;color:var(--text2);white-space:nowrap;}
   .info-gruppen{min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:right;}
@@ -2381,12 +2406,16 @@ export default function VokabelApp() {
   const neuImOrdnerRef = useRef(null);   // „Neue Session“ in einer geöffneten Gruppe begonnen → beim Speichern/Aufteilen dort anlegen   // sichtbare Session-Kacheln (für „Alle“ in der Mehrfach-Auswahl)
   const [slotVorschau, setSlotVorschau] = useState(null);           // Session-Auswahl: angetippte Session { typ, id } – Info darunter, laden über den Kopf
   const [slotVorschauListe, setSlotVorschauListe] = useState(false); // … deren Vokabeln als Liste
-  const [verlaufOffen, setVerlaufOffen] = useState(false);           // Verlauf (letzte Abfragen) aufgeklappt – selten gebraucht, anfangs zu
+  const [verlaufOffen, setVerlaufOffen] = useState(false);
+  const [infoZu, setInfoZu] = useState(true);   // Info-Fläche: anfangs zu, beim Tab-Wechsel wieder zu (165)
+  useEffect(() => { setInfoZu(true); }, [tab]);           // Verlauf (letzte Abfragen) aufgeklappt – selten gebraucht, anfangs zu
   const [multiAuswahl, setMultiAuswahl] = useState(null);
   // lang drücken in der Mehrfach-Auswahl beendet sie: die Auswahl bleibt (grüner Kopf bestätigt, Kontextmenü offen), das nächste Antippen wählt wieder einzeln
   const [wahlBeendet, setWahlBeendet] = useState({ slot: false, liste: false });
   const wahlBeendenRef = useRef(null);
-  const wahlUmschaltenRef = useRef(null);   // Multiquiz: gewählte Kacheln (Reihenfolge = Nummern), null = aus
+  const wahlUmschaltenRef = useRef(null);
+  const [vonBis, setVonBis] = useState(null);   // { art, id }: „↔ Von–Bis“ gewählt – der nächste Lang-Druck wählt alles dazwischen
+  const plaetzeRef = useRef({ slot: [], liste: [] });   // sichtbare Kacheln mit Platz (für Von–Bis: spaltenweise)   // Multiquiz: gewählte Kacheln (Reihenfolge = Nummern), null = aus
   const [multiStart, setMultiStart] = useState(null);
   const slotZuTimerRef = useRef(null);   // Auswahl klappt nach dem Laden kurz verzögert zu (neue Kachel sichtbar markiert)       // Verlauf-Id des eben gebildeten Multiquiz – startet nach dem Laden
   const [abfrageZielModus, setAbfrageZielModus] = useState(STANDARD_ABFRAGE_ZIEL);
@@ -3116,11 +3145,25 @@ export default function VokabelApp() {
   useEffect(() => { setSlotVorschau(null); setSlotVorschauListe(false); }, [slotSektionAufgeklappt, tab, slotSortModus, slotOrdner]);
   useEffect(() => { if (multiAuswahl) { setSlotVorschau(null); setSlotVorschauListe(false); } else setWahlBeendet(w => w.slot ? { ...w, slot: false } : w); }, [!!multiAuswahl]);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!listenWahl) setWahlBeendet(w => w.liste ? { ...w, liste: false } : w); else setListeVorschau(null); }, [!!listenWahl]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!multiAuswahl && !listenWahl) setVonBis(null); }, [!!multiAuswahl, !!listenWahl]);
   useEffect(() => { setListeVorschau(null); }, [tab, einstBereich, einstUnter, ansicht, listenSortModus]);
   // für die Gesten-Effekte (ohne Abhängigkeiten): Mehrfach-Auswahl beenden und die Tafel (Kontextmenü) zeigen
   // 147: lang drücken nimmt ein Objekt in die Auswahl auf bzw. heraus; die angetippte Einzelauswahl kommt beim ersten Mal mit hinein; leer → keine Auswahl
   wahlUmschaltenRef.current = (art, id) => {
-    const umschalten = (a, einzel) => { const basis = a || (einzel && einzel !== id ? [einzel] : []); return basis.includes(id) ? basis.filter(x => x !== id) : [...basis, id]; };
+    if (vonBis?.art === art && vonBis.id !== id) {   // Von–Bis: alle Kacheln dazwischen (spaltenweise: eine Spalte nach unten, dann die nächste)
+      const reihe = [...plaetzeRef.current[art]].sort((a, b) => a.s - b.s || a.z - b.z).map(x => x.id);
+      const [i, j] = [reihe.indexOf(vonBis.id), reihe.indexOf(id)];
+      setVonBis(null);
+      if (i >= 0 && j >= 0) {
+        const bereich = i <= j ? reihe.slice(i, j + 1) : reihe.slice(j, i + 1).reverse();
+        const dazu = a => [...(a || []), ...bereich.filter(x => !(a || []).includes(x))];
+        auswahlTafelRef.current = art;
+        if (art === "liste") setListenWahl(dazu); else setMultiAuswahl(dazu);
+        leuchte(art === "liste" ? "wahl" : "slotkopf", BLITZ_MS / 2);
+        return;
+      }
+    }
+    const umschalten = a => { const basis = a || []; return basis.includes(id) ? basis.filter(x => x !== id) : [...basis, id]; };
     auswahlTafelRef.current = art;
     const n = umschalten(art === "liste" ? listenWahl : multiAuswahl, art === "liste" ? listeVorschau : slotVorschau?.typ === "gespeichert" ? slotVorschau.id : null);
     if (!n.length) {   // die letzte herausgenommen: Mehrfach-Auswahl endet, diese bleibt als Einzelauswahl stehen
@@ -3177,8 +3220,8 @@ export default function VokabelApp() {
         // schon ausgewählt: angehoben lassen (Stufe 3) – ziehen verschiebt die ganze Auswahl
         if (slotZiehenRef.current && ((lassoArt === "liste" ? r.listeWahl : r.slotWahl) || []).includes(id)) { g.stufe = 3; navigator.vibrate?.(20); return; }
         g.stufe = 2; slotZiehenRef.current = null; setAngehoben(null); navigator.vibrate?.(20);
-        const vorher = lassoArt === "liste" ? r.listeWahl : r.slotWahl, einzel = lassoArt === "liste" ? r.listeEinzel : r.slotEinzel;
-        const ids = [...(vorher || (einzel ? [einzel] : []))];   // die angetippte Einzelauswahl kommt mit
+        const vorher = lassoArt === "liste" ? r.listeWahl : r.slotWahl;
+        const ids = [...(vorher || [])];   // der erste Lang-Druck ist die erste Kachel (eine vorher angetippte kommt nicht mit)
         if (!ids.includes(id)) ids.push(id);
         lassoRef.current = { art: lassoArt, feld: el.closest("[data-lasso]") || el.parentElement, x: g.x, y: g.y, aktiv: true, ids };
         setLasso({ art: lassoArt, ids });
@@ -3225,6 +3268,7 @@ export default function VokabelApp() {
     const setze = (art, ids) => (art === "liste" ? setListenWahl : setMultiAuswahl)(ids);
     const start = e => {
       if (e.touches.length !== 1) { if (lassoRef.current) clearTimeout(lassoRef.current.timer); lassoRef.current = null; return; }
+      if (!KACHEL_LASSO_FREI) return;   // 167: Mehrfach-Auswahl durch Ziehen von einer freien Stelle ist aus (Von–Bis im Menü)
       const feld = e.target.closest?.("[data-lasso]");
       if (!feld || e.target.closest("[data-slot-id], [data-liste-id]")) return;
       const t = e.touches[0];
@@ -3908,6 +3952,13 @@ export default function VokabelApp() {
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleTabWechsel(neuerTab) {
+    if (slotSektionAufgeklappt && neuerTab !== tab && (tab === "quiz" || tab === "statistik")) {
+      const laden = tab === "statistik" ? ladeSlotStatistik : ladeSlot;
+      if (multiAuswahl?.length) beendeMultiAuswahl(multiAuswahl, laden);
+      else if (slotVorschau) laden(slotVorschau.typ, slotVorschau.id);
+      setMultiAuswahl(null); setSlotVorschau(null); schliesseInfo(); auswahlTafelRef.current = null;
+      setSlotSektionAufgeklappt(false);
+    }
     if (neuerTab === "statistik" && tab !== "statistik") {
       const listenIds = quizTabListen.length > 0 ? new Set(quizTabListen) : null;
       statistikStartRef.current = statistikStandKey(listenIds, quizBereichTyp, quizCheckboxAuswahl, aktiverSlot);
@@ -4623,7 +4674,7 @@ export default function VokabelApp() {
   const faelligVonSlots = ids => faelligeSchluessel(ids.map(id => getSlotEintrag("gespeichert", id)?.konfiguration).filter(Boolean));
   const faelligVonListen = ids => faelligeSchluessel([{ listenIds: ids }]);
   // fällige Vokabeln über alle sichtbaren Listen (für „🔁 Fällige wiederholen“) – beim Öffnen der Auswahl neu berechnet
-  const faelligAlle = useMemo(() => slotSektionAufgeklappt && tab === "quiz" ? faelligeSchluessel([{ listenIds: sichtbareListen.map(l => l.id) }]) : [],
+  const faelligAlle = useMemo(() => slotSektionAufgeklappt && (tab === "quiz" || tab === "statistik") ? faelligeSchluessel([{ listenIds: sichtbareListen.map(l => l.id) }]) : [],
     [slotSektionAufgeklappt, tab, listenIndex, sprachFilter, quizArt, faelligTick]);   // eslint-disable-line react-hooks/exhaustive-deps
   function ladeFaellige(keys) {
     if (!keys.length) return;
@@ -6477,6 +6528,7 @@ export default function VokabelApp() {
       ...(() => { const f = faelligVonListen(ids); return f.length ? [{ label: `🔁 Fällige wiederholen (${f.length})`, fn: () => ladeFaellige(f) }] : []; })(),
       ...(sprachFilter !== "alle" ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl(ids); } }]),
       { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "liste", ids }) },
+      { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "liste", id: ids[ids.length - 1] }) },
       { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) },
     ];
   }
@@ -6523,7 +6575,7 @@ export default function VokabelApp() {
     const pct = Math.round(lernProzent(voks.map(v => v.fortschritt?.score), schwelle));
     const spalten = mehrere ? gruppeL.map(y => y.x.name) : TYPEN.filter(x => liste.spalten[x]?.aktiv).map(x => liste.spalten[x].name || x);
     const gruppenText = gruppenKurz(anz);
-    const zu = !!einstellungen.slotInfoZu;
+    const zu = infoZu;
     return (
       <div className="slot-info" data-liste-info={mehrere ? "_wahl" : l.id} data-auswahl-durchlass data-slot-info-zu={zu ? "" : undefined} onClick={infoKlapp} style={{position:"static", marginLeft:-16, marginRight:-16}}>
         <div style={{display:"flex", alignItems:"center", gap:8}}>
@@ -6553,6 +6605,7 @@ export default function VokabelApp() {
   }
   function renderListenRaster() {
     const groesse = rasterGroesse(einstellungen, "listenRaster");
+    plaetzeRef.current.liste = sichtbareListen.map((l, i) => ({ id: l.id, z: l.platz?.z ?? i, s: l.platz?.s ?? 0 }));
     const gefiltert = sprachFilter !== "alle";
     const sortModus = listenSortModus && !gefiltert;
     const eng = groesse.spalten > 1;
@@ -6579,7 +6632,7 @@ export default function VokabelApp() {
     // Auswahl-Tafel: eine Liste → ihr Menü, mehrere → Aktionen für die Auswahl
     const tafelInhalt = ids => {
       const l = ids.length === 1 && listenIndex.find(x => x.id === ids[0]);
-      if (l) return { text: l.name, aktionen: [...menue(l).filter(a => a.label !== "☑ Auswählen"), { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) }] };
+      if (l) return { text: l.name, aktionen: [...menue(l).filter(a => a.label !== "☑ Auswählen"), { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "liste", id: l.id }) }, { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) }] };
       return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: wahlMenue(ids) } : { text: "Nichts ausgewählt – Listen antippen", aktionen: [] };
     };
     auswahlTafelDaten.current.liste = () => listenWahl && tafelInhalt(listenWahl);
@@ -6725,7 +6778,7 @@ export default function VokabelApp() {
     // Angetippte Session: der Name wird zum grünen „✓ ‹Name› laden“
     const vorschauE = !zu && !wahl && slotVorschau ? getSlotEintrag(slotVorschau.typ, slotVorschau.id) : null;
     const vorschauName = vorschauE ? (vorschauE.multi ? `🧩 ${vorschauE.name}` : vorschauE.name || "Abfrage") : "";
-    const wahlText = wahl ? (multiAuswahl.length ? `${multiAuswahl.length} ausgewählt${multiAuswahl.length >= 2 ? ` · ${multiZusammenstellung(multiAuswahl)?.anzahl || 0} Vokabeln` : ""}` : "Nichts ausgewählt") : "";
+    const wahlText = wahl ? (vonBis?.art === "slot" ? "Von–Bis: Ziel lang drücken" : multiAuswahl.length ? `${multiAuswahl.length} ausgewählt${multiAuswahl.length >= 2 ? ` · ${multiZusammenstellung(multiAuswahl)?.anzahl || 0} Vokabeln` : ""}` : "Nichts ausgewählt") : "";
     const kopfKlick = wahl ? () => beendeMultiAuswahl(multiAuswahl, statistik ? ladeSlotStatistik : ladeSlot)
       : vorschauE ? () => { const s = slotVorschau; setSlotVorschau(null); setSlotVorschauListe(false); (statistik ? ladeSlotStatistik : ladeSlot)(s.typ, s.id); leuchte("slotkopf"); }
       : aendern ? () => { setListenAendern(false); setListenAuswahlAufgeklappt(false); setQuizListeAufgeklappt(false); leuchte("slotkopf"); }
@@ -6743,10 +6796,11 @@ export default function VokabelApp() {
               : aendern ? "Ändern beenden – Listen und Vokabeln übernehmen"
               : geaendert ? `${name} – Vokabelauswahl geändert, noch nicht gespeichert; lang drücken: überspeichern, als neue Session speichern, verwerfen, umbenennen, duplizieren, Vokabeln ändern oder löschen`
               : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern, umbenennen, duplizieren, Vokabeln ändern, löschen" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, (wahl ? (auswahlTafelDaten.current.slot?.()?.aktionen || null) : aktionen), { langText: name })}>
+            {zu && voks.length > 0 && <span className="kopf-balken" data-kopf-balken={Math.round(ls[statistik ? statistikArt : quizArt]?.pct || 0)}><span style={{width:`${Math.round(ls[statistik ? statistikArt : quizArt]?.pct || 0)}%`}}/></span>}
             {wahl ? <span data-wahl-anzahl={multiAuswahl.length}>{wahlText}</span> : vorschauE ? <span data-bestaetigen>{vorschauName} laden</span> : aendern ? <span data-bestaetigen>Bestätigen</span>
               : <>{name}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}</>}
           </button>
-          {voks.length > 0 && !zu && (
+          {voks.length > 0 && !zu && statistik && (
             <span className="mini-kreise" {...(statistik ? { "data-statistik-arten": true } : { "data-quiz-arten": true })} style={{gap:4, flexShrink:0}}>
               {renderMiniKreise(ls, { aktiv: statistik ? statistikArt : quizArt, beiKlick: a => statistik ? setStatistikArt(a) : wechsleQuizArt(a),
                 groesse: 30, aufGruen: gruen, attr: statistik ? "data-statistik-art" : "data-quiz-art", nurVerfuegbar: true })}
@@ -6849,7 +6903,11 @@ export default function VokabelApp() {
       </div>) : null;
     // Gruppen: Grundarten · Wort-Übungen · Satz-Arten · Runden (leere Gruppen entfallen)
     const zeilen = [
-      { key: "grund", knoepfe: gruppe(["karte", "mc", "tippen", "akzent"]) },
+      { key: "grund", knoepfe: [...gruppe(["karte", "mc", "tippen"]),
+        ...(typ.startsWith("E") ? [<button key="diktat" data-modus-knopf={`${typ}:diktat`} className="spalten-modus-btn"
+          onClick={() => { leuchte(`art:${typ}:diktat`, BLITZ_MS / 2); wechsleQuizArt("diktat"); setQuizDiktatSpalte(typ); }}
+          {...tt("Diktat: das Wort wird vorgelesen, du schreibst, was du hörst – eigener Diktat-Score (Statistik)")}>Diktat</button>] : []),
+        ...gruppe(["akzent"])] },
       { key: "wort", knoepfe: gruppe(["hoeren", "puzzle", "luecke", "artikel"]) },
       { key: "satz", knoepfe: gruppe(["satzfinden", "satzbauen", "lueckensatz"]), extra: ueb },
       { key: "runde", knoepfe: gruppe(["zuordnung", "memory"]) },
@@ -6883,18 +6941,43 @@ export default function VokabelApp() {
 
   // Mehrfach-Auswahl bzw. Verschieben: Knöpfe an der Stelle von „＋ Neue Session“ / „Alle Listen“ / „＋ Neue Liste“ (gleiche Höhe – die Kacheln bleiben, wo sie sind)
   // geöffnete Gruppe: „← Alle Sessions › 📁 Name“ über dem „Neu“-Knopf
-  function ordnerNavi(stil) {
+  // Pfad-Zeile über den Kacheln (immer): „Alle Sessions“ bzw. „← Alle Sessions › 📁 Name“; lang drücken: Neue Session, Fällige wiederholen;
+  // rechts in der Mehrfach-Auswahl „Alle | Keine“, beim Verschieben „Fertig“ – die Zeile bleibt gleich hoch, nichts verrutscht
+  function ordnerNavi(stil, statistik = false) {
     const ordnerOffen = (slots.ordner || []).find(o => o.id === slotOrdner) || null;
-    if (!ordnerOffen) return null;
+    const neueSession = imOrdner => ({ label: "＋ Neue Session aus Listen", fn: () => { neuImOrdnerRef.current = imOrdner; setNeueSessionSchritt("art"); setModal("neue-session"); } });
+    const faellige = keys => keys.length ? [{ label: `🔁 Fällige wiederholen (${keys.length})`, fn: () => ladeFaellige(keys) }] : [];
+    const alleListen = { label: "▦ Alle Listen", fn: () => {
+      setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setSlotSektionAufgeklappt(false);
+      setStatistikListenIds(null); setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
+      setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt'])); } };
+    const alleAktionen = [...(statistik ? [alleListen] : [neueSession(null)]), ...faellige(faelligAlle)];
+    const ordnerAktionen = ordnerOffen ? [...(statistik ? [] : [neueSession(ordnerOffen.id)]),
+      ...faellige(faelligVonSlots(slots.gespeichert.filter(g => g.ordner === ordnerOffen.id).map(g => g.id)))] : [];
+    const markiert = slotAuswahl.length;
     return (
-      <div data-ordner-navi style={{display:"flex", alignItems:"center", gap:8, marginBottom:8, minHeight:22, ...stil}}>
-        <span data-ordner-pfad style={{display:"flex", alignItems:"center", gap:6, minWidth:0}}>
-          <button className="typ-btn" data-ordner-zurueck data-raus-ziel={slotDragZiel === "raus" ? "" : undefined}
-            style={{fontSize:"0.75rem", padding:"3px 9px", ...(slotDragZiel === "raus" && slotDragId ? {outline:"3px dashed var(--bestaetigen)", outlineOffset:-3} : {})}}
-            onClick={() => { setSlotOrdner(null); setSlotSortModus(false); setSlotAuswahl([]); }}
-            {...tt("Zurück zu allen Sessions – Sessions hierher ziehen nimmt sie aus der Gruppe")}>← Alle Sessions</button>
-          <span style={{fontSize:"0.72rem", color:"var(--text2)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>› 📁 {ordnerOffen.name}</span>
+      <div data-ordner-navi style={{display:"flex", alignItems:"center", gap:8, marginBottom:8, minHeight:30, ...stil}}>
+        <span data-ordner-pfad style={{display:"flex", alignItems:"center", gap:6, minWidth:0, flex:1}}>
+          <button className="typ-btn" data-alle-sessions {...(ordnerOffen ? { "data-ordner-zurueck": true } : {})} data-raus-ziel={slotDragZiel === "raus" ? "" : undefined}
+            style={{fontSize:"0.75rem", padding:"4px 10px", flexShrink:0, ...(slotDragZiel === "raus" && slotDragId ? {outline:"3px dashed var(--bestaetigen)", outlineOffset:-3} : {})}}
+            onClick={() => { if (ordnerOffen) { setSlotOrdner(null); setSlotSortModus(false); setSlotAuswahl([]); } }}
+            {...tt(ordnerOffen ? "Zurück zu allen Sessions – Sessions hierher ziehen nimmt sie aus der Gruppe; lang drücken: neue Session, fällige wiederholen"
+              : `Alle Sessions – lang drücken: ${statistik ? "alle Listen anzeigen" : "neue Session aus Listen"}, fällige wiederholen`, alleAktionen)}>{ordnerOffen ? "← Alle Sessions" : "Alle Sessions"}</button>
+          {ordnerOffen && (
+            <span data-ordner-name style={{fontSize:"0.72rem", color:"var(--text2)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", cursor:"pointer"}}
+              {...tt(`Gruppe „${ordnerOffen.name}“ – lang drücken: neue Session in der Gruppe, fällige der Gruppe wiederholen`, ordnerAktionen.length ? ordnerAktionen : null)}>› 📁 {ordnerOffen.name}</span>
+          )}
         </span>
+        {multiAuswahl && (<span style={{display:"flex", gap:6, flexShrink:0}}>
+          <button className="typ-btn" data-wahl-alle data-auswahl-durchlass style={{fontSize:"0.75rem", padding:"4px 10px"}}
+            onClick={() => setMultiAuswahl(a => [...a, ...slotSichtbarRef.current.filter(id => !a.includes(id))])} {...tt("Alle sichtbaren Sessions auswählen")}>Alle</button>
+          <button className="typ-btn" data-wahl-keine data-auswahl-durchlass style={{fontSize:"0.75rem", padding:"4px 10px"}} onClick={() => setMultiAuswahl([])} {...tt("Alle abwählen")}>Keine</button>
+        </span>)}
+        {slotSortModus && (
+          <button className="typ-btn aktiv" data-slot-fertig style={{fontSize:"0.75rem", padding:"4px 10px", flexShrink:0}}
+            onClick={() => { setSlotSortModus(false); setSlotAuswahl([]); setSlotDragId(null); setSlotDragZiel(null); }}
+            {...tt("Verschieben beenden")}>Fertig{markiert ? ` · ${markiert}` : ""}</button>
+        )}
       </div>
     );
   }
@@ -6940,6 +7023,7 @@ export default function VokabelApp() {
     const platzMap = new Map(raster.gespeichert.map(x => [`${x.platz.z}|${x.platz.s}`, x]));
     const sichtbar = raster.gespeichert.filter(x => sichtbarE(x) && !x.istOrdner);
     slotSichtbarRef.current = sichtbar.map(x => x.id);
+    plaetzeRef.current.slot = sichtbar.map(x => ({ id: x.id, z: x.platz.z, s: x.platz.s }));
     const zeilenAnzeige = slotSortModus ? raster.gespeichert.reduce((m, x) => Math.max(m, x.platz.z + 1), 0) + RASTER_FREI_ZEILEN
       : raster.gespeichert.filter(sichtbarE).reduce((m, x) => Math.max(m, x.platz.z + 1), 0);
     const sfVon = x => slotSFAlle(x)[aktiverSlot?.id === x.id ? quizAbfrageArt : slotKonfigArt(x)];
@@ -6952,6 +7036,7 @@ export default function VokabelApp() {
       ...(ordnerOffen ? [{ label: `↑ Aus der Gruppe (${ids.length})`, fn: () => verschiebeInOrdner(ids, null) }] : []),
       { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl(ids); } },
       { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "slot", ids }) },
+      { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "slot", id: ids[ids.length - 1] }) },
       { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) },
     ];
     const wahlNamen = ids => ids.map(id => slots.gespeichert.find(g => g.id === id)?.name).filter(Boolean).join(", ");
@@ -6969,7 +7054,7 @@ export default function VokabelApp() {
     // Auswahl-Tafel: eine Session → ihr Menü, mehrere → Aktionen für die Auswahl
     const tafelInhalt = ids => {
       const x = ids.length === 1 && slots.gespeichert.find(g => g.id === ids[0]);
-      if (x) return { text: x.name, aktionen: [...einzelMenue(x).filter(a => a.label !== "☑ Auswählen"), { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) }] };
+      if (x) return { text: x.name, aktionen: [...einzelMenue(x).filter(a => a.label !== "☑ Auswählen"), { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "slot", id: x.id }) }, { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) }] };
       return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: wahlMenue(ids) } : { text: "Nichts ausgewählt – Sessions antippen", aktionen: [] };
     };
     auswahlTafelDaten.current.slot = () => multiAuswahl && tafelInhalt(multiAuswahl);
@@ -7115,7 +7200,7 @@ export default function VokabelApp() {
   function gruppenKurz(anz) {
     return [["gelernt", "✓"], ["arbeit", "in Arbeit"], ["nie", "nie"], ["negativ", "−"]].filter(([g]) => anz[g]).map(([g, l]) => `${anz[g]} ${l}`).join(" · ");
   }
-  const infoKlapp = () => speichereEinst({ ...einstellungen, slotInfoZu: !einstellungen.slotInfoZu });
+  const infoKlapp = () => setInfoZu(z => !z);
   function renderSlotInfo(statistik) {
     const eintrag = infoEintrag(statistik);
     if (!eintrag) return null;
@@ -7142,7 +7227,7 @@ export default function VokabelApp() {
     const sf = eintrag.konfiguration ? slotSFAlle(eintrag)[slotKonfigArt(eintrag)] : null;
     const faelligN = alle.filter(v => istFaellig(v[FORTSCHRITT_FELD[quizArt] || "fortschritt"])).length;
     const gruppenText = (faelligN ? `🔁 ${faelligN} fällig · ` : "") + gruppenKurz(anz);
-    const zu = !!einstellungen.slotInfoZu;
+    const zu = infoZu;
     // Name wie im Kopf: gespeicherte Session → ihr Name; Multiquiz aus dem Verlauf → seine Teile; Verlauf → Datum
     const gespeichert = slots.gespeichert.some(g => g.id === eintrag.id);
     const name = eintrag.id === "_wahl" ? eintrag.name : `${multi ? "🧩 " : ""}${gespeichert ? eintrag.name : multi ? multi.map(m => m.name).join(" + ") : eintrag.id === "_auswahl" ? eintrag.name : `🕘 ${eintrag.name || "Abfrage"}`}`;
@@ -7156,7 +7241,7 @@ export default function VokabelApp() {
               {name}{zu && schwelle > 0 && alle.length > 0 && <span style={{fontWeight:500, color:"var(--text2)"}}> · {pct} % gelernt</span>}</div>
             {!zu && <div data-vorschau-listen style={{fontSize:"0.8rem", color:"var(--text2)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{teile.length ? `(${listenText})` : "\u00a0"}</div>}
           </div>
-          {!zu && alle.length > 0 && <span className="mini-kreise" style={{gap:4, flexShrink:0}}>{renderMiniKreise(ls, { groesse: 26, nurVerfuegbar: true })}</span>}
+          {!zu && statistik && alle.length > 0 && <span className="mini-kreise" style={{gap:4, flexShrink:0}}>{renderMiniKreise(ls, { groesse: 26, nurVerfuegbar: true })}</span>}
           <span className="slot-info-pfeil" data-slot-info-pfeil={zu ? "zu" : "auf"}
             {...tt(zu ? "Info aufklappen – auch Antippen der Fläche (bleibt so)" : "Info auf eine Zeile einklappen – auch Antippen der Fläche (bleibt so)")}>{zu ? "▼" : "▲"}</span>
         </div>
@@ -7198,7 +7283,7 @@ export default function VokabelApp() {
                   <span className="vorschau-nr">{v._nr}</span>
                   <span className="vorschau-wort">{ohneHinweis(v[fremd]?.wert || "")}</span>
                   <span className="vorschau-de">{ohneHinweis(v[deutsch]?.wert || "")}</span>
-                  {stufenPunkte(v.fortschritt?.score)}
+                  {scoreSymbole(v.fortschritt?.score, true)}
                   {sc !== null && <span className={`score-badge ${sc > 0 ? "score-pos" : sc < 0 ? "score-neg" : "score-null"}`}>{sc > 0 ? "+" : ""}{sc}</span>}
                 </div>);
               vorher = v._nr;
@@ -9150,11 +9235,7 @@ export default function VokabelApp() {
                       {antwortBoxKlasse.includes("gelernt-blitz") && <GelerntSterne/>}
                       <div className="karten-kopf">
                         <span className="quiz-label" style={{display:"inline-flex", alignItems:"center"}}>{antwortStatus(antwortBoxKlasse)}{antwortLabel}{isWeitere && <span style={{color:"var(--info)", marginLeft:8}}>— weitere Antwort</span>}</span>
-                        {kartenKnoepfe(aktAntwortTyp, antwortGanz, "antwort", antwortSichtbar, (isKarteEingabe || isKarteAufgedeckt || quiz.karteNeinFlash) && (
-                          <span className={`score-badge ${score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null"}`} style={{fontSize:"0.88rem", padding:"2px 9px"}}>
-                            {score > 0 ? "+" : ""}{score}
-                          </span>
-                        ))}
+                        {kartenKnoepfe(aktAntwortTyp, antwortGanz, "antwort", antwortSichtbar, (isKarteEingabe || isKarteAufgedeckt || quiz.karteNeinFlash) && scoreSymbole(akz ? aktVok?.akzentFortschritt?.score : aktVok?.fortschritt?.score))}
                       </div>
                       {/* Karte-Modus: Platzhalter in Höhe der Antwort (ohne Text), damit beim Aufdecken nichts springt */}
                       {isKarteEingabe && <div className="karte-aufdecken" aria-hidden="true" style={{visibility:"hidden"}}>&nbsp;</div>}
@@ -10205,19 +10286,6 @@ export default function VokabelApp() {
                       <div ref={slotContainerRef} style={{overflow:'hidden', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 8 : 0, margin:"0 -8px", paddingLeft:8, paddingRight:8}}>
                         {slotSektionAufgeklappt && sicherungErinnerungUI()}
                         {slotSektionAufgeklappt && ordnerNavi()}
-                        {slotSektionAufgeklappt && !slotSortModus && !multiAuswahl && faelligAlle.length > 0 && (
-                          <button className="btn btn-ghost neue-session-knopf" data-faellig-alle={faelligAlle.length} style={{marginBottom:6}} onClick={() => ladeFaellige(faelligAlle)}
-                            {...tt("Alle fälligen Vokabeln (gelernte, deren Wiederholung ansteht) aus allen Listen abfragen – gewusst: nächste Gelernt-Stufe")}>
-                            🔁 Fällige wiederholen ({faelligAlle.length})
-                          </button>
-                        )}
-                        {slotSektionAufgeklappt && listenIndex.length > 0 && (slotSortModus || multiAuswahl) && wahlLeiste("slot")}
-                        {slotSektionAufgeklappt && listenIndex.length > 0 && !slotSortModus && !multiAuswahl && (
-                          <button className="btn btn-ghost neue-session-knopf" data-neue-session style={{marginBottom:6}} onClick={() => { neuImOrdnerRef.current = slotOrdner; setNeueSessionSchritt("art"); setModal("neue-session"); }}
-                            {...tt("Neue Session aus Listen zusammenstellen – eine Session oder mehrere (eine Liste in Pakete aufteilen)")}>
-                            <IcoPlus s={13}/> Neue Session aus Listen
-                          </button>
-                        )}
                         {slotSektionAufgeklappt && renderSlotBereiche(null, ladeSlot, aktiverSlot)}
                       </div>
                     </>
@@ -10536,6 +10604,11 @@ export default function VokabelApp() {
                       {/* DIKTAT-KONFIGURATION */}
                       {quizModus === "diktat" && (
                         <>
+                          <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:10}} data-diktat-art>
+                            <span className="sektion-label" style={{margin:0, flex:1}}>Antwortart: Diktat</span>
+                            <button className="typ-btn" data-diktat-zurueck onClick={() => wechsleQuizArt("uebersetzung")}
+                              {...tt("Zurück zu den Antwortarten der Übersetzung (Karte, MC, Tastatur …)")}>Andere Antwortart</button>
+                          </div>
                           <div className="sektion-label" style={{marginBottom:8}}>Diktat-Konfiguration</div>
                           <div className="karte" style={{marginBottom:16}}>
                             <div style={{padding:"12px 16px", borderBottom:"1px solid var(--rahmen)"}}>
@@ -10835,19 +10908,10 @@ export default function VokabelApp() {
                       // Abfrageart wählen: gewählte Art groß (mit Name und Lernfortschritt), die anderen kleiner
                       const ls = lernstandJeArt(quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0 ? kombiListe.vokabeln.filter(v => quizCheckboxAuswahl.has(v.id)) : kombiListe.vokabeln);
                       return (
-                        <><div data-start-fortschritt style={{fontWeight:600, fontSize:"0.85rem", color:"var(--text)", marginBottom:4}}>Fortschritt</div>
-                        <div className="start-arten" data-start-arten>
-                          {QUIZ_ARTEN.filter(a => !ls[a].aus).map(a => {
-                            const akt = a === quizArt, pct = Math.round(ls[a].pct);
-                            return (
-                              <button key={a} className={`start-art${akt ? " aktiv" : ""}`} data-quiz-art={a} data-pct={pct} onClick={() => { if (!akt) wechsleQuizArt(a); }}
-                                {...tt(akt ? `${ABFRAGE_ART_NAMEN[a]}: ${pct} % gelernt` : `${ABFRAGE_ART_NAMEN[a]} (${pct} % gelernt) – antippen: zu ${ABFRAGE_ART_NAMEN[a]} wechseln`)}>
-                                <MiniKreis pct={ls[a].pct} buchstabe={ART_KURZ[a]} aktiv={akt} groesse={akt ? 95 : 57}/>
-                                {akt && <span className="start-art-name" data-start-art-name>{ABFRAGE_ART_NAMEN[a]} · {pct} %</span>}
-                              </button>
-                            );
-                          })}
-                        </div></>
+                        <div data-start-arten hidden>{/* Abfrageart (Ü/D/A) wird über die Antwortarten gewählt – unsichtbare Umschalter für Tests */}
+                          {QUIZ_ARTEN.filter(a => !ls[a].aus).map(a => <button key={a} className={`start-art${a === quizArt ? " aktiv" : ""}`} data-quiz-art={a} data-pct={Math.round(ls[a].pct)}
+                            onClick={() => { if (a !== quizArt) wechsleQuizArt(a); }}/>)}
+                        </div>
                       );
                     })()}
                     <div className="start-titel" data-start-titel>{lernAktiv ? "Lernen" : "Quiz"} mit {sessionAnzahl} Vokabel{sessionAnzahl !== 1 ? "n" : ""}</div>
@@ -11141,7 +11205,7 @@ export default function VokabelApp() {
                                 <span style={{background:"var(--haupt-flaeche)", color:"var(--haupt)", borderRadius:4,
                                   fontSize:"0.65rem", padding:"1px 5px", fontWeight:700, marginRight:2}}>✓</span>
                               )}
-                              {stufenPunkte(vok.fortschritt?.score)}
+                              {scoreSymbole(vok.fortschritt?.score, true)}
                               {score !== null && (
                                 <span className={`score-badge ${score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null"}`} style={{marginRight:4}}>
                                   {score > 0 ? "+" : ""}{score}
@@ -11181,19 +11245,7 @@ export default function VokabelApp() {
               {slotSektionAufgeklappt && renderSlotInfo(true)}
               <div ref={slotContainerRef} style={{overflow:'hidden', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 8 : 0}}>
                 {slotSektionAufgeklappt && (<>
-                  {ordnerNavi({margin:"0 16px 8px"})}
-                  {(slotSortModus || multiAuswahl) && wahlLeiste("slot", {margin:"0 16px 6px"})}
-                  {!slotSortModus && !multiAuswahl && (
-                    <button className="btn btn-ghost neue-session-knopf" data-alle-listen data-statistik-neu style={{margin:"0 16px 6px", width:"calc(100% - 32px)"}}
-                      onClick={() => {
-                        setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setSlotSektionAufgeklappt(false);
-                        setStatistikListenIds(null); setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
-                        setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']));
-                      }}
-                      {...tt("Alle Listen und Vokabeln anzeigen (ohne gespeicherte Session)")}>
-                      ▦ Alle Listen
-                    </button>
-                  )}
+                  {ordnerNavi({margin:"0 16px 8px"}, true)}
                   {renderSlotBereiche(null, ladeSlotStatistik, statistikAktiverSlot, 16)}
                 </>)}
               </div>

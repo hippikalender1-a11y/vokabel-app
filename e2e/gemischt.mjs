@@ -38,7 +38,7 @@ await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c =>
 // Abfrage-Modus öffnen: Tastatur, MC und Akzente dazu anhaken
 await page.click("[data-abfragemodus]"); await sleep(300);
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf]")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
-ok(knoepfe === "karte,mc,tippen,akzent,puzzle,luecke,artikel,satzfinden,satzbauen,lueckensatz,zuordnung,memory", `Antwortarten für E1 (Fremdsprache): Grund + Akzente, Wort, Satz, Runde – ohne Hören (${knoepfe})`);
+ok(knoepfe === "karte,mc,tippen,diktat,akzent,puzzle,luecke,artikel,satzfinden,satzbauen,lueckensatz,zuordnung,memory", `Antwortarten für E1 (Fremdsprache): Grund + Akzente, Wort, Satz, Runde – ohne Hören (${knoepfe})`);
 await artenMehrfach(page, "E1:tippen");   // 147: lang drücken nimmt Tastatur dazu
 await artenMehrfach(page, "E1:mc");
 await page.click('[data-modus-knopf="E1:akzent"]'); await sleep(100);   // Akzente: Zusatz, antippen schaltet

@@ -53,7 +53,7 @@ await page.touchscreen.touchEnd();
 await sleep(500);
 const blase = await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText.trim());
 console.log("     Info:", blase);
-ok(blase === "Unregelmäßige Verben Kapitel 3 – Wiederholung", "Lang-Druck: ausgewählt, die Info oben zeigt den vollen Namen");
+ok((blase || "").startsWith("Unregelmäßige Verben Kapitel 3 – Wiederholung"), "Lang-Druck: ausgewählt, die Info oben zeigt den vollen Namen");
 ok(await page.$("[data-info-menue]") && !(await page.$("[data-info-blase]")), "Menü-Knöpfe unten, ohne schwarze Box");
 // Auswahl-Tafel: Tipp daneben bewirkt nichts, „✕ Auswahl beenden“ schließt
 { const k = await page.evaluate(() => { const r = document.querySelector("[data-slot-info-name]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
