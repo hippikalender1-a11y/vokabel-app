@@ -2441,5 +2441,6 @@ Gesammelt (noch NICHT umsetzen):
 - 141 Beschriftungen in den Sektionen = Beschriftung auf dem Knopf (z. B. Reihenfolge „Schlechteste zuerst“, „Zufällig“, „Listenplatz“);
   „Listen-Nr.“ heißt überall „Listenplatz“ (auch Statistik-Sortierung, Info-Texte).
 - 142 Ordner (Gruppe) geöffnet: Navigation „← Alle Sessions › 📁 Name“ über dem Knopf „＋ Neue Session aus Listen“, der Knopf schließt direkt an die
-  Kacheln an; in diesem Fall zweispaltig (Anordnung offen, x). Neue Session (auch „In Sessions aufteilen“) im geöffneten Ordner wird in diesem Ordner
+  Kacheln an – Knopf über die volle Breite, darunter OHNE Abstand das Raster (x: „zweispaltig“ meinte nur das Raster). Gilt ebenso ohne Ordner
+  und für „Alle Listen“ / „＋ Neue Liste“. Neue Session (auch „In Sessions aufteilen“) im geöffneten Ordner wird in diesem Ordner
   angelegt; Duplizieren bleibt im Ordner (113, erledigt).
