@@ -2490,3 +2490,7 @@ Sitzung 147–149 (Commit 3257528):
 - 149 .aktiv-kachel jetzt für 100 % gelernte Session-Kacheln; chipStil markiert die geladene Session nicht mehr (nur laufende Runde getönt).
 - InfoTafel: gedrückte Kachel ganz über die Tafel scrollen (frei - 70). Tests: Helfer antwortDazu/artenMehrfach per Lang-Druck (Erklärung danach zu);
   angepasst u. a. auswahl, export (Menü über den Kopf), multiquiz, gruppen_gesten, gruppen_sessions, runde3, listenraster, langdruck, slots, statistik, gemischt.
+
+Gesammelt (noch NICHT umsetzen):
+- 150 Multiquiz: nach dem Einstellen/Starten (grüner Kopf bzw. „🧩 Multiquiz starten“) und Rückkehr zur Session-Auswahl sind die Sessions wieder
+  abgewählt (keine Nummern/Ringe mehr; Auswahl leer) – wie bei einer einzelnen Session.
