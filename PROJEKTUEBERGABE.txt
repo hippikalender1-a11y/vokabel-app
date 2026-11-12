@@ -2466,3 +2466,9 @@ Sitzung 139–146 (Commit 8b4dbec):
 - 145/146 .kachel-gewaehlt: Ring per box-shadow (2 px Kartenfarbe + 5 px Auswahl-Farbe), Füllung color-mix 22 % (nicht bei .aktiv-kachel, nicht während .leuchten);
   gilt für die Session im Kopf (angetippt oder geladen), Mehrfach-Auswahl, Lasso, Listen; Quiz-Container margin -8/padding 8 (Ring nicht abgeschnitten);
   Ziel-Rahmen gestrichelt nach innen (outlineOffset -3).
+
+Gesammelt (noch NICHT umsetzen):
+- 147 Neues Auswahl-Modell (vom Nutzer gefunden, „funktioniert super“): Lang-Druck nimmt ein Objekt in die Auswahl auf bzw. heraus (jeder Lang-Druck
+  einzeln); einfaches Antippen schaltet sofort auf Einzelauswahl (nur dieses Objekt). Kein dauerhafter Mehrfach-Modus mehr – Mehrfach-Auswahl besteht,
+  solange man per Lang-Druck sammelt; ersetzt 115/123/125. Offen (y): wo erscheint das Kontextmenü (Multiquiz, Gruppe, Löschen …)? (z): gilt auch für
+  Antwortarten und „Antwort“-Rollen?
