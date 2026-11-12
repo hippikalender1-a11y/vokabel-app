@@ -2612,3 +2612,11 @@ Gesammelt nach Test von 158–167 (noch NICHT umsetzen):
 - 173 scoreSymbole: Score ≤ 3 nur Kreise, darüber nur Rauten (Stufe 2 = 1 volle Raute).
 - 174 handleTabWechsel: Wechsel in „einstellungen“ setzt einstBereich, einstUnter, farbTab auf null.
 - Test e2e/punkte168.mjs (91. Test).
+
+Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
+- 175 Im Quiz zurückspringen und Bewertung nachträglich ändern (Vertipper beim schnellen Antworten):
+  zurückgesprungene Karte zeigt, wie gewertet wurde; Lang-Druck auf die andere Antwort/Bewertung → Rückfrage
+  „Bewertung nachträglich ändern?“; Knopf, um das Quiz danach an der aktuellen Stelle fortzusetzen.
+  Technik-Idee: je beantworteter Karte Schnappschuss des Fortschritts vor der Antwort (+ Ergebnis, Eingabe) merken;
+  Ändern = Schnappschuss zurück und mit neuem Ergebnis neu rechnen (Score, Stufe, Streak, falsch-Liste, Session, Runde).
+  Offene Fragen: (a) wie weit zurück, (b) Bedienung Zurück, (c) Umwerten nur richtig↔falsch, (d) Zuordnung, (e) Wiederholungskarten.
