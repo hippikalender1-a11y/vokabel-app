@@ -19,7 +19,7 @@ const langDruck = sel => page.evaluate(s => { const el = document.querySelector(
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 2, sprache: "alle" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 2, sprache: "alle" }));
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Englisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const vok = n => Array.from({ length: n }, (_, i) => ({ id: i + 1, E1: { wert: `word${i + 1}`, falsch: [] }, D1: { wert: `Wort${i + 1}`, falsch: [] }, ...(i < 3 ? { fortschritt: { score: 3 } } : {}) }));
   localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unit 1", sprache:"en", spalten: sp, naechste_id: 61, vokabeln: vok(60) }));

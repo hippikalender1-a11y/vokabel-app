@@ -46,14 +46,14 @@ const warteAufDatei = async () => {
 
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_stufen_v1", "1");
   const sp = n => Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:n,D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const L = (id, n, s, w) => ({ id, name: n, sprache: s, spalten: sp(n), naechste_id: w.length + 1,
     vokabeln: w.map(([e, d, sc], i) => ({ id: i + 1, E1: { wert: e, falsch: [] }, D1: { wert: d, falsch: [] }, fortschritt: { score: sc, streak: 0 } })) });
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(L("l_fr", "Unité 1", "fr", [["été","Sommer",4],["café","Kaffee",-2]])));
   localStorage.setItem("vokabel_liste_l_en", JSON.stringify(L("l_en", "Verbs", "en", [["go","gehen",1]])));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }, { id:"l_en", name:"Verbs", sprache:"en", platz:{z:1,s:0} }]));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus: "einfach", gelerntSchwelle: 5, sprache: "alle", farbschema: "freudig" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "einfach", gelerntSchwelle: 5, sprache: "alle", farbschema: "freudig" }));
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf: [], gespeichert: [{ id: "g1", name: "Mein Quiz", timestamp: 1, konfiguration: { listenIds: ["l_fr"] }, sessionFortschritt: null, platz: { z: 0, s: 0 } }] }));
 });
 await page.reload(); await sleep(600);

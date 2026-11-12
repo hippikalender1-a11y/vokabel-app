@@ -32,7 +32,7 @@ await page.evaluateOnNewDocument(() => {
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus: "einfach", autoplay: true, vorlesen: ["E1", "E2", "E3"], gelerntSchwelle: 3 }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "einfach", autoplay: true, vorlesen: ["E1", "E2", "E3"], gelerntSchwelle: 3 }));
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Infinitive",E2:"Simple Past",E3:"Past Participle",D1:"Deutsch"}[t] || "", aktiv: ["E1","E2","E3","D1"].includes(t) }]));
   const l = { id:"l_en", name:"Irregular Verbs", sprache:"en", spalten: sp, naechste_id:3, vokabeln: [
     { id:1, E1:{wert:"be",falsch:[]}, E2:{wert:"was / were",falsch:[]}, E3:{wert:"been",falsch:[]}, D1:{wert:"sein",falsch:[]} },

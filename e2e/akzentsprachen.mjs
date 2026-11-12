@@ -39,7 +39,7 @@ const tippeOhneAkzent = async () => {
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus: "schwer", gelerntSchwelle: 3, sprache: "alle" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "schwer", gelerntSchwelle: 3, sprache: "alle" }));
   const sp = name => Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:name,D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const liste = (id, name, sprache, w) => ({ id, name, sprache, spalten: sp(name), naechste_id: w.length + 1,
     vokabeln: w.map(([e, d], i) => ({ id: i + 1, E1: { wert: e, falsch: [] }, D1: { wert: d, falsch: [] } })) });

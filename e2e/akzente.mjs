@@ -44,7 +44,7 @@ await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
   // frühere Standard-Haken der Stufen (Test prüft sie ausdrücklich)
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", autoplay:false, vorlesen:["E1"], gelerntSchwelle:0, sprache:"alle",
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", autoplay:false, vorlesen:["E1"], gelerntSchwelle:0, sprache:"alle",
     stufen: { schwer: { akzenteTolerant:false, aufdeckenAbzug:true, akzentOhneMischen:true, akzentHervorheben:false, akzentZaehler:false, akzentAutoUebernahme:false } } }));
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const l = { id:"l_fr", name:"Akzente", sprache:"fr", spalten: sp, naechste_id:5, vokabeln: [

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, Fragment } from "react";
+﻿import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { zeigeInfo, schliesseInfo, schalteInfoModus, setzeFarbeImMenue } from "./infoEreignisse.js";
 
@@ -1088,6 +1088,58 @@ function MiniKreis({ pct, buchstabe, aktiv, aus, groesse = 24, aufGruen = false 
 // Score für den Gelernt-Status: Diktat hat einen eigenen Fortschritt
 function gelerntScore(v, diktat) { return (diktat ? v.diktatFortschritt?.score : v.fortschritt?.score) ?? -Infinity; }
 
+// ── Gelernt-Stufen (157) ───────────────────────────────────────────────────
+// Score 3 = gelernt (Stufe 1, Schwelle fest). Normales Üben hebt nicht darüber. Ist eine gelernte Vokabel nach dem Abstand ihrer Stufe
+// fällig und wird gewusst → +1 = nächste Stufe (bis Stufe 4 = Score 6). Nicht gewusst → −1 (ggf. Stufe zurück, unter 3 nicht mehr gelernt).
+// Gewusst, aber nicht fällig: Score bleibt, Zähler „zusätzlich gewusst“ (extraGewusst) +1.
+const GELERNT_SCHWELLE = 3, MAX_STUFE = 4;
+const STANDARD_WIEDERHOL_TAGE = [3, 10, 30, 60];   // Stufe 1→2, 2→3, 3→4, Stufe 4 prüfen
+const WIEDERHOL_TAGE_WAHL = [1, 2, 3, 5, 7, 10, 14, 21, 30, 45, 60, 90];
+function wiederholTage() { const a = lsGet(SK.einstellungen, {})?.wiederholTage; return Array.isArray(a) && a.length === 4 ? a : STANDARD_WIEDERHOL_TAGE; }
+function stufeVon(score) { return (score ?? -Infinity) >= GELERNT_SCHWELLE ? Math.min(MAX_STUFE, score - GELERNT_SCHWELLE + 1) : 0; }
+function istFaellig(f, jetzt = Date.now()) {
+  const st = stufeVon(f?.score);
+  if (!st) return false;
+  const seit = Date.parse(f.stufeSeit || f.letzteAbfrage || "");
+  if (!seit) return false;   // ohne Datum (z. B. importiert) nicht fällig
+  return jetzt - seit >= wiederholTage()[st - 1] * 86400000;
+}
+function stufenRegel(alt, neu, ereignis) {
+  const vorher = alt?.score ?? 0, jetzt = new Date().toISOString();
+  if (ereignis === "richtig") {
+    if (vorher >= GELERNT_SCHWELLE) {
+      if (istFaellig(alt)) { neu.score = Math.min(GELERNT_SCHWELLE + MAX_STUFE - 1, vorher + 1); neu.stufeSeit = jetzt; }
+      else { neu.score = vorher; neu.extraGewusst = (alt?.extraGewusst || 0) + 1; }
+    } else if (neu.score >= GELERNT_SCHWELLE) { neu.score = GELERNT_SCHWELLE; neu.stufeSeit = jetzt; }
+  } else if (neu.score !== vorher) {
+    if (neu.score >= GELERNT_SCHWELLE) neu.stufeSeit = jetzt; else delete neu.stufeSeit;
+  }
+  return neu;
+}
+// Stufen als Punkte (●●○○) neben dem Score
+function stufenPunkte(score) {
+  const st = stufeVon(score);
+  return st ? <span className="stufen-punkte" data-stufe={st} title={`Gelernt-Stufe ${st} von ${MAX_STUFE}`}>{"●".repeat(st)}{"○".repeat(MAX_STUFE - st)}</span> : null;
+}
+// einmalig: Scores über 3 → 3 (Stufe 1); die höheren Stufen verdient man sich über die Wiederholungen
+function stufenUmstellen() {
+  try { if (localStorage.getItem("vokabel_stufen_v1")) return; } catch { return; }
+  (lsGet(SK.listenIndex, []) || []).forEach(({ id }) => {
+    const l = lsGet(SK.liste(id));
+    if (!l) return;
+    let geaendert = false;
+    const vokabeln = l.vokabeln.map(v => {
+      const n = { ...v };
+      ["fortschritt", "diktatFortschritt", "akzentFortschritt"].forEach(k => {
+        if ((v[k]?.score ?? 0) > GELERNT_SCHWELLE) { n[k] = { ...v[k], score: GELERNT_SCHWELLE, stufeSeit: v[k].letzteAbfrage || new Date().toISOString() }; geaendert = true; }
+      });
+      return n;
+    });
+    if (geaendert) lsSet(SK.liste(id), { ...l, vokabeln });
+  });
+  try { localStorage.setItem("vokabel_stufen_v1", "1"); } catch { /* egal */ }
+}
+
 // ── Scoring ────────────────────────────────────────────────────────────────
 // falschAbzug (Regel je Stufe): falsche Antwort −1, sonst bleibt der Score gleich
 function berechneNeuenScore(fortschritt, ereignis, modus, falschAbzug = true) {
@@ -1104,7 +1156,7 @@ function berechneNeuenScore(fortschritt, ereignis, modus, falschAbzug = true) {
     if (modus === "schwer") neu.score -= 1;
     if (neu.aufgedecktStreak >= 3 && neu.score > -100) neu.score = -100;
   }
-  return neu;
+  return stufenRegel(fortschritt, neu, ereignis);
 }
 function speichereScore(liste, vokId, neuFortschritt) {
   const vok = liste.vokabeln.find(v => v.id === vokId);
@@ -1127,7 +1179,7 @@ function berechneDiktatScore(fortschritt, ereignis, falschAbzug = true) {
   const neu = { ...f, letzteAbfrage: new Date().toISOString() };
   if (ereignis === "richtig") neu.score += 1;
   else if (ereignis === "aufgedeckt" && falschAbzug) neu.score -= 1;
-  return neu;
+  return stufenRegel(fortschritt, neu, ereignis);
 }
 function speichereDiktatScore(liste, vokId, neuFortschritt) {
   const vok = liste.vokabeln.find(v => v.id === vokId);
@@ -2091,6 +2143,7 @@ const CSS_BASIS = `
   .wahl-leiste .btn{flex:1;}
   .slot-info{position:sticky;z-index:8;background:var(--karte);background:color-mix(in srgb, var(--bestaetigen) 11%, var(--karte));border-bottom:1px solid var(--rahmen);padding:10px 16px;box-shadow:0 4px 8px -6px rgba(0,0,0,0.25);}
   .slot-info-pfeil{flex-shrink:0;width:34px;height:30px;border-radius:15px;border:1.5px solid var(--rahmen);background:var(--karte);color:var(--text2);cursor:pointer;font-size:0.75rem;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .stufen-punkte{font-size:0.62rem;letter-spacing:1px;color:var(--gelernt);margin-right:4px;white-space:nowrap;}
   .info-zeile-klein{display:flex;justify-content:space-between;gap:8px;font-size:0.75rem;color:var(--text2);white-space:nowrap;}
   .info-gruppen{min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:right;}
   .slot-info{cursor:pointer;}
@@ -2183,7 +2236,7 @@ const IcoCollapse= ({s=16}) => <svg viewBox="0 0 16 16" width={s} height={s} sty
 export default function VokabelApp() {
   const [tab, setTab] = useState("quiz");
   const [listenIndex, setListenIndex] = useState([]);
-  const [einstellungen, setEinstellungen] = useState(defaultEinstellungen());
+  const [einstellungen, setEinstellungen] = useState(defaultEinstellungen());   // gelerntSchwelle ist fest 3 (157)
   const [schemaBearbeiten, setSchemaBearbeiten] = useState(null);   // id des eigenen Schemas im Editor
   // Farbmodus: Farben direkt am Element ändern (Vorschau bis „Farben übernehmen“)
   const [farbModus, setFarbModus] = useState(false);
@@ -2324,6 +2377,7 @@ export default function VokabelApp() {
   const [listenAendern, setListenAendern] = useState(false);
   const slotSichtbarRef = useRef([]);
   const [, setSprungTick] = useState(0);
+  const [faelligTick, setFaelligTick] = useState(0);
   const neuImOrdnerRef = useRef(null);   // „Neue Session“ in einer geöffneten Gruppe begonnen → beim Speichern/Aufteilen dort anlegen   // sichtbare Session-Kacheln (für „Alle“ in der Mehrfach-Auswahl)
   const [slotVorschau, setSlotVorschau] = useState(null);           // Session-Auswahl: angetippte Session { typ, id } – Info darunter, laden über den Kopf
   const [slotVorschauListe, setSlotVorschauListe] = useState(false); // … deren Vokabeln als Liste
@@ -2889,7 +2943,8 @@ export default function VokabelApp() {
     } else {
       setListenIndex(idx);
     }
-    setEinstellungen(lsGet(SK.einstellungen, defaultEinstellungen()));
+    stufenUmstellen();
+    setEinstellungen({ ...lsGet(SK.einstellungen, defaultEinstellungen()), gelerntSchwelle: GELERNT_SCHWELLE });
     // Neues Slot-Format laden, ggf. vom alten Format migrieren
     let slotsData = lsGet(SK.slots);
     if (!slotsData) {
@@ -3381,7 +3436,7 @@ export default function VokabelApp() {
     while (namen.has(n.toLowerCase())) n = `${name} (Kopie ${i++})`;
     return n;
   }
-  function speichereEinst(e) { setEinstellungen(e); lsSet(SK.einstellungen, e); }
+  function speichereEinst(e) { e = { ...e, gelerntSchwelle: GELERNT_SCHWELLE }; setEinstellungen(e); lsSet(SK.einstellungen, e); }
 
   // Vor allen frühen Render-Rückgaben berechnen: starteQuiz() nutzt den Wert auch
   // vom Paket-Ende-Bildschirm aus (sonst ReferenceError → Button ohne Wirkung)
@@ -4554,6 +4609,30 @@ export default function VokabelApp() {
   }
 
   // art (optional): Konfiguration direkt in dieser Abfrageart laden
+  // Fällige Vokabeln (Abfrageart des Quiz-Tabs) einer Menge von Konfigurationen bzw. Listen: Schlüssel „listeId__vokId“
+  const FORTSCHRITT_FELD = { uebersetzung: "fortschritt", diktat: "diktatFortschritt", akzente: "akzentFortschritt" };
+  function faelligeSchluessel(konfigs) {
+    const feld = FORTSCHRITT_FELD[quizArt] || "fortschritt", jetzt = Date.now(), erg = new Set();
+    konfigs.forEach(k => (k.listenIds || []).forEach(id => {
+      const l = lsGet(SK.liste(id));
+      const auswahl = k.bereichTyp === "bereich" && (k.vokabelAuswahl || []).length ? new Set(k.vokabelAuswahl) : null;
+      l?.vokabeln.forEach(v => { const key = `${id}__${v.id}`; if ((!auswahl || auswahl.has(key)) && istFaellig(v[feld], jetzt)) erg.add(key); });
+    }));
+    return [...erg];
+  }
+  const faelligVonSlots = ids => faelligeSchluessel(ids.map(id => getSlotEintrag("gespeichert", id)?.konfiguration).filter(Boolean));
+  const faelligVonListen = ids => faelligeSchluessel([{ listenIds: ids }]);
+  // fällige Vokabeln über alle sichtbaren Listen (für „🔁 Fällige wiederholen“) – beim Öffnen der Auswahl neu berechnet
+  const faelligAlle = useMemo(() => slotSektionAufgeklappt && tab === "quiz" ? faelligeSchluessel([{ listenIds: sichtbareListen.map(l => l.id) }]) : [],
+    [slotSektionAufgeklappt, tab, listenIndex, sprachFilter, quizArt, faelligTick]);   // eslint-disable-line react-hooks/exhaustive-deps
+  function ladeFaellige(keys) {
+    if (!keys.length) return;
+    const listenIds = [...new Set(keys.map(x => x.split("__")[0]))];
+    applyKonfiguration({ ...aktuelleKonfiguration(false), listenIds, vokabelAuswahl: keys, bereichTyp: "bereich", quizBereichTyp: "bereich" });
+    setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotVorschau(null); setMultiAuswahl(null); setListenWahl(null);
+    auswahlTafelRef.current = null; schliesseInfo();
+    setTab("quiz"); setAnsicht("uebersicht"); setSlotSektionAufgeklappt(false); leuchte("slotkopf");
+  }
   function applyKonfiguration(k, art = null) {
     if (!k) return;
     if (k.listenIds && k.listenIds.length > 0) {
@@ -6370,6 +6449,7 @@ export default function VokabelApp() {
       { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
       { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
       { label: "📤 Exportieren", fn: () => oeffneExport([l.id]) },
+      ...(() => { const f = faelligVonListen([l.id]); return f.length ? [{ label: `🔁 Fällige wiederholen (${f.length})`, fn: () => ladeFaellige(f) }] : []; })(),
       { label: "✨ Beispielsätze ergänzen", fn: () => oeffneSatzFenster(l.id) },
       { label: "≈ Synonyme ergänzen", fn: () => oeffneSynFenster(l.id) },
       ...(imKopf && sichtbareListen.some(x => x.id !== l.id) ? [{ label: "⇲ Zusammenführen", fn: () => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); } }] : []),
@@ -6394,6 +6474,7 @@ export default function VokabelApp() {
   function listenWahlMenue(ids) {
     return [
       { label: `📤 Exportieren (${ids.length})`, behalten: true, fn: () => oeffneExport(ids) },
+      ...(() => { const f = faelligVonListen(ids); return f.length ? [{ label: `🔁 Fällige wiederholen (${f.length})`, fn: () => ladeFaellige(f) }] : []; })(),
       ...(sprachFilter !== "alle" ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl(ids); } }]),
       { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "liste", ids }) },
       { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) },
@@ -6866,6 +6947,7 @@ export default function VokabelApp() {
     const wahlMit = x => multiAuswahl.includes(x.id) ? multiAuswahl : [...multiAuswahl, x.id];
     const wahlMenue = ids => [
       ...(ids.length >= 2 ? [tab === "quiz" ? { label: `🧩 Multiquiz starten (${ids.length})`, fn: () => starteMultiquiz(ids) } : { label: `🧩 Multiquiz (${ids.length})`, fn: () => stelleMultiquizEin(ids) }] : []),
+      ...(() => { const f = faelligVonSlots(ids); return f.length ? [{ label: `🔁 Fällige wiederholen (${f.length})`, fn: () => ladeFaellige(f) }] : []; })(),
       { label: `📁 In Gruppe… (${ids.length})`, fn: () => setInGruppe({ ids, name: "" }) },
       ...(ordnerOffen ? [{ label: `↑ Aus der Gruppe (${ids.length})`, fn: () => verschiebeInOrdner(ids, null) }] : []),
       { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl(ids); } },
@@ -6881,6 +6963,7 @@ export default function VokabelApp() {
       { label: "📁 In Gruppe…", fn: () => setInGruppe({ ids: [x.id], name: "" }) },
       ...(ordnerOffen ? [{ label: "↑ Aus der Gruppe", fn: () => verschiebeInOrdner([x.id], null) }] : []),
       { label: "📝 Listen/Vokabeln ändern", fn: () => { if (slotRef?.id !== x.id) onLaden('gespeichert', x.id); setListenAendern(true); setSlotSektionAufgeklappt(false); } },
+      ...(() => { const f = faelligVonSlots([x.id]); return f.length ? [{ label: `🔁 Fällige wiederholen (${f.length})`, fn: () => ladeFaellige(f) }] : []; })(),
       { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
     ];
     // Auswahl-Tafel: eine Session → ihr Menü, mehrere → Aktionen für die Auswahl
@@ -7057,7 +7140,8 @@ export default function VokabelApp() {
     const ls = lernstandJeArt(alle);
     const pct = Math.round(lernProzent(alle.map(v => v.fortschritt?.score), schwelle));
     const sf = eintrag.konfiguration ? slotSFAlle(eintrag)[slotKonfigArt(eintrag)] : null;
-    const gruppenText = gruppenKurz(anz);
+    const faelligN = alle.filter(v => istFaellig(v[FORTSCHRITT_FELD[quizArt] || "fortschritt"])).length;
+    const gruppenText = (faelligN ? `🔁 ${faelligN} fällig · ` : "") + gruppenKurz(anz);
     const zu = !!einstellungen.slotInfoZu;
     // Name wie im Kopf: gespeicherte Session → ihr Name; Multiquiz aus dem Verlauf → seine Teile; Verlauf → Datum
     const gespeichert = slots.gespeichert.some(g => g.id === eintrag.id);
@@ -7114,6 +7198,7 @@ export default function VokabelApp() {
                   <span className="vorschau-nr">{v._nr}</span>
                   <span className="vorschau-wort">{ohneHinweis(v[fremd]?.wert || "")}</span>
                   <span className="vorschau-de">{ohneHinweis(v[deutsch]?.wert || "")}</span>
+                  {stufenPunkte(v.fortschritt?.score)}
                   {sc !== null && <span className={`score-badge ${sc > 0 ? "score-pos" : sc < 0 ? "score-neg" : "score-null"}`}>{sc > 0 ? "+" : ""}{sc}</span>}
                 </div>);
               vorher = v._nr;
@@ -7211,7 +7296,7 @@ export default function VokabelApp() {
     }
     const schwelleDiktat = einstellungen.gelerntSchwelle ?? 0;
     if (!gruppe && !quizGelerntEinschliessen && schwelleDiktat > 0)
-      voks = voks.filter(v => gelerntScore(v, true) < schwelleDiktat);
+      voks = voks.filter(v => gelerntScore(v, true) < schwelleDiktat || istFaellig(v.diktatFortschritt));
     const sessionGesamt = isPakete ? voks.length : 0;
     if (isPakete) {
       const existingSlot = lsGet(SK.sessionAktiv);
@@ -7240,7 +7325,7 @@ export default function VokabelApp() {
     }
     if (reihenfolgeQ === "schlechteste" && maxScoreQ !== "" && !isNaN(parseFloat(maxScoreQ))) {
       const threshold = parseFloat(maxScoreQ);
-      const gelerntDabei = v => !gruppe && quizGelerntEinschliessen && schwelleDiktat > 0 && gelerntScore(v, true) >= schwelleDiktat;
+      const gelerntDabei = v => !gruppe && ((quizGelerntEinschliessen && schwelleDiktat > 0 && gelerntScore(v, true) >= schwelleDiktat) || istFaellig(v.diktatFortschritt));
       voks = voks.filter(v => gelerntDabei(v) || (v.diktatFortschritt?.score ?? 0) < threshold);
     }
     voks = ordneVokabeln(voks, "diktatFortschritt", reihenfolgeQ, unbeantwortetQ);
@@ -7318,10 +7403,10 @@ export default function VokabelApp() {
     const gruppeVokIds = voks.map(v => v.id);   // ganze Vokabelgruppe inkl. Gelernter (für Lern-Bilanz)
     const schwelleQ = einstellungen.gelerntSchwelle ?? 0;
     if (!gruppe && !quizGelerntEinschliessen && schwelleQ > 0)
-      voks = voks.filter(v => (v[scoreFeld]?.score ?? -Infinity) < schwelleQ);
+      voks = voks.filter(v => (v[scoreFeld]?.score ?? -Infinity) < schwelleQ || istFaellig(v[scoreFeld]));
     // Score-Grenze (Reihenfolge "schlechteste") gehört zur Session-Menge – wie die Anzeige im Quiz-Tab
     // eingeschaltete Gelernte gehören zur Session – die Score-Grenzen gelten für sie nicht
-    const gelerntDabei = v => !gruppe && quizGelerntEinschliessen && schwelleQ > 0 && (v[scoreFeld]?.score ?? -Infinity) >= schwelleQ;
+    const gelerntDabei = v => !gruppe && ((quizGelerntEinschliessen && schwelleQ > 0 && (v[scoreFeld]?.score ?? -Infinity) >= schwelleQ) || istFaellig(v[scoreFeld]));
     if (reihenfolgeQ === "schlechteste" && maxScoreQ !== "" && !isNaN(parseFloat(maxScoreQ))) {
       const threshold = parseFloat(maxScoreQ);
       voks = voks.filter(v => gelerntDabei(v) || (v[scoreFeld]?.score ?? 0) < threshold);
@@ -10023,8 +10108,9 @@ export default function VokabelApp() {
             ? gefilterteVoks.filter(v => antwortSpaltenFuer(v, quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet,
               quizSpalteModus, true).length > 0) : gefilterteVoks;
           // Score-Filter (nur schlechteste-Modus) → Basis für Reihenfolge-Header; eingeschaltete Gelernte bleiben dabei
-          const gelerntDabei = v => quizGelerntEinschliessen && (einstellungen.gelerntSchwelle ?? 0) > 0
-            && (nurAkzent ? (v.akzentFortschritt?.score ?? -Infinity) : gelerntScore(v, quizModus === "diktat")) >= einstellungen.gelerntSchwelle;
+          const feldVon = v => nurAkzent ? v.akzentFortschritt : quizModus === "diktat" ? v.diktatFortschritt : v.fortschritt;
+          const gelerntDabei = v => (quizGelerntEinschliessen && (einstellungen.gelerntSchwelle ?? 0) > 0
+            && (nurAkzent ? (v.akzentFortschritt?.score ?? -Infinity) : gelerntScore(v, quizModus === "diktat")) >= einstellungen.gelerntSchwelle) || istFaellig(feldVon(v));
           let reihenfolgeVoks = akzentVoks;
           if (quizReihenfolge === "schlechteste" && quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
             const thr = parseFloat(quizSchlechtesteMaxScore);
@@ -10036,7 +10122,7 @@ export default function VokabelApp() {
           const gelernteAnzahl = schwelle > 0
             ? akzentVoks.filter(v => startScore(v) >= schwelle).length : 0;
           if (!quizGelerntEinschliessen && schwelle > 0)
-            reihenfolgeVoks = reihenfolgeVoks.filter(v => startScore(v) < schwelle);
+            reihenfolgeVoks = reihenfolgeVoks.filter(v => startScore(v) < schwelle || istFaellig(feldVon(v)));
           if (!istDiktat && abfrageZielModus === "score" && abfrageZielScoreTyp !== "session")
             reihenfolgeVoks = reihenfolgeVoks.filter(v => gelerntDabei(v) || ((nurAkzent ? v.akzentFortschritt : v.fortschritt)?.score ?? 0) < abfrageZielScore);
           if (nurAkzent) {
@@ -10119,6 +10205,12 @@ export default function VokabelApp() {
                       <div ref={slotContainerRef} style={{overflow:'hidden', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 8 : 0, margin:"0 -8px", paddingLeft:8, paddingRight:8}}>
                         {slotSektionAufgeklappt && sicherungErinnerungUI()}
                         {slotSektionAufgeklappt && ordnerNavi()}
+                        {slotSektionAufgeklappt && !slotSortModus && !multiAuswahl && faelligAlle.length > 0 && (
+                          <button className="btn btn-ghost neue-session-knopf" data-faellig-alle={faelligAlle.length} style={{marginBottom:6}} onClick={() => ladeFaellige(faelligAlle)}
+                            {...tt("Alle fälligen Vokabeln (gelernte, deren Wiederholung ansteht) aus allen Listen abfragen – gewusst: nächste Gelernt-Stufe")}>
+                            🔁 Fällige wiederholen ({faelligAlle.length})
+                          </button>
+                        )}
                         {slotSektionAufgeklappt && listenIndex.length > 0 && (slotSortModus || multiAuswahl) && wahlLeiste("slot")}
                         {slotSektionAufgeklappt && listenIndex.length > 0 && !slotSortModus && !multiAuswahl && (
                           <button className="btn btn-ghost neue-session-knopf" data-neue-session style={{marginBottom:6}} onClick={() => { neuImOrdnerRef.current = slotOrdner; setNeueSessionSchritt("art"); setModal("neue-session"); }}
@@ -11049,6 +11141,7 @@ export default function VokabelApp() {
                                 <span style={{background:"var(--haupt-flaeche)", color:"var(--haupt)", borderRadius:4,
                                   fontSize:"0.65rem", padding:"1px 5px", fontWeight:700, marginRight:2}}>✓</span>
                               )}
+                              {stufenPunkte(vok.fortschritt?.score)}
                               {score !== null && (
                                 <span className={`score-badge ${score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null"}`} style={{marginRight:4}}>
                                   {score > 0 ? "+" : ""}{score}
@@ -11863,8 +11956,8 @@ export default function VokabelApp() {
               return einstZeile([
                 { k: "mischen", label: "Arten mischen", text: `${MISCH_ARTEN.filter(([k]) => (g[k] || 0) > 0).length} Arten`,
                   hilfe: "Sind bei einer Spalte mehrere Antwortarten gewählt, wird je Frage eine davon gezogen – mit diesen Anteilen" },
-                { k: "gelernt", label: "Gelernt ab", text: schw ? `Score +${schw}` : "Aus", wahl: true,
-                  hilfe: schw ? `Score ≥ +${schw} gilt als gelernt (Diktat: eigener Diktat-Score)` : "Gelernt-Schwelle deaktiviert – alle Vokabeln werden abgefragt" },
+                { k: "wiederholen", label: "Wiederholen", text: `${wiederholTage().join("·")} T`,
+                  hilfe: `Score +${schw} = gelernt (Stufe 1). Gelernte werden nach diesen Abständen fällig – gewusst: nächste Stufe (bis Stufe ${MAX_STUFE})` },
                 { k: "akzente", label: "Akzente", text: akzAn.length ? `${akzAn.map(sp => sp.flagge).join(" ")} an` : "aus",
                   hilfe: "Akzente je Sprache – ausgeschaltet: keine Abfrageart „A“ und keine Akzent-Statistik; fehlende Akzente beim Tippen gelten als richtig" },
               ]);
@@ -11892,6 +11985,22 @@ export default function VokabelApp() {
                 </div>
               );
             })()}
+            {einstUnter === "wiederholen" && (
+              <div className="karte" data-wiederholen-einst style={{padding:"10px 16px"}}>
+                {["Stufe 1 → 2", "Stufe 2 → 3", "Stufe 3 → 4", "Stufe 4 prüfen"].map((name, i) => (
+                  <div key={i} style={{marginBottom:10}}>
+                    <div className="inp-label">{name} nach</div>
+                    <div style={{display:"flex", gap:5, flexWrap:"wrap"}} data-wahl-bereich>
+                      {WIEDERHOL_TAGE_WAHL.map(d => (
+                        <button key={d} className={`toggle-opt${wiederholTage()[i] === d ? " aktiv" : ""}`} data-wiederhol-stufe={i + 1} data-wiederhol-tage={d} style={{minWidth:40, padding:"6px 8px"}}
+                          onClick={() => { const a = [...wiederholTage()]; a[i] = d; speichereEinst({ ...einstellungen, wiederholTage: a }); setFaelligTick(x => x + 1); }}
+                          {...tt(`${name}: nach ${d} Tag${d !== 1 ? "en" : ""} fällig`)}>{d}</button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             {einstUnter === "gelernt" && (
             <div className="karte">
               <div className="karte-zeile" style={{flexDirection:"column", alignItems:"flex-start", gap:8}}>

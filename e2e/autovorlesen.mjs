@@ -48,7 +48,7 @@ await page.evaluate(() => {
     vokabeln: [{ id:1, E1:{wert:"aller",falsch:[]}, D1:{wert:"gehen",falsch:[]} }, { id:2, E1:{wert:"venir",falsch:[]}, D1:{wert:"kommen",falsch:[]} },
       { id:3, E1:{wert:"voir",falsch:[]}, D1:{wert:"sehen",falsch:[]} }] }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:"Verbes", sprache:"fr" }]));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ autoplay: false, vorlesen: ["E1"], gelerntSchwelle: 3, sprache: "alle" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], autoplay: false, vorlesen: ["E1"], gelerntSchwelle: 3, sprache: "alle" }));
 });
 await page.reload(); await sleep(500);
 await zuListen(page);

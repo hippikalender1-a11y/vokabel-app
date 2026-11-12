@@ -25,7 +25,7 @@ await page.evaluate(() => {
   const basis = { haupt: "#2d6a4f", "haupt-hell": "#52b788", "auf-haupt": "#fff", hintergrund: "#f7f5f0", karte: "#fff", flaeche: "#f0ede8", "text-stark": "#1a1a1a", text: "#3b3832",
     text2: "#6b6560", text3: "#9b9590", rahmen: "#e0dbd2", richtig: "#2d6a4f", falsch: "#c0392b", gelb: "#f9a825", orange: "#e67e22", info: "#6a1b9a",
     gelernt: "#2d6a4f", arbeit: "#e9c46a", nie: "#d6d2cb", negativ: "#e57373", kopfzeile: "#335544", "kopf-schrift": "#ffffff", "kopf-schrift-leise": "#ddeedd", "fortschritt-gelernt": "#ff00aa" };
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, sprache: "alle", farbschema: "e1", eigeneSchemata: [{ id: "e1", name: "Test", basis: "natur", farben: basis, elemente: {} }] }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 3, sprache: "alle", farbschema: "e1", eigeneSchemata: [{ id: "e1", name: "Test", basis: "natur", farben: basis, elemente: {} }] }));
 });
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Statistik")).click()); await sleep(500);

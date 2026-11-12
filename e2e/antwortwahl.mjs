@@ -25,7 +25,7 @@ const aktion = async label => { await page.evaluate(l => [...document.querySelec
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 2 }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 2 }));
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Englisch",E2:"Plural",D1:"Deutsch"}[t] || "", aktiv: ["E1","E2","D1"].includes(t) }]));
   const vokabeln = Array.from({ length: 6 }, (_, i) => ({ id: i + 1, E1: { wert: `word${i + 1}`, falsch: [] }, E2: { wert: `words${i + 1}`, falsch: [] }, D1: { wert: `Wort${i + 1}`, falsch: [] } }));
   localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unit 1", sprache:"en", spalten: sp, naechste_id: 7, vokabeln }));
@@ -102,10 +102,9 @@ await klick("[data-wahl-fertig]");
 ok(!(await wahlKopf()) && await page.$('[data-einst-unter="sicherung"]'), "Bestätigen: Auswahl beendet, Knopfzeile wieder da");
 
 await einstUnter(page, "lernen");
-ok(/Arten mischen=\d+ Arten \| Gelernt ab=Score \+2 \| Akzente=/.test(await zeile()) && !(await page.$("[data-antwort-gewichte]")), `Lernen: Knopfzeile, nichts offen (${await zeile()})`);
-await klick('[data-einst-unter="gelernt"]');
-await klick('[data-gelernt-wahl="4"]'); await sleep(350);
-ok(/Gelernt ab=Score \+4/.test(await zeile()) && !(await page.$("[data-gelernt-schwelle]")), "Gelernt-Schwelle: Wahl schließt");
+ok(/Arten mischen=\d+ Arten \| Wiederholen=[\d·]+ T \| Akzente=/.test(await zeile()) && !(await page.$("[data-antwort-gewichte]")), `Lernen: Knopfzeile, nichts offen (${await zeile()})`);
+await klick('[data-einst-unter="wiederholen"]');
+ok(await page.$("[data-wiederholen-einst]"), "157: „Wiederholen“ öffnet die Abstände je Stufe");
 await klick('[data-einst-unter="mischen"]');
 ok(await page.$("[data-antwort-gewichte]") && (await zeile()).includes("▲"), "Arten mischen offen: Regler, Knopf mit ▲");
 

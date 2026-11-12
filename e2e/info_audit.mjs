@@ -47,7 +47,7 @@ await page.evaluate(() => {
   const l1 = mk("l_en", "Verbs", "en"), l2 = mk("l_fr", "Verbes", "fr");
   [l1, l2].forEach(l => localStorage.setItem("vokabel_liste_" + l.id, JSON.stringify(l)));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_en", name:"Verbs", sprache:"en" }, { id:"l_fr", name:"Verbes", sprache:"fr" }]));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"einfach", autoplay:true, vorlesen:["E1"], gelerntSchwelle:3, sprache:"alle" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"einfach", autoplay:true, vorlesen:["E1"], gelerntSchwelle:3, sprache:"alle" }));
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[{ id:"v_1", name:"25.10.2026, 10:00", timestamp:1, konfiguration:{ listenIds:["l_en"], vokabelAuswahl:[], bereichTyp:"alle" }, sessionFortschritt:null }],
     gespeichert:[{ id:"g_1", name:"Englisch 25.10.2026", timestamp:1, konfiguration:{ listenIds:["l_en"], vokabelAuswahl:[], bereichTyp:"alle" }, sessionFortschritt:null }, { id:"g_2", name:"Test 2", timestamp:2, konfiguration:{ listenIds:["l_en"], vokabelAuswahl:[], bereichTyp:"alle" }, sessionFortschritt:null }] }));
 });

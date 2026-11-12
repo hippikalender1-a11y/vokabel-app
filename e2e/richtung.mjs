@@ -32,7 +32,7 @@ const vorbereiten = async (einst = {}) => {
     const vokabeln = w.map((x, i) => ({ id: i + 1, E1: { wert: x, falsch: [] }, D1: { wert: `Wort${i + 1}`, falsch: [] } }));
     localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unité 1", sprache:"fr", spalten: sp, naechste_id: w.length + 1, vokabeln }));
     localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
-    if (Object.keys(einst).length) localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus: "schwer", vorlesen: ["E1"], gelerntSchwelle: 3, sprache: "alle", ...einst }));
+    if (Object.keys(einst).length) localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "schwer", vorlesen: ["E1"], gelerntSchwelle: 3, sprache: "alle", ...einst }));
   }, WOERTER, einst);
   await page.reload(); await sleep(700);
   await neueEineSession(page);

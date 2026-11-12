@@ -50,7 +50,7 @@ await page.evaluate(() => {
   ] };
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", autoplay:false, vorlesen:["E1"], gelerntSchwelle:6, sprache:"alle" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", autoplay:false, vorlesen:["E1"], gelerntSchwelle:6, sprache:"alle" }));
 });
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);

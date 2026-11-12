@@ -53,7 +53,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[
     { id:"g_k", name:"Karte", timestamp:1, konfiguration:k(["E1","E2"], {E1:"karte",E2:"karte"}, ["i1"]), sessionFortschritt:null, platz:{z:0,s:0} },
     { id:"g_m", name:"Auswahl", timestamp:2, konfiguration:k(["E1"], {E1:"mc"}, []), sessionFortschritt:null, platz:{z:0,s:1} } ] }));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", gelerntSchwelle:6, sprache:"alle", karteInfoPin:true }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", gelerntSchwelle:6, sprache:"alle", karteInfoPin:true }));
 });
 await page.reload(); await sleep(500);
 await tab("Quiz");

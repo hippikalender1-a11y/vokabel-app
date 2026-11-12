@@ -35,7 +35,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
   // nur die Erklärung selbst prüfen (ohne „🎨 Farbe ändern“ darunter – eigener Test: farbrollen)
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ farbeImMenue: false }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], farbeImMenue: false }));
 });
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Quiz").click()); await sleep(200); await quizEinstellungen(page);

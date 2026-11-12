@@ -33,7 +33,7 @@ await mitte();
 const a1 = await art(); await mitte();
 ok(a1 === "Diktat" && await art() === "Übersetzung", `Englisch ohne Akzente (Standard): Mitte wechselt Übersetzung → Diktat → Übersetzung (${a1}, ${await art()})`);
 // Akzente für Englisch einschalten: Akzente-Statistik mit Hinweis „keine Akzente“
-await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"); localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, ...e, akzenteSprachen: { en: true } })); });
+await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"); localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 3, ...e, akzenteSprachen: { en: true } })); });
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Statistik").click()); await sleep(400);
 

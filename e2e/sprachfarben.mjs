@@ -15,7 +15,7 @@ let fehler = 0;
 const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FAIL", msg); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const haupt = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--haupt").trim());
-const einst = aenderung => page.evaluate(a => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"); localStorage.setItem("vokabel_einstellungen", JSON.stringify({ ...e, ...a })); }, aenderung);
+const einst = aenderung => page.evaluate(a => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"); localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], ...e, ...a })); }, aenderung);
 
 await page.goto(URL);
 await page.evaluate(() => {

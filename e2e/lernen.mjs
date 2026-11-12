@@ -51,7 +51,7 @@ await page.evaluate(() => {
   const k = { listenIds:["l_fr"], vokabelAuswahl:[], bereichTyp:"alle", quizAusgewaehlt:["D1","E1"], quizFrageTyp:"D1", quizAntwortTypenGeordnet:["E1"],
     quizInfoTypenSession:[], quizSpalteModus:{E1:"karte"}, quizZeigeInfo:{i1:true}, quizModus:"sequenziell", quizReihenfolge:"listennr" };
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g_1", name:"Verben", timestamp:1, konfiguration:k, sessionFortschritt:null, platz:{z:0,s:0} }] }));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", gelerntSchwelle:6, sprache:"alle", lernen: { halte: 1 } }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", gelerntSchwelle:6, sprache:"alle", lernen: { halte: 1 } }));
 });
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);

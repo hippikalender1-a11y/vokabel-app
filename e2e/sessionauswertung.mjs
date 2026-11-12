@@ -53,7 +53,7 @@ await page.evaluate(() => {
     ...(i < 2 ? { fortschritt: f(2) } : i === 2 ? { fortschritt: f(-1) } : {}) }));
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify({ id: "l_fr", name: "Verbes", sprache: "fr", spalten: sp, naechste_id: 13, vokabeln: voks }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id: "l_fr", name: "Verbes", sprache: "fr" }]));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, sprache: "alle" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 3, sprache: "alle" }));
 });
 await page.reload(); await sleep(500);
 await zuListen(page);

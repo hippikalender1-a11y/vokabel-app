@@ -36,7 +36,7 @@ const runde = async (modus, regel) => {
     localStorage.setItem("vokabel_liste_l_fr", JSON.stringify({ id:"l_fr", name:"Verbes", sprache:"fr", spalten: sp, naechste_id: 3,
       vokabeln: [{ id:1, E1:{wert:"aller",falsch:[]}, D1:{wert:"gehen",falsch:[]}, fortschritt: f(0) }, { id:2, E1:{wert:"venir",falsch:[]}, D1:{wert:"kommen",falsch:[]}, fortschritt: f(2) }] }));
     localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:"Verbes", sprache:"fr" }]));
-    localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus, gelerntSchwelle: 6, sprache: "alle", ...(regel === undefined ? {} : { stufen: { [modus]: { falschAbzug: regel } } }) }));
+    localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus, gelerntSchwelle: 6, sprache: "alle", ...(regel === undefined ? {} : { stufen: { [modus]: { falschAbzug: regel } } }) }));
   }, modus, regel);
   await page.reload(); await sleep(500);
   await zuListen(page);

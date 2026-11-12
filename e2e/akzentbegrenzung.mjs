@@ -53,7 +53,7 @@ await page.evaluate(() => {
     ...(i >= 4 && i < 10 ? { akzentFortschritt: { score: 3 } } : {}) }));
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify({ id: "l_fr", name: "Akzente", sprache: "fr", spalten: sp, naechste_id: 17, vokabeln: voks }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id: "l_fr", name: "Akzente", sprache: "fr" }]));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus: "schwer", gelerntSchwelle: 6, sprache: "alle",
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "schwer", gelerntSchwelle: 6, sprache: "alle",
     stufen: { schwer: { akzentOhneMischen: true } } }));
 });
 await page.reload(); await sleep(500);

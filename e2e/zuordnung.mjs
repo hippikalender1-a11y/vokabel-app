@@ -24,7 +24,7 @@ const vorbereiten = async stufe => {
     const vokabeln = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, E1: { wert: `mot${i + 1}`, falsch: [] }, D1: { wert: `Wort${i + 1}`, falsch: [] } }));
     localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unité 1", sprache:"fr", spalten: sp, naechste_id: 13, vokabeln }));
     localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
-    localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus: "schwer", stufen: { schwer: stufe } }));
+    localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "schwer", stufen: { schwer: stufe } }));
   }, stufe);
   await page.reload(); await sleep(700);
   await neueEineSession(page);
@@ -44,7 +44,7 @@ const vorbereitenMix = async () => {
     const vokabeln = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, E1: { wert: `mot${i + 1}`, falsch: [] }, D1: { wert: `Wort${i + 1}`, falsch: [] } }));
     localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unité 1", sprache:"fr", spalten: sp, naechste_id: 13, vokabeln }));
     localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
-    localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus: "schwer", stufen: { schwer: { zuordnungAmEnde: false, zuordnungZeit: "aus", zuordnungPaare: 5 } },
+    localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "schwer", stufen: { schwer: { zuordnungAmEnde: false, zuordnungZeit: "aus", zuordnungPaare: 5 } },
       antwortGewichte: { karte: 0, zuordnung: 100 } }));
   });
   await page.reload(); await sleep(700);

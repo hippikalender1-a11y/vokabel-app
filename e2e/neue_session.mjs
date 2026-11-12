@@ -26,7 +26,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([["l_a","Unité 1"],["l_b","Unité 2"]].map(([id,name],i) => ({ id, name, sprache:"fr", platz:{z:i,s:0} }))));
   const k = { listenIds:["l_a"], vokabelAuswahl:[], bereichTyp:"alle", quizAusgewaehlt:["D1","E1"], quizFrageTyp:"D1", quizAntwortTypenGeordnet:["E1"], quizInfoTypenSession:[], quizSpalteModus:{E1:"karte"}, quizZeigeInfo:{}, quizModus:"sequenziell", quizReihenfolge:"listennr" };
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g1", name:"Mein Quiz", timestamp:1, konfiguration:k, sessionFortschritt:null, platz:{z:0,s:0} }] }));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, sprache: "alle" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 3, sprache: "alle" }));
 });
 await page.reload(); await sleep(600);
 

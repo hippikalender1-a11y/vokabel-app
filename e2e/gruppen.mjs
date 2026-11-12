@@ -34,7 +34,7 @@ const zeilen = () => page.evaluate(() => {
 
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_stufen_v1", "1");
   localStorage.setItem("vokabel_statistik_liste_zu", "false");  // Vokabelliste offen
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const f = s => ({ score: s, streak: 0, aufgedecktStreak: 0, letzteAbfrage: "2026-10-20T10:00:00.000Z" });
@@ -47,7 +47,7 @@ await page.evaluate(() => {
   ] };
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", autoplay:false, vorlesen:["E1"], gelerntSchwelle:3, sprache:"alle" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", autoplay:false, vorlesen:["E1"], gelerntSchwelle:3, sprache:"alle" }));
 });
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Statistik").click());
@@ -93,7 +93,7 @@ await page.reload(); await sleep(400);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Statistik").click());
 await sleep(400);
 t = await text(); z = await zeilen();
-ok(/0 \/ 5 gelernt/.test(t) && z.every(r => r.nullLinie === "50%"), "Schwelle +5: 0 / 5 gelernt, Null bei 50 %");
+ok(/2 \/ 5 gelernt/.test(t), "157: Gelernt-Schwelle fest 3 – eine gespeicherte +5 wird nicht übernommen (weiter 2 / 5 gelernt)");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

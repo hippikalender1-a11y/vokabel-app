@@ -18,7 +18,7 @@ const kopfOffen = () => page.evaluate(() => document.querySelector("[data-slot-k
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 2 }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 2 }));
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Englisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const vokabeln = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, E1: { wert: `word${i + 1}`, falsch: [] }, D1: { wert: `Wort${i + 1}`, falsch: [] },
     ...(i < 2 ? { fortschritt: { score: 3, letzteAbfrage: "2026-11-01T10:00:00Z" } } : i === 2 ? { fortschritt: { score: -1, letzteAbfrage: "2026-11-05T10:00:00Z" } } : {}) }));

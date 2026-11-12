@@ -42,7 +42,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify({ id:"l_fr", name:"Vocabulaire", sprache:"fr", spalten: sp, naechste_id: 8,
     vokabeln: Array.from({ length: 7 }, (_, i) => ({ id: i + 1, E1: { wert: "mot" + i, falsch: [] }, D1: { wert: "Wort" + i, falsch: [] } })) }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:"Vocabulaire", sprache:"fr" }]));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, sprache: "alle", farbschema: "lavendel" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 3, sprache: "alle", farbschema: "lavendel" }));
 });
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);

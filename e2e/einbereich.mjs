@@ -31,7 +31,7 @@ await page.evaluate(() => {
   const w = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, E1: { wert: "w" + i, falsch: [] }, D1: { wert: "d" + i, falsch: [] }, ...(i < 3 ? { fortschritt: { score: 8 } } : {}) }));
   localStorage.setItem("vokabel_liste_l", JSON.stringify({ id:"l", name:"Englisch 6", sprache:"en", spalten: sp, naechste_id: 13, vokabeln: w }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l", name:"Englisch 6", sprache:"en" }]));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", gelerntSchwelle:6, sprache:"alle" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", gelerntSchwelle:6, sprache:"alle" }));
 });
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300); await quizEinstellungen(page);

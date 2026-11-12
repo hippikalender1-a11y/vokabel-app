@@ -31,7 +31,7 @@ await page.evaluate(() => {
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unité 1", sprache:"fr", spalten: sp, naechste_id: 2, vokabeln: [{ id: 1, E1: { wert: "mot", falsch: [] }, D1: { wert: "Wort", falsch: [] } }] }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ gelerntSchwelle: 3, sprache: "alle" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 3, sprache: "alle" }));
 });
 await page.reload(); await sleep(500);
 
@@ -51,7 +51,7 @@ ok(await bg(".topbar") === rgb(v["app-kopf"]) && await bg(".tabs") === rgb(v["ap
 
 // Seiten-Hintergrund ändern → Knöpfe/Felder und Info-Kästen bleiben
 await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen"));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ ...e, farbschema: "eigen_t", eigeneSchemata: [{ id: "eigen_t", name: "Test", basis: "natur",
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], ...e, farbschema: "eigen_t", eigeneSchemata: [{ id: "eigen_t", name: "Test", basis: "natur",
     farben: { haupt: "#2d6a4f", "haupt-hell": "#52b788", "auf-haupt": "#fff", hintergrund: "#ff0000", karte: "#fff", flaeche: "#f0ede8", knopf: "#f7f5f0",
       "text-stark": "#1a1a1a", text: "#3b3832", text2: "#6b6560", text3: "#9b9590", rahmen: "#e0dbd2", richtig: "#2d6a4f", falsch: "#c0392b",
       gelb: "#f9a825", orange: "#e67e22", info: "#6a1b9a", gelernt: "#2d6a4f", arbeit: "#e9c46a", nie: "#d6d2cb", negativ: "#e57373" } }] })); });

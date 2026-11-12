@@ -46,7 +46,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[
     { id:"g_k", name:"Karte", timestamp:1, konfiguration:k("karte"), sessionFortschritt:null, platz:{z:0,s:0} },
     { id:"g_t", name:"Tippen", timestamp:2, konfiguration:k("tippen"), sessionFortschritt:null, platz:{z:0,s:1} } ] }));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", gelerntSchwelle:6, sprache:"alle" }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", gelerntSchwelle:6, sprache:"alle" }));
 });
 await page.reload(); await sleep(500);
 
@@ -80,7 +80,7 @@ await feld("E1", "aller");
 await page.keyboard.press("Enter"); await sleep(300);
 ok((await vok(1)).E1.wert === "aller" && !(await page.$("[data-vokabel-editor]")), "Enter im Dialog speichert (auch über der Frage-Karte)");
 await page.type(".quiz-antwort-box input.inp, .quiz-aktionen input.inp", "aller"); await page.keyboard.press("Enter"); await sleep(400);
-ok(await page.evaluate(() => (document.querySelector(".quiz-antwort-box")?.className || "").includes("richtig")), "die geänderte Antwort wird sofort als richtig erkannt");
+ok(await page.evaluate(() => /richtig|gelernt-blitz/.test(document.querySelector(".quiz-antwort-box")?.className || "")), "die geänderte Antwort wird sofort als richtig erkannt (ggf. gleich gelernt)");
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Beenden")?.click()); await sleep(400);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(400);
 

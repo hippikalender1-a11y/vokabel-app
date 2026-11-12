@@ -43,7 +43,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[
     { id:"g_a", name:"Verben", timestamp:1, konfiguration:k("l_a"), sessionFortschritt:null, platz:{z:0,s:0} },
     { id:"g_b", name:"Farben", timestamp:2, konfiguration:k("l_b"), sessionFortschritt:null, platz:{z:0,s:1} } ] }));
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", gelerntSchwelle:6, sprache:"alle", lernen: { pauseWort: 10, pauseUeb: 10, pauseInfo: 10 } }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", gelerntSchwelle:6, sprache:"alle", lernen: { pauseWort: 10, pauseUeb: 10, pauseInfo: 10 } }));
 });
 await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);

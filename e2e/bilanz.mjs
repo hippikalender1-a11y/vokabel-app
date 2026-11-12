@@ -37,7 +37,7 @@ async function runde(scores, antworten) {
       vokabeln: woerter.map(([e, d], i) => ({ id: i + 1, E1:{wert:e,falsch:[]}, D1:{wert:d,falsch:[]}, fortschritt: f(scores[i]) })) };
     localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
     localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
-    localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", autoplay:false, vorlesen:["E1"], gelerntSchwelle:3, sprache:"alle" }));
+    localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", autoplay:false, vorlesen:["E1"], gelerntSchwelle:3, sprache:"alle" }));
   }, scores);
   await page.reload(); await sleep(500);
   await clickText(".tab", "Quiz"); await quizEinstellungen(page);

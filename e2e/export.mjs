@@ -59,7 +59,7 @@ const lese = () => page.evaluate(() => {
 // ── Ausgangsdaten: drei Sprachen, Verben mit E3, Fortschritt ──
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_stufen_v1", "1");
   const sp = (akt) => Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: akt[t] || "", aktiv: !!akt[t] }]));
   const listen = [
     { id:"l_en", name:"Irregular Verbs", sprache:"en", spalten: sp({E1:"Infinitive",E2:"Simple Past",E3:"Past Participle",D1:"Deutsch"}),
@@ -87,7 +87,7 @@ for (const id of ["l_fr", "l_es"]) await langDruckListe(id);   // 147: lang drü
 ok(await page.evaluate(() => document.querySelector("[data-wahl-anzahl]")?.dataset.wahlAnzahl) === "3", "drei Listen ausgewählt");
 let vorher = fs.readdirSync(DL);
 await kopfMenue();   // Menü der Auswahl: lang drücken auf den grünen Kopf
-ok(await menueLabels() === "📤 Exportieren (3)|⇄ Verschieben|🗑 Löschen (3)|✕ Auswahl beenden", `Lang-Druck in der Auswahl: Exportieren, Verschieben, Löschen (${await menueLabels()})`);
+ok((await menueLabels()).replace(/\|🔁[^|]*/, "") === "📤 Exportieren (3)|⇄ Verschieben|🗑 Löschen (3)|✕ Auswahl beenden", `Lang-Druck in der Auswahl: Exportieren, Verschieben, Löschen (${await menueLabels()})`);
 await menueAktion("📤 Exportieren"); await page.click('[data-export-art="txt"]'); await sleep(300);
 ok(await page.evaluate(() => document.querySelector("[data-datei-export] [data-export-name]")?.value) === "3 Listen - TXT", "TXT: Fenster mit Dateiname, Vorschlag „3 Listen - TXT“");
 await page.click("[data-datei-export-ok]"); await sleep(300);

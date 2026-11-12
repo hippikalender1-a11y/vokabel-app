@@ -24,7 +24,7 @@ const lernenUndQuiz = async quizStufe => {
   await page.goto(URL);
   await page.evaluate(quizStufe => {
     localStorage.clear();
-    localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus:"schwer", gelerntSchwelle:6, sprache:"alle", lernen: { aktiv: true, halte: 1, ...(quizStufe ? { quizStufe } : {}) } }));
+    localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", gelerntSchwelle:6, sprache:"alle", lernen: { aktiv: true, halte: 1, ...(quizStufe ? { quizStufe } : {}) } }));
     const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
     const w = [["élève","Schüler"],["café","Kaffee"],["été","Sommer"]];
     localStorage.setItem("vokabel_liste_l_fr", JSON.stringify({ id:"l_fr", name:"Akzente", sprache:"fr", spalten: sp, naechste_id: 4,

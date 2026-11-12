@@ -22,7 +22,7 @@ const beenden = async () => { await page.evaluate(() => document.querySelector("
 await page.goto(URL);
 await page.evaluate(() => {
   localStorage.clear();
-  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ modus: "schwer", gelerntSchwelle: 3 }));
+  localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "schwer", gelerntSchwelle: 3 }));
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Englisch",D1:"Deutsch",i1:"Synonyme"}[t] || "", aktiv: ["E1","D1","i1"].includes(t) }]));
   const l = { id:"l_en", name:"Words", sprache:"en", spalten: sp, naechste_id:4, vokabeln: [
     { id:1, E1:{wert:"hello; hi there",falsch:[]}, D1:{wert:"Hallo",falsch:[]}, i1:{wert:"hey, howdy",falsch:[]} },
