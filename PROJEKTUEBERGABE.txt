@@ -2588,7 +2588,7 @@ Gesammelt nach Test von 157 (noch NICHT umsetzen):
 Gesammelt nach Test von 158–167 (noch NICHT umsetzen):
 - 168 Farben nach Sprachen: Farbe soll schon wechseln, sobald eine Session/Liste dieser Sprache in der Auswahl gewählt ist
   (bisher nur in der Abfrage bzw. über den Sprachfilter). Neue Einstellung: App behält eigene Farbe, Wechsel erst im Quiz.
-- 169 Fortschrittsanzeige (Balken wie 164) auch für den Kopf-Knopf der Listenauswahl übernehmen.
+- 169 Fortschrittsbalken im Kopf auch bei GEÖFFNETER Session-Auswahl, genauso wie zugeklappt (nimmt 164 „offen ohne Balken“ zurück).
 - 170 Langdruck auf Ordner/„Alle Sessions“ ohne fällige Vokabeln: inaktiver Knopf als Hinweis (z. B. „🔁 Keine fälligen“),
   nicht ausblenden – man ist gewohnt, dort nachzusehen.
 - 171 FEHLER: Langdruck auf eine Kachel – Menü schließt beim Loslassen des Fingers wieder. Auf Ordnern korrekt.
