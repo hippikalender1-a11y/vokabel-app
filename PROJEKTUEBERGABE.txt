@@ -2499,3 +2499,5 @@ Gesammelt (noch NICHT umsetzen):
   nur sichtbar, wenn etwas gewählt ist. Gleiches in der Statistik-Einzelauswahl.
 - 152 Wischen zu den Einstellungen ruckelt, die Titelzeile verschiebt sich mal mehr, mal weniger (Gleit-Animation mit transform auf den Inhalten,
   feststehende Köpfe springen) → Gleiten entfernen, Tab wechselt sofort (Seite oben, ohne Animation).
+- 153 Mehrfach-Auswahl: wird per Lang-Druck die letzte noch gewählte Session (Liste) herausgenommen, springt die Auswahl bisher auf die geladene
+  Session. Stattdessen: Mehrfach-Auswahl endet, die zuletzt gedrückte Kachel bleibt als Einzelauswahl stehen (Kopf „‹Name› laden“ bzw. „öffnen“).
