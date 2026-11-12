@@ -2494,3 +2494,6 @@ Sitzung 147–149 (Commit 3257528):
 Gesammelt (noch NICHT umsetzen):
 - 150 Multiquiz: nach dem Einstellen/Starten und Rückkehr zur Session-Auswahl sind dessen Sessions ANGEWÄHLT dargestellt (grüner Ring, Nummern
   1, 2 …) – wie die geladene einzelne Session, wenn nichts angetippt ist; Kopf und Info zeigen das Multiquiz. (Bisher: abgewählt.)
+- 151 Vokabel-Auswahl (Liste mit Häkchen, Von–Bis): Knopf „Sprung zur Auswahl“ in der Kopfzeile – springt zur ersten Vokabel des ersten zusammenhängenden
+  gewählten Stücks; erneut drücken → Anfang des nächsten Stücks (nach einer Lücke), am Ende wieder zum ersten. Beschriftung z. B. „⇣ 1/3“ (Stück von Anzahl);
+  nur sichtbar, wenn etwas gewählt ist. Gleiches in der Statistik-Einzelauswahl.
