@@ -2549,14 +2549,14 @@ Sitzung 157 (Commit 32731b6) – Gelernt-Stufen:
 Gesammelt nach Test von 157 (noch NICHT umsetzen):
 - 158 Knopf „🔁 Fällige wiederholen“ in der Session-Auswahl entfernen (blendet sich ein/aus → Inhalt springt, Lang-Druck geht daneben).
 - 159 Lang-Druck: (a) angetippte Session lang drücken → Mehrfach-Auswahl beginnt mit ihr; (b) eine Session angetippt, Lang-Druck auf eine ANDERE →
-  diese ist die erste der Mehrfach-Auswahl (Frage A: die vorher angetippte nicht mit aufnehmen?). Funktioniert derzeit nicht (vermutlich wegen 158).
+  diese ist die erste der Mehrfach-Auswahl; (A) die vorher angetippte wird NICHT mitgenommen (der erste Lang-Druck = erste Kachel). Derzeit kaputt (158).
 - 160 Pfad-Zeile immer zeigen: „Alle Sessions“ (in einem Ordner: „Alle Sessions › 📁 Name“). Lang-Druck auf „Alle Sessions“: „＋ Neue Session aus Listen“,
   „🔁 Fällige wiederholen (n)“ (alle); Lang-Druck auf den Ordner: dasselbe für den Ordner-Inhalt. Fällige einer Liste/Session: Lang-Druck auf die Kachel,
-  ebenso in der Mehrfach-Auswahl. Mehr Platz, nichts springt. (Frage B: großer Knopf „＋ Neue Session“ weg?)
+  ebenso in der Mehrfach-Auswahl. Mehr Platz, nichts springt. (B) Großer Knopf „＋ Neue Session aus Listen“ entfällt (Statistik „Alle Listen“ entsprechend prüfen).
 - 161 Fehler: komplett gelernte (dunkel gefüllte) Kachel – Fortschrittsbalken wirkt leer; muss gefüllt sichtbar sein.
 - 162 Antwortkarte: statt Score-Zahl (+2) Symbole – 3 Kreise (normale Stufe: je richtiger Antwort bis Score 3 gefüllt) + 3 Rauten (auf der Spitze stehende
-  Quadrate: je erfolgreicher Wiederholung, Stufe 2–4). Form statt Farbe unterscheidet (Farbe: das wiederkehrende Grün). (Frage C: negative Scores?
-  dieselben Symbole statt ●●○○ in Listen/Statistik?)
+  Quadrate: je erfolgreicher Wiederholung, Stufe 2–4). Form statt Farbe unterscheidet (Farbe: das wiederkehrende Grün). (C) Negativ: alle leer, erster
+  Kreis rot umrandet; dieselben Symbole auch in Listen/„Vokabeln ansehen“ statt ●●○○.
 - 163 Quiz-Tab: große Kreisdiagramme (Umschalter Übersetzung/Diktat/Akzente) entfernen; Diktat wird Antwortart im normalen Modus, rechts neben „Tastatur“;
   Akzente bleibt Antwortart. (D) Diktat- und Akzent-Scores/-Statistik bleiben eigen, sichtbar nur noch im Statistik-Tab; gewählt wird über die Antwortarten.
 - 164 Session-Kopf (zu): Fortschrittsbalken (wie weit die Session gelernt ist) im Knopf; Auswahl offen: ohne Balken (flacher), die Kachel zeigt ihn;
