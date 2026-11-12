@@ -2642,3 +2642,7 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
 - 179 Altlasten im Score prüfen/entfernen: Streak-Sprung (3× richtig in Folge → Score mind. 2), 3× „Lösung anzeigen“
   in Folge → Score −100, Anzeige-Clamp −10…+10, Statistik-Sortierung „Streak“, Hilfetexte „Streak“ an Gewusst/Nicht gewusst
   und „Lösung anzeigen“; bestehende Scores unter −6 einmalig auf −6 setzen.
+  Entschieden zu 178/179: (a) Einstellung „Nicht gewusst zieht 1 Punkt ab“ bleibt je Modus einstellbar (leicht: aus –
+  zum ersten Anschauen ohne Minus); (b) „Lösung anzeigen“ = nicht gewusst (zählt wie falsch, gemäß Einstellung
+  „Lösung anzeigen zieht 1 Punkt ab“); (c) falsch bei positivem Score: weiter nur −1 (keine Sprünge auf 0/−1);
+  Altlasten (Streak-Sprung, −100, Clamp ±10, Streak-Sortierung, Streak-Hilfetexte) entfernen.
