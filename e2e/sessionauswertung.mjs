@@ -45,7 +45,7 @@ const auswertung = () => page.evaluate(() => ({
 
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_ohne_tagessperre", "1");
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const f = s => ({ score: s, streak: 0, aufgedecktStreak: 0, letzteAbfrage: "2026-10-20T10:00:00.000Z" });
   // 12 Vokabeln: w1–w2 Score 2 (werden mit „Gewusst“ gelernt), w3 Score −1, Rest nie abgefragt

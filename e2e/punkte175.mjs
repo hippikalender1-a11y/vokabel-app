@@ -36,7 +36,7 @@ const LANG = "nervös/verlegen/aufgeregt/verärgert/beschämt/unsicher";
 
 await page.goto(URL);
 await page.evaluate(lang => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_ohne_tagessperre", "1");
   localStorage.setItem("vokabel_stufen_v1", "1");
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "schwer" }));
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Englisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));

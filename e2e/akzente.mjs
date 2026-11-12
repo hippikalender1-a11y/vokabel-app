@@ -42,7 +42,7 @@ const artWaehlen = async a => {
 };
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_ohne_tagessperre", "1");
   // frühere Standard-Haken der Stufen (Test prüft sie ausdrücklich)
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", autoplay:false, vorlesen:["E1"], gelerntSchwelle:0, sprache:"alle",
     stufen: { schwer: { akzenteTolerant:false, aufdeckenAbzug:true, akzentOhneMischen:true, akzentHervorheben:false, akzentZaehler:false, akzentAutoUebernahme:false } } }));

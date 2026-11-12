@@ -1120,6 +1120,14 @@ function stufenRegel(alt, neu, ereignis) {
   return neu;
 }
 // Score als Symbole: 3 Kreise (bis gelernt, je richtiger Antwort) + 3 Rauten (Wiederholungs-Stufen 2–4); negativ: alle leer, erster Kreis rot umrandet
+// 180/181: heute (seit Mitternacht) im Quiz abgefragt – letzteAbfrage setzt nur eine Antwort (nicht das Ansehen im Lernen)
+function heuteAbgefragt(f) {
+  if (!f?.letzteAbfrage) return false;
+  const a = new Date(f.letzteAbfrage), h = new Date();
+  return a.getFullYear() === h.getFullYear() && a.getMonth() === h.getMonth() && a.getDate() === h.getDate();
+}
+// 180: Tagessperre – nur die automatischen Tests (ältere Abläufe mit mehrfachen Runden) schalten sie über einen unsichtbaren Schlüssel ab
+function tagesSperre() { try { return !localStorage.getItem("vokabel_test_ohne_tagessperre"); } catch { return true; } }
 // 172: fällige Vokabeln zwischen die übrigen einstreuen – je Karte mit faelligAnteil() % eine fällige (Reihenfolge je Teil bleibt)
 const STANDARD_FAELLIG_ANTEIL = 30;
 const FAELLIG_ANTEIL_WAHL = [0, 10, 20, 30, 50, 70, 100];
@@ -2089,13 +2097,12 @@ const CSS_BASIS = `
   .raster-fortschritt{font-size:0.68rem;font-weight:600;opacity:0.8;}
   .raster-fuss{display:flex;align-items:center;gap:6px;width:100%;margin-top:6px;min-height:14px;}
   .kachel-balken{flex:1;height:6px;border-radius:3px;background:var(--rahmen);overflow:hidden;}
-  .kachel-balken > span{display:block;height:100%;background:var(--haupt-hell);border-radius:3px;}
+  .kachel-balken > span{display:block;height:100%;background:var(--haupt);border-radius:3px;}   /* 181: Fortschritt immer dunkel */
   .kachel-balken.voll > span{background:var(--gelernt);}
   .kachel-voll{font-size:0.7rem;font-weight:900;color:var(--auf-gelernt);background:var(--gelernt);border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .raster-chip.aktiv-kachel{background:var(--haupt) !important;border-color:var(--haupt) !important;color:var(--auf-haupt) !important;}
   .raster-chip.aktiv-kachel.leuchten{background:var(--bestaetigen) !important;border-color:var(--bestaetigen) !important;color:var(--auf-bestaetigen) !important;}
-  .raster-chip.aktiv-kachel .kachel-balken{background:rgba(0,0,0,0.28);}
-  .raster-chip.aktiv-kachel .kachel-balken > span{background:var(--auf-haupt);}
+  .raster-chip.aktiv-kachel .kachel-balken{background:var(--haupt-hell);}   /* 181: dunkle Kachel – heller Grund, Fortschritt wie sonst dunkel */
   .mini-kreise{display:flex;gap:3px;}
   .mini-kreise > span{border-radius:50%;}
   .kopf-kreise{position:absolute;right:12px;gap:4px;}
@@ -2475,6 +2482,7 @@ export default function VokabelApp() {
   const [slotSektionAufgeklappt, setSlotSektionAufgeklappt] = useState(true);
   const [slotUmbenennen, setSlotUmbenennen] = useState(null);   // {id, name, kopie} – Fenster "Umbenennen" bzw. "Duplizieren"
   const [quizGelerntEinschliessen, setQuizGelerntEinschliessen] = useState(false);
+  const [quizHeuteEinschliessen, setQuizHeuteEinschliessen] = useState(false);   // 180: vorübergehend (nicht gespeichert; andere Session → aus)
   const [gruppenQuiz, setGruppenQuiz] = useState(null);   // {name, art, ids, listenIds} – Rückfrage "Quiz mit dieser Gruppe starten?"
   const gruppenQuizStartRef = useRef(0);                 // >0: nach dem Tab-Wechsel automatisch starten
   const [listenGelerntAusblenden, setListenGelerntAusblenden] = useState(false);
@@ -4800,6 +4808,7 @@ export default function VokabelApp() {
   }
   function applyKonfiguration(k, art = null) {
     if (!k) return;
+    setQuizHeuteEinschliessen(false);   // 180
     if (k.listenIds && k.listenIds.length > 0) {
       const alleVorhanden = k.listenIds.every(id => listenIndex.some(l => l.id === id));
       if (alleVorhanden) {
@@ -5326,6 +5335,7 @@ export default function VokabelApp() {
     setAbfrageZielScore(0);
     setAbfrageZielScoreTyp("global");
     setQuizGelerntEinschliessen(false);
+    setQuizHeuteEinschliessen(false);
   }
 
   function getKombinierteListe(listenIds) {
@@ -7079,13 +7089,15 @@ export default function VokabelApp() {
     const ordnerOffen = (slots.ordner || []).find(o => o.id === slotOrdner) || null;
     const neueSession = imOrdner => ({ label: "＋ Neue Session aus Listen", fn: () => { neuImOrdnerRef.current = imOrdner; setNeueSessionSchritt("art"); setModal("neue-session"); } });
     const faellige = faelligAktion;
+    const gelerntUmschalter = { label: einstellungen.gelernteAusblenden ? "👁 Gelernte einblenden" : "🙈 Gelernte ausblenden",
+      fn: () => speichereEinst({ ...einstellungen, gelernteAusblenden: !einstellungen.gelernteAusblenden }) };   // 181
     const alleListen = { label: "▦ Alle Listen", fn: () => {
       setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setSlotSektionAufgeklappt(false);
       setStatistikListenIds(null); setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
       setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt'])); } };
-    const alleAktionen = [...(statistik ? [alleListen] : [neueSession(null)]), ...faellige(faelligAlle)];
+    const alleAktionen = [...(statistik ? [alleListen] : [neueSession(null)]), ...faellige(faelligAlle), gelerntUmschalter];
     const ordnerAktionen = ordnerOffen ? [...(statistik ? [] : [neueSession(ordnerOffen.id)]),
-      ...faellige(faelligVonSlots(slots.gespeichert.filter(g => g.ordner === ordnerOffen.id).map(g => g.id)))] : [];
+      ...faellige(faelligVonSlots(slots.gespeichert.filter(g => g.ordner === ordnerOffen.id).map(g => g.id))), gelerntUmschalter] : [];
     const markiert = slotAuswahl.length;
     return (
       <div data-ordner-navi style={{display:"flex", alignItems:"center", gap:8, marginBottom:8, minHeight:30, ...stil}}>
@@ -7137,12 +7149,17 @@ export default function VokabelApp() {
     const listenCache = new Map();
     const listeVon = id => { if (!listenCache.has(id)) listenCache.set(id, lsGet(SK.liste(id))); return listenCache.get(id); };
     const aktArt = tab === "statistik" ? statistikArt : quizArt;
-    const lernstand = x => {
+    const kachelVoks = x => {
       const k = x.konfiguration || {};
       let voks = (k.listenIds || []).flatMap(id => (listeVon(id)?.vokabeln || []).map(v => ({ ...v, _key: `${id}__${v.id}`, _listeId: id })));
       if (k.bereichTyp === "bereich" && k.vokabelAuswahl?.length) { const a = new Set(k.vokabelAuswahl); voks = voks.filter(v => a.has(v._key)); }
-      return lernstandJeArt(voks);
+      return voks;
     };
+    const lernstandCache = new Map();
+    const lernstand = x => { if (!lernstandCache.has(x.id)) lernstandCache.set(x.id, lernstandJeArt(kachelVoks(x))); return lernstandCache.get(x.id); };
+    // 181: Anteil der heute (in der gewählten Abfrageart) abgefragten Vokabeln einer Session
+    const heuteFeld = FORTSCHRITT_FELD[aktArt] || "fortschritt";
+    const heuteProzent = x => { const v = kachelVoks(x).filter(y => !y.herausgenommen); return v.length ? Math.round(v.filter(y => heuteAbgefragt(y[heuteFeld])).length / v.length * 100) : 0; };
     const verlauf = slots.verlauf.filter(slotSichtbar);
     const label = {fontSize:"0.72rem", color:"var(--text3)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em"};
     // Raster: alle Einträge (auch andere Sprache) belegen ihren Platz; sichtbar nur die der gewählten Sprache
@@ -7151,7 +7168,11 @@ export default function VokabelApp() {
     const ordnerOffen = (slots.ordner || []).find(o => o.id === slotOrdner) || null;
     const raster = ordneRaster(ebeneVon(slots, ordnerOffen?.id || null), groesse);
     const kinderVon = id => slots.gespeichert.filter(s => s.ordner === id);
-    const sichtbarE = x => x.istOrdner ? (sprachFilter === "alle" || kinderVon(x.id).length === 0 || kinderVon(x.id).some(slotSichtbar)) : slotSichtbar(x);
+    // 181: komplett gelernte Kacheln ausblenden (Ordner: wenn alles darin gelernt ist); gewählte bleiben sichtbar
+    const gelerntVoll = x => x.istOrdner ? (kinderVon(x.id).length > 0 && kinderVon(x.id).every(k => lernstand(k).uebersetzung.pct >= 100)) : lernstand(x).uebersetzung.pct >= 100;
+    const gewaehltE = x => multiAuswahl?.includes(x.id) || (slotVorschau?.typ === "gespeichert" && slotVorschau.id === x.id) || (slotRef?.typ === "gespeichert" && slotRef.id === x.id);
+    const sichtbarE = x => (x.istOrdner ? (sprachFilter === "alle" || kinderVon(x.id).length === 0 || kinderVon(x.id).some(slotSichtbar)) : slotSichtbar(x))
+      && !(einstellungen.gelernteAusblenden && !slotSortModus && !gewaehltE(x) && gelerntVoll(x));
     const platzMap = new Map(raster.gespeichert.map(x => [`${x.platz.z}|${x.platz.s}`, x]));
     const sichtbar = raster.gespeichert.filter(x => sichtbarE(x) && !x.istOrdner);
     slotSichtbarRef.current = sichtbar.map(x => x.id);
@@ -7208,6 +7229,7 @@ export default function VokabelApp() {
         const pct = x.istOrdner
           ? (kinder.length ? Math.round(kinder.reduce((a, k) => a + lernstand(k).uebersetzung.pct, 0) / kinder.length) : 0)
           : Math.round(lernstand(x).uebersetzung.pct);
+        const heuteP = x.istOrdner ? 0 : heuteProzent(x);
         const multiNr = multiAuswahl ? multiAuswahl.indexOf(x.id) + 1 : 0;
         // geladenes Multiquiz (nichts angetippt): seine Sessions angewählt, mit Nummer
         const multiTeile = !multiAuswahl && !slotVorschau ? (multiVonSlot(slotRef) || []).map(m => m.id) : [];
@@ -7257,10 +7279,12 @@ export default function VokabelApp() {
         ) : (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-multi-nr={multiNr || undefined} data-auswahl-durchlass
             data-kachel-geste="slot" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined}
-            className={`slot-chip belegt raster-chip${pct >= 100 ? " aktiv-kachel" : ""}${
+            data-heute={heuteP}
+            className={`slot-chip belegt raster-chip${heuteP >= 100 ? " aktiv-kachel" : ""}${
               multiNr || teilNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) || (!multiAuswahl && (slotVorschau ? slotVorschau.typ === "gespeichert" && slotVorschau.id === x.id : slotRef?.typ === "gespeichert" && slotRef?.id === x.id)) ? " kachel-gewaehlt" : ""}${blitzt(`slot:${x.id}`)}`}
             data-vorschau={slotVorschau?.typ === "gespeichert" && slotVorschau.id === x.id ? "" : undefined}
-            style={{...chipStil('gespeichert', x.id, slotRef), position:"relative"}}
+            style={{...chipStil('gespeichert', x.id, slotRef), position:"relative",
+              ...(heuteP > 0 && heuteP < 100 ? { backgroundImage: `linear-gradient(to right, color-mix(in srgb, var(--haupt) 26%, transparent) ${heuteP}%, transparent ${heuteP}%)` } : {})}}
             onClick={() => multiAuswahl
               ? (schliesseInfo(), auswahlTafelRef.current = null, setMultiAuswahl(null), leuchte(`slot:${x.id}`, BLITZ_MS / 2), setSlotVorschauListe(false), setTimeout(() => setSlotVorschau({ typ: "gespeichert", id: x.id }), 0))
               : (leuchte(`slot:${x.id}`, BLITZ_MS / 2), setSlotVorschauListe(false), setSlotVorschau({ typ: "gespeichert", id: x.id }))}
@@ -7545,6 +7569,7 @@ export default function VokabelApp() {
       const gelerntDabei = v => !gruppe && ((quizGelerntEinschliessen && schwelleDiktat > 0 && gelerntScore(v, true) >= schwelleDiktat) || istFaellig(v.diktatFortschritt));
       voks = voks.filter(v => gelerntDabei(v) || (v.diktatFortschritt?.score ?? 0) < threshold);
     }
+    if (!gruppe && !quizHeuteEinschliessen && tagesSperre()) voks = voks.filter(v => !heuteAbgefragt(v.diktatFortschritt));   // 180: heute schon abgefragte nicht noch einmal
     voks = ordneVokabeln(voks, "diktatFortschritt", reihenfolgeQ, unbeantwortetQ);
     if (!gruppe) voks = mischeFaellige(voks, "diktatFortschritt");
     if (isPakete) voks = voks.slice(0, quizPaketGroesse);
@@ -7668,6 +7693,7 @@ export default function VokabelApp() {
       }
     }
 
+    if (!gruppe && !quizHeuteEinschliessen && tagesSperre()) voks = voks.filter(v => !heuteAbgefragt(v[scoreFeld]));   // 180: heute schon abgefragte nicht noch einmal
     voks = ordneVokabeln(voks, scoreFeld, reihenfolgeQ, unbeantwortetQ);
     if (!gruppe) voks = mischeFaellige(voks, scoreFeld);
 
@@ -10487,15 +10513,19 @@ export default function VokabelApp() {
             ? gefilterteVoks.filter(v => akzentSpalten.some(t => hatAkzente(v[t]?.wert))).length : null;
           const sessionAnzahl = verfuegbarReihenfolge;
           let sessionAbgefragtAnzahl = 0;
+          // 180: heute schon abgefragte zählen nicht (außer „+ heute“)
+          const heuteBasis = sessionHatFortschritt ? reihenfolgeVoks.filter(v => !new Set(sessionSlotAktiv.abgefragt || []).has(v.id)) : reihenfolgeVoks;
+          const heuteAnzahl = tagesSperre() ? heuteBasis.filter(v => heuteAbgefragt(feldVon(v))).length : 0;
+          const ohneHeute = n => quizHeuteEinschliessen ? n : n - heuteAnzahl;
           if (sessionHatFortschritt) {
             const bereitsAbgefragt = new Set(sessionSlotAktiv.abgefragt || []);
             const restVoks = reihenfolgeVoks.filter(v => !bereitsAbgefragt.has(v.id));
             sessionAbgefragtAnzahl = sessionAnzahl - restVoks.length;
-            verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, restVoks.length) : 0;
+            verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, ohneHeute(restVoks.length)) : 0;
           } else if (isPakete) {
-            verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, verfuegbarReihenfolge) : 0;
+            verfuegbar = quizPaketGroesse != null ? Math.min(quizPaketGroesse, ohneHeute(verfuegbarReihenfolge)) : 0;
           } else {
-            verfuegbar = verfuegbarReihenfolge;
+            verfuegbar = ohneHeute(verfuegbarReihenfolge);
           }
           // Zeile "Abfrage-Modus": Art der Abfrage (Karte, MC, Tastatur, Akzente bzw. Diktat)
           const modusSpalten = quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet;
@@ -11078,6 +11108,15 @@ export default function VokabelApp() {
                         onClick={() => { schliesseQuizBereiche(null); setQuizGelerntEinschliessen(v => !v); }}
                         {...tt(quizGelerntEinschliessen ? `${gelernteAnzahl} gelernte Vokabeln werden mit abgefragt – antippen zum Ausblenden` : `${gelernteAnzahl} gelernte Vokabeln sind ausgeblendet – antippen zum Einschließen`)}>
                         {quizGelerntEinschliessen ? `+ ${gelernteAnzahl} gelernte` : `${gelernteAnzahl} gelernte`}
+                      </button></div>
+                    )}
+                    {heuteAnzahl > 0 && (
+                      <div className="quiz-zeile-zelle schmal"><span className="quiz-zeile-label">Heute</span>
+                      <button className={`quiz-zeile-knopf${quizHeuteEinschliessen ? " an" : ""}`} data-heute={quizHeuteEinschliessen ? "an" : "aus"}
+                        onClick={() => { schliesseQuizBereiche(null); setQuizHeuteEinschliessen(v => !v); }}
+                        {...tt(quizHeuteEinschliessen ? `${heuteAnzahl} heute schon abgefragte Vokabeln werden noch einmal abgefragt – antippen zum Ausblenden`
+                          : `${heuteAnzahl} Vokabeln wurden heute schon abgefragt und kommen erst morgen wieder – antippen: trotzdem einschließen (gilt nur für diese Session)`)}>
+                        {quizHeuteEinschliessen ? `+ ${heuteAnzahl} heute` : `${heuteAnzahl} heute`}
                       </button></div>
                     )}
                   </div>
