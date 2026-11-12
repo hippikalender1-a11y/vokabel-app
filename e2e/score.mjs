@@ -116,7 +116,7 @@ for (let schritt = 0; schritt < 6; schritt++) {
 sc = await scores();
 ok(gefragt2.gehen === 3 && gefragt2.sehen === 3, `Tippen: nach Fehler in Spalte 2 wurde Spalte 3 trotzdem abgefragt (${JSON.stringify(gefragt2)})`);
 ok(sc.gehen === -1, `Tippen: eine Spalte falsch → 0 auf −1 (ist ${sc.gehen})`);
-ok(sc.sehen === -4, `Tippen: alle richtig → −5 auf −4 (ist ${sc.sehen})`);
+ok(sc.sehen === -3, `178: Tippen: alle richtig → −5 auf −3 (ist ${sc.sehen})`);
 t = await text();
 ok(/1\s*(von|\/)\s*2/.test(t), "Tippen: Auswertung 1 von 2");
 
@@ -150,7 +150,7 @@ sc = await scores();
 ok(gefragt3.gehen === 3 && gefragt3.sehen === 3, `MC: alle Spalten abgefragt (${JSON.stringify(gefragt3)})`);
 ok(hinweisGesehen, "MC: Hinweis „Nicht auf Anhieb gefunden“ nach Fehlklick");
 ok(sc.gehen === -1, `MC: Fehlklick in Spalte 2 → 0 auf −1 (ist ${sc.gehen})`);
-ok(sc.sehen === -4, `MC: alles auf Anhieb → −5 auf −4 (ist ${sc.sehen})`);
+ok(sc.sehen === -3, `178: MC: alles auf Anhieb → −5 auf −3 (ist ${sc.sehen})`);
 t = await text();
 ok(/1\s*(von|\/)\s*2/.test(t), "MC: Auswertung 1 von 2");
 

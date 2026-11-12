@@ -62,7 +62,7 @@ await tab("Quiz");
 await ladeSlot("Karte");
 await page.click("[data-start-knopf]"); await sleep(500);
 await langDruck("[data-karte-frage]");
-ok(await menue() === "✎ Frage bearbeiten", `Frage-Karte: „✎ Frage bearbeiten“ (${await menue()})`);
+ok(await menue() === "✎ Frage bearbeiten|🚫 Nicht mehr abfragen", `Frage-Karte: „✎ Frage bearbeiten“, „🚫 Nicht mehr abfragen“ (${await menue()})`);
 await aktion("✎ Frage bearbeiten");
 let ed = await editor();
 ok(ed.art === "frage" && ed.titel === "Frage bearbeiten" && ed.felder === "D1=gehen", `Dialog „Frage bearbeiten“ nur mit Deutsch (${JSON.stringify(ed)})`);

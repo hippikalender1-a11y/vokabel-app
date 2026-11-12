@@ -892,6 +892,8 @@ const HINWEIS_RE = /(^|\s)(\([^()]*\)|\[[^\[\]]*\])(?=\s|$|[,;.!?])/g;
 function ohneHinweis(t) { return (t || "").replace(HINWEIS_RE, "$1").replace(/\s{2,}/g, " ").replace(/\s+([,;.!?])/g, "$1").trim(); }
 function hinweiseAus(t) { return [...(t || "").matchAll(HINWEIS_RE)].map(m => m[2].slice(1, -1).trim()).filter(Boolean); }
 // Text mit dezent dargestellten Klammerhinweisen (für die Anzeige)
+// 177: nach „/“ ohne Leerzeichen darf umgebrochen werden (unsichtbarer Trennpunkt)
+function umbruch(t) { return (t || "").replace(/\/(?=\S)/g, "/\u200B"); }
 function mitHinweis(t) {
   const teile = []; let last = 0;
   for (const m of (t || "").matchAll(HINWEIS_RE)) {
@@ -1057,7 +1059,7 @@ function stufenRegeln(einst) {
 const MC_FEHLKLICK_HINWEIS = "Nicht auf Anhieb gefunden – zählt als nicht gewusst.";
 
 // ── Score-Clamp (Anzeige: −10 bis +10) ────────────────────────────────────
-function clampScore(s) { return Math.max(-10, Math.min(10, s ?? 0)); }
+function clampScore(s) { return s ?? 0; }   // 179: Grenzen stecken in der Berechnung (−6 … +6)
 // Lernfortschritt in %: jede Vokabel anteilig bis zur Gelernt-Schwelle (negativ/nie = 0)
 function lernProzent(scores, schwelle) {
   if (!scores.length || schwelle <= 0) return 0;
@@ -1133,11 +1135,14 @@ function mischeFaellige(voks, feld) {
 function scoreSymbole(score, klein = false) {
   const s = score ?? 0;
   const st = stufeVon(s);
-  const titel = s < 0 ? `Score ${s}` : st ? `Gelernt, Stufe ${st} von ${MAX_STUFE}` : `${Math.max(0, s)} von ${GELERNT_SCHWELLE} bis gelernt`;
+  const titel = s < 0 ? `${-s} × nicht gewusst` : st ? `Gelernt, Stufe ${st} von ${MAX_STUFE}` : `${Math.max(0, s)} von ${GELERNT_SCHWELLE} bis gelernt`;
   return (
     <span className={`score-symbole${klein ? " klein" : ""}`} data-score-symbole={s} title={titel}>
-      {s <= GELERNT_SCHWELLE
-        ? [0, 1, 2].map(i => <span key={"k" + i} className={`sym kreis${s >= i + 1 ? " voll" : ""}${s < 0 && i === 0 ? " negativ" : ""}`}/>)
+      {s < 0
+        ? [0, 1, 2].map(i => { const tief = s <= -4, n = tief ? -s - 3 : -s;   // 178: rote Umrisse, darunter rot gefüllt
+            return <span key={"k" + i} className={`sym kreis${tief || i < n ? " negativ" : ""}${tief && i < n ? " voll" : ""}`}/>; })
+        : s <= GELERNT_SCHWELLE
+        ? [0, 1, 2].map(i => <span key={"k" + i} className={`sym kreis${s >= i + 1 ? " voll" : ""}`}/>)
         : [0, 1, 2].map(i => <span key={"r" + i} className={`sym raute${s >= GELERNT_SCHWELLE + i + 1 ? " voll" : ""}`}/>)}
     </span>
   );
@@ -1148,6 +1153,23 @@ function stufenPunkte(score) {
   return st ? <span className="stufen-punkte" data-stufe={st} title={`Gelernt-Stufe ${st} von ${MAX_STUFE}`}>{"●".repeat(st)}{"○".repeat(MAX_STUFE - st)}</span> : null;
 }
 // einmalig: Scores über 3 → 3 (Stufe 1); die höheren Stufen verdient man sich über die Wiederholungen
+function negativUmstellen() {   // 179: alte Scores unter −6 (z. B. −100) einmalig auf −6
+  try { if (localStorage.getItem("vokabel_negativ_v1")) return; } catch { return; }
+  (lsGet(SK.listenIndex, []) || []).forEach(({ id }) => {
+    const l = lsGet(SK.liste(id));
+    if (!l) return;
+    let geaendert = false;
+    const vokabeln = l.vokabeln.map(v => {
+      const n = { ...v };
+      ["fortschritt", "diktatFortschritt", "akzentFortschritt"].forEach(k => {
+        if ((v[k]?.score ?? 0) < NEGATIV_MIN) { n[k] = { ...v[k], score: NEGATIV_MIN }; geaendert = true; }
+      });
+      return n;
+    });
+    if (geaendert) lsSet(SK.liste(id), { ...l, vokabeln });
+  });
+  try { localStorage.setItem("vokabel_negativ_v1", "1"); } catch { /* egal */ }
+}
 function stufenUmstellen() {
   try { if (localStorage.getItem("vokabel_stufen_v1")) return; } catch { return; }
   (lsGet(SK.listenIndex, []) || []).forEach(({ id }) => {
@@ -1168,21 +1190,23 @@ function stufenUmstellen() {
 
 // ── Scoring ────────────────────────────────────────────────────────────────
 // falschAbzug (Regel je Stufe): falsche Antwort −1, sonst bleibt der Score gleich
+// 178: Nichtwissen in zwei Stufen – −1…−3 rote Umrisse, −4…−6 rot gefüllt; tiefer nicht. Richtig bei negativem Score:
+// eine ganze Stufe hoch (−4…−6 → −3, −1…−3 → 0). 179: kein Streak-Sprung, kein −100 mehr
+const NEGATIV_MIN = -6;
+function negativRegel(alt, neu, ereignis) {
+  const vorher = alt?.score ?? 0;
+  if (ereignis === "richtig" && vorher < 0) neu.score = vorher <= -4 ? -3 : 0;
+  neu.score = Math.max(NEGATIV_MIN, neu.score);
+  delete neu.streak; delete neu.aufgedecktStreak;
+  return neu;
+}
 function berechneNeuenScore(fortschritt, ereignis, modus, falschAbzug = true) {
-  const f = fortschritt || { score:0, streak:0, aufgedecktStreak:0, letzteAbfrage:null };
+  const f = fortschritt || { score:0, letzteAbfrage:null };
   const neu = { ...f, letzteAbfrage: new Date().toISOString() };
-  if (ereignis === "richtig") {
-    neu.score += 1; neu.streak += 1; neu.aufgedecktStreak = 0;
-    if (neu.streak >= 3) neu.score = Math.max(neu.score, 2);
-  } else if (ereignis === "falsch") {
-    neu.streak = 0; neu.aufgedecktStreak = 0;
-    if (falschAbzug) neu.score -= 1;
-  } else if (ereignis === "aufgedeckt") {
-    neu.streak = 0; neu.aufgedecktStreak += 1;
-    if (modus === "schwer") neu.score -= 1;
-    if (neu.aufgedecktStreak >= 3 && neu.score > -100) neu.score = -100;
-  }
-  return stufenRegel(fortschritt, neu, ereignis);
+  if (ereignis === "richtig") neu.score += 1;
+  else if (ereignis === "falsch") { if (falschAbzug) neu.score -= 1; }
+  else if (ereignis === "aufgedeckt") { if (modus === "schwer") neu.score -= 1; }
+  return stufenRegel(fortschritt, negativRegel(fortschritt, neu, ereignis), ereignis);
 }
 function speichereScore(liste, vokId, neuFortschritt) {
   const vok = liste.vokabeln.find(v => v.id === vokId);
@@ -1205,7 +1229,7 @@ function berechneDiktatScore(fortschritt, ereignis, falschAbzug = true) {
   const neu = { ...f, letzteAbfrage: new Date().toISOString() };
   if (ereignis === "richtig") neu.score += 1;
   else if (ereignis === "aufgedeckt" && falschAbzug) neu.score -= 1;
-  return stufenRegel(fortschritt, neu, ereignis);
+  return stufenRegel(fortschritt, negativRegel(fortschritt, neu, ereignis), ereignis);
 }
 function speichereDiktatScore(liste, vokId, neuFortschritt) {
   const vok = liste.vokabeln.find(v => v.id === vokId);
@@ -2100,7 +2124,8 @@ const CSS_BASIS = `
   .wiederholung-karte{background:var(--gelb-flaeche);border:2px dashed var(--orange);text-align:center;}
   .wiederholung-marke{color:var(--orange);font-size:0.85rem;font-weight:700;}
   .quiz-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--abfrage-schrift-leise);margin-bottom:6px;}
-  .quiz-frage-text{font-size:1.5rem;font-weight:700;line-height:1.3;}
+  .quiz-frage-text{font-size:1.5rem;font-weight:700;line-height:1.3;overflow-wrap:anywhere;}
+  .quiz-antwort-box,.quiz-vorig,.rueck-karte{overflow-wrap:anywhere;min-width:0;}
   .quiz-info-text{font-size:0.85rem;color:var(--text2);margin-top:6px;}
   .quiz-antwort-box{background:var(--abfrage-karte);color:var(--abfrage-schrift);border:1.5px solid var(--rahmen);border-radius:14px;padding:18px;margin-bottom:14px;transition:border-color .2s,background .2s;min-height:120px;}
   .quiz-antwort-box.richtig{border-color:var(--haupt);background:var(--haupt-flaeche);}
@@ -2178,6 +2203,11 @@ const CSS_BASIS = `
   .score-symbole .sym.raute{width:8px;height:8px;transform:rotate(45deg);margin:0 1px;}
   .score-symbole .sym.voll{background:var(--bestaetigen);}
   .score-symbole .sym.negativ{border-color:var(--falsch);}
+  .score-symbole .sym.negativ.voll{background:var(--falsch);}
+  .rueck-wahl.andere{opacity:.4;}
+  .rueck-wahl.gewaehlt{box-shadow:0 0 0 3px var(--bestaetigen);}
+  .rueck-eingabe{margin-top:6px;font-size:0.82rem;color:var(--text2);text-align:center;}
+  .rueck-geaendert{margin-top:10px;text-align:center;font-size:0.85rem;font-weight:700;color:var(--bestaetigen);}
   .score-symbole.klein{gap:3px;}
   .score-symbole.klein .sym{width:7px;height:7px;border-width:1.3px;}
   .score-symbole.klein .sym.raute{width:6px;height:6px;}
@@ -2448,6 +2478,7 @@ export default function VokabelApp() {
   const [gruppenQuiz, setGruppenQuiz] = useState(null);   // {name, art, ids, listenIds} – Rückfrage "Quiz mit dieser Gruppe starten?"
   const gruppenQuizStartRef = useRef(0);                 // >0: nach dem Tab-Wechsel automatisch starten
   const [listenGelerntAusblenden, setListenGelerntAusblenden] = useState(false);
+  const [listeNurAus, setListeNurAus] = useState(false);   // 176: Listenansicht zeigt nur die herausgenommenen Vokabeln
   const [updateStatus, setUpdateStatus] = useState(null);
   const [sprachMenuOffen, setSprachMenuOffen] = useState(false);
   const [slotSortModus, setSlotSortModus] = useState(false);   // "Verschieben"-Modus des Rasters
@@ -2988,7 +3019,7 @@ export default function VokabelApp() {
     } else {
       setListenIndex(idx);
     }
-    stufenUmstellen();
+    stufenUmstellen(); negativUmstellen();
     setEinstellungen({ ...lsGet(SK.einstellungen, defaultEinstellungen()), gelerntSchwelle: GELERNT_SCHWELLE });
     // Neues Slot-Format laden, ggf. vom alten Format migrieren
     let slotsData = lsGet(SK.slots);
@@ -3202,6 +3233,30 @@ export default function VokabelApp() {
     const id = rasterSlot.id;
     [60, 350].forEach(ms => setTimeout(() => document.querySelector(`[data-slot-id="${id}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }), ms));
   }, [slotSektionAufgeklappt, tab, rasterSlot?.typ, rasterSlot?.id]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 175: im Quiz seitlich wischen – nach rechts eine Karte zurück, nach links vorwärts (nicht auf Eingabefeldern und bei Zuordnung)
+  const rueckWischRef = useRef(null);
+  rueckWischRef.current = rueckblickWischen;
+  useEffect(() => {
+    if (ansicht !== "quiz") return;
+    let st = null;
+    const start = e => {
+      st = null;
+      if (e.touches.length !== 1 || e.target.closest?.("input, textarea, [data-zuordnung], [data-memory]")) return;
+      st = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
+    const ende = e => {
+      if (!st) return;
+      const t = e.changedTouches[0], dx = t.clientX - st.x, dy = t.clientY - st.y;
+      st = null;
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      if (e.cancelable) e.preventDefault();
+      rueckWischRef.current?.(dx > 0 ? -1 : 1);
+    };
+    window.addEventListener("touchstart", start, { passive: true });
+    window.addEventListener("touchend", ende, { passive: false });
+    return () => { window.removeEventListener("touchstart", start); window.removeEventListener("touchend", ende); };
+  }, [ansicht]);
 
   // Kachel-Gesten (Touch): sofort wischen scrollt; KACHEL_ANHEBEN_MS halten hebt die Kachel an – ziehen verschiebt
   // (über die Lang-Druck-Verfolgung oben); KACHEL_AUSWAEHLEN_MS halten wählt sie aus – weiterfahren sammelt weitere
@@ -3834,6 +3889,34 @@ export default function VokabelApp() {
     schliesseVokabelBearbeiten();
   }
 
+  // 176: Vokabel herausnehmen / wieder abfragen (bleibt in der Liste, wird nirgends abgefragt und zählt nicht im Fortschritt)
+  function setzeHerausgenommen(listeId, origId, an) {
+    const l = lsGet(SK.liste(listeId));
+    if (!l) return;
+    const neu = { ...l, vokabeln: l.vokabeln.map(v => { if (v.id !== origId) return v; const n = { ...v }; if (an) n.herausgenommen = true; else delete n.herausgenommen; return n; }) };
+    lsSet(SK.liste(listeId), neu);
+    if (listeId === aktiveListeId) setAktiveListe(neu);
+    setFaelligTick(x => x + 1);
+  }
+  // im Quiz: aktuelle Vokabel herausnehmen – sie fällt aus der Runde, weiter mit der nächsten (ohne Wertung)
+  function nimmVokabelHeraus() {
+    if (!quiz) return;
+    const v = quiz.vokabeln[quiz.index];
+    if (!v) return;
+    setzeHerausgenommen(v._listeId ?? quiz.liste.id, v._origId ?? v.id, true);
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    flashWeiterRef.current = null;
+    setQuiz(prev => {
+      if (!prev) return prev;
+      const vokabeln = prev.vokabeln.filter((x, i) => i < prev.index || x.id !== v.id);
+      const liste = { ...prev.liste, vokabeln: prev.liste.vokabeln.map(x => x.id === v.id ? { ...x, herausgenommen: true } : x) };
+      const basis = { ...prev, liste, vokabeln, ...(prev.spielBasis ? { spielBasis: prev.spielBasis.filter(x => x.id !== v.id) } : {}),
+        vokErgebnis: null, erstbewertung: false, letzteWertung: null, diktatWertung: null, flash: false, karteNeinFlash: false };
+      if (prev.modus === "diktat") return prev.index >= vokabeln.length ? { ...basis, phase: "fertig" }
+        : { ...basis, eingabe: "", diktatAufgedeckt: 0, diktatVersuche: [], phase: "eingabe", feedback: "" };
+      return naechsteVokabelState({ ...basis, index: prev.index - 1 });
+    });
+  }
   function loescheVokabel(vokId) {
     const neueListe = { ...aktiveListe, vokabeln: aktiveListe.vokabeln.filter(v => v.id !== vokId) };
     lsSet(SK.liste(aktiveListeId), neueListe);
@@ -4695,7 +4778,7 @@ export default function VokabelApp() {
     konfigs.forEach(k => (k.listenIds || []).forEach(id => {
       const l = lsGet(SK.liste(id));
       const auswahl = k.bereichTyp === "bereich" && (k.vokabelAuswahl || []).length ? new Set(k.vokabelAuswahl) : null;
-      l?.vokabeln.forEach(v => { const key = `${id}__${v.id}`; if ((!auswahl || auswahl.has(key)) && istFaellig(v[feld], jetzt)) erg.add(key); });
+      l?.vokabeln.forEach(v => { const key = `${id}__${v.id}`; if (!v.herausgenommen && (!auswahl || auswahl.has(key)) && istFaellig(v[feld], jetzt)) erg.add(key); });
     }));
     return [...erg];
   }
@@ -5259,7 +5342,7 @@ export default function VokabelApp() {
       }
     });
     const vokabeln = listen.flatMap(l =>
-      l.vokabeln.map(v => ({ ...v, id: `${l.id}__${v.id}`, _listeId: l.id, _origId: v.id }))
+      l.vokabeln.filter(v => !v.herausgenommen).map(v => ({ ...v, id: `${l.id}__${v.id}`, _listeId: l.id, _origId: v.id }))   // 176
     );
     return { id: 'combined', name: listen.map(l => l.name).join(' + '), spalten, naechste_id: 0, vokabeln };
   }
@@ -6528,6 +6611,7 @@ export default function VokabelApp() {
 
   // Menü einer Liste (lang drücken auf die Kachel bzw. auf den Namen im Listenkopf); imKopf: ohne Verschieben/Auswählen
   function oeffneListeDetail(id) {
+    setListeNurAus(false);
     setAktiveListeId(id); setTab("listen"); setAnsicht("liste-detail"); window.scrollTo(0, 0); vorigerListenBereich.current = null; setListenBereich(null);
   }
   function listenMenue(l, imKopf = false) {
@@ -6537,6 +6621,8 @@ export default function VokabelApp() {
       { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
       { label: "📤 Exportieren", fn: () => oeffneExport([l.id]) },
       ...(() => { const f = faelligVonListen([l.id]); return faelligAktion(f); })(),
+      ...(() => { const n = (lsGet(SK.liste(l.id))?.vokabeln || []).filter(v => v.herausgenommen).length;   // 176
+        return n ? [{ label: `🚫 Herausgenommene (${n})`, fn: () => { oeffneListeDetail(l.id); setListenBereich("vokabeln"); setListeNurAus(true); } }] : []; })(),
       { label: "✨ Beispielsätze ergänzen", fn: () => oeffneSatzFenster(l.id) },
       { label: "≈ Synonyme ergänzen", fn: () => oeffneSynFenster(l.id) },
       ...(imKopf && sichtbareListen.some(x => x.id !== l.id) ? [{ label: "⇲ Zusammenführen", fn: () => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); } }] : []),
@@ -6602,7 +6688,8 @@ export default function VokabelApp() {
     const gruppeL = (mehrere || [l]).map(x => ({ x, liste: lsGet(SK.liste(x.id)) })).filter(y => y.liste);
     if (!gruppeL.length) return null;
     const liste = gruppeL[0].liste;
-    const voks = gruppeL.flatMap(y => y.liste.vokabeln.map(v => ({ ...v, _listeId: y.x.id })));
+    const ausAnz = gruppeL.reduce((a, y) => a + y.liste.vokabeln.filter(v => v.herausgenommen).length, 0);   // 176
+    const voks = gruppeL.flatMap(y => y.liste.vokabeln.filter(v => !v.herausgenommen).map(v => ({ ...v, _listeId: y.x.id })));
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
     const gruppe = v => !v.fortschritt ? "nie" : v.fortschritt.score < 0 ? "negativ" : schwelle > 0 && v.fortschritt.score >= schwelle ? "gelernt" : "arbeit";
     const anz = { gelernt: 0, arbeit: 0, nie: 0, negativ: 0 };
@@ -6610,7 +6697,7 @@ export default function VokabelApp() {
     const zuletzt = voks.flatMap(v => [v.fortschritt, v.diktatFortschritt, v.akzentFortschritt].map(f => f?.letzteAbfrage).filter(Boolean)).sort().pop() || null;
     const pct = Math.round(lernProzent(voks.map(v => v.fortschritt?.score), schwelle));
     const spalten = mehrere ? gruppeL.map(y => y.x.name) : TYPEN.filter(x => liste.spalten[x]?.aktiv).map(x => liste.spalten[x].name || x);
-    const gruppenText = gruppenKurz(anz);
+    const gruppenText = gruppenKurz(anz) + (ausAnz ? ` · 🚫 ${ausAnz}` : "");
     const zu = infoZu;
     return (
       <div className="slot-info" data-liste-info={mehrere ? "_wahl" : l.id} data-auswahl-durchlass data-slot-info-zu={zu ? "" : undefined} onClick={infoKlapp} style={{position:"static", marginLeft:-16, marginRight:-16}}>
@@ -6858,6 +6945,7 @@ export default function VokabelApp() {
   // Lernfortschritt je Art (Mini-Kreise) für eine Vokabelmenge; aus = keine passenden Vokabeln
   function lernstandJeArt(voks, listeId = null) {
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
+    voks = voks.filter(v => !v.herausgenommen);   // 176: zählen nicht mit
     return Object.fromEntries(QUIZ_ARTEN.map(a => {
       const sicht = statistikSicht(voks, a, listeId);
       return [a, { pct: lernProzent(sicht.map(v => v.fortschritt?.score), schwelle), aus: sicht.length === 0 }];
@@ -7257,8 +7345,8 @@ export default function VokabelApp() {
       const liste = lsGet(SK.liste(id));
       if (!liste) return null;
       const voks = [];
-      liste.vokabeln.forEach((v, i) => { if (auswahl.has(`${id}__*`) || auswahl.has(`${id}__${v.id}`)) voks.push({ ...v, _nr: i + 1, _listeId: id }); });
-      return { id, liste, idx: listenIndex.find(l => l.id === id) || liste, voks, ganz: voks.length === liste.vokabeln.length };
+      liste.vokabeln.forEach((v, i) => { if (!v.herausgenommen && (auswahl.has(`${id}__*`) || auswahl.has(`${id}__${v.id}`))) voks.push({ ...v, _nr: i + 1, _listeId: id }); });
+      return { id, liste, idx: listenIndex.find(l => l.id === id) || liste, voks, ganz: voks.length === liste.vokabeln.filter(v => !v.herausgenommen).length };
     }).filter(Boolean);
     const alle = teile.flatMap(x => x.voks);
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
@@ -7517,7 +7605,7 @@ export default function VokabelApp() {
       ...TYPEN.filter(t => t.startsWith('i') && kombiListe.spalten[t].aktiv && quizZeigeInfo[t]),
     ];
 
-    let voks = kombiListe.vokabeln.filter(v => alleAbfragbar.every(t => v[t]));
+    let voks = kombiListe.vokabeln.filter(v => !v.herausgenommen && alleAbfragbar.every(t => v[t]));
 
     if (gruppe) voks = voks.filter(v => gruppe.has(v.id));
     else if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
@@ -7606,7 +7694,7 @@ export default function VokabelApp() {
       ? generiereButtons(voks, voks[0], antwortTypen[0], ersterModusTyp0) : null;
 
     const startScoresZiel = abfrageZielModus === "score" && abfrageZielScoreTyp === "session"
-      ? Object.fromEntries(voks.map(v => [v.id, Math.min(10, Math.max(-10, v[scoreFeld]?.score ?? 0))]))
+      ? Object.fromEntries(voks.map(v => [v.id, v[scoreFeld]?.score ?? 0]))
       : null;
     const abfrageZiel = abfrageZielModus !== "anzahl" || abfrageZielAnzahl > 1
       ? { modus: abfrageZielModus, anzahl: abfrageZielAnzahl, wiederholung: abfrageZielWiederholung,
@@ -7840,7 +7928,19 @@ export default function VokabelApp() {
   }
 
   // Berechnet den nächsten Vokabel-State als reines Objekt (kein setQuiz)
+  // 175: abgeschlossene Vokabel in den Rückblick (ganze Runde; Zuordnung nicht)
+  function mitRueckblick(prev) {
+    const v = prev.vokabeln[prev.index];
+    const rb = prev.rueckblick || [];
+    if (!v || !prev.vokErgebnis || prev.phase === "zuordnung") return { ...prev, letzteWertung: null, versuche: {}, rueckIdx: null };
+    const sp = t => prev.liste.spalten[t]?.name || t;
+    const eintrag = { art: "quiz", vokId: v.id, frage: { typ: prev.frageTyp, label: sp(prev.frageTyp), wert: v[prev.frageTyp]?.wert || "" },
+      antworten: (prev.vorigeAntworten || []).map(a => ({ ...a })), ergebnis: prev.vokErgebnis === "richtig" ? "richtig" : "falsch",
+      wertung: prev.letzteWertung || null, zaehlt: prev.erstbewertung !== false };
+    return { ...prev, rueckblick: [...rb, eintrag], letzteWertung: null, versuche: {}, rueckIdx: null };
+  }
   function naechsteVokabelState(prev) {
+    prev = mitRueckblick(prev);
     const sp = prev?.abfrageZiel?.modus, spiel = sp === "blitz" || sp === "serie";
     if (spiel && prev.vokErgebnis) {
       const richtig = prev.vokErgebnis === "richtig", id = prev.vokabeln[prev.index]?.id;
@@ -7931,7 +8031,7 @@ export default function VokabelApp() {
         if (ziel.modus === "score" && ziel.scoreTyp === "session") {
           const restVoks = prev.vokabeln.filter(v => {
             const liveVok = prev.liste.vokabeln.find(lv => lv.id === v.id);
-            const score = Math.min(10, Math.max(-10, liveVok?.[prev.scoreFeld || "fortschritt"]?.score ?? 0));
+            const score = liveVok?.[prev.scoreFeld || "fortschritt"]?.score ?? 0;
             if (ziel.scoreTyp === "session") {
               const startScore = (ziel.startScoresZiel || {})[v.id] ?? 0;
               return (score - startScore) < ziel.score;
@@ -7993,7 +8093,7 @@ export default function VokabelApp() {
   function weiterNachSpalte(prev, richtig) {
     const typ = prev.antwortTypen[prev.antwortTypIndex];
     const vorigeAntworten = [...prev.vorigeAntworten, {
-      typ, wert: prev.antwortTeile.join(" / "), label: prev.liste.spalten[typ]?.name || typ, richtig,
+      typ, wert: prev.antwortTeile.join(" / "), label: prev.liste.spalten[typ]?.name || typ, richtig, eingaben: prev.versuche?.[prev.antwortTypIndex] || [],
     }];
     const naechsterIdx = prev.antwortTypIndex + 1;
     if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, vorigeAntworten, richtigAufgedeckt: false});
@@ -8035,6 +8135,10 @@ export default function VokabelApp() {
     const gewertet = erstbewertung ? { ...(quiz.gewertet || {}), [aktVok.id]: vokErgebnis } : quiz.gewertet;
     if (!erstbewertung && quiz.abfrageZiel?.modus !== "score") return { spaltenErgebnisse, vokErgebnis, erstbewertung, gewertet, karteBewertungOffen: false };
     let liste = quiz.liste, sessionFalsch = quiz.sessionFalsch, gelerntBlitz = null;
+    // 175: Stand vor der Antwort + Ergebnis je Teil – für das nachträgliche Umwerten
+    const letzteWertung = { vorher: { fortschritt: aktVok.fortschritt, akzentFortschritt: aktVok.akzentFortschritt },
+      normal: normal.length ? gesamt(normal) : null, akzent: akzent.length ? (gesamt(akzent) === "richtig" ? "richtig" : "aufgedeckt") : null,
+      modus: quizRegeln().aufdeckenAbzug ? "schwer" : "einfach", falschAbzug: quizRegeln().falschAbzug };
     // Vokabel erreicht mit dieser Antwort die Gelernt-Schwelle → Karte leuchtet kurz auf (Farbe „Gelernt-Effekt“) + Sternenregen
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
     const erreicht = (vorher, nachher) => schwelle > 0 && (vorher?.score ?? -Infinity) < schwelle && (nachher?.score ?? -Infinity) >= schwelle;
@@ -8051,7 +8155,7 @@ export default function VokabelApp() {
       liste = speichereAkzentScore(liste, aktVok.id, neu);
       if (erreicht(aktVok.akzentFortschritt, neu)) gelerntBlitz = blitzKey(quiz);
     }
-    return { spaltenErgebnisse, vokErgebnis, erstbewertung, gewertet, liste, sessionFalsch, karteBewertungOffen: false, ...(gelerntBlitz ? { gelerntBlitz } : {}) };
+    return { spaltenErgebnisse, vokErgebnis, erstbewertung, gewertet, liste, sessionFalsch, karteBewertungOffen: false, letzteWertung, ...(gelerntBlitz ? { gelerntBlitz } : {}) };
   }
 
   // Akzent-Abfrage mit Wörtern ohne Akzent: nur so viele ohne Akzent wie eingestellt (Faktor × mit Akzent);
@@ -8089,6 +8193,7 @@ export default function VokabelApp() {
   function pruefeAntwort(eingabeArg) {
     const eingabe = (typeof eingabeArg === "string" ? eingabeArg : quiz?.eingabe || "").trim();
     if (!quiz || !eingabe) return;
+    setQuiz(prev => prev ? { ...prev, versuche: { ...(prev.versuche || {}), [prev.antwortTypIndex]: [...(prev.versuche?.[prev.antwortTypIndex] || []), eingabe] } } : prev);   // 175
 
     // Modus "Einfach": fehlende/falsche Akzente zählen als richtig (mit Hinweis); ebenso, wenn die Akzente der Sprache aus sind
     const vokJetzt = quiz.vokabeln[quiz.index], spalteJetzt = quiz.antwortTypen[quiz.antwortTypIndex];
@@ -8188,6 +8293,7 @@ export default function VokabelApp() {
       }
     } else {
       setQuiz(prev => ({...prev,
+        versuche: { ...(prev.versuche || {}), [prev.antwortTypIndex]: [...(prev.versuche?.[prev.antwortTypIndex] || []), btn.text] },   // 175
         spaltenErgebnisse: { ...(prev.spaltenErgebnisse || {}), [prev.antwortTypIndex]: "falsch" },
         mcButtons: prev.mcButtons.map((b, i) => i === idx ? {...b, status: "falsch"} : b)}));
       setTimeout(() => {
@@ -8232,6 +8338,103 @@ export default function VokabelApp() {
     }));
   }
 
+  // 175: Bewertung einer früheren Karte der Runde ändern (nur richtig ↔ falsch). Score: Stand vor der Antwort wiederherstellen
+  // und alle späteren Wertungen derselben Vokabel neu rechnen; Rundenzählung, Wiederholungs-Zähler und Diktat-Ergebnis mitziehen
+  function umwerten(i) {
+    setQuiz(prev => {
+      const rb = [...(prev?.rueckblick || [])], e = rb[i];
+      if (!e) return prev;
+      const neu = e.ergebnis === "richtig" ? "falsch" : "richtig", ja = neu === "richtig";
+      const w0 = e.wertung;
+      rb[i] = { ...e, ergebnis: neu, umgewertet: !e.umgewertet,
+        antworten: e.antworten.map(a => ({ ...a, richtig: ja })),
+        wertung: w0 ? { ...w0, ...(w0.normal != null ? { normal: ja ? "richtig" : "falsch" } : {}), ...(w0.akzent != null ? { akzent: ja ? "richtig" : "aufgedeckt" } : {}),
+          ...(w0.diktat != null ? { diktat: ja ? "richtig" : "aufgedeckt" } : {}) } : null };
+      let liste = prev.liste, extra = {};
+      if (w0) {
+        const stand = { ...w0.vorher };
+        for (let j = i; j < rb.length; j++) {
+          const x = rb[j];
+          if (x.vokId !== e.vokId || !x.wertung) continue;
+          const w = { ...x.wertung, vorher: { ...x.wertung.vorher, ...stand } };
+          rb[j] = { ...x, wertung: w };
+          if (w.normal != null) stand.fortschritt = berechneNeuenScore(w.vorher.fortschritt, w.normal, w.modus, w.falschAbzug);
+          if (w.akzent != null) stand.akzentFortschritt = berechneDiktatScore(w.vorher.akzentFortschritt, w.akzent, w.falschAbzug);
+          if (w.diktat != null) stand.diktatFortschritt = berechneDiktatScore(w.vorher.diktatFortschritt, w.diktat, w.falschAbzug);
+        }
+        if (w0.normal != null) liste = speichereScore(liste, e.vokId, stand.fortschritt);
+        if (w0.akzent != null) liste = speichereAkzentScore(liste, e.vokId, stand.akzentFortschritt);
+        if (w0.diktat != null) liste = speichereDiktatScore(liste, e.vokId, stand.diktatFortschritt);
+      }
+      if (e.zaehlt && e.art === "quiz") {
+        extra.quizRichtigAnzahl = Math.max(0, (prev.quizRichtigAnzahl || 0) + (ja ? 1 : -1));
+        extra.quizFalschAnzahl = Math.max(0, (prev.quizFalschAnzahl || 0) + (ja ? -1 : 1));
+        extra.gewertet = { ...(prev.gewertet || {}), [e.vokId]: neu };
+      }
+      if (e.art === "diktat" && e.diktatIdx != null && prev.diktatErgebnisse?.[e.diktatIdx])
+        extra.diktatErgebnisse = prev.diktatErgebnisse.map((d, k) => k === e.diktatIdx ? { ...d, richtig: ja } : d);
+      let vokabeln = prev.vokabeln;
+      if (prev.abfrageZiel?.modus === "wiederholung") {
+        const rm = { ...(prev.richtigMap || {}) };
+        rm[e.vokId] = Math.max(0, (rm[e.vokId] || 0) + (ja ? 1 : -1));
+        extra.richtigMap = rm;
+        // falsch → richtig: eine noch geplante Wiederholung dieser Vokabel im laufenden Durchgang entfällt
+        if (ja && rm[e.vokId] >= prev.abfrageZiel.wiederholung) vokabeln = vokabeln.filter((v, k) => k <= prev.index || v.id !== e.vokId);
+      }
+      return { ...prev, ...extra, liste, vokabeln, rueckblick: rb };
+    });
+  }
+  // Wischen im Quiz: nach rechts = eine Karte zurück, nach links = vorwärts bis zur aktuellen
+  function rueckblickWischen(richtung) {
+    setQuiz(prev => {
+      const n = prev?.rueckblick?.length || 0;
+      if (!n || !["eingabe", "aufgedeckt", "weitere", "richtig"].includes(prev.phase) || prev.flash || prev.karteNeinFlash) return prev;
+      const akt = prev.rueckIdx ?? n, ziel = Math.max(0, Math.min(n, akt + richtung));
+      return ziel === akt ? prev : { ...prev, rueckIdx: ziel >= n ? null : ziel };
+    });
+  }
+  function renderRueckblick() {
+    const rb = quiz.rueckblick, i = quiz.rueckIdx, e = rb[i];
+    const ja = e.ergebnis === "richtig";
+    const vok = quiz.liste.vokabeln.find(v => v.id === e.vokId) || quiz.vokabeln.find(v => v.id === e.vokId);
+    const feld = e.art === "diktat" ? "diktatFortschritt" : e.wertung?.normal == null && e.wertung?.akzent != null ? "akzentFortschritt" : "fortschritt";
+    const knopf = gewusst => {
+      const gewaehlt = gewusst === ja;
+      return (
+        <button className={`karte-btn ${gewusst ? "karte-btn-ja" : "karte-btn-nein"} rueck-wahl${gewaehlt ? " gewaehlt" : " andere"}`}
+          data-rueck-bewertung={gewusst ? "richtig" : "falsch"} data-gewaehlt={gewaehlt ? "ja" : "nein"}
+          {...tt(gewaehlt ? "So wurde gewertet" : "Lang drücken: Bewertung nachträglich ändern",
+            gewaehlt ? null : [{ label: gewusst ? "✓ Doch gewusst – umwerten" : "✗ Doch nicht gewusst – umwerten", fn: () => umwerten(i) }],
+            { langText: `Bewertung nachträglich ändern: ${gewusst ? "gewusst" : "nicht gewusst"}?` })}>
+          {gewusst ? "✓ Gewusst" : "✗ Nicht gewusst"}</button>);
+    };
+    return (
+      <>
+        <style>{CSS}</style>{farbModusUI}{farbRadUI}
+        <div className="app">
+          <div className="topbar">
+            <span className="topbar-title" data-rueckblick-titel>↩ {i + 1} / {rb.length}</span>
+            <span className="quiz-fortschritt">{scoreSymbole(vok?.[feld]?.score)}</span>
+          </div>
+          <div className="sektion" data-rueckblick={i} style={{minHeight:"70vh"}}>
+            <div className="quiz-frage-box rueck-karte" style={{marginBottom:10}}>
+              <div className="quiz-label">{e.frage.label}</div>
+              <div className="quiz-frage-text" style={{textAlign:"center"}}>{mitHinweis(umbruch(e.frage.wert))}</div>
+            </div>
+            {e.antworten.map((a, k) => (
+              <div key={k} className={`quiz-vorig rueck-karte${a.richtig === false ? " nicht" : ""}`} data-rueck-antwort={a.richtig === false ? "falsch" : "richtig"}>
+                <div className="quiz-vorig-label">{a.richtig === false ? "✗ " : "✓ "}{a.label}</div>
+                <div style={{textAlign:"center", fontSize:"1rem"}}><strong>{mitHinweis(umbruch(a.wert))}</strong></div>
+                {a.eingaben?.length > 0 && <div className="rueck-eingabe" data-rueck-eingabe>Deine Antwort: {a.eingaben.join(" · ")}</div>}
+              </div>
+            ))}
+            <div className="karte-bewertung" style={{marginTop:14}}>{knopf(false)}{knopf(true)}</div>
+            {e.umgewertet && <div className="rueck-geaendert" data-rueck-geaendert>↺ nachträglich geändert</div>}
+          </div>
+        </div>
+      </>
+    );
+  }
   function naechsteVokabel() {
     if (!quiz) return;
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
@@ -8356,6 +8559,8 @@ export default function VokabelApp() {
     const aktVok = quiz.vokabeln[quiz.index];
     const wort = aktVok[quiz.diktatSpalte]?.wert || "";
     const treffer = istRichtigeAntwort(quiz.eingabe.trim(), wort, quizRegeln().akzenteTolerant || (quiz.diktatSpalte?.startsWith("E") && !AKZENTE_FUER_LISTE(aktVok._listeId ?? aktiveListeId)));
+    const diktatVersuche = [...(quiz.diktatVersuche || []), quiz.eingabe.trim()];   // 175
+    const diktatWertung = { vorher: { diktatFortschritt: aktVok.diktatFortschritt }, falschAbzug: true };
     if (treffer) {
       const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "richtig");
       const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
@@ -8364,11 +8569,12 @@ export default function VokabelApp() {
       const ergebnis = { vokId: aktVok.id, wort, uebersetzung: aktVok[quiz.diktatUeberspalte]?.wert, richtig: true };
       setQuiz(prev => ({
         ...prev, liste: neueListe, eingabe: "", phase: "richtig", flash: false, ...(gelerntBlitz ? { gelerntBlitz } : {}),
+        diktatVersuche, diktatWertung: { ...diktatWertung, diktat: "richtig" }, diktatIdx: prev.diktatErgebnisse.length,
         diktatErgebnisse: [...prev.diktatErgebnisse, ergebnis], feedback: treffer === "akzent" ? AKZENT_HINWEIS : "",
       }));
     } else {
       setQuiz(prev => ({
-        ...prev, eingabe: "",
+        ...prev, eingabe: "", diktatVersuche,
         diktatAufgedeckt: Math.min((prev.diktatAufgedeckt || 0) + 1, ohneHinweis(wort).length),
         feedback: "Nicht richtig – ein Buchstabe mehr aufgedeckt.",
       }));
@@ -8382,10 +8588,11 @@ export default function VokabelApp() {
     const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "aufgedeckt", quizRegeln().falschAbzug);
     const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
     const wort = aktVok[quiz.diktatSpalte]?.wert || "";
+    const diktatWertung = { vorher: { diktatFortschritt: aktVok.diktatFortschritt }, falschAbzug: quizRegeln().falschAbzug, diktat: "aufgedeckt" };   // 175
     const ergebnis = { vokId: aktVok.id, wort, uebersetzung: aktVok[quiz.diktatUeberspalte]?.wert, richtig: false };
     setQuiz(prev => ({
       ...prev, liste: neueListe, eingabe: "", phase: "aufgedeckt", flash: false,
-      diktatAufgedeckt: ohneHinweis(wort).length,
+      diktatAufgedeckt: ohneHinweis(wort).length, diktatWertung, diktatIdx: prev.diktatErgebnisse.length,
       diktatErgebnisse: [...prev.diktatErgebnisse, ergebnis],
       feedback: "",
     }));
@@ -8396,7 +8603,15 @@ export default function VokabelApp() {
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     diktatPlayCountRef.current = 0;
     setDiktatManualPlays(0);
-    setQuiz(prev => {
+    setQuiz(prev0 => {
+      // 175: beantwortete Diktat-Vokabel in den Rückblick
+      const v = prev0.vokabeln[prev0.index], w = prev0.diktatWertung;
+      const sp = t => prev0.liste.spalten[t]?.name || t;
+      const prev = { ...prev0, diktatWertung: null, diktatVersuche: [], rueckIdx: null,
+        rueckblick: v && w ? [...(prev0.rueckblick || []), { art: "diktat", vokId: v.id, diktatIdx: prev0.diktatIdx,
+          frage: { typ: prev0.diktatUeberspalte, label: sp(prev0.diktatUeberspalte), wert: v[prev0.diktatUeberspalte]?.wert || "" },
+          antworten: [{ typ: prev0.diktatSpalte, label: sp(prev0.diktatSpalte), wert: v[prev0.diktatSpalte]?.wert || "", richtig: w.diktat === "richtig", eingaben: prev0.diktatVersuche || [] }],
+          ergebnis: w.diktat === "richtig" ? "richtig" : "falsch", wertung: w, zaehlt: true }] : (prev0.rueckblick || []) };
       const naechsterIdx = prev.index + 1;
       if (naechsterIdx >= prev.vokabeln.length) return { ...prev, phase: "fertig" };
       return { ...prev, index: naechsterIdx, eingabe: "", diktatAufgedeckt: 0, phase: "eingabe", feedback: "" };
@@ -8576,6 +8791,7 @@ export default function VokabelApp() {
     );
   }
 
+  if (ansicht === "quiz" && quiz && quiz.rueckIdx != null && quiz.rueckblick?.[quiz.rueckIdx] && ["eingabe", "aufgedeckt", "weitere", "richtig"].includes(quiz.phase)) return renderRueckblick();   // 175
   if (ansicht === "quiz" && quiz && quiz.modus === "diktat") {
     if (quiz.phase === "fertig") {
       const richtig = quiz.diktatErgebnisse.filter(e => e.richtig).length;
@@ -8698,6 +8914,7 @@ export default function VokabelApp() {
             <div className="quiz-frage-box" style={{textAlign:"center", marginBottom:14, flexShrink:0}} data-karte-diktat
               {...tt("Lang drücken: richtige Antwort bearbeiten", [
                 { label: "✎ Richtige Antwort bearbeiten", fn: () => oeffneVokabelBearbeiten(quiz.vokabeln[quiz.index], quiz.vokabeln[quiz.index]._listeId ?? quiz.liste.id, quiz.diktatSpalte) },
+                { label: "🚫 Nicht mehr abfragen", fn: nimmVokabelHeraus },
               ], { langText: `${quiz.liste.spalten[quiz.diktatSpalte]?.name || quiz.diktatSpalte}: richtige Antwort bearbeiten` })}>
               <div className="quiz-label">{quiz.liste.spalten[quiz.diktatSpalte]?.name || quiz.diktatSpalte} — hör genau hin!</div>
               {quiz.diktatSpalte.startsWith('E') && (
@@ -8764,7 +8981,7 @@ export default function VokabelApp() {
                     {quiz.diktatSpalte.startsWith('E') && (
                       <button className="btn btn-ghost" onClick={() => sprichDiktatNochmal(diktatWort, vokLang(aktVok, quiz.diktatSpalte))} {...tt("Diktat-Wort nochmals mit anderer Stimme vorlesen")}><IcoSpkOn s={18}/> Andere Stimme</button>
                     )}
-                    <button className="btn btn-ghost" onClick={zeigeDiktatLoesung} {...tt("Lösung anzeigen – kein Punkt, kein Streak")}>Lösung anzeigen</button>
+                    <button className="btn btn-ghost" onClick={zeigeDiktatLoesung} {...tt("Lösung anzeigen – zählt als nicht gewusst")}>Lösung anzeigen</button>
                   </>
                 )}
                 {diktatWeiter && (
@@ -9149,16 +9366,18 @@ export default function VokabelApp() {
       const alts = alternativen(teil);
       const haupt = alts.length > 1 && treffer ? (alts.find(a => istRichtigeEinzeln(treffer, a, true)) || alts[0]) : (alts[0] || teil);
       const rest = alts.filter(a => a !== haupt);
-      return <Fragment key={i}>{i > 0 && " / "}{mitHinweis(haupt)}{rest.length > 0 && <span className="auch-hinweis" data-auch> (auch: {rest.join(", ")})</span>}</Fragment>;
+      return <Fragment key={i}>{i > 0 && " / "}{mitHinweis(umbruch(haupt))}{rest.length > 0 && <span className="auch-hinweis" data-auch> (auch: {rest.join(", ")})</span>}</Fragment>;
     });
     const trefferJetzt = quiz.treffer?.k === `${quiz.index}|${quiz.antwortTypIndex}` ? quiz.treffer.e : null;
     const antwortGanz = (quiz.antwortTeile || []).join(" / ");
     const antwortSichtbar = quiz.phase !== "eingabe" && !quiz.flash;
     const antwortBearbeiten = tt(antwortSichtbar ? "Antippen: Antwort vorlesen – lang drücken: Tempo, richtige Antwort bearbeiten" : "Lang drücken: Tempo, richtige Antwort bearbeiten", [
       { label: "✎ Richtige Antwort bearbeiten", fn: () => bearbeite(aktAntwortTyp) },
+      { label: "🚫 Nicht mehr abfragen", fn: nimmVokabelHeraus },
     ], { langText: `${antwortLabel}: richtige Antwort bearbeiten`, regler: tempoRegler(antwortGanz, aktAntwortTyp) });
     const frageBearbeiten = tt("Antippen: Frage vorlesen – lang drücken: Tempo, Frage bearbeiten", [
       { label: "✎ Frage bearbeiten", fn: () => bearbeite(quiz.frageTyp) },
+      { label: "🚫 Nicht mehr abfragen", fn: nimmVokabelHeraus },
     ], { langText: `${frageLabel}: Frage bearbeiten`, regler: tempoRegler(frageWert, quiz.frageTyp) });
     const infoAktionen = typen => typen.map(t => ({ label: `✎ ${spaltenName(t)} bearbeiten`, fn: () => bearbeite(t) }));
     const eigeneFalsche = aktVokRaw[aktAntwortTyp]?.falsch || [];
@@ -9253,14 +9472,14 @@ export default function VokabelApp() {
               return (
                 <div style={{display:"flex", gap:10, alignItems:"stretch", marginBottom:14}}>
                   {/* Linke Spalte */}
-                  <div style={{flex:1, display:"flex", flexDirection:"column", gap:10}}>
+                  <div style={{flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:10}}>
                     <div className="quiz-frage-box" style={{marginBottom:0, cursor:"pointer", position:"relative"}} data-karte-frage data-vorlesen={quiz.frageTyp} {...frageBearbeiten}
                       onClick={e => { e.stopPropagation(); sprich(frageWert, vokLang(aktVok, quiz.frageTyp)); }}>
                       <div className="karten-kopf"><div className="quiz-label">{frageLabel}</div>{kartenKnoepfe(quiz.frageTyp, frageWert, "frage", !(aktSpaltModus === "hoeren" && quiz.phase === "eingabe" && !quiz.flash))}</div>
                       <div style={{display:"flex", alignItems:"baseline", gap:8, justifyContent:"center"}}>
                         <div className="quiz-frage-text" style={{textAlign:"center"}}>
                           {aktSpaltModus === "hoeren" && quiz.phase === "eingabe" && !quiz.flash
-                            ? <span className="hoer-symbol" data-hoer-verdeckt>🔊</span> : mitHinweis(frageWert)}
+                            ? <span className="hoer-symbol" data-hoer-verdeckt>🔊</span> : mitHinweis(umbruch(frageWert))}
                         </div>
                       </div>
                     </div>
@@ -9640,7 +9859,7 @@ export default function VokabelApp() {
                   {aktSpaltModus === "tippen" && (
                     <button className="btn btn-primary" onClick={pruefeAntwort} {...tt("Eingegebene Antwort prüfen")}>Prüfen</button>
                   )}
-                  <button className="btn btn-ghost" onClick={zeigeLosung} {...tt("Lösung anzeigen – kein Punkt, kein Streak")}>Lösung anzeigen</button>
+                  <button className="btn btn-ghost" onClick={zeigeLosung} {...tt("Lösung anzeigen – zählt als nicht gewusst")}>Lösung anzeigen</button>
                   {infoSpalten.length > 0 && (
                     <button {...tt("Info-Spalten (z. B. Beispielsatz) ein- oder ausblenden")} className="btn btn-ghost"
                       onClick={() => setQuiz(prev => ({...prev, infoSichtbar: !prev.infoSichtbar}))}>
@@ -9669,8 +9888,8 @@ export default function VokabelApp() {
               {/* Karte: Gewusst / Nicht gewusst (letzte Spalte bzw. nach der letzten Spalte für die Karten-Spalten) */}
               {!quiz.flash && ((isKarteAufgedeckt && karteLetzte) || karteUrteilOffen) && (
                 <div className="karte-bewertung" style={{width:"100%"}}>
-                  <button className="karte-btn karte-btn-nein" onClick={() => bewerteKarte(false)} {...tt("Antwort war falsch – Score sinkt, Streak auf 0")}>✗ Nicht gewusst</button>
-                  <button className="karte-btn karte-btn-ja" onClick={() => bewerteKarte(true)} {...tt("Antwort war richtig – Score +1, Streak +1")}>✓ Gewusst</button>
+                  <button className="karte-btn karte-btn-nein" onClick={() => bewerteKarte(false)} {...tt("Antwort war falsch – Score sinkt")}>✗ Nicht gewusst</button>
+                  <button className="karte-btn karte-btn-ja" onClick={() => bewerteKarte(true)} {...tt("Antwort war richtig – Score steigt")}>✓ Gewusst</button>
                 </div>
               )}
               {!quiz.flash && quiz.phase === "aufgedeckt" && !isKarteAufgedeckt && !karteUrteilOffen && (
@@ -9728,7 +9947,7 @@ export default function VokabelApp() {
     ? statistikAlleListenObjekte
     : statistikAlleListenObjekte.filter(l => statistikListenIds.has(l.id));
   const statistikBasisVoks = statistikGewaehlteListenObjekte.flatMap((l, lRank) =>
-    l.vokabeln.map((v, vIdx) => ({...v, id: `${l.id}__${v.id}`, _origId: v.id, _listeId: l.id, _listeName: l.name, _spalten: l.spalten, _listenIndexRank: lRank, _listIndex: vIdx}))
+    l.vokabeln.map((v, vIdx) => v.herausgenommen ? null : ({...v, id: `${l.id}__${v.id}`, _origId: v.id, _listeId: l.id, _listeName: l.name, _spalten: l.spalten, _listenIndexRank: lRank, _listIndex: vIdx})).filter(Boolean)
   );
   const statistikGefilterteVoks = statistikBereichTyp === "bereich" && statistikCheckboxAuswahl.size > 0
     ? statistikBasisVoks.filter(v => statistikCheckboxAuswahl.has(v.id))
@@ -11056,7 +11275,10 @@ export default function VokabelApp() {
           const schwelleL = einstellungen.gelerntSchwelle ?? 0;
           const gelernteInListe = schwelleL > 0
             ? aktiveListe.vokabeln.filter(v => (v.fortschritt?.score ?? -Infinity) >= schwelleL).length : 0;
-          const anzeigeVoks = listenGelerntAusblenden && schwelleL > 0
+          const ausInListe = aktiveListe.vokabeln.filter(v => v.herausgenommen).length;
+          const nurAus = listeNurAus && ausInListe > 0;
+          const anzeigeVoks = nurAus ? aktiveListe.vokabeln.filter(v => v.herausgenommen)
+            : listenGelerntAusblenden && schwelleL > 0
             ? aktiveListe.vokabeln.filter(v => (v.fortschritt?.score ?? -Infinity) < schwelleL)
             : aktiveListe.vokabeln;
           const listenSuche = suchInfo(anzeigeVoks, sucheListe);
@@ -11216,6 +11438,11 @@ export default function VokabelApp() {
                       })}
                     </>)}
                     <span style={{marginLeft:"auto", display:"flex", gap:6, flexShrink:0}}>
+                      {ausInListe > 0 && (
+                        <button data-nur-aus={nurAus ? "an" : "aus"} className={`typ-btn${nurAus ? " aktiv" : ""}`} style={{fontSize:"0.72rem", padding:"3px 10px"}}
+                          onClick={() => setListeNurAus(v => !v)}
+                          {...tt(nurAus ? "Wieder alle Vokabeln zeigen" : `Nur die ${ausInListe} herausgenommenen Vokabeln zeigen (werden nicht abgefragt)`)}>🚫 {ausInListe}</button>
+                      )}
                       {schwelleL > 0 && gelernteInListe > 0 && (
                         <button data-gelernte-ausblenden className={`typ-btn${listenGelerntAusblenden ? " aktiv" : ""}`} style={{fontSize:"0.72rem", padding:"3px 10px"}}
                           onClick={() => setListenGelerntAusblenden(v => !v)}
@@ -11235,7 +11462,11 @@ export default function VokabelApp() {
                       const score = vok.fortschritt != null ? clampScore(vok.fortschritt.score) : null;
                       const istGelernt = schwelleL > 0 && (vok.fortschritt?.score ?? -Infinity) >= schwelleL;
                       return (
-                        <div key={vok.id} className="karte-zeile" data-such-ziel="liste" data-such-id={vok.id} style={{flexDirection:"column", alignItems:"flex-start", gap:4, ...suchMarke(listenSuche, vok.id)}}>
+                        <div key={vok.id} className="karte-zeile" data-such-ziel="liste" data-such-id={vok.id} data-herausgenommen={vok.herausgenommen ? "" : undefined}
+                          style={{flexDirection:"column", alignItems:"flex-start", gap:4, ...(vok.herausgenommen ? { opacity: 0.5 } : {}), ...suchMarke(listenSuche, vok.id)}}
+                          {...tt(vok.herausgenommen ? "Herausgenommen – wird nicht abgefragt" : "Lang drücken: Vokabel herausnehmen (nicht mehr abfragen)",
+                            [vok.herausgenommen ? { label: "↩ Wieder abfragen", fn: () => setzeHerausgenommen(aktiveListeId, vok.id, false) }
+                              : { label: "🚫 Nicht mehr abfragen", fn: () => setzeHerausgenommen(aktiveListeId, vok.id, true) }])}>
                           <div style={{display:"flex", width:"100%", justifyContent:"space-between", alignItems:"flex-start"}}>
                             <div style={{display:"flex", flexDirection:"column", gap:3, flex:1}}>
                               {anzeigeSpalten.map(typ => vok[typ] ? (
@@ -11247,6 +11478,7 @@ export default function VokabelApp() {
                               ) : null)}
                             </div>
                             <div style={{display:"flex", alignItems:"center", gap:2, flexShrink:0, marginLeft:8}}>
+                              {vok.herausgenommen && <span data-aus-marke style={{marginRight:4}}>🚫</span>}
                               {istGelernt && (
                                 <span style={{background:"var(--haupt-flaeche)", color:"var(--haupt)", borderRadius:4,
                                   fontSize:"0.65rem", padding:"1px 5px", fontWeight:700, marginRight:2}}>✓</span>
@@ -11546,7 +11778,6 @@ export default function VokabelApp() {
           let voks = alleFilterAktiv ? [...anzeigeVoks] : anzeigeVoks.filter(filterVok);
           const [sKey, sDir] = statistikSort.split("-");
           if (sKey === "score") voks.sort((a, b) => { const d = (a.fortschritt?.score ?? 0) - (b.fortschritt?.score ?? 0); return sDir === "asc" ? d : -d; });
-          else if (sKey === "streak") voks.sort((a, b) => { const d = (a.fortschritt?.streak ?? 0) - (b.fortschritt?.streak ?? 0); return sDir === "asc" ? d : -d; });
           else if (sKey === "datum") voks.sort((a, b) => { const da = a.fortschritt?.letzteAbfrage ? new Date(a.fortschritt.letzteAbfrage) : new Date(0); const db = b.fortschritt?.letzteAbfrage ? new Date(b.fortschritt.letzteAbfrage) : new Date(0); return sDir === "asc" ? da - db : db - da; });
           else if (sKey === "alpha") { voks.sort((a, b) => { const spa = TYPEN.find(t => a._spalten[t]?.aktiv); const spb = TYPEN.find(t => b._spalten[t]?.aktiv); const r = (a[spa]?.wert || '').localeCompare(b[spb]?.wert || ''); return sDir === "asc" ? r : -r; }); }
           else if (sKey === "listennr") voks.sort((a, b) => { const dr = a._listenIndexRank - b._listenIndexRank; if (dr !== 0) return sDir === "asc" ? dr : -dr; const di = a._listIndex - b._listIndex; return sDir === "asc" ? di : -di; });
@@ -11714,7 +11945,6 @@ export default function VokabelApp() {
               <div style={{display:"flex", gap:6, flexWrap:"wrap", alignItems:"center", marginBottom:16}}>
                 {[
                   {key:"score", label:"Score", def:"asc"},
-                  {key:"streak", label:"Streak", def:"desc"},
                   {key:"datum", label:"Datum", def:"desc"},
                   {key:"alpha", label:"A→Z", def:"asc"},
                   {key:"listennr", label:"Listenplatz", def:"asc"},
@@ -11748,7 +11978,7 @@ export default function VokabelApp() {
                   <div className="karte-zeile" style={{color:"var(--text2)", fontSize:"0.85rem"}}>Keine Vokabeln in diesem Filter.</div>
                 ) : voks.map((vok, idx) => {
                   const rawScore = vok.fortschritt?.score ?? null;
-                  const score = rawScore !== null ? Math.min(10, Math.max(-10, rawScore)) : null;
+                  const score = rawScore;
                   const isPos = score !== null && score > 0;
                   const isNeg = score !== null && score < 0;
                   const gruppe = gruppeVon(vok);

@@ -56,7 +56,7 @@ await ladeSlot("Karte");
 await page.click("[data-start-knopf]"); await sleep(500);
 ok(await page.evaluate(() => document.querySelector(".quiz-frage-text")?.textContent.trim()) === "gehen", "Abfrage: Frage „gehen“");
 await langDruck("[data-karte-antwort]");
-ok(await menue() === "✎ Richtige Antwort bearbeiten", `Lang-Druck auf die Karte: nur „✎ Richtige Antwort bearbeiten“ (${await menue()})`);
+ok(await menue() === "✎ Richtige Antwort bearbeiten|🚫 Nicht mehr abfragen", `Lang-Druck auf die Karte: „✎ Richtige Antwort bearbeiten“, „🚫 Nicht mehr abfragen“ (${await menue()})`);
 await aktion("✎ Richtige Antwort bearbeiten");
 const ed = await page.evaluate(() => ({ art: document.querySelector("[data-vokabel-editor]")?.dataset.vokabelEditor,
   felder: [...document.querySelectorAll("[data-vokabel-feld]")].map(i => `${i.dataset.vokabelFeld}=${i.value}`).join(","), text: document.querySelector("[data-vokabel-editor]")?.textContent }));

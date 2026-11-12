@@ -58,8 +58,8 @@ await page.evaluate(() => {
   const f = s => ({ score: s, streak: 0, aufgedecktStreak: 0, letzteAbfrage: "2026-10-20T10:00:00.000Z" });
   const liste = (id, name, w) => ({ id, name, sprache:"fr", spalten: sp, naechste_id: w.length + 1,
     vokabeln: w.map(([e, d, sc], i) => ({ id:i+1, E1:{wert:e,falsch:[]}, D1:{wert:d,falsch:[]}, ...(sc === null ? {} : { fortschritt: f(sc) }) })) });
-  const a = liste("l_a", "Verbes", [["aller","gehen",-2],["venir","kommen",-1],["partir","abfahren",4],["sortir","ausgehen",1]]);
-  const b = liste("l_b", "Tiere", [["chat","Katze",-3],["chien","Hund",null]]);
+  const a = liste("l_a", "Verbes", [["aller","gehen",-5],["venir","kommen",-4],["partir","abfahren",4],["sortir","ausgehen",1]]);
+  const b = liste("l_b", "Tiere", [["chat","Katze",-6],["chien","Hund",null]]);
   [a, b].forEach(l => localStorage.setItem("vokabel_liste_" + l.id, JSON.stringify(l)));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([a, b].map(l => ({ id:l.id, name:l.name, sprache:"fr" }))));
 });
@@ -84,7 +84,7 @@ ok(await titel() === "1 / 3", `Quiz läuft mit 3 Vokabeln (${await titel()})`);
 const gefragt = await durchlaufen();
 console.log("     gefragt:", gefragt.join(", "));
 ok(gefragt.length === 3 && ["gehen","kommen","Katze"].every(w => gefragt.includes(w)), "genau die negativen Vokabeln aus beiden Listen");
-ok(gefragt[0] === "Katze", "schlechteste zuerst (Katze −3)");
+ok(gefragt[0] === "Katze", "schlechteste zuerst (Katze −6)");
 
 // Gelernt (Score 4 > Standard-Grenze 3) lässt sich trotzdem abfragen
 await weiterZurAuswertung(); await page.click("[data-zurueck-statistik]"); await sleep(400);
@@ -108,7 +108,7 @@ await clickText(".slot-chip", "Mein Paket"); await sleep(500); await slotLaden(p
 await clickText("[data-start-knopf]", "");
 for (let i = 0; i < 2; i++) {
   await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(250);
-  await clickText(".karte-btn-ja", "Gewusst"); await sleep(1200);
+  await clickText(".karte-btn-nein", "Nicht gewusst"); await sleep(1200);   // 178: richtig hebt −1…−3 auf 0 – damit „Negativ“ gefüllt bleibt
 }
 await clickText(".topbar-back", "Beenden"); await sleep(500);
 if (/Zur Übersicht/.test(await page.evaluate(() => document.body.innerText))) await clickText("button", "Zur Übersicht");
