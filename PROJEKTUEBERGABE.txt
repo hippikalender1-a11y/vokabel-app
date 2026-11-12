@@ -2623,3 +2623,8 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   (Karte für Karte bis zur aktuellen; Tab-Wischen gilt nur in der Übersicht, im Quiz frei); (c) nur richtig↔falsch
   (Tastatur: Tippfehler als richtig werten); (d) Zuordnung ausgenommen; (e) falsch→richtig: geplante Wiederholung
   entfällt, richtig→falsch: Wiederholung wird wie sonst nachgeholt.
+  Kein langer Wisch zur aktuellen Karte (vorerst).
+- 176 Vokabel während der Abfrage herausnehmen (z. B. Straßenname – fällt beim Abfragen auf): Lang-Druck auf die Karte →
+  „🚫 Nicht mehr abfragen“. Dazu: herausgenommene Vokabeln anzeigen und wieder hineinnehmen können.
+  Offene Fragen: (a) gilt überall (alle Sessions, Fortschritt) – Vokabel bleibt in der Liste; (b) Anzeige/Zurückholen
+  in der Listenansicht; (c) nicht im Lernstand mitzählen; (d) ohne Rückfrage.
