@@ -2515,7 +2515,10 @@ Gesammelt (umgesetzt in 150–156, Commit ab36c0d):
   Score max. 6). Nicht gewusst → −1 (ggf. Stufe zurück, unter 3 nicht mehr gelernt). Stufen an den Vokabeln kennzeichnen.
   Vorschläge/Fragen: Abstände (z. B. 3 / 10 / 30 Tage, Stufe 4 alle ~60 Tage prüfen); „fällig“ zählt auch in normalen Sessions (gewusst + fällig → +1);
   Anzeige je Vokabel (z. B. ●●○○); Statistik/Kacheln mit Stufen; eigener Zugang „🔁 Fällig (n)“; bestehende Scores > 3 → 3 (Stufe 1);
-  Diktat/Akzente gleich; Schwelle fest 3 oder 1–3 wählbar?
+  Diktat/Akzente gleich. Entschieden: (a) Gelernt-Schwelle FEST 3 (keine Auswahl mehr); (b) Abstände je Stufe in den Einstellungen (Lernen) einstellbar,
+  Vorgabe 3 / 10 / 30 Tage (+ Prüfung Stufe 4 ~60 T); (c) vorerst max. Stufe 4 (Score 6), später evtl. erweiterbar.
+  Zusätzlich: wird eine gelernte Vokabel außerhalb der Fälligkeit (freies Wiederholen) gewusst, ändert das den Score nicht – aber ein Zähler
+  „zusätzlich gewusst“ wird je Vokabel (und Abfrageart) gespeichert (später evtl. für Boni/Belohnungen, vgl. 138).
 
 Sitzung 150–156 (Commit ab36c0d):
 - 150 Raster: geladenes Multiquiz (nichts angetippt) → multiTeile aus multiVonSlot(slotRef): kachel-gewaehlt + Nummer (data-teil-nr, ohne data-multi-nr).
