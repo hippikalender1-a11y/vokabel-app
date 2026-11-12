@@ -2446,3 +2446,5 @@ Gesammelt (noch NICHT umsetzen):
   angelegt; Duplizieren bleibt im Ordner (113, erledigt).
 - 143 Info-Fläche: „Vokabeln ansehen“ kein Knopf mehr, sondern eine Textzeile an derselben Stelle („📋 Vokabeln (25)“) mit kleinem Pfeil rechtsbündig
   (beide Pfeile – Info einklappen und Vokabeln aufklappen – sehen gleich aus und funktionieren gleich) – ▼ aufklappen, ▲ zuklappen; ganze Zeile antippbar.
+- 144 Info-Fläche (Sessions und Listen, ein- und ausgeklappt): Hintergrund helles, dezentes Grün, abgeleitet aus der Farbe „Auswahl / Bestätigen“
+  (z. B. color-mix ~12 % in die Kartenfarbe) – folgt automatisch, wenn die Auswahl-Farbe geändert wird.
