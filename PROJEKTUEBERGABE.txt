@@ -2619,4 +2619,7 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   „Bewertung nachträglich ändern?“; Knopf, um das Quiz danach an der aktuellen Stelle fortzusetzen.
   Technik-Idee: je beantworteter Karte Schnappschuss des Fortschritts vor der Antwort (+ Ergebnis, Eingabe) merken;
   Ändern = Schnappschuss zurück und mit neuem Ergebnis neu rechnen (Score, Stufe, Streak, falsch-Liste, Session, Runde).
-  Offene Fragen: (a) wie weit zurück, (b) Bedienung Zurück, (c) Umwerten nur richtig↔falsch, (d) Zuordnung, (e) Wiederholungskarten.
+  Entschieden: (a) ganze laufende Runde; (b) KEIN Knopf – nur wischen: nach rechts = zurück, nach links = vorwärts
+  (Karte für Karte bis zur aktuellen; Tab-Wischen gilt nur in der Übersicht, im Quiz frei); (c) nur richtig↔falsch
+  (Tastatur: Tippfehler als richtig werten); (d) Zuordnung ausgenommen; (e) falsch→richtig: geplante Wiederholung
+  entfällt, richtig→falsch: Wiederholung wird wie sonst nachgeholt.
