@@ -2445,4 +2445,4 @@ Gesammelt (noch NICHT umsetzen):
   und für „Alle Listen“ / „＋ Neue Liste“. Neue Session (auch „In Sessions aufteilen“) im geöffneten Ordner wird in diesem Ordner
   angelegt; Duplizieren bleibt im Ordner (113, erledigt).
 - 143 Info-Fläche: „Vokabeln ansehen“ kein Knopf mehr, sondern eine Textzeile an derselben Stelle („📋 Vokabeln (25)“) mit kleinem Pfeil rechtsbündig
-  (gleicher Stil wie der Pfeil oben zum Einklappen der Info) – ▼ aufklappen, ▲ zuklappen; ganze Zeile antippbar.
+  (beide Pfeile – Info einklappen und Vokabeln aufklappen – sehen gleich aus und funktionieren gleich) – ▼ aufklappen, ▲ zuklappen; ganze Zeile antippbar.
