@@ -2475,3 +2475,5 @@ Gesammelt (noch NICHT umsetzen):
   (antippen = nur diese, lang drücken = dazu/weg).
 - 148 Info-Fläche während der Mehrfach-Auswahl: zeigt die zusammengefasste Info der ausgewählten Sessions/Listen (Anzahl Vokabeln, gelernt, Gruppen,
   Fortschritt/Ø, zuletzt abgefragt, Listen und Bereiche); ein-/ausklappbar wie sonst; „📋 Vokabeln ansehen“ zeigt die Vokabeln der ganzen Auswahl.
+- 149 Geladene Session nicht mehr eigens markieren (dunkle Füllung .aktiv-kachel entfällt – was im Kopf steht, ist ausgewählt). Stattdessen bekommen
+  vollständig gelernte Kacheln (100 %) die dunkle Füllung (Hauptfarbe, ✓). Ausgewählt + gelernt: Füllung bleibt, nur der grüne Ring (wie 146).
