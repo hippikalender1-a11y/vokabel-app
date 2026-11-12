@@ -2448,3 +2448,7 @@ Gesammelt (noch NICHT umsetzen):
   (beide Pfeile – Info einklappen und Vokabeln aufklappen – sehen gleich aus und funktionieren gleich) – ▼ aufklappen, ▲ zuklappen; ganze Zeile antippbar.
 - 144 Info-Fläche (Sessions und Listen, ein- und ausgeklappt): Hintergrund helles, dezentes Grün, abgeleitet aus der Farbe „Auswahl / Bestätigen“
   (z. B. color-mix ~12 % in die Kartenfarbe) – folgt automatisch, wenn die Auswahl-Farbe geändert wird.
+- 145 Fehler: grüner Auswahl-Rahmen der Kacheln am linken/rechten Rand abgeschnitten (outline außerhalb, Container overflow:hidden) – Rahmen so zeichnen,
+  dass er ganz sichtbar ist (Platz am Rand bzw. Rahmen nach innen).
+- 146 Angetippte (ausgewählte) Session-/Listen-Kachel: vollflächig in der Auswahl-Farbe (Schrift passend), dazu schmaler weißer Spalt und grüner Ring außen.
+  Die geladene Session bleibt wie bisher in der Hauptfarbe gefüllt (gefällt dem Nutzer). Ist die geladene zugleich angetippt → grün.
