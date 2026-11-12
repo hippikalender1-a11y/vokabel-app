@@ -2450,5 +2450,6 @@ Gesammelt (noch NICHT umsetzen):
   (z. B. color-mix ~12 % in die Kartenfarbe) – folgt automatisch, wenn die Auswahl-Farbe geändert wird.
 - 145 Fehler: grüner Auswahl-Rahmen der Kacheln am linken/rechten Rand abgeschnitten (outline außerhalb, Container overflow:hidden) – Rahmen so zeichnen,
   dass er ganz sichtbar ist (Platz am Rand bzw. Rahmen nach innen).
-- 146 Angetippte (ausgewählte) Session-/Listen-Kachel: vollflächig in der Auswahl-Farbe (Schrift passend), dazu schmaler weißer Spalt und grüner Ring außen.
-  Die geladene Session bleibt wie bisher in der Hauptfarbe gefüllt (gefällt dem Nutzer). Ist die geladene zugleich angetippt → grün.
+- 146 Ausgewählte Kachel (die oben im Kopf steht): immer der grüne Ring (dunkles Auswahl-Grün, schmaler weißer Spalt). Fläche:
+  geladene Session behält ihre Füllung (Hauptfarbe) – nur Ring; jede andere ausgewählte Kachel: beim Antippen kurz dunkelgrün blinken (wie jetzt),
+  danach Fläche HELLGRÜN (helle Auswahl-Farbe wie 144) + dunkler Ring. Falls hellgrün nicht gut aussieht: dunkelgrün versuchen. Gilt auch für Listen.
