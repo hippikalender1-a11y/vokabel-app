@@ -2506,3 +2506,7 @@ Gesammelt (noch NICHT umsetzen):
   Allgemein: Info-Fläche bei jeder Auswahl gleich hoch (auch ohne Gruppen-Text, ohne Vokabeln, Mehrfach-Auswahl).
 - 155 Info-Fläche: Antippen irgendwo auf der Fläche klappt sie ein bzw. aus (wie die Vokabeln-Zeile, ganze Fläche statt nur Pfeil) – ausgenommen die
   Zeile „📋 Vokabeln ansehen“ (eigenes Auf-/Zuklappen). Gilt für Sessions und Listen.
+- 156 Einstellungen › Listen: Kacheln scheinen zwischen grüner Kopfzeile und Info-Fläche durch (Lücke im feststehenden Bereich, durchsichtig).
+  Vorschlag: feststehender Block wie bei den Sessions – Kopfzeile und Info lückenlos aneinander, durchgehend deckender Hintergrund, Schatten unten;
+  alles darunter verschwindet vollständig dahinter. Info-Zeilen einzeilig (Gruppen kurz, z. B. „112 ✓ · 98 … · 2850 nie · 11 −“, sonst „…“), damit die
+  Höhe gleich bleibt (vgl. 154).
