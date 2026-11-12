@@ -2651,3 +2651,4 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   Offene Fragen: (a) auch heute falsch beantwortete sperren? (Wiederholung innerhalb derselben Runde bleibt);
   (b) Tageswechsel Mitternacht; (c) Schalter nicht gespeichert (andere Session/Neustart → wieder aus);
   (d) je Abfrageart eigener Stand (Ü/D/A), Quiz aus der Statistik ausgenommen; (e) Pakete: alles heute abgefragt → Start 0.
+  Entschieden: (a) ja, alle heute abgefragten gesperrt (Wiederholung in derselben Runde bleibt); (b) Mitternacht; (d) ok; (e) ja. (c) nachgefragt.
