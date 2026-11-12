@@ -2497,3 +2497,5 @@ Gesammelt (noch NICHT umsetzen):
 - 151 Vokabel-Auswahl (Liste mit Häkchen, Von–Bis): Knopf „Sprung zur Auswahl“ in der Kopfzeile – springt zur ersten Vokabel des ersten zusammenhängenden
   gewählten Stücks; erneut drücken → Anfang des nächsten Stücks (nach einer Lücke), am Ende wieder zum ersten. Beschriftung z. B. „⇣ 1/3“ (Stück von Anzahl);
   nur sichtbar, wenn etwas gewählt ist. Gleiches in der Statistik-Einzelauswahl.
+- 152 Wischen zu den Einstellungen ruckelt, die Titelzeile verschiebt sich mal mehr, mal weniger (Gleit-Animation mit transform auf den Inhalten,
+  feststehende Köpfe springen) → Gleiten entfernen, Tab wechselt sofort (Seite oben, ohne Animation).
