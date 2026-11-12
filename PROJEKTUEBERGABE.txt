@@ -2646,3 +2646,8 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   zum ersten Anschauen ohne Minus); (b) „Lösung anzeigen“ = nicht gewusst (zählt wie falsch, gemäß Einstellung
   „Lösung anzeigen zieht 1 Punkt ab“); (c) falsch bei positivem Score: weiter nur −1 (keine Sprünge auf 0/−1);
   Altlasten (Streak-Sprung, −100, Clamp ±10, Streak-Sortierung, Streak-Hilfetexte) entfernen.
+- 180 Vokabeln möglichst nur einmal am Tag abfragen: heute schon abgefragte kommen im Normalfall nicht in die Abfrage;
+  neben „Gelernte“ ein Knopf „Heute abgefragte“ (Anzahl, antippen = mit einschließen) zum bewussten Umgehen.
+  Offene Fragen: (a) auch heute falsch beantwortete sperren? (Wiederholung innerhalb derselben Runde bleibt);
+  (b) Tageswechsel Mitternacht; (c) Schalter nicht gespeichert (andere Session/Neustart → wieder aus);
+  (d) je Abfrageart eigener Stand (Ü/D/A), Quiz aus der Statistik ausgenommen; (e) Pakete: alles heute abgefragt → Start 0.
