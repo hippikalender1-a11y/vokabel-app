@@ -2588,10 +2588,13 @@ Gesammelt nach Test von 157 (noch NICHT umsetzen):
 Gesammelt nach Test von 158–167 (noch NICHT umsetzen):
 - 168 Farben nach Sprachen: Farbe soll schon wechseln, sobald eine Session/Liste dieser Sprache in der Auswahl gewählt ist
   (bisher nur in der Abfrage bzw. über den Sprachfilter). Neue Einstellung: App behält eigene Farbe, Wechsel erst im Quiz.
+  Entschieden: mehrere Sprachen gewählt → normale App-Farbe; der Sprachfilter färbt weiterhin ein (auch bei „erst im Quiz“).
 - 169 Fortschrittsbalken im Kopf auch bei GEÖFFNETER Session-Auswahl, genauso wie zugeklappt (nimmt 164 „offen ohne Balken“ zurück).
 - 170 Langdruck auf Ordner/„Alle Sessions“ ohne fällige Vokabeln: inaktiver Knopf als Hinweis (z. B. „🔁 Keine fälligen“),
   nicht ausblenden – man ist gewohnt, dort nachzusehen.
 - 171 FEHLER: Langdruck auf eine Kachel – Menü schließt beim Loslassen des Fingers wieder. Auf Ordnern korrekt.
 - 172 Neue Einstellung: wie häufig fällige (zu wiederholende) Vokabeln zwischen die neuen eingestreut werden.
+  Entschieden: als Wahrscheinlichkeit – je Karte wird mit p % zufällig eine fällige gezogen (sonst eine neue);
+  sind die neuen aufgebraucht, folgen die restlichen fälligen.
 - 173 Kreise und Rauten nicht gleichzeitig: ab Stufe 2 ersetzen die Rauten die Kreise.
 - 174 Beim Wechsel in den Einstellungen-Tab sind alle Bereiche zugeklappt.
