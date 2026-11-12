@@ -2501,3 +2501,6 @@ Gesammelt (noch NICHT umsetzen):
   feststehende Köpfe springen) → Gleiten entfernen, Tab wechselt sofort (Seite oben, ohne Animation).
 - 153 Mehrfach-Auswahl: wird per Lang-Druck die letzte noch gewählte Session (Liste) herausgenommen, springt die Auswahl bisher auf die geladene
   Session. Stattdessen: Mehrfach-Auswahl endet, die zuletzt gedrückte Kachel bleibt als Einzelauswahl stehen (Kopf „‹Name› laden“ bzw. „öffnen“).
+- 154 Info-Fläche: Zeile „▶ Runde läuft …“ erscheint nur bei laufender Session → Info wird höher, die Liste springt. Höhe immer gleich halten:
+  Vorschlag – Runde in die vorhandene Zeile „25 Vokabeln“ links aufnehmen („25 Vokabeln · ▶ 5/25“); sonst Platz für die Zeile immer reservieren.
+  Allgemein: Info-Fläche bei jeder Auswahl gleich hoch (auch ohne Gruppen-Text, ohne Vokabeln, Mehrfach-Auswahl).
