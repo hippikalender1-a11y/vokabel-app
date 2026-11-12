@@ -2504,3 +2504,5 @@ Gesammelt (noch NICHT umsetzen):
 - 154 Info-Fläche: Zeile „▶ Runde läuft …“ erscheint nur bei laufender Session → Info wird höher, die Liste springt. Höhe immer gleich halten:
   Vorschlag – Runde in die vorhandene Zeile „25 Vokabeln“ links aufnehmen („25 Vokabeln · ▶ 5/25“); sonst Platz für die Zeile immer reservieren.
   Allgemein: Info-Fläche bei jeder Auswahl gleich hoch (auch ohne Gruppen-Text, ohne Vokabeln, Mehrfach-Auswahl).
+- 155 Info-Fläche: Antippen irgendwo auf der Fläche klappt sie ein bzw. aus (wie die Vokabeln-Zeile, ganze Fläche statt nur Pfeil) – ausgenommen die
+  Zeile „📋 Vokabeln ansehen“ (eigenes Auf-/Zuklappen). Gilt für Sessions und Listen.
