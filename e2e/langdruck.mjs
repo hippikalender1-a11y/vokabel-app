@@ -51,18 +51,16 @@ await page.touchscreen.touchStart(p.x, p.y);
 await sleep(1000);
 await page.touchscreen.touchEnd();
 await sleep(500);
-const blase = await page.evaluate(() => document.querySelector('[role="status"]')?.innerText.split("\n")[0]);
-const getrennt = await page.evaluate(() => { const m = document.querySelector("[data-info-menue]"); const b = document.querySelector('[role="status"]'); return !!m && !!b && !b.contains(m); });
-console.log("     Erklärung:", blase);
-ok(blase === "Unregelmäßige Verben Kapitel 3 – Wiederholung", "Lang-Druck zeigt den vollen Namen");
-ok(getrennt, "Menü-Knöpfe schweben getrennt von der Erklärung");
-// Auswahl-Tafel: Tipp daneben bewirkt nichts, Tipp auf die Tafel schließt
+const blase = await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText.trim());
+console.log("     Info:", blase);
+ok(blase === "Unregelmäßige Verben Kapitel 3 – Wiederholung", "Lang-Druck: ausgewählt, die Info oben zeigt den vollen Namen");
+ok(await page.$("[data-info-menue]") && !(await page.$("[data-info-blase]")), "Menü-Knöpfe unten, ohne schwarze Box");
+// Auswahl-Tafel: Tipp daneben bewirkt nichts, „✕ Auswahl beenden“ schließt
 { const k = await page.evaluate(() => { const r = document.querySelector("[data-slot-info-name]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
   await page.touchscreen.tap(k.x, k.y); await sleep(300); }   // eindeutig neben den Kacheln (Name in der Info-Fläche)
-ok(await page.$('[role="status"]') && await page.$("[data-info-menue]"), "Tipp daneben: Auswahl-Tafel bleibt offen");
-const tb = await page.evaluate(() => { const r = document.querySelector("[data-info-blase]").getBoundingClientRect(); return { x: r.x + 20, y: r.y + 10 }; });
-await page.touchscreen.tap(tb.x, tb.y); await sleep(300);
-ok(!(await page.$('[role="status"]')) && !(await page.$("[data-info-menue]")), "Tipp auf die Tafel schließt Erklärung und Menü");
+ok(await page.$("[data-info-menue]"), "Tipp daneben: Auswahl-Tafel bleibt offen");
+await page.evaluate(() => document.querySelector('[data-info-aktion="✕ Auswahl beenden"]').click()); await sleep(300);
+ok(!(await page.$("[data-info-menue]")), "„✕ Auswahl beenden“ schließt das Menü");
 ok(Object.keys(await plaetze()).length === 2 && !(await page.evaluate(() => document.body.innerText.includes("Jetzt den Zielplatz"))), "Nichts geladen oder verschoben");
 
 // 2) Kurz halten (angehoben) + Ziehen auf freien Platz 2|1 → Verschieben-Modus, Eintrag verschoben

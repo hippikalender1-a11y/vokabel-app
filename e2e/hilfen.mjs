@@ -111,18 +111,20 @@ export async function artenMehrfach(page, knopf) {
   await page.evaluate(s => { const el = document.querySelector(`[data-modus-knopf="${s}"]`); const r = el.getBoundingClientRect();
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }, knopf);
   await new Promise(r => setTimeout(r, 250));
+  await page.evaluate(() => document.querySelector("[data-info-blase]")?.click()); await new Promise(r => setTimeout(r, 150));   // Erklärung wieder zu
 }
-// Rolle „Antwort“ dazunehmen (Spalte nach Namen): jede Spalte einzeln an/aus – antippen, falls noch keine Antwort
+// Rolle „Antwort“ dazunehmen (Spalte nach Namen): lang drücken nimmt sie als weitere Antwort dazu (antippen hieße: einzige Antwort)
 export async function antwortDazu(page, name) {
   const ok = await page.evaluate(n => {
     const z = [...document.querySelectorAll("div")].find(d => d.style.padding === "10px 16px" && d.textContent.includes(n) && d.querySelector(".checkbox"));
     const b = z?.querySelector("[data-rolle-antwort]");
     if (!b) return false;
-    if (!b.classList.contains("antwort")) b.click();
+    if (!b.classList.contains("antwort")) { const r = b.getBoundingClientRect(); b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }
     return true;
   }, name);
   if (!ok) throw new Error(`Antwort-Knopf fehlt: ${name}`);
   await new Promise(r => setTimeout(r, 250));
+  await page.evaluate(() => document.querySelector("[data-info-blase]")?.click()); await new Promise(r => setTimeout(r, 150));
 }
 // Gespeicherte Session laden: Quiz-Tab, Session-Kopf auf, Kachel/Chip antippen, ggf. mit dem grünen Kopf-Knopf bestätigen
 export async function sessionLaden(page, name) {

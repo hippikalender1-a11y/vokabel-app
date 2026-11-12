@@ -2327,7 +2327,8 @@ export default function VokabelApp() {
   const [multiAuswahl, setMultiAuswahl] = useState(null);
   // lang drücken in der Mehrfach-Auswahl beendet sie: die Auswahl bleibt (grüner Kopf bestätigt, Kontextmenü offen), das nächste Antippen wählt wieder einzeln
   const [wahlBeendet, setWahlBeendet] = useState({ slot: false, liste: false });
-  const wahlBeendenRef = useRef(null);   // Multiquiz: gewählte Kacheln (Reihenfolge = Nummern), null = aus
+  const wahlBeendenRef = useRef(null);
+  const wahlUmschaltenRef = useRef(null);   // Multiquiz: gewählte Kacheln (Reihenfolge = Nummern), null = aus
   const [multiStart, setMultiStart] = useState(null);
   const slotZuTimerRef = useRef(null);   // Auswahl klappt nach dem Laden kurz verzögert zu (neue Kachel sichtbar markiert)       // Verlauf-Id des eben gebildeten Multiquiz – startet nach dem Laden
   const [abfrageZielModus, setAbfrageZielModus] = useState(STANDARD_ABFRAGE_ZIEL);
@@ -2362,7 +2363,8 @@ export default function VokabelApp() {
   const [listeVorschau, setListeVorschau] = useState(null);   // Einstellungen › Listen: angetippte Liste (Info oben, öffnen über den grünen Knopf)
   const [auswahlLoeschen, setAuswahlLoeschen] = useState(null);     // { art: "slot" | "liste", ids } wartet auf Bestätigung
   const rasterAuswahlRef = useRef({ slot: [], liste: [] });          // für die Zieh-Logik (Effekte ohne Abhängigkeiten)
-  rasterAuswahlRef.current = { slot: slotAuswahl, liste: listenAuswahl, slotWahl: multiAuswahl, listeWahl: listenWahl };
+  rasterAuswahlRef.current = { slot: slotAuswahl, liste: listenAuswahl, slotWahl: multiAuswahl, listeWahl: listenWahl,
+    slotEinzel: slotVorschau?.typ === "gespeichert" ? slotVorschau.id : null, listeEinzel: listeVorschau };
   const [listeMenueId, setListeMenueId] = useState(null);          // Liste aus dem Lang-Druck-Menü (Umbenennen, Duplizieren, Zurücksetzen, Löschen)
   const [zuruecksetzenArten, setZuruecksetzenArten] = useState(new Set(Object.keys(SCORE_FELD)));
   // Liste in Sessions aufteilen (Quiz-Tab): { listeId, name, groesse, von, bis, restAnhaengen }
@@ -3057,6 +3059,15 @@ export default function VokabelApp() {
   useEffect(() => { if (!listenWahl) setWahlBeendet(w => w.liste ? { ...w, liste: false } : w); else setListeVorschau(null); }, [!!listenWahl]);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setListeVorschau(null); }, [tab, einstBereich, einstUnter, ansicht, listenSortModus]);
   // für die Gesten-Effekte (ohne Abhängigkeiten): Mehrfach-Auswahl beenden und die Tafel (Kontextmenü) zeigen
+  // 147: lang drücken nimmt ein Objekt in die Auswahl auf bzw. heraus; die angetippte Einzelauswahl kommt beim ersten Mal mit hinein; leer → keine Auswahl
+  wahlUmschaltenRef.current = (art, id) => {
+    const umschalten = (a, einzel) => { const basis = a || (einzel && einzel !== id ? [einzel] : []); const n = basis.includes(id) ? basis.filter(x => x !== id) : [...basis, id]; return n.length ? n : null; };
+    auswahlTafelRef.current = art;
+    if (art === "liste") { setListenSortModus(false); setListenWahl(a => umschalten(a, listeVorschau)); }
+    else { setSlotSortModus(false); setMultiAuswahl(a => umschalten(a, slotVorschau?.typ === "gespeichert" ? slotVorschau.id : null)); }
+    leuchte(art === "liste" ? `lw:${id}` : `slot:${id}`, BLITZ_MS / 2);
+    leuchte(art === "liste" ? "wahl" : "slotkopf", BLITZ_MS / 2);   // der grüne Kopf mit der Anzahl leuchtet mit
+  };
   wahlBeendenRef.current = art => { setWahlBeendet(w => ({ ...w, [art]: true })); auswahlTafelRef.current = art; setTimeout(() => zeigeAuswahlTafel(art), 0); };
   useEffect(() => {
     if (!slotSektionAufgeklappt || (tab !== "quiz" && tab !== "statistik") || multiAuswahl || slotSortModus) return;
@@ -3102,10 +3113,10 @@ export default function VokabelApp() {
         // schon ausgewählt: angehoben lassen (Stufe 3) – ziehen verschiebt die ganze Auswahl
         if (slotZiehenRef.current && ((lassoArt === "liste" ? r.listeWahl : r.slotWahl) || []).includes(id)) { g.stufe = 3; navigator.vibrate?.(20); return; }
         g.stufe = 2; slotZiehenRef.current = null; setAngehoben(null); navigator.vibrate?.(20);
-        const ids = [...((lassoArt === "liste" ? r.listeWahl : r.slotWahl) || [])];
-        const lief = !!(lassoArt === "liste" ? r.listeWahl : r.slotWahl);   // Mehrfach-Auswahl lief schon → lang drücken beendet sie
+        const vorher = lassoArt === "liste" ? r.listeWahl : r.slotWahl, einzel = lassoArt === "liste" ? r.listeEinzel : r.slotEinzel;
+        const ids = [...(vorher || (einzel ? [einzel] : []))];   // die angetippte Einzelauswahl kommt mit
         if (!ids.includes(id)) ids.push(id);
-        lassoRef.current = { art: lassoArt, feld: el.closest("[data-lasso]") || el.parentElement, x: g.x, y: g.y, aktiv: true, ids, beenden: lief };
+        lassoRef.current = { art: lassoArt, feld: el.closest("[data-lasso]") || el.parentElement, x: g.x, y: g.y, aktiv: true, ids };
         setLasso({ art: lassoArt, ids });
       };
       g.t1 = setTimeout(g.heben, KACHEL_ANHEBEN_MS);
@@ -3129,7 +3140,7 @@ export default function VokabelApp() {
       const g = kachelGesteRef.current;
       if (!g) return;
       if (g.stufe >= 2 && e.cancelable) e.preventDefault();   // kein Klick hinterher (würde die Kachel wieder abwählen)
-      if (g.stufe === 3 && !slotZiehenRef.current?.aktiv) wahlBeendenRef.current?.(g.art === "liste" ? "liste" : "slot");   // ausgewählte Kachel lang gedrückt: Mehrfach-Auswahl beenden
+      if (g.stufe === 3 && !slotZiehenRef.current?.aktiv) wahlUmschaltenRef.current?.(g.art === "liste" ? "liste" : "slot", g.id);   // ausgewählte Kachel lang gedrückt: heraus   // ausgewählte Kachel lang gedrückt: Mehrfach-Auswahl beenden
       if (g.stufe !== 2 && slotZiehenRef.current && !slotZiehenRef.current.aktiv) slotZiehenRef.current = null;   // nur angehoben
       aus();
     };
@@ -3183,7 +3194,6 @@ export default function VokabelApp() {
       auswahlTafelRef.current = l.art;   // die Tafel geht mit der übernommenen Auswahl auf (Effekt)
       auswahlTafelStelle.current = { x: l.x, y: l.y };
       setze(l.art, l.ids);
-      if (l.beenden) setWahlBeendet(w => ({ ...w, [l.art]: true }));
     };
     document.addEventListener("touchstart", start, { passive: true });
     window.addEventListener("touchmove", bewegen, { passive: false });
@@ -3354,7 +3364,7 @@ export default function VokabelApp() {
     zeigeInfo(d.text, st?.x ?? null, st?.y ?? null, d.aktionen, { auswahl: auswahlTafel(art) });
   }
   function auswahlTafel(art) {
-    return { zu: behalten => { auswahlTafelRef.current = null; auswahlTafelStelle.current = null; if (!behalten) (art === "liste" ? setListenWahl : setMultiAuswahl)(null); } };
+    return { ohneText: true, zu: behalten => { auswahlTafelRef.current = null; auswahlTafelStelle.current = null; if (!behalten) (art === "liste" ? setListenWahl : setMultiAuswahl)(null); } };
   }
   function listenKopieName(name) {
     const namen = new Set(listenIndex.map(l => l.name.toLowerCase()));
@@ -4348,8 +4358,15 @@ export default function VokabelApp() {
     } else if (rolle === "antwort") {
       const ist = quizAntwortTypenGeordnet.includes(typ);
       const modusNeu = v => quizArt === "akzente" ? "akzent" : (v && v !== "akzent" ? v : STANDARD_ANTWORT_MODUS);
-      // Jede Spalte einzeln an/aus – andere Antworten bleiben unberührt; die Reihenfolge des Antippens ergibt Antwort 1, 2 … (eine bleibt)
-      if (ist) {
+      // antippen: diese Spalte wird die einzige Antwort; lang drücken (mehrfach): dazu bzw. weg – Reihenfolge ergibt Antwort 1, 2 … (eine bleibt)
+      if (!mehrfach) {
+        if (ist && quizAntwortTypenGeordnet.length === 1) return;
+        leuchte(`rolle:${typ}`, BLITZ_MS / 2);
+        if (quizFrageTyp === typ) setQuizFrageTyp("");
+        setQuizInfoTypenSession(p => p.filter(t => t !== typ));
+        setQuizAntwortTypenGeordnet([typ]);
+        if (!ist) setQuizSpalteModus(p => ({...p, [typ]: modusNeu(p[typ])}));
+      } else if (ist) {
         if (quizAntwortTypenGeordnet.length > 1) setQuizAntwortTypenGeordnet(p => p.filter(t => t !== typ));
       } else {
         leuchte(`rolle:${typ}`, BLITZ_MS / 2);
@@ -6381,28 +6398,29 @@ export default function VokabelApp() {
       </div>
     );
   }
-  function renderListeInfo(l) {
-    const liste = lsGet(SK.liste(l.id));
-    if (!liste) return null;
-    const voks = liste.vokabeln.map(v => ({ ...v, _listeId: l.id }));
+  function renderListeInfo(l, mehrere = null) {
+    const gruppeL = (mehrere || [l]).map(x => ({ x, liste: lsGet(SK.liste(x.id)) })).filter(y => y.liste);
+    if (!gruppeL.length) return null;
+    const liste = gruppeL[0].liste;
+    const voks = gruppeL.flatMap(y => y.liste.vokabeln.map(v => ({ ...v, _listeId: y.x.id })));
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
     const gruppe = v => !v.fortschritt ? "nie" : v.fortschritt.score < 0 ? "negativ" : schwelle > 0 && v.fortschritt.score >= schwelle ? "gelernt" : "arbeit";
     const anz = { gelernt: 0, arbeit: 0, nie: 0, negativ: 0 };
     voks.forEach(v => { anz[gruppe(v)]++; });
     const zuletzt = voks.flatMap(v => [v.fortschritt, v.diktatFortschritt, v.akzentFortschritt].map(f => f?.letzteAbfrage).filter(Boolean)).sort().pop() || null;
     const pct = Math.round(lernProzent(voks.map(v => v.fortschritt?.score), schwelle));
-    const spalten = TYPEN.filter(x => liste.spalten[x]?.aktiv).map(x => liste.spalten[x].name || x);
+    const spalten = mehrere ? gruppeL.map(y => y.x.name) : TYPEN.filter(x => liste.spalten[x]?.aktiv).map(x => liste.spalten[x].name || x);
     const gruppenText = [["gelernt", "gelernt"], ["arbeit", "in Arbeit"], ["nie", "nie abgefragt"], ["negativ", "negativ"]].filter(([g]) => anz[g]).map(([g, x]) => `${anz[g]} ${x}`).join(" · ");
     const zu = !!einstellungen.slotInfoZu;
     return (
-      <div className="slot-info" data-liste-info={l.id} data-slot-info-zu={zu ? "" : undefined} style={{position:"static", marginLeft:-16, marginRight:-16, boxShadow:"none"}}>
+      <div className="slot-info" data-liste-info={mehrere ? "_wahl" : l.id} data-auswahl-durchlass data-slot-info-zu={zu ? "" : undefined} style={{position:"static", marginLeft:-16, marginRight:-16, boxShadow:"none"}}>
         <div style={{display:"flex", alignItems:"center", gap:8}}>
           <div style={{flex:1, minWidth:0}}>
-            <div style={{fontWeight:800, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{sprachInfo(listeSprache(l)).flagge} {l.name}
+            <div data-slot-info-name style={{fontWeight:800, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{mehrere ? `${mehrere.length} Listen ausgewählt` : `${sprachInfo(listeSprache(l)).flagge} ${l.name}`}
               {zu && schwelle > 0 && voks.length > 0 && <span style={{fontWeight:500, color:"var(--text2)"}}> · {pct} % gelernt</span>}</div>
             {!zu && <div data-liste-info-spalten style={{fontSize:"0.8rem", color:"var(--text2)"}}>({spalten.join(" · ")})</div>}
           </div>
-          {!zu && voks.length > 0 && schwelle > 0 && <span className="mini-kreise" style={{gap:4, flexShrink:0}}>{renderMiniKreise(lernstandJeArt(voks, l.id), { groesse: 26, nurVerfuegbar: true })}</span>}
+          {!zu && voks.length > 0 && schwelle > 0 && <span className="mini-kreise" style={{gap:4, flexShrink:0}}>{renderMiniKreise(lernstandJeArt(voks, mehrere ? null : l.id), { groesse: 26, nurVerfuegbar: true })}</span>}
           <span className="slot-info-pfeil" data-slot-info-pfeil={zu ? "zu" : "auf"} onClick={() => speichereEinst({ ...einstellungen, slotInfoZu: !zu })}
             {...tt(zu ? "Info aufklappen (bleibt so)" : "Info auf eine Zeile einklappen (bleibt so)")}>{zu ? "▼" : "▲"}</span>
         </div>
@@ -6432,14 +6450,10 @@ export default function VokabelApp() {
       if (listenAuswahl.length) setzeListenPlaetze(listenAuswahl, platz);
     };
     const oeffne = l => {
-      if (listenWahl && wahlBeendet.liste) {   // Mehrfach-Auswahl beendet: Antippen wählt wieder einzeln
+      if (listenWahl) {   // Antippen wählt wieder einzeln (ersetzt die Auswahl)
         schliesseInfo(); auswahlTafelRef.current = null; setListenWahl(null);
         leuchte(`lw:${l.id}`, BLITZ_MS / 2);
         setTimeout(() => setListeVorschau(l.id), 0);
-      } else if (listenWahl) {
-        if (!listenWahl.includes(l.id)) leuchte(`lw:${l.id}`);
-        leuchte("wahl");
-        setListenWahl(a => a.includes(l.id) ? a.filter(x => x !== l.id) : [...a, l.id]);
       } else {
         leuchte(`lw:${l.id}`, BLITZ_MS / 2);
         setListeVorschau(l.id);
@@ -6453,7 +6467,7 @@ export default function VokabelApp() {
     // Auswahl-Tafel: eine Liste → ihr Menü, mehrere → Aktionen für die Auswahl
     const tafelInhalt = ids => {
       const l = ids.length === 1 && listenIndex.find(x => x.id === ids[0]);
-      if (l) return { text: l.name, aktionen: menue(l) };
+      if (l) return { text: l.name, aktionen: [...menue(l).filter(a => a.label !== "☑ Auswählen"), { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) }] };
       return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: wahlMenue(ids) } : { text: "Nichts ausgewählt – Listen antippen", aktionen: [] };
     };
     auswahlTafelDaten.current.liste = () => listenWahl && tafelInhalt(listenWahl);
@@ -6466,9 +6480,9 @@ export default function VokabelApp() {
       // Touch: Haltestufen (kurz halten + ziehen verschiebt, lang halten + fahren wählt aus)
       const tafel = tafelInhalt(listenWahl ? wahlMit(l) : [l.id]);
       const erklaerung = sortModus && !listenWahl ? tt(`${l.name} – antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen – markierte wandern zusammen`)
-        : tt(listenWahl ? `${l.name} – antippen: auswählen oder abwählen; lang drücken: Aktionen für die Auswahl (Export, Verschieben, Löschen)` : `${l.name} – antippen: auswählen und Infos zeigen; öffnen mit dem grünen Knopf oben`,
+        : tt(`${l.name} – antippen: nur diese auswählen (Infos oben, öffnen mit dem grünen Knopf); lang drücken: zur Auswahl dazu bzw. heraus (Export, Verschieben, Löschen)`,
           tafel.aktionen, { langText: tafel.text, auswahl: auswahlTafel("liste"), eigeneGeste: true,
-            beimMenue: () => { auswahlTafelRef.current = "liste"; setListenSortModus(false); if (listenWahl) setWahlBeendet(w => ({ ...w, liste: true })); setListenWahl(a => a ? (a.includes(l.id) ? a : [...a, l.id]) : [l.id]); } });
+            beimMenue: () => wahlUmschaltenRef.current("liste", l.id) });
       return (
         <div {...erklaerung} key={key} data-raster-zelle={gefiltert ? undefined : key} data-liste-id={l.id} data-auswahl-durchlass
           className={`karte-zeile${(listenAuswahl.includes(l.id) && sortModus) || listenWahl?.includes(l.id) || (lasso?.art === "liste" && lasso.ids.includes(l.id)) || (!listenWahl && listeVorschau === l.id) ? " kachel-gewaehlt" : ""}${blitzt(`lw:${l.id}`)}`}
@@ -6616,7 +6630,7 @@ export default function VokabelApp() {
               : vorschauE ? `„${vorschauName}“ laden (Listen, Vokabelauswahl, Einstellungen, Fortschritt)`
               : aendern ? "Ändern beenden – Listen und Vokabeln übernehmen"
               : geaendert ? `${name} – Vokabelauswahl geändert, noch nicht gespeichert; lang drücken: überspeichern, als neue Session speichern, verwerfen, umbenennen, duplizieren, Vokabeln ändern oder löschen`
-              : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern, umbenennen, duplizieren, Vokabeln ändern, löschen" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, aktionen, { langText: name })}>
+              : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern, umbenennen, duplizieren, Vokabeln ändern, löschen" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, (wahl ? (auswahlTafelDaten.current.slot?.()?.aktionen || null) : aktionen), { langText: name })}>
             {wahl ? <span data-wahl-anzahl={multiAuswahl.length}>{wahlText}</span> : vorschauE ? <span data-bestaetigen>{vorschauName} laden</span> : aendern ? <span data-bestaetigen>Bestätigen</span>
               : <>{name}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}</>}
           </button>
@@ -6648,7 +6662,7 @@ export default function VokabelApp() {
     const akzentMoeglich = typ.startsWith("E") && quizTabListen.some(id => AKZENTE_FUER_LISTE(id));
     const spalten = quizModus === "rotierend" ? (quizAusgewaehlt.length ? quizAusgewaehlt : [typ]) : quizAntwortTypenGeordnet.length ? quizAntwortTypenGeordnet : [typ];
     const waehle = m => {
-      if (mehrfach || m === "akzent") { umschalten(m); return; }
+      if (m === "akzent") { umschalten(m); return; }
       const ohneAkz = aktiv.filter(x => x !== "akzent");
       if (ohneAkz.length === 1 && ohneAkz[0] === m) return;
       leuchte(`art:${typ}:${m}`, BLITZ_MS / 2);
@@ -6691,9 +6705,8 @@ export default function VokabelApp() {
       return { ...p, [typ]: neu.length === 1 ? neu[0] : neu };
     });
     const knopf = ([m, label, text]) => (
-      <button key={m} {...tt(istRunde(m) || m === "akzent" ? text : `${text} – mehrere wählen: lang drücken wählt sie aus, jedes weitere Antippen nimmt eine dazu (alle Spalten), nochmal lang drücken beendet; je Frage eine davon nach der Gewichtung (Einstellungen › Lernen)`,
-          null, { beimLang: () => { if (m === "akzent") return; if (!mehrfach) { mehrfachMit(m); return; }
-            if (!aktiv.includes(m)) umschalten(m); setArtenMehrfach(null); leuchte(`art:${typ}:${m}`, BLITZ_MS / 2); } })}
+      <button key={m} {...tt(istRunde(m) || m === "akzent" ? text : `${text} – antippen: nur diese Art; lang drücken: Art dazu bzw. weg (mehrere); je Frage eine davon nach der Gewichtung (Einstellungen › Lernen)`,
+          null, { beimLang: () => { if (m === "akzent") return; umschalten(m); leuchte(`art:${typ}:${m}`, BLITZ_MS / 2); } })}
         data-modus-knopf={`${typ}:${m}`}
         className={`spalten-modus-btn${aktiv.includes(m) ? " aktiv" : ""}${blitzt(`art:${typ}:${m}`)}`} onClick={() => waehle(m)}>{label}</button>
     );
@@ -6842,7 +6855,7 @@ export default function VokabelApp() {
     // Auswahl-Tafel: eine Session → ihr Menü, mehrere → Aktionen für die Auswahl
     const tafelInhalt = ids => {
       const x = ids.length === 1 && slots.gespeichert.find(g => g.id === ids[0]);
-      if (x) return { text: x.name, aktionen: einzelMenue(x) };
+      if (x) return { text: x.name, aktionen: [...einzelMenue(x).filter(a => a.label !== "☑ Auswählen"), { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) }] };
       return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: wahlMenue(ids) } : { text: "Nichts ausgewählt – Sessions antippen", aktionen: [] };
     };
     auswahlTafelDaten.current.slot = () => multiAuswahl && tafelInhalt(multiAuswahl);
@@ -6910,24 +6923,20 @@ export default function VokabelApp() {
         ) : (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-multi-nr={multiNr || undefined} data-auswahl-durchlass
             data-kachel-geste="slot" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined}
-            className={`slot-chip belegt raster-chip${!multiAuswahl && slotRef?.typ === "gespeichert" && slotRef?.id === x.id ? " aktiv-kachel" : ""}${
+            className={`slot-chip belegt raster-chip${pct >= 100 ? " aktiv-kachel" : ""}${
               multiNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) || (!multiAuswahl && (slotVorschau ? slotVorschau.typ === "gespeichert" && slotVorschau.id === x.id : slotRef?.typ === "gespeichert" && slotRef?.id === x.id)) ? " kachel-gewaehlt" : ""}${blitzt(`slot:${x.id}`)}`}
             data-vorschau={slotVorschau?.typ === "gespeichert" && slotVorschau.id === x.id ? "" : undefined}
             style={{...chipStil('gespeichert', x.id, slotRef), position:"relative"}}
-            onClick={() => multiAuswahl && wahlBeendet.slot
+            onClick={() => multiAuswahl
               ? (schliesseInfo(), auswahlTafelRef.current = null, setMultiAuswahl(null), leuchte(`slot:${x.id}`, BLITZ_MS / 2), setSlotVorschauListe(false), setTimeout(() => setSlotVorschau({ typ: "gespeichert", id: x.id }), 0))
-              : multiAuswahl
-              ? (multiAuswahl.includes(x.id) || leuchte(`slot:${x.id}`), setMultiAuswahl(a => a.includes(x.id) ? a.filter(v => v !== x.id) : [...a, x.id]))
               : (leuchte(`slot:${x.id}`, BLITZ_MS / 2), setSlotVorschauListe(false), setSlotVorschau({ typ: "gespeichert", id: x.id }))}
             {...(() => {
               // Lang-Druck (Maus: Rechtsklick): Session kommt in die Auswahl, die Tafel bleibt unten offen (weitere antippen wählt mit aus);
               // Touch: Haltestufen (kurz halten + ziehen verschiebt, lang halten + fahren wählt aus)
               const tafel = tafelInhalt(multiAuswahl ? wahlMit(x) : [x.id]);
-              return tt(multiAuswahl
-              ? `${x.name} – antippen: auswählen oder abwählen; lang drücken: Aktionen für die Auswahl (Multiquiz, Verschieben, Löschen)`
-              : `${x.name} – antippen: auswählen und Infos zeigen; laden mit dem grünen Knopf oben`, tafel.aktionen,
+              return tt(`${x.name} – antippen: nur diese auswählen (Infos oben, laden mit dem grünen Knopf); lang drücken: zur Auswahl dazu bzw. heraus (mehrere: Multiquiz, Gruppe …)`, tafel.aktionen,
                { langText: tafel.text, auswahl: auswahlTafel("slot"),
-                 beimMenue: () => { auswahlTafelRef.current = "slot"; setSlotSortModus(false); if (multiAuswahl) setWahlBeendet(w => ({ ...w, slot: true })); setMultiAuswahl(a => a ? (a.includes(x.id) ? a : [...a, x.id]) : [x.id]); },
+                 beimMenue: () => wahlUmschaltenRef.current("slot", x.id),
                  eigeneGeste: true });
             })()}>
             {inhalt}
@@ -6972,6 +6981,9 @@ export default function VokabelApp() {
 
   // Info-Fläche unter dem Session-Kopf: immer die Session, die oben steht (angetippt, sonst die geladene bzw. die aktuelle Auswahl)
   function infoEintrag(statistik) {
+    if (multiAuswahl?.length === 1) return getSlotEintrag("gespeichert", multiAuswahl[0]);   // eine per Lang-Druck gewählt: ihre Info (voller Name)
+    if (multiAuswahl?.length) return { id: "_wahl", name: `${multiAuswahl.length} Session${multiAuswahl.length !== 1 ? "s" : ""} ausgewählt`,
+      multi: multiAuswahl.map(id => ({ id, name: getSlotEintrag("gespeichert", id)?.name || id })) };
     if (slotVorschau) return getSlotEintrag(slotVorschau.typ, slotVorschau.id);
     const slot = statistik ? statistikAktiverSlot : aktiverSlot;
     const e = slot ? getSlotEintrag(slot.typ, slot.id) : null;
@@ -7010,10 +7022,10 @@ export default function VokabelApp() {
     const zu = !!einstellungen.slotInfoZu;
     // Name wie im Kopf: gespeicherte Session → ihr Name; Multiquiz aus dem Verlauf → seine Teile; Verlauf → Datum
     const gespeichert = slots.gespeichert.some(g => g.id === eintrag.id);
-    const name = `${multi ? "🧩 " : ""}${gespeichert ? eintrag.name : multi ? multi.map(m => m.name).join(" + ") : eintrag.id === "_auswahl" ? eintrag.name : `🕘 ${eintrag.name || "Abfrage"}`}`;
+    const name = eintrag.id === "_wahl" ? eintrag.name : `${multi ? "🧩 " : ""}${gespeichert ? eintrag.name : multi ? multi.map(m => m.name).join(" + ") : eintrag.id === "_auswahl" ? eintrag.name : `🕘 ${eintrag.name || "Abfrage"}`}`;
     const listenText = teile.map(x => `${sprachInfo(listeSprache(x.idx)).flagge} ${x.liste.name} · ${x.ganz ? `alle ${x.voks.length}` : `Nr. ${nrText(x.voks.map(v => v._nr))}`}`).join(" + ");
     return (<>
-      <div className="slot-info" data-slot-info={eintrag.id} data-slot-vorschau={eintrag.id} data-slot-info-zu={zu ? "" : undefined}
+      <div className="slot-info" data-slot-info={eintrag.id} data-slot-vorschau={eintrag.id} data-slot-info-zu={zu ? "" : undefined} data-auswahl-durchlass
         style={{top: headerH + slotH, ...(statistik ? {} : {marginLeft:-16, marginRight:-16})}}>
         <div style={{display:"flex", alignItems:"center", gap:8}}>
           <div style={{flex:1, minWidth:0}}>
@@ -7047,7 +7059,7 @@ export default function VokabelApp() {
         </>)}
       </div>
       {slotVorschauListe && alle.length > 0 && (
-        <div data-vorschau-vokliste style={{padding:"4px 0 10px", ...(statistik ? {margin:"0 16px"} : {})}}>
+        <div data-vorschau-vokliste data-auswahl-durchlass style={{padding:"4px 0 10px", ...(statistik ? {margin:"0 16px"} : {})}}>
           {teile.map(x => {
             const fremd = TYPEN.find(y => y.startsWith("E") && x.liste.spalten[y]?.aktiv), deutsch = TYPEN.find(y => y.startsWith("D") && x.liste.spalten[y]?.aktiv);
             const zeilen = [];
@@ -9446,11 +9458,9 @@ export default function VokabelApp() {
     </button>
   );
   const chipStil = (typ, id, slotRef = aktiverSlot) => {
-    const istAktiv = slotRef?.typ === typ && slotRef?.id === id;
+    // die geladene Session wird nicht eigens markiert (was oben im Kopf steht, ist ausgewählt); getönt = dort läuft eine angefangene Runde
     const sf = Object.keys(slotSFAlle(getSlotEintrag(typ, id))).length > 0;
-    return istAktiv
-      ? {background:"var(--haupt-flaeche)", borderColor:"var(--haupt)", color:"var(--haupt)"}
-      : sf ? {background:"var(--haupt-flaeche)", borderColor:"var(--haupt-zart)", color:"var(--haupt)"} : {};
+    return sf ? {background:"var(--haupt-flaeche)", borderColor:"var(--haupt-zart)", color:"var(--haupt)"} : {};
   };
   // Fortschritt der Abfrageart: beim aktiven Eintrag die gerade eingestellte, sonst die gespeicherte
   const slotChipLabel = (eintrag) => {
@@ -10452,7 +10462,8 @@ export default function VokabelApp() {
                                         onClick={() => toggleSpalteRolle(typ,"frage")}>Frage</button>
                                     )}
                                     {!isFrage && !isInfo && (quizArt !== "akzente" || typ.startsWith('E')) && (
-                                      <button {...tt("Antwort an/aus – jede Spalte einzeln; die Reihenfolge des Antippens ergibt Antwort 1, 2 …")}
+                                      <button {...tt("Antwort – antippen: diese Spalte ist die einzige Antwort; lang drücken: weitere Antwort dazu bzw. weg (Reihenfolge ergibt Antwort 1, 2 …)", null,
+                                          { beimLang: () => toggleSpalteRolle(typ, "antwort", true) })}
                                         className={`spalten-rolle-btn${isAntwort?" antwort":""}${blitzt(`rolle:${typ}`)}`} data-rolle-antwort={typ}
                                         onClick={() => toggleSpalteRolle(typ,"antwort")}>
                                         {isAntwort ? `Antwort ${antwortNr+1}` : "Antwort"}
@@ -11722,7 +11733,7 @@ export default function VokabelApp() {
             {(() => {
               const vorschauL = !listenWahl && !einstUnter && listeVorschau ? listenIndex.find(x => x.id === listeVorschau) : null;
               return (
-                <div style={{position:"sticky", top: headerH, zIndex: 8, marginBottom: vorschauL ? 12 : 0}} data-listen-kopf-bereich>
+                <div style={{position:"sticky", top: headerH, zIndex: 8, marginBottom: vorschauL || (listenWahl?.length && !einstUnter) ? 12 : 0}} data-listen-kopf-bereich>
                   {listenWahl && !einstUnter ? listenWahlKopf() : vorschauL ? listeOeffnenKopf(vorschauL) : einstZeile([
                     { k: "sicherung", label: "Sicherung", text: letzteSicherung ? `💾 ${formatTag(letzteSicherung).slice(0, 6)}` : "💾 nie",
                       hilfe: `Alles sichern, wiederherstellen, Speicher schützen · ${letzteSicherung ? `zuletzt am ${formatTag(letzteSicherung)}` : "noch nie gesichert"}` },
@@ -11730,6 +11741,7 @@ export default function VokabelApp() {
                       hilfe: "In der Session-Auswahl an eine Sicherung erinnern, wenn die letzte älter ist als …" },
                   ])}
                   {vorschauL && renderListeInfo(vorschauL)}
+                  {listenWahl?.length > 0 && !einstUnter && (() => { const ls = listenWahl.map(id => listenIndex.find(x => x.id === id)).filter(Boolean); return ls.length ? renderListeInfo(ls[0], ls.length > 1 ? ls : null) : null; })()}
                 </div>
               );
             })()}

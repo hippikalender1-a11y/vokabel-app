@@ -39,17 +39,18 @@ await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c =>
 await page.click("[data-abfragemodus]"); await sleep(300);
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf]")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
 ok(knoepfe === "karte,mc,tippen,akzent,puzzle,luecke,artikel,satzfinden,satzbauen,lueckensatz,zuordnung,memory", `Antwortarten für E1 (Fremdsprache): Grund + Akzente, Wort, Satz, Runde – ohne Hören (${knoepfe})`);
-await artenMehrfach(page, "E1:tippen");   // lang drücken › „Mehrere wählen“ nimmt Tastatur dazu
-for (const m of ["mc", "akzent"]) { await page.click(`[data-modus-knopf="E1:${m}"]`); await sleep(100); }
+await artenMehrfach(page, "E1:tippen");   // 147: lang drücken nimmt Tastatur dazu
+await artenMehrfach(page, "E1:mc");
+await page.click('[data-modus-knopf="E1:akzent"]'); await sleep(100);   // Akzente: Zusatz, antippen schaltet
 const an = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf].aktiv")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
 ok(an === "karte,mc,tippen,akzent", `alle vier angehakt (${an})`);
 // nur Akzente übrig lassen geht nicht (mindestens eine andere Art bleibt)
-for (const m of ["tippen", "mc", "karte"]) { await page.click(`[data-modus-knopf="E1:${m}"]`); await sleep(100); }
+for (const m of ["tippen", "mc", "karte"]) await artenMehrfach(page, `E1:${m}`);   // lang drücken nimmt weg
 const rest = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf].aktiv")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
 ok(rest === "karte,akzent", `letzte Art außer Akzente lässt sich nicht abwählen (${rest})`);
-for (const m of ["tippen", "mc"]) { await page.click(`[data-modus-knopf="E1:${m}"]`); await sleep(100); }
+for (const m of ["tippen", "mc"]) await artenMehrfach(page, `E1:${m}`);
 const offenKnopf = await page.evaluate(() => document.querySelector("[data-abfragemodus]").innerText.trim());
-ok(/^4 Arten\s+✓ Bestätigen$/.test(offenKnopf), `Mehrfach-Auswahl: „4 Arten / ✓ Bestätigen“ (${offenKnopf})`);
+ok(/Bestätigen/.test(offenKnopf), `offener Modus-Knopf: „Bestätigen“ (${offenKnopf})`);
 await page.click("[data-abfragemodus]"); await sleep(300);
 const knopf = await page.evaluate(() => { const b = document.querySelector("[data-abfragemodus]"); return `${b.querySelector(".zeile1")?.textContent}|${b.querySelector(".zeile2")?.textContent}`; });
 await page.click("[data-abfragemodus]"); await sleep(300);

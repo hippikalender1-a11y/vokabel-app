@@ -99,7 +99,7 @@ export default function InfoTafel() {
     if (!warUntenRef.current) {
       warUntenRef.current = true;
       const frei = window.innerHeight - el.offsetHeight - 24;   // Unterkante des sichtbaren Bereichs über der Tafel
-      if (info.y != null && info.y > frei - 40) window.scrollBy({ top: info.y - frei + 60, behavior: "smooth" });
+      if (info.y != null && info.y > frei - 70) window.scrollBy({ top: info.y - frei + 90, behavior: "smooth" });   // die gedrückte Kachel (≈ 60 px hoch) ganz über die Tafel
     }
     const obs = new ResizeObserver(anpassen);
     obs.observe(el);

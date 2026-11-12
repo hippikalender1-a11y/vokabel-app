@@ -27,6 +27,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const langDruckListe = async id => { await page.evaluate(id => { const el = document.querySelector(`[data-liste-id="${id}"]`); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, id); await sleep(250); };
 const menueAktion = async p => { await page.evaluate(p => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion.startsWith(p)).click(), p); await sleep(300); };
+const kopfMenue = async () => { await page.evaluate(() => { const el = document.querySelector("[data-wahl-fertig]"); const r = el.getBoundingClientRect();
+  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(250); };
 const menueLabels = () => page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion).join("|"));
 const clickText = async (sel, text, exact = false) => {
   const done = await page.evaluate((sel, text, exact) => {
@@ -80,11 +82,11 @@ await zuListen(page);
 
 // ── Export 1: alle drei als TXT (Lang-Druck → Auswählen, antippen, Lang-Druck → TXT) ──
 ok(!(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Exportieren"))), "kein eigener „Exportieren“-Knopf mehr");
-await langDruckListe("l_en"); await menueAktion("☑ Auswählen");
-for (const id of ["l_fr", "l_es"]) { await page.click(`[data-liste-id="${id}"]`); await sleep(200); }
+await langDruckListe("l_en");
+for (const id of ["l_fr", "l_es"]) await langDruckListe(id);   // 147: lang drücken nimmt dazu
 ok(await page.evaluate(() => document.querySelector("[data-wahl-anzahl]")?.dataset.wahlAnzahl) === "3", "drei Listen ausgewählt");
 let vorher = fs.readdirSync(DL);
-await langDruckListe("l_es");
+await kopfMenue();   // Menü der Auswahl: lang drücken auf den grünen Kopf
 ok(await menueLabels() === "📤 Exportieren (3)|⇄ Verschieben|🗑 Löschen (3)|✕ Auswahl beenden", `Lang-Druck in der Auswahl: Exportieren, Verschieben, Löschen (${await menueLabels()})`);
 await menueAktion("📤 Exportieren"); await page.click('[data-export-art="txt"]'); await sleep(300);
 ok(await page.evaluate(() => document.querySelector("[data-datei-export] [data-export-name]")?.value) === "3 Listen - TXT", "TXT: Fenster mit Dateiname, Vorschlag „3 Listen - TXT“");
@@ -98,7 +100,7 @@ ok(txtInhalt.includes("# Unité 1 {fr}") && txtInhalt.includes("# Unidad 1 {es}"
 // ── Export 2: alle drei als JSON ──
 vorher = fs.readdirSync(DL);
 ok(await page.evaluate(() => document.querySelector("[data-wahl-anzahl]")?.dataset.wahlAnzahl) === "3", "Auswahl bleibt nach dem Export");
-await langDruckListe("l_en"); await menueAktion("📤 Exportieren"); await page.click('[data-export-art="json"]'); await sleep(300);
+await kopfMenue(); await menueAktion("📤 Exportieren"); await page.click('[data-export-art="json"]'); await sleep(300);
 await clickText(".modal button", "Exportieren", true);
 const jsonAlle = await warteAufDatei(" - JSON.txt", vorher);
 ok(!!jsonAlle && path.basename(jsonAlle) === "3 Listen - JSON.txt", `JSON (alle) heruntergeladen: ${jsonAlle && path.basename(jsonAlle)}`);
@@ -107,7 +109,7 @@ ok(jsonDaten.map(l => l.sprache).join(",") === "en,fr,es", `JSON enthält Sprach
 
 // ── Export 2b: JSON mit eigenem Namen (unerlaubte Zeichen werden zu „-“) ──
 vorher = fs.readdirSync(DL);
-await langDruckListe("l_en"); await menueAktion("📤 Exportieren"); await page.click('[data-export-art="json"]'); await sleep(300);
+await kopfMenue(); await menueAktion("📤 Exportieren"); await page.click('[data-export-art="json"]'); await sleep(300);
 ok(await page.evaluate(() => document.querySelector(".modal [data-export-name]")?.value) === "3 Listen - JSON", "JSON: Dateiname mit Vorschlag „3 Listen - JSON“");
 await page.click(".modal [data-export-name]", { clickCount: 3 }); await page.keyboard.press("Backspace");
 await page.type(".modal [data-export-name]", "Französisch Klasse 7: Teil/1");

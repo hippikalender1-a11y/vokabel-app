@@ -55,9 +55,7 @@ let k = await kacheln();
 ok(k.some(t => t.startsWith("📁 Kapitel A")) && !k.includes("Teil 1") && k.includes("Teil 2"), `oberste Ebene: Gruppe statt Teil 1 (${k.join(" | ")})`);
 
 // Auswahl-Modus: Teil 2 + Teil 3 in die vorhandene Gruppe
-await langDruck(kachel("s2")); await aktion("☑ Auswählen");
-await page.click(kachel("s3")); await sleep(200);
-await langDruck(kachel("s3"));
+await langDruck(kachel("s2")); await langDruck(kachel("s3"));   // 147: lang drücken nimmt dazu
 ok((await menue()).some(m => m.startsWith("📁 In Gruppe… (2)")), "Auswahl-Menü: „📁 In Gruppe… (2)“");
 await aktion("📁 In Gruppe…");
 await page.click(`[data-in-gruppe="${ordner.id}"]`); await sleep(400);

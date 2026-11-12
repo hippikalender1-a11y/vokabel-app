@@ -112,9 +112,9 @@ const menue = async key => { await page.evaluate(k => { const el = document.quer
 const aktion = async label => { await page.evaluate(l => document.querySelector(`[data-info-aktion="${l}"]`).click(), label); await sleep(250); };
 await menue("2|0");
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.textContent.trim()));
-const blase = await page.evaluate(() => document.querySelector('[role="status"]')?.innerText || "");
+const blase = await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText || "");
 console.log("     Menü:", knoepfe.join(" | "));
-ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|☑ Auswählen|📁 In Gruppe…|📝 Listen/Vokabeln ändern|🗑 Löschen", "Lang-Druck: voller Name + Umbenennen / Duplizieren / Verschieben / Listen ändern / Löschen");
+ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Gruppe…|📝 Listen/Vokabeln ändern|🗑 Löschen|✕ Auswahl beenden", `Lang-Druck: voller Name (Info oben) + Menü (${knoepfe.join("|")})`);
 await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
 ok(!(await page.$('[role="status"]')) && /1 markiert/.test(await page.evaluate(() => document.body.innerText)),

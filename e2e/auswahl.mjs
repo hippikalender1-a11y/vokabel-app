@@ -46,28 +46,28 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 
-// ── Listen ──
+// ── Listen (147: lang drücken nimmt auf/heraus, antippen = Einzelauswahl) ──
 await zuListen(page);
 await langDruck('[data-liste-id="l_a"]');
-ok((await menue()).includes("☑ Auswählen"), "Liste: Lang-Druck bietet „☑ Auswählen“");
-await aktion("☑ Auswählen");
-ok(await anzahl() === "1" && await page.$('[data-liste-id="l_a"] [data-wahl-nr="1"]'), "Auswahl-Modus: Unité A ausgewählt (Nr. 1)");
-await klick('[data-liste-id="l_b"]');
-ok(await anzahl() === "2" && await page.evaluate(() => !document.querySelector(".liste-detail-header-name")?.textContent.includes("Unité")), "antippen wählt Unité B dazu, öffnet nichts");
-await klick('[data-liste-id="l_a"]');
-ok(await anzahl() === "1" && !(await page.$('[data-liste-id="l_a"] [data-wahl-nr]')), "nochmal antippen nimmt Unité A heraus");
+ok(await anzahl() === "1" && await page.$('[data-liste-id="l_a"] [data-wahl-nr="1"]'), "lang drücken: Unité A ausgewählt (Nr. 1)");
+ok(!(await menue()).includes("☑ Auswählen") && (await menue()).includes("✕ Auswahl beenden") && !(await page.$("[data-info-blase]")), `Menü ohne schwarze Box, ohne „☑ Auswählen“ (${await menue()})`);
+await langDruck('[data-liste-id="l_b"]');
+ok(await anzahl() === "2" && await page.evaluate(() => !document.querySelector(".liste-detail-header-name")?.textContent.includes("Unité")), "lang drücken auf Unité B: kommt dazu, öffnet nichts");
+await langDruck('[data-liste-id="l_a"]');
+ok(await anzahl() === "1" && !(await page.$('[data-liste-id="l_a"] [data-wahl-nr]')), "nochmal lang drücken nimmt Unité A heraus");
 await klick("[data-wahl-alle]");
 ok(await anzahl() === "3", "„Alle“: drei ausgewählt");
-await langDruck('[data-liste-id="l_c"]');
-ok(/3 ausgewählt/.test(await blase()), `Menü-Kopf: „3 ausgewählt: …“ (${await blase()})`);
 ok(await menue() === "📤 Exportieren (3)|⇄ Verschieben|🗑 Löschen (3)|✕ Auswahl beenden", `Aktionen für die Auswahl (${await menue()})`);
+await klick('[data-liste-id="l_c"]');
+ok(await anzahl() === null && await page.$('[data-liste-oeffnen="l_c"]'), "antippen: Einzelauswahl (nur Unité C, öffnen über den grünen Knopf)");
+await langDruck('[data-liste-id="l_a"]');
+ok(await anzahl() === "2", "lang drücken: die angetippte Liste kommt mit in die Auswahl (C + A)");
 await aktion("✕ Auswahl beenden");
 ok(await anzahl() === null, "„Auswahl beenden“");
 
-// Lang-Druck auf nicht gewählte Liste nimmt sie dazu; Verschieben mit der Auswahl
-await langDruck('[data-liste-id="l_a"]'); await aktion("☑ Auswählen");
-await langDruck('[data-liste-id="l_b"]');
-ok(await anzahl() === "2" && /2 ausgewählt/.test(await blase()), "Lang-Druck auf nicht gewählte Liste: kommt dazu");
+// Verschieben mit der Auswahl
+await langDruck('[data-liste-id="l_a"]'); await langDruck('[data-liste-id="l_b"]');
+ok(await anzahl() === "2", "zwei per lang drücken");
 await aktion("⇄ Verschieben");
 ok(await page.$("[data-listen-fertig]") && await page.evaluate(() => document.querySelectorAll("[data-auswahl-nr]").length) === 2 && await anzahl() === null,
   "„Verschieben“: Verschieben-Modus mit beiden markiert");
@@ -77,9 +77,8 @@ ok(idx.find(l => l.id === "l_a").platz.z === 4 && idx.find(l => l.id === "l_b").
 await klick("[data-listen-fertig]");
 
 // mehrere löschen
-await langDruck('[data-liste-id="l_a"]'); await aktion("☑ Auswählen");
-await klick('[data-liste-id="l_b"]');
-await langDruck('[data-liste-id="l_b"]'); await aktion("🗑 Löschen");
+await langDruck('[data-liste-id="l_a"]'); await langDruck('[data-liste-id="l_b"]');
+await aktion("🗑 Löschen");
 const namen = await page.evaluate(() => document.querySelector('[data-auswahl-loeschen="liste"] [data-auswahl-namen]')?.textContent);
 ok(namen === "„Unité A“, „Unité B“" && await page.evaluate(() => /2 Listen löschen\?/.test(document.querySelector("[data-auswahl-loeschen]").textContent) && /Vorher sichern/.test(document.querySelector("[data-auswahl-loeschen]").textContent)),
   `Rückfrage „2 Listen löschen?“ mit Namen und „Vorher sichern“ (${namen})`);
@@ -91,10 +90,9 @@ ok(idx.map(l => l.id).join(",") === "l_c" && await page.evaluate(() => !localSto
 // ── Konfigurationen (Quiz-Tab) ──
 await tab("Quiz");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-await langDruck('[data-slot-id="g1"]'); await aktion("☑ Auswählen");
-await klick('[data-slot-id="g2"]');
-await langDruck('[data-slot-id="g2"]');
+await langDruck('[data-slot-id="g1"]'); await langDruck('[data-slot-id="g2"]');
 ok(await menue() === "🧩 Multiquiz starten (2)|📁 In Gruppe… (2)|⇄ Verschieben|🗑 Löschen (2)|✕ Auswahl beenden", `Konfigurationen: Aktionen für die Auswahl (${await menue()})`);
+ok(/2 Sessions ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-info]")?.innerText || "")), "148: Info zeigt die Auswahl zusammengefasst");
 await aktion("🗑 Löschen");
 ok(await page.evaluate(() => /2 Konfigurationen löschen\?/.test(document.querySelector('[data-auswahl-loeschen="slot"]')?.textContent || "")
   && document.querySelector("[data-auswahl-namen]").textContent === "„Quiz A“, „Quiz B“"), "Rückfrage „2 Konfigurationen löschen?“ mit Namen");
@@ -105,10 +103,9 @@ ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")).g
 // Statistik-Tab: kein Multiquiz
 await tab("Statistik");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-await langDruck('[data-slot-id="g3"]'); await aktion("☑ Auswählen");
 await langDruck('[data-slot-id="g3"]');
 ok(!/Multiquiz/.test(await menue()) && /📁 In Gruppe…/.test(await menue()), `Statistik: Menü ohne Multiquiz (${await menue()})`);
-await klick("[data-info-blase]");
+await aktion("✕ Auswahl beenden");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

@@ -45,42 +45,39 @@ ok(await leuchtet('[data-modus-knopf="E1:mc"]'), "… MC leuchtet kurz");
 await klick('[data-modus-knopf="E1:mc"]');
 ok(await arten("E1") === "mc", "gewählte Art nochmal antippen: bleibt");
 
-// ── 86: Mehrfach-Auswahl ──
-// 115: lang drücken auf Tastatur, dann MC antippen → Mehrfach-Auswahl mit beiden (Info verschwindet, kein Menüpunkt nötig)
+// ── 147: lang drücken nimmt eine Art dazu bzw. weg, antippen = nur diese Art ──
 await lang('[data-modus-knopf="E1:tippen"]');
-ok(!(await page.$('[data-info-aktion="☑ Mehrere wählen"]')), "kein Menüpunkt „☑ Mehrere wählen“ mehr");
-ok(await arten("E1") === "mc,tippen" && await page.$("[data-modus-gruppen][data-mehrfach]"), `lang drücken: Tastatur sofort dazu, Mehrfach-Auswahl an (${await arten("E1")})`);
-// 116: gilt für alle Spalten
-ok(await page.evaluate(() => [...document.querySelectorAll("[data-modus-gruppen]")].every(g => g.hasAttribute("data-mehrfach"))), "Mehrfach-Auswahl gilt für alle Spalten");
-ok(/2 Arten/.test(await kopf()) && /Bestätigen/.test(await kopf()), `Zeilen-Knopf: „2 Arten / Bestätigen“ (${await kopf()})`);
-await klick('[data-modus-knopf="E1:karte"]');
-ok(await arten("E1") === "karte,mc,tippen" && /3 Arten/.test(await kopf()), `antippen nimmt dazu (${await arten("E1")})`);
-await klick('[data-modus-knopf="E1:mc"]');
-ok(await arten("E1") === "karte,tippen", `antippen nimmt weg (${await arten("E1")})`);
+ok(!(await page.$('[data-info-aktion="☑ Mehrere wählen"]')), "kein Menüpunkt „☑ Mehrere wählen“");
+ok(await arten("E1") === "mc,tippen", `lang drücken: Tastatur dazu (${await arten("E1")})`);
+await lang('[data-modus-knopf="E1:karte"]');
+ok(await arten("E1") === "karte,mc,tippen", `lang drücken: Karte dazu (${await arten("E1")})`);
+await lang('[data-modus-knopf="E1:mc"]');
+ok(await arten("E1") === "karte,tippen", `lang drücken auf gewählte Art: weg (${await arten("E1")})`);
 await klick("[data-abfragemodus]"); await sleep(200);
 ok(!(await page.$("[data-modus-gruppen]")), "Bestätigen: Bereich zu");
 await klick("[data-abfragemodus]"); await sleep(200);
-ok(!(await page.$("[data-modus-gruppen][data-mehrfach]")) && await arten("E1") === "karte,tippen", "wieder offen: Auswahl bleibt, Mehrfach-Auswahl beendet");
+ok(await arten("E1") === "karte,tippen", "wieder offen: Auswahl bleibt");
 await klick('[data-modus-knopf="E1:puzzle"]');
-ok(await arten("E1") === "puzzle", `danach normal antippen: nur die angetippte Art (${await arten("E1")})`);
+ok(await arten("E1") === "puzzle", `antippen: nur die angetippte Art (${await arten("E1")})`);
 
-// ── 87: Rolle „Antwort“ ──
-await page.evaluate(() => [...document.querySelectorAll("[data-modus-gruppen]")].length);
+// ── 147: Rolle „Antwort“ – antippen = einzige Antwort, lang drücken = dazu/weg ──
 const zeileVon = typ => `[data-rolle-antwort="${typ}"]`;
 // Spalte „Plural“ (E2) anhaken
 await page.evaluate(() => [...document.querySelectorAll("div")].find(d => d.style.cursor === "pointer" && d.textContent.includes("Plural") && d.textContent.includes("E2"))?.click()); await sleep(200);
 const rollen = () => page.evaluate(() => [...document.querySelectorAll("[data-rolle-antwort]")].map(b => `${b.dataset.rolleAntwort}=${b.textContent.trim()}`).join(" "));
 ok(/E1=Antwort 1/.test(await rollen()) && /E2=Antwort$/.test(await rollen()), `Start: E1 ist Antwort 1 (${await rollen()})`);
-// 122: jede Spalte einzeln an/aus – andere Antworten bleiben
-await klick(zeileVon("E2"));
-ok(await rollen() === "E1=Antwort 1 E2=Antwort 2", `„Antwort“ bei Plural antippen: kommt dazu, Englisch bleibt (${await rollen()})`);
+await lang(zeileVon("E2"));
+ok(await rollen() === "E1=Antwort 1 E2=Antwort 2", `lang drücken auf Plural: kommt dazu, Englisch bleibt (${await rollen()})`);
 ok(await leuchtet(zeileVon("E2")), "… leuchtet kurz");
+await lang(zeileVon("E1"));
+ok(await rollen() === "E1=Antwort E2=Antwort 1", `lang drücken auf Englisch: weg, Plural bleibt (${await rollen()})`);
+await lang(zeileVon("E1"));
+ok(await rollen() === "E1=Antwort 2 E2=Antwort 1", `wieder dazu: Reihenfolge (${await rollen()})`);
 await klick(zeileVon("E1"));
-ok(await rollen() === "E1=Antwort E2=Antwort 1", `Englisch antippen: nur Englisch weg, Plural bleibt (${await rollen()})`);
-await klick(zeileVon("E1"));
-ok(await rollen() === "E1=Antwort 2 E2=Antwort 1", `wieder dazu: Reihenfolge des Antippens (${await rollen()})`);
-await klick(zeileVon("E2")); await klick(zeileVon("E1"));
+ok(await rollen() === "E1=Antwort 1 E2=Antwort", `antippen: Englisch ist die einzige Antwort (${await rollen()})`);
+await lang(zeileVon("E1"));
 ok(await rollen() === "E1=Antwort 1 E2=Antwort", `die letzte Antwort bleibt (${await rollen()})`);
+await page.evaluate(() => document.querySelector("[data-info-blase]")?.click()); await sleep(150);
 await klick("[data-abfragemodus]"); await sleep(200);
 
 // ── 89: Einstellungen ──

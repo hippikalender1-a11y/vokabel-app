@@ -55,7 +55,7 @@ const vorbereitenMix = async () => {
   await artenMehrfach(page, "E1:zuordnung");   // Karte bleibt, Zuordnung dazu
   const modi = await page.evaluate(() => [...document.querySelectorAll("[data-modus-knopf].aktiv")].map(b => b.dataset.modusKnopf.split(":")[1]).join(","));
   ok(modi === "karte,zuordnung", `Karte + Zuordnung gleichzeitig angehakt (${modi})`);
-  ok(/2 Arten\s+✓ Bestätigen/.test(await page.evaluate(() => document.querySelector("[data-abfragemodus]").innerText)), "offener Modus-Knopf: „2 Arten / ✓ Bestätigen“");
+  ok(/Bestätigen/.test(await page.evaluate(() => document.querySelector("[data-abfragemodus]").innerText)), "offener Modus-Knopf: „Bestätigen“");
   await bereichZu(page);
   ok(/Gemischt\s*Karte – Zuordnung/.test(await page.evaluate(() => document.querySelector("[data-abfragemodus]").innerText)), "zugeklappt: „Gemischt / Karte – Zuordnung“");
   await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(700);

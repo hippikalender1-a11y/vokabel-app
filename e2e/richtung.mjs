@@ -54,7 +54,7 @@ ok(abst >= 12, `Abstand zwischen den Gruppen (${abst}px)`);
 // ── Übersetzung-Schalter erscheinen nur mit Satz finden / Lückensatz ──
 ok(!(await page.$("[data-satz-ueb-schalter]")), "ohne Satz-Arten kein Übersetzungs-Schalter");
 await artenMehrfach(page, "E1:satzfinden");
-await page.click('[data-modus-knopf="E1:lueckensatz"]'); await sleep(150);
+await artenMehrfach(page, "E1:lueckensatz");   // 147: lang drücken nimmt dazu
 const ueb = await page.evaluate(() => [...document.querySelectorAll("[data-satz-ueb]")].map(b => `${b.dataset.satzUeb}:${b.classList.contains("aktiv")}`).join(","));
 ok(ueb === "satzfinden:false,lueckensatz:true", `Übersetzung: Satz finden aus, Lückensatz an (${ueb})`);
 await page.click('[data-satz-ueb="satzfinden"]'); await sleep(150);

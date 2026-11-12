@@ -21,7 +21,9 @@ const kachel = id => `[data-slot-id="${id}"]`;
 const mitte = sel => page.evaluate(sel => { const r = document.querySelector(sel).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width }; }, sel);
 const cdp = await page.createCDPSession();
 const finger = (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
-const tafel = () => page.evaluate(() => { const t = document.querySelector("[data-auswahl-tafel]"); return t ? t.querySelector("[data-info-blase]").textContent : null; });
+// Auswahl-Tafel ohne schwarze Box (147): offen = Menü-Knöpfe da; der Name der Auswahl steht oben in der Info-Fläche
+const tafel = () => page.evaluate(() => document.querySelector("[data-auswahl-tafel]") ? (document.querySelector("[data-slot-info-name]")?.innerText.trim() || "") : null);
+const tafelZu = async () => { await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "✕ Auswahl beenden")?.click()); await sleep(300); };
 const menue = () => page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
 const gewaehlt = () => page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId).join(","));
 const kontext = async sel => {
@@ -55,7 +57,7 @@ await kontext(kachel("s4")); await sleep(600);
 const tafelLage = await page.evaluate(() => { const k = document.querySelector('[data-slot-id="s4"]').getBoundingClientRect(), t = document.querySelector("[data-auswahl-tafel]").getBoundingClientRect(); return { k: Math.round(k.bottom), t: Math.round(t.top), pad: document.body.style.paddingBottom }; });
 ok(tafelLage.k <= tafelLage.t, `unterste Kachel über die Tafel gescrollt (Kachel unten ${tafelLage.k}, Tafel oben ${tafelLage.t})`);
 ok(parseInt(tafelLage.pad) > 100, `unten Platz zum Hochscrollen (${tafelLage.pad})`);
-await page.click("[data-info-blase]"); await sleep(300);
+await tafelZu();
 ok(await page.evaluate(() => document.body.style.paddingBottom === ""), "Tafel zu: Platz unten wieder weg");
 await page.setViewport({ width: 390, height: 844, hasTouch: true, isMobile: true }); await sleep(300);
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
@@ -63,24 +65,22 @@ await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 // ── Auswahl-Tafel ──
 await kontext(kachel("s1"));
 ok((await tafel())?.startsWith("Teil 1"), `Lang-Druck: Auswahl-Tafel unten mit „Teil 1“ (${await tafel()})`);
-ok((await menue()).includes("✎ Umbenennen") && (await menue()).includes("☑ Auswählen"), "eine Session: ihr Menü (Umbenennen … Auswählen bleibt)");
+ok((await menue()).includes("✎ Umbenennen") && !(await menue()).includes("☑ Auswählen"), "eine Session: ihr Menü (ohne „☑ Auswählen“ – sie ist schon ausgewählt)");
 ok(await gewaehlt() === "s1", "Teil 1 ist ausgewählt");
-await page.click(kachel("s2")); await sleep(300);
-ok(/^2 ausgewählt/.test(await tafel() || ""), `Antippen von Teil 2: „2 ausgewählt“ (${await tafel()})`);
+await kontext(kachel("s2"));
+ok(/^2 Sessions ausgewählt/.test(await tafel() || ""), `Lang-Druck auf Teil 2: „2 Sessions ausgewählt“ (${await tafel()})`);
 ok((await menue()).some(m => m.startsWith("🧩 Multiquiz starten (2)")), "Tafel zeigt Aktionen für die Auswahl");
 ok(await gewaehlt() === "s1,s2", "Teil 1 + 2 ausgewählt");
-await page.click(kachel("s2")); await sleep(300);
-ok(await gewaehlt() === "s1" && (await tafel())?.startsWith("Teil 1"), "nochmal antippen wählt ab");
+await kontext(kachel("s2"));
+ok(await gewaehlt() === "s1" && (await tafel())?.startsWith("Teil 1"), "nochmal lang drücken nimmt heraus");
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(b => /Statistik/.test(b.textContent))?.click()); await sleep(300);
-ok(await tafel() && await page.$("[data-slot-id]"), "Tippen daneben (Statistik-Tab) bewirkt nichts, Tafel bleibt");
-await page.click("[data-info-blase]"); await sleep(300);
-ok(!(await tafel()) && await gewaehlt() === "", "Tippen auf die Tafel beendet die Auswahl");
-// „☑ Auswählen“: Tafel zu, Auswahl-Modus bleibt
-await kontext(kachel("s1"));
-await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "☑ Auswählen").click()); await sleep(300);
-ok(!(await tafel()) && await gewaehlt() === "s1" && await page.$("[data-wahl-fertig]"), "„☑ Auswählen“: Tafel zu, Auswahl-Modus bleibt (Fertig)");
-await page.click(kachel("s1")); await sleep(250);   // abwählen – „Fertig“ ohne Auswahl beendet nur (mit Auswahl würde es laden)
-await page.click("[data-wahl-fertig]"); await sleep(300);
+ok(await tafel() !== null && await page.$("[data-slot-id]"), "Tippen daneben (Statistik-Tab) bewirkt nichts, Tafel bleibt");
+await tafelZu();
+ok(!(await tafel()) && await gewaehlt() === "", "„✕ Auswahl beenden“ beendet die Auswahl");
+// antippen in der Auswahl: Einzelauswahl
+await kontext(kachel("s1")); await kontext(kachel("s2"));
+await page.click(kachel("s3")); await sleep(300);
+ok(!(await tafel()) && await gewaehlt() === "" && await page.$('[data-slot-laden="gespeichert:s3"]'), "antippen: Auswahl ersetzt durch Teil 3 (Einzelauswahl, Tafel zu)");
 
 // ── Einsammeln: Lang-Druck auf freie Stelle, dann über Kacheln ziehen ──
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
@@ -91,8 +91,8 @@ for (let i = 1; i <= 4; i++) { await finger("touchMove", frei.x - (frei.x - a1.x
 for (let i = 1; i <= 8; i++) { await finger("touchMove", a1.x, a1.y + (a3.y - a1.y) * i / 8); await sleep(40); }
 await finger("touchEnd"); await sleep(400);
 ok(await gewaehlt() === "s1,s2,s3", `Einsammeln: Teil 1–3 ausgewählt (${await gewaehlt()})`);
-ok(/^3 ausgewählt/.test(await tafel() || ""), `danach Auswahl-Tafel „3 ausgewählt“ (${await tafel()})`);
-await page.click("[data-info-blase]"); await sleep(300);
+ok(/^3 Sessions ausgewählt/.test(await tafel() || ""), `danach Auswahl-Tafel „3 ausgewählt“ (${await tafel()})`);
+await tafelZu();
 
 // ── Haltestufen auf einer Kachel ──
 // sofort wischen: nichts (Seite scrollt)
@@ -111,14 +111,14 @@ ok(!(await page.$("[data-angehoben]")), "nach 0,9 s: ausgewählt statt angehoben
 for (let i = 1; i <= 8; i++) { await finger("touchMove", h.x, h.y + (h3.y - h.y) * i / 8); await sleep(40); }
 await finger("touchEnd"); await sleep(400);
 ok(await gewaehlt() === "s1,s2,s3", `lang halten + fahren: Teil 1–3 ausgewählt (${await gewaehlt()})`);
-ok(/^3 ausgewählt/.test(await tafel() || ""), "danach Auswahl-Tafel „3 ausgewählt“");
+ok(/^3 Sessions ausgewählt/.test(await tafel() || ""), "danach Auswahl-Tafel „3 ausgewählt“");
 ok(!(await page.$("[data-slot-fertig]")) || await page.$("[data-wahl-fertig]"), "kein Verschieben-Modus");
-await page.click("[data-info-blase]"); await sleep(300);
+await tafelZu();
 // lang halten, loslassen: Tafel mit dem Menü der Kachel
 await finger("touchStart", h.x, h.y); await sleep(1050); await finger("touchEnd"); await sleep(400);
 ok((await tafel())?.startsWith("Teil 1") && await gewaehlt() === "s1", `lang halten + loslassen: Tafel „Teil 1“, nur Teil 1 ausgewählt (${await gewaehlt()})`);
 ok(await page.evaluate(() => !document.querySelector("[data-slot-kopf-name]") || document.querySelector("[data-slot-kopf-name]").textContent.trim() !== "Teil 1"), "lang halten lädt die Session nicht");
-await page.click("[data-info-blase]"); await sleep(300);
+await tafelZu();
 
 // ausgewählte Kachel lang halten und ziehen: die ganze Auswahl wandert (Teil 1 + 2 in die freie rechte Spalte)
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
@@ -189,13 +189,14 @@ await page.click("[data-ordner-zurueck]"); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(b => b.textContent.trim() === "Fertig")?.click()); await sleep(200);
 await zuListen(page);
 await kontext('[data-liste-id="l_a"]');
-ok((await tafel())?.startsWith("Unité 1") && (await menue()).includes("▦ In Sessions aufteilen"), "Listen: Lang-Druck → Tafel mit dem Listen-Menü");
+ok((await tafel())?.includes("Unité 1") && (await menue()).includes("▦ In Sessions aufteilen"), "Listen: Lang-Druck → Tafel mit dem Listen-Menü");
 await page.evaluate(() => document.querySelector('[data-liste-id="l_c"]').scrollIntoView({ block: "center" })); await sleep(300);   // Kachel über die Tafel scrollen
-await page.click('[data-liste-id="l_c"]'); await sleep(300); await listeOeffnen(page);
-ok(/^2 ausgewählt/.test(await tafel() || "") && (await menue()).includes("📤 Exportieren (2)"), `Listen: Antippen wählt mit aus (${await tafel()})`);
-ok(await page.evaluate(() => !document.querySelector("[data-vokabel-liste], .liste-detail-header")), "Listen: Antippen öffnet die Liste nicht");
-await page.click("[data-info-blase]"); await sleep(300);
+await kontext('[data-liste-id="l_c"]');
+ok(/^2 Listen ausgewählt/.test(await tafel() || "") && (await menue()).includes("📤 Exportieren (2)"), `Listen: Lang-Druck nimmt dazu (${await tafel()})`);
+ok(await page.evaluate(() => !document.querySelector("[data-vokabel-liste], .liste-detail-header")), "Listen: öffnet die Liste nicht");
+await tafelZu();
 ok(!(await tafel()) && !(await page.$("[data-wahl-nr]")), "Listen: Tafel beendet die Auswahl");
+await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);   // Unité 1 nicht unter dem feststehenden Kopf
 const b1 = await mitte('[data-liste-id="l_a"]'), b3 = await mitte('[data-liste-id="l_c"]');
 // Einsammeln im Listen-Raster: Lang-Druck auf das leere Feld zwischen Unité 2 und 3, hoch bis Unité 1, dann runter zu Unité 3
 const leer = await page.evaluate(() => { const a = document.querySelector('[data-liste-id="l_b"]').getBoundingClientRect(), b = document.querySelector('[data-liste-id="l_c"]').getBoundingClientRect(); return { x: a.x + a.width / 2, y: (a.bottom + b.top) / 2 }; });
@@ -205,7 +206,7 @@ for (let i = 1; i <= 10; i++) { await finger("touchMove", leer.x, b1.y + (b3.y -
 await finger("touchEnd"); await sleep(400);
 const lw = await page.evaluate(() => [...document.querySelectorAll("[data-wahl-nr]")].map(e => e.closest("[data-liste-id]").dataset.listeId).join(","));
 ok(lw === "l_a,l_b,l_c", `Listen: Einsammeln vom leeren Feld aus (${lw})`);
-ok(/^3 ausgewählt/.test(await tafel() || ""), "Listen: danach Auswahl-Tafel „3 ausgewählt“");
+ok(/^3 Listen ausgewählt/.test(await tafel() || ""), "Listen: danach Auswahl-Tafel „3 ausgewählt“");
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();

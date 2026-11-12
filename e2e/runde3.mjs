@@ -122,8 +122,7 @@ await schliesseTafel();
 // ── 14: Auswahl-Modus zeigt nur den Zustand ──
 let txt = await page.evaluate(() => document.body.innerText);
 ok(!/Lang drücken: Menü/.test(txt), "keine Erklärzeile über dem Raster");
-await lang(`[data-slot-id="${id1}"]`); await aktion("☑ Auswählen");
-await page.evaluate(id => document.querySelector(`[data-slot-id="${id}"]`).click(), id2); await sleep(300);
+await lang(`[data-slot-id="${id1}"]`); await lang(`[data-slot-id="${id2}"]`);   // 147: lang drücken nimmt dazu
 const hinweis = await page.evaluate(() => document.querySelector("[data-wahl-hinweis]")?.innerText.trim());
 ok(/^2 ausgewählt · \d+ Vokabeln$/.test(hinweis || ""), `Auswahl: nur „${hinweis}“`);
 ok(!(await page.evaluate(() => document.querySelector("[data-auswahl-tafel]")?.innerText || "")).includes("Weitere antippen"), "Tafel ohne Zusatzzeile");
@@ -136,15 +135,11 @@ ok(name === "Multiquiz" && !(await page.$(".quiz-frage-box")), `Quiz: „Fertig�
 await klickText(".tab", "Statistik");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf-name]"); if (!document.querySelector("[data-raster-zelle]")) k?.click(); }); await sleep(400);
 if (!(await page.$(`[data-slot-id="${id1}"]`))) { await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("Alle Sessions"))?.click()); await sleep(300); }
-await lang(`[data-slot-id="${id1}"]`);
-ak = await aktionen();
-await aktion("☑ Auswählen");
-await page.evaluate(id => document.querySelector(`[data-slot-id="${id}"]`).click(), id2); await sleep(300);
-await lang(`[data-slot-id="${id1}"]`);
+await lang(`[data-slot-id="${id1}"]`); await lang(`[data-slot-id="${id2}"]`);
 ak = await aktionen();
 ok(ak.includes("🧩 Multiquiz (2)"), `Statistik: Menü der Auswahl mit „🧩 Multiquiz (2)“ (${ak.join(" | ")})`);
 await schliesseTafel();
-if (!(await page.$("[data-wahl-fertig]"))) { await lang(`[data-slot-id="${id1}"]`); await aktion("☑ Auswählen"); await page.evaluate(id => document.querySelector(`[data-slot-id="${id}"]`).click(), id2); await sleep(300); }
+if (!(await page.$("[data-wahl-fertig]"))) { await lang(`[data-slot-id="${id1}"]`); await lang(`[data-slot-id="${id2}"]`); }
 await page.click("[data-wahl-fertig]"); await sleep(600);
 name = await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent.trim());
 ok(name === "Multiquiz", `Statistik: „Fertig“ lädt das Multiquiz (${name})`);
@@ -152,7 +147,7 @@ ok(name === "Multiquiz", `Statistik: „Fertig“ lädt das Multiquiz (${name})`
 await klickText(".tab", "Quiz");
 await page.evaluate(() => { if (!document.querySelector("[data-raster-zelle]")) document.querySelector("[data-slot-kopf-name]")?.click(); }); await sleep(400);
 if (!(await page.$(`[data-slot-id="${id1}"]`))) { await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("Alle Sessions"))?.click()); await sleep(300); }
-await lang(`[data-slot-id="${id1}"]`); await aktion("☑ Auswählen");
+await lang(`[data-slot-id="${id1}"]`);
 await page.click("[data-wahl-fertig]"); await sleep(700);
 name = await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent.trim());
 ok(name === "S1", `„Fertig“ mit einer Session lädt sie (${name})`);

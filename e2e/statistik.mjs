@@ -59,7 +59,8 @@ const statistikInfo = async () => {
 const statistikInfoRoh = () => page.evaluate(() => ({
   tabAktiv: document.querySelector(".tab.aktiv")?.textContent,
   anzahl: [...document.querySelectorAll("span")].map(s => s.textContent).filter(t => /^\(\d+ V\.\)$/.test(t)),
-  chipAktiv: [...document.querySelectorAll(".slot-chip")].filter(c => c.style.borderColor === "var(--haupt)").map(c => c.textContent.trim()),
+  // 149: die geladene Session wird nicht mehr am Chip markiert – sie steht oben (Kopf + Info-Fläche); Verlauf-Einträge mit 🕘
+  chipAktiv: [document.querySelector("[data-slot-info-name]")?.innerText.trim()].filter(x => x && x.startsWith("🕘")),
 }));
 
 // ── A: normale Runde, Bereich mit 3 Vokabeln ──

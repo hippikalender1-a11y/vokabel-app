@@ -92,8 +92,8 @@ ok(await page.$('[data-liste-id="l_b"]'), "Namens-Knopf antippen: zurück zur Li
 
 // ── 81: Mehrfach-Auswahl leuchtet ──
 await langDruck('[data-liste-id="l_a"]'); await sleep(300);
-await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "☑ Auswählen")?.click()); await sleep(900);
-await page.click('[data-liste-id="l_b"]'); await sleep(60); await listeOeffnen(page);
+await sleep(900);
+await langDruck('[data-liste-id="l_b"]'); await sleep(60);   // 147: lang drücken nimmt dazu
 const lw = await page.evaluate(() => ({ kachel: document.querySelector('[data-liste-id="l_b"]').classList.contains("leuchten"), hinweis: document.querySelector("[data-wahl-hinweis]")?.classList.contains("leuchten"), text: document.querySelector("[data-wahl-hinweis]")?.textContent }));
 ok(lw.kachel && lw.hinweis && /2 ausgewählt/.test(lw.text), `Listen-Auswahl: Kachel und „☑ 2 ausgewählt“ leuchten (${JSON.stringify(lw)})`);
 

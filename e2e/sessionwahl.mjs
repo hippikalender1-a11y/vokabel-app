@@ -116,13 +116,15 @@ ok(await page.$("[data-slot-info-zu]") && !(await page.$("[data-vorschau-zahlen]
 await klick("[data-slot-info-pfeil]");
 // 125: Mehrfach-Auswahl per langem Drücken beenden
 const rechts = async sel => { await page.evaluate(s => { const el = document.querySelector(s); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }, sel); await sleep(300); };
-await rechts('[data-slot-id="g_1"]');
-await klick('[data-slot-id="g_2"]');
-ok(/2 ausgewählt/.test(await kopf() || ""), `lang drücken + antippen: Mehrfach-Auswahl mit 2 (${await kopf()})`);
+// 147: lang drücken nimmt dazu/heraus, Menü unten ohne schwarze Box; antippen = Einzelauswahl
+await rechts('[data-slot-id="g_1"]'); await rechts('[data-slot-id="g_2"]');
+ok(/2 ausgewählt/.test(await kopf() || "") && await page.$("[data-info-menue]") && !(await page.$("[data-info-blase]")), `lang drücken ×2: Auswahl mit 2, Menü ohne schwarze Box (${await kopf()})`);
+ok(/2 Sessions ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText || "")) && /Vokabeln/.test(await page.evaluate(() => document.querySelector("[data-vorschau-zahlen]")?.innerText || "")), "148: Info zeigt die Auswahl zusammengefasst");
 await rechts('[data-slot-id="g_2"]');
-ok(/2 ausgewählt/.test(await kopf() || "") && await page.$("[data-info-menue]"), "125: lang drücken auf ausgewählte Kachel – Auswahl bleibt, Kontextmenü offen");
+ok(/1 ausgewählt/.test(await kopf() || ""), "lang drücken auf ausgewählte Kachel: heraus");
+await rechts('[data-slot-id="g_2"]');
 await klick('[data-slot-id="g_1"]');
-ok(await kopf() === "Stücke laden" && !(await page.$("[data-multi-nr]")), `125: danach antippen wählt wieder einzeln (${await kopf()})`);
+ok(await kopf() === "Stücke laden" && !(await page.$("[data-multi-nr]")) && !(await page.$("[data-info-menue]")), `antippen: Einzelauswahl, Menü zu (${await kopf()})`);
 // 134: Start-Knopf grün
 await klick("[data-slot-laden]"); await sleep(400);
 const farben = await page.evaluate(() => ({ start: getComputedStyle(document.querySelector("[data-start-knopf]")).backgroundColor, gruen: getComputedStyle(document.documentElement).getPropertyValue("--bestaetigen").trim() }));

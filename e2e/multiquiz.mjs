@@ -57,36 +57,31 @@ await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await oeffneKopf(); await sleep(300);
 
-// Lang-Druck auf „Teil A“ → Menü mit „☑ Auswählen“
+// 147: Lang-Druck auf „Teil A“ → ausgewählt (1), Menü ohne Multiquiz
 await langDruck('[data-slot-id="g_a"]');
 const menue = await aktionen();
 console.log("     Menü:", menue.join(" | "));
-ok(menue.includes("☑ Auswählen") && !menue.some(m => m.startsWith("🧩")), "Lang-Druck auf eine Kachel: „☑ Auswählen“ im Menü (Multiquiz erst in der Auswahl)");
-await aktion("☑ Auswählen");
-ok(/1 ausgewählt/.test(await hinweis() || "") && await page.$("[data-wahl-fertig]"), `Auswahl-Modus: „1 ausgewählt“, Knopf „Fertig“ (${await hinweis()})`);
-await page.click('[data-slot-id="g_b"]'); await sleep(250);
-ok(/2 ausgewählt · 5 Vokabeln/.test(await hinweis() || ""), `Teil B dazu: 2 ausgewählt · 5 Vokabeln (${await hinweis()})`);
-ok(await page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId + ":" + b.dataset.multiNr).join(",")) === "g_a:1,g_b:2", "Kacheln nummeriert (1, 2)");
-await page.click('[data-slot-id="g_b"]'); await sleep(250);
-ok(/1 ausgewählt/.test(await hinweis() || ""), "nochmal antippen nimmt die Kachel heraus");
-ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf) === "offen" && /ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent)), "Antippen lädt im Auswahl-Modus nichts");
-// Lang-Druck auf eine nicht gewählte Kachel: kommt dazu, Menü für die Auswahl
+ok(!menue.includes("☑ Auswählen") && !menue.some(m => m.startsWith("🧩")), "Lang-Druck auf eine Kachel: ausgewählt, Menü ohne Multiquiz (erst ab zwei)");
+ok(/1 ausgewählt/.test(await hinweis() || "") && await page.$("[data-wahl-fertig]"), `Auswahl: „1 ausgewählt“, grüner Kopf (${await hinweis()})`);
 await langDruck('[data-slot-id="g_b"]');
+ok(/2 ausgewählt · 5 Vokabeln/.test(await hinweis() || ""), `Lang-Druck auf Teil B: dazu – 2 ausgewählt · 5 Vokabeln (${await hinweis()})`);
+ok(await page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId + ":" + b.dataset.multiNr).join(",")) === "g_a:1,g_b:2", "Kacheln nummeriert (1, 2)");
 const wahlMenue = await aktionen();
 console.log("     Auswahl-Menü:", wahlMenue.join(" | "));
-ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|📁 In Gruppe… (2)|⇄ Verschieben|🗑 Löschen (2)|✕ Auswahl beenden", "Lang-Druck in der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
-ok(/2 ausgewählt/.test(await hinweis() || ""), "Lang-Druck auf nicht gewählte Kachel nimmt sie dazu");
-await page.mouse.click(5, 300); await sleep(200);   // Menü schließen (Klick daneben wird verschluckt)
-// „Fertig“ mit 2 Kacheln: Multiquiz einstellen (laden, nicht starten)
+ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|📁 In Gruppe… (2)|⇄ Verschieben|🗑 Löschen (2)|✕ Auswahl beenden", "Menü der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
+await langDruck('[data-slot-id="g_b"]');
+ok(/1 ausgewählt/.test(await hinweis() || ""), "nochmal lang drücken nimmt die Kachel heraus");
+await langDruck('[data-slot-id="g_b"]');
+ok(/2 ausgewählt/.test(await hinweis() || ""), "wieder dazu");
+// grüner Kopf mit 2 Kacheln: Multiquiz einstellen (laden, nicht starten)
 await page.click("[data-wahl-fertig]"); await sleep(700);
 ok(!(await page.$("[data-wahl-hinweis]")) && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent.trim()) === "Multiquiz" && !(await page.$(".quiz-frage-text")),
-  "„Fertig“ beendet den Auswahl-Modus und stellt das Multiquiz ein, ohne zu starten");
+  "grüner Kopf übernimmt die Auswahl und stellt das Multiquiz ein, ohne zu starten");
 await oeffneKopf(); await sleep(300);
 
-// nochmal: A + B, Lang-Druck → Multiquiz starten
-await langDruck('[data-slot-id="g_a"]'); await aktion("☑ Auswählen");
-await page.click('[data-slot-id="g_b"]'); await sleep(250);
-await langDruck('[data-slot-id="g_b"]'); await aktion("🧩 Multiquiz starten");
+// nochmal: A + B per Lang-Druck → Multiquiz starten
+await langDruck('[data-slot-id="g_a"]'); await langDruck('[data-slot-id="g_b"]');
+await aktion("🧩 Multiquiz starten");
 await sleep(600);
 ok(await page.$(".quiz-frage-text"), "„🧩 Multiquiz starten“ startet das Quiz sofort");
 const fragen = [];
