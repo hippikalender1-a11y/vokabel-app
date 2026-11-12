@@ -2652,3 +2652,8 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   (b) Tageswechsel Mitternacht; (c) Schalter nicht gespeichert (andere Session/Neustart → wieder aus);
   (d) je Abfrageart eigener Stand (Ü/D/A), Quiz aus der Statistik ausgenommen; (e) Pakete: alles heute abgefragt → Start 0.
   Entschieden: (a) ja, alle heute abgefragten gesperrt (Wiederholung in derselben Runde bleibt); (b) Mitternacht; (d) ok; (e) ja. (c) vorübergehend: Knopf „Heute“ bleibt nur in der aktuellen Session an – andere Session laden oder App neu öffnen → wieder aus.
+- 181 Dunkle Kachel bekommt eine neue Bedeutung (Screenshot): nicht mehr „komplett gelernt“, sondern „heute geübt“.
+  Die Kachel füllt sich von links nach rechts abgeschwächt dunkel im Anteil der heute abgefragten Vokabeln; sind alle heute
+  abgefragt, ist sie komplett dunkel (heutiges Erscheinungsbild). Lernfortschritt nur noch über den Balken, „komplett gelernt“
+  zeigt der Haken. Dazu Umschalter „gelernte Kacheln ausblenden / einblenden“ im Lang-Druck-Menü von Ordner bzw. „Alle Sessions“.
+  Offene Fragen: Abfrageart, Listen-Kacheln, Ordner-Kacheln, Ausblenden merken, was zählt als „heute abgefragt“.
