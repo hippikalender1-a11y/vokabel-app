@@ -2635,3 +2635,10 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   wird breiter, Kopfzeile verrutscht seitlich. Ursache: .quiz-frage-text ohne overflow-wrap. Vorschlag: Umbruch bevorzugt
   nach „/“ (unsichtbarer Trennpunkt), notfalls mitten im Wort (overflow-wrap:anywhere); auch für aufgedeckte Antworten
   und die übrigen Karten-Texte prüfen.
+- 178 Negative Scores als rote Kreise (zwei Stufen des Nichtwissens, gekappt bei −6):
+  −1…−3 = 1–3 rote Umrisskreise, −4…−6 = 1–3 rot gefüllte Kreise; tiefer nicht (Anzeige und Zählen gekappt).
+  Richtig bei negativem Score springt eine Stufe hoch: −4…−6 → −3 (drei rote Umrisse), −1…−3 → 0.
+  Beispiel: 0, fünfmal falsch → −5 (zwei gefüllt); richtig → −3; richtig → 0; richtig → 1 (ein grüner Kreis).
+- 179 Altlasten im Score prüfen/entfernen: Streak-Sprung (3× richtig in Folge → Score mind. 2), 3× „Lösung anzeigen“
+  in Folge → Score −100, Anzeige-Clamp −10…+10, Statistik-Sortierung „Streak“, Hilfetexte „Streak“ an Gewusst/Nicht gewusst
+  und „Lösung anzeigen“; bestehende Scores unter −6 einmalig auf −6 setzen.
