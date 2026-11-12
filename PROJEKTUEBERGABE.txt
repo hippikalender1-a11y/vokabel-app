@@ -2510,3 +2510,9 @@ Gesammelt (noch NICHT umsetzen):
   Vorschlag: feststehender Block wie bei den Sessions – Kopfzeile und Info lückenlos aneinander, durchgehend deckender Hintergrund, Schatten unten;
   alles darunter verschwindet vollständig dahinter. Info-Zeilen einzeilig (Gruppen kurz, z. B. „112 ✓ · 98 … · 2850 nie · 11 −“, sonst „…“), damit die
   Höhe gleich bleibt (vgl. 154).
+- 157 KONZEPT Wiederholen (Entwurf, Nutzer sammelt – ersetzt ggf. 98–103): Gelernt-Schwelle fest 3 = Gelernt-Stufe 1; normales/manuelles Üben hebt
+  nicht über 3. Von der App nach zeitlichem Abstand wiederholt und gewusst → +1 = Stufe 2, nach längerem Abstand Stufe 3, Stufe 4 (3 weitere Stufen,
+  Score max. 6). Nicht gewusst → −1 (ggf. Stufe zurück, unter 3 nicht mehr gelernt). Stufen an den Vokabeln kennzeichnen.
+  Vorschläge/Fragen: Abstände (z. B. 3 / 10 / 30 Tage, Stufe 4 alle ~60 Tage prüfen); „fällig“ zählt auch in normalen Sessions (gewusst + fällig → +1);
+  Anzeige je Vokabel (z. B. ●●○○); Statistik/Kacheln mit Stufen; eigener Zugang „🔁 Fällig (n)“; bestehende Scores > 3 → 3 (Stufe 1);
+  Diktat/Akzente gleich; Schwelle fest 3 oder 1–3 wählbar?
