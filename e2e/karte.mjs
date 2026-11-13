@@ -74,6 +74,9 @@ await clickText("button", "Beenden");
 await sleep(300);
 const zu = await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent)));
 if (zu) await clickText("button", "Zur Übersicht");
+await sleep(300);
+await clickText(".tab", "Quiz");   // 204: aus der Liste gestartet → zurück in der Liste; weiter im Quiz-Tab
+await sleep(300);
 await auswahlZu(page);   // 190: Session-Auswahl ist offen
 
 // Modus "wechselnd": alle Spalten Karte

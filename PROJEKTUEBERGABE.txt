@@ -2835,3 +2835,62 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   herausgenommene), gleiche Füllung wie Session-Kacheln.
 - 201 [data-gelernt-haken] „✓“ (var(--gelernt)) vor „n % gelernt“ in Session- und Listen-Info (offen und eingeklappt).
   Test e2e/punkte190.mjs erweitert.
+
+── 202– (Feedback, gesammelt 13.11.2026) ──
+- 202 Listen müssen zeigen, was sie enthalten: ob/wie viele Beispielsätze (Anzahl, z. B. Sätze gesamt bzw. Vokabeln mit
+  Sätzen), ob/wie viele Synonyme. Entschieden: beides – kompakt auf der Kachel (z. B. „💬 250 · ≈ 12“, nur was vorhanden ist)
+  und ausführlich in der Listen-Info; bei den Sätzen die GESAMTZAHL. Sätze liegen in IndexedDB (saetzeLaden) – Anzahl je
+  Liste fürs Raster zwischenspeichern.
+- 203 Spaltenzahl des Listen-Rasters doch manuell wählbar: dritter Knopf in der Knopfzeile unter Einstellungen › Listen
+  neben „Sicherung“ und „Erinnerung“ (z. B. „Spalten: 3“), Auswahl 1–5 (ergänzt 196). Entschieden:
+  (1) je Ebene – gilt für die gerade geöffnete Ebene (oberste bzw. Ordner; am Ordner/oben gespeichert);
+  (2) MINDESTENS so viele Spalten – belegte Spalten (und die freie beim Verschieben, bis 5) können mehr ergeben;
+  (3) auch für Sessions – dort im Lang-Druck-Menü von „Alle Sessions“ bzw. des Ordnernamens im Pfad.
+- 204 Quiz aus einer Liste gestartet (Liste geöffnet › „Quiz starten“, bzw. Listen-Menü „🔁 Fällige wiederholen“): am Ende
+  „Zur Übersicht“ (auch Beenden/Schließen) führt zurück zur Liste statt in die Session-Auswahl (190). Merker am Quiz
+  (z. B. ausListe: { listeId, ordner, ansicht }) wie ausStatistik/ausLernen. Entschieden: dorthin, wo gestartet wurde –
+  „Quiz starten“ in der geöffneten Liste → zurück in diese Liste (Liste-Detail); „🔁 Fällige wiederholen“ über das Menü
+  einer Listen-Kachel → Listen-Raster, deren Ordner offen, die Liste gewählt. „Pause“ bleibt wie bisher.
+- 205 FEHLER (Screenshot iPhone, Statistik): die Kopfzeile der Statistik („Übersetzung“ · Fortschrittsbalken
+  „0 / 25 gelernt · Ø +1.0“ · Knopf rechts = ↑ nach oben) rutscht beim Scrollen zur Hälfte unter den festen App-Kopf
+  (Titel + Tabs) – der ↑-Knopf verschwindet. Die Zeile muss vollständig unter dem App-Kopf kleben (sticky top = headerH;
+  prüfen, ob headerH auf dem iPhone zu klein gemessen wird, z. B. Sicherheitsbereich/Statusleiste oder Sprach-Knopf 🌐).
+- 206 Statistik-Kopfzeile: Knopf „nach oben“ ganz entfernen – unten am Bildschirm erscheint ohnehin der schwebende ↑-Knopf,
+  sobald die Liste über den Bildschirm hinausragt. Der Fortschrittsbalken nimmt den frei werdenden Platz ein. Prüfen, ob es
+  weitere doppelte „nach oben“-Knöpfe gibt (dann ebenso). (Nicht aufnehmen: „33 %“ neben „0 / 25 gelernt“ – stört nicht.)
+- 207 Session komplett abgefragt → zurück in der Übersicht zeigt sie „0/25“ (updateSessionSlotFortschritt setzt beim
+  Durchlauf-Ende abgefragt = [] zurück). Gewünscht: „25/25“ stehen lassen (Durchlauf fertig, z. B. Merker fertig: true statt
+  sofort leeren; Kachel/Start-Feld/Verlauf zeigen voll). Start-Knopf dann „Erneut abfragen“; beim Antippen sieht man kurz,
+  wie die Fortschrittsanzeige auf 0 zurückläuft, dann startet das Quiz (erst jetzt wird der Durchlauf zurückgesetzt).
+  Zusammenspiel mit der Tagessperre (180/188/189) beachten: heute komplett geübt → Start ist ohnehin „0 · heute geschafft“.
+  ZURÜCKGESTELLT (Nutzer, 13.11.2026): Konzept noch nicht schlüssig – NICHT umsetzen; Anzeige bleibt „0/25“, Start-Knopf
+  unverändert.
+- 208 Listen und Sessions: per Lang-Druck „⇅ Automatisch anordnen“ (vermutlich im Menü der Ebene: „Alle …“ bzw. Ordnername
+  im Pfad; gilt für die geöffnete Ebene, Ordner-Kacheln mit). Entschieden:
+  (1) mehrere Möglichkeiten: nach Name (natürlich sortiert, „A1-02“ vor „A1-10“), nach Datum (Sessions: timestamp; Listen:
+  Anlage-Zeit aus der Id „liste_<ms>“), nach Lernstand (entschieden: am MEISTEN gelernt zuerst/oben) – und zusätzlich
+  „Lücken schließen“ (bisherige Reihenfolge, leere Plätze fallen weg). Untermenü oder Folge-Tafel mit den Optionen.
+  (2) SPALTENWEISE füllen: erst nach unten, dann die nächste Spalte; Spaltenzahl = gewählte (203) bzw. belegte Spalten,
+  Zeilen = aufgerundet Anzahl / Spalten.
+  (3) Ordner zuerst, dann die Einträge.
+- 209 Geöffnete Liste (Screenshot „A1 · 20 Sport & Spiele“): in der Knopfzeile „Fremdsprache | Beispielsätze | Spalten |
+  Vokabeln“ die Knöpfe Fremdsprache und Vokabeln tauschen → „Vokabeln | Beispielsätze | Spalten | Fremdsprache“.
+  Nur die Knöpfe tauschen – die Unterzeile „🇬🇧 Englisch · 25 Vokabeln“ bleibt, wie sie ist.
+
+── 202–209 umgesetzt (207 zurückgestellt, 205 offen) ──
+- 202 satzStandAlle() (IndexedDB-Cursor über alle Sätze → { listeId: { vokId: n } }), State satzStand (beim Start und nach
+  uebernehmeSaetze neu); listenInhalt(liste, satzStand) = Sätze gesamt + Synonyme gesamt (Synonym-Spalten, synonymeAus).
+  Kachel: [data-listen-inhalt] „ · 💬 n · ≈ m“ hinter der Vokabelzahl (nur Vorhandenes); Info: [data-liste-info-inhalt].
+- 203 ebenenSpalten(eintraege, frei, min); minSpalten(art, ordnerId) / setzeMinSpalten: oben einstellungen.ebenenSpalten
+  { slot, liste }, sonst ordner.spalten. Listen: Knopf „Spalten ▥ n“ (einstUnter „spalten“, [data-listen-spalten-wahl]);
+  Sessions: „▥ Spalten (n)“ im Menü von „Alle Sessions“/Ordnername → Fenster [data-spalten-dialog].
+- 204 ausListeRef { listeId, ziel: "liste" | "raster" }: gesetzt von „Quiz starten“ (Liste-Detail) und von
+  faelligAktion(keys, ausListe) im listenMenue (imKopf → "liste", Kachel → "raster"); ladeSlot löscht ihn. beendeQuiz
+  (nicht Pause): "liste" → oeffneListeDetail, "raster" → zuEinstListen + Ordner der Liste + listeVorschau.
+- 206 „nach oben“ aus der Statistik-Kopfzeile entfernt (Balken bis 260 px).
+- 208 ordneEbeneAn(data, ordnerId, vergleich, spalten) (Ordner zuerst, spaltenweise füllen), nameVergleich (numeric);
+  ordneAn(art, ordnerId, name|datum|lernstand|luecken) – Datum: Sessions timestamp, Listen Zahl aus der Id; Lernstand:
+  Übersetzung %, absteigend; Ordner: Mittel ihres Inhalts. Menü „⇅ Anordnen…“ (Alle …/Ordnername) → [data-anordnen-dialog].
+- 209 Knopfzeile der geöffneten Liste: Vokabeln | Beispielsätze | Spalten | Fremdsprache.
+- 205 (Statistik-Kopfzeile unter dem App-Kopf, iPhone) im Desktop-Chrome nicht nachstellbar (klebt korrekt unter
+  Kopf + Session-Kopf) – Rückfrage an den Nutzer. Test e2e/punkte202.mjs.

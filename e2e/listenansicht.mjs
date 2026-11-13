@@ -3,7 +3,7 @@ import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, listeBereich, neueEineSession } from "./hilfen.mjs";
 
 // Tabs Statistik | Quiz | Einstellungen; geöffnete Liste: Kopf = Namens-Knopf (antippen zurück, lang drücken Menü) mit Info-Zeile;
-// Bereiche als Knopfzeile (Fremdsprache · Beispielsätze · Spalten · Vokabeln), immer nur einer offen; Vokabeln mit „Gelernte“ und ＋ in der Zeile;
+// Bereiche als Knopfzeile (Vokabeln · Beispielsätze · Spalten · Fremdsprache, 209), immer nur einer offen; Vokabeln mit „Gelernte“ und ＋ in der Zeile;
 // „↑“ nach weitem Scrollen; Mehrfach-Auswahl: gewählte Kachel und „☑ n ausgewählt“ leuchten kurz
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
@@ -46,7 +46,7 @@ await page.keyboard.press("Escape"); await page.mouse.click(5, 400); await sleep
 
 // ── 77: Knopfzeile ──
 const zeile = await page.evaluate(() => [...document.querySelectorAll("[data-listen-zeile] .quiz-zeile-zelle")].map(z => `${z.querySelector(".quiz-zeile-label").textContent}=${z.querySelector("button").textContent}`).join(" | "));
-ok(zeile === "Fremdsprache=🇬🇧 Englisch | Beispielsätze=💬 0/60 | Spalten=2 | Vokabeln=60", `Knopfzeile (${zeile})`);
+ok(zeile === "Vokabeln=60 | Beispielsätze=💬 0/60 | Spalten=2 | Fremdsprache=🇬🇧 Englisch", `Knopfzeile – 209: Vokabeln zuerst, Fremdsprache zuletzt (${zeile})`);
 ok(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent === "Quiz starten")), "nichts offen: „Quiz starten“ sichtbar");
 const breiteZu = await page.evaluate(() => [...document.querySelectorAll("[data-liste-bereich]")].map(b => Math.round(b.getBoundingClientRect().width)).join(","));
 await listeBereich(page, "sprache");

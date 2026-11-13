@@ -41,6 +41,26 @@ async function saetzeLaden(listeId) {
     });
   } catch { return {}; }
 }
+// 202: Anzahl der Sätze je Vokabel über alle Listen: { listeId: { vokId: n } }
+async function satzStandAlle() {
+  try {
+    const db = await satzDb();
+    return await new Promise(res => {
+      const erg = {}, req = db.transaction(SATZ_STORE).objectStore(SATZ_STORE).openCursor();
+      req.onsuccess = () => { const c = req.result; if (c) { const [l, v] = String(c.key).split("__"); (erg[l] = erg[l] || {})[v] = Array.isArray(c.value) ? c.value.length : 0; c.continue(); } else res(erg); };
+      req.onerror = () => res(erg);
+    });
+  } catch { return {}; }
+}
+// 202: Sätze (gesamt) und Synonyme (gesamt) einer Liste – nur vorhandene Vokabeln zählen
+function listenInhalt(liste, satzStand) {
+  if (!liste) return { saetze: 0, synonyme: 0 };
+  const st = satzStand?.[liste.id] || {};
+  const synSp = TYPEN.filter(t => t.startsWith("i") && liste.spalten[t]?.aktiv && istSynonymSpalte(liste.spalten[t]));
+  let saetze = 0, synonyme = 0;
+  liste.vokabeln.forEach(v => { saetze += st[v.id] || 0; synSp.forEach(t => { synonyme += synonymeAus(v[t]?.wert).length; }); });
+  return { saetze, synonyme };
+}
 async function saetzeSpeichern(eintraege) {
   try {
     const db = await satzDb();
@@ -180,8 +200,9 @@ function rasterGroesse() {   // 196: keine Einstellung mehr – Plätze bis RAST
   return { zeilen: RASTER_ZEILEN_OFFEN, spalten: RASTER_MAX_SPALTEN };
 }
 // 196: angezeigte Spalten einer Ebene: belegte (mind. 1), beim Verschieben eine freie dazu
-function ebenenSpalten(eintraege, frei = false) {
-  const belegt = eintraege.reduce((m, x) => Math.max(m, (x.platz?.s ?? 0) + 1), 1);
+// 203: min = gewählte Mindest-Spaltenzahl der Ebene (belegte Spalten können mehr ergeben)
+function ebenenSpalten(eintraege, frei = false, min = 1) {
+  const belegt = eintraege.reduce((m, x) => Math.max(m, (x.platz?.s ?? 0) + 1), Math.max(1, min || 1));
   return Math.min(RASTER_MAX_SPALTEN, belegt + (frei ? 1 : 0));
 }
 const nachPlatz = (a, b) => a.platz.z - b.platz.z || a.platz.s - b.platz.s;
@@ -259,6 +280,19 @@ function ebeneVon(data, ordnerId) {
   const hier = p => ordnerId ? p === ordnerId : !p || !gibt.has(p);
   return [...ordner.filter(o => o.id !== ordnerId && hier(o.ordner)).map(o => ({ ...o, istOrdner: true })), ...data.gespeichert.filter(x => hier(x.ordner))];
 }
+// 208: Ebene automatisch anordnen – Ordner zuerst, dann die Einträge (je nach wert sortiert; ohne wert: bisherige
+// Reihenfolge spaltenweise = Lücken schließen); spaltenweise füllen: erst nach unten, dann die nächste Spalte
+function ordneEbeneAn(data, ordnerId, vergleich, spalten) {
+  const ebene = ebeneVon(data, ordnerId);
+  const p = x => x.platz || { z: Infinity, s: Infinity };
+  const bisher = (a, b) => p(a).s - p(b).s || p(a).z - p(b).z;
+  const sortiert = arr => [...arr].sort(vergleich ? (a, b) => vergleich(a, b) || bisher(a, b) : bisher);
+  const reihe = [...sortiert(ebene.filter(x => x.istOrdner)), ...sortiert(ebene.filter(x => !x.istOrdner))];
+  const sp = Math.max(1, Math.min(RASTER_MAX_SPALTEN, spalten));
+  const zeilen = Math.max(1, Math.ceil(reihe.length / sp));
+  return setzeEbene(data, reihe.map((x, i) => ({ ...x, platz: { z: i % zeilen, s: Math.floor(i / zeilen) } })));
+}
+const nameVergleich = (a, b) => String(a.name || "").localeCompare(String(b.name || ""), "de", { numeric: true, sensitivity: "base" });
 // Pfad von oben bis zum Ordner id (Ordner-Objekte); [] = oberste Ebene
 function ordnerPfad(ordner, id) {
   const pfad = [], gesehen = new Set();
@@ -2560,6 +2594,45 @@ export default function VokabelApp() {
   const slotSichtbarRef = useRef([]);
   const [, setSprungTick] = useState(0);
   const [faelligTick, setFaelligTick] = useState(0);
+  const ausListeRef = useRef(null);       // 204: { listeId, ziel: "liste" | "raster" } – Quiz aus einer Liste gestartet → am Ende dorthin zurück
+  // 203: Mindest-Spalten je Ebene – oberste Ebene in den Einstellungen (ebenenSpalten.slot / .liste), Ordner am Ordner (spalten)
+  const minSpalten = (art, ordnerId) => {
+    if (ordnerId) return ((art === "liste" ? listenOrdner : slots.ordner) || []).find(o => o.id === ordnerId)?.spalten || 1;
+    return einstellungen.ebenenSpalten?.[art] || 1;
+  };
+  function setzeMinSpalten(art, ordnerId, n) {
+    if (!ordnerId) { speichereEinst({ ...einstellungen, ebenenSpalten: { ...(einstellungen.ebenenSpalten || {}), [art]: n } }); return; }
+    if (art === "liste") { const d = listenOrdnerDaten(); speichereListenOrdnerDaten({ ...d, ordner: d.ordner.map(o => o.id === ordnerId ? { ...o, spalten: n } : o) }); }
+    else { const d = getSlotsData(); setSlotsData({ ...d, ordner: (d.ordner || []).map(o => o.id === ordnerId ? { ...o, spalten: n } : o) }); }
+  }
+  const [spaltenWahl, setSpaltenWahl] = useState(null);
+  const [anordnen, setAnordnen] = useState(null);   // 208: { art, ordner } – Fenster „Anordnen“
+  // 208: anordnen nach name | datum | lernstand | luecken (Spalten = gewählte bzw. belegte)
+  function ordneAn(art, ordnerId, nach) {
+    const liste = art === "liste";
+    const data = liste ? listenOrdnerDaten() : rasterEinordnen(getSlotsData());
+    const ebene = ebeneVon(data, ordnerId);
+    const spalten = ebenenSpalten(ebene, false, minSpalten(art, ordnerId));
+    const datum = x => liste ? Number(String(x.id).match(/(\d{10,})/)?.[1] || 0) : (x.timestamp || 0);
+    const pctListe = id => lernstandJeArt(lsGet(SK.liste(id))?.vokabeln || [], id).uebersetzung.pct || 0;
+    const pctSession = x => { const k = x.konfiguration || {};
+      let v = (k.listenIds || []).flatMap(id => (lsGet(SK.liste(id))?.vokabeln || []).map(y => ({ ...y, _key: `${id}__${y.id}` })));
+      if (k.bereichTyp === "bereich" && k.vokabelAuswahl?.length) { const a = new Set(k.vokabelAuswahl); v = v.filter(y => a.has(y._key)); }
+      return lernstandJeArt(v).uebersetzung.pct || 0; };
+    const pct = x => x.istOrdner
+      ? (() => { const e = eintraegeImOrdner(data, x.id); return e.length ? e.reduce((m, y) => m + (liste ? pctListe(y.id) : pctSession(y)), 0) / e.length : 0; })()
+      : liste ? pctListe(x.id) : pctSession(x);
+    const vergleich = nach === "name" ? nameVergleich
+      : nach === "datum" ? (a, b) => (a.istOrdner || b.istOrdner ? nameVergleich(a, b) : datum(a) - datum(b))
+      : nach === "lernstand" ? (a, b) => pct(b) - pct(a)
+      : null;
+    const neu = ordneEbeneAn(data, ordnerId, vergleich, spalten);
+    if (liste) speichereListenOrdnerDaten(neu); else setSlotsData(rasterEinordnen(neu));
+    setAnordnen(null);
+  }   // 203: { art, ordner } – Fenster „Spalten“ (Sessions)
+  const [satzStand, setSatzStand] = useState({});   // 202: { listeId: { vokId: Anzahl Sätze } }
+  const ladeSatzStand = () => satzStandAlle().then(setSatzStand);
+  useEffect(() => { ladeSatzStand(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
   const neuPlatzRef = useRef(null);       // 199: { ordner, platz } – „＋ Neue Session“ auf einem freien Platz begonnen
   const neuListePlatzRef = useRef(null);  // 199: { ordner, platz } – „＋ Neue Liste“ auf einem freien Platz begonnen
   const neuImOrdnerRef = useRef(null);   // „Neue Session“ in einer geöffneten Gruppe begonnen → beim Speichern/Aufteilen dort anlegen   // sichtbare Session-Kacheln (für „Alle“ in der Mehrfach-Auswahl)
@@ -5041,13 +5114,14 @@ export default function VokabelApp() {
   const faelligVonSlots = ids => faelligeSchluessel(ids.map(id => getSlotEintrag("gespeichert", id)?.konfiguration).filter(Boolean));
   const faelligVonListen = ids => faelligeSchluessel([{ listenIds: ids }]);
   // 170: nichts fällig → inaktiver Knopf als Hinweis (man sieht dort nach)
-  const faelligAktion = keys => [keys.length ? { label: `🔁 Fällige wiederholen (${keys.length})`, fn: () => ladeFaellige(keys) }
+  const faelligAktion = (keys, ausListe = null) => [keys.length ? { label: `🔁 Fällige wiederholen (${keys.length})`, fn: () => ladeFaellige(keys, ausListe) }
     : { label: "🔁 Keine fälligen Vokabeln", aus: true, fn: () => {} }];
   // fällige Vokabeln über alle sichtbaren Listen (für „🔁 Fällige wiederholen“) – beim Öffnen der Auswahl neu berechnet
   const faelligAlle = useMemo(() => slotSektionAufgeklappt && (tab === "quiz" || tab === "statistik") ? faelligeSchluessel([{ listenIds: sichtbareListen.map(l => l.id) }]) : [],
     [slotSektionAufgeklappt, tab, listenIndex, sprachFilter, quizArt, faelligTick]);   // eslint-disable-line react-hooks/exhaustive-deps
-  function ladeFaellige(keys) {
+  function ladeFaellige(keys, ausListe = null) {
     if (!keys.length) return;
+    ausListeRef.current = ausListe;   // 204
     const listenIds = [...new Set(keys.map(x => x.split("__")[0]))];
     applyKonfiguration({ ...aktuelleKonfiguration(false), listenIds, vokabelAuswahl: keys, bereichTyp: "bereich", quizBereichTyp: "bereich" });
     setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotVorschau(null); setMultiAuswahl(null); setListenWahl(null);
@@ -5087,6 +5161,7 @@ export default function VokabelApp() {
   function ladeSlot(typ, id, art = null) {
     const eintrag = getSlotEintrag(typ, id);
     neuImOrdnerRef.current = null;
+    ausListeRef.current = null;   // 204: andere Session gewählt
     if (!eintrag || !eintrag.konfiguration) return;
     setListenAendern(false);
     applyKonfiguration(eintrag.konfiguration, art);
@@ -5803,6 +5878,16 @@ export default function VokabelApp() {
   // die Bereiche, wie sie waren
   function beendeQuiz(einklappen = true) {
     setQuiz(null);
+    // 204: aus einer Liste gestartet → zurück dorthin (geöffnete Liste bzw. Listen-Raster mit der Liste gewählt); „Pause“ nicht
+    const al = einklappen ? ausListeRef.current : null;
+    if (al && listenIndex.some(l => l.id === al.listeId)) {
+      ausListeRef.current = null;
+      if (al.ziel === "liste") { oeffneListeDetail(al.listeId); return; }
+      setListenOrdnerOffen(listenIndex.find(l => l.id === al.listeId)?.ordner || null);
+      zuEinstListen();
+      setTimeout(() => { setListeVorschau(al.listeId); document.querySelector(`[data-liste-id="${al.listeId}"]`)?.scrollIntoView({ block: "center" }); }, 0);
+      return;
+    }
     setTab("quiz");
     setAnsicht("uebersicht");
     if (einklappen) klappeUebersichtEin();
@@ -6824,7 +6909,7 @@ export default function VokabelApp() {
       .sort((a, b) => (a.platz?.z ?? 0) - (b.platz?.z ?? 0) || (a.platz?.s ?? 0) - (b.platz?.s ?? 0)).map(l => ({ key: l.id, l })) };
     const platzMap = new Map(ebene.filter(l => l.platz).map(l => [`${l.platz.z}|${l.platz.s}`, l]));
     const zeilen = ebene.reduce((m, l) => Math.max(m, (l.platz?.z ?? 0) + 1), 0);
-    const anz = ebenenSpalten(ebene);   // 196
+    const anz = ebenenSpalten(ebene, false, minSpalten("liste", listenOrdnerOffen));   // 196/203
     const plaetze = [];
     for (let z = 0; z < zeilen; z++) for (let sp = 0; sp < anz; sp++) plaetze.push({ key: `${z}|${sp}`, l: platzMap.get(`${z}|${sp}`) || null });
     return { spalten: anz, plaetze };
@@ -6894,6 +6979,7 @@ export default function VokabelApp() {
       eintraege[key] = zusammen;
     });
     await saetzeSpeichern(eintraege);
+    ladeSatzStand();   // 202
     const saetze = await saetzeLaden(f.listeId);
     setListenSaetze({ listeId: f.listeId, saetze });
     setSatzFenster({ ...f, antwort: "", meldung: Object.keys(eintraege).length ? `${anzSaetze} Sätze für ${Object.keys(eintraege).length} Vokabeln übernommen.` : "Keine passenden Zeilen gefunden – Format „ID // Satz // Übersetzung“ mit *Wort*." });
@@ -6920,7 +7006,7 @@ export default function VokabelApp() {
       { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
       { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
       { label: "📤 Exportieren", fn: () => oeffneExport([l.id]) },
-      ...(() => { const f = faelligVonListen([l.id]); return faelligAktion(f); })(),
+      ...(() => { const f = faelligVonListen([l.id]); return faelligAktion(f, imKopf ? { listeId: l.id, ziel: "liste" } : { listeId: l.id, ziel: "raster" }); })(),   // 204
       ...(() => { const n = (lsGet(SK.liste(l.id))?.vokabeln || []).filter(v => v.herausgenommen).length;   // 176
         return n ? [{ label: `🚫 Herausgenommene (${n})`, fn: () => { oeffneListeDetail(l.id); setListenBereich("vokabeln"); setListeNurAus(true); } }] : []; })(),
       { label: "✨ Beispielsätze ergänzen", fn: () => oeffneSatzFenster(l.id) },
@@ -7026,6 +7112,15 @@ export default function VokabelApp() {
             <span style={{flexShrink:0}}>Zuletzt abgefragt: {zuletzt ? formatDatum(zuletzt) : "noch nie"}</span>
             <span className="info-gruppen">{gruppenText}</span>
           </div>
+          {(() => {   // 202: Inhalt ausführlich – Beispielsätze und Synonyme
+            const inh = gruppeL.reduce((x, y) => { const i = listenInhalt(y.liste, satzStand); return { saetze: x.saetze + i.saetze, synonyme: x.synonyme + i.synonyme }; }, { saetze: 0, synonyme: 0 });
+            return (
+              <div className="info-zeile-klein" data-liste-info-inhalt={`${inh.saetze}|${inh.synonyme}`}>
+                <span>💬 {inh.saetze ? `${inh.saetze} Beispielsätze` : "keine Beispielsätze"}</span>
+                <span>≈ {inh.synonyme ? `${inh.synonyme} Synonyme` : "keine Synonyme"}</span>
+              </div>
+            );
+          })()}
         </>)}
       </div>
     );
@@ -7036,12 +7131,13 @@ export default function VokabelApp() {
       ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe({ art: "liste", ids: [], name: "", eltern }) }] : [];
     const neueListe = eltern => ({ label: "＋ Neue Liste", fn: () => { setListenOrdnerOffen(eltern); resetImport(); setTab("listen"); setAnsicht("import"); } });
     const geheZu = id => { setListenOrdnerOffen(id); setListenSortModus(false); setListenAuswahl([]); setListeVorschau(null); setListenWahl(null); };
+    const anordnenL = ordnerId => ({ label: "⇅ Anordnen…", fn: () => setAnordnen({ art: "liste", ordner: ordnerId }) });   // 208
     return (
       <div data-ordner-navi="liste" style={{display:"flex", alignItems:"center", gap:8, marginBottom:8, minHeight:30}}>
         {pfadTeile({ alleText: "Alle Listen", alleAttr: "data-alle-listen", pfad: ordnerPfad(listenOrdner, listenOrdnerOffen), geheZu,
           alleTt: listenOrdnerOffen ? "Zurück zu allen Listen – Listen hierher ziehen legt sie auf die oberste Ebene; lang drücken: neue Liste, neuer Ordner"
             : "Alle Listen – lang drücken: neue Liste, neuer Ordner",
-          alleAktionen: [neueListe(null), ...neuerOrdner(null)], ordnerAktionen: o => [neueListe(o.id), ...neuerOrdner(o.id)], einheit: "Listen" })}
+          alleAktionen: [neueListe(null), ...neuerOrdner(null), anordnenL(null)], ordnerAktionen: o => [neueListe(o.id), ...neuerOrdner(o.id), anordnenL(o.id)], einheit: "Listen" })}
       </div>
     );
   }
@@ -7059,10 +7155,11 @@ export default function VokabelApp() {
     plaetzeRef.current.liste = ebene.filter(x => !x.istOrdner && sichtbarE(x)).map((l, i) => ({ id: l.id, z: l.platz?.z ?? i, s: l.platz?.s ?? 0 }));
     const gefiltert = sprachFilter !== "alle";
     const sortModus = listenSortModus && !gefiltert;
-    const anzSpalten = gefiltert ? 1 : ebenenSpalten(ebene, sortModus);   // 196
+    const minS = minSpalten("liste", offen);   // 203
+    const anzSpalten = gefiltert ? 1 : ebenenSpalten(ebene, sortModus, minS);   // 196
     // Kachel-Aufbau nur nach den belegten Spalten: die freie Spalte beim Verschieben darf ihn nicht ändern
     // (sonst baut React den Inhalt unter dem Finger neu auf und das Ziehen verliert den Finger)
-    const eng = (gefiltert ? 1 : ebenenSpalten(ebene)) > 1;
+    const eng = (gefiltert ? 1 : ebenenSpalten(ebene, false, minS)) > 1;
     const tippeImRaster = (l, platz) => {
       if (slotGezogenRef.current) { slotGezogenRef.current = false; return; }
       if (l) { setListenAuswahl(a => a.includes(l.id) ? a.filter(x => x !== l.id) : [...a, l.id]); return; }
@@ -7093,6 +7190,9 @@ export default function VokabelApp() {
     const zelle = (l, key, ziehIdsL = []) => {
       const anzahl = vokabelAnzahl(l.id);
       const liste = lsGet(SK.liste(l.id));
+      // 202: Inhalt kurz – Beispielsätze (gesamt) und Synonyme, nur was vorhanden ist
+      const inh = listenInhalt(liste, satzStand);
+      const inhaltKurz = <span data-listen-inhalt={`${inh.saetze}|${inh.synonyme}`}>{inh.saetze ? ` · 💬 ${inh.saetze}` : ""}{inh.synonyme ? ` · ≈ ${inh.synonyme}` : ""}</span>;
       const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
       const ziel = slotDragZiel === key && slotDragId && slotDragId !== l.id;
       // Lang-Druck (Maus: Rechtsklick): Liste kommt in die Auswahl, die Tafel bleibt unten offen (weitere antippen wählt mit aus);
@@ -7117,7 +7217,7 @@ export default function VokabelApp() {
           {eng ? (
             <div className="karte-zeile-info">
               <div className="karte-zeile-name">{listenFlagge(l)}{l.name}</div>
-              <div className="karte-zeile-sub">{anzahl} Vokabel{anzahl !== 1 ? "n" : ""}</div>
+              <div className="karte-zeile-sub">{anzahl} Vokabel{anzahl !== 1 ? "n" : ""}{inhaltKurz}</div>
               {(einstellungen.gelerntSchwelle ?? 0) > 0 && liste?.vokabeln.length > 0 && (
                 <span className="mini-kreise" data-listen-kreise style={{marginTop:4}}>{renderMiniKreise(lernstandJeArt(liste.vokabeln, liste.id), { groesse: anzSpalten >= 4 ? 16 : 22 })}</span>
               )}
@@ -7126,7 +7226,7 @@ export default function VokabelApp() {
                   <div className="karte-zeile-info">
                     <div className="karte-zeile-name">{listenFlagge(l)}{l.name}</div>
                     <div className="karte-zeile-sub">
-                      {anzahl} Vokabel{anzahl !== 1 ? "n" : ""}{" "}
+                      {anzahl} Vokabel{anzahl !== 1 ? "n" : ""}{inhaltKurz}{" "}
                       {aktSpalten.map(t => <span key={t} className="spalten-badge aktiv">{liste.spalten[t].name || t}</span>)}
                     </div>
                   </div>
@@ -7493,9 +7593,11 @@ export default function VokabelApp() {
     // 194: leeren Ordner anlegen (in der Ebene des Pfad-Teils), solange dort noch einer hineinpasst
     const neuerOrdner = eltern => ordnerPfad(slots.ordner, eltern).length < ORDNER_TIEFE_MAX
       ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe({ ids: [], name: "", eltern }) }] : [];
-    const alleAktionen = [...(statistik ? [alleListen] : [neueSession(null)]), ...faellige(faelligAlle), ...neuerOrdner(null), gelerntUmschalter];
+    const spaltenAktion = ordnerId => ({ label: `▥ Spalten (${minSpalten("slot", ordnerId)})`, fn: () => setSpaltenWahl({ art: "slot", ordner: ordnerId }) });   // 203
+    const anordnenAktion = ordnerId => ({ label: "⇅ Anordnen…", fn: () => setAnordnen({ art: "slot", ordner: ordnerId }) });   // 208
+    const alleAktionen = [...(statistik ? [alleListen] : [neueSession(null)]), ...faellige(faelligAlle), ...neuerOrdner(null), spaltenAktion(null), anordnenAktion(null), gelerntUmschalter];
     const ordnerAktionen = o => [...(statistik ? [] : [neueSession(o.id)]),
-      ...faellige(faelligVonSlots(eintraegeImOrdner(slots, o.id).map(g => g.id))), ...neuerOrdner(o.id), gelerntUmschalter];
+      ...faellige(faelligVonSlots(eintraegeImOrdner(slots, o.id).map(g => g.id))), ...neuerOrdner(o.id), spaltenAktion(o.id), anordnenAktion(o.id), gelerntUmschalter];
     const markiert = slotAuswahl.length;
     const geheZu = id => { setSlotOrdner(id); setSlotSortModus(false); setSlotAuswahl([]); };
     return (
@@ -7571,7 +7673,7 @@ export default function VokabelApp() {
     slotSichtbarRef.current = sichtbar.map(x => x.id);
     plaetzeRef.current.slot = sichtbar.map(x => ({ id: x.id, z: x.platz.z, s: x.platz.s }));
     const ebeneLeer = raster.gespeichert.length === 0;   // 194: leerer Ordner – eine Zeile freier Plätze zeigen
-    const anzSpalten = ebenenSpalten(raster.gespeichert, slotSortModus);   // 196: so viele Spalten wie belegt (+1 beim Verschieben)
+    const anzSpalten = ebenenSpalten(raster.gespeichert, slotSortModus, minSpalten("slot", ordnerOffen?.id || null));   // 196/203: belegt bzw. gewählt (+1 beim Verschieben)
     const ordnerHierGeht = ordnerPfad(slots.ordner, ordnerOffen?.id || null).length < ORDNER_TIEFE_MAX;
     const zeilenAnzeige = slotSortModus ? raster.gespeichert.reduce((m, x) => Math.max(m, x.platz.z + 1), 0) + RASTER_FREI_ZEILEN
       : Math.max(ebeneLeer && ordnerOffen ? 1 : 0, raster.gespeichert.filter(sichtbarE).reduce((m, x) => Math.max(m, x.platz.z + 1), 0));
@@ -11784,10 +11886,10 @@ export default function VokabelApp() {
             <>
             <div className="sektion" style={{paddingTop:0}}>
               <div ref={listenZeileRef} data-listen-zeile className="quiz-zeile" style={{top: headerH + listeDetailKopfH, marginBottom:12}}>
-                {zelle("sprache", "Fremdsprache", `${spr.flagge} ${spr.name}`, <span data-bestaetigen>Bestätigen</span>, lb === "sprache" ? "Auswahl übernehmen und zuklappen" : "Fremdsprache der Liste – bestimmt Vorlese-Stimme und Sprachfilter", true)}
+                {zelle("vokabeln", "Vokabeln", `${aktiveListe.vokabeln.length}`, <>{aktiveListe.vokabeln.length}{pfeil}</>, lb === "vokabeln" ? "Vokabeln zuklappen" : "Vokabeln der Liste ansehen, bearbeiten und ergänzen")}
                 {zelle("saetze", "Beispielsätze", `💬 ${mitSaetzen.length}/${aktiveListe.vokabeln.length}`, <>💬 {mitSaetzen.length}/{aktiveListe.vokabeln.length}{pfeil}</>, lb === "saetze" ? "Beispielsätze zuklappen" : "Beispielsätze ansehen und per KI ergänzen")}
                 {zelle("spalten", "Spalten", `${aktiveSpalten.length}`, <>{aktiveSpalten.length}{pfeil}</>, lb === "spalten" ? "Spalten zuklappen" : "Spalten ansehen und umbenennen")}
-                {zelle("vokabeln", "Vokabeln", `${aktiveListe.vokabeln.length}`, <>{aktiveListe.vokabeln.length}{pfeil}</>, lb === "vokabeln" ? "Vokabeln zuklappen" : "Vokabeln der Liste ansehen, bearbeiten und ergänzen")}
+                {zelle("sprache", "Fremdsprache", `${spr.flagge} ${spr.name}`, <span data-bestaetigen>Bestätigen</span>, lb === "sprache" ? "Auswahl übernehmen und zuklappen" : "Fremdsprache der Liste – bestimmt Vorlese-Stimme und Sprachfilter", true)}
               </div>
 
               {!lb && abfragbareSpalten.length >= 2 && aktiveListe.vokabeln.length > 0 && (
@@ -11810,6 +11912,7 @@ export default function VokabelApp() {
                     setQuizTabListen([aktiveListeId]);
                     setListenAuswahlAufgeklappt(false);
                     initQuizDefaults(lsGet(SK.liste(aktiveListeId)));
+                    ausListeRef.current = { listeId: aktiveListeId, ziel: "liste" };   // 204
                   }}
                   {...tt("Quiz mit dieser Liste starten")}>
                   Quiz starten
@@ -12275,7 +12378,7 @@ export default function VokabelApp() {
                   <div style={{display:"flex", alignItems:"baseline", gap:6}}>
                     <span data-statistik-kopf-prozent style={{fontWeight:800, fontSize:"1.25rem", color: keineAkzente ? "var(--kopf-schrift-leise)" : "var(--kopf-schrift)"}}>{keineAkzente ? "–" : `${Math.round(lernFortschritt)} %`}</span>
                   </div>
-                  <div data-statistik-kopf-balken style={{display:"flex", width:"min(180px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"var(--fortschritt-balken)", margin:"3px 0 2px"}}
+                  <div data-statistik-kopf-balken style={{display:"flex", width:"min(260px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"var(--fortschritt-balken)", margin:"3px 0 2px"}}
                     {...tt(`Gelernt ${kopfAnzahl.gelernt} · In Arbeit ${kopfAnzahl.arbeit} · Nie abgefragt ${kopfAnzahl.nie} · Negativ ${kopfAnzahl.negativ}`)}>
                     {kopfVoks.length > 0 && FORTSCHRITT_BALKEN.map(([g, farbe]) => kopfAnzahl[g] > 0 && (
                       <div key={g} style={{width:`${kopfAnzahl[g] / kopfVoks.length * 100}%`, background:farbe}}/>
@@ -12299,7 +12402,6 @@ export default function VokabelApp() {
                 </div>
               </div>
               )}
-              <button className="btn btn-ghost btn-sm" style={{flexShrink:0}} onClick={() => window.scrollTo({top:0, behavior:"smooth"})} {...tt("Zum Seitenanfang scrollen")}>nach oben</button>
             </div>
             )}
             <div className="sektion" style={{paddingTop:12, paddingBottom:(statistikListenAufgeklappt||statistikEinzelauswahlAufgeklappt)?'100dvh':0}}>
@@ -12678,6 +12780,8 @@ export default function VokabelApp() {
                       hilfe: `Alles sichern, wiederherstellen, Speicher schützen · ${letzteSicherung ? `zuletzt am ${formatTag(letzteSicherung)}` : "noch nie gesichert"}` },
                     { k: "erinnerung", label: "Erinnerung", text: sicherungTage ? `nach ${sicherungTage} T` : "Aus", wahl: true,
                       hilfe: "In der Session-Auswahl an eine Sicherung erinnern, wenn die letzte älter ist als …" },
+                    { k: "spalten", label: "Spalten", text: `▥ ${minSpalten("liste", listenOrdnerOffen)}`, wahl: true,
+                      hilfe: "Spalten dieser Ebene (mindestens) – belegte Spalten können mehr ergeben, höchstens 5" },
                   ])}
                   {vorschauL && renderListeInfo(vorschauL)}
                   {listenWahl?.length > 0 && !einstUnter && (() => { const ls = listenWahl.map(id => listenIndex.find(x => x.id === id)).filter(Boolean); return ls.length ? renderListeInfo(ls[0], ls.length > 1 ? ls : null) : null; })()}
@@ -12731,6 +12835,18 @@ export default function VokabelApp() {
                   </div>
                 </div>
               )}
+            </div>)}
+            {einstUnter === "spalten" && (
+            <div className="karte">
+              <div className="toggle-row">
+                <div className="toggle-btn" data-listen-spalten data-wahl-bereich style={{display:"flex", width:"100%"}}>
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <button key={n} className={`toggle-opt${minSpalten("liste", listenOrdnerOffen) === n ? " aktiv" : ""}`} data-listen-spalten-wahl={n} style={{flex:1}}
+                      onClick={() => einstWahl("spalten", () => setzeMinSpalten("liste", listenOrdnerOffen, n))}
+                      {...tt(`Mindestens ${n} Spalte${n > 1 ? "n" : ""} in dieser Ebene`)}>{n}</button>
+                  ))}
+                </div>
+              </div>
             </div>)}
             {einstUnter === "erinnerung" && (
             <div className="karte">
@@ -13012,6 +13128,41 @@ export default function VokabelApp() {
         </div>
         );
       })()}
+      {anordnen && (
+        <div className="overlay" onClick={() => setAnordnen(null)}>
+          <div className="modal" data-anordnen-dialog onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">Anordnen{anordnen.ordner ? ` – „${((anordnen.art === "liste" ? listenOrdner : slots.ordner) || []).find(o => o.id === anordnen.ordner)?.name || ""}“` : ""}</div>
+            <div style={{display:"flex", flexDirection:"column", gap:6}}>
+              {[["name", "Nach Name", "A–Z, Zahlen der Reihe nach (A1-02 vor A1-10)"], ["datum", "Nach Datum", "älteste zuerst"],
+                ["lernstand", "Nach Lernstand", "am meisten gelernt zuerst"], ["luecken", "Lücken schließen", "Reihenfolge bleibt, leere Plätze fallen weg"]].map(([k, titel, sub]) => (
+                <button key={k} className="neue-session-wahl" data-anordnen={k} onClick={() => ordneAn(anordnen.art, anordnen.ordner, k)} {...tt(`${titel} – Ordner zuerst, spaltenweise von oben nach unten`)}>
+                  <b>{titel}</b><span>{sub}</span>
+                </button>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setAnordnen(null)} {...tt("Schließen, ohne etwas zu ändern")}>Abbrechen</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {spaltenWahl && (
+        <div className="overlay" onClick={() => setSpaltenWahl(null)}>
+          <div className="modal" data-spalten-dialog onClick={e => e.stopPropagation()}>
+            <div className="modal-titel">Spalten{spaltenWahl.ordner ? ` in „${((spaltenWahl.art === "liste" ? listenOrdner : slots.ordner) || []).find(o => o.id === spaltenWahl.ordner)?.name || ""}“` : ""}</div>
+            <div className="toggle-btn" data-wahl-bereich style={{display:"flex", width:"100%"}}>
+              {[1, 2, 3, 4, 5].map(n => (
+                <button key={n} className={`toggle-opt${minSpalten(spaltenWahl.art, spaltenWahl.ordner) === n ? " aktiv" : ""}`} data-spalten-wahl={n} style={{flex:1}}
+                  onClick={() => { setzeMinSpalten(spaltenWahl.art, spaltenWahl.ordner, n); setSpaltenWahl(null); }}
+                  {...tt(`Mindestens ${n} Spalte${n > 1 ? "n" : ""} – belegte Spalten können mehr ergeben`)}>{n}</button>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setSpaltenWahl(null)} {...tt("Schließen, ohne etwas zu ändern")}>Abbrechen</button>
+            </div>
+          </div>
+        </div>
+      )}
       {ordnerUmbenennen && (
         <div className="overlay" onClick={() => setOrdnerUmbenennen(null)}>
           <div className="modal" data-ordner-umbenennen onClick={e => e.stopPropagation()}>
