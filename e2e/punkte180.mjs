@@ -83,6 +83,20 @@ await klick("[data-heute]:not([data-slot-id])");
 ok(await anzahl() === "2" && await page.evaluate(() => document.querySelector("[data-heute]:not([data-slot-id])")?.dataset.heute) === "an", `„+ 1 heute“: beide zählen (${await anzahl()})`);
 await laden("g_c");
 ok(await anzahl() === "0", `„Ganz heute“: alles heute schon abgefragt → 0 (${await anzahl()})`);
+const leer = await page.evaluate(() => { const k = document.querySelector("[data-start-knopf]"), f = document.querySelector(".start-fortschritt");
+  return { leer: k.classList.contains("leer"), gleich: !f || getComputedStyle(k).backgroundColor === getComputedStyle(f).backgroundColor, frei: !k.disabled,
+    titel: document.querySelector("[data-start-titel]")?.textContent.trim(), heuteKnopf: getComputedStyle(document.querySelector(".quiz-zeile-knopf[data-heute]")).backgroundColor,
+    gelKnopf: getComputedStyle(document.querySelector(".quiz-zeile-knopf[data-gelernte]") || document.body).backgroundColor }; });
+ok(leer.leer && leer.gleich && leer.frei && leer.titel === "Quiz mit 0 Vokabeln", `188: Titel „Quiz mit 0 Vokabeln“, Start-Knopf in der Farbe des Fortschritt-Feldes (${JSON.stringify(leer)})`);
+ok(!(await page.$("[data-start-hinweis]")), "188: Hinweis erst beim Antippen");
+await klick("[data-start-knopf]");
+ok(await page.evaluate(() => document.querySelector("[data-start-hinweis]")?.textContent.trim()) === "1 heute schon abgefragt – oben bei „Heute“ dazunehmen" && await page.evaluate(() => !document.querySelector(".quiz-frage-text")),
+  `188: Antippen zeigt unter den Knöpfen „1 heute schon abgefragt – oben bei „Heute“ dazunehmen“, kein Quiz (${await page.evaluate(() => document.querySelector("[data-start-hinweis]")?.textContent.trim())})`);
+ok(await page.evaluate(() => { const h = document.querySelector("[data-start-hinweis]"), k = document.querySelector("[data-start-knopf]"); return h.getBoundingClientRect().top > k.getBoundingClientRect().bottom; }), "188: Hinweis unterhalb des Knopfes");
+const aus = await page.evaluate(() => getComputedStyle(document.querySelector(".quiz-zeile-knopf[data-heute]")).backgroundColor);
+await klick(".quiz-zeile-knopf[data-heute]");
+const an = await page.evaluate(() => getComputedStyle(document.querySelector(".quiz-zeile-knopf[data-heute]")).backgroundColor);
+ok(aus !== an && !(await page.$("[data-start-hinweis]")) && !(await page.$("[data-start-knopf].leer")), `187: „Heute“ aus hell, an gefüllt (${aus} → ${an}); Hinweis weg, Knopf wieder grün`);
 await laden("g_a");
 ok(await anzahl() === "1" && await page.evaluate(() => document.querySelector("[data-heute]:not([data-slot-id])")?.dataset.heute) === "aus", "andere Session geladen: „Heute“ wieder aus");
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(700);

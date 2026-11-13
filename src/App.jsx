@@ -1971,8 +1971,8 @@ const CSS_BASIS = `
   [data-modus-gruppen].mehrfach .spalten-modus-btn,.spalten-rolle-btn.mehrfach{border-style:dashed;}
   .wahl-hinweis{display:inline-block;padding:2px 6px;margin-left:-6px;border-radius:6px;}
   .nach-oben{position:fixed;right:max(16px, calc(50vw - 284px));bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:30;width:46px;height:46px;border-radius:50%;border:none;background:var(--haupt);color:var(--auf-haupt);font-size:1.3rem;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.25);opacity:0.92;}
-  .quiz-zeile-knopf[data-gelernte]{background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);flex:0 0 auto;padding-left:12px;padding-right:12px;}
-  .quiz-zeile-knopf[data-gelernte].an{background:var(--haupt);color:var(--auf-haupt);}
+  .quiz-zeile-knopf[data-gelernte],.quiz-zeile-knopf[data-heute]{background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);flex:0 0 auto;padding-left:12px;padding-right:12px;}
+  .quiz-zeile-knopf[data-gelernte].an,.quiz-zeile-knopf[data-heute].an{background:var(--haupt);color:var(--auf-haupt);}
   .quiz-zeile-hinweis{font-size:0.75rem;color:var(--text3);text-align:center;padding:6px 0 0;}
   .umfang-raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px;}
   .umfang-raster .typ-btn{min-height:48px;font-size:1.1rem;font-weight:800;}
@@ -1985,6 +1985,8 @@ const CSS_BASIS = `
   .start-bereich{background:var(--karte);padding:14px 16px;margin:0 -16px 8px;border-bottom:1px solid var(--rahmen);}
   .start-fortschritt{flex:0 0 auto;min-width:86px;border-radius:12px;border:1.5px solid var(--haupt-zart);background:var(--haupt-flaeche);color:var(--haupt);font-family:inherit;font-weight:800;font-size:1rem;cursor:pointer;}
   .start-fortschritt:disabled{cursor:default;opacity:0.7;}
+  .btn-primary.start-knopf.leer{background:var(--haupt-flaeche);color:var(--haupt);border:1.5px solid var(--haupt-zart);box-shadow:none;}   /* 188: nichts abzufragen */
+  .start-hinweis{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:31px;font-size:0.82rem;margin-top:10px;color:var(--text);}
   .start-knopf{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 12px;min-height:58px;}
   .start-knopf b{font-size:1.1rem;font-weight:800;}
   .start-knopf span{font-size:0.85rem;font-weight:400;opacity:0.95;}
@@ -2482,7 +2484,8 @@ export default function VokabelApp() {
   const [slotSektionAufgeklappt, setSlotSektionAufgeklappt] = useState(true);
   const [slotUmbenennen, setSlotUmbenennen] = useState(null);   // {id, name, kopie} – Fenster "Umbenennen" bzw. "Duplizieren"
   const [quizGelerntEinschliessen, setQuizGelerntEinschliessen] = useState(false);
-  const [quizHeuteEinschliessen, setQuizHeuteEinschliessen] = useState(false);   // 180: vorübergehend (nicht gespeichert; andere Session → aus)
+  const [quizHeuteEinschliessen, setQuizHeuteEinschliessen] = useState(false);
+  const [startLeerHinweis, setStartLeerHinweis] = useState(false);   // 188: Start-Knopf mit 0 angetippt → Zeile unter den Knöpfen   // 180: vorübergehend (nicht gespeichert; andere Session → aus)
   const [gruppenQuiz, setGruppenQuiz] = useState(null);   // {name, art, ids, listenIds} – Rückfrage "Quiz mit dieser Gruppe starten?"
   const gruppenQuizStartRef = useRef(0);                 // >0: nach dem Tab-Wechsel automatisch starten
   const [listenGelerntAusblenden, setListenGelerntAusblenden] = useState(false);
@@ -4809,6 +4812,7 @@ export default function VokabelApp() {
   function applyKonfiguration(k, art = null) {
     if (!k) return;
     setQuizHeuteEinschliessen(false);   // 180
+    setStartLeerHinweis(false);
     if (k.listenIds && k.listenIds.length > 0) {
       const alleVorhanden = k.listenIds.every(id => listenIndex.some(l => l.id === id));
       if (alleVorhanden) {
@@ -10559,7 +10563,10 @@ export default function VokabelApp() {
           const lernGesamt = lernStand ? lernStand.ids.length : 0;
           const lernAngesehen = lernStand ? Math.min(lernGesamt, lernStand.start + (lernStand.fertig ? Math.min(lernStand.groesse, lernGesamt - lernStand.start) : lernStand.index)) : 0;
           // Start-Knopf: was in der laufenden Session noch übrig ist (die Paketgröße steht auf dem Umfang-Knopf)
-          const startRest = isPakete ? Math.max(0, sessionAnzahl - sessionAbgefragtAnzahl) : verfuegbar;
+          // 188: Titel und Knopf-Zahl ohne die heute gesperrten (Fortschritt-Feld zählt sie weiter zur Session)
+          const heuteGesperrt = quizHeuteEinschliessen || !tagesSperre() ? 0 : reihenfolgeVoks.filter(v => heuteAbgefragt(feldVon(v))).length;
+          const titelAnzahl = Math.max(0, sessionAnzahl - heuteGesperrt);
+          const startRest = isPakete ? Math.max(0, sessionAnzahl - sessionAbgefragtAnzahl - (quizHeuteEinschliessen ? 0 : heuteAnzahl)) : verfuegbar;
           const sessionPct = sessionAnzahl > 0 ? Math.round(sessionAbgefragtAnzahl / sessionAnzahl * 100) : 0;
           const sliderActive = quizSchlechtesteMaxScore !== "";
           const sliderVal = sliderActive ? parseInt(quizSchlechtesteMaxScore) : 0;
@@ -11110,7 +11117,7 @@ export default function VokabelApp() {
                     {schwelle > 0 && gelernteAnzahl > 0 && (
                       <div className="quiz-zeile-zelle schmal"><span className="quiz-zeile-label">Gelernte</span>
                       <button className={`quiz-zeile-knopf${quizGelerntEinschliessen ? " an" : ""}`} data-gelernte={quizGelerntEinschliessen ? "an" : "aus"}
-                        onClick={() => { schliesseQuizBereiche(null); setQuizGelerntEinschliessen(v => !v); }}
+                        onClick={() => { schliesseQuizBereiche(null); setQuizGelerntEinschliessen(v => !v); setStartLeerHinweis(false); }}
                         {...tt(quizGelerntEinschliessen ? `${gelernteAnzahl} gelernte Vokabeln werden mit abgefragt – antippen zum Ausblenden` : `${gelernteAnzahl} gelernte Vokabeln sind ausgeblendet – antippen zum Einschließen`)}>
                         {quizGelerntEinschliessen ? `+ ${gelernteAnzahl} gelernte` : `${gelernteAnzahl} gelernte`}
                       </button></div>
@@ -11118,7 +11125,7 @@ export default function VokabelApp() {
                     {heuteAnzahl > 0 && (
                       <div className="quiz-zeile-zelle schmal"><span className="quiz-zeile-label">Heute</span>
                       <button className={`quiz-zeile-knopf${quizHeuteEinschliessen ? " an" : ""}`} data-heute={quizHeuteEinschliessen ? "an" : "aus"}
-                        onClick={() => { schliesseQuizBereiche(null); setQuizHeuteEinschliessen(v => !v); }}
+                        onClick={() => { schliesseQuizBereiche(null); setQuizHeuteEinschliessen(v => !v); setStartLeerHinweis(false); }}
                         {...tt(quizHeuteEinschliessen ? `${heuteAnzahl} heute schon abgefragte Vokabeln werden noch einmal abgefragt – antippen zum Ausblenden`
                           : `${heuteAnzahl} Vokabeln wurden heute schon abgefragt und kommen erst morgen wieder – antippen: trotzdem einschließen (gilt nur für diese Session)`)}>
                         {quizHeuteEinschliessen ? `+ ${heuteAnzahl} heute` : `${heuteAnzahl} heute`}
@@ -11223,40 +11230,12 @@ export default function VokabelApp() {
                         </div>
                       );
                     })()}
-                    <div className="start-titel" data-start-titel>{lernAktiv ? "Lernen" : "Quiz"} mit {sessionAnzahl} Vokabel{sessionAnzahl !== 1 ? "n" : ""}</div>
+                    <div className="start-titel" data-start-titel>{lernAktiv ? "Lernen" : "Quiz"} mit {lernAktiv ? sessionAnzahl : titelAnzahl} Vokabel{(lernAktiv ? sessionAnzahl : titelAnzahl) !== 1 ? "n" : ""}</div>
                     {isPakete && (
                       <div style={{height:6, background:"var(--rahmen)", borderRadius:3, marginBottom:10}} data-start-balken={sessionPct}>
                         <div style={{width:`${sessionPct}%`, height:"100%", background:"var(--haupt)", borderRadius:3, transition:"width 0.3s"}}/>
                       </div>
                     )}
-                    {lernStand && lernResetFrage ? (
-                      <div data-lern-reset-frage style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", minHeight:31, fontSize:"0.82rem", marginBottom:10}}>
-                        <span style={{color:"var(--text)", fontWeight:600}}>Lernstand löschen?</span>
-                        <button data-lern-reset-ja className="toggle-opt aktiv" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8}}
-                          onClick={() => { setLernResetFrage(false); setzeLernStand(aktiverSlot, quizAbfrageArt, null); }}
-                          {...tt("Ja: das Lernen beginnt beim nächsten Start von vorn. Scores und Abfrage-Fortschritt bleiben.")}>
-                          Ja, von vorn
-                        </button>
-                        <button className="toggle-opt" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8, border:"1.5px solid var(--rahmen)"}}
-                          onClick={() => setLernResetFrage(false)} {...tt("Nein: nichts ändern")}>Nein</button>
-                      </div>
-                    ) : null}
-                    {sessionResetFrage && sessionHatFortschritt ? (
-                      <div data-reset-frage style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", minHeight:31, fontSize:"0.82rem", marginBottom:10}}>
-                        <span style={{color:"var(--text)", fontWeight:600}}>Abgefragt-Stand löschen?</span>
-                        <button data-reset-ja className="toggle-opt aktiv" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8}}
-                          onClick={() => { setSessionResetFrage(false); loescheSessionSlot(); }}
-                          {...tt("Ja: die Session beginnt von vorn – alle Vokabeln kommen wieder in die Pakete. Scores und Lernfortschritt bleiben erhalten.")}>
-                          Ja, neu beginnen
-                        </button>
-                        <button className="toggle-opt" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8, border:"1.5px solid var(--rahmen)"}}
-                          onClick={() => setSessionResetFrage(false)}
-                          {...tt("Nein: nichts ändern")}>
-                          Nein
-                        </button>
-                        <span style={{color:"var(--text3)", fontSize:"0.7rem"}}>(Scores bleiben)</span>
-                      </div>
-                    ) : null}
                     <div style={{display:"flex", gap:10, alignItems:"stretch"}}>
                       {lernStand && !aufteilen && (
                         <button data-lernstand className="start-fortschritt" onClick={() => setLernResetFrage(f => !f)}
@@ -11294,13 +11273,51 @@ export default function VokabelApp() {
                           <b>Neuer Durchlauf</b><span>alle {sessionAnzahl} abgefragt</span>
                         </button>
                       ) : (
-                        <button className="btn btn-primary start-knopf" data-start-knopf data-start-anzahl={verfuegbar} data-start-rest={startRest}
-                          onClick={() => starteQuiz()} disabled={!kannStarten || verfuegbar === 0}
+                        <button className={`btn btn-primary start-knopf${verfuegbar === 0 ? " leer" : ""}`} data-start-knopf data-start-anzahl={verfuegbar} data-start-rest={startRest}
+                          onClick={() => verfuegbar === 0 ? setStartLeerHinweis(h => !h) : starteQuiz()} disabled={!kannStarten}
                           {...tt(isPakete ? `${START_TEXT[quizArt] || "Quiz starten"} – in dieser Session sind noch ${startRest} Vokabeln übrig; abgefragt wird ${quizPaketGroesse >= PAKET_ALLE ? "alles in einem Paket" : `in Paketen zu ${quizPaketGroesse}`}; lang drücken: speichern` : `${START_TEXT[quizArt] || "Quiz starten"} – die Zahl nennt die Vokabeln dieser Fragerunde; lang drücken: speichern`, sessionSpeicherAktionen())}>
                           <b>{START_TEXT[quizArt] || "Quiz starten"}</b><span>{startRest} Vokabel{startRest !== 1 ? "n" : ""}</span>
                         </button>
                       )}
                     </div>
+                    {lernStand && lernResetFrage ? (
+                      <div data-lern-reset-frage style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", minHeight:31, fontSize:"0.82rem", marginTop:10}}>
+                        <span style={{color:"var(--text)", fontWeight:600}}>Lernstand löschen?</span>
+                        <button data-lern-reset-ja className="toggle-opt aktiv" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8}}
+                          onClick={() => { setLernResetFrage(false); setzeLernStand(aktiverSlot, quizAbfrageArt, null); }}
+                          {...tt("Ja: das Lernen beginnt beim nächsten Start von vorn. Scores und Abfrage-Fortschritt bleiben.")}>
+                          Ja, von vorn
+                        </button>
+                        <button className="toggle-opt" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8, border:"1.5px solid var(--rahmen)"}}
+                          onClick={() => setLernResetFrage(false)} {...tt("Nein: nichts ändern")}>Nein</button>
+                      </div>
+                    ) : null}
+                    {sessionResetFrage && sessionHatFortschritt ? (
+                      <div data-reset-frage style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", minHeight:31, fontSize:"0.82rem", marginTop:10}}>
+                        <span style={{color:"var(--text)", fontWeight:600}}>Abgefragt-Stand löschen?</span>
+                        <button data-reset-ja className="toggle-opt aktiv" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8}}
+                          onClick={() => { setSessionResetFrage(false); loescheSessionSlot(); }}
+                          {...tt("Ja: die Session beginnt von vorn – alle Vokabeln kommen wieder in die Pakete. Scores und Lernfortschritt bleiben erhalten.")}>
+                          Ja, neu beginnen
+                        </button>
+                        <button className="toggle-opt" style={{padding:"5px 12px", fontSize:"0.8rem", borderRadius:8, border:"1.5px solid var(--rahmen)"}}
+                          onClick={() => setSessionResetFrage(false)}
+                          {...tt("Nein: nichts ändern")}>
+                          Nein
+                        </button>
+                        <span style={{color:"var(--text3)", fontSize:"0.7rem"}}>(Scores bleiben)</span>
+                      </div>
+                    ) : null}
+                    {startLeerHinweis && !lernAktiv && !aufteilen && !alleAbgefragt && verfuegbar === 0 && (() => {
+                      const gel = quizGelerntEinschliessen ? 0 : gelernteAnzahl, heu = quizHeuteEinschliessen ? 0 : heuteAnzahl;
+                      const teile = [gel && `${gel} gelernt`, heu && `${heu} heute schon abgefragt`].filter(Boolean);
+                      const knoepfe = [gel && "„Gelernte“", heu && "„Heute“"].filter(Boolean);
+                      return (
+                        <div className="start-hinweis" data-start-hinweis onClick={() => setStartLeerHinweis(false)}>
+                          {teile.length ? <span><b>{teile.join(" · ")}</b> – oben bei {knoepfe.join(" / ")} dazunehmen</span> : <span>Keine Vokabeln ausgewählt</span>}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
                 </>)}
