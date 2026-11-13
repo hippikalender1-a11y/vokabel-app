@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen } from "./hilfen.mjs";
+import { quizEinstellungen, kurzHalten } from "./hilfen.mjs";
 
 // 109–113: Session-Auswahl – antippen wählt nur aus (Info darunter), grüner Kopf-Knopf lädt; Vokabeln ansehen mit Listen-Nr. und Lücken;
 // Namensvorschlag „Engl 11.11.“; Duplizieren im Ordner
@@ -38,7 +38,7 @@ if (!(await kopfOffen())) { await klick("[data-slot-kopf-name]"); }
 ok(await kopfOffen(), "Session-Auswahl offen");
 
 // ── 109: antippen wählt nur aus ──
-await klick('[data-slot-id="g_1"]');
+await kurzHalten(page, '[data-slot-id="g_1"]');
 ok(await kopfOffen() && await page.$('[data-slot-vorschau="g_1"]') && await page.$('[data-slot-id="g_1"][data-vorschau]'), "Kachel antippen: Auswahl bleibt offen, Kachel markiert, Info darunter");
 ok(await kopf() === "Stücke laden" && await page.$('[data-slot-laden="gespeichert:g_1"].bestaetigen-knopf'), `Kopf: grüner Knopf „✓ Stücke laden“, ein Häkchen (${await kopf()})`);
 // ── 110: Info ──
@@ -65,7 +65,7 @@ await klick("[data-vorschau-vokabeln]");
 const liste = await page.evaluate(() => [...document.querySelectorAll("[data-vorschau-vokliste] > div > *")].map(e => e.dataset.vorschauNr || `L${e.dataset.vorschauLuecke}`).join(","));
 ok(liste === "1,2,3,4,L5-7,8,9,L10-10", `Vokabeln: nur enthaltene mit Nr., Lücken als Trennzeile (${liste})`);
 // andere Kachel antippen: wechselt
-await klick('[data-slot-id="g_2"]');
+await kurzHalten(page, '[data-slot-id="g_2"]');
 ok(/Ganze Liste laden/.test(await kopf() || "") && !(await page.$("[data-vorschau-vokliste]")), `andere Kachel: wechselt, Liste wieder zu (${await kopf()})`);
 ok(/alle 10/.test(await page.evaluate(() => document.querySelector("[data-vorschau-listen]")?.innerText)), "ganze Liste: „alle 10“");
 // laden über den Kopf
@@ -91,7 +91,7 @@ const vorschlag = await page.evaluate(() => {
 });
 await page.evaluate(() => document.querySelector("[data-ordner-zurueck]")?.click()); await sleep(200);
 await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(300);
-await klick("[data-slot-id=\"g_2\"]");
+await kurzHalten(page, "[data-slot-id=\"g_2\"]");
 await klick("[data-slot-laden]"); await sleep(500);
 // Neues Quiz → Speichern
 await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(300);

@@ -57,7 +57,7 @@ await langDruck('[data-liste-id="l_a"]');
 ok(await anzahl() === "1" && !(await page.$('[data-liste-id="l_a"] [data-wahl-nr]')), "nochmal lang drücken nimmt Unité A heraus");
 await klick("[data-wahl-alle]");
 ok(await anzahl() === "3", "„Alle“: drei ausgewählt");
-ok(await menue() === "📤 Exportieren (3)|🔁 Keine fälligen Vokabeln|⇄ Verschieben|🗑 Löschen (3)|↔ Von–Bis|✕ Auswahl beenden", `Aktionen für die Auswahl (${await menue()})`);
+ok(await menue() === "📤 Exportieren (3)|🔁 Keine fälligen Vokabeln|⇄ Verschieben|📁 In Ordner… (3)|🗑 Löschen (3)|↔ Von–Bis|✕ Auswahl beenden", `Aktionen für die Auswahl (${await menue()})`);
 await klick('[data-liste-id="l_c"]');
 ok(await anzahl() === null && await page.$('[data-liste-oeffnen="l_c"]'), "antippen: Einzelauswahl (nur Unité C, öffnen über den grünen Knopf)");
 await langDruck('[data-liste-id="l_a"]');
@@ -91,7 +91,7 @@ ok(idx.map(l => l.id).join(",") === "l_c" && await page.evaluate(() => !localSto
 await tab("Quiz");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await langDruck('[data-slot-id="g1"]'); await langDruck('[data-slot-id="g2"]');
-ok(await menue() === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|📁 In Gruppe… (2)|⇄ Verschieben|🗑 Löschen (2)|↔ Von–Bis|✕ Auswahl beenden", `Konfigurationen: Aktionen für die Auswahl (${await menue()})`);
+ok(await menue() === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|📁 In Ordner… (2)|⇄ Verschieben|🗑 Löschen (2)|↔ Von–Bis|✕ Auswahl beenden", `Konfigurationen: Aktionen für die Auswahl (${await menue()})`);
 ok(/2 Sessions ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-info]")?.innerText || "")), "148: Info zeigt die Auswahl zusammengefasst");
 await aktion("🗑 Löschen");
 ok(await page.evaluate(() => /2 Konfigurationen löschen\?/.test(document.querySelector('[data-auswahl-loeschen="slot"]')?.textContent || "")
@@ -104,7 +104,7 @@ ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")).g
 await tab("Statistik");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await langDruck('[data-slot-id="g3"]');
-ok(!/Multiquiz/.test(await menue()) && /📁 In Gruppe…/.test(await menue()), `Statistik: Menü ohne Multiquiz (${await menue()})`);
+ok(!/Multiquiz/.test(await menue()) && /📁 In Ordner…/.test(await menue()), `Statistik: Menü ohne Multiquiz (${await menue()})`);
 await aktion("✕ Auswahl beenden");
 
 await browser.close();

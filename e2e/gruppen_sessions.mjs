@@ -1,8 +1,8 @@
 import puppeteer from "puppeteer-core";
 import { neueSessionMenue } from "./hilfen.mjs";
 
-// Session-Gruppen (Ordner): „📁 In Gruppe…“ (neu / vorhanden), Gruppen-Kachel öffnet die Gruppe („← Alle Sessions“),
-// „↑ Aus der Gruppe“, Gruppe umbenennen / auflösen, Multiquiz der Gruppe, Aufteilen legt eine Gruppe an
+// Session-Gruppen (Ordner): „📁 In Ordner…“ (neu / vorhanden), Gruppen-Kachel öffnet die Gruppe („← Alle Sessions“),
+// „↑ Aus dem Ordner“, Gruppe umbenennen / auflösen, Multiquiz der Gruppe, Aufteilen legt eine Gruppe an
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -43,8 +43,8 @@ await page.reload(); await sleep(600);
 
 // Neue Gruppe aus Teil 1
 await langDruck(kachel("s1"));
-ok((await menue()).includes("📁 In Gruppe…"), "Session-Menü: „📁 In Gruppe…“");
-await aktion("📁 In Gruppe…");
+ok((await menue()).includes("📁 In Ordner…"), "Session-Menü: „📁 In Ordner…“");
+await aktion("📁 In Ordner…");
 ok(await page.$("[data-in-gruppe-dialog]"), "Dialog „In Gruppe“");
 await page.type("[data-ordner-name-feld]", "Kapitel A");
 await page.click("[data-ordner-neu]"); await sleep(400);
@@ -57,8 +57,8 @@ ok(k.some(t => t.startsWith("📁 Kapitel A")) && !k.includes("Teil 1") && k.inc
 
 // Auswahl-Modus: Teil 2 + Teil 3 in die vorhandene Gruppe
 await langDruck(kachel("s2")); await langDruck(kachel("s3"));   // 147: lang drücken nimmt dazu
-ok((await menue()).some(m => m.startsWith("📁 In Gruppe… (2)")), "Auswahl-Menü: „📁 In Gruppe… (2)“");
-await aktion("📁 In Gruppe…");
+ok((await menue()).some(m => m.startsWith("📁 In Ordner… (2)")), "Auswahl-Menü: „📁 In Ordner… (2)“");
+await aktion("📁 In Ordner…");
 await page.click(`[data-in-gruppe="${ordner.id}"]`); await sleep(400);
 d = await slots();
 ok(["s1", "s2", "s3"].every(id => d.gespeichert.find(x => x.id === id).ordner === ordner.id), "alle drei Teile in „Kapitel A“");
@@ -69,12 +69,12 @@ await page.click(`[data-ordner-id="${ordner.id}"]`); await sleep(300);
 ok(await page.$("[data-ordner-zurueck]") && /Kapitel A/.test(await page.evaluate(() => document.querySelector("[data-ordner-pfad]").textContent)), "Gruppe geöffnet: „← Alle Sessions › 📁 Kapitel A“");
 k = await kacheln();
 ok(k.join("|") === "Teil 1|Teil 2|Teil 3", `in der Gruppe: Teil 1–3 (${k.join(" | ")})`);
-await page.click(kachel("s2")); await sleep(300); await page.click("[data-slot-laden]"); await sleep(900);
+await page.click(kachel("s2")); await sleep(900);   // 192: antippen lädt sofort
 ok(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Teil 2", "Session aus der Gruppe geladen");
 await page.click("[data-slot-kopf-name]"); await sleep(300);
 ok(await page.$("[data-ordner-zurueck]"), "Auswahl wieder offen: noch in der Gruppe");
 // Aus der Gruppe nehmen
-await langDruck(kachel("s3")); await aktion("↑ Aus der Gruppe");
+await langDruck(kachel("s3")); await aktion("↑ Aus dem Ordner");
 d = await slots();
 ok(!d.gespeichert.find(x => x.id === "s3").ordner, "Teil 3 aus der Gruppe genommen");
 await page.click("[data-ordner-zurueck]"); await sleep(300);
@@ -94,18 +94,18 @@ await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(
 await langDruck(`[data-ordner-id="${ordner.id}"]`);
 const m = await menue();
 console.log("     Gruppen-Menü:", m.join(" | "));
-ok(m.includes("📂 Öffnen") && m.some(x => x.startsWith("🧩 Multiquiz der Gruppe (")) && m.includes("✎ Umbenennen") && m.includes("📤 Gruppe auflösen"), "Gruppen-Menü: Öffnen, Multiquiz, Umbenennen, Auflösen");
+ok(m.includes("📂 Öffnen") && m.some(x => x.startsWith("🧩 Multiquiz des Ordners (")) && m.includes("✎ Umbenennen") && m.includes("📤 Ordner auflösen"), "Gruppen-Menü: Öffnen, Multiquiz, Umbenennen, Auflösen");
 await aktion("✎ Umbenennen");
 await page.evaluate(() => { const i = document.querySelector("[data-ordner-name-feld]"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, "Kapitel B"); i.dispatchEvent(new Event("input", { bubbles: true })); });
 await page.click("[data-ordner-umbenennen-ok]"); await sleep(300);
 ok((await slots()).ordner[0].name === "Kapitel B", "umbenannt: „Kapitel B“");
-await langDruck(`[data-ordner-id="${ordner.id}"]`); await aktion("🧩 Multiquiz der Gruppe");
+await langDruck(`[data-ordner-id="${ordner.id}"]`); await aktion("🧩 Multiquiz des Ordners");
 ok(await page.$(".quiz-frage-text"), "Multiquiz der Gruppe gestartet");
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Beenden")?.click()); await sleep(400);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(400);
 if (await page.evaluate(() => document.querySelector("[data-quiz-ansicht]")?.dataset.quizAnsicht !== "auswahl")) { await page.click("[data-slot-kopf-name]"); await sleep(300); }
 if (await page.$("[data-ordner-zurueck]")) { await page.click("[data-ordner-zurueck]"); await sleep(300); }
-await langDruck(`[data-ordner-id="${ordner.id}"]`); await aktion("📤 Gruppe auflösen");
+await langDruck(`[data-ordner-id="${ordner.id}"]`); await aktion("📤 Ordner auflösen");
 d = await slots();
 ok((d.ordner || []).length === 0 && d.gespeichert.every(x => !x.ordner), "aufgelöst: keine Gruppe mehr, alle Sessions oben");
 k = await kacheln();

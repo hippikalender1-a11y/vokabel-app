@@ -68,7 +68,7 @@ ok(/2 ausgewählt · 5 Vokabeln/.test(await hinweis() || ""), `Lang-Druck auf Te
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId + ":" + b.dataset.multiNr).join(",")) === "g_a:1,g_b:2", "Kacheln nummeriert (1, 2)");
 const wahlMenue = await aktionen();
 console.log("     Auswahl-Menü:", wahlMenue.join(" | "));
-ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|📁 In Gruppe… (2)|⇄ Verschieben|🗑 Löschen (2)|↔ Von–Bis|✕ Auswahl beenden", "Menü der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
+ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|📁 In Ordner… (2)|⇄ Verschieben|🗑 Löschen (2)|↔ Von–Bis|✕ Auswahl beenden", "Menü der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
 await langDruck('[data-slot-id="g_b"]');
 ok(/1 ausgewählt/.test(await hinweis() || ""), "nochmal lang drücken nimmt die Kachel heraus");
 await langDruck('[data-slot-id="g_b"]');
@@ -101,6 +101,8 @@ await sleep(400);
 // Kopfzeile: „Multiquiz“, Info-Zeile nennt die Teile
 const kopfName = await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent.trim());
 ok(kopfName === "Multiquiz", `Kopfzeile: „Multiquiz“ (${kopfName})`);
+ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf === "offen"), "190: nach „Zur Übersicht“ ist die Session-Auswahl offen");
+await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(400);   // zu: Einstellungen mit Start
 ok(await page.evaluate(() => document.querySelectorAll("[data-start-arten] [data-quiz-art]").length) >= 1, "Kreise der zusammengesetzten Auswahl");
 await oeffneKopf(); await sleep(300);
 await page.evaluate(() => { if (document.querySelector("[data-slot-info-zu]")) document.querySelector("[data-slot-info]").click(); }); await sleep(200);   // 165: Info anfangs zu

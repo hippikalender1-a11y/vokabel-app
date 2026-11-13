@@ -87,7 +87,7 @@ for (const id of ["l_fr", "l_es"]) await langDruckListe(id);   // 147: lang drü
 ok(await page.evaluate(() => document.querySelector("[data-wahl-anzahl]")?.dataset.wahlAnzahl) === "3", "drei Listen ausgewählt");
 let vorher = fs.readdirSync(DL);
 await kopfMenue();   // Menü der Auswahl: lang drücken auf den grünen Kopf
-ok((await menueLabels()).replace(/\|🔁[^|]*/, "") === "📤 Exportieren (3)|⇄ Verschieben|🗑 Löschen (3)|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck in der Auswahl: Exportieren, Verschieben, Löschen (${await menueLabels()})`);
+ok((await menueLabels()).replace(/\|🔁[^|]*/, "") === "📤 Exportieren (3)|⇄ Verschieben|📁 In Ordner… (3)|🗑 Löschen (3)|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck in der Auswahl: Exportieren, Verschieben, Löschen (${await menueLabels()})`);
 await menueAktion("📤 Exportieren"); await page.click('[data-export-art="txt"]'); await sleep(300);
 ok(await page.evaluate(() => document.querySelector("[data-datei-export] [data-export-name]")?.value) === "3 Listen - TXT", "TXT: Fenster mit Dateiname, Vorschlag „3 Listen - TXT“");
 await page.click("[data-datei-export-ok]"); await sleep(300);

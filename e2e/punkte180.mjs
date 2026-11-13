@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { kurzHalten } from "./hilfen.mjs";
 
 // 180: heute schon abgefragte Vokabeln kommen nicht noch einmal (Knopf „Heute“ schließt sie vorübergehend ein)
 // 181: Session-Kachel füllt sich mit dem Anteil der heute abgefragten (ganz = dunkel); gelernt = Haken; gelernte ausblenden
@@ -62,7 +63,7 @@ await aktion("👁 Gelernte einblenden");
 ok(await kachel("g_b"), "„👁 Gelernte einblenden“: wieder da");
 
 // ── 182: gewählte Kachel zeigt den Tagesstand in Grün ──
-await klick('[data-slot-id="g_a"]'); await sleep(400);
+await kurzHalten(page, '[data-slot-id="g_a"]'); await sleep(100);   // 192: kurz halten wählt nur aus
 const gew = await page.evaluate(() => { const k = document.querySelector('[data-slot-id="g_a"]'); const s = getComputedStyle(k);
   return { gewaehlt: k.classList.contains("kachel-gewaehlt"), bild: s.backgroundImage, farbe: s.getPropertyValue("--heute-farbe") }; });
 ok(gew.gewaehlt && /linear-gradient/.test(gew.bild) && /bestaetigen|color-mix/.test(gew.farbe) && !/haupt\)/.test(gew.farbe), `182: gewählte Kachel: Füllung sichtbar, grün (${JSON.stringify(gew)})`);

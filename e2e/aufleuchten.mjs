@@ -68,9 +68,10 @@ ok(!(await zustand('[data-vokwahl="alle"]')).an, "… und hört wieder auf");
 
 // ── Sessions: geladene Kachel leuchtet, danach der Session-Name im Kopf ──
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-await page.click('[data-slot-id="g"]'); await sleep(80);
+{ const r = await page.evaluate(() => { const b = document.querySelector('[data-slot-id="g"]').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
+  await page.mouse.move(r.x, r.y); await page.mouse.down(); await sleep(400); await page.mouse.up(); await sleep(80); }   // 192: kurz halten wählt (antippen lädt sofort)
 z = await zustand('[data-slot-id="g"]');
-ok(z?.an && z.farbe === B, `Session-Kachel angetippt: leuchtet kurz (${JSON.stringify(z)})`);
+ok(z?.an && z.farbe === B, `Session-Kachel kurz gehalten: leuchtet kurz (${JSON.stringify(z)})`);
 await sleep(300); await page.click("[data-slot-laden]"); await sleep(80);
 z = await zustand("[data-slot-kopf-name]");
 ok(z?.an && z.farbe === B && /Meine Session/.test(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent)), `grüner Knopf lädt: Session-Name im Kopf leuchtet (${JSON.stringify(z)})`);
@@ -82,7 +83,7 @@ ok(!(await zustand("[data-slot-kopf-name]")).an, "… und hört wieder auf");
 
 // ── Beispielsätze: Prompt als Datei ──
 await zuListen(page);
-await page.click('[data-liste-id="l_a"]'); await sleep(600); await listeOeffnen(page);
+await page.click('[data-liste-id="l_a"]'); await sleep(600); await listeOeffnen(page);   // 192: antippen öffnet direkt
 await listeBereich(page, "saetze");
 await page.click("[data-saetze-ergaenzen]"); await sleep(400);
 const kl = () => page.evaluate(() => ({ kopieren: document.querySelector("[data-satz-prompt-kopieren]").className, datei: document.querySelector("[data-satz-prompt-datei]")?.className }));

@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { slotLaden } from "./hilfen.mjs";
+import { slotLaden, auswahlZu } from "./hilfen.mjs";
 import { stufeAuf, stufeZu, stufeWaehlen, stufeFenster } from "./hilfen.mjs";
 
 // Lernen: Stufe Lernen → Leicht → Schwer; „Lernen starten“ zeigt Wort (vorgelesen), nach der Pause die Übersetzung + Info,
@@ -234,7 +234,9 @@ await page.click("[data-lernen-pause]"); await sleep(100);
 await tippeBisEnde();
 ok(await page.$("[data-lernen-fertig]") && !(await page.$("[data-lernen-quiz]")), "nach nochmals Ansehen: weiterhin kein zweites Quiz");
 await page.click("[data-lernen-beenden]"); await sleep(300);
-ok(await page.$("[data-stufe]") && !(await page.$("[data-lernen-karte]")), "Beenden: zurück im Quiz-Tab");
+ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf === "offen") && !(await page.$("[data-lernen-karte]")), "Beenden: zurück im Quiz-Tab, Session-Auswahl offen (190)");
+await auswahlZu(page);
+ok(await page.$("[data-stufe]"), "Session-Auswahl zu: Einstellungen da");
 
 // Zuerst Deutsch
 await stufeFenster(page, "lernen");

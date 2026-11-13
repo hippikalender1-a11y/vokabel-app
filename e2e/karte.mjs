@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer-core";
 import { listeOeffnen } from "./hilfen.mjs";
+import { auswahlZu } from "./hilfen.mjs";
 import { zuListen, bereichZu, antwortDazu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -73,6 +74,7 @@ await clickText("button", "Beenden");
 await sleep(300);
 const zu = await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent)));
 if (zu) await clickText("button", "Zur Übersicht");
+await auswahlZu(page);   // 190: Session-Auswahl ist offen
 
 // Modus "wechselnd": alle Spalten Karte
 if (!(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "wechselnd"))))

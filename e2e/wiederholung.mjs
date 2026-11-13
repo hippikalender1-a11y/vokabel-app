@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer-core";
 import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
+import { auswahlZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -86,6 +87,7 @@ ok(/1 von 2 richtig/.test(t), "Auswertung zählt jede Vokabel einmal: 1 von 2 ri
 
 // Abfrage-Ziel "Score < +2": nur Vokabeln unter dem Ziel, ein Durchgang ohne Wiederholung
 await clickText("button", "Zur Übersicht");
+await auswahlZu(page);   // 190: Session-Auswahl ist offen
 await page.evaluate(() => {
   const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr"));
   l.vokabeln.forEach(v => { delete v.fortschritt; });
@@ -115,6 +117,7 @@ const scoreRunde = async () => {
     await sleep(1300);
   }
   await clickText("button", "Zur Übersicht");
+  await auswahlZu(page);   // 190: Session-Auswahl ist offen
   await sleep(300);
   return { schritte, karten, scores: await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.map(v => v.fortschritt?.score)) };
 };

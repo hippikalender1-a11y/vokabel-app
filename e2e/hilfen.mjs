@@ -151,3 +151,16 @@ export async function slotLaden(page) {
 export async function listeOeffnen(page) {
   if (await page.$("[data-liste-oeffnen]")) { await page.evaluate(() => document.querySelector("[data-liste-oeffnen]").click()); await new Promise(r => setTimeout(r, 500)); }
 }
+// 192: Kachel kurz halten (Maus ≥ ¼ s ohne Bewegung) – wählt nur aus (Blätter-Modus), statt sofort zu übernehmen
+export async function kurzHalten(page, sel) {
+  const p = await page.evaluate(s => { const el = typeof s === "string" ? document.querySelector(s) : null; if (!el) return null;
+    el.scrollIntoView({ block: "center" }); const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, sel);
+  if (!p) throw new Error(`kurzHalten: nicht gefunden ${sel}`);
+  await page.mouse.move(p.x, p.y); await page.mouse.down(); await new Promise(r => setTimeout(r, 400)); await page.mouse.up();
+  await new Promise(r => setTimeout(r, 350));
+}
+// 190: nach „Zur Übersicht“ ist die Session-Auswahl offen – zuklappen (Einstellungen mit Start sichtbar)
+export async function auswahlZu(page) {
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]")?.click(); });
+  await new Promise(r => setTimeout(r, 400));
+}

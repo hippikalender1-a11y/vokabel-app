@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer-core";
 import { neueEineSession, listenZu, stufeWaehlen } from "./hilfen.mjs";
+import { auswahlZu } from "./hilfen.mjs";
 
 // Vorlesen: Einstellungen › Stimmen (Variante, Stimmen an/aus, Tempo je Sprache, Gesamt-Tempo),
 // auf der Abfrage-Karte: ganze Karte spielt ab, „🔁 Stimme“ bei mehreren aktiven Stimmen, Gesamt-Tempo per langem Druck.
@@ -117,6 +118,7 @@ ok(await page.$("[data-info-regler]"), "Tafel bleibt beim Ziehen offen");
 await page.mouse.click(5, 300); await sleep(200);
 await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht|Beenden/.test(b.textContent))?.click()); await sleep(400);
+await auswahlZu(page);   // 190: Session-Auswahl ist offen
 await stufeWaehlen(page, "lernen");
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);
 const lk = await page.evaluate(() => document.querySelector('[data-stimme-wechsel="lernen"]')?.textContent.trim());

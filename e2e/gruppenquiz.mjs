@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer-core";
 import { slotLaden } from "./hilfen.mjs";
+import { auswahlZu } from "./hilfen.mjs";
 import { quizEinstellungen, bereichZu } from "./hilfen.mjs";
 
 // Statistik: Lang-Druck auf eine Gruppe des Kreisdiagramms → Menü „Quiz mit n Vokabeln“ → Rückfrage → Quiz mit genau dieser Gruppe
@@ -112,6 +113,7 @@ for (let i = 0; i < 2; i++) {
 }
 await clickText(".topbar-back", "Beenden"); await sleep(500);
 if (/Zur Übersicht/.test(await page.evaluate(() => document.body.innerText))) await clickText("button", "Zur Übersicht");
+await auswahlZu(page);   // 190: Session-Auswahl ist offen
 await sleep(400);
 const fortschritt = () => page.evaluate(() => document.querySelector('[data-anzahl="fortschritt"]')?.textContent.trim());
 const vorher = await fortschritt();
@@ -132,6 +134,7 @@ await clickText("[data-gruppen-quiz] button", "Starten", true); await sleep(600)
 ok(/^1 \/ \d+$/.test(await titel() || ""), `Gruppen-Quiz läuft (${await titel()})`);
 await durchlaufen();
 await clickText("button", "Zur Übersicht"); await sleep(500);
+await auswahlZu(page);   // 190: Session-Auswahl ist offen
 const kopf = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); return k?.dataset.slotKopf + " " + k?.querySelector("button.toggle-opt.aktiv")?.textContent.trim(); });
 console.log("     Quiz danach:", kopf, "| Session:", await fortschritt());
 ok(kopf === "gruen Mein Paket", "Konfiguration „Mein Paket“ bleibt gewählt");

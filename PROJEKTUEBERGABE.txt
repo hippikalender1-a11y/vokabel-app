@@ -2743,3 +2743,52 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
 - 189b Kachel-Tagesstand (und „Heute (n %)“ in der Info) per heuteAnteil(voks, feld, schwelle): ruhende Gelernte
   (Score ≥ Schwelle, nicht fällig, heute nicht abgefragt) zählen nicht mit – voll, wenn alles außer ihnen heute dran war.
   Test e2e/punkte189.mjs (94. Test).
+
+── 190–195 (Feedback Handy, 13.11.2026) ──
+- 190 Quiz-Ende „Zur Übersicht“ (bzw. Schließen am Ende): in den Quiz-Tab, Session-Auswahl geöffnet.
+- 191 „Alle Sessions“ / „← Alle Sessions“ (und „Alle Listen“) gelb wie der Ordner – neue Farbrolle „Ordner“ (Standard Ordner-Gelb).
+- 192 Gesten in Session-Auswahl UND Listen (entschieden wie vorgeschlagen):
+  · Antippen (Normalzustand): sofort übernehmen → Quiz-Einstellungen (Listen: Liste öffnen). Ordner-Kachel: öffnet wie bisher.
+  · Kurzer Lang-Druck (Karte hebt sich, loslassen ohne Bewegung): Karte wählen + „Blätter-Modus“ – danach wechselt Antippen
+    nur die Karte (Info), ohne zu übernehmen. Gilt, bis die Auswahl geschlossen wird (Übernehmen / Tab-Wechsel).
+  · Langer Lang-Druck (Karte senkt sich wieder): Mehrfach-Auswahl starten (Tafel wie bisher).
+  · In der Mehrfach-Auswahl: kurzer Lang-Druck = dazu/weg; langer Lang-Druck (ohne Bewegung) = Karte dazu + alles übernehmen
+    → Quiz-Einstellungen; Antippen = Mehrfach-Auswahl aufheben, nur diese Karte (Blätter-Modus bleibt). Grüner Kopf übernimmt.
+  · Mit Bewegung bleibt alles wie bisher (anheben + ziehen verschiebt, lang halten + weiterfahren sammelt ein, ausgewählte
+    Kachel lang halten + ziehen verschiebt die Auswahl). Menü der Auswahl weiter per Lang-Druck auf den grünen Kopf.
+  · Nachtrag (Fehler): kurzer Lang-Druck auf eine nicht ausgewählte Karte wählt sie bisher nicht aus.
+- 193 Ordner auch für Listen, so analog wie möglich zu den Session-Gruppen (Pfad „Alle Listen › 📁 Name“, hineinziehen,
+  umbenennen, auflösen). Ordner bis 3 Ebenen tief (Sessions und Listen); Pfad zeigt alle Ebenen.
+- 194 Leere Ordner anlegen: Lang-Druck auf „Alle Sessions“/„Alle Listen“ bzw. auf einen Ordnernamen im Pfad (= Unterordner
+  dort) und Lang-Druck auf einen leeren Kachelplatz → „📁 Neuer Ordner“. Ordner lösen sich NICHT mehr automatisch auf
+  (loeseKleineGruppen entfällt) – nur über „Ordner auflösen“.
+- 195 Import in einen Ordner: im geöffneten Ordner landen importierte Listen dort; JSON mit mehreren Listen zusätzlich
+  „In neuen Ordner“ (Name aus dem Dateinamen vorbelegt).
+
+── 190–195 umgesetzt ──
+- 190 klappeUebersichtEin: schliesseQuizBereiche("slots") + Session-Auswahl auf (gilt für Zur Übersicht / Beenden / Schließen
+  und Lernen-Beenden; „Pause“ unverändert). Tests: auswahlZu(page) in hilfen.mjs klappt danach zu.
+- 191 Farbrollen „ordner“ (Standard #f6c445) / „auf-ordner“; ORDNER_KNOPF für „Alle Sessions“, „Alle Listen“ (auch in der
+  Listenauswahl von Quiz/Statistik).
+- 192 blaettern (State) + kachelLangRef(art, id, stufe, ids): Touch-Loslassen ohne Bewegung (g.bewegt) – Stufe 1: wählen
+  (Vorschau) + blaettern bzw. in der Mehrfach-Auswahl dazu/weg; Stufe 2: Mehrfach-Auswahl beginnt (Lasso-Ende), lief sie schon
+  (g.warWahl, nur Sessions) → uebernimmSlots(lasso.ids); Stufe 3 (ausgewählte Kachel): Sessions übernehmen, Listen heraus.
+  Antippen: Mehrfach → aufheben + Vorschau + blaettern; blaettern → Vorschau; sonst uebernimmSlots([id]) bzw. Liste öffnen.
+  blaettern endet mit Session-Auswahl zu / Tab / Bereich / Ansicht. Maus: Kachel ≥ KACHEL_ANHEBEN_MS gedrückt halten = Stufe 1
+  (pointerdown/up capture, Klick danach verschluckt); Test-Helfer kurzHalten(page, sel).
+- 193 Ordner verschachtelt (o.ordner = Eltern, ORDNER_TIEFE_MAX 3): Modul-Helfer ebeneVon, ordnerPfad, ordnerUnter, ordnerHoehe,
+  ordnerPasst, eintraegeImOrdner, legeInOrdner, neuerOrdnerIn, loeseOrdnerDaten (Inhalt eine Ebene hinauf), ordnerBereinigen,
+  nachOrdnerBaum – gemeinsam für Sessions (slots) und Listen ({ ordner: SK.listenOrdner, gespeichert: Listen-Index }).
+  Listen: SK.listenOrdner „vokabel_listen_ordner“ (in der Gesamtsicherung automatisch), listenOrdnerOffen; speichereIndex ordnet
+  jede Ebene (ordneRaster) und sortiert den Index nach dem Ordner-Baum; verschiebeListenInOrdner, legeListenOrdnerAn,
+  gruppiereListen, loeseListenOrdnerAuf, benenneListenOrdnerUm. Listen-Ordner-Kachel [data-lordner-id], Geste „lordner“.
+  pfadTeile(): „← Alle … › 📁 A › 📁 B“ – Teile [data-ordner-pfad-teil]/[data-ordner-ziel] (antippen = dorthin, Kacheln darauf
+  ziehen = hinein: zielUnter → „raus:<id>“), letzter [data-ordner-name]. Verweilen (verweilGeht) auf jeder Ebene; Ordner nur,
+  wenn sie samt Unterordnern passen. Dialog inGruppe { art, ids, name, eltern, platz } = „In Ordner…“ (Ziele mit Pfad) bzw.
+  „Neuer Ordner“ (ids leer). Menütexte „Gruppe“ → „Ordner“. Listenauswahl Quiz/Statistik: listenRasterPlaetze je Ebene,
+  listenAuswahlPfad(), auswahlOrdnerZelle (zeigt „n gewählt“).
+- 194 „📁 Neuer Ordner“: Lang-Druck auf „Alle …“, auf Pfad-Teile, auf die Ordner-Kachel („… darin“) und auf freie Plätze
+  [data-freier-platz] (Ordner genau dort); leere Ebene zeigt eine Zeile gestrichelter freier Plätze.
+- 195 imListenOrdner(): neue/importierte Listen in den geöffneten Ordner (Kopie neben dem Original); importOrdnerWahl()
+  [data-import-ordner] bei JSON- und Mehrfach-Import: „＋ In neuen Ordner“ (Name aus dem Dateinamen ohne „_alle_listen“),
+  danach ist der Ordner geöffnet. Test e2e/punkte190.mjs; alle.sh um punkte189/190 ergänzt (punkte189 fehlte).

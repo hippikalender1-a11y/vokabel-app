@@ -64,7 +64,7 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); let ziel = await mitte("0|0");
 await finger("touchStart", p.x, p.y); await sleep(1000); await finger("touchEnd"); await sleep(400);
-ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|🔁 Keine fälligen Vokabeln|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|▦ In Sessions aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
+ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|🔁 Keine fälligen Vokabeln|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|📁 In Ordner…|▦ In Sessions aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
 await page.evaluate(() => document.querySelector('[data-info-aktion="✕ Auswahl beenden"]').click()); await sleep(300);
 p = await mitte("2|0"); ziel = await mitte("0|0");   // die Auswahl-Tafel kann die Seite verschoben haben
 // kurz halten (angehoben) und ziehen: verschieben
@@ -135,12 +135,10 @@ await clickText(".modal .btn-danger", "Löschen", true);
 pl = await plaetze();
 ok(!pl["Gamma (Kopie)"] && pl.Gamma === "0|0" && await page.evaluate(() => !localStorage.getItem("vokabel_liste_" + JSON.parse(localStorage.getItem("vokabel_listen_index")).find(l => l.name === "Gamma (Kopie)")?.id)), "gelöscht, andere bleiben auf ihren Plätzen");
 
-// 131: Antippen wählt die Liste aus (Info oben, grüner Knopf „Gamma öffnen“), der grüne Knopf öffnet sie
-await page.evaluate(() => [...document.querySelectorAll("[data-liste-id]")].find(d => d.textContent.includes("Gamma")).click()); await sleep(300);
-ok(await page.$("[data-liste-info]") && /Gamma öffnen/.test(await page.evaluate(() => document.querySelector("[data-liste-oeffnen]")?.innerText || "")), "Antippen: Liste ausgewählt, Info oben, grüner Knopf „Gamma öffnen“");
-await page.click("[data-liste-oeffnen]"); await sleep(400);
+// 192: Antippen öffnet die Liste direkt (kurz halten wählt nur aus – siehe punkte190)
+await page.evaluate(() => [...document.querySelectorAll("[data-liste-id]")].find(d => d.textContent.includes("Gamma")).click()); await sleep(400);
 console.log("     geöffnet:", await page.evaluate(() => document.querySelector(".topbar")?.innerText.replace(/\s+/g, " ")));
-ok(await page.evaluate(() => /Gamma/.test(document.body.innerText) && !document.querySelector("[data-liste-id]")), "grüner Knopf öffnet die Liste");
+ok(await page.evaluate(() => /Gamma/.test(document.body.innerText) && !document.querySelector("[data-liste-id]")), "Antippen öffnet die Liste");
 await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(300);
 
 // Einstellungen → Listen: 2 Spalten

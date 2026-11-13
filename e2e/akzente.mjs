@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer-core";
 import { quizEinstellungen, listenZu, bereichZu, stufeFenster } from "./hilfen.mjs";
+import { auswahlZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -171,6 +172,7 @@ ok(st["chat"][0] === null, "chat wurde nicht abgefragt");
 
 // Statistik: Tap in die Kreismitte wechselt Übersetzung → Diktat → Akzente
 await clickText("button", "Zur Übersicht");
+await auswahlZu(page);   // 190: Session-Auswahl ist offen
 await clickText(".tab", "Statistik");
 await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check, div")].find(e => e.textContent.trim() === "Akzente")?.click());
@@ -207,6 +209,7 @@ const starteUndZaehle = async () => {
   await clickText("button", "Beenden", true);
   await sleep(300);
   if (/Zur Übersicht/.test(await text())) await clickText("button", "Zur Übersicht");
+  await auswahlZu(page);   // 190: Session-Auswahl ist offen
   await sleep(300);
   return n;
 };
@@ -242,6 +245,7 @@ await sleep(400);
   await clickText("button", "Beenden", true);
   await sleep(300);
   if (/Zur Übersicht/.test(await text())) await clickText("button", "Zur Übersicht");
+  await auswahlZu(page);   // 190: Session-Auswahl ist offen
   await sleep(300);
 }
 // Haken "hervorheben" in Spalte Einfach entfernen

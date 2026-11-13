@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer-core";
 import { neueEineSession, listenZu, bereichZu, fremdAlsFrage } from "./hilfen.mjs";
+import { auswahlZu } from "./hilfen.mjs";
 
 // Neue Antwortarten: „Hören“ (Frage verdeckt + vorgelesen, Antwort per MC), „Puzzle“ (Buchstaben-Kacheln),
 // „Lücken“ (fehlende Buchstaben ergänzen, der erste bleibt stehen)
@@ -127,6 +128,7 @@ const mitZiel = async ziel => {
   await starte("karte");   // Karte bleibt (nur „karte“ angehakt)
   await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(400);
   await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht|Beenden/.test(b.textContent))?.click()); await sleep(400);
+  await auswahlZu(page);   // 190: Session-Auswahl ist offen
   await page.evaluate(() => document.querySelector("[data-abfrageziel]")?.click()); await sleep(300);
   await page.evaluate(z => [...document.querySelectorAll(".typ-btn")].find(b => b.textContent.includes(z))?.click(), ziel); await sleep(200);
   await page.evaluate(() => document.querySelector("[data-abfrageziel]")?.click()); await sleep(300);

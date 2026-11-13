@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { slotLaden } from "./hilfen.mjs";
+import { slotLaden, auswahlZu } from "./hilfen.mjs";
 import { stufeWaehlen } from "./hilfen.mjs";
 
 // Lernen pausieren: Schließen merkt den Lernstand je Konfiguration (getrennt vom Abfrage-Fortschritt);
@@ -27,7 +27,7 @@ const ladeSlot = async name => {
 const knopf = () => page.evaluate(() => { const b = document.querySelector("[data-start-knopf]"); return { art: b?.dataset.lernenStart, text: b?.textContent.trim(), stand: document.querySelector('[data-anzahl="lernstand"]')?.textContent.trim() || null }; });
 const lernStand = () => page.evaluate(() => ({ stand: document.querySelector("[data-lernen-stand]")?.textContent.replace(/\s/g, ""), wort: document.querySelector("[data-lernen-wort] .lernen-wort")?.textContent.trim() }));
 const vor = async n => { for (let i = 0; i < n; i++) { await page.click("[data-lernen-vor]"); await sleep(150); } };
-const schliessen = async () => { await page.click("[data-lernen-beenden]"); await sleep(500); };
+const schliessen = async () => { await page.click("[data-lernen-beenden]"); await sleep(500); await auswahlZu(page); };   // 190: Session-Auswahl ist danach offen
 const slotDaten = id => page.evaluate(id => JSON.parse(localStorage.getItem("vokabel_slots")).gespeichert.find(g => g.id === id), id);
 
 await page.goto(URL);

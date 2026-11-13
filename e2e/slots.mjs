@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer-core";
 import { quizEinstellungen, listenZu, bereichZu, einstUnter } from "./hilfen.mjs";
+import { auswahlZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -57,6 +58,7 @@ const quizRunde = async () => {
     await sleep(1200);
   }
   await clickText("button", "Zur Übersicht");
+  await auswahlZu(page);   // 190: Session-Auswahl ist offen
   await sleep(300);
 };
 await quizRunde();
@@ -114,7 +116,7 @@ await menue("2|0");
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.textContent.trim()));
 const blase = await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText || "");
 console.log("     Menü:", knoepfe.join(" | "));
-ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Gruppe…|📝 Listen/Vokabeln ändern|🔁 Keine fälligen Vokabeln|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: voller Name (Info oben) + Menü (${knoepfe.join("|")})`);
+ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|📝 Listen/Vokabeln ändern|🔁 Keine fälligen Vokabeln|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: voller Name (Info oben) + Menü (${knoepfe.join("|")})`);
 await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
 ok(!(await page.$('[role="status"]')) && /Fertig · 1/.test(await page.evaluate(() => document.querySelector("[data-slot-fertig]")?.innerText || "")),

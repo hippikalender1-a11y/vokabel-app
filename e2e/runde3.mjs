@@ -106,17 +106,17 @@ ok(!(await page.$(`[data-slot-id="${id2}"]`)), "„← Alle Sessions“: oberste
 await page.click("[data-slot-kopf-name]"); await sleep(300);   // zu Einstellungen
 await page.click("[data-slot-kopf-name]"); await sleep(400);   // wieder Auswahl
 ok(await page.$(`[data-slot-id="${id2}"]`), "Auswahl wieder geöffnet: springt in die Gruppe der geladenen Session");
-// 16: eine Session aus der Gruppe → Gruppe bleibt; beide raus → leere Gruppe bleibt, Menü „Gruppe löschen“
-await lang(`[data-slot-id="${id1}"]`); await aktion("↑ Aus der Gruppe");
+// 16: eine Session aus der Gruppe → Gruppe bleibt; beide raus → leere Gruppe bleibt, Menü „Ordner löschen“
+await lang(`[data-slot-id="${id1}"]`); await aktion("↑ Aus dem Ordner");
 sl = await slots();
 ok(sl.ordner.some(o => o.id === "o1") && sl.gespeichert.filter(x => x.ordner === "o1").length === 1, "eine Session übrig: Gruppe bleibt bestehen");
-await lang(`[data-slot-id="${id2}"]`); await aktion("↑ Aus der Gruppe");
+await lang(`[data-slot-id="${id2}"]`); await aktion("↑ Aus dem Ordner");
 sl = await slots();
 ok(sl.ordner.some(o => o.id === "o1") && sl.gespeichert.filter(x => x.ordner === "o1").length === 0, "keine Session übrig: leere Gruppe bleibt bestehen");
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("Alle Sessions"))?.click()); await sleep(300);
 await lang('[data-ordner-id="o1"]');
 ak = await aktionen();
-ok(ak.includes("🗑 Gruppe löschen") && !ak.includes("📤 Gruppe auflösen"), `leere Gruppe: „Gruppe löschen“ (${ak.join(" | ")})`);
+ok(ak.includes("🗑 Ordner löschen") && !ak.includes("📤 Ordner auflösen"), `leere Gruppe: „Ordner löschen“ (${ak.join(" | ")})`);
 await schliesseTafel();
 
 // ── 14: Auswahl-Modus zeigt nur den Zustand ──

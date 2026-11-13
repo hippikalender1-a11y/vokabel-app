@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { einstUnter, zuListen, listeOeffnen } from "./hilfen.mjs";
+import { einstUnter, zuListen, listeOeffnen, kurzHalten, auswahlZu } from "./hilfen.mjs";
 
 // 168–174: Farbe je Sprache schon bei der Session-Wahl (Einstellung „erst im Quiz“), Kopf-Balken auch bei offener Auswahl,
 // inaktiver „Keine fälligen“-Knopf, Kachel-Lang-Druck mit zusätzlichem Kontextmenü (Android), fällige einstreuen,
@@ -50,8 +50,8 @@ await auswahlAuf();
 
 // ── 168: Farbe schon bei der Wahl ──
 ok(await haupt() === STD, `nichts gewählt: Standard-Farbe (${await haupt()})`);
-await klick('[data-slot-id="g_en"]');
-ok(await haupt() === EN, `Session „Englisch“ angetippt: englische Farbe (${await haupt()})`);
+await kurzHalten(page, '[data-slot-id="g_en"]');   // 192: kurz halten wählt nur aus
+ok(await haupt() === EN, `Session „Englisch“ gewählt: englische Farbe (${await haupt()})`);
 // ── 169: Balken auch im offenen Kopf ──
 ok(await page.$("[data-slot-kopf-name] [data-kopf-balken]"), "169: offener Kopf zeigt den Fortschrittsbalken");
 await kontext('[data-slot-id="g_fr"]');

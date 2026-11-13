@@ -1,6 +1,6 @@
 import puppeteer from "puppeteer-core";
 import { slotLaden } from "./hilfen.mjs";
-import { quizEinstellungen, neueEineSession, bereichZu } from "./hilfen.mjs";
+import { quizEinstellungen, neueEineSession, bereichZu, kurzHalten, auswahlZu } from "./hilfen.mjs";
 
 // Gespeicherte Session: eigener Paket-Fortschritt je Abfrageart (Übersetzung / Akzente), Zurücksetzen,
 // Kopfzeile grün + zentriert, Liste klappt nach Auswahl zu
@@ -57,8 +57,8 @@ await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 if (!(await text()).includes("Mein Paket")) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
 ok(!(await text()).includes("Verlauf & Gespeichert") && await page.$("[data-slot-info]"), "Aufgeklappt: keine Überschrift mehr, dafür die Info-Fläche");
-await clickText(".slot-chip", "Mein Paket");
-ok(await kopf() === "offen" && await page.$("[data-vorschau]") && await page.$("[data-slot-laden]"), "Nach dem Antippen: Auswahl noch offen, gewählte Kachel markiert, grüner Lade-Knopf");
+await kurzHalten(page, '[data-slot-id="g_1"]');   // 192: kurz halten wählt nur aus (antippen lädt sofort)
+ok(await kopf() === "offen" && await page.$("[data-vorschau]") && await page.$("[data-slot-laden]"), "Nach kurzem Halten: Auswahl noch offen, gewählte Kachel markiert, grüner Lade-Knopf");
 await slotLaden(page);
 await sleep(400);
 const t0 = await text();
@@ -108,6 +108,7 @@ await sleep(400);
 if ((await text()).includes("Wiederholung abbrechen")) await clickText("button", "Wiederholung abbrechen");
 if (/Zur Übersicht/.test(await text())) await clickText("button", "Zur Übersicht");
 await sleep(400);
+await auswahlZu(page);   // 190: Session-Auswahl ist offen
 const akz = await fortschritt();
 console.log("     Akzente nach Abbruch:", akz);
 ok(/^2\/\d+$/.test(akz || ""), "Akzente: eigener Fortschritt 2 / …");
