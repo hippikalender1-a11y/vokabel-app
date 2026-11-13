@@ -2670,6 +2670,8 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   jedem Wert ein einfarbiger Punkt in der Farbe seines Balken-Abschnitts; vor „gelernt“ ein grüner Punkt.
 - 186 Session-Info: die automatische Inhaltsangabe aus der zweiten Zeile („(🇬🇧 Englisch 6 · Nr. 151–175)“) rückt nach
   unten an die Stelle von „📋 Vokabeln ansehen“ und klappt dort mit ▼ die Vokabeln auf; „Vokabeln ansehen“ selbst entfällt.
+  Entschieden zu 185/186: (a) gelernt = grüner Punkt (statt „✓“), fällig/wiederholen = grüne Raute (statt „🔁“);
+  (b) Inhaltsangabe ohne Klammern; (c) eingeklappte Info bleibt einzeilig: Name · „n % gelernt“ (wie bisher).
 
 ── 175–179 umgesetzt (Commit abca04e) ──
 - 175 quiz.rueckblick (Einträge {art quiz|diktat, vokId, frage, antworten[{label,wert,richtig,eingaben}], ergebnis, wertung, zaehlt}),
