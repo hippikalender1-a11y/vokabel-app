@@ -2685,6 +2685,11 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   (180 zieht sie nur von verfuegbar ab; der Knopf ist dadurch zwar gesperrt, sieht aber gleich aus).
   Gewünscht: 0 anzeigen; bei 0 der Start-Knopf nicht grün, sondern in der Farbe des Fortschritt-Feldes links daneben;
   erst beim Antippen ein Hinweis, z. B. „Alle Vokabeln sind heute schon abgefragt oder gelernt“.
+  Entschieden: Titel „Quiz mit 0 Vokabeln“ (Titel und Knopf-Zahl ohne die heute gesperrten); Fortschritt-Feld bleibt
+  „0/11“ (die heute gesperrten gehören zur Session). Start-Knopf bei 0 in der Farbe des Fortschritt-Feldes; antippen zeigt
+  UNTER den Knöpfen eine knappe Zeile wie bei „Abgefragt-Stand löschen?“, z. B. „14 gelernt · 11 heute schon abgefragt –
+  oben bei „Gelernte“ / „Heute“ dazunehmen“ (nur genannte Teile, die > 0 sind). Dabei auch die Rückfragen „Abgefragt-Stand
+  löschen?“ und „Lernstand löschen?“ unter die Knöpfe verlegen – die Knöpfe sollen nicht nach unten rutschen.
 
 ── 175–179 umgesetzt (Commit abca04e) ──
 - 175 quiz.rueckblick (Einträge {art quiz|diktat, vokId, frage, antworten[{label,wert,richtig,eingaben}], ergebnis, wertung, zaehlt}),
