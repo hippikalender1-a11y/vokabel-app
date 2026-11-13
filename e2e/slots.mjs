@@ -102,7 +102,7 @@ const [n1, n2, n3] = [v1, v2, `Frz ${heute} (3)`];
 let pl = await plaetze();
 console.log("     Plätze:", JSON.stringify(pl));
 ok(pl[n1] === "0|0" && pl[n2] === "1|0" && pl[n3] === "2|0", "Neue Einträge untereinander in der ersten Spalte (Raster 10 × 2)");
-ok(await page.evaluate(() => getComputedStyle(document.querySelector(".slot-raster")).gridTemplateColumns.split(" ").length === 2), "Raster mit 2 Spalten");
+ok(await page.evaluate(() => getComputedStyle(document.querySelector(".slot-raster")).gridTemplateColumns.split(" ").length === 1), "196: nur die erste Spalte belegt → eine Spalte");
 ok(await page.evaluate(() => { const neu = document.querySelector("[data-alle-sessions]"); return !!neu && !neu.closest(".slot-raster"); }),
   "„＋ Neue Session aus Listen“ oben, nicht im Raster");
 t = await page.evaluate(() => document.body.innerText);
@@ -199,9 +199,7 @@ ok(pl["Meine Verben 2"] === "4|0" && pl["Meine Verben"] === platzN1, `Duplikat u
 await menue("4|0"); await aktion("🗑 Löschen"); await clickText(".modal .btn-danger", "Löschen", true);
 
 // Einstellungen: nur noch Spalten (3); Zeilen wachsen von selbst – neuer Eintrag kommt unter den untersten
-await einstUnter(page, "raster", "sessions");
-await page.evaluate(() => document.querySelector('[data-raster-spalten="3"]').click()); await sleep(200);
-ok(!(await page.$("[data-raster-zeilen]")) && !/Zeilen ×/.test(await page.evaluate(() => document.body.innerText)), "Raster-Einstellung: nur Spalten, keine Zeilen-Einstellung");
+ok(!(await page.$('[data-einst-kopf="raster"]')), "196: keine Raster-Einstellung mehr (Spalten wachsen mit)");
 const plVor = await plaetze();
 const unten = Math.max(...Object.values(plVor).map(p => +p.split("|")[0]));
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
@@ -228,8 +226,6 @@ await aktion("🗑 Löschen");
 await clickText(".modal .btn-danger", "Löschen", true);
 pl = await plaetze();
 ok(Object.keys(pl).length === 3 && !(neuName in pl), "Löschen über das Menü: Eintrag weg");
-// für den Statistik-Teil wieder Standard (10 × 2)
-await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen")); e.slotRaster = { zeilen: 10, spalten: 2 }; localStorage.setItem("vokabel_einstellungen", JSON.stringify(e)); });
 await page.reload(); await sleep(400);
 
 // ── 5) Statistik: Verlauf-Eintrag zeigt Session-Modus ──

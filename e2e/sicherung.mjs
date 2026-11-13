@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { neueListe } from "./hilfen.mjs";
 import { zuListen } from "./hilfen.mjs";
 import fs from "node:fs";
 import path from "node:path";
@@ -127,7 +128,7 @@ ok(await page.evaluate(() => /keine Gesamtsicherung/.test(document.querySelector
 // Import-Ansicht erkennt die Gesamtsicherung
 await page.evaluate(() => localStorage.clear()); await page.reload(); await sleep(600);
 await zuListen(page);
-await page.click("[data-liste-neu]"); await sleep(300);
+await neueListe(page);
 await (await page.$('input[type="file"]')).uploadFile(datei); await sleep(600);
 ok(/Gesamtsicherung vom/.test(await page.evaluate(() => document.body.innerText)), "Import: „Gesamtsicherung vom … erkannt“");
 await Promise.all([page.waitForNavigation(), page.click("[data-alles-wiederherstellen]")]); await sleep(700);

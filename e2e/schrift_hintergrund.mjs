@@ -105,7 +105,7 @@ await page.evaluate(() => document.querySelector('[data-einst-unter="akzente"]')
 const z = await mitte("[data-akzent-sprachen] .toggle-label");
 await rechtsklick(z.x, z.y);
 await setzeFarbe("text-stark", "#003300");
-ok(await variable("text-stark") === "#003300" && await farbe('[data-einst-kopf="raster"]') === "rgb(255, 255, 255)", "„Text kräftig“ geändert, Kopf-Schrift bleibt weiß");
+ok(await variable("text-stark") === "#003300" && await farbe('[data-einst-kopf="stimmen"]') === "rgb(255, 255, 255)", "„Text kräftig“ geändert, Kopf-Schrift bleibt weiß");
 ok(await variable("abfrage-schrift") === kartenTextVorher && await variable("dialog-schrift") === kartenTextVorher, "Abfrage- und Dialog-Schrift bleiben beim alten Wert");
 
 await browser.close();

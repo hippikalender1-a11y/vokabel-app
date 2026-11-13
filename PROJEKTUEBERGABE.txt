@@ -2288,7 +2288,8 @@ Sitzung 85–90 (Commit d7c74a6):
   (Positionen nach der Auswahl-Tafel neu messen – Seite jetzt scrollbar), richtung, runde3, schrift_hintergrund, score, sicherung, slots, stimmen, zuordnung.
 - (erledigt in 97) Mehrfach-Auswahl der Listen mit grünem Kopf-Knopf.
 
-MERKLISTE (vom Nutzer zurückgestellt, nicht umsetzen ohne Auftrag):
+MERKLISTE (vom Nutzer zurückgestellt, nicht umsetzen ohne Auftrag):
+
 - 138 Konzept Belohnungssystem + grafische Aufbereitung (Nutzer: vielfältig, nicht überstürzen). Optionen notiert: echte 3D-Figuren (WebGL/Three.js
   bzw. <model-viewer>, .glb aus Blender, nur bei Bedarf laden), vorgerenderte 3D-Grafik (WebP/APNG aus Blender), CSS-3D (Karten drehen/kippen).
   Vorschlag: Mischung – Alltagseffekte vorgerendert/CSS, echtes 3D nur für besondere Momente (z. B. 100 % gelernt). Siehe auch TODO 2) Belohnungssystem.
@@ -2792,3 +2793,45 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
 - 195 imListenOrdner(): neue/importierte Listen in den geöffneten Ordner (Kopie neben dem Original); importOrdnerWahl()
   [data-import-ordner] bei JSON- und Mehrfach-Import: „＋ In neuen Ordner“ (Name aus dem Dateinamen ohne „_alle_listen“),
   danach ist der Ordner geöffnet. Test e2e/punkte190.mjs; alle.sh um punkte189/190 ergänzt (punkte189 fehlte).
+
+── 196 (gesammelt, 13.11.2026) ──
+- 196 Raster (Sessions und Listen) wächst auch seitlich dynamisch – wie nach unten: jede Ebene (oben und jeder Ordner) hat so
+  viele Spalten, wie belegt sind (= Raster je Ordner); beim Verschieben rechts eine freie Spalte (wie unten freie Zeilen),
+  leere rechte Spalte verschwindet wieder. Höchstens 5 Spalten; alle Spalten passen auf die Breite, die Kacheln werden
+  schmaler (kein seitliches Wischen). Raster-Einstellungen (Spalten Sessions/Listen) entfallen; bestehende Plätze bleiben.
+  Stand: RASTER_MAX_SPALTEN = 4, rasterGroesse(einst, "slotRaster"|"listenRaster"), Einstellung einstBereich „raster“.
+- 197 Pfad-Zeile (Sessions und Listen): nur das LETZTE Element (die Ebene, in der man ist) ohne gelben Knopf-Hintergrund –
+  oben also „Alle Sessions“ / „Alle Listen“ schlicht (wie heute der Name des geöffneten Ordners); in einem Ordner sind
+  „← Alle …“ und alle übergeordneten Ordner gelbe Knöpfe (bisher nur Text), der geöffnete Ordner bleibt schlicht.
+- 198 Ordnertiefe auf 5 Ebenen erweitern (ORDNER_TIEFE_MAX 3 → 5).
+- 199 Freier Platz im Listen-Raster: im Menü zusätzlich „＋ Neue Liste“ (neben „📁 Neuer Ordner“; die Liste kommt in diese
+  Ebene, möglichst auf den gedrückten Platz). Der breite Knopf „＋ Neue Liste“ über dem Raster entfällt (bleibt im Menü von
+  „Alle Listen“ / Ordnernamen im Pfad). Entschieden: nur per Lang-Druck (Antippen eines freien Platzes tut nichts);
+  Sessions genauso: Lang-Druck auf freien Platz → „＋ Neue Session aus Listen“ (in dieser Ebene, auf diesem Platz) und
+  „📁 Neuer Ordner“.
+- 200 Ordner-Kacheln (Sessions) zeigen doch einen Tagesstand (ändert 181c „Ordner ohne Tagesstand“): Durchschnitt der heute
+  geübten Vokabeln der Sessions darin (samt Unterordnern), gleiche abgeschwächte Füllung wie auf Session-Kacheln
+  (heuteAnteil, ruhende Gelernte zählen nicht). Entschieden: Anteil über alle Vokabeln darin – jede Vokabel einmal
+  (Vereinigung über Listen-Id + Vokabel-Id, ohne herausgenommene), große Sessions zählen entsprechend mehr.
+- 201 Session-Info: bei der Angabe der gelernten Vokabeln fehlt ein Häkchen. Annahme: „n % gelernt“ (Info oben rechts neben
+  „n Vokabeln“ und in der eingeklappten Namenszeile „· n % gelernt“) bekommt ein ✓ (in der Farbe „gelernt“), wie die
+  Gruppenzeile („● n ✓“); analog in der Listen-Info. (Rückfrage an den Nutzer gestellt.)
+
+── 196–201 umgesetzt ──
+- 196 rasterGroesse() ohne Einstellung (Plätze bis RASTER_MAX_SPALTEN = 5, Zeilen offen); ebenenSpalten(eintraege, frei):
+  angezeigte Spalten je Ebene = belegte (mind. 1), im Verschieben-Modus +1 (freie Spalte rechts). Session-, Listen-Raster und
+  listenRasterPlaetze (Quiz/Statistik) rechnen je Ebene; [data-raster-spalten-anz]. Ab 4 Spalten Klasse .schmal (kleinere
+  Schrift, Listen: Unterzeile mit …, Mini-Kreise 16 px). Einstellungen › Raster samt rasterEinstellung/setze…RasterGroesse entfernt.
+  Listen-Kachel: Aufbau (eng) nur nach den BELEGTEN Spalten – sonst ändert die freie Spalte beim Ziehen den Kachel-Inhalt,
+  React baut ihn neu auf und touchend erreicht window nicht mehr (Ziehen hing). Tests: erste Fingerbewegung ≥ 30 px
+  (Chrome meldet kleinere nicht), Ziel nach Ziehbeginn neu messen (Raster rückt).
+- 197 pfadTeile/listenAuswahlPfad: letztes Element ([data-pfad-hier]) schlicht, alles davor gelbe Knöpfe (ORDNER_KNOPF),
+  „›“ als eigene Trenner; [data-ordner-name] zeigt „📁 Name“.
+- 198 ORDNER_TIEFE_MAX = 5.
+- 199 Freier Platz (Lang-Druck): Listen „＋ Neue Liste“ (neuListePlatzRef → imListenOrdner() setzt ordner + platz) und
+  „📁 Neuer Ordner“; Sessions „＋ Neue Session aus Listen“ (neuPlatzRef → speichereAlsGespeichert, nicht Statistik) und
+  „📁 Neuer Ordner“. Breiter Knopf [data-liste-neu] entfernt; Tests: neueListe(page) in hilfen.mjs (Lang-Druck „Alle Listen“).
+- 200 Ordner-Kachel (Sessions): data-heute = heuteAnteil über die Vereinigung aller Vokabeln der Sessions darin (_key, ohne
+  herausgenommene), gleiche Füllung wie Session-Kacheln.
+- 201 [data-gelernt-haken] „✓“ (var(--gelernt)) vor „n % gelernt“ in Session- und Listen-Info (offen und eingeklappt).
+  Test e2e/punkte190.mjs erweitert.

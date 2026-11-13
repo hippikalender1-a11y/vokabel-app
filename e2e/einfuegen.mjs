@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { neueListe } from "./hilfen.mjs";
 import { zuListen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -18,7 +19,7 @@ async function einfuegen(text) {
   await page.evaluate(() => localStorage.clear());
   await page.reload(); await sleep(400);
   await zuListen(page); await sleep(200);
-  await page.evaluate(() => document.querySelector("[data-liste-neu]")?.click()); await sleep(300);
+  await neueListe(page);
   await page.evaluate(t => {
     const ta = document.querySelector("textarea");
     Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set.call(ta, t);

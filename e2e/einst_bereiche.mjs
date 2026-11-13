@@ -22,18 +22,15 @@ await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
 
 const koepfe = await page.evaluate(() => [...document.querySelectorAll("[data-einst-kopf]")].map(b => b.dataset.einstKopf).join(","));
-ok(koepfe === "listen,lernen,stimmen,raster,farben,app", `Kopfzeilen: Listen, Lernen, Stimmen, Raster, Farben, App (${koepfe})`);
+ok(koepfe === "listen,lernen,stimmen,farben,app", `Kopfzeilen: Listen, Lernen, Stimmen, Farben, App – Raster entfällt (196) (${koepfe})`);
 ok(await offen() === "" && !(await page.$("[data-farbschema]")) && !(await page.$("[data-alles-sichern]")), "anfangs alle zugeklappt");
 
 // Listen: Raster der Listen, „+ Neu“ und die Sicherung
 await kopf("listen");
-ok(await offen() === "listen" && await page.$("[data-liste-neu]") && await page.$('[data-einst-unter="sicherung"]') && await page.$('[data-einst-unter="erinnerung"]'), "Listen: Knopfzeile Sicherung · Erinnerung · ＋ Neu");
+ok(await offen() === "listen" && await page.$("[data-alle-listen]") && await page.$('[data-einst-unter="sicherung"]') && await page.$('[data-einst-unter="erinnerung"]'), "Listen: Knopfzeile Sicherung · Erinnerung · ＋ Neu");
 // Lernen: Gelernt-Schwelle und Akzente
 await kopf("lernen");
 ok(await offen() === "lernen" && await page.$('[data-einst-unter="akzente"]') && !(await page.$('[data-einst-unter="sicherung"]')), "Lernen mit Knopf „Akzente“; Listen zu (nur einer offen)");
-// Raster: beide Raster-Einstellungen
-await kopf("raster");
-ok(await offen() === "raster" && await page.evaluate(() => [...document.querySelectorAll("[data-einst-unter]")].map(d => d.dataset.einstUnter).join("|")) === "sessions|listenraster", "Raster: Knöpfe Sessions und Listen");
 // Farben: eigener Bereich mit Tabs
 await kopf("farben");
 ok(await offen() === "farben" && await page.$("[data-farb-tabs]") && !(await page.$("[data-farbschema]")), "Farben: Knopfzeile, nichts offen");

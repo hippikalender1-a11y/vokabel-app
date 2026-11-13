@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { neueListe } from "./hilfen.mjs";
 import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 import fs from "node:fs";
@@ -133,7 +134,7 @@ ok(!!txtFr && path.basename(txtFr) === "Unité 1 - TXT.txt", `TXT (Unité 1) her
 // ── Import A: TXT mit allen drei Listen ──
 await leeren();
 await zuListen(page);
-await clickText("button", "Neu");
+await neueListe(page);
 let input = await page.$('input[type="file"]');
 await input.uploadFile(txtAlle);
 await sleep(500);
@@ -153,7 +154,7 @@ ok(daten.find(d => d.index.name === "Unité 1")?.liste.vokabeln[0].E1.falsch?.[0
 // ── Import B: JSON-Backup ──
 await leeren();
 await zuListen(page);
-await clickText("button", "Neu");
+await neueListe(page);
 input = await page.$('input[type="file"]');
 await input.uploadFile(jsonAlle);
 await sleep(500);
@@ -168,7 +169,7 @@ ok(daten[0].liste.spalten.E3.aktiv, "Import B: E3 erhalten");
 // ── Import C: einzelne französische TXT ──
 await leeren();
 await zuListen(page);
-await clickText("button", "Neu");
+await neueListe(page);
 input = await page.$('input[type="file"]');
 await input.uploadFile(txtFr);
 await sleep(500);

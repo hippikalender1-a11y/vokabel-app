@@ -133,8 +133,10 @@ ok(await gewaehlt() === "s1,s2", `Teil 1 + 2 ausgewählt (${await gewaehlt()})`)
 h = await mitte(kachel("s1"));   // der Auswahl-Hinweis verschiebt das Raster
 await finger("touchStart", h.x, h.y); await sleep(1050);
 ok(await page.$(`[data-angehoben][data-slot-id="s1"]`), "ausgewählte Kachel lang gehalten: bleibt angehoben (kein Einsammeln)");
-const rechts = { x: h.x + h.w + 6, y: h.y };
-for (let i = 1; i <= 8; i++) { await finger("touchMove", h.x + (rechts.x - h.x) * i / 8, h.y); await sleep(40); }
+await finger("touchMove", h.x + 30, h.y); await sleep(250);   // Ziehen beginnt – 196: rechts kommt eine freie Spalte dazu
+const zeile = (await slots()).gespeichert.find(x => x.id === "s1").platz.z;
+const rechts = await mitte(`[data-raster-zelle="${zeile}|1"]`);
+for (let i = 1; i <= 8; i++) { await finger("touchMove", h.x + (rechts.x - h.x) * i / 8, h.y + (rechts.y - h.y) * i / 8); await sleep(40); }
 await finger("touchEnd"); await sleep(400);
 let d = await slots();
 ok(["s1", "s2"].every(id => d.gespeichert.find(x => x.id === id).platz.s === 1), `ganze Auswahl verschoben (Teil 1: ${JSON.stringify(d.gespeichert.find(x => x.id === "s1").platz)}, Teil 2: ${JSON.stringify(d.gespeichert.find(x => x.id === "s2").platz)})`);

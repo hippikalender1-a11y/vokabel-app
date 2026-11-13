@@ -108,9 +108,7 @@ ok(await page.$("[data-wiederholen-einst]"), "157: „Wiederholen“ öffnet die
 await klick('[data-einst-unter="mischen"]');
 ok(await page.$("[data-antwort-gewichte]") && (await zeile()).includes("▲"), "Arten mischen offen: Regler, Knopf mit ▲");
 
-await einstUnter(page, "raster", "sessions");
-await klick('[data-raster-spalten="3"]'); await sleep(350);
-ok(/Sessions=3 Spalten/.test(await zeile()), `Raster: Sessions 3 Spalten (${await zeile()})`);
+ok(!(await page.$('[data-einst-kopf="raster"]')), "196: keine Raster-Einstellung mehr (Spalten wachsen mit)");
 
 await einstUnter(page, "farben");
 ok(await page.$("[data-farb-tabs]") && !(await page.$("[data-farbschema]")), "Farben: Knopfzeile, nichts offen");

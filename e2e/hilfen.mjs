@@ -164,3 +164,11 @@ export async function auswahlZu(page) {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]")?.click(); });
   await new Promise(r => setTimeout(r, 400));
 }
+// 199: „＋ Neue Liste“ – über den Lang-Druck auf „Alle Listen“ (der breite Knopf entfällt)
+export async function neueListe(page) {
+  await page.evaluate(() => { const el = document.querySelector("[data-alle-listen]"); const r = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); });
+  await new Promise(r => setTimeout(r, 300));
+  await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "＋ Neue Liste")?.click());
+  await new Promise(r => setTimeout(r, 300));
+}

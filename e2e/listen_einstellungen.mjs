@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { neueListe } from "./hilfen.mjs";
 import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen } from "./hilfen.mjs";
 
@@ -26,7 +27,7 @@ ok(await aktiverTab() === "Quiz" && await page.$("[data-keine-listen]"), "leere 
 await page.click("[data-liste-importieren]"); await sleep(400);
 ok(await aktiverTab() === "Einstellungen" && /Importieren/.test(await page.evaluate(() => document.body.innerText)), "„Liste importieren“ öffnet den Import (Tab Einstellungen)");
 await page.click("[data-zurueck-listen]"); await sleep(400);
-ok(await offen() === "listen" && await page.$("[data-liste-neu]"), "Pfeil zurück: Einstellungen › Listen");
+ok(await offen() === "listen" && await page.$("[data-alle-listen]"), "Pfeil zurück: Einstellungen › Listen");
 
 // mit Listen
 await page.evaluate(() => {
@@ -42,7 +43,7 @@ ok(await aktiverTab() === "Einstellungen" && await page.$("[data-zurueck-listen]
   "Liste antippen: Liste bildschirmfüllend, Tab Einstellungen bleibt markiert");
 await page.click("[data-zurueck-listen]"); await sleep(400);
 ok(await offen() === "listen" && await page.$('[data-liste-id="l_a"]'), "Pfeil zurück: wieder Einstellungen › Listen");
-await page.click("[data-liste-neu]"); await sleep(400);
+await neueListe(page); await sleep(100);
 ok(/Importieren/.test(await page.evaluate(() => document.querySelector(".liste-detail-header")?.textContent)) && await page.$("[data-zurueck-listen]"), "„+ Neu“: Import mit Pfeil zurück");
 await page.click("[data-zurueck-listen]"); await sleep(400);
 ok(await offen() === "listen", "zurück aus dem Import");

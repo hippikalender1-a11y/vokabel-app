@@ -69,7 +69,8 @@ await page.evaluate(() => document.querySelector('[data-info-aktion="✕ Auswahl
 p = await mitte("2|0"); ziel = await mitte("0|0");   // die Auswahl-Tafel kann die Seite verschoben haben
 // kurz halten (angehoben) und ziehen: verschieben
 await finger("touchStart", p.x, p.y); await sleep(400);
-for (let i = 1; i <= 8; i++) { await finger("touchMove", p.x, p.y + (ziel.y - p.y) * i / 8); await sleep(40); }
+await finger("touchMove", p.x, p.y - 30); await sleep(250);   // Ziehen beginnt – 196: rechts kommt eine freie Spalte dazu, die Plätze rücken
+for (let i = 1; i <= 8; i++) { ziel = await mitte("0|0"); await finger("touchMove", p.x + (ziel.x - p.x) * i / 8, p.y + (ziel.y - p.y) * i / 8); await sleep(40); }   // Ziel jedes Mal neu (das Raster rückt)
 ok((await aktionen()).length === 0 && await page.$("[data-listen-fertig]"), "beim Ziehen: kein Menü, Verschieben-Modus");
 await finger("touchEnd"); await sleep(300);
 pl = await plaetze();
@@ -141,16 +142,15 @@ console.log("     geöffnet:", await page.evaluate(() => document.querySelector(
 ok(await page.evaluate(() => /Gamma/.test(document.body.innerText) && !document.querySelector("[data-liste-id]")), "Antippen öffnet die Liste");
 await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(300);
 
-// Einstellungen → Listen: 2 Spalten
-await einstUnter(page, "raster", "listenraster");
-await page.evaluate(() => document.querySelector('[data-listen-raster-spalten="2"]').click()); await sleep(200);
-ok(!(await page.$("[data-listen-raster-zeilen]")), "Einstellungen → Listen: keine Zeilen-Einstellung mehr (nur Spalten)");
+// 196: keine Raster-Einstellung mehr – die Spalten wachsen mit (so viele wie belegt)
+ok(!(await page.$('[data-einst-kopf="raster"]')), "196: keine Raster-Einstellung mehr");
 await zuListen(page);
 pl = await plaetze();
 const spalten = await page.evaluate(() => getComputedStyle(document.querySelector(".listen-raster")).gridTemplateColumns.split(" ").length);
-console.log("     2 Spalten:", JSON.stringify(pl));
-ok(spalten === 2 && pl.Gamma === "0|0", "Raster mit 2 Spalten, Plätze bleiben");
-ok(await page.evaluate(() => /1 Vokabel$/.test(document.querySelector("[data-liste-id] .karte-zeile-sub").textContent.trim())), "Kachel: Flagge, Name, Anzahl");
+const belegt = Math.max(...Object.values(pl).map(p => +p.split("|")[1])) + 1;
+console.log("     Spalten:", spalten, JSON.stringify(pl));
+ok(spalten === belegt && pl.Gamma === "0|0", `Raster mit so vielen Spalten wie belegt (${spalten}), Plätze bleiben`);
+ok(await page.evaluate(() => /^1 Vokabel/.test(document.querySelector("[data-liste-id] .karte-zeile-sub").textContent.trim())), "Kachel: Flagge, Name, Anzahl");
 
 // Mehrere Listen markieren und auf einen freien Platz setzen (untereinander)
 await menue("Gamma"); await aktion("⇄ Verschieben");

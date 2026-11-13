@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { neueListe } from "./hilfen.mjs";
 import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu, listeBereich } from "./hilfen.mjs";
 
@@ -47,7 +48,7 @@ ok(idx[0].sprache === "en", `Migration Index-Sprache: ${JSON.stringify(idx)}`);
 
 // 2) Französische Liste importieren
 await zuListen(page);
-await clickText("button", "Neu");
+await neueListe(page);
 await page.type("textarea.inp", "Französisch // Deutsch\nl'été // der Sommer\nl'école // die Schule\nle garçon // der Junge");
 await clickText("button", "Analysieren");
 let t = await bodyText();
@@ -97,7 +98,7 @@ ok(!t.includes("Englisch Unit 1"), "Statistik zeigt keine englische Liste");
 
 // 3b) KI-Prompt mit Französisch vorausgewählt
 await zuListen(page);
-await clickText("button", "Neu");
+await neueListe(page);
 await clickText("button", "Prompt generieren");
 const prompt = await page.evaluate(() => [...document.querySelectorAll("textarea")].map(t => t.value).join(" "));
 ok(prompt.includes("Französisch // Deutsch") && prompt.includes("aller"), "KI-Prompt auf Französisch");

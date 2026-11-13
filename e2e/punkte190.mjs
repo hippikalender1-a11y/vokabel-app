@@ -58,9 +58,14 @@ await page.reload(); await sleep(800);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await auswahlAuf();
 
-// ── 191: „Alle Sessions“ gelb ──
-const farbe = await page.evaluate(() => getComputedStyle(document.querySelector("[data-alle-sessions]")).backgroundColor);
-ok(farbe === "rgb(246, 196, 69)", `„Alle Sessions“ in Ordner-Gelb (${farbe})`);
+// ── 191/197: oben ist „Alle Sessions“ die aktuelle Ebene – schlicht (gelb erst in einem Ordner, siehe unten) ──
+const GELB = "rgb(246, 196, 69)";
+const bg = sel => page.evaluate(s => { const el = document.querySelector(s); return el ? getComputedStyle(el).backgroundColor : null; }, sel);
+const farbe = await bg("[data-alle-sessions]");
+ok(farbe !== GELB, `197: oben „Alle Sessions“ ohne Gelb (${farbe})`);
+// ── 196: so viele Spalten wie belegt (hier eine) ──
+const spaltenAnz = () => page.evaluate(() => document.querySelector(".slot-raster")?.dataset.rasterSpaltenAnz);
+ok(await spaltenAnz() === "1", `196: Sessions nur in Spalte 1 → eine Spalte (${await spaltenAnz()})`);
 
 // ── 192: antippen übernimmt sofort ──
 await halte('[data-slot-id="s1"]', 60); await sleep(500);
@@ -72,6 +77,8 @@ await auswahlAuf();
 await halte('[data-slot-id="s2"]', 450);
 k = await kopf();
 ok(k.zustand === "offen" && k.laden === "gespeichert:s2", `kurz halten wählt „Teil 2“ (nicht geladen) (${JSON.stringify(k)})`);
+const haken = await page.evaluate(() => document.querySelector("[data-slot-info] [data-gelernt-haken]")?.parentElement?.textContent.trim());
+ok(/✓ \d+ % gelernt$/.test(haken || ""), `201: Info „✓ n % gelernt“ (${haken})`);
 await halte('[data-slot-id="s3"]', 60);
 k = await kopf();
 ok(k.zustand === "offen" && k.laden === "gespeichert:s3", `danach antippen wechselt nur die Karte (${JSON.stringify(k)})`);
@@ -95,6 +102,18 @@ await page.evaluate(() => document.querySelector(".topbar-back")?.click()); awai
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Zur Übersicht")?.click()); await sleep(600);
 k = await kopf();
 ok(imQuiz && k.zustand === "offen", `nach „Zur Übersicht“: Quiz-Tab mit offener Session-Auswahl (${k.zustand})`);
+
+// ── 196: beim Verschieben rechts eine freie Spalte; hineingesetzt → zwei Spalten ──
+await kontext('[data-slot-id="s2"]');
+await aktion("⇄ Verschieben");
+ok(await spaltenAnz() === "2", `196: Verschieben zeigt rechts eine freie Spalte (${await spaltenAnz()})`);
+await page.evaluate(() => document.querySelector('[data-raster-zelle="0|1"]')?.click()); await sleep(300);
+await page.evaluate(() => document.querySelector("[data-slot-fertig]")?.click()); await sleep(300);
+ok((await slots()).gespeichert.find(x => x.id === "s2")?.platz?.s === 1 && await spaltenAnz() === "2", `in die freie Spalte gesetzt: zwei Spalten (${await spaltenAnz()})`);
+await kontext("[data-freier-platz]");
+const freiMenue = await menue();
+ok(freiMenue.includes("＋ Neue Session aus Listen") && freiMenue.includes("📁 Neuer Ordner"), `199: freier Platz: neue Session / neuer Ordner (${freiMenue.join(" | ")})`);
+await page.keyboard.press("Escape"); await page.mouse.click(5, 5); await sleep(300);
 
 // ── 193/194: leere Ordner, drei Ebenen ──
 await kontext("[data-alle-sessions]");
@@ -124,15 +143,22 @@ ok(oC?.ordner === oB.id && oC.platz?.z === 0 && oC.platz?.s === 0, `„C“ in �
 await page.evaluate(id => document.querySelector(`[data-ordner-id="${id}"]`)?.click(), oC?.id); await sleep(400);
 const pfad = await page.evaluate(() => [...document.querySelectorAll("[data-ordner-pfad] > *")].map(e => e.textContent.trim()).join(" "));
 ok(pfad === "← Alle Sessions › 📁 A › 📁 B › 📁 C", `Pfad mit drei Ebenen (${pfad})`);
+const farben = { alle: await bg("[data-alle-sessions]"), a: await bg(`[data-ordner-pfad-teil="${oA.id}"]`), c: await bg("[data-ordner-name]") };
+ok(farben.alle === GELB && farben.a === GELB && farben.c !== GELB, `197: „← Alle Sessions“ und „A“ gelb, der geöffnete Ordner schlicht (${JSON.stringify(farben)})`);
+// 198: bis 5 Ebenen
+for (const n of ["D", "E"]) { await kontext("[data-ordner-name]"); await aktion("📁 Neuer Ordner"); await ordnerAnlegen(n);
+  const o = (await slots()).ordner.find(x => x.name === n); await page.evaluate(id => document.querySelector(`[data-ordner-id="${id}"]`)?.click(), o?.id); await sleep(400); }
+const pfad5 = await page.evaluate(() => [...document.querySelectorAll("[data-ordner-pfad] > *")].map(e => e.textContent.trim()).join(" "));
+ok(pfad5 === "← Alle Sessions › 📁 A › 📁 B › 📁 C › 📁 D › 📁 E", `198: fünf Ebenen (${pfad5})`);
 await kontext("[data-ordner-name]");
-ok(!(await menue()).includes("📁 Neuer Ordner"), "in der dritten Ebene kein weiterer Ordner");
+ok(!(await menue()).includes("📁 Neuer Ordner"), "in der fünften Ebene kein weiterer Ordner");
 await page.keyboard.press("Escape"); await sleep(200);
 // Pfad-Teil antippen geht in diese Ebene
 await page.evaluate(id => document.querySelector(`[data-ordner-pfad-teil="${id}"]`)?.click(), oA.id); await sleep(400);
-if (!(await page.evaluate(() => document.querySelector("[data-ordner-name]")?.textContent.trim() === "› 📁 A"))) {   // der erste Tipp schloss nur das Menü
+if (!(await page.evaluate(() => document.querySelector("[data-ordner-name]")?.textContent.trim() === "📁 A"))) {   // der erste Tipp schloss nur das Menü
   await page.evaluate(id => document.querySelector(`[data-ordner-pfad-teil="${id}"]`)?.click(), oA.id); await sleep(400); }
 const nachTipp = await page.evaluate(() => document.querySelector("[data-ordner-name]")?.textContent.trim());
-ok(nachTipp === "› 📁 A", `Pfad-Teil „A“ antippen öffnet „A“ (${nachTipp})`);
+ok(nachTipp === "📁 A", `Pfad-Teil „A“ antippen öffnet „A“ (${nachTipp})`);
 // Session in den tiefsten Ordner (Dialog „In Ordner…“ mit Pfaden)
 await page.evaluate(() => document.querySelector("[data-ordner-zurueck]")?.click()); await sleep(400);
 await kontext('[data-slot-id="s3"]');
@@ -144,11 +170,20 @@ d = await slots();
 ok(d.gespeichert.find(x => x.id === "s3")?.ordner === oC.id, "„Teil 3“ liegt in „C“");
 const anzahlA = await page.evaluate(id => document.querySelector(`[data-ordner-id="${id}"] [data-ordner-anzahl]`)?.dataset.ordnerAnzahl, oA.id);
 ok(anzahlA === "1", `Ordner-Kachel „A“ zählt die Session in „C“ mit (${anzahlA})`);
+// 200: Tagesstand des Ordners – Anteil über alle Vokabeln darin (Teil 3 = Nr. 7–9, davon 2 heute geübt)
+await page.evaluate(() => { const l = JSON.parse(localStorage.getItem("vokabel_liste_l_a")); const jetzt = new Date().toISOString();
+  l.vokabeln.forEach(v => { if (v.id === 7 || v.id === 8) v.fortschritt = { score: 1, letzteAbfrage: jetzt }; }); localStorage.setItem("vokabel_liste_l_a", JSON.stringify(l)); });
+await page.reload(); await sleep(800);
+await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
+await auswahlAuf();
+if (await page.$("[data-ordner-zurueck]")) { await page.evaluate(() => document.querySelector("[data-ordner-zurueck]").click()); await sleep(300); }
+const heuteA = await page.evaluate(id => document.querySelector(`[data-ordner-id="${id}"]`)?.dataset.heute, oA.id);
+ok(heuteA === "67", `200: Ordner „A“ zeigt den Tagesstand (2 von 3 Vokabeln: ${heuteA} %)`);
 
 // ── 193: Listen-Ordner ──
 await zuListen(page);
-const lFarbe = await page.evaluate(() => getComputedStyle(document.querySelector("[data-alle-listen]")).backgroundColor);
-ok(lFarbe === "rgb(246, 196, 69)", `„Alle Listen“ gelb (${lFarbe})`);
+const lFarbe = await bg("[data-alle-listen]");
+ok(lFarbe !== GELB && !(await page.$("[data-liste-neu]")), `197/199: oben „Alle Listen“ schlicht, kein breiter „＋ Neue Liste“-Knopf (${lFarbe})`);
 await kontext("[data-alle-listen]");
 await aktion("📁 Neuer Ordner");
 await ordnerAnlegen("Englisch");
@@ -166,6 +201,7 @@ ok(oben.listen === "l_b" && oben.ordner === 1, `oben: Ordner-Kachel + „Unit 2�
 await page.evaluate(id => document.querySelector(`[data-lordner-id="${id}"]`)?.click(), oE?.id); await sleep(400);
 const drin = await page.evaluate(() => ({ listen: [...document.querySelectorAll("[data-liste-id]")].map(e => e.dataset.listeId).join(","), name: document.querySelector('[data-ordner-navi="liste"] [data-ordner-name]')?.textContent.trim() }));
 ok(drin.listen === "l_a" && /Englisch/.test(drin.name || ""), `Ordner geöffnet: „Unit 1“, Pfad „Englisch“ (${JSON.stringify(drin)})`);
+ok(await bg("[data-alle-listen]") === GELB, "197: im Ordner ist „← Alle Listen“ gelb");
 // Liste antippen öffnet sie sofort (192)
 await halte('[data-liste-id="l_a"]', 60); await sleep(300);
 const offen = await page.evaluate(() => !!document.querySelector("[data-liste-detail], [data-listen-bereich]") || !document.querySelector('[data-liste-id="l_a"]'));
@@ -178,7 +214,8 @@ const datei = path.join(os.tmpdir(), "B9_alle_listen.json");
 const jl = (id, name) => ({ id, name, sprache: "en", naechste_id: 2, spalten: { E1: { name: "Englisch", aktiv: true }, D1: { name: "Deutsch", aktiv: true } },
   vokabeln: [{ id: 1, E1: { wert: "cat", falsch: [] }, D1: { wert: "Katze", falsch: [] } }] });
 fs.writeFileSync(datei, JSON.stringify([jl("x1", "B9-01"), jl("x2", "B9-02")]));
-await page.evaluate(() => document.querySelector("[data-liste-neu]")?.click()); await sleep(500);
+await kontext('[data-ordner-navi="liste"] [data-ordner-name]');   // 199: „＋ Neue Liste“ im Menü des Ordners
+await aktion("＋ Neue Liste"); await sleep(300);
 const input = await page.$('input[type="file"]');
 await input.uploadFile(datei); await sleep(900);
 ok(await page.$("[data-import-ordner]") !== null, "Import: Ordner-Wahl sichtbar");

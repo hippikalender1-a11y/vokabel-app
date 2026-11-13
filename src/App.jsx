@@ -173,12 +173,16 @@ function neuerSlotId(typ) { return `${typ}_${Date.now()}_${Math.random().toStrin
 // ── Raster der gespeicherten Konfigurationen und der Listen: jeder Eintrag hat einen Platz {z, s} ──
 // Zeilen gibt es nicht als Einstellung: das Raster ist nach unten offen; beim Verschieben stehen unter dem
 // untersten Eintrag immer RASTER_FREI_ZEILEN freie Zeilen bereit (wachsen mit, verschwinden danach wieder)
-const RASTER_MAX_SPALTEN = 4, RASTER_ZEILEN_OFFEN = 100000, RASTER_FREI_ZEILEN = 2;
+// 196: auch seitlich offen – jede Ebene zeigt so viele Spalten, wie belegt sind (beim Verschieben eine freie dazu), höchstens 5
+const RASTER_MAX_SPALTEN = 5, RASTER_ZEILEN_OFFEN = 100000, RASTER_FREI_ZEILEN = 2;
 const MISCH_ARTEN = [["karte", "Karte"], ["mc", "MC"], ["hoeren", "Hören"], ["akzent", "Akzente"], ["tippen", "Tastatur"], ["puzzle", "Puzzle"], ["luecke", "Lücken"], ["artikel", "Artikel"], ["satzfinden", "Satz finden"], ["lueckensatz", "Lückensatz"], ["satzbauen", "Satz bauen"], ["zuordnung", "Zuordnung"], ["memory", "Memory"]];
-function rasterGroesse(einst, schluessel = "slotRaster") {
-  const r = einst?.[schluessel] || {};
-  const spalten = r.spalten ?? (schluessel === "listenRaster" ? 1 : 2);
-  return { zeilen: RASTER_ZEILEN_OFFEN, spalten: Math.min(RASTER_MAX_SPALTEN, Math.max(1, spalten)) };
+function rasterGroesse() {   // 196: keine Einstellung mehr – Plätze bis RASTER_MAX_SPALTEN, Zeilen offen
+  return { zeilen: RASTER_ZEILEN_OFFEN, spalten: RASTER_MAX_SPALTEN };
+}
+// 196: angezeigte Spalten einer Ebene: belegte (mind. 1), beim Verschieben eine freie dazu
+function ebenenSpalten(eintraege, frei = false) {
+  const belegt = eintraege.reduce((m, x) => Math.max(m, (x.platz?.s ?? 0) + 1), 1);
+  return Math.min(RASTER_MAX_SPALTEN, belegt + (frei ? 1 : 0));
 }
 const nachPlatz = (a, b) => a.platz.z - b.platz.z || a.platz.s - b.platz.s;
 // Liste in Session-Gruppen aufteilen: Nummern von..bis (1-basiert) in Gruppen zu je groesse;
@@ -248,7 +252,7 @@ function platziereGruppe(eintraege, ids, ziel) {
 // im Raster der Gruppe. Oberste Ebene = Gruppen + Sessions ohne Gruppe (beide mit Platz im Haupt-Raster).
 // 193: Ordner können in Ordnern liegen (o.ordner = Eltern-Id), bis ORDNER_TIEFE_MAX Ebenen. Gleiches Modell für
 // Listen-Ordner: dort ist data = { ordner: Listen-Ordner, gespeichert: Listen-Index }.
-const ORDNER_TIEFE_MAX = 3;
+const ORDNER_TIEFE_MAX = 5;   // 198
 function ebeneVon(data, ordnerId) {
   const ordner = data.ordner || [];
   const gibt = new Set(ordner.map(o => o.id));
@@ -2186,6 +2190,12 @@ const CSS_BASIS = `
   .listen-raster.auswahl .quiz-setup-check > div:last-child{min-width:0;}
   .listen-raster.auswahl .raster-leer{min-height:0;}
   .raster-chip{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-height:44px;min-width:0;text-align:left;padding:6px 10px;}
+  .slot-raster.schmal .raster-chip{padding:6px 6px;font-size:0.78rem;}   /* 196: 4–5 Spalten */
+  .listen-raster.schmal .karte-zeile{padding:8px 6px !important;font-size:0.8rem;}
+  .listen-raster.schmal .karte-zeile-name{font-size:0.8rem;}
+  .listen-raster.schmal .karte-zeile-info{min-width:0;width:100%;}
+  .listen-raster.schmal .karte-zeile-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:0.72rem;}
+  .listen-raster.schmal .mini-kreise{gap:2px !important;}
   .raster-name{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .raster-fortschritt{font-size:0.68rem;font-weight:600;opacity:0.8;}
   .raster-fuss{display:flex;align-items:center;gap:6px;width:100%;margin-top:6px;min-height:14px;}
@@ -2550,6 +2560,8 @@ export default function VokabelApp() {
   const slotSichtbarRef = useRef([]);
   const [, setSprungTick] = useState(0);
   const [faelligTick, setFaelligTick] = useState(0);
+  const neuPlatzRef = useRef(null);       // 199: { ordner, platz } – „＋ Neue Session“ auf einem freien Platz begonnen
+  const neuListePlatzRef = useRef(null);  // 199: { ordner, platz } – „＋ Neue Liste“ auf einem freien Platz begonnen
   const neuImOrdnerRef = useRef(null);   // „Neue Session“ in einer geöffneten Gruppe begonnen → beim Speichern/Aufteilen dort anlegen   // sichtbare Session-Kacheln (für „Alle“ in der Mehrfach-Auswahl)
   const [slotVorschau, setSlotVorschau] = useState(null);           // Session-Auswahl: angetippte Session { typ, id } – Info darunter, laden über den Kopf
   const [slotVorschauListe, setSlotVorschauListe] = useState(false); // … deren Vokabeln als Liste
@@ -3708,11 +3720,6 @@ export default function VokabelApp() {
   }
   function listenOrdnerDaten() { return { ordner: lsGet(SK.listenOrdner, []), gespeichert: lsGet(SK.listenIndex, []) }; }
   const speichereListenOrdnerDaten = (d, einst) => speichereIndex(d.gespeichert, einst, d.ordner);
-  function setzeListenRasterGroesse(zeilen, spalten) {
-    const einst = { ...einstellungen, listenRaster: { zeilen, spalten } };
-    speichereEinst(einst);
-    speichereIndex(lsGet(SK.listenIndex, []), einst);
-  }
   // Listen (ids) untereinander ab Platz ziel in der geöffneten Ebene; Raster wächst bei Bedarf
   function setzeListenPlaetze(ids, ziel) {
     const einst = lsGet(SK.einstellungen, defaultEinstellungen());
@@ -3914,7 +3921,11 @@ export default function VokabelApp() {
 
   // ── Listen-Aktionen ───────────────────────────────────────────────────────
   // 195: neue Listen kommen in den geöffneten Listen-Ordner (bzw. beim Import in einen neuen Ordner darin)
-  const imListenOrdner = () => listenOrdnerOffenRef.current && listenOrdner.some(o => o.id === listenOrdnerOffenRef.current) ? { ordner: listenOrdnerOffenRef.current } : {};
+  const imListenOrdner = () => {
+    const ordner = listenOrdnerOffenRef.current && listenOrdner.some(o => o.id === listenOrdnerOffenRef.current) ? listenOrdnerOffenRef.current : null;
+    const np = neuListePlatzRef.current; neuListePlatzRef.current = null;   // 199: auf den lang gedrückten freien Platz
+    return { ...(ordner ? { ordner } : {}), ...(np && (np.ordner || null) === ordner ? { platz: np.platz } : {}) };
+  };
   function importZielOrdner() {
     let ordner = lsGet(SK.listenOrdner, []);
     const eltern = listenOrdnerOffenRef.current && ordner.some(o => o.id === listenOrdnerOffenRef.current) ? listenOrdnerOffenRef.current : null;
@@ -4450,7 +4461,7 @@ export default function VokabelApp() {
 
   // ── Import-Aktionen ───────────────────────────────────────────────────────
   function resetImport() {
-    setImportNeuerOrdner(null);
+    setImportNeuerOrdner(null); neuListePlatzRef.current = null;
     setImportText(""); setImportDateiname(""); setImportParsed(null);
     setImportMehrfachListen(null); setImportJsonData(null); setImportMapping({});
     setImportZielTyp("neu"); setImportNeuName(""); setImportBestehendId(""); setImportFehler("");
@@ -4916,13 +4927,6 @@ export default function VokabelApp() {
     if (zeilen !== groesse.zeilen) speichereEinst({ ...einst, slotRaster: { ...groesse, zeilen } });
     return neu;
   }
-  // Rastergröße ändern: Einträge außerhalb rücken auf freie Plätze; reicht der Platz nicht,
-  // bleiben so viele Zeilen wie nötig (kleiner geht dann nicht)
-  function setzeRasterGroesse(zeilen, spalten) {
-    const einst = { ...einstellungen, slotRaster: { zeilen, spalten } };
-    speichereEinst(einst);
-    setSlotsData(rasterEinordnen(getSlotsData(), einst));
-  }
   function setzeSlotPlaetze(ids, ziel) {
     const einst = lsGet(SK.einstellungen, defaultEinstellungen());
     const g = rasterGroesse(einst);
@@ -5297,7 +5301,9 @@ export default function VokabelApp() {
       const newId = neuerSlotId('g');
       const imOrdner = !multi && neuImOrdnerRef.current && (data.ordner || []).some(o => o.id === neuImOrdnerRef.current) ? neuImOrdnerRef.current : null;
       neuImOrdnerRef.current = null;
-      const neuerEintrag = { id: newId, name, timestamp: Date.now(), konfiguration, sessionFortschritt: null, ...(multi ? { multi } : {}), ...(imOrdner ? { ordner: imOrdner } : {}) };
+      const np = neuPlatzRef.current; neuPlatzRef.current = null;   // 199: auf den lang gedrückten freien Platz
+      const platz = !multi && np && (np.ordner || null) === (imOrdner || null) ? np.platz : null;
+      const neuerEintrag = { id: newId, name, timestamp: Date.now(), konfiguration, sessionFortschritt: null, ...(multi ? { multi } : {}), ...(imOrdner ? { ordner: imOrdner } : {}), ...(platz ? { platz } : {}) };
       // bestehende Plätze festhalten, der neue Eintrag kommt auf den ersten freien Platz (Raster wächst automatisch)
       updated = rasterEinordnen({ ...data, gespeichert: [...rasterEinordnen(data).gespeichert, neuerEintrag] });
       id = newId;
@@ -6806,55 +6812,40 @@ export default function VokabelApp() {
       </div>
     </div>, document.body) : null;
 
-  // Einstellung der Rastergröße (gespeicherte Konfigurationen bzw. Listen)
-  // Raster-Spalten (1–4) – Inhalt des Knopfs „Sessions“ bzw. „Listen“ unter Einstellungen › Raster
-  function rasterEinstellung(g, setze, art) {
-    const attr = (name, wert) => ({ [`data-${art ? art + "-" : ""}raster-${name}`]: wert });
-    return (
-      <div className="karte" data-wahl-bereich>
-        <div className="toggle-row">
-          <div className="toggle-btn" style={{display:"flex", width:"100%"}}>
-            {[1, 2, 3, 4].map(n => (
-              <button key={n} {...attr("spalten", n)} className={`toggle-opt${g.spalten === n ? " aktiv" : ""}`} style={{flex:1}}
-                onClick={() => setze(g.zeilen, n)}
-                {...tt(`${n} Spalte${n > 1 ? "n" : ""} nebeneinander (höchstens 4)`)}>{n}</button>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Plätze des Listen-Rasters für die Listenauswahl in Quiz und Statistik: gleiche Spalten und Plätze
   // wie im Listen-Tab (leere Plätze bleiben frei); mit Sprachfilter zusammengerückt
   // 193: die geöffnete Ebene (Listen-Ordner) – Ordner kommen als { istOrdner } mit
   function listenRasterPlaetze() {
-    const { spalten } = rasterGroesse(einstellungen, "listenRaster");
     const daten = { ordner: listenOrdner, gespeichert: listenIndex };
     const ebene = ebeneVon(daten, listenOrdnerOffen);
     const sichtbarIds = new Set(sichtbareListen.map(l => l.id));
     const sichtbar = x => x.istOrdner ? (sprachFilter === "alle" || eintraegeImOrdner(daten, x.id).length === 0 || eintraegeImOrdner(daten, x.id).some(l => sichtbarIds.has(l.id))) : sichtbarIds.has(x.id);
-    if (sprachFilter !== "alle") return { spalten, plaetze: [...ebene].filter(sichtbar)
+    if (sprachFilter !== "alle") return { spalten: 1, plaetze: [...ebene].filter(sichtbar)
       .sort((a, b) => (a.platz?.z ?? 0) - (b.platz?.z ?? 0) || (a.platz?.s ?? 0) - (b.platz?.s ?? 0)).map(l => ({ key: l.id, l })) };
     const platzMap = new Map(ebene.filter(l => l.platz).map(l => [`${l.platz.z}|${l.platz.s}`, l]));
     const zeilen = ebene.reduce((m, l) => Math.max(m, (l.platz?.z ?? 0) + 1), 0);
+    const anz = ebenenSpalten(ebene);   // 196
     const plaetze = [];
-    for (let z = 0; z < zeilen; z++) for (let sp = 0; sp < spalten; sp++) plaetze.push({ key: `${z}|${sp}`, l: platzMap.get(`${z}|${sp}`) || null });
-    return { spalten, plaetze };
+    for (let z = 0; z < zeilen; z++) for (let sp = 0; sp < anz; sp++) plaetze.push({ key: `${z}|${sp}`, l: platzMap.get(`${z}|${sp}`) || null });
+    return { spalten: anz, plaetze };
   }
   // 193: Listenauswahl (Quiz/Statistik) – Pfad über dem Raster (nur, wenn es Listen-Ordner gibt) und Ordner-Kacheln
   function listenAuswahlPfad() {
     if (!listenOrdner.length) return null;
     const pfad = ordnerPfad(listenOrdner, listenOrdnerOffen);
+    // 197: nur die aktuelle Ebene schlicht, darüber gelbe Knöpfe
+    const schlicht = {fontSize:"0.72rem", color:"var(--text2)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", cursor:"default",
+      overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, background:"none", border:"none", padding:"4px 0", fontFamily:"inherit"};
+    const knopf = {fontSize:"0.75rem", padding:"4px 10px", ...ORDNER_KNOPF, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0};
     return (
       <div data-listen-auswahl-pfad style={{display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:8}}>
-        <button className="typ-btn" data-alle-listen-auswahl style={{fontSize:"0.75rem", padding:"4px 10px", ...ORDNER_KNOPF}}
+        <button className={pfad.length ? "typ-btn" : undefined} data-alle-listen-auswahl style={pfad.length ? knopf : schlicht}
           onClick={() => setListenOrdnerOffen(null)} {...tt("Alle Listen (oberste Ebene)")}>{pfad.length ? "← Alle Listen" : "Alle Listen"}</button>
-        {pfad.map((o, i) => (
-          <span key={o.id} data-listen-auswahl-ordner={o.id} onClick={() => setListenOrdnerOffen(o.id)}
-            style={{fontSize:"0.72rem", color: i === pfad.length - 1 ? "var(--text2)" : "var(--text3)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", cursor:"pointer",
-              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0}} {...tt(`Ordner „${o.name}“`)}>› 📁 {o.name}</span>
-        ))}
+        {pfad.map((o, i) => (<Fragment key={o.id}>
+          <span aria-hidden="true" style={{fontSize:"0.72rem", color:"var(--text3)"}}>›</span>
+          <button className={i === pfad.length - 1 ? undefined : "typ-btn"} data-listen-auswahl-ordner={o.id} onClick={() => setListenOrdnerOffen(o.id)}
+            style={i === pfad.length - 1 ? schlicht : { ...knopf, maxWidth: "45%" }} {...tt(`Ordner „${o.name}“`)}>📁 {o.name}</button>
+        </Fragment>))}
       </div>
     );
   }
@@ -7017,7 +7008,7 @@ export default function VokabelApp() {
         <div style={{display:"flex", alignItems:"center", gap:8}}>
           <div style={{flex:1, minWidth:0}}>
             <div data-slot-info-name style={{fontWeight:800, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{mehrere ? `${mehrere.length} Listen ausgewählt` : `${sprachInfo(listeSprache(l)).flagge} ${l.name}`}
-              {zu && schwelle > 0 && voks.length > 0 && <span style={{fontWeight:500, color:"var(--text2)"}}> · {pct} % gelernt</span>}</div>
+              {zu && schwelle > 0 && voks.length > 0 && <span style={{fontWeight:500, color:"var(--text2)"}}> · <span data-gelernt-haken style={{color:"var(--gelernt)", fontWeight:800}}>✓</span> {pct} % gelernt</span>}</div>
             {!zu && <div data-liste-info-spalten style={{fontSize:"0.8rem", color:"var(--text2)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>({spalten.join(" · ")})</div>}
           </div>
           {!zu && voks.length > 0 && schwelle > 0 && <span className="mini-kreise" style={{gap:4, flexShrink:0}}>{renderMiniKreise(lernstandJeArt(voks, mehrere ? null : l.id), { groesse: 26, nurVerfuegbar: true })}</span>}
@@ -7026,7 +7017,7 @@ export default function VokabelApp() {
         </div>
         {!zu && (<>
           <div data-liste-info-zahlen={voks.length} style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:8, marginTop:8, fontSize:"0.85rem"}}>
-            <b>{voks.length} Vokabel{voks.length !== 1 ? "n" : ""}</b>{schwelle > 0 && voks.length > 0 && <span>{pct} % gelernt</span>}
+            <b>{voks.length} Vokabel{voks.length !== 1 ? "n" : ""}</b>{schwelle > 0 && voks.length > 0 && <span><span data-gelernt-haken style={{color:"var(--gelernt)", fontWeight:800}}>✓</span> {pct} % gelernt</span>}
           </div>
           <div className="vorschau-balken" style={{display:"flex", height:8, borderRadius:4, overflow:"hidden", margin:"6px 0 4px", background:"var(--rahmen)"}}>
             {GRUPPE_BALKEN.filter(([g]) => anz[g]).map(([g, farbe]) => <span key={g} data-gruppe={g} style={{width:`${anz[g] / Math.max(1, voks.length) * 100}%`, background:farbe}}/>)}
@@ -7068,7 +7059,10 @@ export default function VokabelApp() {
     plaetzeRef.current.liste = ebene.filter(x => !x.istOrdner && sichtbarE(x)).map((l, i) => ({ id: l.id, z: l.platz?.z ?? i, s: l.platz?.s ?? 0 }));
     const gefiltert = sprachFilter !== "alle";
     const sortModus = listenSortModus && !gefiltert;
-    const eng = groesse.spalten > 1;
+    const anzSpalten = gefiltert ? 1 : ebenenSpalten(ebene, sortModus);   // 196
+    // Kachel-Aufbau nur nach den belegten Spalten: die freie Spalte beim Verschieben darf ihn nicht ändern
+    // (sonst baut React den Inhalt unter dem Finger neu auf und das Ziehen verliert den Finger)
+    const eng = (gefiltert ? 1 : ebenenSpalten(ebene)) > 1;
     const tippeImRaster = (l, platz) => {
       if (slotGezogenRef.current) { slotGezogenRef.current = false; return; }
       if (l) { setListenAuswahl(a => a.includes(l.id) ? a.filter(x => x !== l.id) : [...a, l.id]); return; }
@@ -7125,7 +7119,7 @@ export default function VokabelApp() {
               <div className="karte-zeile-name">{listenFlagge(l)}{l.name}</div>
               <div className="karte-zeile-sub">{anzahl} Vokabel{anzahl !== 1 ? "n" : ""}</div>
               {(einstellungen.gelerntSchwelle ?? 0) > 0 && liste?.vokabeln.length > 0 && (
-                <span className="mini-kreise" data-listen-kreise style={{marginTop:4}}>{renderMiniKreise(lernstandJeArt(liste.vokabeln, liste.id), { groesse: 22 })}</span>
+                <span className="mini-kreise" data-listen-kreise style={{marginTop:4}}>{renderMiniKreise(lernstandJeArt(liste.vokabeln, liste.id), { groesse: anzSpalten >= 4 ? 16 : 22 })}</span>
               )}
             </div>
           ) : (<>
@@ -7191,7 +7185,7 @@ export default function VokabelApp() {
       const platzMap = new Map(ebene.filter(l => l.platz).map(l => [`${l.platz.z}|${l.platz.s}`, l]));
       const belegtBis = ebene.reduce((m, l) => Math.max(m, (l.platz?.z ?? 0) + 1), 0);
       const zeilenAnzeige = sortModus ? belegtBis + RASTER_FREI_ZEILEN : Math.max(ebeneLeer && offen ? 1 : 0, belegtBis);
-      for (let z = 0; z < zeilenAnzeige; z++) for (let sp = 0; sp < groesse.spalten; sp++) {
+      for (let z = 0; z < zeilenAnzeige; z++) for (let sp = 0; sp < anzSpalten; sp++) {
         const key = `${z}|${sp}`;
         const l = platzMap.get(key);
         const ziel = slotDragZiel === key && slotDragId && !l;
@@ -7202,11 +7196,13 @@ export default function VokabelApp() {
           onClick={() => tippeImRaster(null, { z, s: sp })}
           {...tt("Freier Platz – markierte Listen hier untereinander einsetzen (oder Listen hierher ziehen)")}/>);
         else zellen.push(<div key={key} className="raster-leer" data-freier-platz={key} style={ebeneLeer ? {borderStyle:"dashed", opacity:0.5} : {border:"none"}}
-          {...tt("Freier Platz", ordnerHierGeht ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe({ art: "liste", ids: [], name: "", platz: { z, s: sp } }) }] : null)}/>);
+          {...tt("Freier Platz – lang drücken: neue Liste oder neuer Ordner genau hier", [
+            { label: "＋ Neue Liste", fn: () => { resetImport(); neuListePlatzRef.current = { ordner: offen, platz: { z, s: sp } }; setTab("listen"); setAnsicht("import"); } },
+            ...(ordnerHierGeht ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe({ art: "liste", ids: [], name: "", platz: { z, s: sp } }) }] : [])])}/>);
       }
     }
     return (<>
-      <div className={`listen-raster${eng ? " eng" : ""}`} data-lasso={sortModus ? undefined : "liste"} style={{gridTemplateColumns:`repeat(${groesse.spalten}, minmax(0, 1fr))`}}>
+      <div className={`listen-raster${eng ? " eng" : ""}${anzSpalten >= 4 ? " schmal" : ""}`} data-lasso={sortModus ? undefined : "liste"} data-raster-spalten-anz={anzSpalten} style={{gridTemplateColumns:`repeat(${anzSpalten}, minmax(0, 1fr))`}}>
         {zellen}
       </div>
     </>);
@@ -7459,23 +7455,27 @@ export default function VokabelApp() {
   function pfadTeile({ alleText, alleAttr, pfad, geheZu, alleTt, alleAktionen, ordnerAktionen, einheit }) {
     const offen = pfad.length > 0;
     const zielStil = an => an && slotDragId ? {outline:"3px dashed var(--bestaetigen)", outlineOffset:-3} : {};
+    // 197: nur das letzte Element (die Ebene, in der man ist) schlicht; alles darüber gelbe Knöpfe
+    const schlicht = {fontSize:"0.72rem", color:"var(--text2)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em",
+      overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, cursor:"pointer", background:"none", border:"none", padding:"4px 0", fontFamily:"inherit"};
+    const knopf = {fontSize:"0.75rem", padding:"4px 10px", ...ORDNER_KNOPF, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0};
+    const trenner = <span aria-hidden="true" style={{fontSize:"0.72rem", color:"var(--text3)", flexShrink:0}}>›</span>;
     return (
       <span data-ordner-pfad style={{display:"flex", alignItems:"center", gap:6, minWidth:0, flex:1, flexWrap:"wrap", rowGap:4}}>
-        <button className="typ-btn" {...{ [alleAttr]: true }} {...(offen ? { "data-ordner-zurueck": true } : {})} data-raus-ziel={slotDragZiel === "raus" ? "" : undefined}
-          style={{fontSize:"0.75rem", padding:"4px 10px", flexShrink:0, ...ORDNER_KNOPF, ...zielStil(slotDragZiel === "raus")}}
+        <button className={offen ? "typ-btn" : undefined} {...{ [alleAttr]: true }} {...(offen ? { "data-ordner-zurueck": true } : { "data-pfad-hier": true })} data-raus-ziel={slotDragZiel === "raus" ? "" : undefined}
+          style={{flexShrink:0, ...(offen ? knopf : schlicht), ...zielStil(slotDragZiel === "raus")}}
           onClick={() => { if (offen) geheZu(null); }}
           {...tt(alleTt, alleAktionen)}>{offen ? `← ${alleText}` : alleText}</button>
         {pfad.map((o, i) => {
           const letzter = i === pfad.length - 1;
-          return (
-            <span key={o.id} {...(letzter ? { "data-ordner-name": true } : { "data-ordner-ziel": o.id, "data-ordner-pfad-teil": o.id })}
+          return (<Fragment key={o.id}>
+            {trenner}
+            <button className={letzter ? undefined : "typ-btn"} {...(letzter ? { "data-ordner-name": true, "data-pfad-hier": true } : { "data-ordner-ziel": o.id, "data-ordner-pfad-teil": o.id })}
               data-raus-ziel={slotDragZiel === `raus:${o.id}` ? "" : undefined}
-              style={{fontSize:"0.72rem", color: letzter ? "var(--text2)" : "var(--text3)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em",
-                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", cursor:"pointer", minWidth:0, maxWidth: letzter ? "100%" : "40%", borderRadius:6, padding:"2px 0",
-                ...zielStil(slotDragZiel === `raus:${o.id}`)}}
+              style={{...(letzter ? schlicht : knopf), maxWidth: letzter ? "100%" : "45%", ...zielStil(slotDragZiel === `raus:${o.id}`)}}
               onClick={() => { if (!letzter) geheZu(o.id); }}
-              {...tt(`Ordner „${o.name}“ – ${letzter ? "" : `antippen öffnet ihn, ${einheit} hierher ziehen legt sie hinein; `}lang drücken: Menü des Ordners`, ordnerAktionen(o))}>› 📁 {o.name}</span>
-          );
+              {...tt(`Ordner „${o.name}“ – ${letzter ? "" : `antippen öffnet ihn, ${einheit} hierher ziehen legt sie hinein; `}lang drücken: Menü des Ordners`, ordnerAktionen(o))}>📁 {o.name}</button>
+          </Fragment>);
         })}
       </span>
     );
@@ -7571,6 +7571,7 @@ export default function VokabelApp() {
     slotSichtbarRef.current = sichtbar.map(x => x.id);
     plaetzeRef.current.slot = sichtbar.map(x => ({ id: x.id, z: x.platz.z, s: x.platz.s }));
     const ebeneLeer = raster.gespeichert.length === 0;   // 194: leerer Ordner – eine Zeile freier Plätze zeigen
+    const anzSpalten = ebenenSpalten(raster.gespeichert, slotSortModus);   // 196: so viele Spalten wie belegt (+1 beim Verschieben)
     const ordnerHierGeht = ordnerPfad(slots.ordner, ordnerOffen?.id || null).length < ORDNER_TIEFE_MAX;
     const zeilenAnzeige = slotSortModus ? raster.gespeichert.reduce((m, x) => Math.max(m, x.platz.z + 1), 0) + RASTER_FREI_ZEILEN
       : Math.max(ebeneLeer && ordnerOffen ? 1 : 0, raster.gespeichert.filter(sichtbarE).reduce((m, x) => Math.max(m, x.platz.z + 1), 0));
@@ -7615,7 +7616,7 @@ export default function VokabelApp() {
       if (slotAuswahl.length) setzeSlotPlaetze(slotAuswahl, platz);
     };
     const zellen = [];
-    for (let z = 0; z < zeilenAnzeige; z++) for (let sp = 0; sp < groesse.spalten; sp++) {
+    for (let z = 0; z < zeilenAnzeige; z++) for (let sp = 0; sp < anzSpalten; sp++) {
       const key = `${z}|${sp}`;
       const x = platzMap.get(key);
       const ziel = slotDragZiel === key && slotDragId && slotDragId !== x?.id;
@@ -7624,7 +7625,10 @@ export default function VokabelApp() {
         const pct = x.istOrdner
           ? (kinder.length ? Math.round(kinder.reduce((a, k) => a + lernstand(k).uebersetzung.pct, 0) / kinder.length) : 0)
           : Math.round(lernstand(x).uebersetzung.pct);
-        const heuteP = x.istOrdner ? 0 : heuteProzent(x);
+        // 200: Ordner – Anteil über alle Vokabeln darin (samt Unterordnern), jede Vokabel einmal
+        const heuteP = x.istOrdner
+          ? heuteAnteil([...new Map(kinder.flatMap(kachelVoks).filter(y => !y.herausgenommen).map(y => [y._key, y])).values()], heuteFeld, einstellungen.gelerntSchwelle ?? 0)
+          : heuteProzent(x);
         const multiNr = multiAuswahl ? multiAuswahl.indexOf(x.id) + 1 : 0;
         // geladenes Multiquiz (nichts angetippt): seine Sessions angewählt, mit Nummer
         const multiTeile = !multiAuswahl && !slotVorschau ? (multiVonSlot(slotRef) || []).map(m => m.id) : [];
@@ -7658,7 +7662,8 @@ export default function VokabelApp() {
         ) : x.istOrdner ? (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-ordner-id={x.id} data-kachel-geste="ordner" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined}
             className={`slot-chip belegt raster-chip ordner-kachel${slotRef?.typ === "gespeichert" && kinder.some(k => k.id === slotRef.id) ? " ordner-aktiv" : ""}`}
-            style={{position:"relative"}}
+            data-heute={heuteP}
+            style={{position:"relative", ...(heuteP > 0 ? { backgroundImage: `linear-gradient(to right, var(--heute-farbe) ${heuteP}%, transparent ${heuteP}%)` } : {})}}
             onClick={() => { if (slotGezogenRef.current) { slotGezogenRef.current = false; return; } if (!multiAuswahl) setSlotOrdner(x.id); }}
             {...tt(`Ordner „${x.name}“ mit ${kinder.length} Session${kinder.length !== 1 ? "s" : ""} – antippen öffnet ihn`, multiAuswahl ? [] : [
               { label: "📂 Öffnen", fn: () => setSlotOrdner(x.id) },
@@ -7712,13 +7717,15 @@ export default function VokabelApp() {
       } else {
         // 194: freier Platz – lang drücken: neuer (leerer) Ordner genau hier; im leeren Ordner gestrichelt sichtbar
         zellen.push(<div key={key} className="raster-leer" data-freier-platz={key} style={ebeneLeer ? {borderStyle:"dashed", opacity:0.5} : {border:"none"}}
-          {...tt("Freier Platz", ordnerHierGeht ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe({ ids: [], name: "", platz: { z, s: sp } }) }] : null)}/>);
+          {...tt("Freier Platz – lang drücken: neue Session oder neuer Ordner genau hier", [
+            ...(tab === "statistik" ? [] : [{ label: "＋ Neue Session aus Listen", fn: () => { neuImOrdnerRef.current = ordnerOffen?.id || null; neuPlatzRef.current = { ordner: ordnerOffen?.id || null, platz: { z, s: sp } }; setNeueSessionSchritt("art"); setModal("neue-session"); } }]),
+            ...(ordnerHierGeht ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe({ ids: [], name: "", platz: { z, s: sp } }) }] : [])])}/>);
       }
     }
     return (<>
       <div style={{margin:`0 ${abstand}px 12px`}}>
         {zellen.length > 0 && (
-          <div className="slot-raster" data-lasso={slotSortModus ? undefined : "slot"} style={{gridTemplateColumns:`repeat(${groesse.spalten}, minmax(0, 1fr))`}}>
+          <div className={`slot-raster${anzSpalten >= 4 ? " schmal" : ""}`} data-lasso={slotSortModus ? undefined : "slot"} data-raster-spalten-anz={anzSpalten} style={{gridTemplateColumns:`repeat(${anzSpalten}, minmax(0, 1fr))`}}>
             {zellen}
           </div>
         )}
@@ -7801,7 +7808,7 @@ export default function VokabelApp() {
         <div style={{display:"flex", alignItems:"center", gap:8}}>
           <div style={{flex:1, minWidth:0}}>
             <div data-slot-info-name style={{fontWeight:800, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
-              {name}{zu && schwelle > 0 && alle.length > 0 && <span style={{fontWeight:500, color:"var(--text2)"}}> · {pct} % gelernt</span>}</div>
+              {name}{zu && schwelle > 0 && alle.length > 0 && <span style={{fontWeight:500, color:"var(--text2)"}}> · <span data-gelernt-haken style={{color:"var(--gelernt)", fontWeight:800}}>✓</span> {pct} % gelernt</span>}</div>
           </div>
           {!zu && statistik && alle.length > 0 && <span className="mini-kreise" style={{gap:4, flexShrink:0}}>{renderMiniKreise(ls, { groesse: 26, nurVerfuegbar: true })}</span>}
           <span className="slot-info-pfeil" data-slot-info-pfeil={zu ? "zu" : "auf"}
@@ -7811,7 +7818,7 @@ export default function VokabelApp() {
           <div data-vorschau-zahlen={alle.length} style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:8, marginTop:8, fontSize:"0.85rem"}}>
             <span style={{minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}><b>{alle.length} Vokabel{alle.length !== 1 ? "n" : ""}</b>
               {sf && <span data-vorschau-runde style={{fontWeight:600}}> · ▶ {(sf.abgefragt || []).length}/{sf.gesamt || 0} abgefragt</span>}</span>
-            <span style={{flexShrink:0}}>{schwelle > 0 && alle.length > 0 ? `${pct} % gelernt` : ""}</span>
+            <span style={{flexShrink:0}}>{schwelle > 0 && alle.length > 0 ? <><span data-gelernt-haken style={{color:"var(--gelernt)", fontWeight:800}}>✓</span> {pct} % gelernt</> : ""}</span>
           </div>
           <div className="vorschau-balken" data-vorschau-balken style={{display:"flex", height:8, borderRadius:4, overflow:"hidden", margin:"6px 0 4px", background:"var(--rahmen)"}}>
             {GRUPPE_BALKEN.filter(([g]) => anz[g]).map(([g, farbe]) => <span key={g} data-gruppe={g} style={{width:`${anz[g] / Math.max(1, alle.length) * 100}%`, background:farbe}}/>)}
@@ -12679,12 +12686,6 @@ export default function VokabelApp() {
             })()}
             {!einstUnter && listenNavi()}
             {!einstUnter && (listenWahl || listenSortModus) && wahlLeiste("liste")}
-            {!einstUnter && !listenWahl && !listenSortModus && (
-              <button className="btn btn-ghost neue-session-knopf" data-liste-neu style={{marginBottom:6}}
-                onClick={() => { resetImport(); setTab("listen"); setAnsicht("import"); }} {...tt("Neue Vokabelliste importieren oder anlegen")}>
-                <IcoPlus s={13}/> Neue Liste
-              </button>
-            )}
             {!einstUnter && (sichtbareListen.length === 0 && listenOrdner.length === 0 ? (
               <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
             ) : renderListenRaster())}
@@ -12925,23 +12926,6 @@ export default function VokabelApp() {
                     {...ttFeld("Gesamt-Tempo für alle Sprachen (multipliziert mit dem Tempo der Sprache) – auch über lang drücken auf eine Abfrage-Karte")}/>
                 </div>
               </div>}
-              </>);
-            })()}
-            </div>)}
-            {einstKopf("raster", "Raster", "Plätze für Sessions und Listen")}
-            {einstBereich === "raster" && (<div className="einst-inhalt">
-            {(() => {
-              const sp = n => `${n} Spalte${n > 1 ? "n" : ""}`;
-              const rs = rasterGroesse(einstellungen), rl = rasterGroesse(einstellungen, "listenRaster");
-              return (<>
-                {einstZeile([
-                  { k: "sessions", label: "Sessions", text: sp(rs.spalten), wahl: true,
-                    hilfe: "Plätze für gespeicherte Konfigurationen im Quiz- und Statistik-Tab – Zeilen wachsen von selbst: beim Verschieben stehen unten immer zwei freie Zeilen bereit" },
-                  { k: "listenraster", label: "Listen", text: sp(rl.spalten), wahl: true,
-                    hilfe: "Plätze der Listen unter Einstellungen › Listen – die Reihenfolge gilt in der ganzen App; Zeilen wachsen von selbst" },
-                ])}
-                {einstUnter === "sessions" && rasterEinstellung(rs, (z, n) => einstWahl("sessions", () => setzeRasterGroesse(z, n)), "")}
-                {einstUnter === "listenraster" && rasterEinstellung(rl, (z, n) => einstWahl("listenraster", () => setzeListenRasterGroesse(z, n)), "listen")}
               </>);
             })()}
             </div>)}
