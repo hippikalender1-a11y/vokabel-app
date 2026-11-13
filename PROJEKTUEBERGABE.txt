@@ -2659,6 +2659,17 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   Offene Fragen: Abfrageart, Listen-Kacheln, Ordner-Kacheln, Ausblenden merken, was zählt als „heute abgefragt“.
   Entschieden: (a) je gewählter Abfrageart (Ü/D/A); (b) NICHT für Listen-Kacheln; (c) Ordner zeigen keinen Tagesstand;
   (d) „gelernte ausblenden“ gespeichert, gilt global; (e) nur im Quiz beantwortete zählen, reines Ansehen (Lernen) nicht.
+- 182 Tagesstand auch auf der ausgewählten (grünen) Kachel (Screenshot 1): heute zeigt die angewählte Session ihre Füllung
+  nicht, weil der grüne Auswahl-Hintergrund sie überdeckt. Füllung dort in Grün (abgeschwächt, kräftiger als der
+  Auswahl-Grund), ebenfalls von links nach rechts im Anteil der heute abgefragten.
+- 183 Komplett heute geübte Kachel nicht mehr dunkel: nur die abgeschwächte Farbe verwenden, die Kachel ist dann einfach
+  ganz gefüllt (100 % Verlauf statt aktiv-kachel). Damit entfällt auch der hellgrüne Balken-Grund der dunklen Kachel.
+- 184 Session-Info (Screenshot 2): bei „Zuletzt abgefragt: Heute“ zusätzlich, wie viel Prozent der Vokabeln heute schon
+  abgefragt sind, z. B. „Zuletzt abgefragt: Heute (40 %)“ – gleiche Rechnung wie die Kachel-Füllung (gewählte Abfrageart).
+- 185 Session-Info: die Werte rechts unter dem Fortschrittsbalken („25 in Arbeit“, „✓“, „nie“, „−“) farbcodiert – vor
+  jedem Wert ein einfarbiger Punkt in der Farbe seines Balken-Abschnitts; vor „gelernt“ ein grüner Punkt.
+- 186 Session-Info: die automatische Inhaltsangabe aus der zweiten Zeile („(🇬🇧 Englisch 6 · Nr. 151–175)“) rückt nach
+  unten an die Stelle von „📋 Vokabeln ansehen“ und klappt dort mit ▼ die Vokabeln auf; „Vokabeln ansehen“ selbst entfällt.
 
 ── 175–179 umgesetzt (Commit abca04e) ──
 - 175 quiz.rueckblick (Einträge {art quiz|diktat, vokId, frage, antworten[{label,wert,richtig,eingaben}], ergebnis, wertung, zaehlt}),
