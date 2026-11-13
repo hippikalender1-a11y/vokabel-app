@@ -2672,6 +2672,9 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   unten an die Stelle von „📋 Vokabeln ansehen“ und klappt dort mit ▼ die Vokabeln auf; „Vokabeln ansehen“ selbst entfällt.
   Entschieden zu 185/186: (a) geändert: Häkchen „✓“ (gelernt) und Pfeile „🔁“ (fällig) bleiben – sonst zweideutig;
   (b) Inhaltsangabe ohne Klammern; (c) eingeklappte Info bleibt einzeilig: Name · „n % gelernt“ (wie bisher).
+  185 endgültig: vor jedem Wert des Balkens ein farbiger Punkt in der Farbe seines Balken-Abschnitts (verweist auf den
+  Balken); Beschriftung bleibt „✓“ (gelernt), „in Arbeit“, „nie“; „−“ (nicht gewusst) wird „✗“; „🔁 n fällig“ ohne Punkt.
+  Beispiel: „🔁 3 fällig · ● 12 ✓ · ● 25 in Arbeit · ● 4 nie · ● 2 ✗“.
 
 ── 175–179 umgesetzt (Commit abca04e) ──
 - 175 quiz.rueckblick (Einträge {art quiz|diktat, vokId, frage, antworten[{label,wert,richtig,eingaben}], ergebnis, wertung, zaehlt}),
