@@ -1127,6 +1127,13 @@ function heuteAbgefragt(f) {
   return a.getFullYear() === h.getFullYear() && a.getMonth() === h.getMonth() && a.getDate() === h.getDate();
 }
 // 180: Tagessperre – nur die automatischen Tests (ältere Abläufe mit mehrfachen Runden) schalten sie über einen unsichtbaren Schlüssel ab
+// 189: Tagesstand – Anteil der heute abgefragten an dem, was heute ansteht: Gelernte (nicht fällig, heute nicht abgefragt) zählen nicht mit,
+// voll also, wenn alles außer den Gelernten heute dran war
+function heuteAnteil(voks, feld, schwelle) {
+  const gelerntRuht = v => schwelle > 0 && (v[feld]?.score ?? -Infinity) >= schwelle && !istFaellig(v[feld]);
+  const ansteh = voks.filter(v => heuteAbgefragt(v[feld]) || !gelerntRuht(v));
+  return ansteh.length ? Math.round(ansteh.filter(v => heuteAbgefragt(v[feld])).length / ansteh.length * 100) : 0;
+}
 function tagesSperre() { try { return !localStorage.getItem("vokabel_test_ohne_tagessperre"); } catch { return true; } }
 // 172: fällige Vokabeln zwischen die übrigen einstreuen – je Karte mit faelligAnteil() % eine fällige (Reihenfolge je Teil bleibt)
 const STANDARD_FAELLIG_ANTEIL = 30;
@@ -5754,7 +5761,22 @@ export default function VokabelApp() {
     );
   }
   // Paket-Ende: nächstes Paket wählen; Größen nur unterhalb des Session-Rests, beim Rest „Letzte N Vokabeln“
-  const naechstesPaketUI = (rest, doWeiter, doBeende) => {
+  // 189: offene Vokabeln der Session, die heute schon abgefragt wurden – starteQuiz lässt sie aus, also zählen sie am Paket-Ende nicht als Rest
+  const heuteGesperrtOffen = (q, schonAbgefragt) => {
+    if (quizHeuteEinschliessen || !tagesSperre() || !q.sessionIds) return 0;
+    const feld = q.scoreFeld || "fortschritt", ids = new Set(q.sessionIds);
+    return (q.liste?.vokabeln || []).filter(v => ids.has(v.id) && !schonAbgefragt.has(v.id) && heuteAbgefragt(v[feld])).length;
+  };
+  const naechstesPaketUI = (rest, doWeiter, doBeende, gesperrt = 0) => {
+    if (rest <= 0 && gesperrt > 0) return (
+      <>
+        <div className="meldung-info" data-heute-fertig={gesperrt} style={{marginBottom:10, textAlign:"center"}}
+          {...tt(`${gesperrt} Vokabeln dieser Session wurden heute schon abgefragt und kommen morgen wieder (vor dem Start mit „Heute“ dazunehmbar)`)}>
+          ✓ Für heute geschafft · {gesperrt} morgen
+        </div>
+        <button {...tt("Pause – Fortschritt bleibt gespeichert, morgen mit den übrigen Vokabeln weitermachen")} className="btn btn-primary" style={{width:"100%"}} onClick={() => doBeende(false, true)} data-pause>Pause</button>
+      </>
+    );
     const groessen = [5,10,15,20,25,30,40,50].filter(n => n < rest);
     const letzte = quizPaketGroesse >= rest;
     const n = Math.min(quizPaketGroesse, rest);
@@ -7163,7 +7185,7 @@ export default function VokabelApp() {
     const lernstand = x => { if (!lernstandCache.has(x.id)) lernstandCache.set(x.id, lernstandJeArt(kachelVoks(x))); return lernstandCache.get(x.id); };
     // 181: Anteil der heute (in der gewählten Abfrageart) abgefragten Vokabeln einer Session
     const heuteFeld = FORTSCHRITT_FELD[aktArt] || "fortschritt";
-    const heuteProzent = x => { const v = kachelVoks(x).filter(y => !y.herausgenommen); return v.length ? Math.round(v.filter(y => heuteAbgefragt(y[heuteFeld])).length / v.length * 100) : 0; };
+    const heuteProzent = x => heuteAnteil(kachelVoks(x).filter(y => !y.herausgenommen), heuteFeld, einstellungen.gelerntSchwelle ?? 0);
     const verlauf = slots.verlauf.filter(slotSichtbar);
     const label = {fontSize:"0.72rem", color:"var(--text3)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em"};
     // Raster: alle Einträge (auch andere Sprache) belegen ihren Platz; sichtbar nur die der gewählten Sprache
@@ -7392,7 +7414,7 @@ export default function VokabelApp() {
     const gruppenText = gruppenKurz(anz, faelligN ? `🔁 ${faelligN} fällig` : null);
     // 184: Anteil der heute (in der gewählten Abfrageart) abgefragten – wie die Füllung der Kachel
     const heuteFeld = FORTSCHRITT_FELD[statistik ? statistikArt : quizArt] || "fortschritt";
-    const heuteP = alle.length ? Math.round(alle.filter(v => heuteAbgefragt(v[heuteFeld])).length / alle.length * 100) : 0;
+    const heuteP = heuteAnteil(alle, heuteFeld, schwelle);
     const zu = infoZu;
     // Name wie im Kopf: gespeicherte Session → ihr Name; Multiquiz aus dem Verlauf → seine Teile; Verlauf → Datum
     const gespeichert = slots.gespeichert.some(g => g.id === eintrag.id);
@@ -7548,6 +7570,7 @@ export default function VokabelApp() {
     if (!gruppe && !quizGelerntEinschliessen && schwelleDiktat > 0)
       voks = voks.filter(v => gelerntScore(v, true) < schwelleDiktat || istFaellig(v.diktatFortschritt));
     const sessionGesamt = isPakete ? voks.length : 0;
+    const sessionIds = isPakete ? voks.map(v => v.id) : null;
     if (isPakete) {
       const existingSlot = lsGet(SK.sessionAktiv);
       const konflikt = existingSlot && sessionSlotKonflikt();
@@ -7598,7 +7621,7 @@ export default function VokabelApp() {
       sessionVokIds: isPakete ? voks.map(v => v.id) : null,
       istSessionModus: isPakete,
       ausStatistik: !!gruppe,   // Gruppen-Runde aus der Statistik: danach dorthin zurück
-      sessionGesamt, scoreFeld: "diktatFortschritt", rundeStartZeit: Date.now(),
+      sessionGesamt, sessionIds, scoreFeld: "diktatFortschritt", rundeStartZeit: Date.now(),
       rundeStartScores: Object.fromEntries(voks.map(v => [v.id, v.diktatFortschritt?.score ?? null])),
     });
     setAnsicht("quiz");
@@ -8867,9 +8890,10 @@ export default function VokabelApp() {
                   </div>
                 </div>
                 )}
-                {istLetzteBatch ? weiterZurAuswertung : (
-                  naechstesPaketUI(Math.max(0, (quiz.sessionGesamt || 0) - schonAbgefragt.size), doWeiter, doBeende)
-                )}
+                {istLetzteBatch ? weiterZurAuswertung : (() => {
+                  const gesperrt = heuteGesperrtOffen(quiz, schonAbgefragt);
+                  return naechstesPaketUI(Math.max(0, (quiz.sessionGesamt || 0) - schonAbgefragt.size - gesperrt), doWeiter, doBeende, gesperrt);
+                })()}
               </div>
             </div>
           </>
@@ -9046,6 +9070,8 @@ export default function VokabelApp() {
         const ges = r + f;
         const feedback = getQuizFeedback(r, ges);
         const sessionPct = Math.round(schonAbgefragt.size / Math.max(1, quiz.sessionGesamt) * 100);
+        const heuteGesperrt = istLetzteBatch ? 0 : heuteGesperrtOffen(quiz, schonAbgefragt);
+        const heuteFertig = heuteGesperrt > 0 && schonAbgefragt.size + heuteGesperrt >= (quiz.sessionGesamt || 0);
         if (istLetzteBatch && !quiz.abgebrochen && quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, (<>
           <button data-nochmal {...tt("Session gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}}
             onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteQuiz(true); }}>🔁 Nochmal!</button>
@@ -9058,7 +9084,7 @@ export default function VokabelApp() {
             <div className="app">
               <div className="topbar">
                 <button {...tt("Schließen – Fortschritt wird gespeichert, zurück zur Übersicht")} className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
-                <span className="topbar-title">{quiz.abgebrochen ? "Abgebrochen" : istLetzteBatch ? "Durchlauf abgeschlossen" : "Paket fertig"}</span>
+                <span className="topbar-title">{quiz.abgebrochen ? "Abgebrochen" : istLetzteBatch ? "Durchlauf abgeschlossen" : heuteFertig ? "Für heute fertig" : "Paket fertig"}</span>
                 <span className="quiz-fortschritt">{schonAbgefragt.size}/{quiz.sessionGesamt}</span>
               </div>
               <div className="sektion">
@@ -9092,7 +9118,7 @@ export default function VokabelApp() {
                   <><button {...tt("Zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%"}} onClick={() => beendeQuiz()}>Zur Übersicht</button>
                   <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(beendeQuiz)} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button></>
                 ) : istLetzteBatch ? weiterZurAuswertung : (
-                  naechstesPaketUI(Math.max(0, (quiz.sessionGesamt || 0) - schonAbgefragt.size), doWeiter, doBeende)
+                  naechstesPaketUI(Math.max(0, (quiz.sessionGesamt || 0) - schonAbgefragt.size - heuteGesperrt), doWeiter, doBeende, heuteGesperrt)
                 )}
               </div>
             </div>

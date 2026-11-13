@@ -2734,3 +2734,12 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   [data-start-hinweis] unter den Knöpfen („n gelernt · n heute schon abgefragt – oben bei „Gelernte“ / „Heute“ dazunehmen“,
   sonst „Keine Vokabeln ausgewählt“). Rückfragen „Lernstand löschen?“ / „Abgefragt-Stand löschen?“ jetzt unter den Knöpfen.
   Tests in e2e/punkte180.mjs ergänzt; sessionwahl erwartet „✗“.
+
+── 189 (Feedback Handy, 13.11.2026) ──
+- 189a FEHLER (Screenshot): Paket-Ende „63 von 82“, Knopf „Letzte 19 Vokabeln“ ohne Wirkung – die 19 waren heute schon
+  abgefragt; starteQuiz filtert sie (Tagessperre 180) und bricht bei 0 ab. Fix: heuteGesperrtOffen(quiz, schonAbgefragt)
+  (auch Diktat: sessionIds jetzt im Quiz-Objekt) zieht sie vom Rest ab; Rest 0 → Titel „Für heute fertig“,
+  [data-heute-fertig] „✓ Für heute geschafft · n morgen“ und nur „Pause“. Fortschritt „63/82“ bleibt (wie 188).
+- 189b Kachel-Tagesstand (und „Heute (n %)“ in der Info) per heuteAnteil(voks, feld, schwelle): ruhende Gelernte
+  (Score ≥ Schwelle, nicht fällig, heute nicht abgefragt) zählen nicht mit – voll, wenn alles außer ihnen heute dran war.
+  Test e2e/punkte189.mjs (94. Test).
