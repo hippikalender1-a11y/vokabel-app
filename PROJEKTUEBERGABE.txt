@@ -2675,6 +2675,16 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   185 endgültig: vor jedem Wert des Balkens ein farbiger Punkt in der Farbe seines Balken-Abschnitts (verweist auf den
   Balken); Beschriftung bleibt „✓“ (gelernt), „in Arbeit“, „nie“; „−“ (nicht gewusst) wird „✗“; „🔁 n fällig“ ohne Punkt.
   Beispiel: „🔁 3 fällig · ● 12 ✓ · ● 25 in Arbeit · ● 4 nie · ● 2 ✗“.
+- 187 Knopf „n heute“ (180) im ausgeschalteten Zustand nicht gefüllt – erst gefüllt, wenn die heute abgefragten mit
+  eingeschlossen sind („+ n heute“). Ist-Stand: „Heute“ ist immer voll dunkel (fehlt die Regel von „Gelernte“);
+  „n gelernte“ ist aus bereits hell (Flächen-Ton haupt-flaeche + dunkler Rahmen), an = voll dunkel. Beide gleich gestalten.
+  Entschieden: ja – „Heute“ bekommt dieselbe Gestaltung wie „Gelernte“ (aus hell, an voll).
+- 188 FEHLER (Screenshot): Session nur aus gelernten (14) und heute schon abgefragten (11) Vokabeln, beide Knöpfe aus –
+  trotzdem „Quiz mit 11 Vokabeln“, Fortschritt „0/11“ und Start-Knopf grün „11 Vokabeln“. Ursache: Titel und Fortschritt
+  nehmen sessionAnzahl, die Knopf-Zahl startRest (= sessionAnzahl − abgefragt) – beide ohne die heute gesperrten
+  (180 zieht sie nur von verfuegbar ab; der Knopf ist dadurch zwar gesperrt, sieht aber gleich aus).
+  Gewünscht: 0 anzeigen; bei 0 der Start-Knopf nicht grün, sondern in der Farbe des Fortschritt-Feldes links daneben;
+  erst beim Antippen ein Hinweis, z. B. „Alle Vokabeln sind heute schon abgefragt oder gelernt“.
 
 ── 175–179 umgesetzt (Commit abca04e) ──
 - 175 quiz.rueckblick (Einträge {art quiz|diktat, vokId, frage, antworten[{label,wert,richtig,eingaben}], ergebnis, wertung, zaehlt}),

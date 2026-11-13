@@ -2100,9 +2100,8 @@ const CSS_BASIS = `
   .kachel-balken > span{display:block;height:100%;background:var(--haupt);border-radius:3px;}   /* 181: Fortschritt immer dunkel */
   .kachel-balken.voll > span{background:var(--gelernt);}
   .kachel-voll{font-size:0.7rem;font-weight:900;color:var(--auf-gelernt);background:var(--gelernt);border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .raster-chip.aktiv-kachel{background:var(--haupt) !important;border-color:var(--haupt) !important;color:var(--auf-haupt) !important;}
-  .raster-chip.aktiv-kachel.leuchten{background:var(--bestaetigen) !important;border-color:var(--bestaetigen) !important;color:var(--auf-bestaetigen) !important;}
-  .raster-chip.aktiv-kachel .kachel-balken{background:var(--haupt-hell);}   /* 181: dunkle Kachel – heller Grund, Fortschritt wie sonst dunkel */
+  .raster-chip{--heute-farbe:color-mix(in srgb, var(--haupt) 26%, transparent);}   /* 181/183: heute geübt – abgeschwächte Füllung */
+  .raster-chip.kachel-gewaehlt{--heute-farbe:color-mix(in srgb, var(--bestaetigen) 42%, transparent);}   /* 182: auf der gewählten Kachel grün */
   .mini-kreise{display:flex;gap:3px;}
   .mini-kreise > span{border-radius:50%;}
   .kopf-kreise{position:absolute;right:12px;gap:4px;}
@@ -2221,11 +2220,12 @@ const CSS_BASIS = `
   .stufen-punkte{font-size:0.62rem;letter-spacing:1px;color:var(--gelernt);margin-right:4px;white-space:nowrap;}
   .info-zeile-klein{display:flex;justify-content:space-between;gap:8px;font-size:0.75rem;color:var(--text2);white-space:nowrap;}
   .info-gruppen{min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:right;}
+  .gruppen-punkt{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px;vertical-align:0;}
   .slot-info{cursor:pointer;}
   .info-klapp-zeile{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:0.85rem;font-weight:600;color:var(--text-stark);cursor:pointer;}
   [data-wahl-bereich] .toggle-opt.aktiv,[data-wahl-bereich] .typ-btn.aktiv,[data-wahl-bereich].toggle-btn .toggle-opt.aktiv{background:var(--bestaetigen) !important;color:var(--auf-bestaetigen) !important;border-color:var(--bestaetigen) !important;}
   .kachel-gewaehlt{box-shadow:0 0 0 2px var(--karte),0 0 0 5px var(--bestaetigen) !important;}
-  .kachel-gewaehlt:not(.aktiv-kachel):not(.leuchten){background:var(--karte) !important;background:color-mix(in srgb, var(--bestaetigen) 22%, var(--karte)) !important;border-color:var(--bestaetigen) !important;}
+  .kachel-gewaehlt:not(.leuchten){background-color:var(--karte) !important;background-color:color-mix(in srgb, var(--bestaetigen) 22%, var(--karte)) !important;border-color:var(--bestaetigen) !important;}
   .vorschau-zeile{display:flex;align-items:baseline;gap:8px;padding:5px 2px;border-bottom:1px solid var(--rahmen);font-size:0.85rem;}
   .vorschau-nr{min-width:28px;text-align:right;color:var(--text3);font-variant-numeric:tabular-nums;font-size:0.75rem;}
   .vorschau-wort{font-weight:700;}
@@ -6707,7 +6707,7 @@ export default function VokabelApp() {
     const zuletzt = voks.flatMap(v => [v.fortschritt, v.diktatFortschritt, v.akzentFortschritt].map(f => f?.letzteAbfrage).filter(Boolean)).sort().pop() || null;
     const pct = Math.round(lernProzent(voks.map(v => v.fortschritt?.score), schwelle));
     const spalten = mehrere ? gruppeL.map(y => y.x.name) : TYPEN.filter(x => liste.spalten[x]?.aktiv).map(x => liste.spalten[x].name || x);
-    const gruppenText = gruppenKurz(anz) + (ausAnz ? ` · 🚫 ${ausAnz}` : "");
+    const gruppenText = gruppenKurz(anz, null, ausAnz ? `🚫 ${ausAnz}` : null);
     const zu = infoZu;
     return (
       <div className="slot-info" data-liste-info={mehrere ? "_wahl" : l.id} data-auswahl-durchlass data-slot-info-zu={zu ? "" : undefined} onClick={infoKlapp} style={{position:"static", marginLeft:-16, marginRight:-16}}>
@@ -7280,11 +7280,11 @@ export default function VokabelApp() {
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-multi-nr={multiNr || undefined} data-auswahl-durchlass
             data-kachel-geste="slot" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined}
             data-heute={heuteP}
-            className={`slot-chip belegt raster-chip${heuteP >= 100 ? " aktiv-kachel" : ""}${
+            className={`slot-chip belegt raster-chip${
               multiNr || teilNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) || (!multiAuswahl && (slotVorschau ? slotVorschau.typ === "gespeichert" && slotVorschau.id === x.id : slotRef?.typ === "gespeichert" && slotRef?.id === x.id)) ? " kachel-gewaehlt" : ""}${blitzt(`slot:${x.id}`)}`}
             data-vorschau={slotVorschau?.typ === "gespeichert" && slotVorschau.id === x.id ? "" : undefined}
             style={{...chipStil('gespeichert', x.id, slotRef), position:"relative",
-              ...(heuteP > 0 && heuteP < 100 ? { backgroundImage: `linear-gradient(to right, color-mix(in srgb, var(--haupt) 26%, transparent) ${heuteP}%, transparent ${heuteP}%)` } : {})}}
+              ...(heuteP > 0 ? { backgroundImage: `linear-gradient(to right, var(--heute-farbe) ${heuteP}%, transparent ${heuteP}%)` } : {})}}
             onClick={() => multiAuswahl
               ? (schliesseInfo(), auswahlTafelRef.current = null, setMultiAuswahl(null), leuchte(`slot:${x.id}`, BLITZ_MS / 2), setSlotVorschauListe(false), setTimeout(() => setSlotVorschau({ typ: "gespeichert", id: x.id }), 0))
               : (leuchte(`slot:${x.id}`, BLITZ_MS / 2), setSlotVorschauListe(false), setSlotVorschau({ typ: "gespeichert", id: x.id }))}
@@ -7352,9 +7352,12 @@ export default function VokabelApp() {
   }
   // feststehend unter dem Kopf (Sessions und Vokabel-Liste scrollen darunter hindurch), mit dem Pfeil auf eine Zeile einklappbar (gespeichert);
   // „📋 Vokabeln ansehen“ hängt die enthaltenen Vokabeln mit Listen-Nr. darunter an (Lücken als Trennzeile)
-  // Gruppen kurz und einzeilig (Info-Fläche bleibt gleich hoch): „112 ✓ · 98 in Arbeit · 2850 nie · 11 −“
-  function gruppenKurz(anz) {
-    return [["gelernt", "✓"], ["arbeit", "in Arbeit"], ["nie", "nie"], ["negativ", "−"]].filter(([g]) => anz[g]).map(([g, l]) => `${anz[g]} ${l}`).join(" · ");
+  // Gruppen kurz und einzeilig: „● 112 ✓ · ● 98 in Arbeit · ● 2850 nie · ● 11 ✗“ – der Punkt in der Farbe des Balken-Abschnitts (185)
+  function gruppenKurz(anz, vorn = null, hinten = null) {
+    const farbe = Object.fromEntries(GRUPPE_BALKEN);
+    const teile = [["gelernt", "✓"], ["arbeit", "in Arbeit"], ["nie", "nie"], ["negativ", "✗"]].filter(([g]) => anz[g])
+      .map(([g, l]) => <span key={g} data-gruppe-text={g}><span className="gruppen-punkt" style={{background:farbe[g]}}/>{anz[g]} {l}</span>);
+    return [vorn, ...teile, hinten].filter(Boolean).flatMap((x, i) => i ? [" · ", x] : [x]);
   }
   const infoKlapp = () => setInfoZu(z => !z);
   function renderSlotInfo(statistik) {
@@ -7382,7 +7385,10 @@ export default function VokabelApp() {
     const pct = Math.round(lernProzent(alle.map(v => v.fortschritt?.score), schwelle));
     const sf = eintrag.konfiguration ? slotSFAlle(eintrag)[slotKonfigArt(eintrag)] : null;
     const faelligN = alle.filter(v => istFaellig(v[FORTSCHRITT_FELD[quizArt] || "fortschritt"])).length;
-    const gruppenText = (faelligN ? `🔁 ${faelligN} fällig · ` : "") + gruppenKurz(anz);
+    const gruppenText = gruppenKurz(anz, faelligN ? `🔁 ${faelligN} fällig` : null);
+    // 184: Anteil der heute (in der gewählten Abfrageart) abgefragten – wie die Füllung der Kachel
+    const heuteFeld = FORTSCHRITT_FELD[statistik ? statistikArt : quizArt] || "fortschritt";
+    const heuteP = alle.length ? Math.round(alle.filter(v => heuteAbgefragt(v[heuteFeld])).length / alle.length * 100) : 0;
     const zu = infoZu;
     // Name wie im Kopf: gespeicherte Session → ihr Name; Multiquiz aus dem Verlauf → seine Teile; Verlauf → Datum
     const gespeichert = slots.gespeichert.some(g => g.id === eintrag.id);
@@ -7395,7 +7401,6 @@ export default function VokabelApp() {
           <div style={{flex:1, minWidth:0}}>
             <div data-slot-info-name style={{fontWeight:800, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
               {name}{zu && schwelle > 0 && alle.length > 0 && <span style={{fontWeight:500, color:"var(--text2)"}}> · {pct} % gelernt</span>}</div>
-            {!zu && <div data-vorschau-listen style={{fontSize:"0.8rem", color:"var(--text2)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{teile.length ? `(${listenText})` : "\u00a0"}</div>}
           </div>
           {!zu && statistik && alle.length > 0 && <span className="mini-kreise" style={{gap:4, flexShrink:0}}>{renderMiniKreise(ls, { groesse: 26, nurVerfuegbar: true })}</span>}
           <span className="slot-info-pfeil" data-slot-info-pfeil={zu ? "zu" : "auf"}
@@ -7411,14 +7416,14 @@ export default function VokabelApp() {
             {GRUPPE_BALKEN.filter(([g]) => anz[g]).map(([g, farbe]) => <span key={g} data-gruppe={g} style={{width:`${anz[g] / Math.max(1, alle.length) * 100}%`, background:farbe}}/>)}
           </div>
           <div className="info-zeile-klein">
-            <span data-vorschau-zuletzt style={{flexShrink:0}}>Zuletzt abgefragt: {zuletzt ? formatDatum(zuletzt) : "noch nie"}</span>
+            <span data-vorschau-zuletzt style={{flexShrink:0}}>Zuletzt abgefragt: {zuletzt ? formatDatum(zuletzt) : "noch nie"}{zuletzt && heuteAbgefragt({ letzteAbfrage: zuletzt }) ? <span data-vorschau-heute={heuteP}> ({heuteP} %)</span> : null}</span>
             <span data-vorschau-gruppen className="info-gruppen">{gruppenText}</span>
           </div>
           {(
             <div className="info-klapp-zeile" data-vorschau-vokabeln={slotVorschauListe ? "auf" : "zu"} style={alle.length ? undefined : {opacity:0.4, pointerEvents:"none"}}
               onClick={e => { e.stopPropagation(); setSlotVorschauListe(v => !v); }}
               {...tt(slotVorschauListe ? "Vokabel-Liste schließen" : "Die Vokabeln dieser Session mit ihrem Listenplatz anzeigen")}>
-              <span>📋 Vokabeln ansehen</span>
+              <span data-vorschau-listen style={{minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{teile.length ? listenText : "\u00a0"}</span>
               <span className="slot-info-pfeil">{slotVorschauListe ? "▲" : "▼"}</span>
             </div>
           )}

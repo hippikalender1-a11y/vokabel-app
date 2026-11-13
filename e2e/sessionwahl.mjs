@@ -56,7 +56,7 @@ const info = await page.evaluate(() => ({
 console.log("     Info:", JSON.stringify(info));
 ok(/Unit 1/.test(info.listen) && /Nr\. 1–4, 8–9/.test(info.listen), "Info: Liste mit Bereichen „Nr. 1–4, 8–9“");
 ok(/6 Vokabeln/.test(info.zahlen) && /33 % gelernt/.test(info.zahlen), `Info: 6 Vokabeln, 33 % gelernt (${info.zahlen})`);
-ok(/2 ✓/.test(info.gruppen) && /3 nie/.test(info.gruppen) && /1 −/.test(info.gruppen), `Info: Gruppen kurz (${info.gruppen})`);
+ok(/2 ✓/.test(info.gruppen) && /3 nie/.test(info.gruppen) && /1 ✗/.test(info.gruppen), `Info: Gruppen kurz (${info.gruppen})`);
 ok(/Zuletzt abgefragt/.test(info.zuletzt) && !/noch nie/.test(info.zuletzt), `Info: zuletzt abgefragt (${info.zuletzt})`);
 ok(!info.einst && info.oben && !info.kopfInfo && !info.gespeichert, "127–129: Info über dem Raster, ohne Einstellungs-Zeile, ohne Kopf-Info-Zeile, ohne „📌 Gespeichert“");
 ok(info.kreise === 0, "163: im Quiz-Tab keine Ü/D/A-Kreise in der Info");

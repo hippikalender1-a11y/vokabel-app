@@ -49,7 +49,7 @@ await auswahlAuf();
 
 // ── 181: Kacheln ──
 let a = await kachel("g_a"), b = await kachel("g_b"), c = await kachel("g_c");
-ok(c.dunkel && c.heute === "100", `alle heute abgefragt: Kachel dunkel (${JSON.stringify(c)})`);
+ok(!c.dunkel && c.heute === "100" && /100%/.test(c.bild), `183: alle heute abgefragt: ganz abgeschwächt gefüllt, nicht dunkel (${JSON.stringify(c)})`);
 ok(!a.dunkel && a.heute === "50" && /linear-gradient/.test(a.bild) && /50%/.test(a.bild), `zur Hälfte heute: abgeschwächt bis 50 % gefüllt (${JSON.stringify(a)})`);
 ok(!b.dunkel && b.haken && b.heute === "0", `komplett gelernt, heute nicht geübt: hell mit Haken (${JSON.stringify(b)})`);
 await kontext("[data-alle-sessions]");
@@ -60,6 +60,20 @@ ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellun
 await kontext("[data-alle-sessions]");
 await aktion("👁 Gelernte einblenden");
 ok(await kachel("g_b"), "„👁 Gelernte einblenden“: wieder da");
+
+// ── 182: gewählte Kachel zeigt den Tagesstand in Grün ──
+await klick('[data-slot-id="g_a"]'); await sleep(400);
+const gew = await page.evaluate(() => { const k = document.querySelector('[data-slot-id="g_a"]'); const s = getComputedStyle(k);
+  return { gewaehlt: k.classList.contains("kachel-gewaehlt"), bild: s.backgroundImage, farbe: s.getPropertyValue("--heute-farbe") }; });
+ok(gew.gewaehlt && /linear-gradient/.test(gew.bild) && /bestaetigen|color-mix/.test(gew.farbe) && !/haupt\)/.test(gew.farbe), `182: gewählte Kachel: Füllung sichtbar, grün (${JSON.stringify(gew)})`);
+// ── 184–186: Info der gewählten Session ──
+await page.evaluate(() => { if (document.querySelector("[data-slot-info-zu]")) document.querySelector("[data-slot-info]").click(); }); await sleep(250);
+ok(await page.evaluate(() => document.querySelector("[data-vorschau-zuletzt]")?.innerText.trim()) === "Zuletzt abgefragt: Heute (50 %)", `184: „Zuletzt abgefragt: Heute (50 %)“ (${await page.evaluate(() => document.querySelector("[data-vorschau-zuletzt]")?.innerText.trim())})`);
+const punkte = await page.evaluate(() => [...document.querySelectorAll("[data-vorschau-gruppen] [data-gruppe-text]")].map(s => s.dataset.gruppeText + ":" + (getComputedStyle(s.querySelector(".gruppen-punkt")).backgroundColor === getComputedStyle(document.querySelector(`[data-vorschau-balken] [data-gruppe="${s.dataset.gruppeText}"]`)).backgroundColor)));
+ok(punkte.length === 1 && punkte.every(p => p.endsWith(":true")), `185: Punkt vor jedem Wert in der Farbe des Balken-Abschnitts (${punkte})`);
+const zeile = await page.evaluate(() => ({ klapp: document.querySelector("[data-vorschau-vokabeln]")?.innerText.trim(), alt: /Vokabeln ansehen/.test(document.querySelector("[data-slot-info]").innerText) }));
+ok(/Unit 1 · Nr\. 1–2/.test(zeile.klapp) && !/[()]/.test(zeile.klapp) && !zeile.alt, `186: Inhaltsangabe ohne Klammern statt „Vokabeln ansehen“ (${JSON.stringify(zeile)})`);
+await page.evaluate(() => document.querySelector("[data-slot-info]").click()); await sleep(200);
 
 // ── 180: heute abgefragte nicht noch einmal ──
 await laden("g_a");
