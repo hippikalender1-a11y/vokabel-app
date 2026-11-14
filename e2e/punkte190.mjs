@@ -6,7 +6,7 @@ import { zuListen } from "./hilfen.mjs";
 
 // 190: Quiz schließen → Quiz-Tab mit offener Quiz-Auswahl; 191: „Alle Quiz“ gelb;
 // 192: Gesten – antippen übernimmt sofort, kurz halten wählt (Blätter-Modus), lang halten startet die Mehrfach-Auswahl,
-//      darin kurz halten = dazu, lang halten = übernehmen;
+//      darin kurz halten = dazu, lang halten = nichts (227), übernehmen über den grünen Kopf;
 // 193/194: Ordner bis 3 Ebenen (Quiz und Listen), leere Ordner über Pfad, Ordner-Kachel und freien Platz;
 // 195: Import in den geöffneten Listen-Ordner bzw. in einen neuen Ordner darin
 const URL = "http://localhost:4199/vokabel-app/";
@@ -36,7 +36,7 @@ const ordnerAnlegen = async name => {
 };
 const slots = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")));
 const kopf = () => page.evaluate(() => ({ zustand: document.querySelector("[data-slot-kopf]")?.dataset.slotKopf, name: document.querySelector("[data-slot-kopf-name]")?.textContent.trim(),
-  laden: document.querySelector("[data-slot-laden]")?.dataset.slotLaden || null, multi: [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId).join(",") }));
+  laden: document.querySelector("[data-slot-laden]")?.dataset.slotLaden || null, multi: [...document.querySelectorAll("[data-multi-nr]")].sort((a, b) => a.dataset.multiNr - b.dataset.multiNr).map(b => b.dataset.slotId).join(",") }));
 const auswahlAuf = async () => { await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400); };
 
 await page.goto(URL);
@@ -83,17 +83,23 @@ await halte('[data-slot-id="s3"]', 60);
 k = await kopf();
 ok(k.zustand === "offen" && k.laden === "gespeichert:s3", `danach antippen wechselt nur die Karte (${JSON.stringify(k)})`);
 
-// lang halten: Mehrfach-Auswahl; kurz halten: dazu; lang halten: übernehmen (Multiquiz)
+// lang halten: Mehrfach-Auswahl (228: die gewählte „Teil 3“ bleibt als Nr. 1 drin); kurz halten: dazu;
+// 227: lang halten in der Mehrfach-Auswahl tut nichts – übernommen wird über den grünen Kopf
 await halte('[data-slot-id="s1"]', 1100);
-await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].length && null);
 k = await kopf();
-ok(k.multi === "s1", `lang halten startet die Mehrfach-Auswahl mit „Teil 1“ (${k.multi})`);
+ok(k.multi === "s3,s1", `228: lang halten startet die Mehrfach-Auswahl, „Teil 3“ bleibt Nr. 1, „Teil 1“ Nr. 2 (${k.multi})`);
 await halte('[data-slot-id="s2"]', 450);
 k = await kopf();
-ok(k.multi === "s1,s2", `darin kurz halten nimmt „Teil 2“ dazu (${k.multi})`);
+ok(k.multi === "s3,s1,s2", `darin kurz halten nimmt „Teil 2“ dazu (${k.multi})`);
 await halte('[data-slot-id="s3"]', 1100); await sleep(400);
 k = await kopf();
-ok(k.zustand !== "offen" && /Multiquiz/.test(k.name), `lang halten übernimmt die Auswahl samt „Teil 3“ als Multiquiz (${JSON.stringify(k)})`);
+ok(k.zustand === "offen" && k.multi === "s3,s1,s2", `227: lang halten in der Mehrfach-Auswahl: keine Funktion (${JSON.stringify(k)})`);
+await halte('[data-slot-id="s1"]', 1100); await sleep(400);
+k = await kopf();
+ok(k.zustand === "offen" && k.multi === "s3,s1,s2", `227: auch auf eine gewählte Kachel: keine Funktion (${k.multi})`);
+await page.evaluate(() => document.querySelector("[data-wahl-fertig]")?.click()); await sleep(500);
+k = await kopf();
+ok(k.zustand !== "offen" && /Multiquiz/.test(k.name), `grüner Kopf übernimmt die Auswahl als Multiquiz (${JSON.stringify(k)})`);
 
 // ── 190: Quiz schließen → Quiz-Auswahl offen ──
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(800);

@@ -22,15 +22,15 @@ await page.reload(); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
 
 const koepfe = await page.evaluate(() => [...document.querySelectorAll("[data-einst-kopf]")].map(b => b.dataset.einstKopf).join(","));
-ok(koepfe === "listen,lernen,stimmen,farben,app", `Kopfzeilen: Listen, Lernen, Stimmen, Farben, App – Raster entfällt (196) (${koepfe})`);
+ok(koepfe === "sicherung,lernen,stimmen,farben,app", `Kopfzeilen: Sicherung, Lernen, Stimmen, Farben, App – Listen entfällt (225) (${koepfe})`);
 ok(await offen() === "" && !(await page.$("[data-farbschema]")) && !(await page.$("[data-alles-sichern]")), "anfangs alle zugeklappt");
 
-// Listen: Raster der Listen, „+ Neu“ und die Sicherung
-await kopf("listen");
-ok(await offen() === "listen" && await page.$("[data-alle-listen]") && await page.$('[data-einst-unter="sicherung"]') && await page.$('[data-einst-unter="erinnerung"]'), "Listen: Knopfzeile Sicherung · Erinnerung · ＋ Neu");
+// 225: Sicherung: Knopfzeile Sicherung · Erinnerung, keine Listen mehr
+await kopf("sicherung");
+ok(await offen() === "sicherung" && !(await page.$("[data-alle-listen]")) && !(await page.$(".listen-raster")) && await page.$('[data-einst-unter="sicherung"]') && await page.$('[data-einst-unter="erinnerung"]'), "Sicherung: Knopfzeile Sicherung · Erinnerung, ohne Listen (225)");
 // Lernen: Gelernt-Schwelle und Akzente
 await kopf("lernen");
-ok(await offen() === "lernen" && await page.$('[data-einst-unter="akzente"]') && !(await page.$('[data-einst-unter="sicherung"]')), "Lernen mit Knopf „Akzente“; Listen zu (nur einer offen)");
+ok(await offen() === "lernen" && await page.$('[data-einst-unter="akzente"]') && !(await page.$('[data-einst-unter="sicherung"]')), "Lernen mit Knopf „Akzente“; Sicherung zu (nur einer offen)");
 // Farben: eigener Bereich mit Tabs
 await kopf("farben");
 ok(await offen() === "farben" && await page.$("[data-farb-tabs]") && !(await page.$("[data-farbschema]")), "Farben: Knopfzeile, nichts offen");

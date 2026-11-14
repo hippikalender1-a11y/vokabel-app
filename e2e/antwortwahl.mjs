@@ -82,24 +82,16 @@ await klick("[data-abfragemodus]"); await sleep(200);
 
 // ── 89: Einstellungen ──
 const zeile = () => page.evaluate(() => [...document.querySelectorAll("[data-einst-zeile] .quiz-zeile-zelle")].map(z => `${z.querySelector(".quiz-zeile-label").textContent}=${z.querySelector("button").innerText.trim()}`).join(" | "));
-await einstUnter(page, "listen");
-ok(await page.$('[data-liste-id="l_a"]') && /Sicherung=💾 nie \| Erinnerung=/.test(await zeile()), `Listen: Knopfzeile, Listen sichtbar (${await zeile()})`);
+await einstUnter(page, "sicherung");
+ok(!(await page.$('[data-liste-id="l_a"]')) && /Sicherung=💾 nie \| Erinnerung=/.test(await zeile()), `Sicherung: Knopfzeile, keine Listen (225) (${await zeile()})`);
 await klick('[data-einst-unter="sicherung"]');
-ok(await page.$("[data-sicherung]") && !(await page.$('[data-liste-id="l_a"]')), "Sicherung offen: Listen ausgeblendet");
+ok(await page.$("[data-sicherung]"), "Sicherung offen");
 await klick('[data-einst-unter="erinnerung"]');
 ok(await page.$("[data-sicherung-tage]") && !(await page.$("[data-sicherung]")) && /Bestätigen/.test(await zeile()), "Erinnerung offen: „Bestätigen“, nur ein Bereich offen");
 await klick('[data-sicherung-tage-wahl="14"]'); await sleep(350);   // 139: Wahl kurz sichtbar, dann zu
 ok(!(await page.$("[data-sicherung-tage]")) && /Erinnerung=nach 14 T/.test(await zeile()) && await leuchtet('[data-einst-unter="erinnerung"]'), `Wahl: übernommen, zu, leuchtet (${await zeile()})`);
 
-// ── 97: Listen-Auswahl – Kopf wird grüner Bestätigen-Knopf, „Keine“ statt „Fertig“ ──
-await lang('[data-liste-id="l_a"]'); await aktion("☑ Auswählen"); await sleep(400);
-const wahlKopf = () => page.evaluate(() => document.querySelector('[data-einst-zeile="listen-wahl"] [data-wahl-fertig]')?.innerText.replace(/\s+/g, " ").trim() || null);
-ok(/☑ 1 ausgewählt/.test(await wahlKopf() || "") && /Bestätigen/.test(await wahlKopf() || "") && !(await page.$('[data-einst-unter="sicherung"]')), `Listen-Auswahl: Kopf „☑ 1 ausgewählt / ✓ Bestätigen“ statt Knopfzeile (${await wahlKopf()})`);
-ok(await page.$("[data-wahl-keine]") && !(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Fertig"))), "„Keine“ statt „Fertig“");
-await klick("[data-wahl-keine]");
-ok(/Nichts ausgewählt/.test(await wahlKopf() || ""), `„Keine“: nichts ausgewählt, Auswahl bleibt (${await wahlKopf()})`);
-await klick("[data-wahl-fertig]");
-ok(!(await wahlKopf()) && await page.$('[data-einst-unter="sicherung"]'), "Bestätigen: Auswahl beendet, Knopfzeile wieder da");
+// 97 (Listen-Auswahl in Einstellungen › Listen) entfällt: Listen liegen im Quiz-Tab (225)
 
 await einstUnter(page, "lernen");
 ok(/Arten mischen=\d+ Arten \| Wiederholen=[\d·]+ T · \d+ % \| Akzente=/.test(await zeile()) && !(await page.$("[data-antwort-gewichte]")), `Lernen: Knopfzeile, nichts offen (${await zeile()})`);

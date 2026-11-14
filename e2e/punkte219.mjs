@@ -32,20 +32,20 @@ await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.tex
 
 // ── 220: Listen-Kopf → Listen-Auswahl, Ordner offen, Kachel gewählt und sichtbar ──
 await auswahlAuf();
-const a220 = await page.evaluate(() => { const k = document.querySelector('[data-qliste-id="l12"]'); const r = k?.getBoundingClientRect();
-  return { umschalter: document.querySelector("[data-auswahl-umschalter]")?.dataset.auswahlUmschalter, ordner: document.querySelector('[data-ordner-navi="quiz-listen"] [data-ordner-name]')?.textContent.trim(),
+const a220 = await page.evaluate(() => { const k = document.querySelector('[data-liste-id="l12"]'); const r = k?.getBoundingClientRect();
+  return { umschalter: document.querySelector("[data-auswahl-umschalter]")?.dataset.auswahlUmschalter, ordner: document.querySelector('[data-ordner-navi="liste"] [data-ordner-name]')?.textContent.trim(),
     gewaehlt: k?.classList.contains("kachel-gewaehlt"), sichtbar: !!r && r.top >= 0 && r.bottom <= innerHeight }; });
 ok(a220.umschalter === "listen" && /Fortgeschritten/.test(a220.ordner || "") && a220.gewaehlt && a220.sichtbar, `220: Liste im Kopf → Listen-Auswahl, Ordner offen, Kachel gewählt und sichtbar (${JSON.stringify(a220)})`);
 
 // ── 222: ein Knopf, so hoch wie die Pfad-Zeile ──
-const a222 = await page.evaluate(() => { const b = document.querySelectorAll("[data-auswahl-umschalter]"); const z = document.querySelector('[data-ordner-navi="quiz-listen"]');
+const a222 = await page.evaluate(() => { const b = document.querySelectorAll("[data-auswahl-umschalter]"); const z = document.querySelector('[data-ordner-navi="liste"]');
   const cs = getComputedStyle(z); const innen = z.getBoundingClientRect().height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
   return { anzahl: b.length, hoehe: Math.round(b[0].getBoundingClientRect().height), zeile: Math.round(innen) }; });
 ok(a222.anzahl === 1 && Math.abs(a222.hoehe - a222.zeile) <= 1, `222: ein Umschalt-Knopf, so hoch wie die Pfad-Zeile (${JSON.stringify(a222)})`);
 
 // ── 221: Listen eckig, Quiz rund ──
 const ecke = sel => page.evaluate(s => parseFloat(getComputedStyle(document.querySelector(s)).borderTopLeftRadius), sel);
-const listeEcke = await ecke('[data-qliste-id="l12"]');
+const listeEcke = await ecke('[data-liste-id="l12"]');
 await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]").click()); await sleep(300);
 const quizEcke = await ecke('[data-slot-id="g1"]');
 ok(listeEcke <= 4 && quizEcke >= 8, `221: Listen-Kachel eckig (${listeEcke}px), Quiz-Kachel rund (${quizEcke}px)`);
@@ -54,7 +54,7 @@ await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]").cl
 // ── 223: Pfad-Zeile klebt unter Kopf und Info ──
 await page.evaluate(() => { if (document.querySelector("[data-ordner-zurueck]")) document.querySelector("[data-ordner-zurueck]").click(); }); await sleep(300);
 await page.evaluate(() => window.scrollTo(0, 400)); await sleep(300);
-const a223 = await page.evaluate(() => { const p = document.querySelector('[data-ordner-navi="quiz-listen"]').getBoundingClientRect(), i = document.querySelector("[data-slot-info]").getBoundingClientRect();
+const a223 = await page.evaluate(() => { const p = document.querySelector('[data-ordner-navi="liste"]').getBoundingClientRect(), i = document.querySelector("[data-slot-info]").getBoundingClientRect();
   return { pfad: Math.round(p.top), info: Math.round(i.bottom) }; });
 ok(Math.abs(a223.pfad - a223.info) <= 1, `223: beim Scrollen bleibt die Pfad-Zeile direkt unter der Info stehen (${JSON.stringify(a223)})`);
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
@@ -67,14 +67,11 @@ await page.evaluate(() => document.querySelector("[data-slot-info]").click()); a
 await page.evaluate(() => document.querySelector("[data-slot-info]").click()); await sleep(300);   // wieder auf
 ok(offen && !(await page.$("[data-vorschau-vokliste]")), "219: Info zu und wieder auf – die Vokabel-Liste ist mit zugeklappt");
 
-// ── 223: Einstellungen › Listen – Pfad klebt unter der Knopfzeile ──
-await zuListen(page);
-await page.evaluate(() => window.scrollTo(0, 500)); await sleep(300);
-const a223b = await page.evaluate(() => { const p = document.querySelector('[data-ordner-navi="liste"]').getBoundingClientRect(), k = document.querySelector("[data-listen-kopf-bereich]").getBoundingClientRect();
-  return { pfad: Math.round(p.top), kopf: Math.round(k.bottom) }; });
-ok(Math.abs(a223b.pfad - a223b.kopf) <= 1, `223: Listen-Pfad klebt unter der Knopfzeile (${JSON.stringify(a223b)})`);
+// 223 (Einstellungen › Listen) entfällt: Listen liegen im Quiz-Tab (225), dort oben geprüft
 
-// ── 224: breite Bildschirme ──
+// ── 224: breite Bildschirme (Knopfzeile: Einstellungen › Sicherung) ──
+await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector('[data-einst-kopf="sicherung"]'); if (k && k.dataset.offen !== "ja") k.click(); }); await sleep(300);
 await page.setViewport({ width: 1024, height: 700 }); await sleep(400);
 const a224 = await page.evaluate(() => { const q = document.querySelector(".quiz-zeile"); const cs = getComputedStyle(q); return { clip: cs.clipPath, schatten: cs.boxShadow }; });
 ok(/inset/.test(a224.clip) && /\d{3,}px/.test(a224.schatten), `224: Knopfzeile wird zum Rand fortgeführt (${a224.clip})`);

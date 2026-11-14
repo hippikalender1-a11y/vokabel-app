@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, quizEinstellungen, bereichZu, einstUnter } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen, bereichZu, einstUnter, neueEineSession } from "./hilfen.mjs";
 
 // Listen-Tab als Raster: Lang-Druck → Menü (Umbenennen, Duplizieren, Verschieben, Löschen),
 // Lang-Druck + Ziehen verschiebt (belegt → tauschen), Größe unter Einstellungen → Listen, Sprachfilter rückt zusammen
@@ -64,7 +64,7 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); let ziel = await mitte("0|0");
 await finger("touchStart", p.x, p.y); await sleep(1000); await finger("touchEnd"); await sleep(400);
-ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|🔁 Keine fälligen Vokabeln|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|📁 In Ordner…|▦ In mehrere Quiz aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
+ok((await aktionen()).join("|") === "📂 Liste öffnen|✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|🔁 Keine fälligen Vokabeln|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|📁 In Ordner…|▦ In mehrere Quiz aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
 await page.evaluate(() => document.querySelector('[data-info-aktion="✕ Auswahl beenden"]').click()); await sleep(300);
 p = await mitte("2|0"); ziel = await mitte("0|0");   // die Auswahl-Tafel kann die Seite verschoben haben
 // kurz halten (angehoben) und ziehen: verschieben
@@ -170,7 +170,9 @@ const auswahlRaster = () => page.evaluate(() => {
   return n + ":" + [...r.children].map((c, i) => c.classList.contains("quiz-setup-check") ? `${Math.floor(i / n)}|${i % n}=${c.children[1].children[0].textContent.trim().replace(/^[^\p{L}]+/u, "")}` : null).filter(Boolean).join(",");
 });
 const erwartet = "2:" + Object.entries(pl).sort((a, b) => a[1].localeCompare(b[1])).map(([n, p]) => `${p}=${n}`).join(",");
-await clickText(".tab", "Quiz"); await sleep(300); await quizEinstellungen(page);
+await clickText(".tab", "Quiz"); await sleep(300);
+await neueEineSession(page); await sleep(300);   // 225: freies Quiz – nur dort gibt es die Listen-Auswahl mit Häkchen
+await quizEinstellungen(page);
 let qr = await auswahlRaster();
 if (!qr) { await clickText("span, div", "Listen-Auswahl", true); qr = await auswahlRaster(); }
 console.log("     Quiz-Raster:", qr, "| erwartet:", erwartet);

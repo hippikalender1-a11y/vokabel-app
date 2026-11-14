@@ -26,7 +26,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 // Einstellungen: Bereich aufklappen (immer nur einer offen)
 const oeffneEinst = async key => { await page.evaluate(k => { const b = document.querySelector(`[data-einst-kopf="${k}"]`); if (b && b.dataset.offen !== "ja") b.click(); }, key); await new Promise(r => setTimeout(r, 250)); };
 // Listen: Sicherung liegt hinter dem Knopf „Sicherung“ der Knopfzeile
-const oeffneSicherung = async () => { await oeffneEinst("listen"); await page.evaluate(() => { if (!document.querySelector("[data-sicherung]")) document.querySelector('[data-einst-unter="sicherung"]').click(); }); await new Promise(r => setTimeout(r, 250)); };
+const oeffneSicherung = async () => { await oeffneEinst("sicherung"); await page.evaluate(() => { if (!document.querySelector("[data-sicherung]")) document.querySelector('[data-einst-unter="sicherung"]').click(); }); await new Promise(r => setTimeout(r, 250)); };
 const tab = async name => { await page.evaluate(n => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes(n)).click(), name); await sleep(400); };
 const TAG = 24 * 3600 * 1000;
 const setze = (k, v) => page.evaluate((k, v) => localStorage.setItem(k, JSON.stringify(v)), k, v);
@@ -148,12 +148,12 @@ await page.reload(); await sleep(600); await zurAuswahl();
 ok(await erinnerung() !== null, "nach einem Tag: Erinnerung wieder da");
 
 // Erinnerung aus / 14 Tage
-await tab("Einstellungen"); await oeffneEinst("listen");
+await tab("Einstellungen"); await oeffneEinst("sicherung");
 await page.evaluate(() => { if (!document.querySelector("[data-sicherung-tage]")) document.querySelector('[data-einst-unter="erinnerung"]').click(); }); await sleep(250);
 await page.click('[data-sicherung-tage-wahl="14"]'); await sleep(200);
 await zurAuswahl();
 ok(await erinnerung() === null, "Erinnerung 14 Tage: bei 10 Tagen noch still");
-await tab("Einstellungen"); await oeffneEinst("listen");
+await tab("Einstellungen"); await oeffneEinst("sicherung");
 await page.evaluate(() => { if (!document.querySelector("[data-sicherung-tage]")) document.querySelector('[data-einst-unter="erinnerung"]').click(); }); await sleep(250);
 await page.click('[data-sicherung-tage-wahl="0"]'); await sleep(200);
 await setze("vokabel_letzte_sicherung", Date.now() - 100 * TAG);

@@ -66,24 +66,26 @@ export function auswahlOrdnerZelle(app, o, key, gewaehlt, kurz = false) {
 
 // 193: Pfad über den Listen – „Alle Listen › 📁 A › 📁 B“ (gelb), lang drücken: neue Liste / neuer Ordner hier
 export function listenNavi(app) {
-  const { headerH, listenKopfH, listenOrdner, listenOrdnerOffen, pfadTeile, resetImport, setAnordnen, setAnsicht, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setTab } = app;
+  const { headerH, listenKopfH, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, minSpalten, pfadTeile, quizListenUmschalter, resetImport, setAnordnen, setAnsicht, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setSpaltenWahl, setTab, slotH, slotInfoH } = app;
     const neuerOrdner = eltern => ordnerPfad(listenOrdner, eltern).length < ORDNER_TIEFE_MAX
       ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe({ art: "liste", ids: [], name: "", eltern }) }] : [];
     const neueListe = eltern => ({ label: "＋ Neue Liste", fn: () => { setListenOrdnerOffen(eltern); resetImport(); setTab("listen"); setAnsicht("import"); } });
     const geheZu = id => { setListenOrdnerOffen(id); setListenSortModus(false); setListenAuswahl([]); setListeVorschau(null); setListenWahl(null); };
     const anordnenL = ordnerId => ({ label: "⇅ Anordnen…", fn: () => setAnordnen({ art: "liste", ordner: ordnerId }) });   // 208
+    const spaltenL = ordnerId => ({ label: `▥ Spalten (${minSpalten("liste", ordnerId)})`, fn: () => setSpaltenWahl({ art: "liste", ordner: ordnerId }) });   // 203/225
     return (
-      <div data-ordner-navi="liste" style={{display:"flex", alignItems:"center", gap:8, marginBottom:8, minHeight:30, position:"sticky", top: headerH + listenKopfH, zIndex: 7, background:"var(--hintergrund)", padding:"6px 0"}}>
+      <div data-ordner-navi="liste" style={{display:"flex", alignItems:"center", gap:8, marginBottom:8, minHeight:30, position:"sticky", top: headerH + slotH + slotInfoH, zIndex: 7, background:"var(--hintergrund)", padding:"6px 0"}}>
         {pfadTeile({ alleText: "Alle Listen", alleAttr: "data-alle-listen", pfad: ordnerPfad(listenOrdner, listenOrdnerOffen), geheZu,
           alleTt: listenOrdnerOffen ? "Zurück zu allen Listen – Listen hierher ziehen legt sie auf die oberste Ebene; lang drücken: neue Liste, neuer Ordner"
             : "Alle Listen – lang drücken: neue Liste, neuer Ordner",
-          alleAktionen: [neueListe(null), ...neuerOrdner(null), anordnenL(null)], ordnerAktionen: o => [neueListe(o.id), ...neuerOrdner(o.id), anordnenL(o.id)], einheit: "Listen" })}
+          alleAktionen: [neueListe(null), ...neuerOrdner(null), spaltenL(null), anordnenL(null)], ordnerAktionen: o => [neueListe(o.id), ...neuerOrdner(o.id), spaltenL(o.id), anordnenL(o.id)], einheit: "Listen" })}
+        {!listenWahl && !listenSortModus && quizListenUmschalter()}
       </div>
     );
   }
 
 export function renderListenRaster(app) {
-  const { angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotZiehenRef, sprachFilter, tt, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef } = app;
+  const { aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef } = app;
     const groesse = rasterGroesse(einstellungen, "listenRaster");
     // 193: die geöffnete Ebene (oberste oder ein Ordner) – Ordner-Kacheln und Listen
     const ordnerDaten = { ordner: listenOrdner, gespeichert: listenIndex };
@@ -107,16 +109,18 @@ export function renderListenRaster(app) {
       if (l) { setListenAuswahl(a => a.includes(l.id) ? a.filter(x => x !== l.id) : [...a, l.id]); return; }
       if (listenAuswahl.length) setzeListenPlaetze(listenAuswahl, platz);
     };
+    // 225: Listen im Quiz-Tab – antippen fragt die Liste ab (Blätter-Modus: nur wählen, Kopf „📋 … laden“)
     const oeffne = l => {
       if (listenWahl) {   // Antippen wählt wieder einzeln (ersetzt die Auswahl)
         schliesseInfo(); auswahlTafelRef.current = null; setListenWahl(null); setBlaettern(true);
         leuchte(`lw:${l.id}`, BLITZ_MS / 2);
-        setTimeout(() => setListeVorschau(l.id), 0);
+        setTimeout(() => setSlotVorschau({ typ: "listen", id: l.id }), 0);
       } else if (blaettern) {
         leuchte(`lw:${l.id}`, BLITZ_MS / 2);
-        setListeVorschau(l.id);
-      } else { setListeVorschau(null); oeffneListeDetail(l.id); }   // 192: antippen öffnet sofort (außer im Blätter-Modus)
+        setSlotVorschau({ typ: "listen", id: l.id });
+      } else uebernimmListe(l.id);
     };
+    const gewaehltL = l => slotVorschau ? slotVorschau.typ === "listen" && slotVorschau.id === l.id : aktiverSlot?.typ === "listen" && aktiverSlot.id === l.id;
     const menue = l => listenMenue(l);
     // Auswahl-Modus: Aktionen für die Auswahl (Lang-Druck auf eine nicht gewählte Liste nimmt sie dazu)
     const wahlMit = l => listenWahl.includes(l.id) ? listenWahl : [...listenWahl, l.id];
@@ -141,12 +145,12 @@ export function renderListenRaster(app) {
       // Touch: Haltestufen (kurz halten + ziehen verschiebt, lang halten + fahren wählt aus)
       const tafel = tafelInhalt(listenWahl ? wahlMit(l) : [l.id]);
       const erklaerung = sortModus && !listenWahl ? tt(`${l.name} – antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen – markierte wandern zusammen`)
-        : tt(`${l.name} – antippen: öffnen (nach einem Lang-Druck: nur auswählen, öffnen mit dem grünen Knopf); kurz halten: auswählen; lang halten: Mehrfach-Auswahl (Export, Verschieben, Löschen)`,
+        : tt(`${l.name} – antippen: abfragen (nach kurzem Halten: nur wählen, laden mit dem grünen Kopf); kurz halten: wählen; lang halten: Mehrfach-Auswahl; Menü: lang halten ohne Bewegung (Maus: Rechtsklick)`,
           tafel.aktionen, { langText: tafel.text, auswahl: auswahlTafel("liste"), eigeneGeste: true,
             beimMenue: () => wahlUmschaltenRef.current("liste", l.id) });
       return (
         <div {...erklaerung} key={key} data-raster-zelle={gefiltert ? undefined : key} data-liste-id={l.id} data-auswahl-durchlass
-          className={`karte-zeile${(listenAuswahl.includes(l.id) && sortModus) || listenWahl?.includes(l.id) || (lasso?.art === "liste" && lasso.ids.includes(l.id)) || (!listenWahl && listeVorschau === l.id) ? " kachel-gewaehlt" : ""}${blitzt(`lw:${l.id}`)}`}
+          className={`karte-zeile${(listenAuswahl.includes(l.id) && sortModus) || listenWahl?.includes(l.id) || (lasso?.art === "liste" && lasso.ids.includes(l.id)) || (!listenWahl && gewaehltL(l)) ? " kachel-gewaehlt" : ""}${blitzt(`lw:${l.id}`)}`}
           data-kachel-geste={sortModus ? undefined : "liste"} data-kachel-zieh={sortModus || gefiltert ? undefined : ""} data-angehoben={angehoben === l.id ? "" : undefined}
           style={{cursor: sortModus ? "grab" : "pointer", ...(sortModus ? {touchAction:"none"} : {}),
             ...(slotDragId && (slotDragId === l.id || (listenAuswahl.includes(slotDragId) && listenAuswahl.includes(l.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
@@ -292,11 +296,11 @@ export function pfadTeile(app, { alleText, alleAttr, pfad, geheZu, alleTt, alleA
 // 217/222: EIN Umschalt-Knopf in der Pfad-Zeile – zeigt, was im Raster steht („Listen“ bzw. „Quiz“), antippen wechselt;
 // so hoch wie der Pfad (zweizeiliger Pfad → zweizeilig hoher Knopf)
 export function quizListenUmschalter(app) {
-  const { auswahlListen, setAuswahlListen, setBlaettern, setMultiAuswahl, setSlotVorschau, tt } = app;
+  const { auswahlListen, setAuswahlListen, setBlaettern, setListenSortModus, setListenWahl, setMultiAuswahl, setSlotSortModus, setSlotVorschau, tt } = app;
     return (
       <button className={`typ-btn aktiv${auswahlListen ? " eckig" : ""}`} data-auswahl-umschalter={auswahlListen ? "listen" : "quiz"}
         style={{fontSize:"0.75rem", padding:"4px 12px", alignSelf:"stretch", flexShrink:0, minWidth:64}}
-        onClick={() => { setAuswahlListen(!auswahlListen); setSlotVorschau(null); setMultiAuswahl(null); setBlaettern(false); }}
+        onClick={() => { setAuswahlListen(!auswahlListen); setSlotVorschau(null); setMultiAuswahl(null); setListenWahl(null); setListenSortModus(false); setSlotSortModus(false); setBlaettern(false); }}
         {...tt(auswahlListen ? "Hier stehen die Listen – antippen zeigt die gespeicherten Quiz" : "Hier stehen die gespeicherten Quiz – antippen zeigt die Listen")}>
         {auswahlListen ? "📋 Listen" : "Quiz"}
       </button>

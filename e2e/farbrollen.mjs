@@ -45,8 +45,10 @@ ok(v.kopfzeile !== v.karte && v["info-kasten"] !== v.hintergrund && v["info-kast
 
 // Listenauswahl: Kopfzeile und Listen-Kacheln unterscheiden sich
 await zuListen(page);
-const kopfBg = await bg('[data-einst-kopf="lernen"]'), kachelBg = await bg('[data-liste-id="l_a"]');
-ok(kopfBg === rgb(v.kopfzeile) && kachelBg === rgb(v.karte) && kopfBg !== kachelBg, `Einstellungen › Listen: Kopfzeile (${kopfBg}) ≠ Liste (${kachelBg})`);
+const kachelBg = await bg('[data-liste-id="l_a"]');
+await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
+const kopfBg = await bg('[data-einst-kopf="lernen"]');
+ok(kopfBg === rgb(v.kopfzeile) && kachelBg === rgb(v.karte) && kopfBg !== kachelBg, `Kopfzeile (${kopfBg}) ≠ Listen-Kachel (${kachelBg})`);
 ok(await bg(".topbar") === rgb(v["app-kopf"]) && await bg(".tabs") === rgb(v["app-kopf"]), "Titel- und Tab-Leiste: App-Kopf");
 
 // Seiten-Hintergrund ändern → Knöpfe/Felder und Info-Kästen bleiben
@@ -71,7 +73,8 @@ let zeilen = await feldZeilen();
 console.log("     Farbfeld Liste:", zeilen.join(" | "));
 ok(await page.$("[data-farbmodus-uebernehmen]") && zeilen.includes("karte"), "Farbmodus läuft, Farbfeld der Liste zeigt „Karten“");
 await page.evaluate(() => [...document.querySelectorAll("[data-farbfeld] button")].find(b => b.textContent.trim() === "Schließen").click()); await sleep(300);
-// im Farbmodus: Lang-Druck auf die Kopfzeile → Bereichs-Kopfzeilen
+// im Farbmodus: Lang-Druck auf die Kopfzeile → Bereichs-Kopfzeilen (225: die liegen in den Einstellungen)
+await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(400);
 const kopf = await page.evaluate(() => { const r = document.querySelector('[data-einst-kopf="lernen"]').getBoundingClientRect(); return { x: r.x + 120, y: r.y + r.height / 2 }; });
 await page.evaluate((x, y) => document.elementFromPoint(x, y).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: x, clientY: y })), kopf.x, kopf.y); await sleep(300);
 zeilen = await feldZeilen();

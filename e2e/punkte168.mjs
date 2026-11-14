@@ -20,7 +20,7 @@ const kontext = async sel => {
   await sleep(300);
 };
 const auswahlAuf = async () => { await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300); };
-const gewaehlt = () => page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId).join(","));
+const gewaehlt = () => page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].sort((a, b) => a.dataset.multiNr - b.dataset.multiNr).map(b => b.dataset.slotId).join(","));
 const tageHer = d => new Date(Date.now() - d * 86400000).toISOString();
 const STD = "#2d6a4f", EN = "#1d3c78", FR = "#0055a4";
 
@@ -54,10 +54,10 @@ await kurzHalten(page, '[data-slot-id="g_en"]');   // 192: kurz halten wählt nu
 ok(await haupt() === EN, `Quiz „Englisch“ gewählt: englische Farbe (${await haupt()})`);
 // ── 169: Balken auch im offenen Kopf ──
 ok(await page.$("[data-slot-kopf-name] [data-kopf-balken]"), "169: offener Kopf zeigt den Fortschrittsbalken");
-await kontext('[data-slot-id="g_fr"]');
-ok(await haupt() === FR, `Lang-Druck „Französisch“ (Mehrfachauswahl mit nur ihr): französische Farbe (${await haupt()})`);
+await kontext('[data-slot-id="g_fr"]');   // 228: „Englisch“ bleibt als Nr. 1 drin
+ok(await gewaehlt() === "g_en,g_fr" && await haupt() === STD, `zwei Sprachen gewählt: normale Farbe (${await gewaehlt()} · ${await haupt()})`);
 await kontext('[data-slot-id="g_en"]');
-ok(await gewaehlt() === "g_fr,g_en" && await haupt() === STD, `zwei Sprachen gewählt: normale Farbe (${await gewaehlt()} · ${await haupt()})`);
+ok(await gewaehlt() === "g_fr" && await haupt() === FR, `„Englisch“ heraus (Mehrfachauswahl mit nur „Französisch“): französische Farbe (${await haupt()})`);
 ok(await page.$("[data-slot-kopf-name] [data-kopf-balken]"), "169: Balken auch bei Mehrfachauswahl");
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "✕ Auswahl beenden")?.click()); await sleep(300);
 await klick('[data-slot-id="g_en"]'); await klick("[data-slot-laden]");

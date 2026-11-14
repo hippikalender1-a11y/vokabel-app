@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, kurzHalten } from "./hilfen.mjs";
+import { zuListen, kurzHalten, listeKachelOeffnen } from "./hilfen.mjs";
 
 // 217: Liste als Quiz (Kopf zeigt die Liste, kein Speichern, Fortschritt/Einstellungen je Liste, kein Verlauf),
 // Quiz-Auswahl mit Umschalter „Quiz | Listen“, „Quiz erstellen“ aus der Liste (Bereich, Name, Ordner), Begriff „Quiz“
@@ -15,7 +15,7 @@ const kopf = () => page.evaluate(() => { const b = document.querySelector("[data
   return { zustand: document.querySelector("[data-slot-kopf]")?.dataset.slotKopf, art: b?.dataset.kopfArt, text: b?.textContent.trim(), ungespeichert: !!document.querySelector("[data-nicht-gespeichert]") }; });
 const slots = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")));
 const oeffneListe = async id => { await zuListen(page); await page.evaluate(() => { if (document.querySelector("[data-ordner-zurueck]")) document.querySelector("[data-ordner-zurueck]").click(); }); await sleep(200);
-  await page.evaluate(i => document.querySelector(`[data-liste-id="${i}"]`)?.click(), id); await sleep(500); };
+  await listeKachelOeffnen(page, id); };
 
 await page.goto(URL);
 await page.evaluate(() => {
@@ -51,16 +51,16 @@ ok(le?.konfiguration?.listenIds?.[0] === "l_a" && (d.verlauf || []).length === 0
 // ── Quiz-Tab: Kopf antippen → Listen-Auswahl (Umschalter „Quiz | Listen“) ──
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(400);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
-const um = await page.evaluate(() => ({ listen: document.querySelector('[data-auswahl-umschalter="listen"]')?.classList.contains("aktiv"), raster: !!document.querySelector("[data-quiz-listen-raster]"),
-  kacheln: [...document.querySelectorAll("[data-qliste-id]")].map(e => e.dataset.qlisteId).join(",") }));
+const um = await page.evaluate(() => ({ listen: document.querySelector('[data-auswahl-umschalter="listen"]')?.classList.contains("aktiv"), raster: !!document.querySelector(".listen-raster"),
+  kacheln: [...document.querySelectorAll("[data-liste-id]")].map(e => e.dataset.listeId).join(",") }));
 ok(um.listen && um.raster && um.kacheln === "l_a,l_b", `Listen-Kopf → Listen-Auswahl mit Umschalter (${JSON.stringify(um)})`);
 await page.evaluate(() => document.querySelector('[data-auswahl-umschalter]').click()); await sleep(300);   // 222: ein Knopf, wechselt
 ok(await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]")?.dataset.auswahlUmschalter) === "quiz", "222: der Knopf zeigt jetzt „Quiz“");
-ok(await page.$("[data-alle-sessions]") && !(await page.$("[data-quiz-listen-raster]")), "Umschalter „Quiz“ zeigt die gespeicherten Quiz");
+ok(await page.$("[data-alle-sessions]") && !(await page.$(".listen-raster")), "Umschalter „Quiz“ zeigt die gespeicherten Quiz");
 ok((await page.evaluate(() => document.querySelector("[data-alle-sessions]")?.textContent.trim())) === "Alle Quiz", "Begriff: „Alle Quiz“ statt „Alle Sessions“");
 await page.evaluate(() => document.querySelector('[data-auswahl-umschalter]').click()); await sleep(300);
 // kurz halten wählt nur, antippen übernimmt
-await kurzHalten(page, '[data-qliste-id="l_b"]');
+await kurzHalten(page, '[data-liste-id="l_b"]');
 k = await kopf();
 ok(k.zustand === "offen" && /📋 Unit 2 laden/.test(k.text), `kurz halten: „📋 Unit 2 laden“ (${k.text})`);
 await page.evaluate(() => document.querySelector("[data-slot-laden]").click()); await sleep(600);

@@ -162,30 +162,14 @@ export function EinstellungenTab(app) {
 
           {/* Bereiche mit Kopfzeile: immer nur einer offen */}
           <div className="sektion" data-einst-bereiche style={einstBereich === "info" && infoModus !== "uebersicht" ? {paddingBottom:'100dvh'} : {}}>
-            {einstKopf("listen", "Listen", "Listen öffnen, importieren, sichern")}
-            {einstBereich === "listen" && (<div className="einst-inhalt" data-einst-listen>
-            {(() => {
-              const vorschauL = !listenWahl && !einstUnter && listeVorschau ? listenIndex.find(x => x.id === listeVorschau) : null;
-              return (
-                <div ref={listenKopfRefCb} style={{position:"sticky", top: headerH, zIndex: 8, marginBottom: vorschauL || (listenWahl?.length && !einstUnter) ? 12 : 0, background:"var(--hintergrund)"}} data-listen-kopf-bereich>
-                  {listenWahl && !einstUnter ? listenWahlKopf() : vorschauL ? listeOeffnenKopf(vorschauL) : einstZeile([
-                    { k: "sicherung", label: "Sicherung", text: letzteSicherung ? `💾 ${formatTag(letzteSicherung).slice(0, 6)}` : "💾 nie",
-                      hilfe: `Alles sichern, wiederherstellen, Speicher schützen · ${letzteSicherung ? `zuletzt am ${formatTag(letzteSicherung)}` : "noch nie gesichert"}` },
-                    { k: "erinnerung", label: "Erinnerung", text: sicherungTage ? `nach ${sicherungTage} T` : "Aus", wahl: true,
-                      hilfe: "In des Quiz-Auswahl an eine Sicherung erinnern, wenn die letzte älter ist als …" },
-                    { k: "spalten", label: "Spalten", text: `▥ ${minSpalten("liste", listenOrdnerOffen)}`, wahl: true,
-                      hilfe: "Spalten dieser Ebene (mindestens) – belegte Spalten können mehr ergeben, höchstens 5" },
-                  ])}
-                  {vorschauL && renderListeInfo(vorschauL)}
-                  {listenWahl?.length > 0 && !einstUnter && (() => { const ls = listenWahl.map(id => listenIndex.find(x => x.id === id)).filter(Boolean); return ls.length ? renderListeInfo(ls[0], ls.length > 1 ? ls : null) : null; })()}
-                </div>
-              );
-            })()}
-            {!einstUnter && listenNavi()}
-            {!einstUnter && (listenWahl || listenSortModus) && wahlLeiste("liste")}
-            {!einstUnter && (sichtbareListen.length === 0 && listenOrdner.length === 0 ? (
-              <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
-            ) : renderListenRaster())}
+            {einstKopf("sicherung", "Sicherung", "Alles sichern, wiederherstellen, Erinnerung")}
+            {einstBereich === "sicherung" && (<div className="einst-inhalt" data-einst-sicherung>
+            {einstZeile([
+              { k: "sicherung", label: "Sicherung", text: letzteSicherung ? `💾 ${formatTag(letzteSicherung).slice(0, 6)}` : "💾 nie",
+                hilfe: `Alles sichern, wiederherstellen, Speicher schützen · ${letzteSicherung ? `zuletzt am ${formatTag(letzteSicherung)}` : "noch nie gesichert"}` },
+              { k: "erinnerung", label: "Erinnerung", text: sicherungTage ? `nach ${sicherungTage} T` : "Aus", wahl: true,
+                hilfe: "In der Quiz-Auswahl an eine Sicherung erinnern, wenn die letzte älter ist als …" },
+            ])}
             {einstUnter === "sicherung" && (
             <div className="karte" data-sicherung>
               <div className="karte-zeile">
@@ -229,18 +213,6 @@ export function EinstellungenTab(app) {
                 </div>
               )}
             </div>)}
-            {einstUnter === "spalten" && (
-            <div className="karte">
-              <div className="toggle-row">
-                <div className="toggle-btn" data-listen-spalten data-wahl-bereich style={{display:"flex", width:"100%"}}>
-                  {[1, 2, 3, 4, 5].map(n => (
-                    <button key={n} className={`toggle-opt${minSpalten("liste", listenOrdnerOffen) === n ? " aktiv" : ""}`} data-listen-spalten-wahl={n} style={{flex:1}}
-                      onClick={() => einstWahl("spalten", () => setzeMinSpalten("liste", listenOrdnerOffen, n))}
-                      {...tt(`Mindestens ${n} Spalte${n > 1 ? "n" : ""} in dieser Ebene`)}>{n}</button>
-                  ))}
-                </div>
-              </div>
-            </div>)}
             {einstUnter === "erinnerung" && (
             <div className="karte">
               <div className="toggle-row">
@@ -248,7 +220,7 @@ export function EinstellungenTab(app) {
                   {SICHERUNG_TAGE.map(t => (
                     <button key={t} className={`toggle-opt${sicherungTage === t ? " aktiv" : ""}`} data-sicherung-tage-wahl={t} style={{flex:1}}
                       onClick={() => einstWahl("erinnerung", () => speichereEinst({ ...einstellungen, sicherungErinnerung: t }))}
-                      {...tt(t ? `In des Quiz-Auswahl erinnern, wenn die letzte Sicherung älter als ${t} Tage ist` : "Nicht an Sicherungen erinnern")}>{t ? `${t} T` : "Aus"}</button>
+                      {...tt(t ? `In der Quiz-Auswahl erinnern, wenn die letzte Sicherung älter als ${t} Tage ist` : "Nicht an Sicherungen erinnern")}>{t ? `${t} T` : "Aus"}</button>
                   ))}
                 </div>
               </div>

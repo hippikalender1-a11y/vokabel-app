@@ -3056,3 +3056,35 @@ verschiebeListenInOrdner, sessionSlotKonflikt, speichereSessionSlotNeu, sessionD
 Werkzeug: scratchpad/_logik.cjs (Analyse + Schreiben, sammelt Modul-Importe auch aus Parametern).
 Wie ändern: Funktion in src/logik/… bearbeiten; braucht sie einen neuen App-Namen, ihn in der Hülle in App.jsx
 ({ …, neuerName }) und im „const { … } = app;“ der Funktion ergänzen.
+
+── 225–228 (Feedback 14.11.2026, in Abstimmung) ──
+- 225 Einstellungen › Listen ggf. entfernen – Voraussetzung: alles dort ist im Quiz-Tab (Umschalter „Listen“) erreichbar.
+  Heute NUR in den Einstellungen: Listen-Menü je Kachel (Umbenennen, Duplizieren, Exportieren, Beispielsätze, Synonyme,
+  Vokabeln importieren, Klammern → Info, Herausgenommene, Aufteilen, Lernstand zurücksetzen, Löschen, In Ordner…),
+  Listen-Ordner verwalten (neu, umbenennen, auflösen, verschieben, Anordnen, Spalten), Verschieben/Ziehen, „＋ Neue Liste“/
+  Import, Mehrfach-Auswahl mit Aktionen (Export, Löschen, Verschieben), Knöpfe Sicherung/Erinnerung.
+- 226 Mehrfach-Auswahl auch für Listen im Quiz-Tab (wie bei den Quiz: langer Lang-Druck startet, kurzer nimmt dazu/heraus).
+- 227 In der Mehrfach-Auswahl übernimmt der lange Lang-Druck NICHT mehr (Abschluss nur über den grünen Kopf).
+- 228 Beginn der Mehrfach-Auswahl: ist schon eine Kachel gewählt (Vorschau bzw. angezeigt gewählt), bleibt sie drin –
+  sie ist Nr. 1, die lang gedrückte Kachel Nr. 2 (bisher kam die vorher gewählte nicht mit).
+  Entscheidungen 225–228: (225) ja – Listen-Verwaltung vollständig in den Quiz-Tab (Menü je Kachel, Ordner, Verschieben,
+  Neue Liste über den Pfad, Mehrfach-Auswahl mit Aktionen), Sicherung/Erinnerung in eigenen Einstellungen-Bereich
+  „Sicherung“, Bereich „Listen“ in den Einstellungen entfällt. (227) langer Lang-Druck in der Mehrfach-Auswahl vorerst
+  OHNE Funktion (Ziehen danach verschiebt weiter). (226) mehrere Listen über den grünen Kopf übernehmen → neues,
+  ungespeichertes Quiz aus diesen Listen. (228) Variante (a): nur eine bewusst gewählte Kachel (kurz gehalten /
+  Blätter-Modus angetippt) kommt als Nr. 1 mit – das bloß geladene Quiz nicht.
+- 229 Kartenabfrage: nach dem Zurückwischen (Rückblick, 175) ein Knopf, um direkt zur aktuellen Abfragekarte zurückzukehren.
+
+=== 225–229 umgesetzt ===
+- 225: „Einstellungen › Listen“ entfällt; Listen-Verwaltung (Menü, Ordner, Verschieben, Neu, Mehrfach-Aktionen) im Quiz-Tab
+  (Auswahl offen, Umschalter „Listen“). Neuer Einstellungen-Bereich „Sicherung“ (Sicherung · Erinnerung). Kachel antippen
+  fragt die Liste ab; öffnen über „📂 Liste öffnen“ im Kachel- bzw. Kopf-Menü. Offene Liste/Import markieren den Quiz-Tab;
+  Quiz-Tab antippen führt von dort zurück zu den Listen. Kurz gehaltene Liste zeigt die Listen-Info (Sätze, Synonyme).
+  „▥ Spalten“ jetzt im Menü von „Alle Listen“.
+- 226: Mehrfach-Auswahl der Listen wie bei den Quiz; grüner Kopf „☑ n Listen ausgewählt“ übernimmt → neues, ungespeichertes Quiz.
+- 227: langer Lang-Druck in der Mehrfach-Auswahl ohne Funktion (Quiz und Listen); übernehmen nur über den grünen Kopf.
+- 228: bewusst gewählte Kachel (Vorschau) bleibt beim Start der Mehrfach-Auswahl Nr. 1 (Geste und Rechtsklick); geladenes Quiz nicht.
+- 229: Rückblick in der Kartenabfrage: Knopf „Zur aktuellen Karte ⏭“.
+- Tests: neuer e2e/punkte225.mjs, 229 in punkte175; angepasst: sicherung, einst_bereiche, auswahl, farbrollen, listen_einstellungen,
+  listenansicht, antwortwahl, sessionwahl, punkte168/190/202/217/219, hilfen (zuListen, listeOeffnen, listeKachelOeffnen). 100/100 grün.
+- Noch übrig (Aufräumen, ohne Eile): ungenutzte quizListenNavi / renderQuizListenRaster / listeOeffnenKopf / listenWahlKopf.

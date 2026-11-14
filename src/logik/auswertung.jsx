@@ -49,7 +49,7 @@ export function sessionAuswertungSeite(app, q, knoepfe, schliessen) {
 
 // zurück aus Liste/Import zu Einstellungen › Listen
 export function zuEinstListen(app) {
-  const { setAnsicht, setEinstBereich, setListenWahl, setTab } = app; setTab("einstellungen"); setEinstBereich("listen"); setAnsicht("uebersicht"); setListenWahl(null); requestAnimationFrame(() => window.scrollTo(0, 0)); }
+  const { listenAuswahlErzwingenRef, setAnsicht, setAuswahlListen, setListenWahl, setSlotSektionAufgeklappt, setTab } = app; /* 225: Listen leben im Quiz-Tab */ listenAuswahlErzwingenRef.current = true; setTab("quiz"); setSlotSektionAufgeklappt(true); setAuswahlListen(true); setAnsicht("uebersicht"); setListenWahl(null); requestAnimationFrame(() => window.scrollTo(0, 0)); }
 
 // Namensvorschlag für gespeicherte Konfigurationen: Sprache(n) + Datum, eindeutig
 // 216: ungespeichertes Quiz aus genau einer Liste – deren Name (Teil der Liste: „· Nr. 1–10“ bzw. „· Auswahl“)

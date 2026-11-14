@@ -1,10 +1,13 @@
 // Gemeinsame Test-Hilfen
-// Listen liegen unter Einstellungen › Listen (kein eigener Tab mehr)
+// 225: Listen liegen im Quiz-Tab (Auswahl offen, Umschalter „Listen“) – Einstellungen › Listen gibt es nicht mehr
 export async function zuListen(page) {
-  await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click());
-  await new Promise(r => setTimeout(r, 300));
-  await page.evaluate(() => { const k = document.querySelector('[data-einst-kopf="listen"]'); if (k && k.dataset.offen !== "ja") k.click(); });
-  await new Promise(r => setTimeout(r, 300));
+  const s = ms => new Promise(r => setTimeout(r, ms));
+  // eine offene Liste (Liste-Detail) bzw. der Import: über die Rückweg-Knöpfe verlassen
+  await page.evaluate(() => { const b = document.querySelector("[data-zurueck-listen]"); if (b) b.click(); }); await s(200);
+  const imQuiz = await page.evaluate(() => document.querySelector(".tab.aktiv")?.textContent.includes("Quiz") && !!document.querySelector("[data-slot-kopf]"));
+  if (!imQuiz) { await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await s(300); }
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]")?.click(); }); await s(400);
+  await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "listen") b.click(); }); await s(300);
 }
 // Quiz-Tab: Ist die Quiz-Auswahl offen, Kopf antippen → Einstellungen (Listen-Auswahl usw.) sichtbar
 export async function quizEinstellungen(page) {
@@ -20,7 +23,10 @@ export async function neueEineSession(page) {
 }
 // 160: „＋ Neues Quiz aus Listen“ über lang drücken auf „Alle Quiz“ (bzw. die Gruppe in der Pfad-Zeile)
 export async function neueSessionMenue(page) {
-  await page.evaluate(() => { const el = document.querySelector("[data-ordner-name]") || document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect();
+  // 225: zeigt die Auswahl die Listen, erst auf „Quiz“ umschalten
+  await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter === "listen") b.click(); });
+  await new Promise(r => setTimeout(r, 250));
+  await page.evaluate(() => { const el = document.querySelector('[data-ordner-navi]:not([data-ordner-navi="liste"]) [data-ordner-name]') || document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect();
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); });
   await new Promise(r => setTimeout(r, 250));
   await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "＋ Neues Quiz aus Listen")?.click());
@@ -148,8 +154,17 @@ export async function slotLaden(page) {
   if (await page.$("[data-slot-laden]")) { await page.evaluate(() => document.querySelector("[data-slot-laden]").click()); await new Promise(r => setTimeout(r, 600)); }
 }
 // Einstellungen › Listen: angetippte Liste mit dem grünen Knopf („‹Name› öffnen“) öffnen
+// 225: Antippen einer Liste fragt sie ab (Kopf zeigt die Liste) – geöffnet wird sie über das Kopf-Menü „📂 Liste öffnen“
 export async function listeOeffnen(page) {
-  if (await page.$("[data-liste-oeffnen]")) { await page.evaluate(() => document.querySelector("[data-liste-oeffnen]").click()); await new Promise(r => setTimeout(r, 500)); }
+  const s = ms => new Promise(r => setTimeout(r, ms));
+  if (await page.$("[data-liste-oeffnen]")) { await page.evaluate(() => document.querySelector("[data-liste-oeffnen]").click()); await s(500); return; }
+  if (await page.$("[data-listen-zeile]")) return;   // schon offen
+  await s(450);   // Auswahl klappt nach dem Laden kurz verzögert zu
+  await page.evaluate(() => { const el = document.querySelector('[data-slot-kopf-name][data-kopf-art="liste"]') || document.querySelector("[data-slot-kopf-name]"); if (!el) return;
+    const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); });
+  await s(300);
+  await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "📂 Liste öffnen")?.click());
+  await s(500);
 }
 // 192: Kachel kurz halten (Maus ≥ ¼ s ohne Bewegung) – wählt nur aus (Blätter-Modus), statt sofort zu übernehmen
 export async function kurzHalten(page, sel) {
@@ -171,4 +186,14 @@ export async function neueListe(page) {
   await new Promise(r => setTimeout(r, 300));
   await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "＋ Neue Liste")?.click());
   await new Promise(r => setTimeout(r, 300));
+}
+
+// 225: eine Liste über das Menü ihrer Kachel öffnen (antippen fragt sie ab)
+export async function listeKachelOeffnen(page, id) {
+  const s = ms => new Promise(r => setTimeout(r, ms));
+  await page.evaluate(i => { const el = document.querySelector(`[data-liste-id="${i}"]`); if (!el) return; el.scrollIntoView({ block: "center" }); const r = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, id);
+  await s(350);
+  await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "📂 Liste öffnen")?.click());
+  await s(500);
 }

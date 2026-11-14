@@ -95,7 +95,7 @@ await langDruck('[data-liste-id="l_a"]'); await sleep(300);
 await sleep(900);
 await langDruck('[data-liste-id="l_b"]'); await sleep(60);   // 147: lang drücken nimmt dazu
 const lw = await page.evaluate(() => ({ kachel: document.querySelector('[data-liste-id="l_b"]').classList.contains("leuchten"), hinweis: document.querySelector("[data-wahl-hinweis]")?.classList.contains("leuchten"), text: document.querySelector("[data-wahl-hinweis]")?.textContent }));
-ok(lw.kachel && lw.hinweis && /2 ausgewählt/.test(lw.text), `Listen-Auswahl: Kachel und „☑ 2 ausgewählt“ leuchten (${JSON.stringify(lw)})`);
+ok(lw.kachel && lw.hinweis && /2 (Listen )?ausgewählt/.test(lw.text), `Listen-Auswahl: Kachel und „☑ 2 ausgewählt“ leuchten (${JSON.stringify(lw)})`);
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();

@@ -101,6 +101,12 @@ await zurueck(); await zurueck();
 ok(await page.$('[data-rueckblick="0"]'), "am Anfang der Runde bleibt es bei der ersten Karte");
 for (let i = 0; i < 4; i++) await vor();
 ok(!(await page.$("[data-rueckblick]")) && (await frage())?.replace(/\u200B/g, "") === LANG, `nach links bis zur aktuellen Karte: Quiz geht weiter (${await frage()})`);
+// 229: im Rückblick führt ein Knopf direkt zur aktuellen Karte
+ok(!(await page.$("[data-zur-aktuellen]")), "229: auf der aktuellen Karte kein „Zur aktuellen Karte“");
+await zurueck(); await zurueck(); await zurueck();
+ok(await page.$("[data-rueckblick]") && await page.$("[data-zur-aktuellen]"), "229: im Rückblick: Knopf „Zur aktuellen Karte“");
+await page.evaluate(() => document.querySelector("[data-zur-aktuellen]").click()); await sleep(300);
+ok(!(await page.$("[data-rueckblick]")) && (await frage())?.replace(/​/g, "") === LANG, `229: Knopf führt direkt zur aktuellen Karte (${await frage()})`);
 await bewerte(true);
 ok((await vok(6)).fortschritt.score === 1, "aktuelle Karte normal bewertet");
 

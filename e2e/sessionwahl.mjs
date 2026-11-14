@@ -126,8 +126,11 @@ ok(/1 ausgewählt/.test(await kopf() || ""), "lang drücken auf ausgewählte Kac
 await rechts('[data-slot-id="g_2"]');
 await klick('[data-slot-id="g_1"]');
 ok(await kopf() === "Stücke laden" && !(await page.$("[data-multi-nr]")) && !(await page.$("[data-info-menue]")), `antippen: Einzelauswahl, Menü zu (${await kopf()})`);
+// 228: eine gewählte Kachel bleibt beim Start der Mehrfach-Auswahl als Nr. 1 drin
+await rechts('[data-slot-id="g_2"]');
+ok(/2 ausgewählt/.test(await kopf() || "") && await page.$('[data-slot-id="g_1"][data-multi-nr="1"]') && await page.$('[data-slot-id="g_2"][data-multi-nr="2"]'), `228: „Stücke“ bleibt Nr. 1, „Ganze Liste“ Nr. 2 (${await kopf()})`);
 // 153: die letzte herausgenommen → bleibt als Einzelauswahl
-await rechts('[data-slot-id="g_2"]'); await rechts('[data-slot-id="g_2"]');
+await rechts('[data-slot-id="g_1"]'); await rechts('[data-slot-id="g_2"]');
 ok(await kopf() === "Ganze Liste laden" && !(await page.$("[data-info-menue]")), `153: letzte herausgenommen – Einzelauswahl bleibt (${await kopf()})`);
 // 155: Antippen der Info-Fläche klappt sie ein und aus
 await klick("[data-slot-info-name]");

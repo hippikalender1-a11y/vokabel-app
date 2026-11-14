@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, listeOeffnen } from "./hilfen.mjs";
 
 // 202: Listen zeigen Beispielsätze (gesamt) und Synonyme – Kachel kurz, Info ausführlich; 203: Mindest-Spalten je Ebene
 // (Listen: Knopf „Spalten“, Quiz: Menü „▥ Spalten“); 204: Quiz aus einer Liste → am Ende zurück zur Liste;
@@ -63,11 +63,11 @@ await zuListen(page);
 const inhalt = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("[data-liste-id]")].map(e => [e.dataset.listeId, e.querySelector("[data-listen-inhalt]")?.textContent.trim()])));
 ok(inhalt.liste_1700000000002 === "· 💬 6 · ≈ 6" && inhalt.liste_1700000000001 === "", `202: Kachel „💬 6 · ≈ 6“, ohne Inhalt nichts (${JSON.stringify(inhalt)})`);
 
-// ── 203: Knopf „Spalten“ (Listen) ──
-const zeile = await page.evaluate(() => [...document.querySelectorAll('[data-einst-unter]')].map(b => b.dataset.einstUnter).join("|"));
-ok(/sicherung\|erinnerung\|spalten/.test(zeile), `203: Knopfzeile Sicherung · Erinnerung · Spalten (${zeile})`);
-await page.evaluate(() => document.querySelector('[data-einst-unter="spalten"]')?.click()); await sleep(300);
-await page.evaluate(() => document.querySelector('[data-listen-spalten-wahl="3"]')?.click()); await sleep(400);
+// ── 203: „▥ Spalten“ im Menü von „Alle Listen“ (225: Listen im Quiz-Tab) ──
+await kontext("[data-alle-listen]");
+ok((await menue()).some(m => /^▥ Spalten/.test(m)), `203: „▥ Spalten“ im Menü von „Alle Listen“ (${(await menue()).join(" | ")})`);
+await aktion("Spalten");
+await page.evaluate(() => document.querySelector('[data-spalten-wahl="3"]')?.click()); await sleep(400);
 const anz = await page.evaluate(() => document.querySelector(".listen-raster")?.dataset.rasterSpaltenAnz);
 ok(anz === "3", `203: mindestens 3 Spalten in „Alle Listen“ (${anz})`);
 
@@ -88,7 +88,7 @@ const info = await page.evaluate(() => document.querySelector("[data-liste-info-
 ok(info === "💬 6 Beispielsätze≈ 6 Synonyme", `202: Info „6 Beispielsätze · 6 Synonyme“ (${info})`);
 
 // ── 209: Knopfzeile der geöffneten Liste ──
-await page.evaluate(() => document.querySelector("[data-liste-oeffnen]")?.click()); await sleep(500);
+await kontext('[data-liste-id="liste_1700000000002"]'); await aktion("Liste öffnen"); await sleep(200);   // 225: öffnen über das Menü
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-listen-zeile] .quiz-zeile-label")].map(e => e.textContent.trim()).join("|"));
 ok(knoepfe === "Vokabeln|Beispielsätze|Spalten|Fremdsprache", `209: Vokabeln | Beispielsätze | Spalten | Fremdsprache (${knoepfe})`);
 
@@ -105,12 +105,13 @@ await zuListen(page);
 await kontext('[data-liste-id="liste_1700000000001"]');
 await aktion("Fällige wiederholen");
 imQuiz = await quizUndZurueck();
-zurueck = await page.evaluate(() => ({ raster: !!document.querySelector('[data-liste-id="liste_1700000000001"]'), gewaehlt: document.querySelector("[data-liste-oeffnen]")?.dataset.listeOeffnen }));
+zurueck = await page.evaluate(() => ({ raster: !!document.querySelector('[data-liste-id="liste_1700000000001"]'), gewaehlt: [...document.querySelectorAll(".listen-raster [data-liste-id].kachel-gewaehlt")].map(e => e.dataset.listeId).join(",") }));
 ok(imQuiz && zurueck.raster && zurueck.gewaehlt === "liste_1700000000001", `204: Fällige an der Kachel → Listen-Raster, „Unit 2“ gewählt (${JSON.stringify(zurueck)})`);
 
 // ── 203/208: Quiz – „▥ Spalten“ und „⇅ Anordnen…“ im Menü von „Alle Quiz“ ──
 await tab("Quiz");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "quiz") b.click(); }); await sleep(300);
 await kontext("[data-alle-sessions]");
 const sm = await menue();
 ok(sm.some(m => /^▥ Spalten/.test(m)) && sm.includes("⇅ Anordnen…"), `203/208: Quiz-Menü mit Spalten und Anordnen (${sm.join(" | ")})`);

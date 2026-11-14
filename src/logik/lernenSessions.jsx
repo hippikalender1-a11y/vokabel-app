@@ -631,7 +631,7 @@ export function toggleStatistikEinzelauswahl(app) {
 // zurück zur Übersicht – eingeklappt (alle Bereiche zu bis auf die Quiz-Auswahl (190), nach oben); nur „Pause“ lässt
 // die Bereiche, wie sie waren
 export function beendeQuiz(app, einklappen = true) {
-  const { ausListeRef, klappeUebersichtEin, listenIndex, oeffneListeDetail, setAnsicht, setListeVorschau, setListenOrdnerOffen, setQuiz, setTab, zuEinstListen } = app;
+  const { ausListeRef, klappeUebersichtEin, listenIndex, oeffneListeDetail, setAnsicht, setBlaettern, setListeVorschau, setListenOrdnerOffen, setQuiz, setSlotVorschau, setTab, zuEinstListen } = app;
     setQuiz(null);
     // 204: aus einer Liste gestartet → zurück dorthin (geöffnete Liste bzw. Listen-Raster mit der Liste gewählt); „Pause“ nicht
     const al = einklappen ? ausListeRef.current : null;
@@ -640,7 +640,7 @@ export function beendeQuiz(app, einklappen = true) {
       if (al.ziel === "liste") { oeffneListeDetail(al.listeId); return; }
       setListenOrdnerOffen(listenIndex.find(l => l.id === al.listeId)?.ordner || null);
       zuEinstListen();
-      setTimeout(() => { setListeVorschau(al.listeId); document.querySelector(`[data-liste-id="${al.listeId}"]`)?.scrollIntoView({ block: "center" }); }, 0);
+      setTimeout(() => { setSlotVorschau({ typ: "listen", id: al.listeId }); setBlaettern(true); document.querySelector(`[data-liste-id="${al.listeId}"]`)?.scrollIntoView({ block: "center" }); }, 0);
       return;
     }
     setTab("quiz");

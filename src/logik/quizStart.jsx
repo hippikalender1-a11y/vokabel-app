@@ -60,6 +60,7 @@ export function listenMenue(app, l, imKopf = false) {
   const { faelligAktion, faelligVonListen, listenKopieName, listenOrdner, oeffneExport, oeffneListeDetail, oeffneSatzFenster, oeffneSynFenster, resetImport, setAnsicht, setImportBestehendId, setImportZielTyp, setInGruppe, setKlammerZiel, setListeMenueId, setListeNurAus, setListenAuswahl, setListenBereich, setListenSortModus, setListenWahl, setMergeQuelleId, setModal, setModalFehler, setModalInput, setTab, setZuruecksetzenArten, sichtbareListen, sprachFilter, starteAufteilen, verschiebeListenInOrdner } = app;
     const gefiltert = sprachFilter !== "alle";
     return [
+      ...(imKopf ? [] : [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(l.id) }]),   // 225: antippen fragt ab, öffnen über das Menü
       { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
       { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
       { label: "📤 Exportieren", fn: () => oeffneExport([l.id]) },

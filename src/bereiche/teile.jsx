@@ -500,7 +500,7 @@ export function renderMiniKreise(app, ls, { aktiv = null, beiKlick = null, groes
   }
 
 export function renderRueckblick(app) {
-  const { farbModusUI, farbRadUI, quiz, tt, umwerten } = app;
+  const { farbModusUI, farbRadUI, quiz, setQuiz, tt, umwerten } = app;
     const rb = quiz.rueckblick, i = quiz.rueckIdx, e = rb[i];
     const ja = e.ergebnis === "richtig";
     const vok = quiz.liste.vokabeln.find(v => v.id === e.vokId) || quiz.vokabeln.find(v => v.id === e.vokId);
@@ -537,6 +537,10 @@ export function renderRueckblick(app) {
             ))}
             <div className="karte-bewertung" style={{marginTop:14}}>{knopf(false)}{knopf(true)}</div>
             {e.umgewertet && <div className="rueck-geaendert" data-rueck-geaendert>↺ nachträglich geändert</div>}
+            {/* 229: direkt zurück zur aktuellen Abfragekarte */}
+            <button className="btn btn-primary" data-zur-aktuellen style={{width:"100%", marginTop:16}}
+              onClick={() => setQuiz(q => q ? { ...q, rueckIdx: null } : q)}
+              {...tt("Zurück zur aktuellen Abfragekarte (auch: nach links wischen)")}>Zur aktuellen Karte ⏭</button>
           </div>
         </div>
       </>
