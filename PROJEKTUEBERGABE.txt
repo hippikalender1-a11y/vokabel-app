@@ -2980,3 +2980,64 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
   Bezeichner unverändert), Tests ebenso. Test e2e/punkte217.mjs (98 Tests grün).
 - 218 Verweil-Ring beim Ziehen auf eine andere Kachel: während er läuft „⇄“ (tauschen), erst voll „📁“ (Ordner)
   ([data-ring-symbol] tauschen|ordner). Test gruppen_gesten.
+
+── Aufteilung Phase 1 (Nacht 14.11.2026, Branch „aufteilung“, noch nicht committet) ──
+Modul-Ebene aus App.jsx in eigene Dateien (rein technisch, Verhalten unverändert; 98/98 Tests grün):
+- src/speicher.js   SK, lsGet/lsSet/lsDel, Standards (Einstellungen, Slots), neuerSlotId, neueListeObjekt, ergaenzeSpalten,
+                    Sicherung (erstelleSicherung …), formatDatum/formatTag/formatSlotDatum, TYPEN, APP_VERSION
+- src/raster.js     Raster und Ordner (rasterGroesse, ebenenSpalten, ordneRaster, platziereGruppe, ebeneVon … ordneEbeneAn,
+                    nameVergleich, zahlDe), Gesten-Zeiten, Suche (sucheVokabeln), Aufteilen-Gruppen
+- src/saetze.js     Beispielsätze (IndexedDB, satzStandAlle, listenInhalt), Satz-/Synonym-Prompts und -Leser
+- src/sprache.js    Sprachen, Stimmen, Vorlesen (sprich, sprichAuto)
+- src/importexport.js  KI-Prompt, Export-Text, Import-Parser (Kolumnen, Kopfzeile, Lautsprache)
+- src/quiz.jsx      Quiz-Regeln: Antwortprüfung, Scores, Stufen/Fälligkeit/Tagessperre, Akzente, Antwortarten, Statistik-Sicht
+- src/farben.js     Farbrollen, Vorlagen, Farb-Mathe, farbenAus, Element-Farben, F (+ setzeF)
+- src/stil.js       CSS_BASIS und CSS (+ setzeCSS)
+- src/komponenten.jsx  GelerntSterne, MiniKreis, FarbRad, Icons
+Variablen, die die Komponente neu setzt, über Setter: setzeF, setzeCSS, setzeANTWORT_GEWICHTE, setzeAKZENTE_FUER_LISTE.
+App.jsx: nur noch die Komponente (11.804 statt 14.242 Zeilen). Werkzeug: scratchpad/aufteilen.py (Analyse + Schreiben).
+
+── 219–224 (Feedback 14.11.2026, nachts umsetzen) ──
+- 219 Info-Fläche (Quiz-Auswahl, auch bei Listen): wird sie zugeklappt, klappt die ausgeklappte Vokabel-Liste mit zu.
+- 220 Kopf (Quiz oder Liste) antippen → in der Auswahl ist genau dieses Element gewählt und sichtbar (Umschalter auf
+  Quiz bzw. Listen, dessen Ordner geöffnet, Kachel in den Blick gescrollt).
+- 221 Alles, was Listen betrifft, eckig zeichnen (Listen-Kacheln, Listen-Ordner, Listen-Auswahl); alles, was Quiz
+  betrifft, abgerundet (wie bisher).
+- 222 Umschalter „Quiz | Listen“ → EIN Knopf, der zeigt, was im Raster steht („Listen“ bzw. „Quiz“); antippen wechselt.
+  Er passt sich der Höhe des Pfads an (Pfad zweizeilig → Knopf zweizeilig hoch).
+- 223 Listen-Auswahl: Scrollen unter den feststehenden Zeilen prüfen und festlegen, welche Zeilen stehen bleiben.
+- 224 Breite Bildschirme (iPad, Querformat): Farben der Leisten (App-Kopf, Kopfzeilen …) nach links und rechts bis zum
+  Rand fortführen, damit der Bildschirm vollflächig wirkt.
+
+── 219–224 umgesetzt (Branch „aufteilung“, nicht committet) ──
+- 219 infoKlapp: beim Zuklappen auch setSlotVorschauListe(false).
+- 220 Effekt „Kopf-Element im Raster zeigen“: im Quiz-Tab setAuswahlListen(Kopf ist Liste); Liste → setListenOrdnerOffen(ihr
+  Ordner) + scrollIntoView([data-qliste-id]); Quiz wie bisher (slotOrdner + scroll).
+- 221 :root --liste-ecke 3px, Klasse .eckig; Listen-Kacheln/-Ordner (Listen-Tab, Listen-Auswahl, Quiz-Listen-Raster),
+  Listen-Kopf (Liste-Detail, Quiz-Kopf mit Liste) eckig; Quiz bleibt rund.
+- 222 quizListenUmschalter(): ein Knopf [data-auswahl-umschalter="listen"|"quiz"] („📋 Listen“ / „Quiz“), alignSelf stretch.
+- 223 Pfad-Zeilen kleben: Quiz-Auswahl (ordnerNavi, quizListenNavi) top = headerH + slotH + slotInfoH; Einstellungen ›
+  Listen (listenNavi) top = headerH + listenKopfH (Höhen per ResizeObserver: slotInfoRefCb, listenKopfRefCb). Behälter
+  slotContainerRef overflow: clip statt hidden (sonst klebt darin nichts).
+- 224 stil.js (Ende von CSS_BASIS): @media (min-width:601px) Leisten (.vb-kopf App-Kopf, .tabs, .slot-kopf, .slot-info,
+  .quiz-zeile, .liste-detail-header, .quiz-action-bar, Zeilen mit background: var(--kopfzeile)) per box-shadow 100vmax +
+  clip-path inset(0 -100vmax) bis zum Rand. Test e2e/punkte219.mjs (99 Tests grün).
+
+── Aufteilung Phase 2, Stufe 1 (Nacht 14.11.2026, Branch „aufteilung“, nicht committet) ──
+Die Oberfläche ist aus App.jsx in src/bereiche/ ausgelagert (rein mechanisch, Verhalten unverändert, 99/99 Tests grün).
+App.jsx: 6.006 Zeilen (vorher 14.242) – enthält jetzt v. a. Zustand (≈200 useState, 72 useRef, 78 useEffect) und Logik.
+Muster:
+- Bereiche im Haupt-return: {tab === "quiz" && QuizTab(app)} – Funktion bekommt das Objekt „app“ (const app = {…} direkt
+  vor dem Haupt-return, alle Namen, die die ausgelagerten Bereiche brauchen) und entpackt nur, was sie nutzt.
+  Dateien: QuizTab, StatistikTab, EinstellungenTab, ImportAnsicht, ListeDetail (je eigene Datei); dialoge.jsx (19 Dialoge,
+  KiPromptAnsicht, StatistikKopf1/2).
+- Frühe Rückgaben (eigene Vollbild-Ansichten): if (…) { return AbfrageAnsicht({ nötige Namen }); } – AbfrageAnsicht,
+  DiktatAnsicht, LernenAnsicht (Objekt wird an der Stelle gebaut; nur Namen, die dort schon angelegt sind).
+- Zeichen-Funktionen: in App.jsx bleibt eine Hülle  function renderX(...args) { return renderXTeil({ … }, ...args); }
+  (Namen werden erst beim Aufruf gelesen – gleiche Semantik); Körper in kacheln.jsx (Raster, Pfad, Navi), koepfe.jsx
+  (Session-Kopf, Info, Listen-Kopf), farbenAnsicht.jsx, teile.jsx (übrige render…).
+- Ausgelagerte Bereiche rufen sich gegenseitig über app/Hüllen auf; Hooks gibt es nur in App.jsx.
+Neue Namen, die ein ausgelagerter Bereich braucht: in App.jsx zu „const app = {…}“ (bzw. dem Objekt am Aufruf/der Hülle)
+hinzufügen und in der Datei mit entpacken. Werkzeuge (Babel-basiert, Analyse + Schreiben) im scratchpad:
+_bereiche.cjs, _ansichten.cjs, _funktionen.cjs, aufteilen.py.
+Stufe 2 (später, mit Nutzer): Zustand nach Themen in eigene Hooks bündeln (Listen, Quiz-Einstellungen, Slots, Farben …).

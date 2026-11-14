@@ -54,10 +54,11 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 const um = await page.evaluate(() => ({ listen: document.querySelector('[data-auswahl-umschalter="listen"]')?.classList.contains("aktiv"), raster: !!document.querySelector("[data-quiz-listen-raster]"),
   kacheln: [...document.querySelectorAll("[data-qliste-id]")].map(e => e.dataset.qlisteId).join(",") }));
 ok(um.listen && um.raster && um.kacheln === "l_a,l_b", `Listen-Kopf → Listen-Auswahl mit Umschalter (${JSON.stringify(um)})`);
-await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="quiz"]').click()); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-auswahl-umschalter]').click()); await sleep(300);   // 222: ein Knopf, wechselt
+ok(await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]")?.dataset.auswahlUmschalter) === "quiz", "222: der Knopf zeigt jetzt „Quiz“");
 ok(await page.$("[data-alle-sessions]") && !(await page.$("[data-quiz-listen-raster]")), "Umschalter „Quiz“ zeigt die gespeicherten Quiz");
 ok((await page.evaluate(() => document.querySelector("[data-alle-sessions]")?.textContent.trim())) === "Alle Quiz", "Begriff: „Alle Quiz“ statt „Alle Sessions“");
-await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="listen"]').click()); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-auswahl-umschalter]').click()); await sleep(300);
 // kurz halten wählt nur, antippen übernimmt
 await kurzHalten(page, '[data-qliste-id="l_b"]');
 k = await kopf();

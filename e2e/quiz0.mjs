@@ -82,7 +82,7 @@ if (await page.$("[data-listen-kopf]")) {
   await clickText(".quiz-setup-check", "Irregular Verbs"); await clickText(".quiz-setup-check", "Vocabulaire"); await listenZu(page);
 } else {
   await page.click("[data-slot-kopf-name]"); await sleep(400);
-  await page.evaluate(() => { const b = document.querySelector('[data-auswahl-umschalter="listen"]'); if (b && !b.classList.contains("aktiv")) b.click(); }); await sleep(300);
+  await page.evaluate(() => { const b = document.querySelector('[data-auswahl-umschalter]'); if (b && b.dataset.auswahlUmschalter !== "listen") b.click(); }); await sleep(300);
   await page.evaluate(() => [...document.querySelectorAll("[data-qliste-id]")].find(e => e.textContent.includes("Vocabulaire"))?.click()); await sleep(700);
 }
 await page.evaluate(async () => { const u = document.querySelector("[data-umfang]"); if (!u) return; u.click(); await new Promise(r => setTimeout(r, 200)); document.querySelector('[data-umfang-wahl="alle"]')?.click(); }); await sleep(300);
