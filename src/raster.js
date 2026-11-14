@@ -208,7 +208,11 @@ export const ORDNER_KNOPF = { background: "var(--ordner)", color: "var(--auf-ord
 export const KACHEL_ANHEBEN_MS = 250;
 // … und so lange halten wählt sie aus (weiterfahren sammelt weitere ein, loslassen öffnet die Auswahl-Tafel);
 // ist sie schon ausgewählt, bleibt sie angehoben – ziehen verschiebt dann die ganze Auswahl
-export const KACHEL_AUSWAEHLEN_MS = 900;
+export const KACHEL_AUSWAEHLEN_MS = 1200;   // 232: 0,9 → 1,2 s
+// 232: Rückmeldung am Finger, wenn das lange Halten die Mehrfach-Auswahl startet (Einstellungen › App › Halten)
+export const HALTEN_HAPTIK = { doppel: { label: "Doppel-Tipp", muster: [8, 70, 8] }, tick: { label: "Tick", muster: [6] },
+  kurz: { label: "Vibration", muster: [20] }, aus: { label: "Aus", muster: null } };
+export const haltenHaptik = art => { const m = (HALTEN_HAPTIK[art] || HALTEN_HAPTIK.doppel).muster; if (m) navigator.vibrate?.(m); };
 export const KACHEL_LASSO_FREI = false;   // Einsammeln von einer freien Stelle aus (167: aus)   // so lange über einer Kachel halten, bis Loslassen eine Gruppe bildet
 // Vokabel-Suche: nur Fremdsprache (E1–E3) und Deutsch (D1–D2), „enthält“, Groß/klein und Akzente egal;
 // Treffer am Wortanfang zuerst, sonst in Listen-Reihenfolge. Ergebnis: [{ id, i (Position in voks), rang }]

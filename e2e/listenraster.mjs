@@ -63,7 +63,7 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); let ziel = await mitte("0|0");
-await finger("touchStart", p.x, p.y); await sleep(1000); await finger("touchEnd"); await sleep(400);
+await finger("touchStart", p.x, p.y); await sleep(1500); await finger("touchEnd"); await sleep(400);
 ok((await aktionen()).join("|") === "📂 Liste öffnen|✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|🔁 Keine fälligen Vokabeln|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|📁 In Ordner…|▦ In mehrere Quiz aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
 await page.evaluate(() => document.querySelector('[data-info-aktion="✕ Auswahl beenden"]').click()); await sleep(300);
 p = await mitte("2|0"); ziel = await mitte("0|0");   // die Auswahl-Tafel kann die Seite verschoben haben

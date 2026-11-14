@@ -166,7 +166,9 @@ export const CSS_BASIS = `
   .ordner-kachel{border-width:2px;border-style:solid;margin:0 8px 8px 0;box-shadow:4px 4px 0 -2px var(--haupt-flaeche), 4px 4px 0 0 var(--haupt), 8px 8px 0 -2px var(--haupt-flaeche), 8px 8px 0 0 color-mix(in srgb, var(--haupt) 55%, transparent);}
   /* Ring über der Kachel (nicht unter dem Finger) */
   .gruppen-ring{position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);width:46px;height:46px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3));}
-  [data-angehoben]{transform:scale(1.05);box-shadow:0 6px 16px rgba(0,0,0,0.25);z-index:4;transition:transform 0.12s, box-shadow 0.12s;}
+  /* 232: Anheben/Absenken deutlich – hebt sich spürbar ab, sinkt sanft zurück */
+  [data-kachel-geste]{transition:transform 0.2s ease-out, box-shadow 0.2s ease-out;}
+  [data-angehoben]{transform:translateY(-4px) scale(1.1);box-shadow:0 14px 28px rgba(0,0,0,0.35);z-index:4;transition:transform 0.16s cubic-bezier(.3,1.5,.6,1), box-shadow 0.16s;}
   .gruppen-ring svg{width:46px;height:46px;transform:rotate(-90deg);}
   .gruppen-ring circle{fill:var(--karte);stroke:var(--haupt);stroke-width:3;stroke-dasharray:94.25;stroke-dashoffset:94.25;animation:gruppenRing 1.2s linear forwards;}
   .gruppen-ring.fertig circle{animation:none;stroke-dashoffset:0;fill:var(--haupt-flaeche);}
@@ -387,6 +389,8 @@ export const CSS_BASIS = `
   .info-klapp-zeile{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:0.85rem;font-weight:600;color:var(--text-stark);cursor:pointer;}
   [data-wahl-bereich] .toggle-opt.aktiv,[data-wahl-bereich] .typ-btn.aktiv,[data-wahl-bereich].toggle-btn .toggle-opt.aktiv{background:var(--bestaetigen) !important;color:var(--auf-bestaetigen) !important;border-color:var(--bestaetigen) !important;}
   .kachel-gewaehlt{box-shadow:0 0 0 2px var(--karte),0 0 0 5px var(--bestaetigen) !important;}
+  /* 232: schon beim Anheben (kurzes Halten) eingefärbt, nicht erst beim Loslassen */
+  [data-kachel-geste="slot"][data-angehoben]:not(.kachel-gewaehlt),[data-kachel-geste="liste"][data-angehoben]:not(.kachel-gewaehlt){box-shadow:0 0 0 2px var(--karte),0 0 0 5px var(--bestaetigen),0 14px 28px rgba(0,0,0,0.35) !important;background-color:color-mix(in srgb, var(--bestaetigen) 22%, var(--karte)) !important;border-color:var(--bestaetigen) !important;}
   .kachel-gewaehlt:not(.leuchten){background-color:var(--karte) !important;background-color:color-mix(in srgb, var(--bestaetigen) 22%, var(--karte)) !important;border-color:var(--bestaetigen) !important;}
   .vorschau-zeile{display:flex;align-items:baseline;gap:8px;padding:5px 2px;border-bottom:1px solid var(--rahmen);font-size:0.85rem;}
   .vorschau-nr{min-width:28px;text-align:right;color:var(--text3);font-variant-numeric:tabular-nums;font-size:0.75rem;}

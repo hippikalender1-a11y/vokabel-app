@@ -49,7 +49,7 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 // 1) Lang-Druck: Erklärung = voller Name, Knöpfe getrennt von der Blase
 let p = await mitte("0|0");
 await page.touchscreen.touchStart(p.x, p.y);
-await sleep(1000);
+await sleep(1500);
 await page.touchscreen.touchEnd();
 await sleep(500);
 const blase = await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText.trim());
@@ -86,7 +86,7 @@ ok(pl["Unregelmäßige Verben Kapitel 3 – Wiederholung"] === "2|1", "Lang-Druc
 ok(!(await page.evaluate(() => /Fertig/.test(document.querySelector("[data-slot-fertig]")?.innerText || ""))), "nach dem Ablegen ist der Verschieben-Modus wieder aus");
 p = await mitte("0|1");
 await page.touchscreen.touchStart(p.x, p.y);
-await sleep(1000);
+await sleep(1500);
 await page.touchscreen.touchEnd();
 await sleep(500);
 await page.evaluate(() => document.querySelector('[data-info-aktion="✎ Umbenennen"]').click());

@@ -42,7 +42,7 @@ ok(!(await page.$('[data-einst-kopf="listen"]')) && await page.$('[data-einst-ko
 await zuListen(page);
 await halte('[data-liste-id="l_a"]', 450);
 ok(await gewaehlt() === "l_a" && await wahl() === "", `kurz halten wählt „Unit A“ (ohne Mehrfach-Auswahl) (${await gewaehlt()})`);
-await halte('[data-liste-id="l_b"]', 1100);
+await halte('[data-liste-id="l_b"]', 1500);
 ok(await wahl() === "l_a,l_b", `228: lang halten startet die Mehrfach-Auswahl, „Unit A“ Nr. 1, „Unit B“ Nr. 2 (${await wahl()})`);
 ok(/☑ 2 Listen ausgewählt/.test((await kopf()).text || ""), `226: grüner Kopf „2 Listen ausgewählt“ (${(await kopf()).text})`);
 await halte('[data-liste-id="l_c"]', 450);
@@ -52,10 +52,10 @@ ok(await wahl() === "l_a,l_c", `kurz halten auf eine gewählte nimmt sie heraus 
 await halte('[data-liste-id="l_b"]', 450);
 
 // ── 227: langer Lang-Druck in der Mehrfach-Auswahl tut nichts ──
-await halte('[data-liste-id="l_c"]', 1100);
+await halte('[data-liste-id="l_c"]', 1500);
 ok(await wahl() === "l_a,l_c,l_b" && (await kopf()).zustand === "offen", `227: lang halten auf eine gewählte: keine Funktion (${await wahl()})`);
 await halte('[data-liste-id="l_b"]', 450);
-await halte('[data-liste-id="l_b"]', 1100);
+await halte('[data-liste-id="l_b"]', 1500);
 ok(await wahl() === "l_a,l_c" && (await kopf()).zustand === "offen", `227: lang halten auf eine nicht gewählte: keine Funktion (${await wahl()})`);
 
 // ── 226: grüner Kopf übernimmt → neues, ungespeichertes Quiz aus den Listen ──
@@ -65,14 +65,14 @@ ok(k.zustand !== "offen" && /nicht gespeichert/.test(k.text) && !(await page.$("
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")).gespeichert.length) === 0, "226: nichts gespeichert");
 const info = await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.parentElement?.innerText.replace(/\s+/g, " ") || "");
 console.log("     Info:", info.slice(0, 200));
-ok(/Listen-Auswahl \(6 V\.\) 2 Listen/.test(info), "226: das Quiz enthält die zwei gewählten Listen (6 Vokabeln)");
+ok(/6 Vokabeln/.test(info) && !/Listen-Auswahl/.test(info), "226/230: das Quiz enthält die zwei Listen (6 Vokabeln), ohne Listen-Auswahl (festes Paket)");
 
 // ── 228: das bloß geladene Quiz zählt nicht ──
 await zuListen(page);
 await tippe('[data-liste-id="l_a"]');   // antippen: lädt „Unit A“ als Quiz
 await zuListen(page);
 ok(await gewaehlt() === "l_a", `geladene „Unit A“ ist markiert (${await gewaehlt()})`);
-await halte('[data-liste-id="l_b"]', 1100);
+await halte('[data-liste-id="l_b"]', 1500);
 ok(await wahl() === "l_b", `228: das geladene Quiz kommt nicht mit (nur „Unit B“) (${await wahl()})`);
 
 await browser.close();

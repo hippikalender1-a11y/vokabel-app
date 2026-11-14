@@ -85,16 +85,16 @@ ok(k.zustand === "offen" && k.laden === "gespeichert:s3", `danach antippen wechs
 
 // lang halten: Mehrfach-Auswahl (228: die gewählte „Teil 3“ bleibt als Nr. 1 drin); kurz halten: dazu;
 // 227: lang halten in der Mehrfach-Auswahl tut nichts – übernommen wird über den grünen Kopf
-await halte('[data-slot-id="s1"]', 1100);
+await halte('[data-slot-id="s1"]', 1500);
 k = await kopf();
 ok(k.multi === "s3,s1", `228: lang halten startet die Mehrfach-Auswahl, „Teil 3“ bleibt Nr. 1, „Teil 1“ Nr. 2 (${k.multi})`);
 await halte('[data-slot-id="s2"]', 450);
 k = await kopf();
 ok(k.multi === "s3,s1,s2", `darin kurz halten nimmt „Teil 2“ dazu (${k.multi})`);
-await halte('[data-slot-id="s3"]', 1100); await sleep(400);
+await halte('[data-slot-id="s3"]', 1500); await sleep(400);
 k = await kopf();
 ok(k.zustand === "offen" && k.multi === "s3,s1,s2", `227: lang halten in der Mehrfach-Auswahl: keine Funktion (${JSON.stringify(k)})`);
-await halte('[data-slot-id="s1"]', 1100); await sleep(400);
+await halte('[data-slot-id="s1"]', 1500); await sleep(400);
 k = await kopf();
 ok(k.zustand === "offen" && k.multi === "s3,s1,s2", `227: auch auf eine gewählte Kachel: keine Funktion (${k.multi})`);
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]")?.click()); await sleep(500);

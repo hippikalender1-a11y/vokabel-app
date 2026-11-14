@@ -3088,3 +3088,53 @@ Wie ändern: Funktion in src/logik/… bearbeiten; braucht sie einen neuen App-N
 - Tests: neuer e2e/punkte225.mjs, 229 in punkte175; angepasst: sicherung, einst_bereiche, auswahl, farbrollen, listen_einstellungen,
   listenansicht, antwortwahl, sessionwahl, punkte168/190/202/217/219, hilfen (zuListen, listeOeffnen, listeKachelOeffnen). 100/100 grün.
 - Noch übrig (Aufräumen, ohne Eile): ungenutzte quizListenNavi / renderQuizListenRaster / listeOeffnenKopf / listenWahlKopf.
+
+── 230 ff. (Feedback 14.11.2026, gesammelt – noch nichts ändern) ──
+- 230 Quiz-Auswahl › Mehrfach-Auswahl › Übernahme über den grünen Kopf → es öffnen sich die Einstellungen des Quiz.
+  Dort stehen noch Listenauswahl und Bereichsauswahl – sollen dort NICHT stehen. Ein Quiz ist bereits als Paket
+  angelegt und wird als Ganzes abgefragt.
+  Nachtrag: Beim einzeln geladenen Quiz erscheinen Listen-/Bereichsauswahl NICHT – nur nach der Mehrfach-Übernahme.
+  Ziel also: die Mehrfach-Übernahme verhält sich in den Einstellungen wie ein einzeln geladenes Quiz.
+- 231 Verschieben (Ziehen von Kacheln): rechts erscheint oft eine leere Spalte, obwohl der Finger dort gar nicht war –
+  verwirrt. Beim Verschieben sicher nachvollziehbar. Beim „Streichen“ (langer Druck, dann über weitere Kacheln ziehen
+  zur Mehrfachauswahl) einmal vermutet, aber erneut nicht aufgetreten – dort evtl. Täuschung, nur nebenbei prüfen.
+  Prüfen: wann/warum die Zusatzspalte beim Ziehen eingeblendet wird (evtl. nur zeigen, wenn der Finger den rechten
+  Rand tatsächlich erreicht).
+- 232 (zum Ausprobieren) Mehrfach-Auswahl ohne langen Lang-Druck – gilt für Quiz UND Listen:
+  · langer Lang-Druck (Stufe 2) startet die Mehrfach-Auswahl;
+  · danach gibt es KEINEN langen Lang-Druck mehr (Stufe 2 wird in der laufenden Auswahl gar nicht erst ausgelöst),
+    nur noch den kurzen Lang-Druck: Kachel dazu/heraus;
+  · einfaches Antippen wählt wieder nur ein einzelnes Element (Mehrfach-Auswahl endet);
+  · bestätigt wird wie bisher über den grünen Knopf im Kopf.
+  Stand im Code (App.jsx, Kachel-Gesten ~Z. 1065–1120): in laufender Auswahl löst Stufe 2 noch aus (Lasso startet,
+  Loslassen ohne Bewegung tut nichts – 227). Frage bei Umsetzung: Wisch-Einsammeln (Lasso) in laufender Auswahl dann auch weg?
+- 233 Listen: beim Start der Mehrfach-Auswahl wird die lang gedrückte Kachel Nr. 1 – anders als in der Quiz-Auswahl,
+  wo sie zur bereits gewählten Kachel hinzukommt (228). Bei Listen ebenso: vorher gewählte Kachel bleibt Nr. 1.
+  (Code nutzt schon r.listeEinzel – prüfen, warum es bei Listen nicht greift, z. B. listeEinzel nicht gesetzt.)
+  232 – Nachtrag/Neufassung (ersetzt die Idee oben): langer Lang-Druck BLEIBT, Streichen/Einsammeln ist sehr praktisch.
+  Problem ist das Gefühl: die Vibration beim langen Lang-Druck fühlt sich wie eine Fehlermeldung an → er wird gemieden.
+  Stattdessen Haptik/Optik verbessern:
+  · Einfärben schon beim START des kurzen Lang-Drucks (heute erst nach dessen Ende/beim Loslassen).
+  · Dauer bis zum langen Lang-Druck von 0,9 s auf 1,2 s verlängern (KACHEL_AUSWAEHLEN_MS in raster.js; der Nutzer
+    nannte es „Dauer des kurzen Lang-Drucks“ – gemeint ist vermutlich diese Schwelle; Anheben liegt bei 0,25 s).
+  · Anheben und Absenken der Kachel deutlich sichtbar machen.
+  · Langer Lang-Druck: andere Art Rückmeldung am Finger als das jetzige Vibrieren (navigator.vibrate(20), App.jsx ~1071/1072),
+    z. B. ein kurzes Zucken wie beim kurzen Lang-Druck oder ein Doppel-Tipp-Muster. Das kleine Zucken beim kurzen
+    Lang-Druck ist ok.
+  Geklärt: 1,2 s = Schwelle zum LANGEN Lang-Druck (KACHEL_AUSWAEHLEN_MS 900 → 1200). Test-Gerät: Android
+  (navigator.vibrate verfügbar; das „kleine Zucken“ beim kurzen Lang-Druck kommt vermutlich vom System, die App
+  vibriert dort nicht). iPhone-Safari kennt navigator.vibrate nicht – dort bleibt es ohne Vibration.
+
+=== 230–232 umgesetzt (14.11.2026) ===
+- 230: Quiz aus einer übernommenen Mehrfach-Auswahl ist ein festes Paket – keine Listen-/Bereichsauswahl in den Einstellungen.
+  Gilt für das Multiquiz (Verlauf-Eintrag mit „multi“) und für mehrere übernommene Listen (Zustand listenPaket; gilt,
+  solange kein Quiz geladen ist und die Listen unverändert sind). App.jsx: istPaketQuiz (auch im app-Objekt → QuizTab).
+- 232: Halten auf Kacheln: Kachel färbt sich schon beim Anheben (0,25 s) ein (CSS [data-kachel-geste][data-angehoben]),
+  hebt sich deutlicher (translateY −4 px, scale 1,1, tiefer Schatten) und sinkt sanft zurück; auch ohne Zieh-Möglichkeit
+  (z. B. Sprachfilter) angehoben. Schwelle zum langen Halten 0,9 → 1,2 s (KACHEL_AUSWAEHLEN_MS). Rückmeldung am Finger
+  beim langen Halten wählbar: Einstellungen › App › Halten (Doppel-Tipp [8,70,8] Standard, Tick [6], Vibration [20] =
+  bisher, Aus); antippen spürt die Variante zur Probe (HALTEN_HAPTIK/haltenHaptik in raster.js, einstellungen.haltenHaptik).
+- Tests: neuer e2e/punkte230.mjs; Haltezeiten angepasst in punkte190/225/168, gruppen_gesten, langdruck, listenraster;
+  punkte225 erwartet bei übernommenen Listen keine Listen-Auswahl mehr. 101/101 grün.
+- 231 (leere Spalte rechts beim Verschieben) und 233 (Listen: lang gedrückte Kachel wird Nr. 1) noch offen.
+  233 ließ sich im Test nicht nachstellen (auch mit Sprachfilter bleibt die kurz gehaltene Liste Nr. 1) – genaue Schritte erfragen.

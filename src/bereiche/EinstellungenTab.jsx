@@ -1,7 +1,7 @@
 import { APP_VERSION, SICHERUNG_TAGE, SK, formatTag, listenAusSicherung, lsGet } from "../speicher.js";
 import { FAELLIG_ANTEIL_WAHL, MAX_STUFE, STANDARD_ANTWORT_GEWICHTE, WIEDERHOL_TAGE_WAHL, faelligAnteil, wiederholTage } from "../quiz.jsx";
 import { IcoX } from "../komponenten.jsx";
-import { MISCH_ARTEN } from "../raster.js";
+import { HALTEN_HAPTIK, MISCH_ARTEN, haltenHaptik } from "../raster.js";
 import { SPRACHEN, STIMMEN_PROBE, aeusserung, gewaehlteStimme, listeSprache, normLang, sprachInfo, stimmeFuer, stimmeGeschlecht, stimmenFuerSprache, stimmenVarianten, varianteText } from "../sprache.js";
 
 // Phase 2 (Aufteilung): Bereich aus dem Haupt-return von App.jsx (tab === "einstellungen")
@@ -420,7 +420,20 @@ export function EinstellungenTab(app) {
               { k: "version", label: "Version", text: APP_VERSION, hilfe: `Version ${APP_VERSION} – nach neuer Version suchen` },
               { k: "info", label: "Info", text: "📖 Anleitung", attrs: { "data-info-oeffnen": true }, hilfe: "Übersicht, Konzept und Anleitung der App öffnen",
                 aktion: () => schalteEinstBereich("info") },
+              { k: "haptik", label: "Halten", text: (HALTEN_HAPTIK[einstellungen.haltenHaptik] || HALTEN_HAPTIK.doppel).label,
+                hilfe: "Rückmeldung am Finger, wenn langes Halten auf einer Kachel die Mehrfach-Auswahl startet (Android; auf dem iPhone ohne Vibration)" },
             ])}
+            {einstUnter === "haptik" && (
+              <div className="karte" data-haptik-einst style={{padding:"10px 16px"}}>
+                <div style={{display:"flex", gap:5, flexWrap:"wrap"}} data-wahl-bereich>
+                  {Object.entries(HALTEN_HAPTIK).map(([k, h]) => (
+                    <button key={k} className={`toggle-opt${(einstellungen.haltenHaptik || "doppel") === k ? " aktiv" : ""}`} data-haptik={k} style={{padding:"6px 10px"}}
+                      onClick={() => { haltenHaptik(k); speichereEinst({ ...einstellungen, haltenHaptik: k }); }}
+                      {...tt(`${h.label} – antippen spürt sie gleich zur Probe`)}>{h.label}</button>
+                  ))}
+                </div>
+              </div>
+            )}
             {einstUnter === "version" && <div className="karte">
               <div className="karte-zeile">
                 <div className="karte-zeile-info">
