@@ -4,7 +4,7 @@ import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen } from "./hilfen.mjs";
 
 // Listen unter Einstellungen › Listen: Liste öffnet bildschirmfüllend (Tab „Einstellungen“ bleibt markiert),
-// Pfeil zurück; „+ Neu“ → Import mit Pfeil zurück; leere App: Hinweis „Liste importieren“ in der Session-Auswahl
+// Pfeil zurück; „+ Neu“ → Import mit Pfeil zurück; leere App: Hinweis „Liste importieren“ in des Quiz-Auswahl
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",

@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer-core";
 import { einstUnter, zuListen, listeOeffnen, kurzHalten, auswahlZu } from "./hilfen.mjs";
 
-// 168–174: Farbe je Sprache schon bei der Session-Wahl (Einstellung „erst im Quiz“), Kopf-Balken auch bei offener Auswahl,
+// 168–174: Farbe je Sprache schon bei des Quiz-Wahl (Einstellung „erst im Quiz“), Kopf-Balken auch bei offener Auswahl,
 // inaktiver „Keine fälligen“-Knopf, Kachel-Lang-Druck mit zusätzlichem Kontextmenü (Android), fällige einstreuen,
 // Kreise ODER Rauten, Einstellungen-Tab zugeklappt
 const URL = "http://localhost:4199/vokabel-app/";
@@ -51,7 +51,7 @@ await auswahlAuf();
 // ── 168: Farbe schon bei der Wahl ──
 ok(await haupt() === STD, `nichts gewählt: Standard-Farbe (${await haupt()})`);
 await kurzHalten(page, '[data-slot-id="g_en"]');   // 192: kurz halten wählt nur aus
-ok(await haupt() === EN, `Session „Englisch“ gewählt: englische Farbe (${await haupt()})`);
+ok(await haupt() === EN, `Quiz „Englisch“ gewählt: englische Farbe (${await haupt()})`);
 // ── 169: Balken auch im offenen Kopf ──
 ok(await page.$("[data-slot-kopf-name] [data-kopf-balken]"), "169: offener Kopf zeigt den Fortschrittsbalken");
 await kontext('[data-slot-id="g_fr"]');
@@ -70,7 +70,7 @@ ok(await page.$("[data-sprachfarben-quiz]"), "Einstellung „Erst im Quiz wechse
 await klick("[data-sprachfarben-quiz]");
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen")).sprachFarben.erstImQuiz) === true, "„Erst im Quiz“ gespeichert");
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
-ok(await haupt() === STD, `„Erst im Quiz“: geladene englische Session färbt nicht (${await haupt()})`);
+ok(await haupt() === STD, `„Erst im Quiz“: geladene englische Quiz färbt nicht (${await haupt()})`);
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);
 ok(await haupt() === EN, `„Erst im Quiz“: in der Abfrage englische Farbe (${await haupt()})`);
 await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(400);
@@ -105,7 +105,7 @@ await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zu
 await auswahlAuf();
 await kontext("[data-alle-sessions]");
 const aktiv = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => `${b.dataset.infoAktion}${b.disabled ? "(aus)" : ""}`).join(" | "));
-ok(/🔁 Fällige wiederholen \(1\)/.test(aktiv), `„Alle Sessions“: eine fällige (${aktiv})`);
+ok(/🔁 Fällige wiederholen \(1\)/.test(aktiv), `„Alle Quiz“: eine fällige (${aktiv})`);
 await page.mouse.click(5, 830); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-info-blase]")?.click()); await sleep(200);
 await kontext('[data-slot-id="g_fr"]');

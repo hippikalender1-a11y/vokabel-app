@@ -118,7 +118,7 @@ ok(await page.$("[data-info-regler]"), "Tafel bleibt beim Ziehen offen");
 await page.mouse.click(5, 300); await sleep(200);
 await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht|Beenden/.test(b.textContent))?.click()); await sleep(400);
-await auswahlZu(page);   // 190: Session-Auswahl ist offen
+await auswahlZu(page);   // 190: Quiz-Auswahl ist offen
 await stufeWaehlen(page, "lernen");
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);
 const lk = await page.evaluate(() => document.querySelector('[data-stimme-wechsel="lernen"]')?.textContent.trim());

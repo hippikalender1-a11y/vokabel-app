@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer-core";
 import { quizEinstellungen, kurzHalten } from "./hilfen.mjs";
 
-// 109–113: Session-Auswahl – antippen wählt nur aus (Info darunter), grüner Kopf-Knopf lädt; Vokabeln ansehen mit Listen-Nr. und Lücken;
+// 109–113: Quiz-Auswahl – antippen wählt nur aus (Info darunter), grüner Kopf-Knopf lädt; Vokabeln ansehen mit Listen-Nr. und Lücken;
 // Namensvorschlag „Engl 11.11.“; Duplizieren im Ordner
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
@@ -35,7 +35,7 @@ await page.reload(); await sleep(700);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await quizEinstellungen(page);
 if (!(await kopfOffen())) { await klick("[data-slot-kopf-name]"); }
-ok(await kopfOffen(), "Session-Auswahl offen");
+ok(await kopfOffen(), "Quiz-Auswahl offen");
 
 // ── 109: antippen wählt nur aus ──
 await kurzHalten(page, '[data-slot-id="g_1"]');
@@ -70,12 +70,12 @@ ok(/Ganze Liste laden/.test(await kopf() || "") && !(await page.$("[data-vorscha
 ok(/alle 10/.test(await page.evaluate(() => document.querySelector("[data-vorschau-listen]")?.innerText)), "ganze Liste: „alle 10“");
 // laden über den Kopf
 await klick("[data-slot-laden]"); await sleep(600);
-ok(!(await kopfOffen()) && /Ganze Liste/.test(await kopf() || ""), `grüner Knopf lädt die Session und schließt die Auswahl (${await kopf()})`);
+ok(!(await kopfOffen()) && /Ganze Liste/.test(await kopf() || ""), `grüner Knopf lädt das Quiz und schließt die Auswahl (${await kopf()})`);
 
 // ── 113: Duplizieren im Ordner ──
 await klick("[data-slot-kopf-name]");
 await klick('[data-ordner-id="o_1"]');
-// 142: Ordner-Navigation über „＋ Neue Session“, das Raster schließt direkt an
+// 142: Ordner-Navigation über „＋ Neues Quiz“, das Raster schließt direkt an
 const lage = await page.evaluate(() => { const n = document.querySelector("[data-ordner-navi]"), b = document.querySelector("[data-ordner-navi]"), k = document.querySelector("[data-slot-id]");
   return n && b && k ? { navOben: n.getBoundingClientRect().bottom <= b.getBoundingClientRect().top + 1, abstand: Math.round(k.getBoundingClientRect().top - b.getBoundingClientRect().bottom) } : null; });
 ok(lage && lage.abstand <= 10, `160: Pfad-Zeile, Kacheln direkt darunter (${JSON.stringify(lage)})`);
@@ -86,9 +86,7 @@ const kopie = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel
 ok(kopie && kopie.ordner === "o_1", `Duplikat liegt im selben Ordner (${JSON.stringify(kopie && { name: kopie.name, ordner: kopie.ordner })})`);
 
 // ── 112: Namensvorschlag ──
-const vorschlag = await page.evaluate(() => {
-  const heute = new Date(); return `Engl ${String(heute.getDate()).padStart(2, "0")}.${String(heute.getMonth() + 1).padStart(2, "0")}.`;
-});
+const vorschlag = "Unit 1";   // 216: eine Liste → ihr Name
 await page.evaluate(() => document.querySelector("[data-ordner-zurueck]")?.click()); await sleep(200);
 await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(300);
 await kurzHalten(page, "[data-slot-id=\"g_2\"]");
@@ -96,7 +94,7 @@ await klick("[data-slot-laden]"); await sleep(500);
 // Neues Quiz → Speichern
 await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(300);
 const aktionen = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
-const speichern = aktionen.find(a => /Als neue Session|Speichern/.test(a));
+const speichern = aktionen.find(a => /Als neues Quiz|Speichern/.test(a));
 if (speichern) { await page.evaluate(l => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === l)?.click(), speichern); await sleep(300); }
 const feld = await page.evaluate(() => document.querySelector(".modal input")?.value || "");
 ok(feld === vorschlag, `Namensvorschlag „${vorschlag}“ (${feld || "kein Speichern-Fenster: " + aktionen.join("|")})`);
@@ -122,7 +120,7 @@ const rechts = async sel => { await page.evaluate(s => { const el = document.que
 await rechts('[data-slot-id="g_1"]'); await rechts('[data-slot-id="g_2"]');
 ok(/2 ausgewählt/.test(await kopf() || "") && await page.$("[data-info-menue]") && !(await page.$("[data-info-blase]")), `lang drücken ×2: Auswahl mit 2, Menü ohne schwarze Box (${await kopf()})`);
 if (await page.$("[data-slot-info-zu]")) await klick("[data-slot-info]");
-ok(/2 Sessions ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText || "")) && /Vokabeln/.test(await page.evaluate(() => document.querySelector("[data-vorschau-zahlen]")?.innerText || "")), "148: Info zeigt die Auswahl zusammengefasst");
+ok(/2 Quiz ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText || "")) && /Vokabeln/.test(await page.evaluate(() => document.querySelector("[data-vorschau-zahlen]")?.innerText || "")), "148: Info zeigt die Auswahl zusammengefasst");
 await rechts('[data-slot-id="g_2"]');
 ok(/1 ausgewählt/.test(await kopf() || ""), "lang drücken auf ausgewählte Kachel: heraus");
 await rechts('[data-slot-id="g_2"]');

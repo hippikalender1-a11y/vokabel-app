@@ -101,7 +101,7 @@ await sleep(400);
 // Kopfzeile: „Multiquiz“, Info-Zeile nennt die Teile
 const kopfName = await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent.trim());
 ok(kopfName === "Multiquiz", `Kopfzeile: „Multiquiz“ (${kopfName})`);
-ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf === "offen"), "190: nach „Zur Übersicht“ ist die Session-Auswahl offen");
+ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf === "offen"), "190: nach „Zur Übersicht“ ist die Quiz-Auswahl offen");
 await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(400);   // zu: Einstellungen mit Start
 ok(await page.evaluate(() => document.querySelectorAll("[data-start-arten] [data-quiz-art]").length) >= 1, "Kreise der zusammengesetzten Auswahl");
 await oeffneKopf(); await sleep(300);

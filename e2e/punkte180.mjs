@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 import { kurzHalten } from "./hilfen.mjs";
 
 // 180: heute schon abgefragte Vokabeln kommen nicht noch einmal (Knopf „Heute“ schließt sie vorübergehend ein)
-// 181: Session-Kachel füllt sich mit dem Anteil der heute abgefragten (ganz = dunkel); gelernt = Haken; gelernte ausblenden
+// 181: Quiz-Kachel füllt sich mit dem Anteil der heute abgefragten (ganz = dunkel); gelernt = Haken; gelernte ausblenden
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
@@ -54,7 +54,7 @@ ok(!c.dunkel && c.heute === "100" && /100%/.test(c.bild), `183: alle heute abgef
 ok(!a.dunkel && a.heute === "50" && /linear-gradient/.test(a.bild) && /50%/.test(a.bild), `zur Hälfte heute: abgeschwächt bis 50 % gefüllt (${JSON.stringify(a)})`);
 ok(!b.dunkel && b.haken && b.heute === "0", `komplett gelernt, heute nicht geübt: hell mit Haken (${JSON.stringify(b)})`);
 await kontext("[data-alle-sessions]");
-ok(await page.$('[data-info-aktion="🙈 Gelernte ausblenden"]'), "„Alle Sessions“ lang drücken: „🙈 Gelernte ausblenden“");
+ok(await page.$('[data-info-aktion="🙈 Gelernte ausblenden"]'), "„Alle Quiz“ lang drücken: „🙈 Gelernte ausblenden“");
 await aktion("🙈 Gelernte ausblenden");
 ok(!(await kachel("g_b")) && await kachel("g_a") && await kachel("g_c"), "gelernte Kachel ausgeblendet, die übrigen bleiben");
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen")).gelernteAusblenden) === true, "Einstellung gespeichert");
@@ -67,7 +67,7 @@ await kurzHalten(page, '[data-slot-id="g_a"]'); await sleep(100);   // 192: kurz
 const gew = await page.evaluate(() => { const k = document.querySelector('[data-slot-id="g_a"]'); const s = getComputedStyle(k);
   return { gewaehlt: k.classList.contains("kachel-gewaehlt"), bild: s.backgroundImage, farbe: s.getPropertyValue("--heute-farbe") }; });
 ok(gew.gewaehlt && /linear-gradient/.test(gew.bild) && /bestaetigen|color-mix/.test(gew.farbe) && !/haupt\)/.test(gew.farbe), `182: gewählte Kachel: Füllung sichtbar, grün (${JSON.stringify(gew)})`);
-// ── 184–186: Info der gewählten Session ──
+// ── 184–186: Info der gewählten Quiz ──
 await page.evaluate(() => { if (document.querySelector("[data-slot-info-zu]")) document.querySelector("[data-slot-info]").click(); }); await sleep(250);
 ok(await page.evaluate(() => document.querySelector("[data-vorschau-zuletzt]")?.innerText.trim()) === "Zuletzt abgefragt: Heute (50 %)", `184: „Zuletzt abgefragt: Heute (50 %)“ (${await page.evaluate(() => document.querySelector("[data-vorschau-zuletzt]")?.innerText.trim())})`);
 const punkte = await page.evaluate(() => [...document.querySelectorAll("[data-vorschau-gruppen] [data-gruppe-text]")].map(s => s.dataset.gruppeText + ":" + (getComputedStyle(s.querySelector(".gruppen-punkt")).backgroundColor === getComputedStyle(document.querySelector(`[data-vorschau-balken] [data-gruppe="${s.dataset.gruppeText}"]`)).backgroundColor)));
@@ -99,7 +99,7 @@ await klick(".quiz-zeile-knopf[data-heute]");
 const an = await page.evaluate(() => getComputedStyle(document.querySelector(".quiz-zeile-knopf[data-heute]")).backgroundColor);
 ok(aus !== an && !(await page.$("[data-start-hinweis]")) && !(await page.$("[data-start-knopf].leer")), `187: „Heute“ aus hell, an gefüllt (${aus} → ${an}); Hinweis weg, Knopf wieder grün`);
 await laden("g_a");
-ok(await anzahl() === "1" && await page.evaluate(() => document.querySelector("[data-heute]:not([data-slot-id])")?.dataset.heute) === "aus", "andere Session geladen: „Heute“ wieder aus");
+ok(await anzahl() === "1" && await page.evaluate(() => document.querySelector("[data-heute]:not([data-slot-id])")?.dataset.heute) === "aus", "andere Quiz geladen: „Heute“ wieder aus");
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(700);
 ok(await page.evaluate(() => document.querySelector(".quiz-frage-text")?.textContent.trim()) === "zwei", "Abfrage: nur „zwei“ (nicht das heute schon abgefragte „eins“)");
 

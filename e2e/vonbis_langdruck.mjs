@@ -44,7 +44,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(800);
 
-// ── Neue Session: „Neues Quiz · nicht gespeichert“, Listen-Auswahl ohne Liste: Hinweis statt Knopf ──
+// ── Neues Quiz: „Neues Quiz · nicht gespeichert“, Listen-Auswahl ohne Liste: Hinweis statt Knopf ──
 await neueEineSession(page);
 const kopf = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf-name]"); return { text: k.textContent, ng: !!k.querySelector("[data-nicht-gespeichert]") }; });
 ok(/^Neues Quiz/.test(kopf.text) && kopf.ng, `Kopf: „Neues Quiz“ + „nicht gespeichert“ (${kopf.text})`);
@@ -78,7 +78,7 @@ const tipp = (art, nr) => page.evaluate(s => document.querySelector(s).click(), 
 
 // ── Bereich: Liste maximiert ──
 ok(!(await sichtbar("[data-slot-kopf]")) && !(await sichtbar(".liste-detail-header")) && !(await page.$("[data-start-knopf]")) && !(await page.$(".quiz-zeile")),
-  "Bereich offen: Session-Leiste, Listen-Auswahl, Optionen und Start ausgeblendet");
+  "Bereich offen: Quiz-Leiste, Listen-Auswahl, Optionen und Start ausgeblendet");
 ok(await sichtbar('[data-suchleiste="quiz"]') && await zeilen("quiz") === 80, "nur „Alle | Bereich“, Suche und die Liste sind da");
 ok(!(await sichtbar(".topbar")) && !(await sichtbar(".tab")), "auch Kopfzeile „Vokabel-Trainer“ und Tabs ausgeblendet");
 // nur die Liste scrollt: Zeile „Alle | Bereich“ und Suche bleiben stehen
@@ -142,10 +142,10 @@ await page.evaluate(s => { const el = document.querySelector(s); const b = el.ge
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: b.x + 20, clientY: b.y + 10 })); }, zeile("quiz", 3)); await sleep(400);
 await klickText(".btn", "…Bis");
 ok(!(await gelb("quiz", 3)) && !(await tafel()), "„…Bis“-Knopf oben beendet Von–Bis, Tafel zu");
-// „Bestätigen“ schließt die Liste, die Session-Optionen sind wieder da – mit „Alle | Bereich“
+// „Bestätigen“ schließt die Liste, die Quiz-Optionen sind wieder da – mit „Alle | Bereich“
 await page.click("[data-vok-bestaetigen]"); await sleep(400);
 ok(!(await page.$('[data-suchleiste="quiz"]')) && await page.$("[data-start-knopf]") && await sichtbar("[data-slot-kopf]") && await sichtbar(".liste-detail-header"),
-  "„Bestätigen“: Liste zu, Session-Leiste, Listen-Auswahl und Start wieder sichtbar");
+  "„Bestätigen“: Liste zu, Quiz-Leiste, Listen-Auswahl und Start wieder sichtbar");
 ok(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv")].some(b => b.textContent.trim() === "Bereich")), "Vokabeln angehakt: nach „Bestätigen“ bleibt „Bereich“ gewählt");
 await klickText(".toggle-opt", "Bereich"); await sleep(400);
 ok(await page.$('[data-suchleiste="quiz"]') && await page.$("[data-vok-bestaetigen]"), "„Bereich“ öffnet die Liste wieder");

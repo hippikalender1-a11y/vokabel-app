@@ -19,7 +19,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
-  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Quiz-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
@@ -87,7 +87,7 @@ ok(/1 von 2 richtig/.test(t), "Auswertung zählt jede Vokabel einmal: 1 von 2 ri
 
 // Abfrage-Ziel "Score < +2": nur Vokabeln unter dem Ziel, ein Durchgang ohne Wiederholung
 await clickText("button", "Zur Übersicht");
-await auswahlZu(page);   // 190: Session-Auswahl ist offen
+await auswahlZu(page);   // 190: Quiz-Auswahl ist offen
 await page.evaluate(() => {
   const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr"));
   l.vokabeln.forEach(v => { delete v.fortschritt; });
@@ -117,7 +117,7 @@ const scoreRunde = async () => {
     await sleep(1300);
   }
   await clickText("button", "Zur Übersicht");
-  await auswahlZu(page);   // 190: Session-Auswahl ist offen
+  await auswahlZu(page);   // 190: Quiz-Auswahl ist offen
   await sleep(300);
   return { schritte, karten, scores: await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.map(v => v.fortschritt?.score)) };
 };
@@ -130,7 +130,7 @@ let r2 = await scoreRunde();
 console.log("     Score < +2, Runde 2:", JSON.stringify(r2));
 ok(r2.scores.every(x => x === 2), "zweite Runde: beide +2");
 const rest = await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl);
-ok(rest === "0", `Score < +2: Vokabeln mit Score 2 kommen nicht mehr in die Session (${rest})`);
+ok(rest === "0", `Score < +2: Vokabeln mit Score 2 kommen nicht mehr in das Quiz (${rest})`);
 await page.evaluate(() => {
   const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr"));
   l.vokabeln.forEach(v => { delete v.fortschritt; });

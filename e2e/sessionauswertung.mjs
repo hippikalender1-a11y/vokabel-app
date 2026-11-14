@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu, paketGroesse } from "./hilfen.mjs";
 
-// Session-Auswertung über mehrere Pakete: Balken Start/Ende, Lernfortschritt, neu gelernt, Zusatzdaten;
+// Quiz-Auswertung über mehrere Pakete: Balken Start/Ende, Lernfortschritt, neu gelernt, Zusatzdaten;
 // nach „Nochmal!“ beginnt die Auswertung mit neuen Start-Werten
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -59,7 +59,7 @@ await page.reload(); await sleep(500);
 await zuListen(page);
 await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
 await clickText("button", "Quiz starten", true);
-// Reihenfolge Listen-Nr., keine Score-Grenze → alle 12 in der Session, Pakete zu 10
+// Reihenfolge Listen-Nr., keine Score-Grenze → alle 12 in des Quiz, Pakete zu 10
 await page.click("[data-reihenfolge]"); await sleep(300);
 await clickText(".toggle-opt", "Listenplatz", true);
 await page.evaluate(() => { const r = document.querySelector('input[type="range"]'); });
@@ -71,7 +71,7 @@ const titel1 = await page.evaluate(() => document.querySelector(".topbar-title")
 console.log("     Paket 1:", titel1);
 
 const kopf = () => page.evaluate(() => document.querySelector("[data-kopf-fortschritt]")?.dataset.kopfFortschritt);
-ok(await kopf() === "0/12", `Kopfzeile: Session-Balken zu Beginn 0/12 (${await kopf()})`);
+ok(await kopf() === "0/12", `Kopfzeile: Quiz-Balken zu Beginn 0/12 (${await kopf()})`);
 // die ersten zwei Karten (w4, w5) mit „Nicht gewusst“ beantworten → 2/12
 for (let i = 0; i < 2; i++) { await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(150); await page.click(".karte-btn-nein"); await sleep(150); await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(250); }
 ok(await kopf() === "2/12", `nach 2 Antworten: 2/12 (${await kopf()})`);
@@ -79,15 +79,15 @@ ok(await kopf() === "2/12", `nach 2 Antworten: 2/12 (${await kopf()})`);
 await paket(["w4", "w5"]);
 await clickText("[data-naechstes-paket]", "");
 await sleep(400);
-ok(await kopf() === "10/12", `zweites Paket: Balken zählt die ganze Session weiter (${await kopf()})`);
+ok(await kopf() === "10/12", `zweites Paket: Balken zählt die ganze Quiz weiter (${await kopf()})`);
 await paket([]);
-ok(await page.$("[data-zur-auswertung]"), "Session fertig: „Weiter →“");
+ok(await page.$("[data-zur-auswertung]"), "Quiz fertig: „Weiter →“");
 await page.click("[data-zur-auswertung]"); await sleep(400);
 let a = await auswertung();
 if (process.env.SHOT) await page.screenshot({ path: "auswertung_shot.png", fullPage: true });
 console.log("     Auswertung:", a.text);
 console.log("     Start:", JSON.stringify(a.start), "Ende:", JSON.stringify(a.ende));
-ok(/Ganze Session · 12 Vokabeln/i.test(a.text), "ganze Session: 12 Vokabeln (beide Pakete)");
+ok(/Ganzes Quiz · 12 Vokabeln/i.test(a.text), "ganze Quiz: 12 Vokabeln (beide Pakete)");
 ok(a.start.arbeit === "2" && a.start.negativ === "1" && a.start.nie === "9", "Balken Start: 2 in Arbeit, 1 negativ, 9 nie");
 ok(a.ende.gelernt === "2" && !a.ende.nie, "Balken Ende: 2 gelernt, keine mehr nie abgefragt");
 ok(/Neu gelernt 2/.test(a.text), "neu gelernt: 2 (w1, w2)");
@@ -105,7 +105,7 @@ await page.click("[data-zur-auswertung]"); await sleep(400);
 a = await auswertung();
 console.log("     2. Durchlauf:", a.text.slice(0, 220));
 console.log("     Start:", JSON.stringify(a.start));
-ok(/Ganze Session · 10 Vokabeln/i.test(a.text) && !a.start.nie, "2. Durchlauf: neue Start-Werte (keine „nie abgefragt“ mehr)");
+ok(/Ganzes Quiz · 10 Vokabeln/i.test(a.text) && !a.start.nie, "2. Durchlauf: neue Start-Werte (keine „nie abgefragt“ mehr)");
 ok(/Vokabeln 10 in 1 Paket/.test(a.text) && /Auf Anhieb gewusst 10 von 10/.test(a.text), "2. Durchlauf: eigene Paketzahl und Bewertungen");
 
 await browser.close();

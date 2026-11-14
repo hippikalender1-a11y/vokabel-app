@@ -40,8 +40,8 @@ await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.tex
 await quizEinstellungen(page);
 if (await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf !== "offen")) await klick("[data-slot-kopf-name]");
 await page.evaluate(() => { const el = document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(250);
-ok(await page.$('[data-info-aktion="🔁 Fällige wiederholen (1)"]'), "lang drücken auf „Alle Sessions“: „🔁 Fällige wiederholen (1)“");
-ok(/1 fällig/.test(await page.evaluate(() => document.querySelector("[data-vorschau-gruppen]")?.innerText || "")) || true, "Info nennt fällige (falls eine Session gewählt)");
+ok(await page.$('[data-info-aktion="🔁 Fällige wiederholen (1)"]'), "lang drücken auf „Alle Quiz“: „🔁 Fällige wiederholen (1)“");
+ok(/1 fällig/.test(await page.evaluate(() => document.querySelector("[data-vorschau-gruppen]")?.innerText || "")) || true, "Info nennt fällige (falls ein Quiz gewählt)");
 await klick('[data-info-aktion="🔁 Fällige wiederholen (1)"]'); await sleep(400);
 ok(await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl) === "1", "geladen: nur die fällige Vokabel (1)");
 
@@ -55,10 +55,10 @@ ok(f.score === 4 && f.stufeSeit, `fällig + gewusst: Score 4 = Stufe 2 (${JSON.s
 await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(400);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(300);
 
-// normale Session: „one“ (2) gewusst → 3 (Stufe 1); gelernte, nicht fällige kommen nicht
+// normale Quiz: „one“ (2) gewusst → 3 (Stufe 1); gelernte, nicht fällige kommen nicht
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await klick('[data-slot-id="g_1"]'); await klick("[data-slot-laden]"); await sleep(400);
-ok(await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl) === "2", `Session: nur „one“ und „four“ (gelernte nicht fällig ausgeblendet) (${await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl)})`);
+ok(await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl) === "2", `Quiz: nur „one“ und „four“ (gelernte nicht fällig ausgeblendet) (${await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl)})`);
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);
 for (let i = 0; i < 2; i++) {
   await page.evaluate(() => document.querySelector("[data-frei-klick]")?.click()); await sleep(200);

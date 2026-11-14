@@ -2,8 +2,8 @@ import puppeteer from "puppeteer-core";
 import { neueSessionMenue } from "./hilfen.mjs";
 import { slotLaden } from "./hilfen.mjs";
 
-// Quiz-Tab: Kopf schaltet zwischen Auswahl (Sessions, Verlauf) und Einstellungen um; „＋ Neue Session aus Listen“:
-// Eine Session (Listen wählen, einstellen) oder Mehrere Sessions (Liste wählen → Aufteilen)
+// Quiz-Tab: Kopf schaltet zwischen Auswahl (Quiz, Verlauf) und Einstellungen um; „＋ Neues Quiz aus Listen“:
+// Ein Quiz (Listen wählen, einstellen) oder Mehrere Quiz (Liste wählen → Aufteilen)
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -33,35 +33,35 @@ await page.reload(); await sleep(600);
 
 // Start: nur die Auswahl
 ok(await ansicht() === "auswahl" && await page.$("[data-alle-sessions]") && !(await sichtbar("[data-start-knopf]")) && !(await sichtbar(".quiz-setup-check")),
-  "App-Start: Session-Auswahl ohne Einstellungen, Listen und Start-Knopf");
-// Session wählen → Einstellungen
+  "App-Start: Quiz-Auswahl ohne Einstellungen, Listen und Start-Knopf");
+// Quiz wählen → Einstellungen
 await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Mein Quiz")).click()); await sleep(900); await slotLaden(page);
-ok(await ansicht() === "einstellungen" && await sichtbar("[data-start-knopf]"), "Session gewählt: Einstellungen mit Start-Knopf");
+ok(await ansicht() === "einstellungen" && await sichtbar("[data-start-knopf]"), "Quiz gewählt: Einstellungen mit Start-Knopf");
 // Kopf antippen → Auswahl, nochmal → zurück zu den Einstellungen (ohne Auswahl)
 await page.click("[data-slot-kopf-name]"); await sleep(300);
 ok(await ansicht() === "auswahl" && !(await sichtbar("[data-start-knopf]")), "Kopf antippen: Auswahl, Einstellungen ausgeblendet");
 await page.click("[data-slot-kopf-name]"); await sleep(300);
-ok(await ansicht() === "einstellungen" && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Mein Quiz", "nochmal: zurück zu den Einstellungen, Session bleibt geladen");
+ok(await ansicht() === "einstellungen" && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Mein Quiz", "nochmal: zurück zu den Einstellungen, Quiz bleibt geladen");
 
-// Neue Session: Eine
+// Neues Quiz: Eine
 await page.click("[data-slot-kopf-name]"); await sleep(300);
 await neueSessionMenue(page); await sleep(300);
-ok(await page.$('[data-neue-session-dialog="art"]') && await page.$('[data-neue-session-art="eine"]') && await page.$('[data-neue-session-art="mehrere"]'), "Dialog: Eine Session / Mehrere Sessions");
+ok(await page.$('[data-neue-session-dialog="art"]') && await page.$('[data-neue-session-art="eine"]') && await page.$('[data-neue-session-art="mehrere"]'), "Dialog: Ein Quiz / Mehrere Quiz");
 await page.click('[data-neue-session-art="eine"]'); await sleep(400);
 ok(await ansicht() === "einstellungen" && await sichtbar(".quiz-setup-check") && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Neues Quiznicht gespeichert",
-  "Eine Session: „Neues Quiz · nicht gespeichert“ mit Listen-Auswahl");
+  "Ein Quiz: „Neues Quiz · nicht gespeichert“ mit Listen-Auswahl");
 
-// Neue Session: Mehrere → Liste wählen → Aufteilen
+// Neues Quiz: Mehrere → Liste wählen → Aufteilen
 await page.click("[data-slot-kopf-name]"); await sleep(300);
 await neueSessionMenue(page); await sleep(300);
 await page.click('[data-neue-session-art="mehrere"]'); await sleep(300);
 ok(await page.$('[data-neue-session-dialog="liste"]') && await page.$('[data-aufteilen-liste="l_a"]') && await page.$('[data-aufteilen-liste="l_b"]'), "Mehrere: Listen zur Wahl");
 await page.click('[data-aufteilen-liste="l_b"]'); await sleep(500);
-ok(await ansicht() === "einstellungen" && /„Unité 2“ in Sessions aufteilen/.test(await page.evaluate(() => document.body.innerText)) && await page.$("[data-aufteilen-anlegen]"),
+ok(await ansicht() === "einstellungen" && /„Unité 2“ in mehrere Quiz aufteilen/.test(await page.evaluate(() => document.body.innerText)) && await page.$("[data-aufteilen-anlegen]"),
   "Liste gewählt: Aufteilen-Kasten für „Unité 2“");
 await page.click("[data-aufteilen-anlegen]"); await sleep(500);
 const namen = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")).gespeichert.map(g => g.name));
-ok(namen.includes("Unité 2 (1 - 20)") && namen.includes("Unité 2 (21 - 30)"), `Sessions angelegt (${namen.join(", ")})`);
+ok(namen.includes("Unité 2 (1 - 20)") && namen.includes("Unité 2 (21 - 30)"), `Quiz angelegt (${namen.join(", ")})`);
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

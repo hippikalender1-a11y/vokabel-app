@@ -54,7 +54,7 @@ await page.reload(); await sleep(800);
 // ── 179: Altlast −100 → −6 ──
 ok((await vok(5)).fortschritt.score === -6, `179: alter Score −100 einmalig auf −6 (${(await vok(5)).fortschritt.score})`);
 
-// Session laden und starten
+// Quiz laden und starten
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await page.evaluate(() => document.querySelector('[data-slot-id="g_1"]').click()); await sleep(650);   // 192: antippen lädt sofort

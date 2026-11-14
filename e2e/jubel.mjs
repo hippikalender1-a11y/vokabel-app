@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 
-// Session-Durchlauf geschafft: große Überschrift („Geschafft!“ o. ä.) unter dem Balken, Knopf „Nochmal!“ startet die Session neu
+// Quiz-Durchlauf geschafft: große Überschrift („Geschafft!“ o. ä.) unter dem Balken, Knopf „Nochmal!“ startet das Quiz neu
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -20,7 +20,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
-  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Quiz-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
@@ -51,7 +51,7 @@ await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);
 await clickText("button", "Quiz starten", true);
 await clickText("[data-start-knopf]", "");
 await sleep(300);
-ok(await titel() === "1 / 4", `Session mit 4 Vokabeln (${await titel()})`);
+ok(await titel() === "1 / 4", `Quiz mit 4 Vokabeln (${await titel()})`);
 await alleGewusst();
 
 const jubel = await page.evaluate(() => {
@@ -63,7 +63,7 @@ const jubel = await page.evaluate(() => {
 });
 console.log("     Jubel:", JSON.stringify(jubel));
 ok(await titel() === "Durchlauf abgeschlossen", "Durchlauf abgeschlossen");
-ok(["Geschafft!", "Super gemacht!", "Session gemeistert!", "Stark!", "Ziel erreicht!", "Bravo!", "Klasse!", "Alles durch!"].includes(jubel?.titel), "große Überschrift aus der Auswahl");
+ok(["Geschafft!", "Super gemacht!", "Quiz gemeistert!", "Stark!", "Ziel erreicht!", "Bravo!", "Klasse!", "Alles durch!"].includes(jubel?.titel), "große Überschrift aus der Auswahl");
 ok(jubel?.groesse >= 28 && jubel.unterBalken, "Überschrift groß und unter dem Balken");
 ok(/Alle 4 Vokabeln/.test(jubel?.sub || ""), "Unterzeile: alle 4 Vokabeln");
 await sleep(600);
@@ -74,12 +74,12 @@ await weiterZurAuswertung();
 const ausw = await page.evaluate(() => ({ titel: document.querySelector(".topbar-title")?.textContent.trim(), text: document.querySelector("[data-session-auswertung]")?.innerText.replace(/\s+/g, " ") || "",
   balken: [...document.querySelectorAll("[data-balken]")].map(b => b.dataset.balken).join(",") }));
 console.log("     Auswertung:", ausw.text.slice(0, 260));
-ok(ausw.titel === "Session-Auswertung" && ausw.balken === "Start,Ende", "„Weiter →“: Session-Auswertung mit Balken Start/Ende");
-ok(/Ganze Session · 4 Vokabeln/i.test(ausw.text) && /Neu gelernt/.test(ausw.text) && /Lernfortschritt 0 % → 33 %/.test(ausw.text), "Kennzahlen: ganze Session, Lernfortschritt 0 % → 33 %");
+ok(ausw.titel === "Quiz-Auswertung" && ausw.balken === "Start,Ende", "„Weiter →“: Quiz-Auswertung mit Balken Start/Ende");
+ok(/Ganzes Quiz · 4 Vokabeln/i.test(ausw.text) && /Neu gelernt/.test(ausw.text) && /Lernfortschritt 0 % → 33 %/.test(ausw.text), "Kennzahlen: ganze Quiz, Lernfortschritt 0 % → 33 %");
 ok(/Auf Anhieb gewusst 4 von 4/.test(ausw.text) && /Vokabeln 4 in 1 Paket/.test(ausw.text) && /Dauer/.test(ausw.text), "Zusatzdaten: auf Anhieb 4 von 4, 1 Paket, Dauer");
 ok(await page.$("[data-nochmal]"), "darunter die gewohnten Knöpfe (Nochmal!)");
 await page.click("[data-nochmal]"); await sleep(600);
-ok(await titel() === "1 / 4", `„Nochmal!“: Session startet neu mit 4 Vokabeln (${await titel()})`);
+ok(await titel() === "1 / 4", `„Nochmal!“: Quiz startet neu mit 4 Vokabeln (${await titel()})`);
 await alleGewusst();
 ok(await titel() === "Durchlauf abgeschlossen" && await page.$("[data-jubel]"), "zweiter Durchlauf wieder bis zum Ende");
 await clickText("button", "Zur Übersicht"); await sleep(400);

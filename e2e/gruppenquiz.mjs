@@ -21,7 +21,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
-  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Quiz-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
@@ -95,7 +95,7 @@ await page.evaluate(() => document.querySelector('[data-info-aktion="▶ Quiz mi
 await clickText("[data-gruppen-quiz] button", "Starten", true); await sleep(600);
 ok(await titel() === "1 / 1" && await frage() === "abfahren", `Gelernt-Gruppe: Quiz mit „abfahren“ (${await titel()} ${await frage()})`);
 
-// ── Gewählte Konfiguration mit Session: bleibt erhalten, Runde zählt nicht zum Session-Fortschritt ──
+// ── Gewählte Konfiguration mit Quiz: bleibt erhalten, Runde zählt nicht zum Quiz-Fortschritt ──
 await page.evaluate(() => {
   const k = { listenIds:["l_a","l_b"], vokabelAuswahl:[], bereichTyp:"alle", quizAusgewaehlt:["D1","E1"], quizFrageTyp:"D1", quizAntwortTypenGeordnet:["E1"],
     quizInfoTypenSession:[], quizSpalteModus:{E1:"karte"}, quizZeigeInfo:{}, quizModus:"sequenziell", quizReihenfolge:"listennr" };
@@ -113,11 +113,11 @@ for (let i = 0; i < 2; i++) {
 }
 await clickText(".topbar-back", "Beenden"); await sleep(500);
 if (/Zur Übersicht/.test(await page.evaluate(() => document.body.innerText))) await clickText("button", "Zur Übersicht");
-await auswahlZu(page);   // 190: Session-Auswahl ist offen
+await auswahlZu(page);   // 190: Quiz-Auswahl ist offen
 await sleep(400);
 const fortschritt = () => page.evaluate(() => document.querySelector('[data-anzahl="fortschritt"]')?.textContent.trim());
 const vorher = await fortschritt();
-console.log("     Session vorher:", vorher);
+console.log("     Quiz vorher:", vorher);
 
 await clickText(".tab", "Statistik"); await sleep(400);
 const menueLabel = await page.evaluate(() => {
@@ -134,11 +134,11 @@ await clickText("[data-gruppen-quiz] button", "Starten", true); await sleep(600)
 ok(/^1 \/ \d+$/.test(await titel() || ""), `Gruppen-Quiz läuft (${await titel()})`);
 await durchlaufen();
 await clickText("button", "Zur Übersicht"); await sleep(500);
-await auswahlZu(page);   // 190: Session-Auswahl ist offen
+await auswahlZu(page);   // 190: Quiz-Auswahl ist offen
 const kopf = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); return k?.dataset.slotKopf + " " + k?.querySelector("button.toggle-opt.aktiv")?.textContent.trim(); });
-console.log("     Quiz danach:", kopf, "| Session:", await fortschritt());
+console.log("     Quiz danach:", kopf, "| Quiz:", await fortschritt());
 ok(kopf === "gruen Mein Paket", "Konfiguration „Mein Paket“ bleibt gewählt");
-ok(vorher && await fortschritt() === vorher, `Session-Fortschritt unverändert (${vorher})`);
+ok(vorher && await fortschritt() === vorher, `Quiz-Fortschritt unverändert (${vorher})`);
 
 // ── Nach der Runde zurück in genau die Statistik, aus der man kam ──
 await clickText(".tab", "Statistik"); await sleep(400);

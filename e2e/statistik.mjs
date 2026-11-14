@@ -18,7 +18,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
-  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Quiz-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
@@ -59,7 +59,7 @@ const statistikInfo = async () => {
 const statistikInfoRoh = () => page.evaluate(() => ({
   tabAktiv: document.querySelector(".tab.aktiv")?.textContent,
   anzahl: [...document.querySelectorAll("span")].map(s => s.textContent).filter(t => /^\(\d+ V\.\)$/.test(t)),
-  // 149: die geladene Session wird nicht mehr am Chip markiert – sie steht oben (Kopf + Info-Fläche); Verlauf-Einträge mit 🕘
+  // 149: die geladene Quiz wird nicht mehr am Chip markiert – sie steht oben (Kopf + Info-Fläche); Verlauf-Einträge mit 🕘
   chipAktiv: [document.querySelector("[data-slot-info-name]")?.innerText.trim()].filter(x => x && x.startsWith("🕘")),
 }));
 
@@ -69,7 +69,7 @@ await page.evaluate(async () => { const u = document.querySelector("[data-umfang
 await clickText("button", "Bereich", true);
 await page.evaluate(() => [...document.querySelectorAll(".vok-nr")].slice(0, 3).forEach(z => z.parentElement.click()));
 await sleep(300);
-await page.click("[data-vok-bestaetigen]"); await sleep(300);   // Liste zu → Session-Optionen wieder sichtbar
+await page.click("[data-vok-bestaetigen]"); await sleep(300);   // Liste zu → Quiz-Optionen wieder sichtbar
 await clickText("[data-start-knopf]", "");
 await sleep(400);
 await karteGewusst(3);
@@ -77,7 +77,7 @@ let t = await text();
 ok(t.includes("Weiter →") && !t.includes("Zur Statistik"), "Runde fertig: nur „Weiter →“");
 await clickText("button", "Weiter →", true);
 t = await text();
-ok(t.includes("Session-Auswertung") && t.includes("Zur Übersicht") && t.includes("Zur Statistik"), "Auswertung: beide Buttons sichtbar");
+ok(t.includes("Quiz-Auswertung") && t.includes("Zur Übersicht") && t.includes("Zur Statistik"), "Auswertung: beide Buttons sichtbar");
 await clickText("button", "Zur Statistik");
 await sleep(500);
 let si = await statistikInfo();
@@ -85,7 +85,7 @@ t = await text();
 console.log("     Statistik A:", JSON.stringify(si));
 ok(si.tabAktiv === "Statistik", "A: Statistik-Tab geöffnet");
 ok(si.anzahl.includes("(3 V.)"), "A: genau die 3 Vokabeln der Runde");
-ok(!/\bSession\b/.test((t.match(/(Lernfortschritt|Ø Score)[\s\S]{0,60}/) || [""])[0]), "A: kein Global/Session-Schalter mehr");
+ok(!/\bSession\b/.test((t.match(/(Lernfortschritt|Ø Score)[\s\S]{0,60}/) || [""])[0]), "A: kein Global/Quiz-Schalter mehr");
 await page.screenshot({ path: "statistik_runde.png" });
 
 // ── B: Pakete, kompletter Durchlauf (12 Vokabeln, Pakete à 10 + 2) ──
@@ -102,14 +102,14 @@ t = await text();
 ok(t.includes("Durchlauf abgeschlossen") && t.includes("Weiter →"), "Durchlauf abgeschlossen: „Weiter →“");
 await clickText("button", "Weiter →", true);
 t = await text();
-ok(t.includes("Session-Auswertung") && t.includes("Zur Statistik"), "Session-Auswertung: Button „Zur Statistik“ sichtbar");
+ok(t.includes("Quiz-Auswertung") && t.includes("Zur Statistik"), "Quiz-Auswertung: Button „Zur Statistik“ sichtbar");
 await clickText("button", "Zur Statistik");
 await sleep(500);
 si = await statistikInfo();
 console.log("     Statistik B:", JSON.stringify(si));
 ok(si.tabAktiv === "Statistik", "B: Statistik-Tab geöffnet");
-ok(si.chipAktiv.length === 1, `B: Verlauf-Eintrag der Session aktiv (${si.chipAktiv})`);
-ok(si.anzahl.includes("(12 V.)"), "B: alle 12 Vokabeln der Session");
+ok(si.chipAktiv.length === 1, `B: Verlauf-Eintrag des Quiz aktiv (${si.chipAktiv})`);
+ok(si.anzahl.includes("(12 V.)"), "B: alle 12 Vokabeln des Quiz");
 await page.screenshot({ path: "statistik_session.png" });
 
 await browser.close();

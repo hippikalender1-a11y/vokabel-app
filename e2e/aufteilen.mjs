@@ -2,8 +2,8 @@ import puppeteer from "puppeteer-core";
 import { slotLaden } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 
-// Liste in Sessions aufteilen: Lang-Druck → „In Sessions aufteilen“ → Quiz-Tab mit gelbem Kasten
-// (Name, Gruppengröße, Bereich, Rest, Vorschau) → „n Sessions anlegen“ → gespeicherte Konfigurationen „Name (21 - 40)“
+// Liste in mehrere Quiz aufteilen: Lang-Druck → „In mehrere Quiz aufteilen“ → Quiz-Tab mit gelbem Kasten
+// (Name, Gruppengröße, Bereich, Rest, Vorschau) → „n Quiz anlegen“ → gespeicherte Konfigurationen „Name (21 - 40)“
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -21,7 +21,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
-  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Quiz-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
@@ -48,14 +48,14 @@ await zuListen(page);
 await page.evaluate(() => { const el = document.querySelector("[data-liste-id]"); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 20 })); });
 await sleep(250);
-ok(await page.$('[data-info-aktion="▦ In Sessions aufteilen"]'), "Lang-Druck-Menü: „In Sessions aufteilen“");
-await page.evaluate(() => document.querySelector('[data-info-aktion="▦ In Sessions aufteilen"]').click()); await sleep(500);
+ok(await page.$('[data-info-aktion="▦ In mehrere Quiz aufteilen"]'), "Lang-Druck-Menü: „In mehrere Quiz aufteilen“");
+await page.evaluate(() => document.querySelector('[data-info-aktion="▦ In mehrere Quiz aufteilen"]').click()); await sleep(500);
 
 ok(await page.evaluate(() => document.querySelector(".tab.aktiv")?.textContent.trim()) === "Quiz" && await page.$("[data-aufteilen]"), "Quiz-Tab mit gelbem Aufteilen-Kasten");
 let v = await vorschau();
 console.log("     Vorschau 20:", v.join(" | "));
 ok(v.length === 5 && v[0] === "Verbes (1 - 20)" && v[4] === "Verbes (81 - 87)", "Standard 20: Verbes (1 - 20) … Verbes (81 - 87)");
-ok(await anlegenText() === "▦ 5 Sessions anlegen", `Knopf „5 Sessions anlegen“ statt Quiz starten (${await anlegenText()})`);
+ok(await anlegenText() === "▦ 5 Quiz anlegen", `Knopf „5 Quiz anlegen“ statt Quiz starten (${await anlegenText()})`);
 ok(!(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => /Quiz starten/.test(b.textContent)))), "kein „Quiz starten“ während des Aufteilens");
 
 // Rest anhängen
@@ -104,11 +104,11 @@ await zuListen(page);
 await page.evaluate(() => { const el = document.querySelector("[data-liste-id]"); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 20 })); });
 await sleep(250);
-await page.evaluate(() => document.querySelector('[data-info-aktion="▦ In Sessions aufteilen"]').click()); await sleep(500);
+await page.evaluate(() => document.querySelector('[data-info-aktion="▦ In mehrere Quiz aufteilen"]').click()); await sleep(500);
 await page.click('[data-aufteilen-groesse="10"]'); await sleep(200);
 await setzeFeld("[data-aufteilen-name]", "Verben Teil 2");
 await setzeFeld("[data-aufteilen-bis]", 70);
-ok(await anlegenText() === "▦ 3 Sessions anlegen", `vorhandene übersprungen: ${await anlegenText()} (1-10, 11-20, 61-70)`);
+ok(await anlegenText() === "▦ 3 Quiz anlegen", `vorhandene übersprungen: ${await anlegenText()} (1-10, 11-20, 61-70)`);
 await page.click("[data-aufteilen-abbrechen]"); await sleep(300);
 ok(!(await page.$("[data-aufteilen]")) && (await gespeichert()).length === 4, "Abbrechen: nichts angelegt");
 

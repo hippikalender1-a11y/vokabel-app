@@ -18,7 +18,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
-  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Quiz-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
@@ -80,10 +80,10 @@ await clickText("button", "Zur Statistik");
 await sleep(500);
 t = await text();
 console.log("     Runde:", (t.match(/Lernfortschritt[\s\S]{0,90}/) || [""])[0].replace(/\n/g, " | "));
-// „Alle“ ist ein Session-Paket: danach Statistik der ganzen Session (4 Verben, aller + venir + jetzt partir gelernt)
+// „Alle“ ist ein Quiz-Paket: danach Statistik des ganzen Quiz (4 Verben, aller + venir + jetzt partir gelernt)
 const kopfR = (t.match(/Lernfortschritt[\s\S]{0,60}/) || [""])[0];
-ok(/83 %/.test(kopfR) && !/Global/.test(kopfR), "Session-Statistik nach der Runde: 83 %, kein Global");
-ok(/3 \/ 4 gelernt/.test(t), "Session: „3 / 4 gelernt“");
+ok(/83 %/.test(kopfR) && !/Global/.test(kopfR), "Quiz-Statistik nach der Runde: 83 %, kein Global");
+ok(/3 \/ 4 gelernt/.test(t), "Quiz: „3 / 4 gelernt“");
 await page.screenshot({ path: "fortschritt_runde.png" });
 
 await browser.close();

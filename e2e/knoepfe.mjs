@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 import { neueEineSession, listenZu } from "./hilfen.mjs";
 
 // Zeilen-Knöpfe im Quiz-Tab: aufgeklappt „✓ Bestätigen“ in eigener Farbe, gleiche Größe und Position, übrige Knöpfe der Zeile bleiben;
-// Stufe aufklappbar; lang drücken auf „Start“: Speichern-Menü wie beim Session-Namen
+// Stufe aufklappbar; lang drücken auf „Start“: Speichern-Menü wie beim Quiz-Namen
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();

@@ -3,7 +3,7 @@ import { slotLaden, auswahlZu } from "./hilfen.mjs";
 import { stufeAuf, stufeZu, stufeWaehlen, stufeFenster } from "./hilfen.mjs";
 
 // Lernen: Stufe Lernen → Leicht → Schwer; „Lernen starten“ zeigt Wort (vorgelesen), nach der Pause die Übersetzung + Info,
-// dann die nächste Vokabel; antippen überspringt, Pause / zurück / vor / beenden; kein Score, kein Session-Fortschritt
+// dann die nächste Vokabel; antippen überspringt, Pause / zurück / vor / beenden; kein Score, kein Quiz-Fortschritt
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -73,7 +73,7 @@ await stufeWaehlen(page, "schwer");
 ok(await stufe() === "schwer|Schwer", "gewählt: Schwer");
 await stufeWaehlen(page, "lernen");
 const start = await page.evaluate(() => document.querySelector("[data-start-knopf]")?.textContent.trim());
-ok(start === "Lernen starten7 Vokabeln", `Start-Knopf: „Lernen starten / 7 Vokabeln“ – ganze Session (${start})`);
+ok(start === "Lernen starten7 Vokabeln", `Start-Knopf: „Lernen starten / 7 Vokabeln“ – ganze Quiz (${start})`);
 ok(await page.evaluate(() => document.querySelector("[data-start-titel]")?.textContent.trim()) === "Lernen mit 7 Vokabeln", "Überschrift: „Lernen mit 7 Vokabeln“");
 
 // Stufe aufgeklappt: „Lernen einstellen“, Regeln, Vorlesen als Knöpfe
@@ -188,7 +188,7 @@ ok(ende.titel === "5 Vokabeln angesehen" && ende.paket === "Paket 1 von 2", "End
 ok(ende.quiz === "Quiz mit diesen 5 Vokabeln" && ende.weiter === "Weiter lernen: nächste 2" && ende.nochmal, "Knöpfe: Quiz mit diesen 5, Weiter lernen: nächste 2, 🔄 nochmals ansehen");
 const daten = await page.evaluate(() => ({ scores: JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.filter(v => v.fortschritt).length,
   session: localStorage.getItem("vokabel_session_aktiv") }));
-ok(daten.scores === 0 && !daten.session, `Lernen: kein Score, kein Session-Fortschritt (${JSON.stringify(daten)})`);
+ok(daten.scores === 0 && !daten.session, `Lernen: kein Score, kein Quiz-Fortschritt (${JSON.stringify(daten)})`);
 
 // Quiz mit diesen 5 (eingestellte Stufe: Schwer) – „aller“ einmal nicht gewusst
 const lernQuiz = async (falsch = []) => {
@@ -215,7 +215,7 @@ ok(!(await page.evaluate(() => [...document.querySelectorAll("button")].some(b =
 const sc = await page.evaluate(() => Object.fromEntries(JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.map(v => [v.D1.wert, v.fortschritt?.score ?? null])));
 console.log("     Scores:", JSON.stringify(sc));
 ok(sc.gehen === 0 && sc.kommen === 1 && sc.nehmen === null, "nicht gewusst: kein Abzug (0) trotz Stufe Schwer, gewusst: +1");
-ok(!(await page.evaluate(() => localStorage.getItem("vokabel_session_aktiv"))), "Session-Fortschritt bleibt unberührt");
+ok(!(await page.evaluate(() => localStorage.getItem("vokabel_session_aktiv"))), "Quiz-Fortschritt bleibt unberührt");
 await page.click("[data-weiter-lernen]"); await sleep(300);
 z = await stand();
 ok(z.stand === "6 / 7" && z.phase === "0" && z.wort === "prendre", `„Weiter lernen“: nächstes Paket (${z.stand} ${z.wort})`);
@@ -234,9 +234,9 @@ await page.click("[data-lernen-pause]"); await sleep(100);
 await tippeBisEnde();
 ok(await page.$("[data-lernen-fertig]") && !(await page.$("[data-lernen-quiz]")), "nach nochmals Ansehen: weiterhin kein zweites Quiz");
 await page.click("[data-lernen-beenden]"); await sleep(300);
-ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf === "offen") && !(await page.$("[data-lernen-karte]")), "Beenden: zurück im Quiz-Tab, Session-Auswahl offen (190)");
+ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf === "offen") && !(await page.$("[data-lernen-karte]")), "Beenden: zurück im Quiz-Tab, Quiz-Auswahl offen (190)");
 await auswahlZu(page);
-ok(await page.$("[data-stufe]"), "Session-Auswahl zu: Einstellungen da");
+ok(await page.$("[data-stufe]"), "Quiz-Auswahl zu: Einstellungen da");
 
 // Zuerst Deutsch
 await stufeFenster(page, "lernen");

@@ -4,10 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { zuListen } from "./hilfen.mjs";
 
-// 190: Quiz schließen → Quiz-Tab mit offener Session-Auswahl; 191: „Alle Sessions“ gelb;
+// 190: Quiz schließen → Quiz-Tab mit offener Quiz-Auswahl; 191: „Alle Quiz“ gelb;
 // 192: Gesten – antippen übernimmt sofort, kurz halten wählt (Blätter-Modus), lang halten startet die Mehrfach-Auswahl,
 //      darin kurz halten = dazu, lang halten = übernehmen;
-// 193/194: Ordner bis 3 Ebenen (Sessions und Listen), leere Ordner über Pfad, Ordner-Kachel und freien Platz;
+// 193/194: Ordner bis 3 Ebenen (Quiz und Listen), leere Ordner über Pfad, Ordner-Kachel und freien Platz;
 // 195: Import in den geöffneten Listen-Ordner bzw. in einen neuen Ordner darin
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
@@ -58,14 +58,14 @@ await page.reload(); await sleep(800);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await auswahlAuf();
 
-// ── 191/197: oben ist „Alle Sessions“ die aktuelle Ebene – schlicht (gelb erst in einem Ordner, siehe unten) ──
+// ── 191/197: oben ist „Alle Quiz“ die aktuelle Ebene – schlicht (gelb erst in einem Ordner, siehe unten) ──
 const GELB = "rgb(246, 196, 69)";
 const bg = sel => page.evaluate(s => { const el = document.querySelector(s); return el ? getComputedStyle(el).backgroundColor : null; }, sel);
 const farbe = await bg("[data-alle-sessions]");
-ok(farbe !== GELB, `197: oben „Alle Sessions“ ohne Gelb (${farbe})`);
+ok(farbe !== GELB, `197: oben „Alle Quiz“ ohne Gelb (${farbe})`);
 // ── 196: so viele Spalten wie belegt (hier eine) ──
 const spaltenAnz = () => page.evaluate(() => document.querySelector(".slot-raster")?.dataset.rasterSpaltenAnz);
-ok(await spaltenAnz() === "1", `196: Sessions nur in Spalte 1 → eine Spalte (${await spaltenAnz()})`);
+ok(await spaltenAnz() === "1", `196: Quiz nur in Spalte 1 → eine Spalte (${await spaltenAnz()})`);
 
 // ── 192: antippen übernimmt sofort ──
 await halte('[data-slot-id="s1"]', 60); await sleep(500);
@@ -95,13 +95,13 @@ await halte('[data-slot-id="s3"]', 1100); await sleep(400);
 k = await kopf();
 ok(k.zustand !== "offen" && /Multiquiz/.test(k.name), `lang halten übernimmt die Auswahl samt „Teil 3“ als Multiquiz (${JSON.stringify(k)})`);
 
-// ── 190: Quiz schließen → Session-Auswahl offen ──
+// ── 190: Quiz schließen → Quiz-Auswahl offen ──
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(800);
 const imQuiz = await page.evaluate(() => !!document.querySelector(".topbar-back"));
 await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(600);   // Beenden → Auswertung
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Zur Übersicht")?.click()); await sleep(600);
 k = await kopf();
-ok(imQuiz && k.zustand === "offen", `nach „Zur Übersicht“: Quiz-Tab mit offener Session-Auswahl (${k.zustand})`);
+ok(imQuiz && k.zustand === "offen", `nach „Zur Übersicht“: Quiz-Tab mit offener Quiz-Auswahl (${k.zustand})`);
 
 // ── 196: beim Verschieben rechts eine freie Spalte; hineingesetzt → zwei Spalten ──
 await kontext('[data-slot-id="s2"]');
@@ -112,12 +112,12 @@ await page.evaluate(() => document.querySelector("[data-slot-fertig]")?.click())
 ok((await slots()).gespeichert.find(x => x.id === "s2")?.platz?.s === 1 && await spaltenAnz() === "2", `in die freie Spalte gesetzt: zwei Spalten (${await spaltenAnz()})`);
 await kontext("[data-freier-platz]");
 const freiMenue = await menue();
-ok(freiMenue.includes("＋ Neue Session aus Listen") && freiMenue.includes("📁 Neuer Ordner"), `199: freier Platz: neue Session / neuer Ordner (${freiMenue.join(" | ")})`);
+ok(freiMenue.includes("＋ Neues Quiz aus Listen") && freiMenue.includes("📁 Neuer Ordner"), `199: freier Platz: neues Quiz / neuer Ordner (${freiMenue.join(" | ")})`);
 await page.keyboard.press("Escape"); await page.mouse.click(5, 5); await sleep(300);
 
 // ── 193/194: leere Ordner, drei Ebenen ──
 await kontext("[data-alle-sessions]");
-ok((await menue()).includes("📁 Neuer Ordner"), "Lang-Druck auf „Alle Sessions“: „📁 Neuer Ordner“");
+ok((await menue()).includes("📁 Neuer Ordner"), "Lang-Druck auf „Alle Quiz“: „📁 Neuer Ordner“");
 await aktion("📁 Neuer Ordner");
 ok(await page.$('[data-in-gruppe-dialog="neu"]') !== null, "Dialog „Neuer Ordner“");
 await ordnerAnlegen("A");
@@ -142,14 +142,14 @@ const oC = d.ordner.find(o => o.name === "C");
 ok(oC?.ordner === oB.id && oC.platz?.z === 0 && oC.platz?.s === 0, `„C“ in „B“ auf dem gedrückten Platz (${JSON.stringify(oC?.platz)})`);
 await page.evaluate(id => document.querySelector(`[data-ordner-id="${id}"]`)?.click(), oC?.id); await sleep(400);
 const pfad = await page.evaluate(() => [...document.querySelectorAll("[data-ordner-pfad] > *")].map(e => e.textContent.trim()).join(" "));
-ok(pfad === "← Alle Sessions › 📁 A › 📁 B › 📁 C", `Pfad mit drei Ebenen (${pfad})`);
+ok(pfad === "← Alle Quiz › 📁 A › 📁 B › 📁 C", `Pfad mit drei Ebenen (${pfad})`);
 const farben = { alle: await bg("[data-alle-sessions]"), a: await bg(`[data-ordner-pfad-teil="${oA.id}"]`), c: await bg("[data-ordner-name]") };
-ok(farben.alle === GELB && farben.a === GELB && farben.c !== GELB, `197: „← Alle Sessions“ und „A“ gelb, der geöffnete Ordner schlicht (${JSON.stringify(farben)})`);
+ok(farben.alle === GELB && farben.a === GELB && farben.c !== GELB, `197: „← Alle Quiz“ und „A“ gelb, der geöffnete Ordner schlicht (${JSON.stringify(farben)})`);
 // 198: bis 5 Ebenen
 for (const n of ["D", "E"]) { await kontext("[data-ordner-name]"); await aktion("📁 Neuer Ordner"); await ordnerAnlegen(n);
   const o = (await slots()).ordner.find(x => x.name === n); await page.evaluate(id => document.querySelector(`[data-ordner-id="${id}"]`)?.click(), o?.id); await sleep(400); }
 const pfad5 = await page.evaluate(() => [...document.querySelectorAll("[data-ordner-pfad] > *")].map(e => e.textContent.trim()).join(" "));
-ok(pfad5 === "← Alle Sessions › 📁 A › 📁 B › 📁 C › 📁 D › 📁 E", `198: fünf Ebenen (${pfad5})`);
+ok(pfad5 === "← Alle Quiz › 📁 A › 📁 B › 📁 C › 📁 D › 📁 E", `198: fünf Ebenen (${pfad5})`);
 await kontext("[data-ordner-name]");
 ok(!(await menue()).includes("📁 Neuer Ordner"), "in der fünften Ebene kein weiterer Ordner");
 await page.keyboard.press("Escape"); await sleep(200);
@@ -159,7 +159,7 @@ if (!(await page.evaluate(() => document.querySelector("[data-ordner-name]")?.te
   await page.evaluate(id => document.querySelector(`[data-ordner-pfad-teil="${id}"]`)?.click(), oA.id); await sleep(400); }
 const nachTipp = await page.evaluate(() => document.querySelector("[data-ordner-name]")?.textContent.trim());
 ok(nachTipp === "📁 A", `Pfad-Teil „A“ antippen öffnet „A“ (${nachTipp})`);
-// Session in den tiefsten Ordner (Dialog „In Ordner…“ mit Pfaden)
+// Quiz in den tiefsten Ordner (Dialog „In Ordner…“ mit Pfaden)
 await page.evaluate(() => document.querySelector("[data-ordner-zurueck]")?.click()); await sleep(400);
 await kontext('[data-slot-id="s3"]');
 await aktion("📁 In Ordner…");
@@ -169,7 +169,7 @@ await page.evaluate(id => document.querySelector(`[data-in-gruppe="${id}"]`)?.cl
 d = await slots();
 ok(d.gespeichert.find(x => x.id === "s3")?.ordner === oC.id, "„Teil 3“ liegt in „C“");
 const anzahlA = await page.evaluate(id => document.querySelector(`[data-ordner-id="${id}"] [data-ordner-anzahl]`)?.dataset.ordnerAnzahl, oA.id);
-ok(anzahlA === "1", `Ordner-Kachel „A“ zählt die Session in „C“ mit (${anzahlA})`);
+ok(anzahlA === "1", `Ordner-Kachel „A“ zählt das Quiz in „C“ mit (${anzahlA})`);
 // 200: Tagesstand des Ordners – Anteil über alle Vokabeln darin (Teil 3 = Nr. 7–9, davon 2 heute geübt)
 await page.evaluate(() => { const l = JSON.parse(localStorage.getItem("vokabel_liste_l_a")); const jetzt = new Date().toISOString();
   l.vokabeln.forEach(v => { if (v.id === 7 || v.id === 8) v.fortschritt = { score: 1, letzteAbfrage: jetzt }; }); localStorage.setItem("vokabel_liste_l_a", JSON.stringify(l)); });

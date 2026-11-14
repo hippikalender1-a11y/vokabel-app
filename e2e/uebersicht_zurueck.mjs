@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 import { quizEinstellungen, listenZu, bereichZu, auswahlZu } from "./hilfen.mjs";
 
 // Paket-Ende: Knopf nennt die echte Restzahl („Letzte 2 Vokabeln“), Größen über dem Rest fehlen;
-// „Zur Übersicht“/„Beenden“/„Schließen“ kehren eingeklappt zurück (Session-Auswahl offen, 190), „Pause“ nicht;
+// „Zur Übersicht“/„Beenden“/„Schließen“ kehren eingeklappt zurück (Quiz-Auswahl offen, 190), „Pause“ nicht;
 // Start-Knopf nennt die Abfrageart; aktuelle Liste und Start-Knopf in eigener, hellerer Farbe
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -93,15 +93,15 @@ await clickText("button", "Zur Übersicht"); await sleep(500);
 const nachher = await page.evaluate(() => ({ listen: [...document.querySelectorAll(".quiz-setup-check")].filter(e => e.offsetParent).length,
   kopf: document.querySelector("[data-slot-kopf]")?.dataset.slotKopf, y: window.scrollY, tab: document.querySelector(".tab.aktiv, .tab.active")?.textContent }));
 console.log("     nach „Zur Übersicht“:", JSON.stringify(nachher));
-ok(nachher.listen === 0 && nachher.kopf === "offen" && !(await reihenfolgeOffen()) && nachher.y === 0, "Zur Übersicht: Bereiche eingeklappt, Session-Auswahl offen (190), oben");
+ok(nachher.listen === 0 && nachher.kopf === "offen" && !(await reihenfolgeOffen()) && nachher.y === 0, "Zur Übersicht: Bereiche eingeklappt, Quiz-Auswahl offen (190), oben");
 await auswahlZu(page);
 
-// Beenden während der Abfrage (ohne Antwort) → eingeklappt, Session-Auswahl offen
+// Beenden während der Abfrage (ohne Antwort) → eingeklappt, Quiz-Auswahl offen
 await page.click("[data-start-knopf]"); await sleep(500);
 await clickText("button", "Beenden", true); await sleep(500);
 const nachBeenden = await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf);
 await auswahlZu(page);
-ok(!(await reihenfolgeOffen()) && nachBeenden === "offen" && await page.$("[data-start-knopf]"), `Beenden: Übersicht mit eingeklappten Bereichen, Session-Auswahl offen (${nachBeenden})`);
+ok(!(await reihenfolgeOffen()) && nachBeenden === "offen" && await page.$("[data-start-knopf]"), `Beenden: Übersicht mit eingeklappten Bereichen, Quiz-Auswahl offen (${nachBeenden})`);
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

@@ -19,7 +19,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
-  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Quiz-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
@@ -54,7 +54,7 @@ await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 await clickText("button", "Bereich", true);
 await page.evaluate(() => [...document.querySelectorAll(".vok-nr")].slice(0, 2).forEach(z => z.parentElement.click()));
 await sleep(300);
-await page.click("[data-vok-bestaetigen]"); await sleep(300);   // Liste zu → Session-Optionen wieder sichtbar
+await page.click("[data-vok-bestaetigen]"); await sleep(300);   // Liste zu → Quiz-Optionen wieder sichtbar
 await page.click("[data-reihenfolge]"); await sleep(300);
 await clickText(".toggle-opt", "Zufällig", true);
 await bereichZu(page);   // Reihenfolge zu → Start wieder sichtbar
@@ -67,7 +67,7 @@ ok(z.start === "2" && z.reihenfolge === "Zufällig", "Preset: 2 Vokabeln, Zufäl
 
 // Neu
 await page.evaluate(() => window.scrollTo(0, 0));
-if (!(await page.evaluate(() => /📌 Gespeichert/i.test(document.body.innerText)))) await clickText(".toggle-opt.aktiv", "Frz");
+if (!(await page.evaluate(() => /📌 Gespeichert/i.test(document.body.innerText)))) { await page.click("[data-slot-kopf-name]"); await sleep(300); }   // 216: Kopf heißt wie die Liste
 await neueEineSession(page);
 await sleep(400);
 z = await zustand();
@@ -75,7 +75,7 @@ console.log("     Nach Neu:", JSON.stringify(z));
 ok(z.gewaehlt === 0 && !/^[1-9]/.test(z.start), "Neu: keine Liste mehr ausgewählt");
 ok(z.kopfChip === "Neues Quiznicht gespeichert", "Neu: kein Preset aktiv („Neues Quiz · nicht gespeichert“)");
 const sa = await page.evaluate(() => localStorage.getItem("vokabel_session_aktiv"));
-ok(sa === null, "Neu: keine aktive Session");
+ok(sa === null, "Neu: keine aktive Quiz");
 
 await clickText(".quiz-setup-check", "Verbes");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
@@ -89,7 +89,7 @@ await sleep(300);
 const offen = await page.evaluate(() => /📌 Gespeichert/i.test(document.body.innerText));
 if (!offen) await page.evaluate(() => document.querySelector(".toggle-opt.aktiv")?.click());
 await sleep(300);
-await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Frz"))?.click()); await slotLaden(page);
+await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Verbes"))?.click()); await slotLaden(page);   // 216: Preset heißt wie die Liste
 await sleep(600)   // Auswahl klappt kurz verzögert zu;
 let t = await page.evaluate(() => document.body.innerText);
 ok(/GESAMT\s*\n?\s*2/i.test(t), "Statistik: Preset zeigt 2 Vokabeln");

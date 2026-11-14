@@ -2,9 +2,9 @@ import puppeteer from "puppeteer-core";
 import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen } from "./hilfen.mjs";
 
-// Gesten im Session- und Listen-Raster: Lang-Druck öffnet die Auswahl-Tafel (unten, bleibt offen; weitere antippen
+// Gesten im Quiz- und Listen-Raster: Lang-Druck öffnet die Auswahl-Tafel (unten, bleibt offen; weitere antippen
 // wählt mit aus; nur die Tafel beendet), Lang-Druck auf freie Stelle + ziehen sammelt ein, beim Ziehen 1,2 s über
-// einer Session halten bildet eine Gruppe, auf „← Alle Sessions“ ziehen nimmt heraus, Gruppe mit einer Session löst sich auf
+// eines Quiz halten bildet eine Gruppe, auf „← Alle Quiz“ ziehen nimmt heraus, Gruppe mit eines Quiz löst sich auf
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
   executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -65,10 +65,10 @@ await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 // ── Auswahl-Tafel ──
 await kontext(kachel("s1"));
 ok((await tafel())?.startsWith("Teil 1"), `Lang-Druck: Auswahl-Tafel unten mit „Teil 1“ (${await tafel()})`);
-ok((await menue()).includes("✎ Umbenennen") && !(await menue()).includes("☑ Auswählen"), "eine Session: ihr Menü (ohne „☑ Auswählen“ – sie ist schon ausgewählt)");
+ok((await menue()).includes("✎ Umbenennen") && !(await menue()).includes("☑ Auswählen"), "ein Quiz: ihr Menü (ohne „☑ Auswählen“ – sie ist schon ausgewählt)");
 ok(await gewaehlt() === "s1", "Teil 1 ist ausgewählt");
 await kontext(kachel("s2"));
-ok(/^2 Sessions ausgewählt/.test(await tafel() || ""), `Lang-Druck auf Teil 2: „2 Sessions ausgewählt“ (${await tafel()})`);
+ok(/^2 Quiz ausgewählt/.test(await tafel() || ""), `Lang-Druck auf Teil 2: „2 Quiz ausgewählt“ (${await tafel()})`);
 ok((await menue()).some(m => m.startsWith("🧩 Multiquiz starten (2)")), "Tafel zeigt Aktionen für die Auswahl");
 ok(await gewaehlt() === "s1,s2", "Teil 1 + 2 ausgewählt");
 await kontext(kachel("s2"));
@@ -94,7 +94,7 @@ await kontext(kachel("s1"));
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "↔ Von–Bis")?.click()); await sleep(300);
 await kontext(kachel("s3"));
 ok(await gewaehlt() === "s1,s2,s3", `Von–Bis: Teil 1 bis 3 ausgewählt (${await gewaehlt()})`);
-ok(/^3 Sessions ausgewählt/.test(await tafel() || ""), `danach Auswahl-Tafel „3 ausgewählt“ (${await tafel()})`);
+ok(/^3 Quiz ausgewählt/.test(await tafel() || ""), `danach Auswahl-Tafel „3 ausgewählt“ (${await tafel()})`);
 await tafelZu();
 
 // ── Haltestufen auf einer Kachel ──
@@ -114,13 +114,13 @@ ok(!(await page.$("[data-angehoben]")), "nach 0,9 s: ausgewählt statt angehoben
 for (let i = 1; i <= 8; i++) { await finger("touchMove", h.x, h.y + (h3.y - h.y) * i / 8); await sleep(40); }
 await finger("touchEnd"); await sleep(400);
 ok(await gewaehlt() === "s1,s2,s3", `lang halten + fahren: Teil 1–3 ausgewählt (${await gewaehlt()})`);
-ok(/^3 Sessions ausgewählt/.test(await tafel() || ""), "danach Auswahl-Tafel „3 ausgewählt“");
+ok(/^3 Quiz ausgewählt/.test(await tafel() || ""), "danach Auswahl-Tafel „3 ausgewählt“");
 ok(!(await page.$("[data-slot-fertig]")) || await page.$("[data-wahl-fertig]"), "kein Verschieben-Modus");
 await tafelZu();
 // lang halten, loslassen: Tafel mit dem Menü der Kachel
 await finger("touchStart", h.x, h.y); await sleep(1050); await finger("touchEnd"); await sleep(400);
 ok((await tafel())?.startsWith("Teil 1") && await gewaehlt() === "s1", `lang halten + loslassen: Tafel „Teil 1“, nur Teil 1 ausgewählt (${await gewaehlt()})`);
-ok(await page.evaluate(() => !document.querySelector("[data-slot-kopf-name]") || document.querySelector("[data-slot-kopf-name]").textContent.trim() !== "Teil 1"), "lang halten lädt die Session nicht");
+ok(await page.evaluate(() => !document.querySelector("[data-slot-kopf-name]") || document.querySelector("[data-slot-kopf-name]").textContent.trim() !== "Teil 1"), "lang halten lädt das Quiz nicht");
 await tafelZu();
 
 // ausgewählte Kachel lang halten und ziehen: die ganze Auswahl wandert (Teil 1 + 2 in die freie rechte Spalte)
@@ -155,38 +155,38 @@ const ziehe = async (von, nach, warten) => {
   const q = await mitte(nach);
   for (let i = 1; i <= 8; i++) { await finger("touchMove", p.x + (q.x - p.x) * i / 8, p.y + (q.y - p.y) * i / 8); await sleep(40); }
   if (warten) await sleep(warten);
-  const ring = await page.evaluate(() => document.querySelector("[data-gruppen-ring]")?.dataset.gruppenRing || null);
+  const ring = await page.evaluate(() => { const r = document.querySelector("[data-gruppen-ring]"); return r ? `${r.dataset.gruppenRing}:${r.querySelector("[data-ring-symbol]")?.dataset.ringSymbol}` : null; });
   await finger("touchEnd"); await sleep(400);
   return ring;
 };
 let ring = await ziehe(kachel("s3"), kachel("s4"), 0);
 d = await slots();
-ok(ring === "laeuft", "beim Darüberziehen läuft der Ring");
+ok(ring === "laeuft:tauschen", `beim Darüberziehen läuft der Ring mit ⇄ (tauschen) (${ring})`);
 ok(!(d.ordner || []).length && d.gespeichert.find(x => x.id === "s3").platz.z === 3, "schnell losgelassen: getauscht, keine Gruppe");
 ok(!(await page.$("[data-slot-fertig]")), "nach dem Ablegen ist der Verschieben-Modus wieder aus");
 ring = await ziehe(kachel("s3"), kachel("s4"), 2800);
 d = await slots();
 const g = (d.ordner || [])[0];
-ok(ring === "fertig", "nach 1,2 s: Ring voll (📁)");
+ok(ring === "fertig:ordner", `nach 1,2 s: Ring voll, jetzt 📁 (${ring})`);
 ok(g && g.name === "Teil" && ["s3", "s4"].every(id => d.gespeichert.find(x => x.id === id).ordner === g.id), `verweilt: Gruppe „${g?.name}“ aus Teil 3 + 4`);
-ok(g?.platz?.z === 2 && g?.platz?.s === 0, "Gruppe steht am Platz der Ziel-Session");
+ok(g?.platz?.z === 2 && g?.platz?.s === 0, "Gruppe steht am Platz der Ziel-Quiz");
 const schatten = await page.evaluate(id => getComputedStyle(document.querySelector(`[data-ordner-id="${id}"]`)).boxShadow, g.id);
 ok((schatten.match(/rgb/g) || []).length >= 4, "Gruppen-Kachel als Stapel (zwei Kartenkanten)");
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(b => b.textContent.trim() === "Fertig")?.click()); await sleep(200);
 // Teil 2 auf die Gruppe: verweilen → hinein
 await ziehe(kachel("s2"), `[data-ordner-id="${g.id}"]`, 2800);
 d = await slots();
-ok(d.gespeichert.find(x => x.id === "s2").ordner === g.id, "Session auf der Gruppe verweilt → in der Gruppe");
+ok(d.gespeichert.find(x => x.id === "s2").ordner === g.id, "Quiz auf der Gruppe verweilt → in der Gruppe");
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(b => b.textContent.trim() === "Fertig")?.click()); await sleep(200);
 
-// ── aus der Gruppe ziehen: die Gruppe bleibt auch mit einer Session bestehen ──
+// ── aus der Gruppe ziehen: die Gruppe bleibt auch mit eines Quiz bestehen ──
 await page.click(`[data-ordner-id="${g.id}"]`); await sleep(300);
 await ziehe(kachel("s2"), "[data-ordner-zurueck]", 0);
 d = await slots();
-ok(!d.gespeichert.find(x => x.id === "s2").ordner, "auf „← Alle Sessions“ gezogen: Teil 2 aus der Gruppe");
+ok(!d.gespeichert.find(x => x.id === "s2").ordner, "auf „← Alle Quiz“ gezogen: Teil 2 aus der Gruppe");
 await ziehe(kachel("s3"), "[data-ordner-zurueck]", 0);
 d = await slots();
-ok((d.ordner || []).length === 1 && d.gespeichert.find(x => x.id === "s4").ordner === g.id && !d.gespeichert.find(x => x.id === "s3").ordner, "nur noch eine Session: Gruppe bleibt bestehen");
+ok((d.ordner || []).length === 1 && d.gespeichert.find(x => x.id === "s4").ordner === g.id && !d.gespeichert.find(x => x.id === "s3").ordner, "nur noch ein Quiz: Gruppe bleibt bestehen");
 ok(await page.$("[data-ordner-zurueck]"), "Gruppe bleibt offen");
 await page.click("[data-ordner-zurueck]"); await sleep(300);
 
@@ -194,7 +194,7 @@ await page.click("[data-ordner-zurueck]"); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(b => b.textContent.trim() === "Fertig")?.click()); await sleep(200);
 await zuListen(page);
 await kontext('[data-liste-id="l_a"]');
-ok((await tafel())?.includes("Unité 1") && (await menue()).includes("▦ In Sessions aufteilen"), "Listen: Lang-Druck → Tafel mit dem Listen-Menü");
+ok((await tafel())?.includes("Unité 1") && (await menue()).includes("▦ In mehrere Quiz aufteilen"), "Listen: Lang-Druck → Tafel mit dem Listen-Menü");
 await page.evaluate(() => document.querySelector('[data-liste-id="l_c"]').scrollIntoView({ block: "center" })); await sleep(300);   // Kachel über die Tafel scrollen
 await kontext('[data-liste-id="l_c"]');
 ok(/^2 Listen ausgewählt/.test(await tafel() || "") && (await menue()).includes("📤 Exportieren (2)"), `Listen: Lang-Druck nimmt dazu (${await tafel()})`);

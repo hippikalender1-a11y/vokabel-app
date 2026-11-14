@@ -6,24 +6,24 @@ export async function zuListen(page) {
   await page.evaluate(() => { const k = document.querySelector('[data-einst-kopf="listen"]'); if (k && k.dataset.offen !== "ja") k.click(); });
   await new Promise(r => setTimeout(r, 300));
 }
-// Quiz-Tab: Ist die Session-Auswahl offen, Kopf antippen → Einstellungen (Listen-Auswahl usw.) sichtbar
+// Quiz-Tab: Ist die Quiz-Auswahl offen, Kopf antippen → Einstellungen (Listen-Auswahl usw.) sichtbar
 export async function quizEinstellungen(page) {
   await page.evaluate(() => { if (document.querySelector('[data-quiz-ansicht="auswahl"]')) document.querySelector("[data-slot-kopf-name]")?.click(); });
   await new Promise(r => setTimeout(r, 300));
 }
-// „＋ Neue Session aus Listen“ → „Eine Session“ (ersetzt den früheren „Neu“-Chip)
+// „＋ Neues Quiz aus Listen“ → „Ein Quiz“ (ersetzt den früheren „Neu“-Chip)
 export async function neueEineSession(page) {
   await page.evaluate(() => { if (document.querySelector('[data-quiz-ansicht="einstellungen"]')) document.querySelector("[data-slot-kopf-name]")?.click(); });
   await new Promise(r => setTimeout(r, 300));
   await neueSessionMenue(page);
   await page.click('[data-neue-session-art="eine"]'); await new Promise(r => setTimeout(r, 400));
 }
-// 160: „＋ Neue Session aus Listen“ über lang drücken auf „Alle Sessions“ (bzw. die Gruppe in der Pfad-Zeile)
+// 160: „＋ Neues Quiz aus Listen“ über lang drücken auf „Alle Quiz“ (bzw. die Gruppe in der Pfad-Zeile)
 export async function neueSessionMenue(page) {
   await page.evaluate(() => { const el = document.querySelector("[data-ordner-name]") || document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect();
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); });
   await new Promise(r => setTimeout(r, 250));
-  await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "＋ Neue Session aus Listen")?.click());
+  await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "＋ Neues Quiz aus Listen")?.click());
   await new Promise(r => setTimeout(r, 300));
 }
 // Listen-Auswahl zuklappen: solange sie offen ist (Fokus), sind die übrigen Quiz-Optionen ausgeblendet
@@ -134,7 +134,7 @@ export async function antwortDazu(page, name) {
   await new Promise(r => setTimeout(r, 250));
   await page.evaluate(() => document.querySelector("[data-info-blase]")?.click()); await new Promise(r => setTimeout(r, 150));
 }
-// Gespeicherte Session laden: Quiz-Tab, Session-Kopf auf, Kachel/Chip antippen, ggf. mit dem grünen Kopf-Knopf bestätigen
+// Gespeicherte Quiz laden: Quiz-Tab, Quiz-Kopf auf, Kachel/Chip antippen, ggf. mit dem grünen Kopf-Knopf bestätigen
 export async function sessionLaden(page, name) {
   const s = ms => new Promise(r => setTimeout(r, ms));
   await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await s(300);
@@ -143,7 +143,7 @@ export async function sessionLaden(page, name) {
   await page.evaluate(n => [...document.querySelectorAll(".slot-chip, [data-slot-id]")].find(e => e.textContent.includes(n))?.click(), name); await s(400);
   if (await page.$("[data-slot-laden]")) { await page.evaluate(() => document.querySelector("[data-slot-laden]").click()); await s(500); }
 }
-// Session-Auswahl: angetippte Session mit dem grünen Kopf-Knopf („✓ … laden“) laden
+// Quiz-Auswahl: angetippte Quiz mit dem grünen Kopf-Knopf („✓ … laden“) laden
 export async function slotLaden(page) {
   if (await page.$("[data-slot-laden]")) { await page.evaluate(() => document.querySelector("[data-slot-laden]").click()); await new Promise(r => setTimeout(r, 600)); }
 }
@@ -159,7 +159,7 @@ export async function kurzHalten(page, sel) {
   await page.mouse.move(p.x, p.y); await page.mouse.down(); await new Promise(r => setTimeout(r, 400)); await page.mouse.up();
   await new Promise(r => setTimeout(r, 350));
 }
-// 190: nach „Zur Übersicht“ ist die Session-Auswahl offen – zuklappen (Einstellungen mit Start sichtbar)
+// 190: nach „Zur Übersicht“ ist die Quiz-Auswahl offen – zuklappen (Einstellungen mit Start sichtbar)
 export async function auswahlZu(page) {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]")?.click(); });
   await new Promise(r => setTimeout(r, 400));

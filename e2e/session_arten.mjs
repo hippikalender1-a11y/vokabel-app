@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 import { slotLaden } from "./hilfen.mjs";
 import { quizEinstellungen, neueEineSession, bereichZu, kurzHalten, auswahlZu } from "./hilfen.mjs";
 
-// Gespeicherte Session: eigener Paket-Fortschritt je Abfrageart (Übersetzung / Akzente), Zurücksetzen,
+// Gespeicherte Quiz: eigener Paket-Fortschritt je Abfrageart (Übersetzung / Akzente), Zurücksetzen,
 // Kopfzeile grün + zentriert, Liste klappt nach Auswahl zu
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -22,7 +22,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
-  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Quiz-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
@@ -33,7 +33,7 @@ const fortschritt = () => page.evaluate(() => document.querySelector('[data-anza
 const kopf = () => page.evaluate(() => document.querySelector("[data-slot-kopf]")?.getAttribute("data-slot-kopf"));
 const anzahl = async () => page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl);
 
-// Ü|D|A sitzt in der zugeklappten Kopfzeile der Session-Auswahl
+// Ü|D|A sitzt in der zugeklappten Kopfzeile des Quiz-Auswahl
 const artWaehlen = async a => {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") k.querySelector("button.zeile-rechts")?.click(); });
   await new Promise(r => setTimeout(r, 300));
@@ -108,7 +108,7 @@ await sleep(400);
 if ((await text()).includes("Wiederholung abbrechen")) await clickText("button", "Wiederholung abbrechen");
 if (/Zur Übersicht/.test(await text())) await clickText("button", "Zur Übersicht");
 await sleep(400);
-await auswahlZu(page);   // 190: Session-Auswahl ist offen
+await auswahlZu(page);   // 190: Quiz-Auswahl ist offen
 const akz = await fortschritt();
 console.log("     Akzente nach Abbruch:", akz);
 ok(/^2\/\d+$/.test(akz || ""), "Akzente: eigener Fortschritt 2 / …");
@@ -132,7 +132,7 @@ await page.click("[data-session-zuruecksetzen]");
 await sleep(200);
 await page.click("[data-reset-ja]");
 await sleep(300);
-ok(await fortschritt() === null, "Zurücksetzen: Akzente-Fortschritt weg, neue Session");
+ok(await fortschritt() === null, "Zurücksetzen: Akzente-Fortschritt weg, neues Quiz");
 await artWaehlen("uebersetzung");
 await sleep(300);
 ok(await fortschritt() === "10/14", "Übersetzungs-Fortschritt bleibt nach dem Zurücksetzen von Akzente");
@@ -142,7 +142,7 @@ await page.reload(); await sleep(600);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await sleep(300);
 ok(await kopf() === "gruen" && (await text()).includes("Mein Paket") && await fortschritt() === "10/14",
-  "Nach Neuladen: gespeicherte Session automatisch geladen (grüne Kopfzeile, Übersetzung 10/14)");
+  "Nach Neuladen: gespeichertes Quiz automatisch geladen (grüne Kopfzeile, Übersetzung 10/14)");
 // Statistik: Kopfzeile verhält sich wie im Quiz
 await clickText(".tab", "Statistik");
 await sleep(400);
@@ -163,7 +163,7 @@ await neueEineSession(page);
 await page.reload(); await sleep(600);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await sleep(300);
-ok(await kopf() !== "gruen" && await fortschritt() === null, "Nach „Neu“ und Neuladen: keine Session automatisch geladen");
+ok(await kopf() !== "gruen" && await fortschritt() === null, "Nach „Neu“ und Neuladen: kein Quiz automatisch geladen");
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);

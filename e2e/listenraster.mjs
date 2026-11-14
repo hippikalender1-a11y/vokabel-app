@@ -22,7 +22,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
-  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Quiz-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
@@ -64,7 +64,7 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); let ziel = await mitte("0|0");
 await finger("touchStart", p.x, p.y); await sleep(1000); await finger("touchEnd"); await sleep(400);
-ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|🔁 Keine fälligen Vokabeln|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|📁 In Ordner…|▦ In Sessions aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
+ok((await aktionen()).join("|") === "✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|🔁 Keine fälligen Vokabeln|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|📁 In Ordner…|▦ In mehrere Quiz aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
 await page.evaluate(() => document.querySelector('[data-info-aktion="✕ Auswahl beenden"]').click()); await sleep(300);
 p = await mitte("2|0"); ziel = await mitte("0|0");   // die Auswahl-Tafel kann die Seite verschoben haben
 // kurz halten (angehoben) und ziehen: verschieben

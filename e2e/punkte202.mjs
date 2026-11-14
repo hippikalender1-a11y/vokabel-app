@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 import { zuListen } from "./hilfen.mjs";
 
 // 202: Listen zeigen Beispielsätze (gesamt) und Synonyme – Kachel kurz, Info ausführlich; 203: Mindest-Spalten je Ebene
-// (Listen: Knopf „Spalten“, Sessions: Menü „▥ Spalten“); 204: Quiz aus einer Liste → am Ende zurück zur Liste;
+// (Listen: Knopf „Spalten“, Quiz: Menü „▥ Spalten“); 204: Quiz aus einer Liste → am Ende zurück zur Liste;
 // 206: kein „nach oben“ in der Statistik-Kopfzeile; 208: „⇅ Anordnen…“; 209: Knopfzeile der Liste beginnt mit „Vokabeln“
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
@@ -108,12 +108,12 @@ imQuiz = await quizUndZurueck();
 zurueck = await page.evaluate(() => ({ raster: !!document.querySelector('[data-liste-id="liste_1700000000001"]'), gewaehlt: document.querySelector("[data-liste-oeffnen]")?.dataset.listeOeffnen }));
 ok(imQuiz && zurueck.raster && zurueck.gewaehlt === "liste_1700000000001", `204: Fällige an der Kachel → Listen-Raster, „Unit 2“ gewählt (${JSON.stringify(zurueck)})`);
 
-// ── 203/208: Sessions – „▥ Spalten“ und „⇅ Anordnen…“ im Menü von „Alle Sessions“ ──
+// ── 203/208: Quiz – „▥ Spalten“ und „⇅ Anordnen…“ im Menü von „Alle Quiz“ ──
 await tab("Quiz");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
 await kontext("[data-alle-sessions]");
 const sm = await menue();
-ok(sm.some(m => /^▥ Spalten/.test(m)) && sm.includes("⇅ Anordnen…"), `203/208: Sessions-Menü mit Spalten und Anordnen (${sm.join(" | ")})`);
+ok(sm.some(m => /^▥ Spalten/.test(m)) && sm.includes("⇅ Anordnen…"), `203/208: Quiz-Menü mit Spalten und Anordnen (${sm.join(" | ")})`);
 await aktion("Anordnen");
 await page.evaluate(() => document.querySelector('[data-anordnen="luecken"]')?.click()); await sleep(500);
 const sp = await page.evaluate(() => Object.fromEntries(JSON.parse(localStorage.getItem("vokabel_slots")).gespeichert.map(x => [x.name, `${x.platz.z}|${x.platz.s}`])));
@@ -122,7 +122,7 @@ await kontext("[data-alle-sessions]");
 await aktion("Spalten");
 await page.evaluate(() => document.querySelector('[data-spalten-wahl="2"]')?.click()); await sleep(400);
 const sAnz = await page.evaluate(() => document.querySelector(".slot-raster")?.dataset.rasterSpaltenAnz);
-ok(sAnz === "2", `203: Sessions mindestens 2 Spalten (${sAnz})`);
+ok(sAnz === "2", `203: Quiz mindestens 2 Spalten (${sAnz})`);
 
 // ── 206: Statistik-Kopfzeile ohne „nach oben“ ──
 await tab("Statistik");

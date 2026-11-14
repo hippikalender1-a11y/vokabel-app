@@ -2,8 +2,8 @@ import puppeteer from "puppeteer-core";
 import { listeOeffnen } from "./hilfen.mjs";
 import { zuListen, neueEineSession, listenZu, quizEinstellungen } from "./hilfen.mjs";
 
-// Runde 3: Speichern-Fenster (Knöpfe oben, Eingabetaste), Vokabelbereich einer gespeicherten Session ändern (rot,
-// Überspeichern / Verwerfen), Gruppen bleiben bestehen, geladene Session im Raster sichtbar, Multiquiz + „Fertig“ (auch Statistik),
+// Runde 3: Speichern-Fenster (Knöpfe oben, Eingabetaste), Vokabelbereich einer gespeicherten Quiz ändern (rot,
+// Überspeichern / Verwerfen), Gruppen bleiben bestehen, geladene Quiz im Raster sichtbar, Multiquiz + „Fertig“ (auch Statistik),
 // Exportieren-Fenster, Listen-Menü statt Aktionszeile, keine Erklärzeilen, Antippen liest vor, Stimmen, Farben-Bereich
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -49,7 +49,7 @@ const lage = await page.evaluate(() => { const f = document.querySelector("[data
 ok(lage.knopf > lage.feld && lage.knopf - lage.feld < 60, `Speichern-Knopf direkt unter dem Namensfeld (${Math.round(lage.knopf - lage.feld)} px)`);
 await page.focus("[data-slot-name-feld]"); await page.keyboard.press("Enter"); await sleep(400);
 let sl = await slots();
-ok(!(await page.$(".modal")) && sl.gespeichert?.some(x => x.name === "S1"), "Eingabetaste speichert die Session „S1“");
+ok(!(await page.$(".modal")) && sl.gespeichert?.some(x => x.name === "S1"), "Eingabetaste speichert das Quiz „S1“");
 await speichereAls("S2");
 await page.click("[data-slot-speichern-neu]"); await sleep(400);
 sl = await slots();
@@ -57,11 +57,11 @@ const id1 = sl.gespeichert.find(x => x.name === "S1").id, id2 = sl.gespeichert.f
 ok(!!id2, "„S2“ gespeichert");
 await lang("[data-slot-kopf-name]"); await aktion("💾 Speichern");
 ok(await page.$("[data-ersetzen-liste]") && await page.evaluate(() => document.querySelector("[data-slot-speichern-neu]").getBoundingClientRect().top < document.querySelector("[data-ersetzen-liste]").getBoundingClientRect().top),
-  "Liste „Andere Session ersetzen“ steht unter den Knöpfen");
+  "Liste „Andere Quiz ersetzen“ steht unter den Knöpfen");
 await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b => b.textContent.trim() === "Abbrechen")?.click()); await sleep(300);
 
-// ── 17: gespeicherte Session – „Alle | Bereich“ sichtbar, Änderung → rot, lang drücken: Überspeichern / Verwerfen ──
-ok(!(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Bereich"))), "geladene gespeicherte Session: keine Zeile „Vokabel-Auswahl“");
+// ── 17: gespeichertes Quiz – „Alle | Bereich“ sichtbar, Änderung → rot, lang drücken: Überspeichern / Verwerfen ──
+ok(!(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Bereich"))), "geladene gespeichertes Quiz: keine Zeile „Vokabel-Auswahl“");
 await lang("[data-slot-kopf-name]"); await aktion("📝 Listen/Vokabeln ändern");
 ok(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Bereich")) && await page.$("[data-aendern-bestaetigen]") && !(await page.$("[data-start-knopf]")),
   "„Listen/Vokabeln ändern“: Listen- und Vokabel-Zeile, Name wird „Bestätigen“, darunter ausgeblendet");
@@ -76,7 +76,7 @@ ok(rot.geaendert && /--falsch/.test(rot.bg), `Vokabelauswahl geändert: Name-Kno
 ok(!(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Zurücksetzen"))), "kein eigener „Zurücksetzen“-Knopf mehr");
 await lang("[data-slot-kopf-name]");
 let ak = await aktionen();
-ok(ak.includes("💾 Überspeichern „S2“") && ak.includes("💾 Als neue Session speichern") && ak.includes("↺ Verwerfen"), `Menü: ${ak.join(" | ")}`);
+ok(ak.includes("💾 Überspeichern „S2“") && ak.includes("💾 Als neues Quiz speichern") && ak.includes("↺ Verwerfen"), `Menü: ${ak.join(" | ")}`);
 await aktion("💾 Überspeichern „S2“");
 sl = await slots();
 ok(!(await page.$("[data-slot-kopf-name][data-geaendert]")) && sl.gespeichert.find(x => x.id === id2).konfiguration.vokabelAuswahl.length === 2, "Überspeichern: S2 hat 2 Vokabeln, Kopf nicht mehr rot");
@@ -100,20 +100,20 @@ await page.evaluate((a, b) => {
 await page.reload(); await sleep(900);
 // 15: App-Start mit geladener S2 (in Gruppe G): Auswahl öffnen zeigt die Gruppe
 await page.click("[data-slot-kopf-name]"); await sleep(400);
-ok(await page.$(`[data-slot-id="${id2}"]`) && /Gruppe G/i.test(await page.evaluate(() => document.body.innerText)), "App-Start, Auswahl geöffnet: Gruppe der geladenen Session ist offen, Kachel sichtbar");
-await klickText("button", "← Alle Sessions");
-ok(!(await page.$(`[data-slot-id="${id2}"]`)), "„← Alle Sessions“: oberste Ebene");
+ok(await page.$(`[data-slot-id="${id2}"]`) && /Gruppe G/i.test(await page.evaluate(() => document.body.innerText)), "App-Start, Auswahl geöffnet: Gruppe des geladenen Quiz ist offen, Kachel sichtbar");
+await klickText("button", "← Alle Quiz");
+ok(!(await page.$(`[data-slot-id="${id2}"]`)), "„← Alle Quiz“: oberste Ebene");
 await page.click("[data-slot-kopf-name]"); await sleep(300);   // zu Einstellungen
 await page.click("[data-slot-kopf-name]"); await sleep(400);   // wieder Auswahl
-ok(await page.$(`[data-slot-id="${id2}"]`), "Auswahl wieder geöffnet: springt in die Gruppe der geladenen Session");
-// 16: eine Session aus der Gruppe → Gruppe bleibt; beide raus → leere Gruppe bleibt, Menü „Ordner löschen“
+ok(await page.$(`[data-slot-id="${id2}"]`), "Auswahl wieder geöffnet: springt in die Gruppe des geladenen Quiz");
+// 16: ein Quiz aus der Gruppe → Gruppe bleibt; beide raus → leere Gruppe bleibt, Menü „Ordner löschen“
 await lang(`[data-slot-id="${id1}"]`); await aktion("↑ Aus dem Ordner");
 sl = await slots();
-ok(sl.ordner.some(o => o.id === "o1") && sl.gespeichert.filter(x => x.ordner === "o1").length === 1, "eine Session übrig: Gruppe bleibt bestehen");
+ok(sl.ordner.some(o => o.id === "o1") && sl.gespeichert.filter(x => x.ordner === "o1").length === 1, "ein Quiz übrig: Gruppe bleibt bestehen");
 await lang(`[data-slot-id="${id2}"]`); await aktion("↑ Aus dem Ordner");
 sl = await slots();
-ok(sl.ordner.some(o => o.id === "o1") && sl.gespeichert.filter(x => x.ordner === "o1").length === 0, "keine Session übrig: leere Gruppe bleibt bestehen");
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("Alle Sessions"))?.click()); await sleep(300);
+ok(sl.ordner.some(o => o.id === "o1") && sl.gespeichert.filter(x => x.ordner === "o1").length === 0, "kein Quiz übrig: leere Gruppe bleibt bestehen");
+await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("Alle Quiz"))?.click()); await sleep(300);
 await lang('[data-ordner-id="o1"]');
 ak = await aktionen();
 ok(ak.includes("🗑 Ordner löschen") && !ak.includes("📤 Ordner auflösen"), `leere Gruppe: „Ordner löschen“ (${ak.join(" | ")})`);
@@ -134,7 +134,7 @@ ok(name === "Multiquiz" && !(await page.$(".quiz-frage-box")), `Quiz: „Fertig�
 // Statistik: Multiquiz über „Fertig“
 await klickText(".tab", "Statistik");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf-name]"); if (!document.querySelector("[data-raster-zelle]")) k?.click(); }); await sleep(400);
-if (!(await page.$(`[data-slot-id="${id1}"]`))) { await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("Alle Sessions"))?.click()); await sleep(300); }
+if (!(await page.$(`[data-slot-id="${id1}"]`))) { await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("Alle Quiz"))?.click()); await sleep(300); }
 await lang(`[data-slot-id="${id1}"]`); await lang(`[data-slot-id="${id2}"]`);
 ak = await aktionen();
 ok(ak.includes("🧩 Multiquiz (2)"), `Statistik: Menü der Auswahl mit „🧩 Multiquiz (2)“ (${ak.join(" | ")})`);
@@ -143,14 +143,14 @@ if (!(await page.$("[data-wahl-fertig]"))) { await lang(`[data-slot-id="${id1}"]
 await page.click("[data-wahl-fertig]"); await sleep(600);
 name = await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent.trim());
 ok(name === "Multiquiz", `Statistik: „Fertig“ lädt das Multiquiz (${name})`);
-// „Fertig“ mit genau einer → diese Session laden
+// „Fertig“ mit genau einer → dieses Quiz laden
 await klickText(".tab", "Quiz");
 await page.evaluate(() => { if (!document.querySelector("[data-raster-zelle]")) document.querySelector("[data-slot-kopf-name]")?.click(); }); await sleep(400);
-if (!(await page.$(`[data-slot-id="${id1}"]`))) { await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("Alle Sessions"))?.click()); await sleep(300); }
+if (!(await page.$(`[data-slot-id="${id1}"]`))) { await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("Alle Quiz"))?.click()); await sleep(300); }
 await lang(`[data-slot-id="${id1}"]`);
 await page.click("[data-wahl-fertig]"); await sleep(700);
 name = await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent.trim());
-ok(name === "S1", `„Fertig“ mit einer Session lädt sie (${name})`);
+ok(name === "S1", `„Fertig“ mit eines Quiz lädt sie (${name})`);
 
 // ── 19: Antippen von Frage/Lösung liest vor, Karte deckt dabei nicht auf ──
 await page.evaluate(() => { window.__gesprochen = []; window.speechSynthesis.speak = u => window.__gesprochen.push(u.text); });

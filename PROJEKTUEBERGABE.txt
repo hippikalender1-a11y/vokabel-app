@@ -2894,3 +2894,89 @@ Gesammelt nach Test von 168–174 (noch NICHT umsetzen):
 - 209 Knopfzeile der geöffneten Liste: Vokabeln | Beispielsätze | Spalten | Fremdsprache.
 - 205 (Statistik-Kopfzeile unter dem App-Kopf, iPhone) im Desktop-Chrome nicht nachstellbar (klebt korrekt unter
   Kopf + Session-Kopf) – Rückfrage an den Nutzer. Test e2e/punkte202.mjs.
+
+── 210– (Feedback, gesammelt 14.11.2026) ──
+- 210 Listen-Ordner-Kacheln (Listen-Tab und Listenauswahl im Quiz/Statistik, Screenshot „Schule · 4 Listen“, „Claude ·
+  160 Listen“) zusätzlich mit der Gesamtzahl der Vokabeln darin (samt Unterordnern): „160 Listen · 4.000 Vokabeln“.
+  Wird es eng (schmale Kacheln, ab 4 Spalten bzw. wenn der Text nicht passt): „160 L. · 4.000 V.“.
+  Session-Ordner ebenfalls (entschieden): Anzahl der Sessions bleibt, wo sie jetzt steht (Namenszeile, „· 10“), jetzt
+  als „10 Quiz“; die Vokabelzahl in DERSELBEN Zeile rechtsbündig („120 Vokabeln“). Wenig Platz: „10 Q.“ / „120 V.“.
+  Einzelne Session-Kacheln ebenso: Vokabelzahl oben rechtsbündig in der Namenszeile („25 Vokabeln“ bzw. „25 V.“).
+  Vokabeln je Ordner = Vereinigung aller Vokabeln der Sessions darin (jede einmal, wie 200).
+- 211 Listen-Ordner-Kachel: die Angabe „· n Ordner“ (Unterordner, z. B. „160 Listen · 4 Ordner“) entfällt – mit 210 dann
+  „160 Listen · 4.000 Vokabeln“.
+- 212 Verlauf („🕘 Verlauf · letzte Abfragen“): bis zu 10 Einträge speichern statt 5 (alle .slice(0, 5) beim Anlegen von
+  Verlauf-Einträgen). Verlauf-Chips alle gleich groß, zweispaltig (Raster mit 2 gleich breiten Spalten statt
+  flex-wrap mit unterschiedlich breiten Chips; Text ggf. mit …).
+- 213 Verlauf-Beschriftung kürzer: Jahr zweistellig („14.11.26, 00:35“ statt „14.11.2026, 00:35“). formatSlotDatum
+  (year: "2-digit") für neue Einträge; vorhandene Einträge beim Anzeigen kürzen (vierstelliges Jahr „.2026,“ → „.26,“).
+- 214 Listen-Raster (Listen-Tab, jede Ebene): ist kein freier Platz zu sehen (alle Zellen der angezeigten Zeilen belegt),
+  stets eine zusätzliche Zeile unten mit freien Plätzen anzeigen – damit es immer einen freien Platz für den Lang-Druck
+  (199: Neue Liste / Neuer Ordner) gibt. Freie Plätze wie bisher unsichtbar (nur Lang-Druck). Sessions ebenso (entschieden).
+- 215 Quiz-Tab erneut antippen (man ist schon im Quiz-Tab, Übersicht): öffnet die Session-Auswahl – wie das Antippen des
+  Session-Kopfs. Der Tab kann aber KEINE Auswahl übernehmen (anders als der grüne Kopf-Knopf „‹Name› laden“).
+  Entschieden: Auswahl offen und NICHTS geändert (keine angetippte/kurz gehaltene Kachel, keine Mehrfach-Auswahl) → der
+  Tab schließt sie wieder. Wurde die Auswahl geändert (Kopf ist grün „‹Name› laden“ bzw. „n ausgewählt“), bewirkt der Tab
+  nichts – weder übernehmen noch schließen; bestätigt wird nur über den grünen Kopf.
+- 216 Neues (ungespeichertes) Quiz aus genau EINER Liste (z. B. Liste geöffnet › Quiz-Tab, Screenshots „A1 · 21 Orte in
+  der Stadt“): der Session-Kopf zeigt statt „Neues Quiz“ den Listennamen – weiterhin mit „nicht gespeichert“
+  („A1 · 21 Orte in der Stadt  nicht gespeichert“). Beim Speichern ist dieser Name vorbelegt (slotNamenVorschlag: bei
+  einer Liste deren Name statt „Engl 14.11.“; vorhandener Name → „(2)“). Entschieden: mehrere Listen → weiter „Neues Quiz“
+  (Vorschlag beim Speichern wie bisher „Engl 14.11.“); nur ein Teil der Liste gewählt → Bereich anhängen
+  („A1 · 21 Orte in der Stadt · Nr. 1–10“, wie bereichText; nicht zusammenhängend → „· Auswahl“).
+
+── 210–216 umgesetzt (205 offen – Nutzer testet erneut) ──
+- 210 Session-Kachel: Namenszeile .raster-kopf = .raster-name (Ordner: „· n Quiz“) + rechts .raster-anz [data-vok-anzahl]
+  „n Vokabeln“ (Ordner: Vereinigung der _key). Ab 2 belegten/gewählten Spalten (kurzText) „Q.“ / „V.“. Listen-Ordner
+  (Listen-Tab und auswahlOrdnerZelle) „n Listen · m Vokabeln“ bzw. „n L. · m V.“ (kurzL / eng); zahlDe() mit Tausenderpunkt.
+- 211 „· n Ordner“ auf Listen-Ordnern entfernt.
+- 212 Verlauf .slice(0, 10); [data-verlauf-raster] zweispaltiges Grid, Verlauf-Chips 100 % breit mit „…“.
+- 213 formatSlotDatum year "2-digit"; slotChipLabel kürzt alte Namen „TT.MM.JJJJ,“ → „TT.MM.JJ,“.
+- 214 Sessions/Listen: sind alle Plätze der angezeigten Zeilen belegt, eine Zeile mehr (freie, unsichtbare Plätze).
+- 215 handleTabWechsel: Quiz-Tab im Quiz-Tab (Übersicht) – zu → toggleSlotSektion; offen und nichts gewählt (keine
+  slotVorschau/multiAuswahl/listenAendern) → zu; sonst nichts.
+- 216 einListenName(): genau eine Liste → deren Name (+ „· Nr. a–b“ / „· Auswahl“ bei Teil-Auswahl) im Session-Kopf statt
+  „Neues Quiz“ (mit „nicht gespeichert“) und als Speichern-Vorschlag. Test e2e/punkte210.mjs.
+
+── 217 (Feedback 14.11.2026, Konzept in Abstimmung – noch NICHT umsetzen) ──
+- 217 Listen und Quiz neu ordnen. Zwei Arten zu üben: (A) fertige kleine Listen (z. B. 25 Vokabeln, A1–B2) – die LISTE ist
+  die Einheit, man fragt sie direkt ab, Speichern unnötig; (B) große Buch-Listen (1000+) – daraus werden Quiz/Sessions
+  erstellt (Bereiche, Aufteilen). Wünsche: Quiz aus einer Liste → Kopf zeigt einfach die Liste (kein „nicht gespeichert“);
+  Kopf antippen → zurück zur Listenauswahl (bei geladenem Quiz → Quiz-/Session-Auswahl). In der geöffneten Liste neben
+  „Quiz starten“ ein Knopf „Quiz erstellen“: Bereich + übrige Einstellungen wählen (heute im Quiz-Tab, dort aber mit
+  Listenauswahl, die hier entfällt). Vorschläge und Rückfragen an den Nutzer gestellt (Kopf-Modi Liste/Session, Auswahl im
+  Quiz-Tab mit Umschalter Sessions | Listen, Fortschritt/Einstellungen je Liste merken, kein Verlauf-Eintrag, Ziel-Ordner
+  beim Erstellen).
+  217 Entscheidungen (14.11.2026):
+  (1) Listenauswahl direkt im Quiz-Tab an der Stelle der Quiz-Auswahl, mit Umschalter „Quiz | Listen“ (Ordner, Pfad,
+      Gesten wie bei den Quiz; Listen antippen = übernehmen); Kopf hat zwei Zustände: Quiz (→ Quiz-Auswahl) bzw. Liste
+      (eigene Optik mit Listen-Symbol/Flagge, kein „nicht gespeichert“, → Listen-Auswahl).
+  (2) Listen merken sich Paket-Fortschritt, Tagesstand und Quiz-Einstellungen (wie ein gespeichertes Quiz); kein
+      Verlauf-Eintrag; kein Speichern-Menü für Listen.
+  (3) „Quiz erstellen“: Ziel-Ordner wählbar (Ordner-Wahl im Erstellen-Fenster: Pfad/Baum der Quiz-Ordner, vorbelegt mit
+      dem zuletzt geöffneten Quiz-Ordner, „＋ Neuer Ordner“ möglich) – Vorschlag zur Bestätigung an den Nutzer.
+  (4) Begriff vereinheitlichen: überall „Quiz“ statt „Session(s)“ (z. B. „Alle Quiz“, „＋ Neues Quiz aus Listen“,
+      Menütexte, Info/Hilfe-Texte, Tests).
+
+── 217 umgesetzt ──
+- Liste als Quiz: Slot-Typ "listen" (slots.listen[] je Liste: konfiguration, sessionFortschritte, lernStaende). getSlotEintrag
+  ("listen", id) liefert { id, name aus dem Index, istListe, konfiguration|null }; aendereListenEintrag(id, f) legt an/ändert;
+  updateSlotSF/setzeLernStand legen den Eintrag bei Bedarf an. ladeSlot("listen") – ohne konfiguration →
+  listeAlsQuizVorbereiten(id) (Standard wie früher „Quiz starten“). starteQuiz/Diktat: „listen“ wie „gespeichert“
+  (speichereSessionSlotNeu(…, effSlot.typ, …)); speichereListenKonfig beim Start (Einstellungen merken);
+  merkeRundeImVerlauf: Listen nie im Verlauf. SK.letzterSlot „listen:<id>“ (App-Start lädt die Liste).
+- Kopf (renderSlotKopf): alsListe → „📋 🇬🇧 Name“, grün, data-kopf-art="liste", kein „nicht gespeichert“, Menü
+  „📂 Liste öffnen“ / „＋ Quiz erstellen“ (kein Speichern). Listenauswahl-Zeile bei Listen ausgeblendet.
+- Quiz-Auswahl: auswahlListen (Umschalter quizListenUmschalter() „Quiz | Listen“ in der Pfad-Zeile, beim Öffnen = Art des
+  Kopfs); quizListenNavi() (Pfad der Listen-Ordner) + renderQuizListenRaster() (listenRasterPlaetze, Ordner über
+  auswahlOrdnerZelle, Listen-Kacheln [data-qliste-id] mit Vokabelzahl, Balken, Tagesstand; Geste „qliste“: antippen =
+  uebernimmListe, kurz halten = slotVorschau { typ: "listen" } → Kopf „📋 Name laden“). Info: 📋 statt 🕘.
+- „Quiz erstellen“ (Knopf in der geöffneten Liste neben „Quiz starten“, und im Listen-Kopf-Menü): starteQuizErstellen(id) –
+  Quiz-Tab mit der Liste, Bereich offen, Listenauswahl aus, quizErstellen { listeId }; Kopf grün „＋ Quiz erstellen“
+  (data-kopf-art="erstellen") → Fenster [data-erstellen-dialog]: Name (einListenName, z. B. „Unit 1 · Nr. 1–2“), Ordner-Baum
+  ([data-erstellen-ordner-wahl], vorbelegt slotOrdner, „＋ Neuer Ordner“ per prompt), „In mehrere aufteilen“
+  (starteAufteilen), „Erstellen“ → erstelleQuiz (speichereAlsGespeichert im Ordner, lädt es, Ordner offen).
+- Begriff: „Session(s)“ → „Quiz“ in allen sichtbaren Texten (scratchpad-Skript quiz_begriff.py, Artikel angepasst;
+  Bezeichner unverändert), Tests ebenso. Test e2e/punkte217.mjs (98 Tests grün).
+- 218 Verweil-Ring beim Ziehen auf eine andere Kachel: während er läuft „⇄“ (tauschen), erst voll „📁“ (Ordner)
+  ([data-ring-symbol] tauschen|ordner). Test gruppen_gesten.

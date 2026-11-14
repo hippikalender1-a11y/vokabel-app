@@ -43,7 +43,7 @@ const lageVorher = await lage();
 await mitte(); await mitte();
 const t = await page.evaluate(() => document.body.innerText);
 ok(await art() === "Akzente", `Mitte zeigt „Akzente“ (${await art()})`);
-ok(/Für diese Session sind keine Akzente vorhanden\./.test(t) && await page.$("svg [data-keine-akzente]"), "Hinweis im Kreis-Feld: keine Akzente in dieser Session");
+ok(/Für dieses Quiz sind keine Akzente vorhanden\./.test(t) && await page.$("svg [data-keine-akzente]"), "Hinweis im Kreis-Feld: keine Akzente in dieses Quiz");
 ok(!(await page.$("svg path")) && !/Zur Übersetzungs-Statistik/.test(t), "keine Segmente, kein Wechsel-Knopf");
 ok(/Lernfortschritt/.test(t) && /keine Akzente/.test(t), "Kopfzeile Lernfortschritt bleibt („keine Akzente“)");
 console.log("     Mitte vorher/nachher:", lageVorher, await lage());

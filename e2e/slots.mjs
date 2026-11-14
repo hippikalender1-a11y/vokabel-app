@@ -21,7 +21,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
-  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Quiz-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
@@ -58,7 +58,7 @@ const quizRunde = async () => {
     await sleep(1200);
   }
   await clickText("button", "Zur Übersicht");
-  await auswahlZu(page);   // 190: Session-Auswahl ist offen
+  await auswahlZu(page);   // 190: Quiz-Auswahl ist offen
   await sleep(300);
 };
 await quizRunde();
@@ -77,9 +77,9 @@ const speichern = async () => {
   return vorschlag;
 };
 const v1 = await speichern();
-ok(v1 === `Frz ${heute}`, `Namensvorschlag: „${v1}“`);
+ok(v1 === "Verbes", `216: Namensvorschlag = Name der einen Liste: „${v1}“`);
 const v2 = await speichern();
-ok(v2 === `Frz ${heute} (2)`, `Zweiter Vorschlag eindeutig: „${v2}“`);
+ok(v2 === "Verbes (2)", `Zweiter Vorschlag eindeutig: „${v2}“`);
 const v3 = await speichern();
 sl = await slots();
 console.log("     Gespeichert:", sl.gespeichert.map(x => x.name).join(" | "));
@@ -98,13 +98,13 @@ await page.screenshot({ path: "slots.png" });
 
 // ── 4) Raster: Plätze, Verschieben per Antippen und Ziehen (belegt → tauschen) ──
 const plaetze = async () => Object.fromEntries((await slots()).gespeichert.map(x => [x.name, x.platz ? `${x.platz.z}|${x.platz.s}` : "-"]));
-const [n1, n2, n3] = [v1, v2, `Frz ${heute} (3)`];
+const [n1, n2, n3] = [v1, v2, `${v1} (3)`];
 let pl = await plaetze();
 console.log("     Plätze:", JSON.stringify(pl));
 ok(pl[n1] === "0|0" && pl[n2] === "1|0" && pl[n3] === "2|0", "Neue Einträge untereinander in der ersten Spalte (Raster 10 × 2)");
 ok(await page.evaluate(() => getComputedStyle(document.querySelector(".slot-raster")).gridTemplateColumns.split(" ").length === 1), "196: nur die erste Spalte belegt → eine Spalte");
 ok(await page.evaluate(() => { const neu = document.querySelector("[data-alle-sessions]"); return !!neu && !neu.closest(".slot-raster"); }),
-  "„＋ Neue Session aus Listen“ oben, nicht im Raster");
+  "„＋ Neues Quiz aus Listen“ oben, nicht im Raster");
 t = await page.evaluate(() => document.body.innerText);
 ok(!t.includes("⇄ Verschieben") && !/Lang drücken: Menü/.test(t) && !(await page.$("svg + svg")),
   "Kein Verschieben-Knopf und keine Erklärzeile");
@@ -228,7 +228,7 @@ pl = await plaetze();
 ok(Object.keys(pl).length === 3 && !(neuName in pl), "Löschen über das Menü: Eintrag weg");
 await page.reload(); await sleep(400);
 
-// ── 5) Statistik: Verlauf-Eintrag zeigt Session-Modus ──
+// ── 5) Statistik: Verlauf-Eintrag zeigt Quiz-Modus ──
 await clickText(".tab", "Statistik");
 await sleep(300);
 const offen = await page.evaluate(() => /🕘 Verlauf/i.test(document.body.innerText));
@@ -240,7 +240,7 @@ await sleep(400);
 t = await page.evaluate(() => document.body.innerText);
 const kopf = (t.match(/(Lernfortschritt|Ø Score)[\s\S]{0,80}/) || [""])[0].split("\n").join(" | ");
 console.log("     Statistik-Kopf:", kopf);
-ok(!/Session|Global/.test(kopf) && /Ø Score|Lernfortschritt/.test(kopf), "Statistik: Verlauf-Eintrag lädt, Kopfzeile ohne Global/Session");
+ok(!/Quiz|Global/.test(kopf) && /Ø Score|Lernfortschritt/.test(kopf), "Statistik: Verlauf-Eintrag lädt, Kopfzeile ohne Global/Quiz");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

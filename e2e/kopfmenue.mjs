@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer-core";
 
-// Lang drücken auf den Session-Namen im Kopf (zu und aufgeklappt): Speichern, Umbenennen, Duplizieren,
-// Listen/Vokabeln ändern, Löschen – wie auf der Session-Kachel
+// Lang drücken auf den Quiz-Namen im Kopf (zu und aufgeklappt): Speichern, Umbenennen, Duplizieren,
+// Listen/Vokabeln ändern, Löschen – wie auf des Quiz-Kachel
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
@@ -23,7 +23,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
   const k = { listenIds:["l_a"], vokabelAuswahl:[], bereichTyp:"alle", quizAusgewaehlt:["D1","E1"], quizFrageTyp:"D1", quizAntwortTypenGeordnet:["E1"],
     quizInfoTypenSession:[], quizSpalteModus:{E1:"karte"}, quizZeigeInfo:{}, quizModus:"sequenziell", quizReihenfolge:"listennr" };
-  localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g", name:"Meine Session", timestamp:1, konfiguration:k, sessionFortschritt:null, platz:{z:0,s:0} }] }));
+  localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g", name:"Mein Quiz", timestamp:1, konfiguration:k, sessionFortschritt:null, platz:{z:0,s:0} }] }));
 });
 await page.reload(); await sleep(600);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
@@ -43,14 +43,14 @@ ok(await menue() === ERWARTET, `auf: dasselbe Menü (${await menue()})`);
 // Umbenennen öffnet das Fenster mit dem Namen
 await page.click('[data-info-aktion="✎ Umbenennen"]'); await sleep(300);
 const feld = await page.evaluate(() => [...document.querySelectorAll(".modal input")].map(i => i.value).join("|"));
-ok(/Meine Session/.test(feld), `Umbenennen: Fenster mit dem Namen (${feld})`);
+ok(/Mein Quiz/.test(feld), `Umbenennen: Fenster mit dem Namen (${feld})`);
 await zu(); await page.evaluate(() => document.querySelector(".overlay")?.click()); await sleep(300);
 // Löschen fragt nach
 await langDruck("[data-slot-kopf-name]"); await sleep(300);
 await page.click('[data-info-aktion="🗑 Löschen"]'); await sleep(300);
 ok(await page.evaluate(() => /löschen/i.test(document.querySelector(".modal")?.textContent || "")), "Löschen: Rückfrage");
 
-// ohne gespeicherte Session: nur Speichern
+// ohne gespeichertes Quiz: nur Speichern
 await page.evaluate(() => document.querySelector(".overlay")?.click()); await sleep(200);
 await page.evaluate(() => { localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[] })); localStorage.removeItem("vokabel_letzter_slot"); });
 await page.reload(); await sleep(600);

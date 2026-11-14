@@ -20,7 +20,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
-  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Quiz-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
@@ -95,7 +95,7 @@ console.log("     Quiz nach Statistik-Neu:", JSON.stringify(st));
 ok(st.kopf !== "gruen" && st.listen === "2 Listen", "Statistik „Neu“ (alle Listen) → Quiz: keine Konfiguration, beide Listen");
 const artNachher = await page.evaluate(() => document.querySelector("[data-start-arten] [data-quiz-art].aktiv")?.dataset.quizArt);
 ok(artVorher === "diktat" && artNachher === "uebersetzung", `neues Quiz beginnt in Übersetzung (vorher ${artVorher}, jetzt ${artNachher})`);
-ok(!(await page.$('[data-anzahl="fortschritt"]')), "Quiz: kein Fortschritt einer alten Session sichtbar");
+ok(!(await page.$('[data-anzahl="fortschritt"]')), "Quiz: kein Fortschritt einer alten Quiz sichtbar");
 
 // Quiz: nur Tiere → Statistik zeigt Tiere
 await page.evaluate(() => document.querySelector("button.zeile-rechts[title^='Gewählte Listen']").click());

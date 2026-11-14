@@ -75,7 +75,7 @@ await tippe("[data-reihenfolge]");
 await tippe("[data-reihenfolge]");
 ok(await offen() === "", "nochmal antippen schließt den eigenen Bereich");
 
-// ohne offenen Bereich: nur Kopf, Tabs und Session-Leiste bleiben stehen, der Rest scrollt
+// ohne offenen Bereich: nur Kopf, Tabs und Quiz-Leiste bleiben stehen, der Rest scrollt
 await page.setViewport({ width: 375, height: 500 }); await sleep(300);
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 const lage = () => page.evaluate(() => ({ kopf: Math.round(document.querySelector("[data-slot-kopf]").getBoundingClientRect().top),
@@ -83,12 +83,12 @@ const lage = () => page.evaluate(() => ({ kopf: Math.round(document.querySelecto
 const v = await lage();
 await page.evaluate(() => window.scrollTo(0, 100)); await sleep(300);
 const n = await lage();
-ok(n.kopf === v.kopf && n.listen === v.listen - 100 && n.zeile1 === v.zeile1 - 100, `Session-Leiste bleibt, Listen-Zeile und Zeile 1 scrollen mit (${JSON.stringify(v)} → ${JSON.stringify(n)})`);
+ok(n.kopf === v.kopf && n.listen === v.listen - 100 && n.zeile1 === v.zeile1 - 100, `Quiz-Leiste bleibt, Listen-Zeile und Zeile 1 scrollen mit (${JSON.stringify(v)} → ${JSON.stringify(n)})`);
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 await tippe("[data-reihenfolge]");
 await page.evaluate(() => window.scrollTo(0, 100)); await sleep(300);
 const z1 = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]").getBoundingClientRect(); const z = document.querySelector("[data-reihenfolge]").closest(".quiz-zeile").getBoundingClientRect(); return Math.round(z.top - k.bottom); });
-ok(Math.abs(z1) <= 12, `offener Bereich: seine Zeile klebt unter der Session-Leiste (Abstand ${z1})`);
+ok(Math.abs(z1) <= 12, `offener Bereich: seine Zeile klebt unter des Quiz-Leiste (Abstand ${z1})`);
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);

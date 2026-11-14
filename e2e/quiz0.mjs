@@ -19,7 +19,7 @@ const clickText = async (sel, text, exact = false) => {
     if (el) el.click();
     return !!el;
   }, sel, text, exact);
-  // Ende eines Durchlaufs: „Weiter →“ führt zur Session-Auswertung mit den Knöpfen
+  // Ende eines Durchlaufs: „Weiter →“ führt zur Quiz-Auswertung mit den Knöpfen
   if (!done && await page.$("[data-zur-auswertung]")) { await page.evaluate(() => document.querySelector("[data-zur-auswertung]").click()); await new Promise(r => setTimeout(r, 300)); return clickText(sel, text, exact); }
   if (!done && await bereichZu(page)) return clickText(sel, text, exact);   // offener Bereich blendet den Rest aus
   if (!done) throw new Error(`nicht gefunden: ${sel} "${text}"`);
@@ -76,10 +76,15 @@ console.log("     Verben:", await startText());
 
 // Zur französischen Liste wechseln (über Listen-Auswahl im Quiz-Tab)
 await page.evaluate(() => window.scrollTo(0, 0));
-await clickText("button", "Irregular Verbs");          // Listen-Chip öffnet Auswahl
-await clickText(".quiz-setup-check", "Irregular Verbs"); // abwählen
-await clickText(".quiz-setup-check", "Vocabulaire");     // anwählen
-await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
+// 217: Liste als Quiz – Kopf antippen öffnet die Listen-Auswahl, dort „Vocabulaire“ antippen
+if (await page.$("[data-listen-kopf]")) {
+  await page.click("[data-listen-kopf]"); await sleep(300);
+  await clickText(".quiz-setup-check", "Irregular Verbs"); await clickText(".quiz-setup-check", "Vocabulaire"); await listenZu(page);
+} else {
+  await page.click("[data-slot-kopf-name]"); await sleep(400);
+  await page.evaluate(() => { const b = document.querySelector('[data-auswahl-umschalter="listen"]'); if (b && !b.classList.contains("aktiv")) b.click(); }); await sleep(300);
+  await page.evaluate(() => [...document.querySelectorAll("[data-qliste-id]")].find(e => e.textContent.includes("Vocabulaire"))?.click()); await sleep(700);
+}
 await page.evaluate(async () => { const u = document.querySelector("[data-umfang]"); if (!u) return; u.click(); await new Promise(r => setTimeout(r, 200)); document.querySelector('[data-umfang-wahl="alle"]')?.click(); }); await sleep(300);
 await sleep(400);
 const nachWechsel = await startText();

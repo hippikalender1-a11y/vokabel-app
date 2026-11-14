@@ -92,7 +92,7 @@ await tab("Quiz");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await langDruck('[data-slot-id="g1"]'); await langDruck('[data-slot-id="g2"]');
 ok(await menue() === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|📁 In Ordner… (2)|⇄ Verschieben|🗑 Löschen (2)|↔ Von–Bis|✕ Auswahl beenden", `Konfigurationen: Aktionen für die Auswahl (${await menue()})`);
-ok(/2 Sessions ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-info]")?.innerText || "")), "148: Info zeigt die Auswahl zusammengefasst");
+ok(/2 Quiz ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-info]")?.innerText || "")), "148: Info zeigt die Auswahl zusammengefasst");
 await aktion("🗑 Löschen");
 ok(await page.evaluate(() => /2 Konfigurationen löschen\?/.test(document.querySelector('[data-auswahl-loeschen="slot"]')?.textContent || "")
   && document.querySelector("[data-auswahl-namen]").textContent === "„Quiz A“, „Quiz B“"), "Rückfrage „2 Konfigurationen löschen?“ mit Namen");

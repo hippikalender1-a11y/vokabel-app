@@ -3,8 +3,8 @@ import { listeOeffnen } from "./hilfen.mjs";
 import { neueEineSession, zuListen, listeBereich } from "./hilfen.mjs";
 
 // Kurzes Aufleuchten in der Bestätigen-Farbe (sofort an und aus, ohne Überblendung): gewählte Listen-Kachel,
-// Listen-Name im Kopf nach dem Zuklappen, „Alle | Bereich“ nach dem Bestätigen, geladene Session-Kachel und
-// Session-Name nach dem Zuklappen; Beispielsätze: „📄 Prompt als Datei“ (Begleitsatz in der Zwischenablage)
+// Listen-Name im Kopf nach dem Zuklappen, „Alle | Bereich“ nach dem Bestätigen, geladene Quiz-Kachel und
+// Quiz-Name nach dem Zuklappen; Beispielsätze: „📄 Prompt als Datei“ (Begleitsatz in der Zwischenablage)
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
@@ -33,7 +33,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }, { id:"l_b", name:"Unité 2", sprache:"fr", platz:{z:1,s:0} }]));
   const k = { listenIds:["l_b"], vokabelAuswahl:[], bereichTyp:"alle", quizAusgewaehlt:["D1","E1"], quizFrageTyp:"D1", quizAntwortTypenGeordnet:["E1"],
     quizInfoTypenSession:[], quizSpalteModus:{E1:"karte"}, quizZeigeInfo:{}, quizModus:"sequenziell", quizReihenfolge:"listennr" };
-  localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g", name:"Meine Session", timestamp:1, konfiguration:k, sessionFortschritt:null, platz:{z:0,s:0} }] }));
+  localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g", name:"Mein Quiz", timestamp:1, konfiguration:k, sessionFortschritt:null, platz:{z:0,s:0} }] }));
 });
 await page.reload(); await sleep(700);
 const B = await best();
@@ -66,18 +66,18 @@ ok(!(await zustand('[data-vokwahl="bereich"]')).an, "„Bereich“ leuchtet nich
 await sleep(800);
 ok(!(await zustand('[data-vokwahl="alle"]')).an, "… und hört wieder auf");
 
-// ── Sessions: geladene Kachel leuchtet, danach der Session-Name im Kopf ──
+// ── Quiz: geladene Kachel leuchtet, danach des Quiz-Name im Kopf ──
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 { const r = await page.evaluate(() => { const b = document.querySelector('[data-slot-id="g"]').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
   await page.mouse.move(r.x, r.y); await page.mouse.down(); await sleep(400); await page.mouse.up(); await sleep(80); }   // 192: kurz halten wählt (antippen lädt sofort)
 z = await zustand('[data-slot-id="g"]');
-ok(z?.an && z.farbe === B, `Session-Kachel kurz gehalten: leuchtet kurz (${JSON.stringify(z)})`);
+ok(z?.an && z.farbe === B, `Quiz-Kachel kurz gehalten: leuchtet kurz (${JSON.stringify(z)})`);
 await sleep(300); await page.click("[data-slot-laden]"); await sleep(80);
 z = await zustand("[data-slot-kopf-name]");
-ok(z?.an && z.farbe === B && /Meine Session/.test(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent)), `grüner Knopf lädt: Session-Name im Kopf leuchtet (${JSON.stringify(z)})`);
+ok(z?.an && z.farbe === B && /Mein Quiz/.test(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent)), `grüner Knopf lädt: Quiz-Name im Kopf leuchtet (${JSON.stringify(z)})`);
 await sleep(450);
 z = await zustand("[data-slot-kopf-name]");
-ok(z?.an && z.farbe === B && /Meine Session/.test(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent)), `Übersicht zu: Session-Name leuchtet nach (${JSON.stringify(z)})`);
+ok(z?.an && z.farbe === B && /Mein Quiz/.test(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent)), `Übersicht zu: Quiz-Name leuchtet nach (${JSON.stringify(z)})`);
 await sleep(800);
 ok(!(await zustand("[data-slot-kopf-name]")).an, "… und hört wieder auf");
 

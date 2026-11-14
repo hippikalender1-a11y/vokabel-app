@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer-core";
 import { neueSessionMenue } from "./hilfen.mjs";
 
-// Session-Gruppen (Ordner): „📁 In Ordner…“ (neu / vorhanden), Gruppen-Kachel öffnet die Gruppe („← Alle Sessions“),
+// Quiz-Gruppen (Ordner): „📁 In Ordner…“ (neu / vorhanden), Gruppen-Kachel öffnet die Gruppe („← Alle Quiz“),
 // „↑ Aus dem Ordner“, Gruppe umbenennen / auflösen, Multiquiz der Gruppe, Aufteilen legt eine Gruppe an
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -43,7 +43,7 @@ await page.reload(); await sleep(600);
 
 // Neue Gruppe aus Teil 1
 await langDruck(kachel("s1"));
-ok((await menue()).includes("📁 In Ordner…"), "Session-Menü: „📁 In Ordner…“");
+ok((await menue()).includes("📁 In Ordner…"), "Quiz-Menü: „📁 In Ordner…“");
 await aktion("📁 In Ordner…");
 ok(await page.$("[data-in-gruppe-dialog]"), "Dialog „In Gruppe“");
 await page.type("[data-ordner-name-feld]", "Kapitel A");
@@ -66,11 +66,11 @@ ok(await page.evaluate(() => document.querySelector("[data-ordner-anzahl]")?.dat
 
 // Öffnen, Laden, zurück
 await page.click(`[data-ordner-id="${ordner.id}"]`); await sleep(300);
-ok(await page.$("[data-ordner-zurueck]") && /Kapitel A/.test(await page.evaluate(() => document.querySelector("[data-ordner-pfad]").textContent)), "Gruppe geöffnet: „← Alle Sessions › 📁 Kapitel A“");
+ok(await page.$("[data-ordner-zurueck]") && /Kapitel A/.test(await page.evaluate(() => document.querySelector("[data-ordner-pfad]").textContent)), "Gruppe geöffnet: „← Alle Quiz › 📁 Kapitel A“");
 k = await kacheln();
 ok(k.join("|") === "Teil 1|Teil 2|Teil 3", `in der Gruppe: Teil 1–3 (${k.join(" | ")})`);
 await page.click(kachel("s2")); await sleep(900);   // 192: antippen lädt sofort
-ok(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Teil 2", "Session aus der Gruppe geladen");
+ok(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Teil 2", "Quiz aus der Gruppe geladen");
 await page.click("[data-slot-kopf-name]"); await sleep(300);
 ok(await page.$("[data-ordner-zurueck]"), "Auswahl wieder offen: noch in der Gruppe");
 // Aus der Gruppe nehmen
@@ -80,14 +80,14 @@ ok(!d.gespeichert.find(x => x.id === "s3").ordner, "Teil 3 aus der Gruppe genomm
 await page.click("[data-ordner-zurueck]"); await sleep(300);
 k = await kacheln();
 ok(k.includes("Teil 3") && k.some(t => t.startsWith("📁 Kapitel A")), `oberste Ebene: Gruppe + Teil 3 (${k.join(" | ")})`);
-// Session auf die Gruppen-Kachel ziehen und 1,2 s halten → in die Gruppe
+// Quiz auf die Gruppen-Kachel ziehen und 1,2 s halten → in die Gruppe
 await langDruck(kachel("s3")); await aktion("⇄ Verschieben");
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 const p1 = await page.evaluate(() => { const r = document.querySelector('[data-slot-id="s3"]').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 const p2 = await page.evaluate(id => { const r = document.querySelector(`[data-ordner-id="${id}"]`).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, ordner.id);
 await page.mouse.move(p1.x, p1.y); await page.mouse.down(); await page.mouse.move(p1.x + 20, p1.y + 20, { steps: 3 }); await page.mouse.move(p2.x, p2.y, { steps: 6 }); await sleep(2800); await page.mouse.up(); await sleep(400);
 d = await slots();
-ok(d.gespeichert.find(x => x.id === "s3").ordner === ordner.id, "Session auf die Gruppen-Kachel gezogen → in der Gruppe");
+ok(d.gespeichert.find(x => x.id === "s3").ordner === ordner.id, "Quiz auf die Gruppen-Kachel gezogen → in der Gruppe");
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(b => b.textContent.trim() === "Fertig")?.click()); await sleep(200);
 
 // Gruppen-Menü: Multiquiz, Umbenennen, Auflösen
@@ -107,7 +107,7 @@ if (await page.evaluate(() => document.querySelector("[data-quiz-ansicht]")?.dat
 if (await page.$("[data-ordner-zurueck]")) { await page.click("[data-ordner-zurueck]"); await sleep(300); }
 await langDruck(`[data-ordner-id="${ordner.id}"]`); await aktion("📤 Ordner auflösen");
 d = await slots();
-ok((d.ordner || []).length === 0 && d.gespeichert.every(x => !x.ordner), "aufgelöst: keine Gruppe mehr, alle Sessions oben");
+ok((d.ordner || []).length === 0 && d.gespeichert.every(x => !x.ordner), "aufgelöst: keine Gruppe mehr, alle Quiz oben");
 k = await kacheln();
 ok(["Teil 1", "Teil 2", "Teil 3"].every(n => k.includes(n)), `oberste Ebene: alle drei Teile (${k.join(" | ")})`);
 
@@ -119,7 +119,7 @@ ok(await page.evaluate(() => document.querySelector("[data-aufteilen-gruppe]")?.
 await page.click("[data-aufteilen-anlegen]"); await sleep(500);
 d = await slots();
 const g2 = d.ordner?.find(o => o.name === "Unité 1");
-ok(g2 && d.gespeichert.filter(x => x.ordner === g2.id).length === 2, "Aufteilen: Gruppe „Unité 1“ mit 2 Sessions");
+ok(g2 && d.gespeichert.filter(x => x.ordner === g2.id).length === 2, "Aufteilen: Gruppe „Unité 1“ mit 2 Quiz");
 ok(await page.$("[data-ordner-zurueck]"), "danach ist die neue Gruppe geöffnet");
 
 // Statistik-Tab zeigt die Gruppen ebenfalls

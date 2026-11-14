@@ -30,7 +30,7 @@ const oeffneSicherung = async () => { await oeffneEinst("listen"); await page.ev
 const tab = async name => { await page.evaluate(n => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes(n)).click(), name); await sleep(400); };
 const TAG = 24 * 3600 * 1000;
 const setze = (k, v) => page.evaluate((k, v) => localStorage.setItem(k, JSON.stringify(v)), k, v);
-// Erinnerung steht oben in der Session-Auswahl (Quiz-Tab)
+// Erinnerung steht oben in des Quiz-Auswahl (Quiz-Tab)
 const zurAuswahl = async () => {
   await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
