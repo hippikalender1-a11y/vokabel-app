@@ -3041,3 +3041,18 @@ Neue Namen, die ein ausgelagerter Bereich braucht: in App.jsx zu „const app = 
 hinzufügen und in der Datei mit entpacken. Werkzeuge (Babel-basiert, Analyse + Schreiben) im scratchpad:
 _bereiche.cjs, _ansichten.cjs, _funktionen.cjs, aufteilen.py.
 Stufe 2 (später, mit Nutzer): Zustand nach Themen in eigene Hooks bündeln (Listen, Quiz-Einstellungen, Slots, Farben …).
+
+── Aufteilung Stufe 2a (14.11.2026): Logik ausgelagert (nicht committet) ──
+233 Logik-Funktionen der Komponente nach ihren Abschnitten in src/logik/ (Hüllen-Muster wie Stufe 1c, Verhalten unverändert,
+99/99 Tests grün): allgemein (tt, ttFeld, ordneAn …), listen (Index, Listen-Ordner, Listen-Aktionen, Sprachfilter), vokabeln,
+export (Export, Tab-Wechsel, Gruppen-Quiz), import (Import, Sicherung), slots (Slots/Ordner, Laden, Konfiguration),
+lernenSessions (Lernen, Multiquiz, Speichern, Aufteilen, Session-Fortschritt, Quiz-Tab-Bereiche), auswertung, farbmodus,
+quizStart (Sätze, Menüs, Rückwege), abfrage (laufende Abfrage: Zuordnung, Memory, Antworten, Karten, Akzente, Diktat).
+In App.jsx bleiben: Zustand (useState/useRef), Effekte, abgeleitete Werte, Hüllen und der Haupt-return – 3.274 Zeilen
+(Start: 14.242). Nicht ausgelagert (Prüfung vorsichtig): Funktionen mit App-Namen in Parametern (legeListenOrdnerAn,
+legeOrdnerAn, oeffneVokabelBearbeiten, oeffneExport, wechsleQuizArt, stelleMultiquizEin, aufteilenStand) und solche, die
+beim Zeichnen vor später deklarierten Namen laufen könnten (starteQuiz, starteDiktat, setzeListenPlaetze,
+verschiebeListenInOrdner, sessionSlotKonflikt, speichereSessionSlotNeu, sessionDurchlaufStarten).
+Werkzeug: scratchpad/_logik.cjs (Analyse + Schreiben, sammelt Modul-Importe auch aus Parametern).
+Wie ändern: Funktion in src/logik/… bearbeiten; braucht sie einen neuen App-Namen, ihn in der Hülle in App.jsx
+({ …, neuerName }) und im „const { … } = app;“ der Funktion ergänzen.

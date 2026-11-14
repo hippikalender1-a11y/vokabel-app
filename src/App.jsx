@@ -23,6 +23,17 @@ import { gruppenKurz as gruppenKurzTeil, listeOeffnenKopf as listeOeffnenKopfTei
 import { renderFarbschemata as renderFarbschemataTeil } from "./bereiche/farbenAnsicht.jsx";
 import { auswahlOrdnerZelle as auswahlOrdnerZelleTeil, listenAuswahlPfad as listenAuswahlPfadTeil, listenNavi as listenNaviTeil, listenRasterPlaetze as listenRasterPlaetzeTeil, ordnerNavi as ordnerNaviTeil, pfadTeile as pfadTeileTeil, quizListenNavi as quizListenNaviTeil, quizListenUmschalter as quizListenUmschalterTeil, renderListenRaster as renderListenRasterTeil, renderQuizListenRaster as renderQuizListenRasterTeil, renderSlotBereiche as renderSlotBereicheTeil, wahlLeiste as wahlLeisteTeil } from "./bereiche/kacheln.jsx";
 import { DialogErstellenFenster, DialogGruppenAenderungsDialog, DialogInGruppe, DialogJsonExport, DialogKlammern, DialogLernenEinst, DialogListeZuruecksetzen, DialogListeZusammenfuehren, DialogNeueSession, DialogSaetze, DialogSlotSpeichern, DialogSlotUmbenennen, DialogStimmenHilfe, DialogStufenRegeln, DialogSynonyme, DialogVorlesen, KiPromptAnsicht, StatistikKopf1, StatistikKopf2 } from "./bereiche/dialoge.jsx";
+import { klappeFreieZu as klappeFreieZuTeil, ordneAn as ordneAnTeil, setzeMinSpalten as setzeMinSpaltenTeil, tt as ttTeil, ttFeld as ttFeldTeil, wechsleStimme as wechsleStimmeTeil } from "./logik/allgemein.jsx";
+import { auswahlTafel as auswahlTafelTeil, benenneListenOrdnerUm as benenneListenOrdnerUmTeil, dupliziereListe as dupliziereListeTeil, erstelleListe as erstelleListeTeil, gruppiereListen as gruppiereListenTeil, importOrdnerWahl as importOrdnerWahlTeil, importZielOrdner as importZielOrdnerTeil, legeGezogenAb as legeGezogenAbTeil, listenKopieName as listenKopieNameTeil, listenOrdnerDaten as listenOrdnerDatenTeil, loeschen as loeschenTeil, loeseListenOrdnerAuf as loeseListenOrdnerAufTeil, oeffneModal as oeffneModalTeil, oeffneSynFenster as oeffneSynFensterTeil, setzeListeZurueck as setzeListeZurueckTeil, setzeListenSprache as setzeListenSpracheTeil, setzeSpaltenArt as setzeSpaltenArtTeil, speichereEinst as speichereEinstTeil, speichereIndex as speichereIndexTeil, speichereSpaltenname as speichereSpaltennameTeil, synPortion as synPortionTeil, synZiel as synZielTeil, uebernehmeSynonyme as uebernehmeSynonymeTeil, umbenennen as umbenennenTeil, verweilGeht as verweilGehtTeil, wechsleSprache as wechsleSpracheTeil, zeigeAuswahlTafel as zeigeAuswahlTafelTeil } from "./logik/listen.jsx";
+import { fuehreListenZusammen as fuehreListenZusammenTeil, loescheVokabel as loescheVokabelTeil, nimmVokabelHeraus as nimmVokabelHerausTeil, schliesseVokabelBearbeiten as schliesseVokabelBearbeitenTeil, setzeHerausgenommen as setzeHerausgenommenTeil, speichereVokabelBearbeitung as speichereVokabelBearbeitungTeil } from "./logik/vokabeln.jsx";
+import { bestaetigeDateiExport as bestaetigeDateiExportTeil, exportStandardName as exportStandardNameTeil, generiereKombiniertenExport as generiereKombiniertenExportTeil, gruppenQuizPasst as gruppenQuizPasstTeil, handleTabWechsel as handleTabWechselTeil, kopiereListen as kopiereListenTeil, oeffneDateiExport as oeffneDateiExportTeil, starteGruppenQuiz as starteGruppenQuizTeil, teileAlsDatei as teileAlsDateiTeil, toggleStatistikListe as toggleStatistikListeTeil } from "./logik/export.jsx";
+import { analysiereImport as analysiereImportTeil, autoMappeKolumnen as autoMappeKolumnenTeil, bestaetigeWiederherstellen as bestaetigeWiederherstellenTeil, exportiereAlsJson as exportiereAlsJsonTeil, exportiereAlsJsonBestaetigt as exportiereAlsJsonBestaetigtTeil, fuehreImportDurch as fuehreImportDurchTeil, getBestehendZielOptionen as getBestehendZielOptionenTeil, getBestehendeListe as getBestehendeListeTeil, importiereAlleListen as importiereAlleListenTeil, importiereAusJsonDaten as importiereAusJsonDatenTeil, ladeSicherungsDatei as ladeSicherungsDateiTeil, resetImport as resetImportTeil, schalteEinstBereich as schalteEinstBereichTeil, setzeMapping as setzeMappingTeil, sichereAlles as sichereAllesTeil, speichereSicherung as speichereSicherungTeil } from "./logik/import.jsx";
+import { aendereListenEintrag as aendereListenEintragTeil, aktiviereSlotFortschritt as aktiviereSlotFortschrittTeil, aktuelleKonfiguration as aktuelleKonfigurationTeil, applyKonfiguration as applyKonfigurationTeil, artEinstellungenJetzt as artEinstellungenJetztTeil, benenneOrdnerUm as benenneOrdnerUmTeil, erstelleQuiz as erstelleQuizTeil, erstelleVerlaufEintrag as erstelleVerlaufEintragTeil, faelligeSchluessel as faelligeSchluesselTeil, getSlotEintrag as getSlotEintragTeil, getSlotsData as getSlotsDataTeil, gruppiere as gruppiereTeil, ladeFaellige as ladeFaelligeTeil, ladeSlot as ladeSlotTeil, ladeSlotStatistik as ladeSlotStatistikTeil, listeAlsQuizVorbereiten as listeAlsQuizVorbereitenTeil, loeseOrdnerAuf as loeseOrdnerAufTeil, merkeRundeImVerlauf as merkeRundeImVerlaufTeil, rasterEinordnen as rasterEinordnenTeil, schliesseSlotsVerzoegert as schliesseSlotsVerzoegertTeil, setSlotsData as setSlotsDataTeil, setzeSlotPlaetze as setzeSlotPlaetzeTeil, speichereListenKonfig as speichereListenKonfigTeil, starteQuizErstellen as starteQuizErstellenTeil, toggleInfoSpalte as toggleInfoSpalteTeil, toggleQuizSpalte as toggleQuizSpalteTeil, toggleSpalteRolle as toggleSpalteRolleTeil, toggleVokCheckbox as toggleVokCheckboxTeil, verschiebeInOrdner as verschiebeInOrdnerTeil, wendeArtEinstellungenAn as wendeArtEinstellungenAnTeil, zurUebersetzung as zurUebersetzungTeil } from "./logik/slots.jsx";
+import { beendeLernen as beendeLernenTeil, beendeQuiz as beendeQuizTeil, benenneSlotUm as benenneSlotUmTeil, dupliziereSlot as dupliziereSlotTeil, erstAusQuiz as erstAusQuizTeil, getKombinierteListe as getKombinierteListeTeil, initQuizDefaults as initQuizDefaultsTeil, klappeUebersichtEin as klappeUebersichtEinTeil, kopieName as kopieNameTeil, legeAufteilenAn as legeAufteilenAnTeil, lernEinstellungen as lernEinstellungenTeil, lernInfoZeigen as lernInfoZeigenTeil, lernPause as lernPauseTeil, lernStandVon as lernStandVonTeil, lernenVor as lernenVorTeil, lernenWeiter as lernenWeiterTeil, lernenZurueck as lernenZurueckTeil, loescheAuswahl as loescheAuswahlTeil, loescheSessionSlot as loescheSessionSlotTeil, loescheSlotEintrag as loescheSlotEintragTeil, multiZusammenstellung as multiZusammenstellungTeil, naechstesLernPaket as naechstesLernPaketTeil, neueQuizKonfiguration as neueQuizKonfigurationTeil, schliesseQuizBereiche as schliesseQuizBereicheTeil, sessionStandImQuiz as sessionStandImQuizTeil, setzeLernEinst as setzeLernEinstTeil, setzeLernStand as setzeLernStandTeil, setzeQuizEinstellungenZurueck as setzeQuizEinstellungenZurueckTeil, speichereAlsGespeichert as speichereAlsGespeichertTeil, starteAufteilen as starteAufteilenTeil, starteLernQuiz as starteLernQuizTeil, starteLernen as starteLernenTeil, toggleAbfrageModus as toggleAbfrageModusTeil, toggleEinstellungen as toggleEinstellungenTeil, toggleEinzelauswahl as toggleEinzelauswahlTeil, toggleListenAuswahl as toggleListenAuswahlTeil, toggleQuizTabListe as toggleQuizTabListeTeil, toggleReihenfolge as toggleReihenfolgeTeil, toggleSessionBereich as toggleSessionBereichTeil, toggleSlotSektion as toggleSlotSektionTeil, toggleStatistikEinzelauswahl as toggleStatistikEinzelauswahlTeil, toggleStatistikListenAuswahl as toggleStatistikListenAuswahlTeil, ueberspeichereSession as ueberspeichereSessionTeil, updateSessionSlotFortschritt as updateSessionSlotFortschrittTeil, updateSlotSF as updateSlotSFTeil } from "./logik/lernenSessions.jsx";
+import { auswahlStuecke as auswahlStueckeTeil, einListenName as einListenNameTeil, sessionAuswertungDaten as sessionAuswertungDatenTeil, sessionAuswertungSeite as sessionAuswertungSeiteTeil, sichtbarHalten as sichtbarHaltenTeil, slotNamenVorschlag as slotNamenVorschlagTeil, springeZuTreffer as springeZuTrefferTeil, sprungKnopf as sprungKnopfTeil, suchInfo as suchInfoTeil, suchMarke as suchMarkeTeil, vonBisLangDruck as vonBisLangDruckTeil, zeileImBlick as zeileImBlickTeil, zuEinstListen as zuEinstListenTeil } from "./logik/auswertung.jsx";
+import { aendereEigenesSchema as aendereEigenesSchemaTeil, beendeFarbModus as beendeFarbModusTeil, dupliziereSchema as dupliziereSchemaTeil, entferneElementFarbe as entferneElementFarbeTeil, farbRadAbbrechen as farbRadAbbrechenTeil, farbRadAnwenden as farbRadAnwendenTeil, farbRollenBei as farbRollenBeiTeil, klammerAenderungen as klammerAenderungenTeil, loescheSchema as loescheSchemaTeil, oeffneElementFarbRad as oeffneElementFarbRadTeil, oeffneFarbRad as oeffneFarbRadTeil, starteFarbModus as starteFarbModusTeil, uebernehmeFarben as uebernehmeFarbenTeil, verschiebeKlammern as verschiebeKlammernTeil, zufallsSchema as zufallsSchemaTeil } from "./logik/farbmodus.jsx";
+import { beendeMultiAuswahl as beendeMultiAuswahlTeil, brecheQuizAb as brecheQuizAbTeil, infoEintrag as infoEintragTeil, lernstandJeArt as lernstandJeArtTeil, listenMenue as listenMenueTeil, listenWahlMenue as listenWahlMenueTeil, oeffneListeDetail as oeffneListeDetailTeil, oeffneSatzFenster as oeffneSatzFensterTeil, quizRegeln as quizRegelnTeil, satzPortion as satzPortionTeil, sessionSpeicherAktionen as sessionSpeicherAktionenTeil, uebernehmeSaetze as uebernehmeSaetzeTeil, uebernimmListe as uebernimmListeTeil, verlasseRunde as verlasseRundeTeil, zurRundenStatistik as zurRundenStatistikTeil, zurueckZumLernen as zurueckZumLernenTeil, zurueckZurStatistik as zurueckZurStatistikTeil } from "./logik/quizStart.jsx";
+import { akzentFehlgriff as akzentFehlgriffTeil, akzentStand as akzentStandTeil, beendeVerzoegerung as beendeVerzoegerungTeil, begrenzeOhneAkzent as begrenzeOhneAkzentTeil, bewerteKarte as bewerteKarteTeil, brecheWiederholungAb as brecheWiederholungAbTeil, deckeKarteAuf as deckeKarteAufTeil, geheZurueck as geheZurueckTeil, getAktVok as getAktVokTeil, karteWeiter as karteWeiterTeil, klickeButton as klickeButtonTeil, memoryTippe as memoryTippeTeil, mitFlash as mitFlashTeil, mitRueckblick as mitRueckblickTeil, mitVerzoegerung as mitVerzoegerungTeil, mitZuordnungMix as mitZuordnungMixTeil, naechsteDiktatVokabel as naechsteDiktatVokabelTeil, naechsteVokabel as naechsteVokabelTeil, naechsteVokabelState as naechsteVokabelStateTeil, naechsteVokabelState0 as naechsteVokabelState0Teil, pruefeAkzente as pruefeAkzenteTeil, pruefeAntwort as pruefeAntwortTeil, pruefeDiktatAntwort as pruefeDiktatAntwortTeil, rueckblickWischen as rueckblickWischenTeil, schliesseAkzenteAb as schliesseAkzenteAbTeil, setzeAkzentVariante as setzeAkzentVarianteTeil, spaltenAbschluss as spaltenAbschlussTeil, spielBeenden as spielBeendenTeil, sprichDiktatNochmal as sprichDiktatNochmalTeil, starteWiederholung as starteWiederholungTeil, ueberspringeWeitere as ueberspringeWeitereTeil, umwerten as umwertenTeil, verteileOhneAkzent as verteileOhneAkzentTeil, waehleAkzentKachel as waehleAkzentKachelTeil, wechsleZuMC as wechsleZuMCTeil, weiterNachSpalte as weiterNachSpalteTeil, zeigeDiktatLoesung as zeigeDiktatLoesungTeil, zeigeLosung as zeigeLosungTeil, zuordnungGruppeTippe as zuordnungGruppeTippeTeil, zuordnungMixWeiter as zuordnungMixWeiterTeil, zuordnungPruefe as zuordnungPruefeTeil, zuordnungRunde as zuordnungRundeTeil, zuordnungRundeAus as zuordnungRundeAusTeil, zuordnungRundeEnde as zuordnungRundeEndeTeil, zuordnungTippe as zuordnungTippeTeil, zuordnungWerte as zuordnungWerteTeil, zuordnungZeitBis as zuordnungZeitBisTeil } from "./logik/abfrage.jsx";
 
 export default function VokabelApp() {
   const [tab, setTab] = useState("quiz");
@@ -179,11 +190,7 @@ export default function VokabelApp() {
     if (ordnerId) return ((art === "liste" ? listenOrdner : slots.ordner) || []).find(o => o.id === ordnerId)?.spalten || 1;
     return einstellungen.ebenenSpalten?.[art] || 1;
   };
-  function setzeMinSpalten(art, ordnerId, n) {
-    if (!ordnerId) { speichereEinst({ ...einstellungen, ebenenSpalten: { ...(einstellungen.ebenenSpalten || {}), [art]: n } }); return; }
-    if (art === "liste") { const d = listenOrdnerDaten(); speichereListenOrdnerDaten({ ...d, ordner: d.ordner.map(o => o.id === ordnerId ? { ...o, spalten: n } : o) }); }
-    else { const d = getSlotsData(); setSlotsData({ ...d, ordner: (d.ordner || []).map(o => o.id === ordnerId ? { ...o, spalten: n } : o) }); }
-  }
+  function setzeMinSpalten(...args) { return setzeMinSpaltenTeil({ einstellungen, getSlotsData, listenOrdnerDaten, setSlotsData, speichereEinst, speichereListenOrdnerDaten }, ...args); }
   const [spaltenWahl, setSpaltenWahl] = useState(null);
   const [anordnen, setAnordnen] = useState(null);
   const [quizErstellen, setQuizErstellen] = useState(null);       // 217: { listeId } – „Quiz erstellen“ aus einer Liste (Bereich + Einstellungen)
@@ -196,28 +203,7 @@ export default function VokabelApp() {
   const slotInfoRefCb = useMemo(() => hoeheBeobachten(setSlotInfoH), []);   // eslint-disable-line react-hooks/exhaustive-deps
   const listenKopfRefCb = useMemo(() => hoeheBeobachten(setListenKopfH), []);   // eslint-disable-line react-hooks/exhaustive-deps       // 217: Quiz-Auswahl zeigt die Listen (Umschalter „Quiz | Listen“)   // 208: { art, ordner } – Fenster „Anordnen“
   // 208: anordnen nach name | datum | lernstand | luecken (Spalten = gewählte bzw. belegte)
-  function ordneAn(art, ordnerId, nach) {
-    const liste = art === "liste";
-    const data = liste ? listenOrdnerDaten() : rasterEinordnen(getSlotsData());
-    const ebene = ebeneVon(data, ordnerId);
-    const spalten = ebenenSpalten(ebene, false, minSpalten(art, ordnerId));
-    const datum = x => liste ? Number(String(x.id).match(/(\d{10,})/)?.[1] || 0) : (x.timestamp || 0);
-    const pctListe = id => lernstandJeArt(lsGet(SK.liste(id))?.vokabeln || [], id).uebersetzung.pct || 0;
-    const pctSession = x => { const k = x.konfiguration || {};
-      let v = (k.listenIds || []).flatMap(id => (lsGet(SK.liste(id))?.vokabeln || []).map(y => ({ ...y, _key: `${id}__${y.id}` })));
-      if (k.bereichTyp === "bereich" && k.vokabelAuswahl?.length) { const a = new Set(k.vokabelAuswahl); v = v.filter(y => a.has(y._key)); }
-      return lernstandJeArt(v).uebersetzung.pct || 0; };
-    const pct = x => x.istOrdner
-      ? (() => { const e = eintraegeImOrdner(data, x.id); return e.length ? e.reduce((m, y) => m + (liste ? pctListe(y.id) : pctSession(y)), 0) / e.length : 0; })()
-      : liste ? pctListe(x.id) : pctSession(x);
-    const vergleich = nach === "name" ? nameVergleich
-      : nach === "datum" ? (a, b) => (a.istOrdner || b.istOrdner ? nameVergleich(a, b) : datum(a) - datum(b))
-      : nach === "lernstand" ? (a, b) => pct(b) - pct(a)
-      : null;
-    const neu = ordneEbeneAn(data, ordnerId, vergleich, spalten);
-    if (liste) speichereListenOrdnerDaten(neu); else setSlotsData(rasterEinordnen(neu));
-    setAnordnen(null);
-  }   // 203: { art, ordner } – Fenster „Spalten“ (Quiz)
+  function ordneAn(...args) { return ordneAnTeil({ getSlotsData, lernstandJeArt, listenOrdnerDaten, minSpalten, rasterEinordnen, setAnordnen, setSlotsData, speichereListenOrdnerDaten }, ...args); }   // 203: { art, ordner } – Fenster „Spalten“ (Quiz)
   const [satzStand, setSatzStand] = useState({});   // 202: { listeId: { vokId: Anzahl Sätze } }
   const ladeSatzStand = () => satzStandAlle().then(setSatzStand);
   useEffect(() => { ladeSatzStand(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -369,13 +355,7 @@ export default function VokabelApp() {
     return () => s.removeEventListener("voiceschanged", neu);
   }, []);
   const aendereStimmen = neu => { setzeStimmenWahl(neu); setStimmenWahlState(neu); };
-  function wechsleStimme(text, lang) {
-    const v = naechsteStimme(normLang(lang).split("-")[0]);
-    setStimmenWahlState(STIMMEN_WAHL);
-    if (!text || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    vorleseTeile(text).forEach(x => window.speechSynthesis.speak(aeusserung(x, lang, v)));
-  }   // Einstellungen: aufgeklappter Bereich (immer nur einer)
+  function wechsleStimme(...args) { return wechsleStimmeTeil({ setStimmenWahlState }, ...args); }   // Einstellungen: aufgeklappter Bereich (immer nur einer)
   const infoKontextContainerRef = useRef(null);
   const tooltipTimer = useRef(null);
   const tooltipShown = useRef(false);
@@ -385,45 +365,9 @@ export default function VokabelApp() {
   // aktionen (optional): Lang-Druck bzw. Rechtsklick zeigt die Erklärung mit Menü-Knöpfen darunter
   // opts.langText: anderer Text für den Lang-Druck (z. B. nur der volle Name); opts.beimZeigen(x, y): Rückruf;
   // opts.auswahl: als Auswahl-Tafel zeigen (siehe infoEreignisse.js); opts.eigeneGeste: Touch-Lang-Druck übernimmt die Kachel-Geste
-  function tt(text, aktionen, opts = {}) {
-    if (!text) return {};
-    const langText = opts.langText || text;
-    return {
-      // Rechtsklick = langer Druck: Menü bzw. Erklärung (mit „🎨 Farbe ändern“)
-      // verschachtelt: ein inneres Element mit eigenem Menü hat Vorrang vor dem äußeren (sonst gewinnt wie bisher das äußere)
-      onContextMenu(e) { e.preventDefault(); if (e.nativeEvent._ttMenue) return; if (aktionen) e.nativeEvent._ttMenue = true;
-        // 171: Android meldet den Lang-Druck zusätzlich als Kontextmenü – bei Kacheln läuft schon die eigene Geste (sonst rein + wieder heraus)
-        if (opts.eigeneGeste && (kachelGesteRef.current || lassoRef.current?.aktiv || e.nativeEvent.sourceCapabilities?.firesTouchEvents || e.nativeEvent.pointerType === "touch")) return;
-        opts.beimLang?.();
-        if (aktionen) opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen, { ...(opts.auswahl ? { auswahl: opts.auswahl } : {}), ...(opts.regler ? { regler: opts.regler() } : {}) }); },
-      title: text,
-      "data-info": text,
-      onTouchStart(e) {
-        if (e.nativeEvent._ttMenue) return;
-        if (aktionen) e.nativeEvent._ttMenue = true;
-        if (opts.eigeneGeste) return;   // Kacheln: Haltestufen (Verschieben / Auswählen) statt Erklärung
-        const t = e.touches[0];
-        tooltipStart.current = { x: t.clientX, y: t.clientY };
-        clearTimeout(tooltipTimer.current);
-        tooltipShown.current = false;
-        tooltipTimer.current = setTimeout(() => {
-          if (slotZiehenRef.current?.aktiv) return;   // beim Verschieben im Raster keine Erklärung einblenden
-          if (farbModusRef.current) return;            // Farbmodus: langer Druck öffnet das Farbfeld
-          tooltipShown.current = true; opts.beimLang?.(); zeigeInfo(langText, t.clientX, t.clientY, aktionen, { ...(opts.auswahl ? { auswahl: opts.auswahl } : {}), ...(opts.regler ? { regler: opts.regler() } : {}) });
-          if (aktionen) opts.beimMenue?.();
-          opts.beimZeigen?.(t.clientX, t.clientY);
-        }, 500);
-      },
-      onTouchEnd(e)   { clearTimeout(tooltipTimer.current); if (tooltipShown.current) { e.preventDefault(); tooltipShown.current = false; } },
-      onTouchMove(e)  {   // erst ab 10 px Bewegung abbrechen (Finger zittert); Finger zittert nach dem Aufgehen: Tafel bleibt
-        const t = e.touches[0], st = tooltipStart.current;
-        if (!t || !st || Math.hypot(t.clientX - st.x, t.clientY - st.y) > 10) clearTimeout(tooltipTimer.current);
-      },
-      onTouchCancel() { clearTimeout(tooltipTimer.current); tooltipShown.current = false; },
-    };
-  }
+  function tt(...args) { return ttTeil({ farbModusRef, kachelGesteRef, lassoRef, slotZiehenRef, tooltipShown, tooltipStart, tooltipTimer }, ...args); }
   // Eingabefelder/Ziehen: nur Maus-Hinweis + Info-Modus (langes Drücken bleibt Einfügen/Markieren/Ziehen)
-  function ttFeld(text) { return text ? { title: text, "data-info": text } : {}; }
+  function ttFeld(...args) { return ttFeldTeil({  }, ...args); }
   const [headerH, setHeaderH] = useState(104);
   const [alleBereichH, setAlleBereichH] = useState(0);
   const [abfrageModusH, setAbfrageModusH] = useState(0);
@@ -554,11 +498,7 @@ export default function VokabelApp() {
     zuklappFreiRef.current = frei;
     setZuklappHinweis(hinweis);
   };
-  function klappeFreieZu() {
-    kontexteRef.current().forEach(k => k.schliessen());
-    zuklappFreiRef.current = new Set();
-    setZuklappHinweis(false);
-  }
+  function klappeFreieZu(...args) { return klappeFreieZuTeil({ kontexteRef, setZuklappHinweis, zuklappFreiRef }, ...args); }
   useEffect(() => {
     let timer = null;
     const onScroll = () => {
@@ -1376,30 +1316,10 @@ export default function VokabelApp() {
   // die Reihenfolge des Index folgt dem Raster (zeilenweise) und gilt so in der ganzen App
   // 193: mit Listen-Ordnern – jede Ebene (oberste und jeder Ordner) hat ihr eigenes Raster; der Index folgt dem
   // Ordner-Baum (Ordner mit ihrem Inhalt an ihrer Stelle). ordner: Listen-Ordner (werden mit gespeichert)
-  function speichereIndex(idx, einst = lsGet(SK.einstellungen, defaultEinstellungen()), ordner = lsGet(SK.listenOrdner, [])) {
-    const groesse = rasterGroesse(einst, "listenRaster");
-    let data = ordnerBereinigen({ ordner, gespeichert: idx });
-    let zeilen = groesse.zeilen;
-    for (const oid of [null, ...data.ordner.map(o => o.id)]) {
-      const r = ordneRaster(ebeneVon(data, oid), groesse);
-      zeilen = Math.max(zeilen, r.zeilen);
-      data = setzeEbene(data, r.gespeichert);
-    }
-    if (zeilen !== groesse.zeilen) speichereEinst({ ...einst, listenRaster: { ...groesse, zeilen } });
-    const sortiert = nachOrdnerBaum(data);
-    setListenIndex(sortiert); lsSet(SK.listenIndex, sortiert);
-    setListenOrdner(data.ordner); lsSet(SK.listenOrdner, data.ordner);
-  }
+  function speichereIndex(...args) { return speichereIndexTeil({ setListenIndex, setListenOrdner, speichereEinst }, ...args); }
   // 193: über zielId verweilen bildet einen Ordner (Eintrag) bzw. legt hinein (Ordner) – geht das mit ids?
-  function verweilGeht(liste, zielId, ids) {
-    if (!zielId || ids.includes(zielId)) return false;
-    const data = liste ? listenOrdnerDaten() : getSlotsData();
-    const offen = liste ? listenOrdnerOffenRef.current : slotOrdnerRef.current;
-    const ordnerIds = new Set((data.ordner || []).map(o => o.id));
-    return ordnerIds.has(zielId) ? ids.filter(id => ordnerIds.has(id)).every(id => ordnerPasst(data.ordner, id, zielId))
-      : !ids.some(id => ordnerIds.has(id)) && ordnerPfad(data.ordner, offen).length < ORDNER_TIEFE_MAX;
-  }
-  function listenOrdnerDaten() { return { ordner: lsGet(SK.listenOrdner, []), gespeichert: lsGet(SK.listenIndex, []) }; }
+  function verweilGeht(...args) { return verweilGehtTeil({ getSlotsData, listenOrdnerDaten, listenOrdnerOffenRef, slotOrdnerRef }, ...args); }
+  function listenOrdnerDaten(...args) { return listenOrdnerDatenTeil({  }, ...args); }
   const speichereListenOrdnerDaten = (d, einst) => speichereIndex(d.gespeichert, einst, d.ordner);
   // Listen (ids) untereinander ab Platz ziel in der geöffneten Ebene; Raster wächst bei Bedarf
   function setzeListenPlaetze(ids, ziel) {
@@ -1422,63 +1342,18 @@ export default function VokabelApp() {
     listenWahlEnde();
     return id;
   }
-  function gruppiereListen(ids, ziel) {
-    const data = listenOrdnerDaten(), offen = listenOrdnerOffenRef.current;
-    const imZiel = ebeneVon(data, offen).find(e => e.platz && e.platz.z === ziel.z && e.platz.s === ziel.s);
-    if (!imZiel || ids.includes(imZiel.id)) { setzeListenPlaetze(ids, ziel); return; }
-    if (imZiel.istOrdner) { verschiebeListenInOrdner(ids, imZiel.id); return; }
-    const listen = ids.filter(id => data.gespeichert.some(x => x.id === id));
-    if (!listen.length || ordnerPfad(data.ordner, offen).length >= ORDNER_TIEFE_MAX) { setzeListenPlaetze(ids, ziel); return; }
-    const alle = [imZiel.id, ...listen];
-    legeListenOrdnerAn(gruppenName(alle.map(id => data.gespeichert.find(x => x.id === id)?.name || ""), data.ordner.map(o => o.name)), alle);
-  }
-  function loeseListenOrdnerAuf(id) {
-    const data = listenOrdnerDaten();
-    const eltern = data.ordner.find(x => x.id === id)?.ordner || null;
-    speichereListenOrdnerDaten(loeseOrdnerDaten(data, id));
-    if (listenOrdnerOffenRef.current && ordnerUnter(data.ordner, id).has(listenOrdnerOffenRef.current)) setListenOrdnerOffen(eltern);
-  }
-  function benenneListenOrdnerUm(id, name) {
-    const data = listenOrdnerDaten();
-    speichereListenOrdnerDaten({ ...data, ordner: data.ordner.map(o => o.id === id ? { ...o, name: name.trim() || o.name } : o) });
-    setOrdnerUmbenennen(null);
-  }
+  function gruppiereListen(...args) { return gruppiereListenTeil({ legeListenOrdnerAn, listenOrdnerDaten, listenOrdnerOffenRef, setzeListenPlaetze, verschiebeListenInOrdner }, ...args); }
+  function loeseListenOrdnerAuf(...args) { return loeseListenOrdnerAufTeil({ listenOrdnerDaten, listenOrdnerOffenRef, setListenOrdnerOffen, speichereListenOrdnerDaten }, ...args); }
+  function benenneListenOrdnerUm(...args) { return benenneListenOrdnerUmTeil({ listenOrdnerDaten, setOrdnerUmbenennen, speichereListenOrdnerDaten }, ...args); }
   // Gezogener Eintrag: ist er markiert, wandert die ganze markierte Gruppe mit.
   // Ziel „raus“ / „raus:<id>“: auf einen Ordner im Pfad (oberste Ebene bzw. dieser Ordner); lange genug über einer
   // Kachel gehalten: Ordner bilden bzw. hinein
-  function legeGezogenAb(d, ziel) {
-    const gruppe = gruppenZielRef.current === ziel;
-    gruppenZielRef.current = null;
-    const liste = d.art === "liste";
-    const ausw = rasterAuswahlRef.current[liste ? "liste" : "slot"];
-    const ids = ausw.includes(d.id) ? ausw : [d.id];
-    if (ziel.startsWith("raus")) {
-      const zielOrdner = ziel.slice(5) || null;
-      if ((liste ? listenOrdnerOffenRef.current : slotOrdnerRef.current) !== zielOrdner) (liste ? verschiebeListenInOrdner : verschiebeInOrdner)(ids, zielOrdner);
-      return;
-    }
-    const [z, sp] = ziel.split("|").map(Number);
-    if (gruppe) { (liste ? gruppiereListen : gruppiere)(ids, { z, s: sp }); return; }
-    (liste ? setzeListenPlaetze : setzeSlotPlaetze)(ids, { z, s: sp });
-  }
+  function legeGezogenAb(...args) { return legeGezogenAbTeil({ gruppenZielRef, gruppiere, gruppiereListen, listenOrdnerOffenRef, rasterAuswahlRef, setzeListenPlaetze, setzeSlotPlaetze, slotOrdnerRef, verschiebeInOrdner, verschiebeListenInOrdner }, ...args); }
   // Auswahl-Tafel zeigen bzw. aktualisieren (Inhalt aus dem letzten Render)
-  function zeigeAuswahlTafel(art) {
-    const d = auswahlTafelDaten.current[art]?.();
-    if (!d) return;
-    auswahlTafelRef.current = art;
-    const st = auswahlTafelStelle.current;   // sonst bleibt die Stelle des Lang-Drucks (für „🎨 Farbe ändern“)
-    zeigeInfo(d.text, st?.x ?? null, st?.y ?? null, d.aktionen, { auswahl: auswahlTafel(art) });
-  }
-  function auswahlTafel(art) {
-    return { ohneText: true, zu: behalten => { auswahlTafelRef.current = null; auswahlTafelStelle.current = null; if (!behalten) (art === "liste" ? setListenWahl : setMultiAuswahl)(null); } };
-  }
-  function listenKopieName(name) {
-    const namen = new Set(listenIndex.map(l => l.name.toLowerCase()));
-    let n = `${name} (Kopie)`, i = 2;
-    while (namen.has(n.toLowerCase())) n = `${name} (Kopie ${i++})`;
-    return n;
-  }
-  function speichereEinst(e) { e = { ...e, gelerntSchwelle: GELERNT_SCHWELLE }; setEinstellungen(e); lsSet(SK.einstellungen, e); }
+  function zeigeAuswahlTafel(...args) { return zeigeAuswahlTafelTeil({ auswahlTafel, auswahlTafelDaten, auswahlTafelRef, auswahlTafelStelle }, ...args); }
+  function auswahlTafel(...args) { return auswahlTafelTeil({ auswahlTafelRef, auswahlTafelStelle, setListenWahl, setMultiAuswahl }, ...args); }
+  function listenKopieName(...args) { return listenKopieNameTeil({ listenIndex }, ...args); }
+  function speichereEinst(...args) { return speichereEinstTeil({ setEinstellungen }, ...args); }
 
   // Vor allen frühen Render-Rückgaben berechnen: starteQuiz() nutzt den Wert auch
   // vom Paket-Ende-Bildschirm aus (sonst ReferenceError → Button ohne Wirkung)
@@ -1563,41 +1438,9 @@ export default function VokabelApp() {
     return () => clearTimeout(t);
   }, [hoerFrage]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  function wechsleSprache(code) {
-    setSprachMenuOffen(false);
-    speichereEinst({ ...einstellungen, sprache: code });
-    if (code === "alle") return;
-    const passt = id => spracheVonListe(id) === code;
-    // Quiz: Auswahl/Konfiguration mit Listen anderer Sprache zurücksetzen
-    if (quizTabListen.some(id => !passt(id))) {
-      setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); zurUebersetzung();
-      lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
-      setQuizTabListen(quizTabListen.filter(passt));
-      setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set());
-    }
-    // Statistik
-    if (statistikListenIds && [...statistikListenIds].some(id => !passt(id))) {
-      setStatistikAktiverSlot(null);      const rest = [...statistikListenIds].filter(passt);
-      setStatistikListenIds(rest.length ? new Set(rest) : null);
-      setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
-    } else if (statistikAktiverSlot) {
-      setStatistikAktiverSlot(null);    }
-    // Listen-Tab: geöffnete Liste anderer Sprache schließen
-    if (aktiveListeId && ansicht === "liste-detail" && !passt(aktiveListeId)) {
-      setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null);
-    }
-    setListenWahl(null);
-  }
+  function wechsleSprache(...args) { return wechsleSpracheTeil({ aktiveListeId, ansicht, einstellungen, quizTabListen, setAktiveListe, setAktiveListeId, setAktiverSlot, setAnsicht, setGespeicherteVokabelgruppe, setListenWahl, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizPaketGroesse, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSlotGeaendert, setSprachMenuOffen, setStatistikAktiverSlot, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikListenIds, speichereEinst, spracheVonListe, statistikAktiverSlot, statistikListenIds, zurUebersetzung }, ...args); }
 
-  function setzeListenSprache(code) {
-    if (!aktiveListe) return;
-    const updated = { ...aktiveListe, sprache: code };
-    lsSet(SK.liste(aktiveListeId), updated);
-    setAktiveListe(updated);
-    speichereIndex(listenIndex.map(l => l.id === aktiveListeId ? { ...l, sprache: code } : l));
-    // Gefilterte Ansicht folgt der Liste, damit sie nicht verschwindet
-    if (sprachFilter !== "alle" && sprachFilter !== code) speichereEinst({ ...einstellungen, sprache: code });
-  }
+  function setzeListenSprache(...args) { return setzeListenSpracheTeil({ aktiveListe, aktiveListeId, einstellungen, listenIndex, setAktiveListe, speichereEinst, speichereIndex, sprachFilter }, ...args); }
   const vokabelAnzahl = id => { const l = lsGet(SK.liste(id)); return l ? l.vokabeln.length : 0; };
 
   // ── Listen-Aktionen ───────────────────────────────────────────────────────
@@ -1607,159 +1450,33 @@ export default function VokabelApp() {
     const np = neuListePlatzRef.current; neuListePlatzRef.current = null;   // 199: auf den lang gedrückten freien Platz
     return { ...(ordner ? { ordner } : {}), ...(np && (np.ordner || null) === ordner ? { platz: np.platz } : {}) };
   };
-  function importZielOrdner() {
-    let ordner = lsGet(SK.listenOrdner, []);
-    const eltern = listenOrdnerOffenRef.current && ordner.some(o => o.id === listenOrdnerOffenRef.current) ? listenOrdnerOffenRef.current : null;
-    const name = (importNeuerOrdner || "").trim();
-    if (importNeuerOrdner !== null && name && ordnerPfad(ordner, eltern).length < ORDNER_TIEFE_MAX) {
-      const id = `lordner_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      ordner = [...ordner, { id, name, ...(eltern ? { ordner: eltern } : {}) }];
-      return { ordner, id };
-    }
-    return { ordner, id: eltern };
-  }
-  function importOrdnerWahl() {
-    const pfad = ordnerPfad(listenOrdner, listenOrdnerOffen);
-    const geht = pfad.length < ORDNER_TIEFE_MAX;
-    const vorschlag = () => (importDateiname || "").replace(/\.[^.]*$/, "").replace(/[ _-]*alle[ _-]*listen$/i, "").replace(/_/g, " ").trim() || "Import";
-    return (
-      <div data-import-ordner style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:12}}>
-        <span style={{fontSize:"0.8rem", color:"var(--text2)"}}>📁 {pfad.length ? pfad.map(o => o.name).join(" › ") : "Alle Listen"}</span>
-        {geht && <button className={`typ-btn${importNeuerOrdner !== null ? " aktiv" : ""}`} data-import-neuer-ordner={importNeuerOrdner !== null ? "an" : "aus"}
-          style={{fontSize:"0.75rem", padding:"4px 10px"}} onClick={() => setImportNeuerOrdner(n => n === null ? vorschlag() : null)}
-          {...tt(importNeuerOrdner !== null ? "Doch keinen neuen Ordner anlegen" : "Die Listen in einen neuen Ordner legen (hier)")}>＋ In neuen Ordner</button>}
-        {geht && importNeuerOrdner !== null && <input className="inp" data-import-ordner-name value={importNeuerOrdner} onChange={e => setImportNeuerOrdner(e.target.value)}
-          placeholder="Name des Ordners" style={{flex:"1 1 140px", minWidth:120, marginBottom:0}} {...ttFeld("Name des neuen Ordners")}/>}
-      </div>
-    );
-  }
-  function erstelleListe() {
-    const name = modalInput.trim();
-    if (!name) { setModalFehler("Bitte einen Namen eingeben."); return; }
-    if (listenIndex.some(l => l.name.toLowerCase() === name.toLowerCase())) { setModalFehler("Name bereits vorhanden."); return; }
-    const id = "liste_" + Date.now();
-    const sprache = sprachFilter === "alle" ? "en" : sprachFilter;
-    lsSet(SK.liste(id), { ...neueListeObjekt(id, name), sprache });
-    speichereIndex([...listenIndex, { id, name, sprache, ...imListenOrdner() }]);
-    setModal(null); setModalInput(""); setModalFehler("");
-  }
+  function importZielOrdner(...args) { return importZielOrdnerTeil({ importNeuerOrdner, listenOrdnerOffenRef }, ...args); }
+  function importOrdnerWahl(...args) { return importOrdnerWahlTeil({ importDateiname, importNeuerOrdner, listenOrdner, listenOrdnerOffen, setImportNeuerOrdner, tt, ttFeld }, ...args); }
+  function erstelleListe(...args) { return erstelleListeTeil({ imListenOrdner, listenIndex, modalInput, setModal, setModalFehler, setModalInput, speichereIndex, sprachFilter }, ...args); }
 
   // Umbenennen/Löschen gelten der Liste aus dem Lang-Druck-Menü, sonst der geöffneten Liste
-  function umbenennen() {
-    const id = listeMenueId || aktiveListeId;
-    const name = modalInput.trim();
-    if (!name) { setModalFehler("Bitte einen Namen eingeben."); return; }
-    if (listenIndex.some(l => l.id !== id && l.name.toLowerCase() === name.toLowerCase())) { setModalFehler("Name bereits vorhanden."); return; }
-    speichereIndex(listenIndex.map(l => l.id === id ? {...l, name} : l));
-    const aktuell = lsGet(SK.liste(id));
-    if (aktuell) { const u = {...aktuell, name}; lsSet(SK.liste(id), u); if (id === aktiveListeId) setAktiveListe(u); }
-    setModal(null); setModalInput(""); setModalFehler(""); setListeMenueId(null);
-  }
+  function umbenennen(...args) { return umbenennenTeil({ aktiveListeId, listeMenueId, listenIndex, modalInput, setAktiveListe, setListeMenueId, setModal, setModalFehler, setModalInput, speichereIndex }, ...args); }
 
-  function loeschen() {
-    const id = listeMenueId || aktiveListeId;
-    localStorage.removeItem(SK.liste(id));
-    speichereIndex(listenIndex.filter(l => l.id !== id));
-    setModal(null); setListeMenueId(null);
-    if (id === aktiveListeId) { setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null); }
-  }
+  function loeschen(...args) { return loeschenTeil({ aktiveListeId, listeMenueId, listenIndex, setAktiveListe, setAktiveListeId, setAnsicht, setListeMenueId, setModal, speichereIndex }, ...args); }
 
   // Lernstand einer Liste zurücksetzen (gewählte Arten): Vokabeln gelten danach als nie abgefragt
-  function setzeListeZurueck() {
-    const liste = lsGet(SK.liste(listeMenueId));
-    if (liste && zuruecksetzenArten.size > 0) {
-      const felder = [...zuruecksetzenArten].map(a => SCORE_FELD[a]);
-      const neu = { ...liste, vokabeln: liste.vokabeln.map(v => { const w = { ...v }; felder.forEach(f => delete w[f]); return w; }) };
-      lsSet(SK.liste(listeMenueId), neu);
-      if (listeMenueId === aktiveListeId) setAktiveListe(neu);
-      speichereIndex(listenIndex);   // neu zeichnen (Lernfortschritt in der Übersicht)
-    }
-    setModal(null); setListeMenueId(null);
-  }
+  function setzeListeZurueck(...args) { return setzeListeZurueckTeil({ aktiveListeId, listeMenueId, listenIndex, setAktiveListe, setListeMenueId, setModal, speichereIndex, zuruecksetzenArten }, ...args); }
 
   // Kopie mit allen Vokabeln und Spalten unter neuem Namen (erster freier Platz im Raster);
   // Lernstände starten neu – die Kopie ist eine eigene Liste mit eigenen Vokabeln
-  function dupliziereListe() {
-    const quelle = lsGet(SK.liste(listeMenueId));
-    const name = modalInput.trim();
-    if (!quelle) { setModal(null); return; }
-    if (!name) { setModalFehler("Bitte einen Namen eingeben."); return; }
-    if (listenIndex.some(l => l.name.toLowerCase() === name.toLowerCase())) { setModalFehler("Name bereits vorhanden."); return; }
-    const id = "liste_" + Date.now();
-    const sprache = listeSprache(quelle);
-    const vokabeln = quelle.vokabeln.map(({ fortschritt, diktatFortschritt, akzentFortschritt, ...v }) => v);   // eslint-disable-line no-unused-vars
-    lsSet(SK.liste(id), { ...quelle, id, name, sprache, vokabeln });
-    const qOrdner = listenIndex.find(l => l.id === quelle.id)?.ordner;   // Kopie im selben Ordner
-    speichereIndex([...listenIndex, { id, name, sprache, ...(qOrdner ? { ordner: qOrdner } : {}) }]);
-    setModal(null); setModalInput(""); setModalFehler(""); setListeMenueId(null);
-  }
+  function dupliziereListe(...args) { return dupliziereListeTeil({ listeMenueId, listenIndex, modalInput, setListeMenueId, setModal, setModalFehler, setModalInput, speichereIndex }, ...args); }
 
-  function speichereSpaltenname() {
-    if (!editSpalteTyp || !aktiveListe) return;
-    const updated = { ...aktiveListe, spalten: { ...aktiveListe.spalten, [editSpalteTyp]: { ...aktiveListe.spalten[editSpalteTyp], name: modalInput.trim() } } };
-    lsSet(SK.liste(aktiveListeId), updated);
-    setAktiveListe(updated);
-    speichereIndex(listenIndex); // trigger re-render
-    setModal(null); setModalInput(""); setEditSpalteTyp(null);
-  }
+  function speichereSpaltenname(...args) { return speichereSpaltennameTeil({ aktiveListe, aktiveListeId, editSpalteTyp, listenIndex, modalInput, setAktiveListe, setEditSpalteTyp, setModal, setModalInput, speichereIndex }, ...args); }
 
   // Info-Spalte als „Info“ oder „Synonyme“
-  function setzeSpaltenArt(typ, art) {
-    if (!aktiveListe) return;
-    const updated = { ...aktiveListe, spalten: { ...aktiveListe.spalten, [typ]: { ...aktiveListe.spalten[typ], art } } };
-    lsSet(SK.liste(aktiveListeId), updated);
-    setAktiveListe(updated);
-    speichereIndex(listenIndex);
-  }
+  function setzeSpaltenArt(...args) { return setzeSpaltenArtTeil({ aktiveListe, aktiveListeId, listenIndex, setAktiveListe, speichereIndex }, ...args); }
   // Ziel der Synonyme: vorhandene Synonym-Spalte, sonst eine leere Info-Spalte (wird beim Übernehmen „Synonyme“)
-  function synZiel(liste) {
-    const da = TYPEN.find(x => x.startsWith("i") && liste.spalten[x]?.aktiv && istSynonymSpalte(liste.spalten[x]));
-    if (da) return { typ: da, neu: false };
-    const frei = TYPEN.find(x => x.startsWith("i") && liste.vokabeln.every(v => !v[x]?.wert));
-    return frei ? { typ: frei, neu: true } : null;
-  }
-  function synPortion(listeId) {
-    const liste = lsGet(SK.liste(listeId));
-    if (!liste) return null;
-    const ziel = synZiel(liste);
-    const fremd = TYPEN.find(x => x.startsWith("E") && liste.spalten[x]?.aktiv), deutsch = TYPEN.find(x => x.startsWith("D") && liste.spalten[x]?.aktiv);
-    const offen = ziel ? liste.vokabeln.filter(v => v[fremd]?.wert && !v[ziel.typ]?.wert) : [];
-    const alsDatei = einstellungen.satzWeg === "datei";
-    const teil = offen.slice(0, alsDatei ? 2000 : 100);
-    const sprachName = sprachInfo(listeSprache(liste)).name;
-    return { liste, ziel, offen: offen.length, gesamt: liste.vokabeln.length, teil, alsDatei,
-      prompt: synPrompt(sprachName, teil.map(v => `${v.id} // ${ohneHinweis(v[fremd].wert)} // ${ohneHinweis(v[deutsch]?.wert || "")}`), alsDatei) };
-  }
-  function oeffneSynFenster(listeId) { setSynFenster({ listeId, antwort: "", meldung: "" }); setModal("synonyme"); }
-  function uebernehmeSynonyme(text) {
-    const f = synFenster;
-    if (!f) return;
-    const liste = lsGet(SK.liste(f.listeId));
-    const ziel = liste && synZiel(liste);
-    if (!ziel) { setSynFenster({ ...f, meldung: "Keine freie Info-Spalte für die Synonyme." }); return; }
-    const neu = synonymeAusAntwort(typeof text === "string" ? text : f.antwort);
-    let n = 0;
-    const vokabeln = liste.vokabeln.map(v => { const s = neu[String(v.id)]; if (!s || v[ziel.typ]?.wert) return v; n++; return { ...v, [ziel.typ]: { wert: s, falsch: [] } }; });
-    if (n) {
-      const spalten = { ...liste.spalten, [ziel.typ]: { ...liste.spalten[ziel.typ], aktiv: true, ...(ziel.neu ? { name: "Synonyme", art: "synonyme" } : {}) } };
-      const upd = { ...liste, spalten, vokabeln };
-      lsSet(SK.liste(f.listeId), upd);
-      if (f.listeId === aktiveListeId) setAktiveListe(upd);
-      speichereIndex(listenIndex);
-    }
-    setSynFenster({ ...f, antwort: "", meldung: n ? `Synonyme für ${n} Vokabeln übernommen.` : "Keine passenden Zeilen gefunden – Format „ID // Synonym1, Synonym2“." });
-  }
+  function synZiel(...args) { return synZielTeil({  }, ...args); }
+  function synPortion(...args) { return synPortionTeil({ einstellungen, synZiel }, ...args); }
+  function oeffneSynFenster(...args) { return oeffneSynFensterTeil({ setModal, setSynFenster }, ...args); }
+  function uebernehmeSynonyme(...args) { return uebernehmeSynonymeTeil({ aktiveListeId, listenIndex, setAktiveListe, setSynFenster, speichereIndex, synFenster, synZiel }, ...args); }
 
-  function oeffneModal(typ, extra) {
-    setListeMenueId(null);
-    if (typ === "umbenennen") setModalInput(aktiveListe?.name || "");
-    else if (typ === "spalte-umbenennen" && extra) {
-      setEditSpalteTyp(extra);
-      setModalInput(aktiveListe?.spalten[extra]?.name || "");
-    } else if (typ === "slot-speichern") setModalInput(slotNamenVorschlag());
-    else setModalInput("");
-    setModalFehler(""); setModal(typ);
-  }
+  function oeffneModal(...args) { return oeffneModalTeil({ aktiveListe, setEditSpalteTyp, setListeMenueId, setModal, setModalFehler, setModalInput, slotNamenVorschlag }, ...args); }
 
   // ── Vokabel-Verwaltung ────────────────────────────────────────────────────
   // Vokabel bearbeiten (vok = null: neue Vokabel) in beliebiger Liste – aus Listen, Statistik oder Abfrage.
@@ -1783,136 +1500,21 @@ export default function VokabelApp() {
     setModalFehler("");
     setModal('vokabel-bearbeiten');
   }
-  function schliesseVokabelBearbeiten() { setModal(null); setBearbeiteVokabel(null); setBearbeiteEingaben({}); setBearbeiteNur(null); setBearbeiteFalsch(null); setBearbeiteListe(null); }
+  function schliesseVokabelBearbeiten(...args) { return schliesseVokabelBearbeitenTeil({ setBearbeiteEingaben, setBearbeiteFalsch, setBearbeiteListe, setBearbeiteNur, setBearbeiteVokabel, setModal }, ...args); }
 
-  function speichereVokabelBearbeitung() {
-    if (!bearbeiteVokabel || !bearbeiteListe) return;
-    const liste = lsGet(SK.liste(bearbeiteListe.id)) || bearbeiteListe;
-    const nur = bearbeiteNur, falschAlt = bearbeiteFalsch;
-    const neuEintrag = !!bearbeiteVokabel.neu;
-    const orig = neuEintrag ? null : liste.vokabeln.find(v => v.id === bearbeiteVokabel.id);
-    if (!neuEintrag && !orig) { schliesseVokabelBearbeiten(); return; }
-    let neu;
-    const wert = nur ? (bearbeiteEingaben[nur] || '').trim() : '';
-    if (nur) {
-      if (falschAlt != null) {
-        // falsche Antwort ändern; leer = entfernen
-        const alt = orig[nur]?.falsch || [];
-        neu = { ...orig, [nur]: { ...orig[nur], falsch: wert ? alt.map(f => f === falschAlt ? wert : f) : alt.filter(f => f !== falschAlt) } };
-      } else if (nur.startsWith('i')) {
-        // Info darf leer werden (Spalte entfällt)
-        neu = { ...orig };
-        if (wert) neu[nur] = { ...(orig[nur] || { falsch: [] }), wert }; else delete neu[nur];
-      } else {
-        if (!wert) { setModalFehler("Das Feld darf nicht leer sein."); return; }
-        neu = { ...orig, [nur]: { ...(orig[nur] || { falsch: [] }), wert } };
-      }
-    } else {
-      // Lernstand und nicht angezeigte Spalten bleiben erhalten
-      neu = neuEintrag ? { id: liste.naechste_id } : { ...orig };
-      TYPEN.filter(t => liste.spalten[t].aktiv).forEach(typ => {
-        const raw = (bearbeiteEingaben[typ] || '').trim();
-        if (raw) neu[typ] = parseKolumne(raw); else delete neu[typ];
-      });
-      if (TYPEN.filter(t => !t.startsWith('i') && neu[t]?.wert).length < 2) { setModalFehler("Mindestens zwei Spalten (außer Info) ausfüllen."); return; }
-    }
-    const neueListe = neuEintrag
-      ? { ...liste, naechste_id: liste.naechste_id + 1, vokabeln: [...liste.vokabeln, neu] }
-      : { ...liste, vokabeln: liste.vokabeln.map(v => v.id === neu.id ? neu : v) };
-    lsSet(SK.liste(liste.id), neueListe);
-    if (liste.id === aktiveListeId) setAktiveListe(neueListe);
-    // laufende Abfrage: Vokabel dort ebenfalls ändern (auch MC-Knöpfe mit der alten Antwort)
-    if (!neuEintrag) setQuiz(q => {
-      if (!q) return q;
-      const passt = v => (v._listeId ?? q.liste.id) === liste.id && (v._origId ?? v.id) === neu.id;
-      const spalten = nur ? { [nur]: neu[nur] } : Object.fromEntries(TYPEN.map(t => [t, neu[t]]));
-      const auf = v => passt(v) ? { ...v, ...spalten } : v;
-      const vokabeln = q.vokabeln.map(auf);
-      const neuQ = { ...q, vokabeln, liste: { ...q.liste, vokabeln: q.liste.vokabeln.map(auf) } };
-      // gerade gefragte Vokabel und Spalte: Lösung (und MC-Knöpfe) sofort neu
-      const typ = q.modus === "diktat" ? q.diktatSpalte : q.antwortTypen?.[q.antwortTypIndex];
-      const akt = vokabeln[q.index];
-      if (!passt(akt)) return neuQ;
-      // schon beantwortete Spalten dieser Vokabel zeigen den neuen Wert
-      if (falschAlt == null && q.vorigeAntworten?.length) neuQ.vorigeAntworten = q.vorigeAntworten.map(v =>
-        spalten[v.typ]?.wert ? { ...v, wert: spalten[v.typ].wert.split('/').map(x => x.trim()).join(" / ") } : v);
-      if (!typ || !(typ in spalten) || q.modus === "diktat") return neuQ;
-      if (falschAlt != null) {
-        if (q.mcButtons?.length) neuQ.mcButtons = q.mcButtons.flatMap(b => b.korrekt || b.text !== falschAlt ? [b] : wert ? [{ ...b, text: wert }] : []);
-        return neuQ;
-      }
-      neuQ.antwortTeile = (akt[typ]?.wert || "").split('/').map(x => x.trim());
-      if (q.mcButtons?.length && q.phase === "eingabe") { const mc = generiereButtons(vokabeln, akt, typ); neuQ.mcButtons = mc.buttons; neuQ.mcRichtig = mc.richtig; }
-      return neuQ;
-    });
-    speichereIndex(listenIndex);   // neu zeichnen (Anzahl, Lernstand in Listen und Statistik)
-    schliesseVokabelBearbeiten();
-  }
+  function speichereVokabelBearbeitung(...args) { return speichereVokabelBearbeitungTeil({ aktiveListeId, bearbeiteEingaben, bearbeiteFalsch, bearbeiteListe, bearbeiteNur, bearbeiteVokabel, listenIndex, schliesseVokabelBearbeiten, setAktiveListe, setModalFehler, setQuiz, speichereIndex }, ...args); }
 
   // 176: Vokabel herausnehmen / wieder abfragen (bleibt in der Liste, wird nirgends abgefragt und zählt nicht im Fortschritt)
-  function setzeHerausgenommen(listeId, origId, an) {
-    const l = lsGet(SK.liste(listeId));
-    if (!l) return;
-    const neu = { ...l, vokabeln: l.vokabeln.map(v => { if (v.id !== origId) return v; const n = { ...v }; if (an) n.herausgenommen = true; else delete n.herausgenommen; return n; }) };
-    lsSet(SK.liste(listeId), neu);
-    if (listeId === aktiveListeId) setAktiveListe(neu);
-    setFaelligTick(x => x + 1);
-  }
+  function setzeHerausgenommen(...args) { return setzeHerausgenommenTeil({ aktiveListeId, setAktiveListe, setFaelligTick }, ...args); }
   // im Quiz: aktuelle Vokabel herausnehmen – sie fällt aus der Runde, weiter mit der nächsten (ohne Wertung)
-  function nimmVokabelHeraus() {
-    if (!quiz) return;
-    const v = quiz.vokabeln[quiz.index];
-    if (!v) return;
-    setzeHerausgenommen(v._listeId ?? quiz.liste.id, v._origId ?? v.id, true);
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    flashWeiterRef.current = null;
-    setQuiz(prev => {
-      if (!prev) return prev;
-      const vokabeln = prev.vokabeln.filter((x, i) => i < prev.index || x.id !== v.id);
-      const liste = { ...prev.liste, vokabeln: prev.liste.vokabeln.map(x => x.id === v.id ? { ...x, herausgenommen: true } : x) };
-      const basis = { ...prev, liste, vokabeln, ...(prev.spielBasis ? { spielBasis: prev.spielBasis.filter(x => x.id !== v.id) } : {}),
-        vokErgebnis: null, erstbewertung: false, letzteWertung: null, diktatWertung: null, flash: false, karteNeinFlash: false };
-      if (prev.modus === "diktat") return prev.index >= vokabeln.length ? { ...basis, phase: "fertig" }
-        : { ...basis, eingabe: "", diktatAufgedeckt: 0, diktatVersuche: [], phase: "eingabe", feedback: "" };
-      return naechsteVokabelState({ ...basis, index: prev.index - 1 });
-    });
-  }
-  function loescheVokabel(vokId) {
-    const neueListe = { ...aktiveListe, vokabeln: aktiveListe.vokabeln.filter(v => v.id !== vokId) };
-    lsSet(SK.liste(aktiveListeId), neueListe);
-    setAktiveListe(neueListe);
-    setModal(null); setBearbeiteVokabel(null);
-  }
+  function nimmVokabelHeraus(...args) { return nimmVokabelHerausTeil({ flashTimerRef, flashWeiterRef, naechsteVokabelState, quiz, setQuiz, setzeHerausgenommen }, ...args); }
+  function loescheVokabel(...args) { return loescheVokabelTeil({ aktiveListe, aktiveListeId, setAktiveListe, setBearbeiteVokabel, setModal }, ...args); }
 
-  function fuehreListenZusammen() {
-    if (!mergeQuelleId || mergeQuelleId === aktiveListeId) return;
-    const quelle = lsGet(SK.liste(mergeQuelleId));
-    if (!quelle) return;
-    const ziel = { ...aktiveListe, spalten: {...aktiveListe.spalten}, vokabeln: [...aktiveListe.vokabeln], naechste_id: aktiveListe.naechste_id };
-    TYPEN.forEach(typ => {
-      if (!ziel.spalten[typ].aktiv && quelle.spalten[typ].aktiv)
-        ziel.spalten[typ] = { name: quelle.spalten[typ].name, aktiv: true };
-    });
-    quelle.vokabeln.forEach(v => ziel.vokabeln.push({ ...v, id: ziel.naechste_id++ }));
-    lsSet(SK.liste(aktiveListeId), ziel);
-    setAktiveListe(ziel);
-    setModal(null); setMergeQuelleId('');
-  }
+  function fuehreListenZusammen(...args) { return fuehreListenZusammenTeil({ aktiveListe, aktiveListeId, mergeQuelleId, setAktiveListe, setMergeQuelleId, setModal }, ...args); }
 
   // ── Export-Aktionen ───────────────────────────────────────────────────────
-  function generiereKombiniertenExport(ids) {
-    return ids.map(id => { const l = lsGet(SK.liste(id)); return l ? generiereExportText(l) : null; })
-      .filter(Boolean).join('\n\n');
-  }
-  async function kopiereListen(ids) {
-    if (!ids.length) return;
-    const text = generiereKombiniertenExport(ids);
-    try {
-      await navigator.clipboard.writeText(text);
-      setExportKopiert(true);
-      setTimeout(() => setExportKopiert(false), 2000);
-    } catch {}
-  }
+  function generiereKombiniertenExport(...args) { return generiereKombiniertenExportTeil({  }, ...args); }
+  function kopiereListen(...args) { return kopiereListenTeil({ generiereKombiniertenExport, setExportKopiert }, ...args); }
 
   // Exportieren: ein Fenster mit Art-Wahl JSON | TXT | Kopieren (zuletzt gewählte Art ist vorausgewählt)
   function oeffneExport(ids, art = einstellungen.exportArt || "json") {
@@ -1928,45 +1530,14 @@ export default function VokabelApp() {
   function renderExportArtWahl(...args) { return renderExportArtWahlTeil({ exportWas, oeffneExport, tt }, ...args); }
 
   // Export-Dateien: Endung immer .txt (nimmt jedes Ziel an), Inhalt steht im Namen: "Name - JSON.txt" / "Name - TXT.txt"
-  function exportStandardName(ids, art) {
-    const basis = ids.length === 1 ? (listenIndex.find(l => l.id === ids[0])?.name || 'Vokabeln') : `${ids.length} Listen`;
-    return `${basis} - ${art}`;
-  }
+  function exportStandardName(...args) { return exportStandardNameTeil({ listenIndex }, ...args); }
   // eingegebener Name → Dateiname: Zeichen, die Dateisysteme nicht erlauben, raus; leer → Vorschlag
   const dateiName = (name, standard) => (name.replace(/[\\/:*?"<>|]+/g, "-").replace(/\.(txt|json)$/i, "").trim() || standard) + ".txt";
   const sicherungStandardName = () => `Vokabel-App Sicherung ${new Date().toISOString().slice(0, 10)}`;
-  function teileAlsDatei(text, dateiname) {
-    // iPad/iPhone: Downloads aus der Home-Bildschirm-App kommen oft leer an → Teilen-Menü
-    // ("In Dateien sichern", Mail, AirDrop). Als .txt/text/plain, damit alle Ziele die Datei annehmen.
-    const istIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    if (istIOS && navigator.share) {
-      const file = new File([text], dateiname.replace(/\.json$/, '.txt'), { type: 'text/plain' });
-      if (!navigator.canShare || navigator.canShare({ files: [file] })) {
-        try { navigator.share({ files: [file], title: dateiname.replace(/\.(json|txt)$/, '') }).catch(() => {}); return; }
-        catch { /* weiter mit Download */ }
-      }
-    }
-    // Passender Typ, sonst hängen Browser ".txt" an (".json.txt")
-    const typ = dateiname.endsWith('.json') ? 'application/json;charset=utf-8' : 'text/plain;charset=utf-8';
-    const url = URL.createObjectURL(new Blob([text], { type: typ }));
-    const a = document.createElement('a');
-    a.href = url; a.download = dateiname;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    // Großzügig warten: manche Browser holen den Inhalt erst nach dem Download-Dialog
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  }
+  function teileAlsDatei(...args) { return teileAlsDateiTeil({  }, ...args); }
   // TXT-Export und Gesamtsicherung: erst Fenster mit Dateinamen, dann teileAlsDatei
-  function oeffneDateiExport(ziel, standard) { setDateiExport(ziel); setExportName(standard); setModal("datei-export"); }
-  function bestaetigeDateiExport() {
-    const z = dateiExport;
-    if (!z) return;
-    setModal(null); setDateiExport(null);
-    if (z.art === "sicherung") { speichereSicherung(dateiName(exportName, sicherungStandardName())); return; }
-    const text = z.ids.length === 1 ? generiereExportText(lsGet(SK.liste(z.ids[0]))) : generiereKombiniertenExport(z.ids);
-    teileAlsDatei(text, dateiName(exportName, exportStandardName(z.ids, "TXT")));
-  }
+  function oeffneDateiExport(...args) { return oeffneDateiExportTeil({ setDateiExport, setExportName, setModal }, ...args); }
+  function bestaetigeDateiExport(...args) { return bestaetigeDateiExportTeil({ dateiExport, dateiName, exportName, exportStandardName, generiereKombiniertenExport, setDateiExport, setModal, sicherungStandardName, speichereSicherung, teileAlsDatei }, ...args); }
 
 
   // Stand der Statistik-Auswahl beim Betreten (aus dem Quiz übernommen) – zum Erkennen eigener Änderungen
@@ -2009,95 +1580,15 @@ export default function VokabelApp() {
     return () => { document.removeEventListener("touchstart", start); document.removeEventListener("touchend", ende); };
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleTabWechsel(neuerTab) {
-    // 215: schon im Quiz-Tab (Übersicht) – Tab öffnet die Quiz-Auswahl; offen und nichts geändert → wieder zu;
-    // geändert (grüner Kopf) → nichts (übernehmen nur über den Kopf)
-    if (neuerTab === "quiz" && tab === "quiz" && ansicht === "uebersicht") {
-      if (!slotSektionAufgeklappt) { toggleSlotSektion(); return; }
-      if (!slotVorschau && !multiAuswahl && !listenAendern) toggleSlotSektion();
-      return;
-    }
-    if (slotSektionAufgeklappt && neuerTab !== tab && (tab === "quiz" || tab === "statistik")) {
-      const laden = tab === "statistik" ? ladeSlotStatistik : ladeSlot;
-      if (multiAuswahl?.length) beendeMultiAuswahl(multiAuswahl, laden);
-      else if (slotVorschau) laden(slotVorschau.typ, slotVorschau.id);
-      setMultiAuswahl(null); setSlotVorschau(null); schliesseInfo(); auswahlTafelRef.current = null;
-      setSlotSektionAufgeklappt(false);
-    }
-    if (neuerTab === "statistik" && tab !== "statistik") {
-      const listenIds = quizTabListen.length > 0 ? new Set(quizTabListen) : null;
-      statistikStartRef.current = statistikStandKey(listenIds, quizBereichTyp, quizCheckboxAuswahl, aktiverSlot);
-    }
-    if (neuerTab === "statistik") {
-      setStatistikListenIds(quizTabListen.length > 0 ? new Set(quizTabListen) : null);
-      setStatistikBereichTyp(quizBereichTyp);
-      setStatistikCheckboxAuswahl(new Set(quizCheckboxAuswahl));
-      setStatistikListenAufgeklappt(false);
-      setStatistikEinzelauswahlAufgeklappt(false);
-      setStatistikAktiverSlot(aktiverSlot);
-      setStatistikSlotGeleert(false);
-    }
-    // Statistik → Quiz: nur was in der Statistik geändert wurde, ins Quiz übernehmen
-    if (neuerTab === "quiz" && tab === "statistik"
-        && statistikStandKey(statistikListenIds, statistikBereichTyp, statistikCheckboxAuswahl, statistikAktiverSlot) !== statistikStartRef.current) {
-      const s = statistikAktiverSlot;
-      if (s && getSlotEintrag(s.typ, s.id)) {
-        if (!(aktiverSlot?.typ === s.typ && aktiverSlot?.id === s.id)) { ladeSlot(s.typ, s.id); if (getSlotEintrag(s.typ, s.id)?.multi) setMultiStart({ id: s.id, starten: false }); }
-      } else {
-        // keine Konfiguration mehr ("Neu" oder Liste geändert) → im Quiz lösen, Quiz ebenfalls
-        // (ihr Fortschritt bleibt im gespeicherten Eintrag); Listen-/Vokabelauswahl übernehmen
-        if (aktiverSlot) { setAktiverSlot(null); setGespeicherteVokabelgruppe(null); lsDel(SK.letzterSlot); lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); zurUebersetzung(); }
-        setQuizTabListen(statistikListenIds === null ? sichtbareListen.map(l => l.id) : [...statistikListenIds]);
-        setQuizBereichTyp(statistikBereichTyp);
-        setQuizCheckboxAuswahl(new Set(statistikBereichTyp === "bereich" ? statistikCheckboxAuswahl : []));
-      }
-    }
-    if (neuerTab === "einstellungen" && tab !== "einstellungen") { setEinstBereich(null); setEinstUnter(null); setFarbTab(null); }   // 174
-    setTab(neuerTab);
-    setListenWahl(null);
-    setStatistikVollbild(false);
-  }
+  function handleTabWechsel(...args) { return handleTabWechselTeil({ aktiverSlot, ansicht, auswahlTafelRef, beendeMultiAuswahl, getSlotEintrag, ladeSlot, ladeSlotStatistik, listenAendern, multiAuswahl, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, setAktiverSlot, setEinstBereich, setEinstUnter, setFarbTab, setGespeicherteVokabelgruppe, setListenWahl, setMultiAuswahl, setMultiStart, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizTabListen, setSessionSlotAktiv, setSlotSektionAufgeklappt, setSlotVorschau, setStatistikAktiverSlot, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikEinzelauswahlAufgeklappt, setStatistikListenAufgeklappt, setStatistikListenIds, setStatistikSlotGeleert, setStatistikVollbild, setTab, sichtbareListen, slotSektionAufgeklappt, slotVorschau, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikStandKey, statistikStartRef, tab, toggleSlotSektion, zurUebersetzung }, ...args); }
 
   // Statistik: Quiz direkt mit den Vokabeln einer Gruppe (z. B. Negativ) starten.
   // Quiz-Tab wird darauf eingestellt (Bereich = diese Vokabeln, ohne Score-Grenze, Gelernte erlaubt,
   // ohne Quiz-Pakete, gespeicherte Konfiguration gelöst); Spalten/Abfrage-Modus bleiben wie im Quiz-Tab.
   // Passt die Gruppe zur Quiz-Auswahl (gleiche Abfrageart, Listen enthalten), läuft eine einmalige Runde,
   // die Auswahl, Konfiguration und Quiz unberührt lässt – sonst wird der Quiz-Tab umgestellt.
-  function gruppenQuizPasst(g) {
-    const listen = quizTabListen.length > 0 ? quizTabListen : (aktiveListeId ? [aktiveListeId] : []);
-    return g.art === quizAbfrageArt && g.listenIds.every(id => listen.includes(id));
-  }
-  function starteGruppenQuiz(g) {
-    setGruppenQuiz(null);
-    if (gruppenQuizPasst(g)) {
-      setStatistikVollbild(false);
-      setTab("quiz");
-      starteQuiz(true, null, new Set(g.ids));
-      return;
-    }
-    setSessionUeberschreibenModal(false);
-    setGruppenAenderungsDialog(false);
-    setAktiverSlot(null);
-    setSlotGeaendert(false);
-    setGespeicherteVokabelgruppe(null);
-    lsDel(SK.letzterSlot);
-    lsDel(SK.sessionAktiv);
-    setSessionSlotAktiv(null);
-    setQuizSessionModus("alle");
-    setQuizTabListen(g.listenIds);
-    setQuizBereichTyp("bereich");
-    setQuizCheckboxAuswahl(new Set(g.ids));
-    setQuizReihenfolge("schlechteste");
-    setQuizSchlechtesteMaxScore("");
-    setQuizGelerntEinschliessen(true);
-    wechsleQuizArt(g.art, getKombinierteListe(g.listenIds)?.spalten);
-    setSlotSektionAufgeklappt(false);
-    setQuiz(null);
-    setStatistikVollbild(false);
-    setTab("quiz");
-    gruppenQuizStartRef.current = 2;   // erst nach dem Angleichen der Spalten an die Listen starten
-    setGruppenQuizTick(t => t + 1);
-  }
+  function gruppenQuizPasst(...args) { return gruppenQuizPasstTeil({ aktiveListeId, quizAbfrageArt, quizTabListen }, ...args); }
+  function starteGruppenQuiz(...args) { return starteGruppenQuizTeil({ getKombinierteListe, gruppenQuizPasst, gruppenQuizStartRef, setAktiverSlot, setGespeicherteVokabelgruppe, setGruppenAenderungsDialog, setGruppenQuiz, setGruppenQuizTick, setQuiz, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizGelerntEinschliessen, setQuizReihenfolge, setQuizSchlechtesteMaxScore, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSessionUeberschreibenModal, setSlotGeaendert, setSlotSektionAufgeklappt, setStatistikVollbild, setTab, starteQuiz, wechsleQuizArt }, ...args); }
   const [gruppenQuizTick, setGruppenQuizTick] = useState(0);
   useEffect(() => {
     if (gruppenQuizStartRef.current === 0 || tab !== "quiz") return;
@@ -2106,200 +1597,21 @@ export default function VokabelApp() {
     setQuiz(q => q && { ...q, ausStatistik: true });
   }, [gruppenQuizTick]);
 
-  function toggleStatistikListe(id) {
-    if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); }
-    setStatistikListenIds(prev => {
-      const currentSet = prev === null
-        ? new Set(sichtbareListen.map(l => l.id))
-        : new Set(prev);
-      if (currentSet.has(id)) {
-        currentSet.delete(id);
-        // Bereinige Vokabelauswahl wenn Liste abgewählt
-        if (statistikBereichTyp === "bereich" && statistikCheckboxAuswahl.size > 0) {
-          const neueListen = [...currentSet];
-          const bereinigte = new Set([...statistikCheckboxAuswahl].filter(vokId =>
-            neueListen.some(lId => vokId.startsWith(`${lId}__`))
-          ));
-          if (bereinigte.size === 0) {
-            setStatistikBereichTyp("alle");
-            setStatistikCheckboxAuswahl(new Set());
-          } else {
-            setStatistikCheckboxAuswahl(bereinigte);
-          }
-        }
-      } else {
-        currentSet.add(id);
-        if (currentSet.size === sichtbareListen.length) return null;
-      }
-      return currentSet;
-    });
-  }
+  function toggleStatistikListe(...args) { return toggleStatistikListeTeil({ setStatistikAktiverSlot, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikListenIds, setStatistikSlotGeleert, sichtbareListen, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl }, ...args); }
 
   // ── Import-Aktionen ───────────────────────────────────────────────────────
-  function resetImport() {
-    setImportNeuerOrdner(null); neuListePlatzRef.current = null;
-    setImportText(""); setImportDateiname(""); setImportParsed(null);
-    setImportMehrfachListen(null); setImportJsonData(null); setImportMapping({});
-    setImportZielTyp("neu"); setImportNeuName(""); setImportBestehendId(""); setImportFehler("");
-  }
+  function resetImport(...args) { return resetImportTeil({ neuListePlatzRef, setImportBestehendId, setImportDateiname, setImportFehler, setImportJsonData, setImportMapping, setImportMehrfachListen, setImportNeuName, setImportNeuerOrdner, setImportParsed, setImportText, setImportZielTyp }, ...args); }
 
-  function autoMappeKolumnen(headerNamen) {
-    const VALID = new Set(TYPEN);
-    const mapping = {};
-    const used = new Set();
-    // Pass 1: extract [TYPE] tags from header names (reliable, from our own export)
-    headerNamen.forEach((name, idx) => {
-      const m = name.match(/\[([EDi][123])\]\s*$/);
-      if (m && VALID.has(m[1]) && !used.has(m[1])) {
-        mapping[idx] = m[1];
-        used.add(m[1]);
-      } else {
-        mapping[idx] = null;
-      }
-    });
-    // Pass 2 (fallback for files without tags): keyword detection
-    if (used.size === 0) {
-      const eKeys = SPRACHEN.flatMap(s => s.keys);
-      const dKeys = ['deutsch', 'german'];
-      let eCount = 0, dCount = 0, iCount = 0;
-      headerNamen.forEach((name, idx) => {
-        const low = name.toLowerCase().trim();
-        if (eKeys.some(k => low.includes(k)) && eCount < 3) mapping[idx] = ['E1','E2','E3'][eCount++];
-        else if (dKeys.some(k => low.includes(k)) && dCount < 2) mapping[idx] = ['D1','D2'][dCount++];
-        else if (iCount < 2) mapping[idx] = ['i1','i2'][iCount++];
-      });
-      if (eCount === 0 && dCount === 0) {
-        const pos = ['E1','D1','i1','E2','D2','i2','E3'];
-        headerNamen.forEach((_, idx) => { mapping[idx] = pos[idx] ?? null; });
-      }
-    }
-    return mapping;
-  }
+  function autoMappeKolumnen(...args) { return autoMappeKolumnenTeil({  }, ...args); }
 
-  function analysiereImport() {
-    const normiert = importText.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    // Eingefügtes JSON-Backup (z. B. aus der Zwischenablage) direkt als Backup übernehmen
-    try {
-      const listen = findeJsonListen(normiert);
-      if (listen) {
-        if (!listen.length) { setImportFehler("Keine Vokabellisten im JSON gefunden."); return; }
-        setImportJsonData(listen); setImportText(""); setImportFehler(""); return;
-      }
-    } catch { setImportFehler(`JSON-Backup ist beschädigt. Anfang: ${dateiVorschau(normiert)}`); return; }
-    const alleZeilen = normiert.trim().split('\n').filter(z => z.trim());
-    if (alleZeilen.length < 2) {
-      setImportFehler(`Nur ${alleZeilen.length} Zeile${alleZeilen.length === 1 ? "" : "n"} erkannt – nötig sind eine Kopfzeile und mindestens eine Vokabel. Anfang: ${dateiVorschau(normiert)}. Dateien bitte über „📄 Datei“ laden.`);
-      return;
-    }
+  function analysiereImport(...args) { return analysiereImportTeil({ autoMappeKolumnen, importNeuName, importText, setImportFehler, setImportJsonData, setImportMapping, setImportMehrfachListen, setImportNeuName, setImportParsed, setImportSprache, setImportText, sprachFilter }, ...args); }
 
-    // Namenszeile "# Name {fr}" (eigener TXT-Export) → Sprache
-    const parseNamensZeile = z => {
-      const m = z.slice(2).trim().match(/^(.*?)\s*\{([a-z]{2})\}$/);
-      return m && SPRACHEN.some(s => s.code === m[2]) ? { name: m[1], sprache: m[2] } : { name: z.slice(2).trim(), sprache: null };
-    };
-    const standardSprache = sprachFilter === "alle" ? "en" : sprachFilter;
+  function importiereAlleListen(...args) { return importiereAlleListenTeil({ importMehrfachListen, importSprache, importZielOrdner, listenIndex, resetImport, setAnsicht, setListenOrdnerOffen, speichereIndex }, ...args); }
 
-    const hashIdx = alleZeilen.reduce((acc, z, i) => z.startsWith('# ') ? [...acc, i] : acc, []);
-    if (hashIdx.length > 1) {
-      const sektionen = hashIdx.map((startIdx, si) => {
-        const endIdx = hashIdx[si + 1] ?? alleZeilen.length;
-        const sz = alleZeilen.slice(startIdx, endIdx);
-        const { name, sprache } = parseNamensZeile(sz[0]);
-        const rest = sz.slice(1);
-        if (rest.length < 2) return null;
-        const header = parseKopfZeile(rest[0]);
-        const daten = rest.slice(1).map(parseZeile);
-        const mapping = autoMappeKolumnen(header.map(h => h.wert));
-        return { name, header, daten, mapping, sprache: sprache || erkenneSprache(header.map(h => h.wert)) };
-      }).filter(Boolean);
-      if (!sektionen.length) { setImportFehler("Keine gültigen Listen gefunden."); return; }
-      setImportSprache(standardSprache);
-      setImportMehrfachListen(sektionen);
-      setImportParsed(null);
-      setImportFehler("");
-      return;
-    }
-
-    setImportMehrfachListen(null);
-    let zeilen = alleZeilen;
-    let erkannterName = '';
-    let erkannteSprache = null;
-    if (zeilen[0].startsWith('# ')) {
-      ({ name: erkannterName, sprache: erkannteSprache } = parseNamensZeile(zeilen[0]));
-      zeilen = zeilen.slice(1);
-      if (zeilen.length < 2) { setImportFehler("Mindestens 2 Zeilen erforderlich."); return; }
-    }
-    const header = parseKopfZeile(zeilen[0]);
-    setImportSprache(erkannteSprache || erkenneSprache(header.map(h => h.wert)) || standardSprache);
-    const daten = zeilen.slice(1).map(parseZeile);
-    // Mit Spalten-Kennungen (eigener Export) direkt zuordnen, sonst manuell
-    const hatTags = header.some(h => SPALTEN_TAG.test(h.wert));
-    const mapping = hatTags ? autoMappeKolumnen(header.map(h => h.wert)) : {};
-    if (!hatTags) header.forEach((_, i) => { mapping[i] = null; });
-    setImportParsed({ header, daten });
-    setImportMapping(mapping);
-    if (erkannterName && !importNeuName) setImportNeuName(erkannterName);
-    setImportFehler("");
-  }
-
-  function importiereAlleListen() {
-    if (!importMehrfachListen?.length) return;
-    const neuerIndex = [...listenIndex];
-    const ziel = importZielOrdner();   // 195
-    let n = 0;
-    for (const s of importMehrfachListen) {
-      const abfragbar = Object.values(s.mapping).filter(t => t && !t.startsWith('i'));
-      if (abfragbar.length < 2) continue;
-      const id = "liste_" + Date.now() + "_" + n;
-      const liste = neueListeObjekt(id, s.name || `Import ${n + 1}`);
-      liste.sprache = s.sprache || importSprache;
-      s.header.forEach((h, i) => {
-        const typ = s.mapping[i];
-        if (typ) liste.spalten[typ] = { name: h.wert.replace(/\s*\[[EDi][123]\]\s*$/, '').trim(), aktiv: true };
-      });
-      s.daten.forEach(zeile => {
-        const vok = { id: liste.naechste_id++ };
-        Object.entries(s.mapping).forEach(([idx, typ]) => {
-          if (typ && zeile[Number(idx)]) vok[typ] = { wert: zeile[Number(idx)].wert, falsch: zeile[Number(idx)].falsch };
-        });
-        liste.vokabeln.push(vok);
-      });
-      lsSet(SK.liste(id), liste);
-      neuerIndex.push({ id, name: liste.name, sprache: liste.sprache, ...(ziel.id ? { ordner: ziel.id } : {}) });
-      n++;
-    }
-    speichereIndex(neuerIndex, undefined, ziel.ordner);
-    if (ziel.id) setListenOrdnerOffen(ziel.id);
-    resetImport();
-    setAnsicht("uebersicht");
-  }
-
-  function importiereAusJsonDaten() {
-    if (!importJsonData?.length) return;
-    const neuerIndex = [...listenIndex];
-    const ziel = importZielOrdner();   // 195
-    importJsonData.forEach((l, i) => {
-      const id = "liste_" + Date.now() + "_j" + i;
-      const liste = ergaenzeSpalten({ ...l, id, sprache: listeSprache(l) });
-      lsSet(SK.liste(id), liste);
-      neuerIndex.push({ id, name: liste.name, sprache: liste.sprache, ...(ziel.id ? { ordner: ziel.id } : {}) });
-    });
-    speichereIndex(neuerIndex, undefined, ziel.ordner);
-    if (ziel.id) setListenOrdnerOffen(ziel.id);
-    resetImport();
-    setAnsicht("uebersicht");
-  }
+  function importiereAusJsonDaten(...args) { return importiereAusJsonDatenTeil({ importJsonData, importZielOrdner, listenIndex, resetImport, setAnsicht, setListenOrdnerOffen, speichereIndex }, ...args); }
 
   // Einstellungen: Bereiche mit Kopfzeile, immer nur einer offen; der geöffnete rückt unter die Kopfleiste, falls er oben verschwunden ist
-  function schalteEinstBereich(key) {
-    const neu = einstBereich === key ? null : key;
-    setEinstBereich(neu); setEinstUnter(null);
-    if (neu === "info") setInfoModus("uebersicht");
-    if (neu) requestAnimationFrame(() => {
-      const el = document.querySelector(`[data-einst-kopf="${neu}"]`);
-      if (el && el.getBoundingClientRect().top < headerH) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - headerH - 8 });
-    });
-  }
+  function schalteEinstBereich(...args) { return schalteEinstBereichTeil({ einstBereich, headerH, setEinstBereich, setEinstUnter, setInfoModus }, ...args); }
   // Knopfzeile im Einstellungs-Bereich: der offene Knopf wird grün (Auswahl: „Bestätigen“, sonst Wert mit ▲) und behält Größe und Platz;
   // sein Inhalt erscheint direkt darunter, der übrige Inhalt des Bereichs ist ausgeblendet. aktion: Knopf ohne Inhalt (z. B. ＋)
   const einstZeile = (zellen, offenK = einstUnter, setze = setEinstUnter, attrs = {}) => (
@@ -2340,23 +1652,10 @@ export default function VokabelApp() {
   );
 
   // Gesamtsicherung als Datei (Vorschlag „Vokabel-App Sicherung JJJJ-MM-TT“, Name änderbar)
-  function sichereAlles() { oeffneDateiExport({ art: "sicherung" }, sicherungStandardName()); }
-  function speichereSicherung(dateiname) {
-    const sich = erstelleSicherung();
-    teileAlsDatei(JSON.stringify(sich), dateiname);
-    lsSet(SK.letzteSicherung, sich.erstellt); setLetzteSicherung(sich.erstellt);
-  }
-  async function ladeSicherungsDatei(file) {
-    setSicherungFehler(""); setSicherungLaden(null);
-    let obj = null;
-    try { const t = (await leseDateiAlsText(file)).replace(/^[\uFEFF\u200B\s]+/, ""); obj = JSON.parse(t); } catch { /* unten */ }
-    if (istSicherung(obj)) { setSicherungLaden(obj); return; }
-    setSicherungFehler(`„${file.name}“ ist keine Gesamtsicherung. Einzelne Listen bitte über Listen → Import laden.`);
-  }
-  function bestaetigeWiederherstellen(sich) {
-    stelleSicherungWiederHer(sich);
-    window.location.reload();
-  }
+  function sichereAlles(...args) { return sichereAllesTeil({ oeffneDateiExport, sicherungStandardName }, ...args); }
+  function speichereSicherung(...args) { return speichereSicherungTeil({ setLetzteSicherung, teileAlsDatei }, ...args); }
+  function ladeSicherungsDatei(...args) { return ladeSicherungsDateiTeil({ setSicherungFehler, setSicherungLaden }, ...args); }
+  function bestaetigeWiederherstellen(...args) { return bestaetigeWiederherstellenTeil({  }, ...args); }
   const sicherungTage = einstellungen.sicherungErinnerung ?? 7;
   const sicherungAlt = (() => {
     if (!sicherungTage || !listenIndex.length || Date.now() - sicherungSpaeter < SICHERUNG_TAG_MS) return null;
@@ -2365,212 +1664,40 @@ export default function VokabelApp() {
     return { tage: Math.floor((Date.now() - seit) / SICHERUNG_TAG_MS), nie: !letzteSicherung };
   })();
 
-  function exportiereAlsJson(ids) {
-    setJsonExportIds(ids);
-    setExportName(exportStandardName(ids, "JSON"));
-    setModal("json-export");
-  }
+  function exportiereAlsJson(...args) { return exportiereAlsJsonTeil({ exportStandardName, setExportName, setJsonExportIds, setModal }, ...args); }
 
-  function exportiereAlsJsonBestaetigt() {
-    const listen = jsonExportIds.map(id => lsGet(SK.liste(id))).filter(Boolean);
-    const gefiltert = listen.map(liste => {
-      const l = { ...liste };
-      l.vokabeln = liste.vokabeln.map(vok => {
-        const v = { ...vok };
-        TYPEN.forEach(typ => {
-          if (v[typ]) v[typ] = { wert: v[typ].wert, falsch: jsonExportOptionen.falsch ? (v[typ].falsch || []) : [] };
-        });
-        if (!jsonExportOptionen.fortschritt) delete v.fortschritt;
-        if (!jsonExportOptionen.diktatFortschritt) delete v.diktatFortschritt;
-        if (!jsonExportOptionen.akzentFortschritt) delete v.akzentFortschritt;
-        return v;
-      });
-      return l;
-    });
-    const text = JSON.stringify(gefiltert, null, 2);
-    const name = dateiName(exportName, exportStandardName(jsonExportIds, "JSON"));
-    setModal(null); setJsonExportIds(null);
-    teileAlsDatei(text, name);
-  }
+  function exportiereAlsJsonBestaetigt(...args) { return exportiereAlsJsonBestaetigtTeil({ dateiName, exportName, exportStandardName, jsonExportIds, jsonExportOptionen, setJsonExportIds, setModal, teileAlsDatei }, ...args); }
 
-  function setzeMapping(colIndex, typ) {
-    setImportMapping(prev => {
-      const war = prev[colIndex];
-      const neu = { ...prev };
-      Object.keys(neu).forEach(k => { if (neu[k] === typ) neu[k] = null; });
-      neu[colIndex] = war === typ ? null : typ;
-      return neu;
-    });
-  }
+  function setzeMapping(...args) { return setzeMappingTeil({ setImportMapping }, ...args); }
 
-  function getBestehendeListe() {
-    if (!importBestehendId) return null;
-    return lsGet(SK.liste(importBestehendId));
-  }
+  function getBestehendeListe(...args) { return getBestehendeListeTeil({ importBestehendId }, ...args); }
 
   // Gibt die Ziel-Optionen für bestehende Liste zurück:
   // aktive Spalten (by name) + freie Slots (als "Neu: typ")
-  function getBestehendZielOptionen(bl) {
-    if (!bl) return [];
-    return TYPEN.map(typ => ({
-      typ,
-      label: bl.spalten[typ].aktiv ? bl.spalten[typ].name || typ : null,
-      neu: !bl.spalten[typ].aktiv,
-    }));
-  }
+  function getBestehendZielOptionen(...args) { return getBestehendZielOptionenTeil({  }, ...args); }
 
-  function fuehreImportDurch() {
-    const abfragbar = Object.values(importMapping).filter(t => t && !t.startsWith('i'));
-    if (abfragbar.length < 2) { setImportFehler("Mindestens 2 abfragbare Spalten müssen zugewiesen sein."); return; }
-
-    const istBestehend = importZielTyp === "bestehend";
-    const bl = istBestehend ? getBestehendeListe() : null;
-
-    function bauVokabeln(liste) {
-      importParsed.daten.forEach(zeile => {
-        const vok = { id: liste.naechste_id++ };
-        Object.entries(importMapping).forEach(([idx, typ]) => {
-          if (typ && zeile[Number(idx)]) vok[typ] = { wert: zeile[Number(idx)].wert, falsch: zeile[Number(idx)].falsch };
-        });
-        liste.vokabeln.push(vok);
-      });
-    }
-
-    function aktualisiereSpaltennamen(liste) {
-      Object.entries(importMapping).forEach(([idx, typ]) => {
-        if (!typ) return;
-        if (istBestehend && bl && bl.spalten[typ].aktiv) {
-          // Bestehende Spalte: Name bleibt
-          if (!liste.spalten[typ].aktiv) liste.spalten[typ] = { name: bl.spalten[typ].name, aktiv: true };
-        } else {
-          // Neue Spalte: Import-Header-Name
-          liste.spalten[typ] = { name: importParsed.header[Number(idx)].wert.replace(/\s*\[[EDi][123]\]\s*$/, '').trim(), aktiv: true };
-        }
-      });
-    }
-
-    if (istBestehend) {
-      if (!importBestehendId) { setImportFehler("Bitte eine Liste auswählen."); return; }
-      const liste = lsGet(SK.liste(importBestehendId));
-      if (!liste) { setImportFehler("Liste nicht gefunden."); return; }
-      aktualisiereSpaltennamen(liste);
-      bauVokabeln(liste);
-      lsSet(SK.liste(importBestehendId), liste);
-    } else {
-      const name = importNeuName.trim();
-      if (!name) { setImportFehler("Bitte einen Namen eingeben."); return; }
-      if (listenIndex.some(l => l.name.toLowerCase() === name.toLowerCase())) { setImportFehler("Name bereits vorhanden."); return; }
-      const id = "liste_" + Date.now();
-      const liste = { ...neueListeObjekt(id, name), sprache: importSprache };
-      aktualisiereSpaltennamen(liste);
-      bauVokabeln(liste);
-      lsSet(SK.liste(id), liste);
-      speichereIndex([...listenIndex, { id, name, sprache: importSprache, ...imListenOrdner() }]);
-    }
-    resetImport();
-    setAnsicht("uebersicht");
-  }
+  function fuehreImportDurch(...args) { return fuehreImportDurchTeil({ getBestehendeListe, imListenOrdner, importBestehendId, importMapping, importNeuName, importParsed, importSprache, importZielTyp, listenIndex, resetImport, setAnsicht, setImportFehler, speichereIndex }, ...args); }
 
   // ── Quiz-Aktionen ─────────────────────────────────────────────────────────
-  function toggleQuizSpalte(typ) {
-    setQuizAusgewaehlt(prev => {
-      if (prev.includes(typ)) {
-        if (quizFrageTyp === typ) setQuizFrageTyp("");
-        setQuizAntwortTypenGeordnet(p => p.filter(t => t !== typ));
-        setQuizInfoTypenSession(p => p.filter(t => t !== typ));
-        setQuizSpalteModus(p => { const n = {...p}; delete n[typ]; return n; });
-        return prev.filter(t => t !== typ);
-      }
-      return [...prev, typ];
-    });
-  }
+  function toggleQuizSpalte(...args) { return toggleQuizSpalteTeil({ quizFrageTyp, setQuizAntwortTypenGeordnet, setQuizAusgewaehlt, setQuizFrageTyp, setQuizInfoTypenSession, setQuizSpalteModus }, ...args); }
 
-  function toggleSpalteRolle(typ, rolle, mehrfach = false) {
-    if (rolle === "frage") {
-      if (quizFrageTyp === typ) { setQuizFrageTyp(""); }
-      else {
-        setQuizFrageTyp(typ);
-        setQuizAntwortTypenGeordnet(p => p.filter(t => t !== typ));
-        setQuizInfoTypenSession(p => p.filter(t => t !== typ));
-      }
-    } else if (rolle === "antwort") {
-      const ist = quizAntwortTypenGeordnet.includes(typ);
-      const modusNeu = v => quizArt === "akzente" ? "akzent" : (v && v !== "akzent" ? v : STANDARD_ANTWORT_MODUS);
-      // antippen: diese Spalte wird die einzige Antwort; lang drücken (mehrfach): dazu bzw. weg – Reihenfolge ergibt Antwort 1, 2 … (eine bleibt)
-      if (!mehrfach) {
-        if (ist && quizAntwortTypenGeordnet.length === 1) return;
-        leuchte(`rolle:${typ}`, BLITZ_MS / 2);
-        if (quizFrageTyp === typ) setQuizFrageTyp("");
-        setQuizInfoTypenSession(p => p.filter(t => t !== typ));
-        setQuizAntwortTypenGeordnet([typ]);
-        if (!ist) setQuizSpalteModus(p => ({...p, [typ]: modusNeu(p[typ])}));
-      } else if (ist) {
-        if (quizAntwortTypenGeordnet.length > 1) setQuizAntwortTypenGeordnet(p => p.filter(t => t !== typ));
-      } else {
-        leuchte(`rolle:${typ}`, BLITZ_MS / 2);
-        if (quizFrageTyp === typ) setQuizFrageTyp("");
-        setQuizInfoTypenSession(p => p.filter(t => t !== typ));
-        setQuizAntwortTypenGeordnet(p => [...p, typ]);
-        setQuizSpalteModus(p => ({...p, [typ]: modusNeu(p[typ])}));
-      }
-    } else if (rolle === "info") {
-      if (quizInfoTypenSession.includes(typ)) {
-        setQuizInfoTypenSession(p => p.filter(t => t !== typ));
-      } else {
-        if (quizFrageTyp === typ) setQuizFrageTyp("");
-        setQuizAntwortTypenGeordnet(p => p.filter(t => t !== typ));
-        setQuizInfoTypenSession(p => [...p, typ]);
-      }
-    }
-  }
+  function toggleSpalteRolle(...args) { return toggleSpalteRolleTeil({ leuchte, quizAntwortTypenGeordnet, quizArt, quizFrageTyp, quizInfoTypenSession, setQuizAntwortTypenGeordnet, setQuizFrageTyp, setQuizInfoTypenSession, setQuizSpalteModus }, ...args); }
 
-  function toggleInfoSpalte(typ) {
-    setQuizZeigeInfo(prev => ({...prev, [typ]: !prev[typ]}));
-  }
+  function toggleInfoSpalte(...args) { return toggleInfoSpalteTeil({ setQuizZeigeInfo }, ...args); }
 
-  function toggleVokCheckbox(vokId) {
-    setQuizCheckboxAuswahl(prev => {
-      const neu = new Set(prev);
-      if (neu.has(vokId)) neu.delete(vokId); else neu.add(vokId);
-      return neu;
-    });
-  }
+  function toggleVokCheckbox(...args) { return toggleVokCheckboxTeil({ setQuizCheckboxAuswahl }, ...args); }
 
   // ── Slot-Hilfsfunktionen ──────────────────────────────────────────────────
 
-  function getSlotsData() { return lsGet(SK.slots, defaultSlots()); }
+  function getSlotsData(...args) { return getSlotsDataTeil({  }, ...args); }
 
-  function setSlotsData(data) { lsSet(SK.slots, data); setSlots(data); }
+  function setSlotsData(...args) { return setSlotsDataTeil({ setSlots }, ...args); }
 
   // Raster: Plätze vergeben und bei Bedarf Zeilen anhängen (Einstellung wird mitgespeichert)
-  function rasterEinordnen(data, einst = lsGet(SK.einstellungen, defaultEinstellungen())) {
-    const groesse = rasterGroesse(einst);
-    let neu = ordnerBereinigen({ ...data, ordner: data.ordner || [] });   // Verweise auf nicht mehr vorhandene Gruppen lösen
-    let zeilen = groesse.zeilen;
-    for (const oid of [null, ...neu.ordner.map(o => o.id)]) {
-      const r = ordneRaster(ebeneVon(neu, oid), groesse);
-      zeilen = Math.max(zeilen, r.zeilen);
-      neu = setzeEbene(neu, r.gespeichert);
-    }
-    if (zeilen !== groesse.zeilen) speichereEinst({ ...einst, slotRaster: { ...groesse, zeilen } });
-    return neu;
-  }
-  function setzeSlotPlaetze(ids, ziel) {
-    const einst = lsGet(SK.einstellungen, defaultEinstellungen());
-    const g = rasterGroesse(einst);
-    const einstNeu = ziel.z + ids.length > g.zeilen ? { ...einst, slotRaster: { ...g, zeilen: ziel.z + ids.length } } : einst;
-    if (einstNeu !== einst) speichereEinst(einstNeu);
-    const data = rasterEinordnen(getSlotsData(), einstNeu);
-    const ordnerId = slotOrdnerRef.current;
-    const ebene = ebeneVon(data, ordnerId);
-    setSlotsData(rasterEinordnen(setzeEbene(data, platziereGruppe(ebene, ids, ziel)), einstNeu));
-    setSlotAuswahl([]);
-  }
+  function rasterEinordnen(...args) { return rasterEinordnenTeil({ speichereEinst }, ...args); }
+  function setzeSlotPlaetze(...args) { return setzeSlotPlaetzeTeil({ getSlotsData, rasterEinordnen, setSlotAuswahl, setSlotsData, slotOrdnerRef, speichereEinst }, ...args); }
   // Quiz in eine Gruppe (oder mit null heraus auf die oberste Ebene); sie kommen dort ans Ende
-  function verschiebeInOrdner(ids, ordnerId) {
-    setSlotsData(rasterEinordnen(legeInOrdner(getSlotsData(), ids, ordnerId)));   // Ordner bleiben bestehen, auch leer (194)
-    setMultiAuswahl(null); setSlotSortModus(false); setSlotAuswahl([]); setInGruppe(null);
-  }
+  function verschiebeInOrdner(...args) { return verschiebeInOrdnerTeil({ getSlotsData, rasterEinordnen, setInGruppe, setMultiAuswahl, setSlotAuswahl, setSlotSortModus, setSlotsData }, ...args); }
   // neuer Ordner (193/194) in der geöffneten Ebene – aus Quiz/Ordnern (nimmt den Platz des ersten ein) oder leer (platz)
   function legeOrdnerAn(name, ids, platz = null, eltern = slotOrdnerRef.current) {
     if (ordnerPfad(getSlotsData().ordner, eltern).length >= ORDNER_TIEFE_MAX) return null;
@@ -2580,87 +1707,23 @@ export default function VokabelApp() {
     return id;
   }
   // Gezogene Quiz auf ein Quiz (neuer Ordner aus allen, an deren Platz) bzw. in einen Ordner
-  function gruppiere(ids, ziel) {
-    const data = rasterEinordnen(getSlotsData());
-    const offen = slotOrdnerRef.current;
-    const imZiel = ebeneVon(data, offen).find(e => e.platz && e.platz.z === ziel.z && e.platz.s === ziel.s);
-    if (!imZiel || ids.includes(imZiel.id)) { setzeSlotPlaetze(ids, ziel); return; }
-    if (imZiel.istOrdner) { verschiebeInOrdner(ids, imZiel.id); return; }
-    const sessions = ids.filter(id => data.gespeichert.some(x => x.id === id));
-    if (!sessions.length || ordnerPfad(data.ordner, offen).length >= ORDNER_TIEFE_MAX) { setzeSlotPlaetze(ids, ziel); return; }
-    const alle = [imZiel.id, ...sessions];
-    legeOrdnerAn(gruppenName(alle.map(id => data.gespeichert.find(x => x.id === id)?.name || ""), (data.ordner || []).map(o => o.name)), alle);
-  }
+  function gruppiere(...args) { return gruppiereTeil({ getSlotsData, legeOrdnerAn, rasterEinordnen, setzeSlotPlaetze, slotOrdnerRef, verschiebeInOrdner }, ...args); }
   // Ordner auflösen: Inhalt eine Ebene hinauf (der erste auf den Platz des Ordners)
-  function loeseOrdnerAuf(id) {
-    const data = rasterEinordnen(getSlotsData());
-    const eltern = (data.ordner || []).find(x => x.id === id)?.ordner || null;
-    setSlotsData(rasterEinordnen(loeseOrdnerDaten(data, id)));
-    if (slotOrdner === id) setSlotOrdner(eltern);
-  }
-  function benenneOrdnerUm(id, name) {
-    const data = getSlotsData();
-    setSlotsData({ ...data, ordner: (data.ordner || []).map(o => o.id === id ? { ...o, name: name.trim() || o.name } : o) });
-    setOrdnerUmbenennen(null);
-  }
+  function loeseOrdnerAuf(...args) { return loeseOrdnerAufTeil({ getSlotsData, rasterEinordnen, setSlotOrdner, setSlotsData, slotOrdner }, ...args); }
+  function benenneOrdnerUm(...args) { return benenneOrdnerUmTeil({ getSlotsData, setOrdnerUmbenennen, setSlotsData }, ...args); }
 
   // 217: typ "listen" = eine Liste als Quiz (slots.listen[] je Liste: konfiguration, sessionFortschritte, lernStaende);
   // Name kommt aus dem Listen-Index, konfiguration erst nach dem ersten Start (vorher Standard-Einstellungen)
-  function getSlotEintrag(typ, id) {
-    const data = getSlotsData();
-    if (typ === "listen") {
-      const l = lsGet(SK.listenIndex, []).find(x => x.id === id);
-      if (!l) return null;
-      const e = (data.listen || []).find(s => s.id === id) || {};
-      return { ...e, id, name: l.name, istListe: true, konfiguration: e.konfiguration || null };
-    }
-    return data[typ]?.find(s => s.id === id) || null;
-  }
+  function getSlotEintrag(...args) { return getSlotEintragTeil({ getSlotsData }, ...args); }
   // 217: Eintrag einer Liste anlegen (falls noch nicht da) bzw. ändern
-  function aendereListenEintrag(id, f) {
-    const data = getSlotsData();
-    const listen = data.listen || [];
-    const da = listen.some(x => x.id === id);
-    setSlotsData({ ...data, listen: da ? listen.map(x => x.id === id ? f(x) : x) : [...listen, f({ id })] });
-  }
+  function aendereListenEintrag(...args) { return aendereListenEintragTeil({ getSlotsData, setSlotsData }, ...args); }
 
-  function aktuelleKonfiguration(mitVokabeln = true) {
-    return {
-      ...(mitVokabeln ? {
-        listenIds: [...quizTabListen],
-        vokabelAuswahl: Array.from(quizCheckboxAuswahl),
-        bereichTyp: quizBereichTyp,
-      } : {}),
-      quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet,
-      quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
-      quizModus, quizBereichTyp,
-      quizReihenfolge, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst,
-      quizDiktatSpalte, quizDiktatUebersetzung,
-      art: quizArt, arten: { ...quizArtStash, [quizArt]: artEinstellungenJetzt() },
-    };
-  }
-  function artEinstellungenJetzt() {
-    return { quizAusgewaehlt, quizFrageTyp, quizAntwortTypenGeordnet, quizInfoTypenSession, quizSpalteModus, quizZeigeInfo,
-      quizModus, quizReihenfolge, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst, quizDiktatSpalte, quizDiktatUebersetzung };
-  }
-  function wendeArtEinstellungenAn(k) {
-    setQuizAusgewaehlt(k.quizAusgewaehlt || []);
-    setQuizFrageTyp(k.quizFrageTyp || "");
-    setQuizAntwortTypenGeordnet(k.quizAntwortTypenGeordnet || []);
-    setQuizInfoTypenSession(k.quizInfoTypenSession || []);
-    setQuizSpalteModus(k.quizSpalteModus || {});
-    setQuizZeigeInfo(k.quizZeigeInfo || {});
-    setQuizModus(k.quizModus || "sequenziell");
-    setQuizReihenfolge(k.quizReihenfolge || "zufall");
-    setQuizSchlechtesteMaxScore(k.quizSchlechtesteMaxScore ?? "");
-    const ubz = k.quizUnbeantwortetZuerst;
-    setQuizUnbeantwortetZuerst(ubz != null && typeof ubz === "object" ? ubz : { zufall: !!ubz, schlechteste: false, listennr: !!ubz });
-    setQuizDiktatSpalte(k.quizDiktatSpalte || "E1");
-    setQuizDiktatUebersetzung(k.quizDiktatUebersetzung !== undefined ? k.quizDiktatUebersetzung : "D1");
-  }
+  function aktuelleKonfiguration(...args) { return aktuelleKonfigurationTeil({ artEinstellungenJetzt, quizAntwortTypenGeordnet, quizArt, quizArtStash, quizAusgewaehlt, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizFrageTyp, quizInfoTypenSession, quizModus, quizReihenfolge, quizSchlechtesteMaxScore, quizSpalteModus, quizTabListen, quizUnbeantwortetZuerst, quizZeigeInfo }, ...args); }
+  function artEinstellungenJetzt(...args) { return artEinstellungenJetztTeil({ quizAntwortTypenGeordnet, quizAusgewaehlt, quizDiktatSpalte, quizDiktatUebersetzung, quizFrageTyp, quizInfoTypenSession, quizModus, quizReihenfolge, quizSchlechtesteMaxScore, quizSpalteModus, quizUnbeantwortetZuerst, quizZeigeInfo }, ...args); }
+  function wendeArtEinstellungenAn(...args) { return wendeArtEinstellungenAnTeil({ setQuizAntwortTypenGeordnet, setQuizAusgewaehlt, setQuizDiktatSpalte, setQuizDiktatUebersetzung, setQuizFrageTyp, setQuizInfoTypenSession, setQuizModus, setQuizReihenfolge, setQuizSchlechtesteMaxScore, setQuizSpalteModus, setQuizUnbeantwortetZuerst, setQuizZeigeInfo }, ...args); }
   // Ü|D|A: Einstellungen der bisherigen Art merken, die der neuen Art laden (oder Standard)
   // neues Quiz (ohne geladene Konfiguration) beginnt immer in Übersetzung
-  function zurUebersetzung() { if (quizArt !== "uebersetzung") wechsleQuizArt("uebersetzung"); }
+  function zurUebersetzung(...args) { return zurUebersetzungTeil({ quizArt, wechsleQuizArt }, ...args); }
   function wechsleQuizArt(neu, spalten = quizKombiListe?.spalten) {
     if (neu === quizArt) return;
     const stash = { ...quizArtStash, [quizArt]: artEinstellungenJetzt() };
@@ -2672,15 +1735,7 @@ export default function VokabelApp() {
   // art (optional): Konfiguration direkt in dieser Abfrageart laden
   // Fällige Vokabeln (Abfrageart des Quiz-Tabs) einer Menge von Konfigurationen bzw. Listen: Schlüssel „listeId__vokId“
   const FORTSCHRITT_FELD = { uebersetzung: "fortschritt", diktat: "diktatFortschritt", akzente: "akzentFortschritt" };
-  function faelligeSchluessel(konfigs) {
-    const feld = FORTSCHRITT_FELD[quizArt] || "fortschritt", jetzt = Date.now(), erg = new Set();
-    konfigs.forEach(k => (k.listenIds || []).forEach(id => {
-      const l = lsGet(SK.liste(id));
-      const auswahl = k.bereichTyp === "bereich" && (k.vokabelAuswahl || []).length ? new Set(k.vokabelAuswahl) : null;
-      l?.vokabeln.forEach(v => { const key = `${id}__${v.id}`; if (!v.herausgenommen && (!auswahl || auswahl.has(key)) && istFaellig(v[feld], jetzt)) erg.add(key); });
-    }));
-    return [...erg];
-  }
+  function faelligeSchluessel(...args) { return faelligeSchluesselTeil({ FORTSCHRITT_FELD, quizArt }, ...args); }
   const faelligVonSlots = ids => faelligeSchluessel(ids.map(id => getSlotEintrag("gespeichert", id)?.konfiguration).filter(Boolean));
   const faelligVonListen = ids => faelligeSchluessel([{ listenIds: ids }]);
   // 170: nichts fällig → inaktiver Knopf als Hinweis (man sieht dort nach)
@@ -2689,286 +1744,58 @@ export default function VokabelApp() {
   // fällige Vokabeln über alle sichtbaren Listen (für „🔁 Fällige wiederholen“) – beim Öffnen der Auswahl neu berechnet
   const faelligAlle = useMemo(() => slotSektionAufgeklappt && (tab === "quiz" || tab === "statistik") ? faelligeSchluessel([{ listenIds: sichtbareListen.map(l => l.id) }]) : [],
     [slotSektionAufgeklappt, tab, listenIndex, sprachFilter, quizArt, faelligTick]);   // eslint-disable-line react-hooks/exhaustive-deps
-  function ladeFaellige(keys, ausListe = null) {
-    if (!keys.length) return;
-    ausListeRef.current = ausListe;   // 204
-    const listenIds = [...new Set(keys.map(x => x.split("__")[0]))];
-    applyKonfiguration({ ...aktuelleKonfiguration(false), listenIds, vokabelAuswahl: keys, bereichTyp: "bereich", quizBereichTyp: "bereich" });
-    setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotVorschau(null); setMultiAuswahl(null); setListenWahl(null);
-    auswahlTafelRef.current = null; schliesseInfo();
-    setTab("quiz"); setAnsicht("uebersicht"); setSlotSektionAufgeklappt(false); leuchte("slotkopf");
-  }
-  function applyKonfiguration(k, art = null) {
-    if (!k) return;
-    setQuizHeuteEinschliessen(false);   // 180
-    setStartLeerHinweis(false);
-    if (k.listenIds && k.listenIds.length > 0) {
-      const alleVorhanden = k.listenIds.every(id => listenIndex.some(l => l.id === id));
-      if (alleVorhanden) {
-        setQuizTabListen(k.listenIds);
-        setQuizCheckboxAuswahl(k.vokabelAuswahl && k.vokabelAuswahl.length > 0 ? new Set(k.vokabelAuswahl) : new Set());
-      } else {
-        setQuizBereichTyp("alle");
-        setQuizCheckboxAuswahl(new Set());
-      }
-    }
-    setQuizBereichTyp(k.quizBereichTyp || "alle");
-    const artK = artVonKonfig(k);
-    const ziel = art || artK;
-    const arten = { ...(k.arten || {}), [artK]: artFelderAus(k) };
-    const spalten = k.listenIds?.length ? getKombinierteListe(k.listenIds)?.spalten : null;
-    wendeArtEinstellungenAn(artBereinigt(ziel, arten[ziel] || standardArtEinstellungen(ziel, spalten), spalten));
-    setQuizArtStash(arten);
-    setQuizArt(ziel);
-  }
+  function ladeFaellige(...args) { return ladeFaelligeTeil({ aktuelleKonfiguration, applyKonfiguration, ausListeRef, auswahlTafelRef, leuchte, setAktiverSlot, setAnsicht, setGespeicherteVokabelgruppe, setListenWahl, setMultiAuswahl, setSlotSektionAufgeklappt, setSlotVorschau, setTab }, ...args); }
+  function applyKonfiguration(...args) { return applyKonfigurationTeil({ getKombinierteListe, listenIndex, setQuizArt, setQuizArtStash, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizHeuteEinschliessen, setQuizTabListen, setStartLeerHinweis, wendeArtEinstellungenAn }, ...args); }
 
   // Nach dem Antippen einer Kachel bleibt die Auswahl einen Moment offen, damit man die neu markierte Kachel sieht
-  function schliesseSlotsVerzoegert() {
-    clearTimeout(slotZuTimerRef.current);
-    slotZuTimerRef.current = setTimeout(() => { setSlotSektionAufgeklappt(false); leuchte("slotkopf"); }, SLOT_ZU_VERZOEGERUNG);
-  }
+  function schliesseSlotsVerzoegert(...args) { return schliesseSlotsVerzoegertTeil({ leuchte, setSlotSektionAufgeklappt, slotZuTimerRef }, ...args); }
 
-  function ladeSlot(typ, id, art = null) {
-    const eintrag = getSlotEintrag(typ, id);
-    neuImOrdnerRef.current = null;
-    if (!(typ === "listen" && ausListeRef.current?.listeId === id)) ausListeRef.current = null;   // 204: andere Quiz gewählt
-    setQuizErstellen(null);   // 217
-    if (eintrag && typ === "listen" && !eintrag.konfiguration) { listeAlsQuizVorbereiten(id); return; }   // 217: erstes Mal – Standard
-    if (!eintrag || !eintrag.konfiguration) return;
-    setListenAendern(false);
-    applyKonfiguration(eintrag.konfiguration, art);
-    if (typ === 'gespeichert') {
-      setGespeicherteVokabelgruppe({ listenIds: eintrag.konfiguration.listenIds || [], vokabelAuswahl: eintrag.konfiguration.vokabelAuswahl || [], bereichTyp: eintrag.konfiguration.bereichTyp || "alle" });
-    } else {
-      setGespeicherteVokabelgruppe(null);
-    }
-    setListenAuswahlAufgeklappt(false);
-    setQuizListeAufgeklappt(false);
-    setQuizAbfrageModusAufgeklappt(false);
-    setQuizReihenfolgeAufgeklappt(false);
-    setQuizEinstellungenAufgeklappt(false);
-    setQuizSessionAufgeklappt(false);
-    setAktiverSlot({ typ, id });
-    setSlotGeaendert(false);
-    if (typ === 'gespeichert') lsSet(SK.letzterSlot, id); else if (typ === "listen") lsSet(SK.letzterSlot, `listen:${id}`); else lsDel(SK.letzterSlot);
-    schliesseSlotsVerzoegert();   // nach der Auswahl nur noch die Kopfzeile zeigen
-    aktiviereSlotFortschritt(eintrag, typ, id, art || slotKonfigArt(eintrag));
-  }
+  function ladeSlot(...args) { return ladeSlotTeil({ aktiviereSlotFortschritt, applyKonfiguration, ausListeRef, getSlotEintrag, listeAlsQuizVorbereiten, neuImOrdnerRef, schliesseSlotsVerzoegert, setAktiverSlot, setGespeicherteVokabelgruppe, setListenAendern, setListenAuswahlAufgeklappt, setQuizAbfrageModusAufgeklappt, setQuizEinstellungenAufgeklappt, setQuizErstellen, setQuizListeAufgeklappt, setQuizReihenfolgeAufgeklappt, setQuizSessionAufgeklappt, setSlotGeaendert }, ...args); }
   // 217: Liste zum ersten Mal als Quiz – Standard-Einstellungen (wie früher „Quiz starten“), Kopf zeigt die Liste
-  function listeAlsQuizVorbereiten(id) {
-    const liste = lsGet(SK.liste(id));
-    if (!liste) return;
-    setSessionUeberschreibenModal(false); setGruppenAenderungsDialog(false);
-    setGespeicherteVokabelgruppe(null); setListenAendern(false);
-    lsDel(SK.sessionAktiv); setSessionSlotAktiv(null);
-    setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
-    setQuizHeuteEinschliessen(false); setStartLeerHinweis(false);
-    setQuizTabListen([id]); setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set());
-    setListenAuswahlAufgeklappt(false); setQuizListeAufgeklappt(false);
-    initQuizDefaults(liste);
-    setAktiverSlot({ typ: "listen", id }); setSlotGeaendert(false);
-    lsSet(SK.letzterSlot, `listen:${id}`);
-    schliesseSlotsVerzoegert();
-    const e = getSlotEintrag("listen", id);
-    if (e) aktiviereSlotFortschritt(e, "listen", id, "uebersetzung");
-  }
+  function listeAlsQuizVorbereiten(...args) { return listeAlsQuizVorbereitenTeil({ aktiviereSlotFortschritt, getSlotEintrag, initQuizDefaults, schliesseSlotsVerzoegert, setAktiverSlot, setGespeicherteVokabelgruppe, setGruppenAenderungsDialog, setListenAendern, setListenAuswahlAufgeklappt, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizPaketGroesse, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSessionUeberschreibenModal, setSlotGeaendert, setStartLeerHinweis }, ...args); }
   // 217: „Quiz erstellen“ – Quiz-Tab mit dieser Liste (Listenauswahl ausgeblendet), Bereich + Einstellungen wählen;
   // der grüne Kopf „＋ Quiz erstellen“ öffnet das Fenster (Name, Ordner)
-  function starteQuizErstellen(id) {
-    const liste = lsGet(SK.liste(id));
-    if (!liste) return;
-    setSlotSektionAufgeklappt(false); setQuizSessionAufgeklappt(false);
-    handleTabWechsel("quiz"); setQuiz(null); setAnsicht("uebersicht");
-    setAktiverSlot(null); setSlotGeaendert(false); setGespeicherteVokabelgruppe(null); setListenAendern(false);
-    lsDel(SK.sessionAktiv); setSessionSlotAktiv(null);
-    setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
-    setQuizTabListen([id]); setQuizCheckboxAuswahl(new Set());
-    setListenAuswahlAufgeklappt(false);
-    initQuizDefaults(liste);
-    setQuizBereichTyp("bereich"); setQuizListeAufgeklappt(true);   // nach den Standards: gleich den Bereich wählen
-    ausListeRef.current = null;
-    setQuizErstellen({ listeId: id });
-    window.scrollTo(0, 0);
-  }
-  function erstelleQuiz() {
-    const f = erstellenFenster;
-    if (!f || !f.name.trim()) return;
-    neuImOrdnerRef.current = f.ordner || null;
-    speichereAlsGespeichert(null, f.name.trim());
-    setErstellenFenster(null); setQuizErstellen(null);
-    setSlotOrdner(f.ordner || null);
-  }
+  function starteQuizErstellen(...args) { return starteQuizErstellenTeil({ ausListeRef, handleTabWechsel, initQuizDefaults, setAktiverSlot, setAnsicht, setGespeicherteVokabelgruppe, setListenAendern, setListenAuswahlAufgeklappt, setQuiz, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizErstellen, setQuizListeAufgeklappt, setQuizPaketGroesse, setQuizSessionAufgeklappt, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSlotGeaendert, setSlotSektionAufgeklappt }, ...args); }
+  function erstelleQuiz(...args) { return erstelleQuizTeil({ erstellenFenster, neuImOrdnerRef, setErstellenFenster, setQuizErstellen, setSlotOrdner, speichereAlsGespeichert }, ...args); }
   // 217: Einstellungen der Liste merken (beim Start einer Runde)
-  function speichereListenKonfig(id) { const k = aktuelleKonfiguration(); aendereListenEintrag(id, x => ({ ...x, konfiguration: k })); }
+  function speichereListenKonfig(...args) { return speichereListenKonfigTeil({ aendereListenEintrag, aktuelleKonfiguration }, ...args); }
 
   // Quiz-Fortschritt der Abfrageart aus dem Slot-Eintrag aktivieren (oder kein Quiz, wenn es keinen gibt)
-  function aktiviereSlotFortschritt(eintrag, typ, id, art) {
-    const sf = slotSFAlle(eintrag)[art];
-    if (sf) {
-      const k = eintrag.konfiguration || {};
-      const sessionObj = { slotTyp: typ, slotId: id, art, listenIds: k.listenIds || [], vokabelAuswahl: k.vokabelAuswahl || [], bereichTyp: k.bereichTyp || "alle", abgefragt: sf.abgefragt || [], gesamt: sf.gesamt || 0, paketGroesse: sf.paketGroesse || STANDARD_PAKET_GROESSE, startScores: sf.startScores || {},
-        startZeit: sf.startZeit, erst: sf.erst, pakete: sf.pakete };
-      lsSet(SK.sessionAktiv, sessionObj);
-      setSessionSlotAktiv(sessionObj);
-      setQuizSessionModus("pakete");
-      setQuizPaketGroesse(sf.paketGroesse || STANDARD_PAKET_GROESSE);
-    } else {
-      lsDel(SK.sessionAktiv);
-      setSessionSlotAktiv(null);
-    }
-  }
+  function aktiviereSlotFortschritt(...args) { return aktiviereSlotFortschrittTeil({ setQuizPaketGroesse, setQuizSessionModus, setSessionSlotAktiv }, ...args); }
 
-  function ladeSlotStatistik(typ, id, art = null) {
-    const eintrag = getSlotEintrag(typ, id);
-    if (!eintrag || !eintrag.konfiguration) return;
-    setListenAendern(false);
-    const k = eintrag.konfiguration;
-    if (art) setStatistikArt(art);
-    setStatistikListenIds(k.listenIds?.length > 0 ? new Set(k.listenIds) : null);
-    setStatistikBereichTyp(k.bereichTyp || "alle");
-    setStatistikCheckboxAuswahl(new Set(k.vokabelAuswahl || []));
-    setStatistikListenAufgeklappt(false);
-    setStatistikEinzelauswahlAufgeklappt(false);
-    setStatistikAktiverSlot({ typ, id });
-    setStatistikSlotGeleert(false);
-    schliesseSlotsVerzoegert();   // nach der Auswahl nur noch die Kopfzeile zeigen (wie im Quiz)
-  }
+  function ladeSlotStatistik(...args) { return ladeSlotStatistikTeil({ getSlotEintrag, schliesseSlotsVerzoegert, setListenAendern, setStatistikAktiverSlot, setStatistikArt, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikEinzelauswahlAufgeklappt, setStatistikListenAufgeklappt, setStatistikListenIds, setStatistikSlotGeleert }, ...args); }
 
   // Abfrage ohne Pakete im Verlauf festhalten (mit Start-Scores für die Statistik).
   // Gespeicherte Konfiguration oder unveränderter Verlauf-Eintrag → kein neuer Eintrag.
-  function merkeRundeImVerlauf(effSlot, startScores) {
-    if (effSlot?.typ === 'gespeichert') return;
-    if (effSlot?.typ === "listen") return;   // 217: Listen erscheinen nicht im Verlauf
-    if (effSlot?.typ === 'verlauf') {
-      const e = getSlotEintrag('verlauf', effSlot.id);
-      if (e && JSON.stringify(e.konfiguration) === JSON.stringify(aktuelleKonfiguration())) {
-        const data = getSlotsData();
-        setSlotsData({ ...data, verlauf: [{ ...e, timestamp: Date.now(), startScores }, ...data.verlauf.filter(v => v.id !== e.id)] });
-        return;
-      }
-    }
-    erstelleVerlaufEintrag({ startScores });
-  }
+  function merkeRundeImVerlauf(...args) { return merkeRundeImVerlaufTeil({ aktuelleKonfiguration, erstelleVerlaufEintrag, getSlotEintrag, getSlotsData, setSlotsData }, ...args); }
 
-  function erstelleVerlaufEintrag(extra = {}) {
-    const id = neuerSlotId('v');
-    const neuerEintrag = { id, name: formatSlotDatum(), timestamp: Date.now(), konfiguration: aktuelleKonfiguration(), sessionFortschritt: null, ...extra };
-    const data = getSlotsData();
-    const neuerVerlauf = [neuerEintrag, ...data.verlauf].slice(0, 10);   // 212
-    const updated = { ...data, verlauf: neuerVerlauf };
-    setSlotsData(updated);
-    setAktiverSlot({ typ: 'verlauf', id });
-    setSlotGeaendert(false);
-    return id;
-  }
+  function erstelleVerlaufEintrag(...args) { return erstelleVerlaufEintragTeil({ aktuelleKonfiguration, getSlotsData, setAktiverSlot, setSlotGeaendert, setSlotsData }, ...args); }
 
   // ── Lernen: Wort zeigen (ggf. vorlesen), nach einer Pause die Übersetzung, dann die nächste Vokabel ──
-  function lernEinstellungen() {
-    const e = einstellungen.lernen || {};
-    // frühere einzige Pause ("halte") gilt als Pause nach der Info
-    return { ...LERNEN_STANDARD, ...(e.halte != null ? { pauseInfo: e.halte } : {}), ...e };
-  }
+  function lernEinstellungen(...args) { return lernEinstellungenTeil({ einstellungen }, ...args); }
   // Pause nach dem aktuellen Abschnitt (s); ohne Zusatzinfo gilt nach der Übersetzung die längere von Übersetzung/Info
-  function lernPause(l, v) {
-    const le = lernEinstellungen();
-    if (l.phase === 0) return le.pauseWort;
-    if (l.phase === 1) return lernInfoZeigen(l, v) ? le.pauseUeb : Math.max(le.pauseUeb, le.pauseInfo);
-    return le.pauseInfo;
-  }
-  function setzeLernEinst(felder) { speichereEinst({ ...einstellungen, lernen: { ...lernEinstellungen(), ...felder } }); }
+  function lernPause(...args) { return lernPauseTeil({ lernEinstellungen, lernInfoZeigen }, ...args); }
+  function setzeLernEinst(...args) { return setzeLernEinstTeil({ einstellungen, lernEinstellungen, speichereEinst }, ...args); }
   // Lernstand je gespeicherter Konfiguration / Verlaufseintrag und Abfrageart (lernStaende), getrennt vom Abfrage-Fortschritt:
   // { ids (ganze Lern-Reihenfolge), groesse, start, index, fertig, quizGemacht, zeit }
-  function lernStandVon(slot, art) {
-    if (!slot) return null;
-    return slots[slot.typ]?.find(x => x.id === slot.id)?.lernStaende?.[art] || null;
-  }
-  function setzeLernStand(slot, art, stand) {
-    if (slot?.typ === "listen" && !(getSlotsData().listen || []).some(x => x.id === slot.id)) aendereListenEintrag(slot.id, x => x);   // 217
-    const data = getSlotsData();
-    if (!slot || !data[slot.typ]?.some(x => x.id === slot.id)) return;
-    setSlotsData({ ...data, [slot.typ]: data[slot.typ].map(x => {
-      if (x.id !== slot.id) return x;
-      const alle = { ...(x.lernStaende || {}) };
-      if (stand) alle[art] = stand; else delete alle[art];
-      return { ...x, lernStaende: alle };
-    }) });
-  }
+  function lernStandVon(...args) { return lernStandVonTeil({ slots }, ...args); }
+  function setzeLernStand(...args) { return setzeLernStandTeil({ aendereListenEintrag, getSlotsData, setSlotsData }, ...args); }
   // alle: ganze Quiz in Abfrage-Reihenfolge; groesse: Paketgröße (null = alle auf einmal);
   // stand: gespeicherter Lernstand → Reihenfolge und Stelle von damals (fehlende Vokabeln fallen weg)
-  function starteLernen(alle, groesse, spalten, info, stand = null) {
-    if (!alle.length || !spalten.length) return;
-    let start = 0, index = 0, fertig = false, quizGemacht = false;
-    if (stand) {
-      const nachId = new Map((quizKombiListe?.vokabeln || []).map(v => [v.id, v]));
-      const damals = stand.ids.map(id => nachId.get(id)).filter(Boolean);
-      if (damals.length) {
-        alle = damals; groesse = stand.groesse;
-        start = Math.min(stand.start, Math.max(0, alle.length - 1));
-        ({ index, fertig, quizGemacht } = stand);
-      }
-    }
-    const g = groesse || alle.length;
-    const voks = alle.slice(start, start + g);
-    index = Math.min(index || 0, voks.length - 1);
-    const le = lernEinstellungen();
-    const fremd = spalten.filter(t => t.startsWith("E")), deutsch = spalten.filter(t => !t.startsWith("E"));
-    let zuerst = le.zuerst === "deutsch" ? deutsch : fremd, danach = le.zuerst === "deutsch" ? fremd : deutsch;
-    if (!zuerst.length || !danach.length) { zuerst = spalten.slice(0, 1); danach = spalten.slice(1); }
-    // ohne gewählte Konfiguration: Verlaufseintrag anlegen, damit der Lernstand einen Platz hat
-    const slot = aktiverSlot || { typ: "verlauf", id: erstelleVerlaufEintrag() };
-    setLernResetFrage(false);
-    setLernen({ alle, groesse: g, start, voks, index, phase: 0, pausiert: false, fertig: !!fertig, quizGemacht: !!quizGemacht, lauf: 0, zuerst, danach, info,
-      liste: quizKombiListe, slot, art: quizAbfrageArt });
-    window.scrollTo(0, 0);
-  }
+  function starteLernen(...args) { return starteLernenTeil({ aktiverSlot, erstelleVerlaufEintrag, lernEinstellungen, quizAbfrageArt, quizKombiListe, setLernResetFrage, setLernen }, ...args); }
   // Zusatzinfo dieser Vokabel zeigen? (Schalter auf dem Lernbildschirm, nur wenn es Info-Text gibt)
-  function lernInfoZeigen(l, v) { return lernEinstellungen().info && l.info.some(t => v?.[t]?.wert); }
-  function lernenWeiter() {
-    setLernen(l => {
-      if (!l || l.fertig) return l;
-      if (l.phase === 0 && l.danach.length) return { ...l, phase: 1 };
-      if (l.phase === 1 && lernInfoZeigen(l, l.voks[l.index])) return { ...l, phase: 2 };
-      if (l.index + 1 >= l.voks.length) return { ...l, fertig: true };
-      return { ...l, index: l.index + 1, phase: 0 };
-    });
-  }
-  function lernenVor() { setLernen(l => l && (l.index + 1 >= l.voks.length ? { ...l, fertig: true } : { ...l, index: l.index + 1, phase: 0, lauf: l.lauf + 1 })); }
-  function lernenZurueck() { setLernen(l => l && { ...l, index: Math.max(0, l.index - 1), phase: 0, fertig: false, lauf: l.lauf + 1 }); }
-  function beendeLernen() { window.speechSynthesis?.cancel(); setLernen(null); klappeUebersichtEin(); }
+  function lernInfoZeigen(...args) { return lernInfoZeigenTeil({ lernEinstellungen }, ...args); }
+  function lernenWeiter(...args) { return lernenWeiterTeil({ lernInfoZeigen, setLernen }, ...args); }
+  function lernenVor(...args) { return lernenVorTeil({ setLernen }, ...args); }
+  function lernenZurueck(...args) { return lernenZurueckTeil({ setLernen }, ...args); }
+  function beendeLernen(...args) { return beendeLernenTeil({ klappeUebersichtEin, setLernen }, ...args); }
   // nächstes Paket des Quiz (nach dem letzten: Endbildschirm bleibt)
-  function naechstesLernPaket(l) {
-    const start = l.start + l.groesse;
-    if (start >= l.alle.length) return { ...l, imQuiz: false };
-    return { ...l, imQuiz: false, quizGemacht: false, start, voks: l.alle.slice(start, start + l.groesse), index: 0, phase: 0, fertig: false, pausiert: false, lauf: l.lauf + 1 };
-  }
+  function naechstesLernPaket(...args) { return naechstesLernPaketTeil({  }, ...args); }
   // Quiz mit genau den eben gezeigten Vokabeln – einmal je Paket, ohne Punktabzug; danach das nächste Paket
-  function starteLernQuiz() {
-    window.speechSynthesis?.cancel();
-    const ids = new Set(lernen.voks.map(v => v.id));
-    setLernen(l => ({ ...l, imQuiz: true, quizGemacht: true }));
-    starteQuiz(true, null, ids, "lernen");
-    setQuiz(q => q && { ...q, ausStatistik: false, ausLernen: true });
-  }
+  function starteLernQuiz(...args) { return starteLernQuizTeil({ lernen, setLernen, setQuiz, starteQuiz }, ...args); }
 
   // Multiquiz: Vokabeln mehrerer gespeicherter Konfigurationen zusammen, Einstellungen von der ersten
-  function multiZusammenstellung(ids) {
-    const data = getSlotsData();
-    const teile = ids.map(id => data.gespeichert.find(x => x.id === id)).filter(Boolean);
-    if (!teile.length) return null;
-    const listenIds = [], keys = new Set(), vorhanden = new Set();
-    for (const t of teile) {
-      const k = t.konfiguration || {};
-      const ids2 = (k.listenIds || []).filter(id => listenIndex.some(l => l.id === id));
-      for (const id of ids2) {
-        if (!listenIds.includes(id)) { listenIds.push(id); (lsGet(SK.liste(id))?.vokabeln || []).forEach(v => vorhanden.add(`${id}__${v.id}`)); }
-      }
-      if (k.bereichTyp === "bereich" && k.vokabelAuswahl?.length) k.vokabelAuswahl.forEach(v => keys.add(v));
-      else ids2.forEach(id => (lsGet(SK.liste(id))?.vokabeln || []).forEach(v => keys.add(`${id}__${v.id}`)));
-    }
-    const vokabelAuswahl = [...keys].filter(k => vorhanden.has(k));
-    return { konfiguration: { ...teile[0].konfiguration, listenIds, vokabelAuswahl, bereichTyp: "bereich", quizBereichTyp: "bereich" },
-      anzahl: vokabelAuswahl.length, teile: teile.map(t => ({ id: t.id, name: t.name })) };
-  }
+  function multiZusammenstellung(...args) { return multiZusammenstellungTeil({ getSlotsData, listenIndex }, ...args); }
   // Multiquiz aus gespeicherten Quiz (Einstellungen von Nr. 1 = zuerst gewählt): als Verlauf-Eintrag laden,
   // im Quiz-Tab auf Wunsch gleich starten; im Statistik-Tab zeigt die Statistik alle Vokabeln zusammen
   function stelleMultiquizEin(ids = multiAuswahl || [], starten = false) {
@@ -2985,70 +1812,15 @@ export default function VokabelApp() {
   const starteMultiquiz = ids => stelleMultiquizEin(ids, true);
   const multiVonSlot = slot => (slot ? getSlotEintrag(slot.typ, slot.id)?.multi : null) || null;
 
-  function speichereAlsGespeichert(id, name) {
-    const data = getSlotsData();
-    const konfiguration = aktuelleKonfiguration();
-    const multi = multiVonSlot(aktiverSlot);
-    let updated;
-    if (id) {
-      updated = { ...data, gespeichert: data.gespeichert.map(s => s.id === id ? (({ multi: _m, ...rest }) => ({ ...rest, name, konfiguration, ...(multi ? { multi } : {}) }))(s) : s) };
-    } else {
-      const newId = neuerSlotId('g');
-      const imOrdner = !multi && neuImOrdnerRef.current && (data.ordner || []).some(o => o.id === neuImOrdnerRef.current) ? neuImOrdnerRef.current : null;
-      neuImOrdnerRef.current = null;
-      const np = neuPlatzRef.current; neuPlatzRef.current = null;   // 199: auf den lang gedrückten freien Platz
-      const platz = !multi && np && (np.ordner || null) === (imOrdner || null) ? np.platz : null;
-      const neuerEintrag = { id: newId, name, timestamp: Date.now(), konfiguration, sessionFortschritt: null, ...(multi ? { multi } : {}), ...(imOrdner ? { ordner: imOrdner } : {}), ...(platz ? { platz } : {}) };
-      // bestehende Plätze festhalten, der neue Eintrag kommt auf den ersten freien Platz (Raster wächst automatisch)
-      updated = rasterEinordnen({ ...data, gespeichert: [...rasterEinordnen(data).gespeichert, neuerEintrag] });
-      id = newId;
-    }
-    setSlotsData(updated);
-    setAktiverSlot({ typ: 'gespeichert', id });
-    setListenAendern(false);
-    lsSet(SK.letzterSlot, id);
-    setSlotGeaendert(false);
-    setGespeicherteVokabelgruppe({ listenIds: [...quizTabListen], vokabelAuswahl: Array.from(quizCheckboxAuswahl), bereichTyp: quizBereichTyp });
-  }
+  function speichereAlsGespeichert(...args) { return speichereAlsGespeichertTeil({ aktiverSlot, aktuelleKonfiguration, getSlotsData, multiVonSlot, neuImOrdnerRef, neuPlatzRef, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, rasterEinordnen, setAktiverSlot, setGespeicherteVokabelgruppe, setListenAendern, setSlotGeaendert, setSlotsData }, ...args); }
 
   // Geänderte Vokabelauswahl in die geladene gespeichertes Quiz übernehmen. Ihr Quiz-Fortschritt (je Abfrageart)
   // passt sich an: „abgefragt“ behält nur Vokabeln im neuen Bereich, neue zählen als noch nicht abgefragt
-  function ueberspeichereSession() {
-    if (aktiverSlot?.typ !== 'gespeichert') return;
-    const id = aktiverSlot.id;
-    const name = getSlotEintrag('gespeichert', id)?.name || id;
-    let ids = (quizTabListen.length ? getKombinierteListe(quizTabListen)?.vokabeln || [] : []).map(v => v.id);
-    if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size) ids = ids.filter(x => quizCheckboxAuswahl.has(x));
-    const imBereich = new Set(ids);
-    const anpassen = sf => ({ ...sf, abgefragt: (sf.abgefragt || []).filter(x => imBereich.has(x)), gesamt: ids.length });
-    speichereAlsGespeichert(id, name);
-    const data = getSlotsData();
-    setSlotsData({ ...data, gespeichert: data.gespeichert.map(x => {
-      if (x.id !== id) return x;
-      const { sessionFortschritt: _alt, ...rest } = x;   // eslint-disable-line no-unused-vars
-      return { ...rest, sessionFortschritte: Object.fromEntries(Object.entries(slotSFAlle(x)).map(([a, sf]) => [a, anpassen(sf)])) };
-    }) });
-    const sa = lsGet(SK.sessionAktiv);
-    if (sa && sa.slotTyp === 'gespeichert' && sa.slotId === id) {
-      const neu = { ...anpassen(sa), slotTyp: sa.slotTyp, slotId: sa.slotId, art: sa.art, listenIds: [...quizTabListen], vokabelAuswahl: [...quizCheckboxAuswahl], bereichTyp: quizBereichTyp };
-      lsSet(SK.sessionAktiv, neu); setSessionSlotAktiv(neu);
-    }
-  }
+  function ueberspeichereSession(...args) { return ueberspeichereSessionTeil({ aktiverSlot, getKombinierteListe, getSlotEintrag, getSlotsData, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, setSessionSlotAktiv, setSlotsData, speichereAlsGespeichert }, ...args); }
 
   // ── Liste in mehrere Quiz aufteilen: Quiz-Tab mit dieser Liste, alle Einstellungen wie gewohnt,
   // dann je Gruppe eine gespeicherte Konfiguration „Name (21 - 40)“ ──
-  function starteAufteilen(listeId) {
-    const liste = lsGet(SK.liste(listeId));
-    if (!liste) return;
-    setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); lsDel(SK.letzterSlot); zurUebersetzung();
-    setQuizTabListen([listeId]);
-    setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false);
-    setQuizVonBisModus(false); setQuizVonBisErster(null);
-    setSlotSektionAufgeklappt(false); setListenAuswahlAufgeklappt(false);
-    setAufteilen({ listeId, name: liste.name, groesse: 20, von: 1, bis: liste.vokabeln.length, restAnhaengen: false, gruppe: true });
-    setTab("quiz");
-    window.scrollTo(0, 0);
-  }
+  function starteAufteilen(...args) { return starteAufteilenTeil({ setAktiverSlot, setAufteilen, setGespeicherteVokabelgruppe, setListenAuswahlAufgeklappt, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizListeAufgeklappt, setQuizTabListen, setQuizVonBisErster, setQuizVonBisModus, setSlotGeaendert, setSlotSektionAufgeklappt, setTab, zurUebersetzung }, ...args); }
   function aufteilenStand(a = aufteilen) {
     const liste = a && lsGet(SK.liste(a.listeId));
     if (!liste) return null;
@@ -3061,101 +1833,23 @@ export default function VokabelApp() {
       return { von: v, bis: b, name, vorhanden: vorhanden.has(name) };
     }) };
   }
-  function legeAufteilenAn() {
-    const stand = aufteilenStand();
-    if (!stand) return;
-    const neu = stand.gruppen.filter(g => !g.vorhanden);
-    const data = rasterEinordnen(getSlotsData());
-    const basisKonfig = aktuelleKonfiguration(false);
-    const eintraege = neu.map((g, i) => ({
-      id: neuerSlotId('g'), name: g.name, timestamp: Date.now() + i, sessionFortschritt: null,   // Platz: untereinander (Raster)
-      konfiguration: { ...basisKonfig, listenIds: [aufteilen.listeId], bereichTyp: "bereich", quizBereichTyp: "bereich",
-        vokabelAuswahl: stand.liste.vokabeln.slice(g.von - 1, g.bis).map(v => `${aufteilen.listeId}__${v.id}`) },
-    }));
-    // „In Gruppe zusammenfassen“: Gruppe mit dem Namen (vorhandene gleichen Namens wird ergänzt)
-    let ordnerId = null, ordner = data.ordner || [];
-    // 193: im geöffneten Ordner begonnen → der neue Ordner kommt dort hinein (solange er noch passt)
-    const eltern = neuImOrdnerRef.current && ordner.some(o => o.id === neuImOrdnerRef.current) && ordnerPfad(ordner, neuImOrdnerRef.current).length < ORDNER_TIEFE_MAX ? neuImOrdnerRef.current : null;
-    if (aufteilen.gruppe !== false && eintraege.length > 0) {
-      const name = (aufteilen.name || "").trim() || stand.liste.name;
-      ordnerId = ordner.find(o => o.name === name && (o.ordner || null) === eltern)?.id || neuerSlotId("ordner");
-      if (!ordner.some(o => o.id === ordnerId)) ordner = [...ordner, { id: ordnerId, name, ...(eltern ? { ordner: eltern } : {}) }];
-      eintraege.forEach(e => { e.ordner = ordnerId; });
-    } else if (neuImOrdnerRef.current && ordner.some(o => o.id === neuImOrdnerRef.current)) {
-      ordnerId = neuImOrdnerRef.current;   // in der geöffneten Gruppe begonnen → dort anlegen
-      eintraege.forEach(e => { e.ordner = ordnerId; });
-    }
-    neuImOrdnerRef.current = null;
-    setSlotsData(rasterEinordnen({ ...data, ordner, gespeichert: [...data.gespeichert, ...eintraege] }));
-    setAufteilen(null);
-    if (ordnerId) setSlotOrdner(ordnerId);
-    setSlotSektionAufgeklappt(true);
-    window.scrollTo(0, 0);
-  }
+  function legeAufteilenAn(...args) { return legeAufteilenAnTeil({ aktuelleKonfiguration, aufteilen, aufteilenStand, getSlotsData, neuImOrdnerRef, rasterEinordnen, setAufteilen, setSlotOrdner, setSlotSektionAufgeklappt, setSlotsData }, ...args); }
 
   // Kopie einer gespeicherten Konfiguration unter neuem Namen: gleiche Einstellungen,
   // eigener (leerer) Quiz-Fortschritt, erster freier Platz im Raster
-  function dupliziereSlot(id, name) {
-    const data = getSlotsData();
-    const quelle = data.gespeichert.find(x => x.id === id);
-    if (!quelle) return;
-    // im selben Ordner wie das Original
-    const kopie = { id: neuerSlotId('g'), name, timestamp: Date.now(), konfiguration: JSON.parse(JSON.stringify(quelle.konfiguration)), sessionFortschritt: null,
-      ...(quelle.ordner ? { ordner: quelle.ordner } : {}) };
-    setSlotsData(rasterEinordnen({ ...data, gespeichert: [...rasterEinordnen(data).gespeichert, kopie] }));
-  }
+  function dupliziereSlot(...args) { return dupliziereSlotTeil({ getSlotsData, rasterEinordnen, setSlotsData }, ...args); }
   // freier Name "Name (Kopie)", "Name (Kopie 2)" …
-  function kopieName(name) {
-    const namen = new Set(slots.gespeichert.map(x => x.name));
-    let n = `${name} (Kopie)`, i = 2;
-    while (namen.has(n)) n = `${name} (Kopie ${i++})`;
-    return n;
-  }
+  function kopieName(...args) { return kopieNameTeil({ slots }, ...args); }
 
-  function benenneSlotUm(id, name) {
-    const data = getSlotsData();
-    setSlotsData({ ...data, gespeichert: data.gespeichert.map(x => x.id === id ? { ...x, name } : x) });
-  }
+  function benenneSlotUm(...args) { return benenneSlotUmTeil({ getSlotsData, setSlotsData }, ...args); }
 
   // Auswahl löschen (nach Rückfrage): Konfigurationen bzw. Listen mit Vokabeln
-  function loescheAuswahl() {
-    const z = auswahlLoeschen;
-    setAuswahlLoeschen(null);
-    if (!z) return;
-    if (z.art === "slot") { z.ids.forEach(id => loescheSlotEintrag("gespeichert", id)); setMultiAuswahl(null); return; }
-    z.ids.forEach(id => lsDel(SK.liste(id)));
-    speichereIndex(listenIndex.filter(l => !z.ids.includes(l.id)));
-    if (z.ids.includes(aktiveListeId)) { setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null); }
-    setListenWahl(null);
-  }
+  function loescheAuswahl(...args) { return loescheAuswahlTeil({ aktiveListeId, auswahlLoeschen, listenIndex, loescheSlotEintrag, setAktiveListe, setAktiveListeId, setAnsicht, setAuswahlLoeschen, setListenWahl, setMultiAuswahl, speichereIndex }, ...args); }
 
-  function loescheSlotEintrag(typ, id) {
-    const data = getSlotsData();
-    const updated = { ...data, [typ]: data[typ].filter(s => s.id !== id) };   // die Gruppe bleibt, auch leer
-    setSlotsData(updated);
-    if (lsGet(SK.letzterSlot) === id) lsDel(SK.letzterSlot);
-    if (aktiverSlot?.typ === typ && aktiverSlot?.id === id) {
-      setAktiverSlot(null); zurUebersetzung();
-      setSlotGeaendert(false);
-      lsDel(SK.sessionAktiv);
-      setSessionSlotAktiv(null);
-    }
-    setLoescheSlotNr(null);
-  }
+  function loescheSlotEintrag(...args) { return loescheSlotEintragTeil({ aktiverSlot, getSlotsData, setAktiverSlot, setLoescheSlotNr, setSessionSlotAktiv, setSlotGeaendert, setSlotsData, zurUebersetzung }, ...args); }
 
   // Quiz-Fortschritt je Abfrageart (Übersetzung / Diktat / Akzente) getrennt im Slot-Eintrag
-  function updateSlotSF(typ, id, sf, art) {
-    if (typ === "listen" && !(getSlotsData().listen || []).some(x => x.id === id)) aendereListenEintrag(id, x => x);   // 217
-    const data = getSlotsData();
-    const updated = { ...data, [typ]: data[typ].map(s => {
-      if (s.id !== id) return s;
-      const alle = { ...slotSFAlle(s) };
-      if (sf) alle[art] = sf; else delete alle[art];
-      const { sessionFortschritt: _alt, ...rest } = s;   // altes Einzel-Format ablösen
-      return { ...rest, sessionFortschritte: alle };
-    }) };
-    setSlotsData(updated);
-  }
+  function updateSlotSF(...args) { return updateSlotSFTeil({ aendereListenEintrag, getSlotsData, setSlotsData }, ...args); }
 
   function sessionSlotKonflikt() {
     const slot = lsGet(SK.sessionAktiv);
@@ -3195,331 +1889,52 @@ export default function VokabelApp() {
     if (neu.slotTyp && neu.slotId) updateSlotSF(neu.slotTyp, neu.slotId, sessionSF(neu), neu.art || "uebersetzung");
   }
   // Erste Bewertung je Vokabel in dieser Runde: "richtig" | "falsch" | "aufgedeckt"
-  function erstAusQuiz(q) {
-    if (!q) return {};
-    if (q.modus !== "diktat") return q.gewertet || {};
-    const erst = {};
-    (q.diktatErgebnisse || []).forEach(e => { if (!(e.vokId in erst)) erst[e.vokId] = e.richtig ? "richtig" : "falsch"; });
-    return erst;
-  }
+  function erstAusQuiz(...args) { return erstAusQuizTeil({  }, ...args); }
 
-  function updateSessionSlotFortschritt(neueIds, isDurchlaufEnde) {
-    const slot = lsGet(SK.sessionAktiv);
-    if (!slot) return;
-    const neuAbgefragt = isDurchlaufEnde ? [] : [...new Set([...(slot.abgefragt || []), ...neueIds])];
-    // Durchlauf-Ende: Auswertungsdaten zurücksetzen (der nächste Durchlauf beginnt mit neuen Start-Scores)
-    const updated = isDurchlaufEnde
-      ? { ...slot, abgefragt: [], startScores: {}, startZeit: null, erst: {}, pakete: 0 }
-      : { ...slot, abgefragt: neuAbgefragt,
-          ...(slot.erst ? { erst: { ...slot.erst, ...erstAusQuiz(quiz) } } : {}),
-          ...(slot.pakete != null ? { pakete: slot.pakete + 1 } : {}) };
-    lsSet(SK.sessionAktiv, updated);
-    setSessionSlotAktiv(updated);
-    const { slotTyp, slotId } = slot;
-    if (slotTyp && slotId) updateSlotSF(slotTyp, slotId, sessionSF(updated), slot.art || "uebersetzung");
-  }
+  function updateSessionSlotFortschritt(...args) { return updateSessionSlotFortschrittTeil({ erstAusQuiz, quiz, sessionSF, setSessionSlotAktiv, updateSlotSF }, ...args); }
 
   // Löscht nur den Fortschritt der aktuellen Abfrageart; die anderen Arten bleiben im Slot erhalten
-  function loescheSessionSlot() {
-    const sSlot = lsGet(SK.sessionAktiv);
-    const { slotTyp, slotId } = sSlot || {};
-    lsDel(SK.sessionAktiv);
-    setSessionSlotAktiv(null);
-    if (slotTyp && slotId) updateSlotSF(slotTyp, slotId, null, sSlot.art || "uebersetzung");
-  }
+  function loescheSessionSlot(...args) { return loescheSessionSlotTeil({ setSessionSlotAktiv, updateSlotSF }, ...args); }
 
   // "Neu": komplett neu beginnen – Quiz, Listen-/Vokabelauswahl und alle Abfrage-Einstellungen
-  function neueQuizKonfiguration() {
-    setListenAendern(false);
-    setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false);
-    lsDel(SK.letzterSlot);
-    lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
-    setQuizTabListen([]);
-    // Spalten wie beim App-Start; passen sich bei der Listenauswahl automatisch an
-    setQuizAusgewaehlt(["D1", "E1"]); setQuizFrageTyp("D1"); setQuizAntwortTypenGeordnet(["E1"]);
-    setQuizInfoTypenSession([]); setQuizSpalteModus({ E1: "karte" }); setQuizZeigeInfo({ i1: true, i2: true });
-    setQuizDiktatSpalte("E1");
-    setzeQuizEinstellungenZurueck();
-    setSlotSektionAufgeklappt(false);
-    setListenAuswahlAufgeklappt(true);
-  }
+  function neueQuizKonfiguration(...args) { return neueQuizKonfigurationTeil({ setAktiverSlot, setGespeicherteVokabelgruppe, setListenAendern, setListenAuswahlAufgeklappt, setQuizAntwortTypenGeordnet, setQuizAusgewaehlt, setQuizDiktatSpalte, setQuizFrageTyp, setQuizInfoTypenSession, setQuizPaketGroesse, setQuizSessionModus, setQuizSpalteModus, setQuizTabListen, setQuizZeigeInfo, setSessionSlotAktiv, setSlotGeaendert, setSlotSektionAufgeklappt, setzeQuizEinstellungenZurueck }, ...args); }
 
-  function initQuizDefaults(kombiListe) {
-    const liste = kombiListe || aktiveListe;
-    if (!liste) return;
-    const abfragbar = TYPEN.filter(t => !t.startsWith('i') && liste.spalten[t].aktiv);
-    const infoVerfuegbar = TYPEN.filter(t => t.startsWith('i') && liste.spalten[t].aktiv);
-    const ausgewaehlt = (abfragbar.includes('E1') && abfragbar.includes('D1'))
-      ? ['E1', 'D1'] : abfragbar.slice(0, 2);
-    const frageTyp = ausgewaehlt.find(t => t.startsWith('D')) || ausgewaehlt[0] || '';
-    const antwortTypen = ausgewaehlt.filter(t => t !== frageTyp);
-    const spalteModus = {};
-    antwortTypen.forEach(t => { spalteModus[t] = 'karte'; });
-    const zeigeInfo = {};
-    infoVerfuegbar.forEach(t => { zeigeInfo[t] = true; });
-    setQuizAusgewaehlt(ausgewaehlt);
-    setQuizFrageTyp(frageTyp);
-    setQuizAntwortTypenGeordnet(antwortTypen);
-    setQuizInfoTypenSession([]);
-    setQuizSpalteModus(spalteModus);
-    setQuizZeigeInfo(zeigeInfo);
-    setzeQuizEinstellungenZurueck();
-  }
+  function initQuizDefaults(...args) { return initQuizDefaultsTeil({ aktiveListe, setQuizAntwortTypenGeordnet, setQuizAusgewaehlt, setQuizFrageTyp, setQuizInfoTypenSession, setQuizSpalteModus, setQuizZeigeInfo, setzeQuizEinstellungenZurueck }, ...args); }
 
   // Abfrage-Einstellungen ohne Spalten auf Standard (Quiz-Start aus Liste, "Neu")
-  function setzeQuizEinstellungenZurueck() {
-    setQuizModus('sequenziell');
-    setQuizArt("uebersetzung"); setQuizArtStash({});
-    setQuizBereichTyp('alle');
-    setQuizReihenfolge(STANDARD_REIHENFOLGE);
-    setQuizSchlechtesteMaxScore(STANDARD_MAX_SCORE);
-    setQuizUnbeantwortetZuerst(STANDARD_UNBEANTWORTET_ZUERST);
-    setQuizCheckboxAuswahl(new Set());
-    setQuizListeAufgeklappt(false);
-    setQuizVonBisModus(false);
-    setQuizVonBisErster(null);
-    setAbfrageZielModus(STANDARD_ABFRAGE_ZIEL);
-    setAbfrageZielAnzahl(1);
-    setAbfrageZielWiederholung(1);
-    setAbfrageZielScore(0);
-    setAbfrageZielScoreTyp("global");
-    setQuizGelerntEinschliessen(false);
-    setQuizHeuteEinschliessen(false);
-  }
+  function setzeQuizEinstellungenZurueck(...args) { return setzeQuizEinstellungenZurueckTeil({ setAbfrageZielAnzahl, setAbfrageZielModus, setAbfrageZielScore, setAbfrageZielScoreTyp, setAbfrageZielWiederholung, setQuizArt, setQuizArtStash, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizGelerntEinschliessen, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizModus, setQuizReihenfolge, setQuizSchlechtesteMaxScore, setQuizUnbeantwortetZuerst, setQuizVonBisErster, setQuizVonBisModus }, ...args); }
 
-  function getKombinierteListe(listenIds) {
-    const listen = listenIds.map(id => lsGet(SK.liste(id))).filter(Boolean);
-    if (listen.length === 0) return null;
-    const spalten = {};
-    TYPEN.forEach(typ => {
-      const aktiv = listen.filter(l => l.spalten[typ].aktiv);
-      if (aktiv.length > 0) {
-        const namen = [...new Set(aktiv.map(l => l.spalten[typ].name).filter(Boolean))];
-        spalten[typ] = { aktiv: true, name: namen.join(' / ') };
-      } else {
-        spalten[typ] = { aktiv: false, name: '' };
-      }
-    });
-    const vokabeln = listen.flatMap(l =>
-      l.vokabeln.filter(v => !v.herausgenommen).map(v => ({ ...v, id: `${l.id}__${v.id}`, _listeId: l.id, _origId: v.id }))   // 176
-    );
-    return { id: 'combined', name: listen.map(l => l.name).join(' + '), spalten, naechste_id: 0, vokabeln };
-  }
+  function getKombinierteListe(...args) { return getKombinierteListeTeil({  }, ...args); }
 
-  function toggleQuizTabListe(id) {
-    if (!quizTabListen.includes(id)) leuchte(`liste:${id}`);
-    setQuizTabListen(prev => {
-      const neueListen = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
-      if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
-        const bereinigte = new Set([...quizCheckboxAuswahl].filter(vokId =>
-          neueListen.some(lId => vokId.startsWith(`${lId}__`))
-        ));
-        if (bereinigte.size === 0) {
-          setQuizBereichTyp("alle");
-          setQuizCheckboxAuswahl(new Set());
-        } else {
-          setQuizCheckboxAuswahl(bereinigte);
-        }
-      }
-      return neueListen;
-    });
-  }
+  function toggleQuizTabListe(...args) { return toggleQuizTabListeTeil({ leuchte, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizTabListen }, ...args); }
 
   // Quiz-Tab: immer nur ein Bereich offen – wer einen öffnet, schließt alle anderen
   // aufgeklappter Zeilen-Knopf: oben der Wert (kurz), darunter „Bestätigen“ (antippen klappt zu)
   const offenText = (offen, kurz) => offen ? <span data-bestaetigen>Bestätigen</span> : kurz;
-  function schliesseQuizBereiche(ausser) {
-    if (ausser !== "slots") { setSlotSektionAufgeklappt(false); setMultiAuswahl(null); }
-    if (ausser !== "listen") setListenAuswahlAufgeklappt(false);
-    if (ausser !== "einzel") setQuizListeAufgeklappt(false);
-    if (ausser !== "modus") setQuizAbfrageModusAufgeklappt(false);
-    if (ausser !== "reihenfolge") setQuizReihenfolgeAufgeklappt(false);
-    if (ausser !== "stufe") setQuizStufeAufgeklappt(false);
-    if (ausser !== "einstellungen") setQuizEinstellungenAufgeklappt(false);
-    if (ausser !== "session") setQuizSessionAufgeklappt(false);
-  }
-  function toggleSessionBereich(art) {
-    if (quizSessionAufgeklappt !== art) schliesseQuizBereiche("session");
-    setQuizSessionAufgeklappt(v => v === art ? false : art);
-  }
+  function schliesseQuizBereiche(...args) { return schliesseQuizBereicheTeil({ setListenAuswahlAufgeklappt, setMultiAuswahl, setQuizAbfrageModusAufgeklappt, setQuizEinstellungenAufgeklappt, setQuizListeAufgeklappt, setQuizReihenfolgeAufgeklappt, setQuizSessionAufgeklappt, setQuizStufeAufgeklappt, setSlotSektionAufgeklappt }, ...args); }
+  function toggleSessionBereich(...args) { return toggleSessionBereichTeil({ quizSessionAufgeklappt, schliesseQuizBereiche, setQuizSessionAufgeklappt }, ...args); }
 
-  function toggleListenAuswahl() {
-    const opening = !listenAuswahlAufgeklappt;
-    if (opening) schliesseQuizBereiche("listen");
-    else leuchte("listenkopf");
-    setListenAuswahlAufgeklappt(v => !v);
-    if (opening) {
-      dropdownImmuneRef.current = true;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        const el = listenContainerRef.current;
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        if (rect.top < headerH + slotH + listenauswahlHeaderH) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH - slotH - listenauswahlHeaderH), behavior: 'instant' });
-        }
-        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
-      }));
-    }
-  }
+  function toggleListenAuswahl(...args) { return toggleListenAuswahlTeil({ dropdownImmuneRef, headerH, leuchte, listenAuswahlAufgeklappt, listenContainerRef, listenauswahlHeaderH, schliesseQuizBereiche, setListenAuswahlAufgeklappt, slotH }, ...args); }
 
-  function toggleReihenfolge() {
-    const opening = !quizReihenfolgeAufgeklappt;
-    if (opening) schliesseQuizBereiche("reihenfolge");
-    setQuizReihenfolgeAufgeklappt(v => !v);
-    if (opening) {
-      dropdownImmuneRef.current = true;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        const el = reihenfolgeContainerRef.current;
-        if (!el) return;
-        const target = headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH;
-        const rect = el.getBoundingClientRect();
-        if (rect.top < target) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
-        }
-        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
-      }));
-    }
-  }
+  function toggleReihenfolge(...args) { return toggleReihenfolgeTeil({ abfrageModusH, alleBereichH, dropdownImmuneRef, headerH, listenauswahlHeaderH, quizReihenfolgeAufgeklappt, reihenfolgeContainerRef, schliesseQuizBereiche, setQuizReihenfolgeAufgeklappt, slotH }, ...args); }
 
-  function toggleEinstellungen() {
-    const opening = !quizEinstellungenAufgeklappt;
-    if (opening) schliesseQuizBereiche("einstellungen");
-    setQuizEinstellungenAufgeklappt(v => !v);
-    if (opening) {
-      dropdownImmuneRef.current = true;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        const el = einstellungenContainerRef.current;
-        if (!el) return;
-        const target = headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH + reihenfolgeH + einstellungenH;
-        const rect = el.getBoundingClientRect();
-        if (rect.top < target) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
-        }
-        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
-      }));
-    }
-  }
+  function toggleEinstellungen(...args) { return toggleEinstellungenTeil({ abfrageModusH, alleBereichH, dropdownImmuneRef, einstellungenContainerRef, einstellungenH, headerH, listenauswahlHeaderH, quizEinstellungenAufgeklappt, reihenfolgeH, schliesseQuizBereiche, setQuizEinstellungenAufgeklappt, slotH }, ...args); }
 
   useEffect(() => { if (!quizAbfrageModusAufgeklappt) { setArtenMehrfach(null); setAntwortMehrfach(false); } }, [quizAbfrageModusAufgeklappt]);
-  function toggleAbfrageModus() {
-    const opening = !quizAbfrageModusAufgeklappt;
-    if (opening) schliesseQuizBereiche("modus");
-    setQuizAbfrageModusAufgeklappt(v => !v);
-    if (opening) {
-      dropdownImmuneRef.current = true;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        const el = abfrageModusContainerRef.current;
-        if (!el) return;
-        const target = headerH + slotH + listenauswahlHeaderH + alleBereichH + abfrageModusH;
-        const rect = el.getBoundingClientRect();
-        if (rect.top < target) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
-        }
-        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
-      }));
-    }
-  }
+  function toggleAbfrageModus(...args) { return toggleAbfrageModusTeil({ abfrageModusContainerRef, abfrageModusH, alleBereichH, dropdownImmuneRef, headerH, listenauswahlHeaderH, quizAbfrageModusAufgeklappt, schliesseQuizBereiche, setQuizAbfrageModusAufgeklappt, slotH }, ...args); }
 
-  function toggleEinzelauswahl() {
-    const opening = !quizListeAufgeklappt;
-    if (opening) schliesseQuizBereiche("einzel");
-    setQuizListeAufgeklappt(v => !v);
-    if (opening) {
-      dropdownImmuneRef.current = true;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        const el = einzelauswahlRef.current;
-        if (!el) return;
-        const target = headerH + slotH + listenauswahlHeaderH + alleBereichH;
-        const rect = el.getBoundingClientRect();
-        if (rect.top < target) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
-        }
-        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
-      }));
-    }
-  }
+  function toggleEinzelauswahl(...args) { return toggleEinzelauswahlTeil({ alleBereichH, dropdownImmuneRef, einzelauswahlRef, headerH, listenauswahlHeaderH, quizListeAufgeklappt, schliesseQuizBereiche, setQuizListeAufgeklappt, slotH }, ...args); }
 
-  function toggleSlotSektion() {
-    const opening = !slotSektionAufgeklappt;
-    if (opening) setAuswahlListen(tab === "quiz" && aktiverSlot?.typ === "listen");   // 217: Listen-Kopf → Listen-Auswahl
-    clearTimeout(slotZuTimerRef.current);
-    if (opening && tab === "quiz") schliesseQuizBereiche("slots");
-    if (!opening) leuchte("slotkopf");
-    setSlotSektionAufgeklappt(v => !v);
-    setSlotSortModus(false); setSlotAuswahl([]); setMultiAuswahl(null);
-    if (opening) {
-      dropdownImmuneRef.current = true;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        const el = slotContainerRef.current;
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        if (rect.top < headerH + slotH) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH - slotH), behavior: 'instant' });
-        }
-        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
-      }));
-    }
-  }
+  function toggleSlotSektion(...args) { return toggleSlotSektionTeil({ aktiverSlot, dropdownImmuneRef, headerH, leuchte, schliesseQuizBereiche, setAuswahlListen, setMultiAuswahl, setSlotAuswahl, setSlotSektionAufgeklappt, setSlotSortModus, slotContainerRef, slotH, slotSektionAufgeklappt, slotZuTimerRef, tab }, ...args); }
 
-  function toggleStatistikListenAuswahl() {
-    const opening = !statistikListenAufgeklappt;
-    setStatistikListenAufgeklappt(v => !v);
-    if (opening) {
-      dropdownImmuneRef.current = true;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        const el = statistikListenContainerRef.current;
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        if (rect.top < headerH + slotH) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH - slotH), behavior: 'instant' });
-        }
-        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
-      }));
-    }
-  }
+  function toggleStatistikListenAuswahl(...args) { return toggleStatistikListenAuswahlTeil({ dropdownImmuneRef, headerH, setStatistikListenAufgeklappt, slotH, statistikListenAufgeklappt, statistikListenContainerRef }, ...args); }
 
-  function toggleStatistikEinzelauswahl() {
-    const opening = !statistikEinzelauswahlAufgeklappt;
-    setStatistikEinzelauswahlAufgeklappt(v => !v);
-    if (opening) {
-      dropdownImmuneRef.current = true;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        const el = statistikEinzelauswahlRef.current;
-        if (!el) return;
-        const target = headerH + slotH + statistikListenHeaderH + statistikVokauswahlH;
-        const rect = el.getBoundingClientRect();
-        if (rect.top < target) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
-        }
-        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
-      }));
-    }
-  }
+  function toggleStatistikEinzelauswahl(...args) { return toggleStatistikEinzelauswahlTeil({ dropdownImmuneRef, headerH, setStatistikEinzelauswahlAufgeklappt, slotH, statistikEinzelauswahlAufgeklappt, statistikEinzelauswahlRef, statistikListenHeaderH, statistikVokauswahlH }, ...args); }
 
   // zurück zur Übersicht – eingeklappt (alle Bereiche zu bis auf die Quiz-Auswahl (190), nach oben); nur „Pause“ lässt
   // die Bereiche, wie sie waren
-  function beendeQuiz(einklappen = true) {
-    setQuiz(null);
-    // 204: aus einer Liste gestartet → zurück dorthin (geöffnete Liste bzw. Listen-Raster mit der Liste gewählt); „Pause“ nicht
-    const al = einklappen ? ausListeRef.current : null;
-    if (al && listenIndex.some(l => l.id === al.listeId)) {
-      ausListeRef.current = null;
-      if (al.ziel === "liste") { oeffneListeDetail(al.listeId); return; }
-      setListenOrdnerOffen(listenIndex.find(l => l.id === al.listeId)?.ordner || null);
-      zuEinstListen();
-      setTimeout(() => { setListeVorschau(al.listeId); document.querySelector(`[data-liste-id="${al.listeId}"]`)?.scrollIntoView({ block: "center" }); }, 0);
-      return;
-    }
-    setTab("quiz");
-    setAnsicht("uebersicht");
-    if (einklappen) klappeUebersichtEin();
-  }
-  function klappeUebersichtEin() {
-    schliesseQuizBereiche("slots");
-    setSlotSektionAufgeklappt(true);
-    setQuizModusInfoAufgeklappt(false);
-    requestAnimationFrame(() => window.scrollTo(0, 0));
-  }
+  function beendeQuiz(...args) { return beendeQuizTeil({ ausListeRef, klappeUebersichtEin, listenIndex, oeffneListeDetail, setAnsicht, setListeVorschau, setListenOrdnerOffen, setQuiz, setTab, zuEinstListen }, ...args); }
+  function klappeUebersichtEin(...args) { return klappeUebersichtEinTeil({ schliesseQuizBereiche, setQuizModusInfoAufgeklappt, setSlotSektionAufgeklappt }, ...args); }
 
   // Statistik-Vollbild: Kopfzeile zeigt den Lernfortschritt der EINGEBLENDETEN Gruppen
   function renderVollbildKopf(...args) { return renderVollbildKopfTeil({ einstellungen, statistikArt, statistikFilter, statistikGefilterteVoks, tt }, ...args); }
@@ -3529,57 +1944,15 @@ export default function VokabelApp() {
 
   // Fortschritt des ganzen Quiz während der Abfrage (Kopfzeile): frühere Pakete + Position im aktuellen
   // Paket; in der Wiederholung gilt das Paket als durch. Ohne Pakete: diese Runde.
-  function sessionStandImQuiz(q) {
-    const imPaket = q.wiederholungDurchgang ? (q.sessionVokIds || q.vokabeln).length : q.index;
-    if (q.istSessionModus) {
-      const slot = lsGet(SK.sessionAktiv);
-      const vorher = (slot?.abgefragt || []).filter(id => !(q.sessionVokIds || []).includes(id)).length;
-      // Gesamtzahl vom Quiz-Start (später gelernte Vokabeln fallen sonst aus der Zählung)
-      const startAnzahl = Object.keys(slot?.startScores || {}).length;
-      return { erledigt: vorher + imPaket, gesamt: Math.max(startAnzahl, q.sessionGesamt || 0) };
-    }
-    const gesamt = Object.keys(q.rundeStartScores || {}).length || q.vokabeln.length;
-    return { erledigt: q.wiederholungDurchgang ? gesamt : q.index, gesamt };
-  }
+  function sessionStandImQuiz(...args) { return sessionStandImQuizTeil({  }, ...args); }
   function renderKopfFortschritt(...args) { return renderKopfFortschrittTeil({ sessionStandImQuiz, tt }, ...args); }
 
   // ── Quiz-Auswertung (zweiter Bildschirm nach „Weiter →“) ──
   // Quiz mit Paketen: alle Vokabeln des Quiz seit Durchlauf-Start; sonst: diese Runde
-  function sessionAuswertungDaten(q) {
-    const slot = q.istSessionModus ? lsGet(SK.sessionAktiv) : null;
-    const feld = q.scoreFeld || (q.modus === "diktat" ? "diktatFortschritt" : "fortschritt");
-    const mitSession = !!(slot?.startScores && Object.keys(slot.startScores).length > 0);
-    const start = mitSession ? slot.startScores : (q.rundeStartScores || {});
-    const vokMap = new Map(q.liste.vokabeln.map(v => [v.id, v]));
-    const ids = Object.keys(start).filter(id => feld !== "akzentFortschritt" || hatAkzentWort(vokMap.get(id)));
-    const jetztMap = new Map(q.liste.vokabeln.map(v => [v.id, v[feld]?.score ?? null]));
-    const jetzt = Object.fromEntries(ids.map(id => [id, jetztMap.has(id) ? jetztMap.get(id) : start[id]]));
-    const erstRunde = erstAusQuiz(q);
-    const erst = mitSession ? (slot.erst ? { ...slot.erst, ...erstRunde } : null) : erstRunde;
-    const ohneAkzent = feld === "akzentFortschritt" ? Object.keys(start).length - ids.length : null;
-    return { ids, start, jetzt, erst, ohneAkzent, startZeit: mitSession ? slot.startZeit : q.rundeStartZeit,
-      pakete: mitSession ? (slot.pakete != null ? slot.pakete + 1 : null) : 1, mitSession };
-  }
+  function sessionAuswertungDaten(...args) { return sessionAuswertungDatenTeil({ erstAusQuiz }, ...args); }
   function renderSessionAuswertung(...args) { return renderSessionAuswertungTeil({ einstellungen, ttFeld }, ...args); }
   // ganze Seite des Quiz-Auswertung mit den gewohnten Knöpfen darunter
-  function sessionAuswertungSeite(q, knoepfe, schliessen) {
-    return (
-      <>
-        <style>{CSS}</style>{farbModusUI}{farbRadUI}
-        <div className="app">
-          <div className="topbar">
-            <button {...tt("Schließen – zurück zur Übersicht")} className="topbar-back" onClick={schliessen}>Schließen</button>
-            <span className="topbar-title">Quiz-Auswertung</span>
-            <span className="quiz-fortschritt"/>
-          </div>
-          <div className="sektion">
-            {renderSessionAuswertung(sessionAuswertungDaten(q))}
-            {knoepfe}
-          </div>
-        </div>
-      </>
-    );
-  }
+  function sessionAuswertungSeite(...args) { return sessionAuswertungSeiteTeil({ farbModusUI, farbRadUI, renderSessionAuswertung, sessionAuswertungDaten, tt }, ...args); }
   // Paket-Ende: nächstes Paket wählen; Größen nur unterhalb des Quiz-Rests, beim Rest „Letzte N Vokabeln“
   // 189: offene Vokabeln des Quiz, die heute schon abgefragt wurden – starteQuiz lässt sie aus, also zählen sie am Paket-Ende nicht als Rest
   const heuteGesperrtOffen = (q, schonAbgefragt) => {
@@ -3634,7 +2007,7 @@ export default function VokabelApp() {
     </div>
   );
   // zurück aus Liste/Import zu Einstellungen › Listen
-  function zuEinstListen() { setTab("einstellungen"); setEinstBereich("listen"); setAnsicht("uebersicht"); setListenWahl(null); requestAnimationFrame(() => window.scrollTo(0, 0)); }
+  function zuEinstListen(...args) { return zuEinstListenTeil({ setAnsicht, setEinstBereich, setListenWahl, setTab }, ...args); }
   const weiterZurAuswertung = (
     <button data-zur-auswertung {...tt("Weiter zur Auswertung des ganzen Quiz: Start und Ende im Vergleich")} className="btn btn-primary" style={{width:"100%", fontSize:"1.05rem"}}
       onClick={() => { setQuiz(q => q && { ...q, sessionAuswertung: true }); window.scrollTo(0, 0); }}>Weiter →</button>
@@ -3645,98 +2018,25 @@ export default function VokabelApp() {
 
   // Namensvorschlag für gespeicherte Konfigurationen: Sprache(n) + Datum, eindeutig
   // 216: ungespeichertes Quiz aus genau einer Liste – deren Name (Teil der Liste: „· Nr. 1–10“ bzw. „· Auswahl“)
-  function einListenName() {
-    if (quizTabListen.length !== 1) return null;
-    const id = quizTabListen[0], l = listenIndex.find(x => x.id === id);
-    if (!l) return null;
-    if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
-      const alle = lsGet(SK.liste(id))?.vokabeln || [];
-      const nr = alle.map((v, i) => quizCheckboxAuswahl.has(`${id}__${v.id}`) ? i + 1 : null).filter(Boolean);
-      if (nr.length && nr.length < alle.length) return `${l.name} · ${nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}–${nr[nr.length - 1]}` : "Auswahl"}`;
-    }
-    return l.name;
-  }
-  function slotNamenVorschlag() {
-    // Kürzel der Sprache + Tag.Monat, z. B. „Engl 11.11.“
-    const sprachen = [...new Set(quizTabListen.map(spracheVonListe))].map(c => SPRACH_KUERZEL[c] || sprachInfo(c).name);
-    const multi = multiVonSlot(aktiverSlot);
-    const basis = multi ? `Multiquiz: ${multi.map(t => t.name).join(" + ")}`
-      : einListenName() || `${sprachen.length ? sprachen.join(" + ") : "Abfrage"} ${(() => { const d = new Date(); return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`; })()}`;
-    const namen = new Set(slots.gespeichert.map(x => x.name));
-    let name = basis, n = 2;
-    while (namen.has(name)) name = `${basis} (${n++})`;
-    return name;
-  }
+  function einListenName(...args) { return einListenNameTeil({ listenIndex, quizBereichTyp, quizCheckboxAuswahl, quizTabListen }, ...args); }
+  function slotNamenVorschlag(...args) { return slotNamenVorschlagTeil({ aktiverSlot, einListenName, multiVonSlot, quizTabListen, slots, spracheVonListe }, ...args); }
 
   // Suchleiste über einer Vokabelliste (Einzelauswahl Quiz/Statistik, Listenansicht): Treffer anspringen (‹ ›, Enter)
   // oder mit „nur Treffer“ filtern. Zeilen tragen data-such-ziel={art} data-such-id={vok.id}.
   // Vokabel-Auswahl: zum Anfang des nächsten zusammenhängenden gewählten Stücks springen (zyklisch)
   const sprungRef = useRef({});
-  function auswahlStuecke(voks, auswahl) {
-    const anf = [];
-    voks.forEach((v, i) => { if (auswahl.has(v.id) && !(i > 0 && auswahl.has(voks[i - 1].id))) anf.push(v.id); });
-    return anf;
-  }
-  function sprungKnopf(art, voks, auswahl) {
-    const anf = auswahlStuecke(voks, auswahl);
-    if (!anf.length) return null;
-    const cur = sprungRef.current[art] ?? -1;
-    const naechst = (cur + 1) % anf.length;
-    return (
-      <button className="btn btn-ghost btn-sm" data-auswahl-sprung={`${naechst + 1}/${anf.length}`} data-auswahl-durchlass style={{padding:"6px 8px"}}
-        onClick={() => {
-          sprungRef.current[art] = naechst;
-          document.querySelector(`[data-such-ziel="${art}"][data-such-id="${window.CSS.escape(String(anf[naechst]))}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
-          setSprungTick(x => x + 1);
-        }}
-        {...tt(`Zum Anfang des ${naechst + 1}. gewählten Stücks springen (${anf.length} zusammenhängende Stücke)`)}>⇣ {naechst + 1}/{anf.length}</button>
-    );
-  }
-  function suchInfo(voks, such) {
-    const treffer = sucheVokabeln(voks, such.text);
-    const nr = Math.min(such.nr, Math.max(0, treffer.length - 1));
-    return { treffer, nr, ids: new Set(treffer.map(t => t.id)), aktuell: treffer[nr]?.id, filter: such.nurTreffer && !!such.text.trim() };
-  }
+  function auswahlStuecke(...args) { return auswahlStueckeTeil({  }, ...args); }
+  function sprungKnopf(...args) { return sprungKnopfTeil({ auswahlStuecke, setSprungTick, sprungRef, tt }, ...args); }
+  function suchInfo(...args) { return suchInfoTeil({  }, ...args); }
   // Hervorhebung einer Zeile: aktueller Treffer kräftig, weitere Treffer zart (linker Rand)
-  function suchMarke(info, id) {
-    return id === info.aktuell ? { boxShadow:"inset 5px 0 0 var(--gelb)", outline:"2px solid var(--gelb)", outlineOffset:-2 }
-      : info.ids.has(id) ? { boxShadow:"inset 5px 0 0 var(--gelb-zart)" } : {};
-  }
-  function springeZuTreffer(art, id) {
-    requestAnimationFrame(() => document.querySelector(`[data-such-ziel="${art}"][data-such-id="${window.CSS.escape(String(id))}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
-  }
+  function suchMarke(...args) { return suchMarkeTeil({  }, ...args); }
+  function springeZuTreffer(...args) { return springeZuTrefferTeil({  }, ...args); }
   // Nach einer Aktion in der Vokabelliste (Häkchen, Von–Bis): Tastatur der Suche schließen und die Zeile im Blick halten –
   // verschoben wird nur, wenn sie danach verdeckt oder außerhalb liegt (Tastatur zu, Tafel unten, Liste länger), dann in die Mitte
-  function sichtbarHalten(art, id) {
-    const el = document.querySelector(`[data-such-ziel="${art}"][data-such-id="${window.CSS.escape(String(id))}"]`);
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const vv = window.visualViewport;
-    const vOben = vv ? vv.offsetTop : 0, vUnten = vOben + (vv ? vv.height : window.innerHeight);
-    const scroller = el.closest("[data-vok-scroller]");
-    const sr = scroller?.getBoundingClientRect();
-    const leiste = document.querySelector(`[data-suchleiste="${art}"]`)?.getBoundingClientRect();
-    const tafel = document.querySelector("[data-auswahl-tafel]")?.getBoundingClientRect();
-    const oben = Math.max(vOben, sr ? sr.top : vOben, leiste ? leiste.bottom : vOben);
-    const unten = Math.min(vUnten, sr ? sr.bottom : vUnten, tafel ? tafel.top : vUnten);
-    if (r.top >= oben - 1 && r.bottom <= unten + 1) return;
-    const dy = (r.top + r.height / 2) - (oben + unten) / 2;
-    (scroller || window).scrollBy({ top: dy, behavior: "smooth" });
-  }
-  function zeileImBlick(art, id) {
-    const f = document.activeElement;
-    if (f?.matches?.("[data-such-feld]")) f.blur();
-    [0, 150, 400, 800].forEach(ms => setTimeout(() => requestAnimationFrame(() => sichtbarHalten(art, id)), ms));
-  }
+  function sichtbarHalten(...args) { return sichtbarHaltenTeil({  }, ...args); }
+  function zeileImBlick(...args) { return zeileImBlickTeil({ sichtbarHalten }, ...args); }
   // Lang-Druck auf eine Vokabelzeile: Von–Bis mit dieser Vokabel als Anfang
-  function vonBisLangDruck(art, vok, nr, w1, w2) {
-    const [setModus, setErster] = art === "quiz" ? [setQuizVonBisModus, setQuizVonBisErster] : [setStatistikVonBisModus, setStatistikVonBisErster];
-    const abbrechen = () => { vonBisTafelRef.current = null; setModus(false); setErster(null); };
-    return tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs) – lang drücken: Von–Bis ab hier",
-      [{ label: "✕ Von–Bis abbrechen", fn: abbrechen }],
-      { auswahl: { zu: () => abbrechen(), ohneText: true },
-        beimMenue: () => { vonBisTafelRef.current = art; setModus(true); setErster(vok.id); zeileImBlick(art, vok.id); } });
-  }
+  function vonBisLangDruck(...args) { return vonBisLangDruckTeil({ setQuizVonBisErster, setQuizVonBisModus, setStatistikVonBisErster, setStatistikVonBisModus, tt, vonBisTafelRef, zeileImBlick }, ...args); }
   function renderSuchleiste(...args) { return renderSuchleisteTeil({ springeZuTreffer, suchInfo, tt, ttFeld }, ...args); }
 
   // Kasten „In mehrere Quiz aufteilen“ im Quiz-Tab: Name, Gruppengröße, Bereich, Rest, Vorschau
@@ -3750,69 +2050,22 @@ export default function VokabelApp() {
     while (namen.has(n.toLowerCase())) n = `${name} (Kopie ${i++})`;
     return n;
   };
-  function dupliziereSchema(sch) {
-    const neu = { id: "eigen_" + Date.now(), name: schemaName(sch.name), basis: sch.basis || sch.id, dunkel: !!sch.dunkel, farben: { ...sch.farben }, elemente: { ...(sch.elemente || {}) } };
-    speichereEinst({ ...einstellungen, eigeneSchemata: [...eigeneSchemata, neu], farbschema: neu.id });
-    setSchemaBearbeiten(neu.id);
-  }
+  function dupliziereSchema(...args) { return dupliziereSchemaTeil({ eigeneSchemata, einstellungen, schemaName, setSchemaBearbeiten, speichereEinst }, ...args); }
   // 🎲 Zufällige Farben: ersetzt das Schema „Zufall“ (umbenannte oder duplizierte bleiben erhalten)
-  function zufallsSchema() {
-    const farben = zufallsFarben();
-    const alt = eigeneSchemata.find(x => x.zufall && x.name === "Zufall");
-    const sch = alt ? { ...alt, farben, elemente: {} } : { id: "zufall_" + Date.now(), name: "Zufall", basis: "natur", dunkel: false, zufall: true, farben, elemente: {} };
-    speichereEinst({ ...einstellungen, farbschema: sch.id,
-      eigeneSchemata: alt ? eigeneSchemata.map(x => x.id === alt.id ? sch : x) : [...eigeneSchemata, sch] });
-    if (schemaBearbeiten && schemaBearbeiten !== sch.id) setSchemaBearbeiten(null);
-  }
-  function aendereEigenesSchema(id, aenderung) {
-    speichereEinst({ ...einstellungen, eigeneSchemata: eigeneSchemata.map(x => x.id === id ? { ...x, ...aenderung(x) } : x) });
-  }
-  function loescheSchema(id) {
-    speichereEinst({ ...einstellungen, eigeneSchemata: eigeneSchemata.filter(x => x.id !== id), farbschema: einstellungen.farbschema === id ? "natur" : einstellungen.farbschema });
-    if (schemaBearbeiten === id) setSchemaBearbeiten(null);
-    setModal(null); setSchemaMenueId(null);
-  }
+  function zufallsSchema(...args) { return zufallsSchemaTeil({ eigeneSchemata, einstellungen, schemaBearbeiten, setSchemaBearbeiten, speichereEinst }, ...args); }
+  function aendereEigenesSchema(...args) { return aendereEigenesSchemaTeil({ eigeneSchemata, einstellungen, speichereEinst }, ...args); }
+  function loescheSchema(...args) { return loescheSchemaTeil({ eigeneSchemata, einstellungen, schemaBearbeiten, setModal, setSchemaBearbeiten, setSchemaMenueId, speichereEinst }, ...args); }
   const vollHex = h => /^#[0-9a-f]{3}$/i.test(h) ? "#" + h.slice(1).split("").map(c => c + c).join("") : h;
   function renderFarbschemata(...args) { return renderFarbschemataTeil({ aendereEigenesSchema, beendeFarbModus, dupliziereSchema, eigeneSchemata, einstZeile, einstellungen, farbModus, farbTab, oeffneFarbRad, schemaBearbeiten, setFarbTab, setModal, setModalFehler, setModalInput, setSchemaBearbeiten, setSchemaMenueId, speichereEinst, starteFarbModus, tt, ttFeld, vorhandeneSprachen, zufallsSchema }, ...args); }
 
   // ── Aufräum-Werkzeug: Klammerhinweise der Wort-Spalten in eine Info-Spalte verschieben ──
-  function klammerAenderungen(liste, ziel) {
-    const quellen = TYPEN.filter(t => !t.startsWith("i") && liste.spalten[t]?.aktiv);
-    return liste.vokabeln.map(v => {
-      const hinweise = quellen.flatMap(t => hinweiseAus(v[t]?.wert));
-      if (!hinweise.length) return null;
-      const neu = { ...v };
-      quellen.forEach(t => { if (v[t]?.wert && hinweiseAus(v[t].wert).length) neu[t] = { ...v[t], wert: ohneHinweis(v[t].wert) }; });
-      const alt = v[ziel]?.wert?.trim();
-      neu[ziel] = { wert: [alt, ...hinweise].filter(Boolean).join("; "), falsch: v[ziel]?.falsch || [] };
-      return { vorher: v, nachher: neu, hinweise };
-    }).filter(Boolean);
-  }
-  function verschiebeKlammern() {
-    const aenderungen = klammerAenderungen(aktiveListe, klammerZiel);
-    const neuMap = new Map(aenderungen.map(a => [a.vorher.id, a.nachher]));
-    const sp = aktiveListe.spalten[klammerZiel];
-    const neu = { ...aktiveListe, vokabeln: aktiveListe.vokabeln.map(v => neuMap.get(v.id) || v),
-      spalten: { ...aktiveListe.spalten, [klammerZiel]: { ...sp, aktiv: true, name: sp?.name || "Hinweis" } } };
-    lsSet(SK.liste(aktiveListe.id), neu); setAktiveListe(neu); speichereIndex(listenIndex);
-    setModal(null);
-  }
+  function klammerAenderungen(...args) { return klammerAenderungenTeil({  }, ...args); }
+  function verschiebeKlammern(...args) { return verschiebeKlammernTeil({ aktiveListe, klammerAenderungen, klammerZiel, listenIndex, setAktiveListe, setModal, speichereIndex }, ...args); }
 
   // ── Farbwähler (Farbkreis): live über CSS-Variablen, ohne die App neu aufzubauen ──
-  function oeffneFarbRad(rolle, titel, basis, ziel, el = null) {
-    const r = el?.getBoundingClientRect();
-    setFarbRad({ rolle, titel, start: vollHex(basis[rolle] || farbenAus(basis)[rolle] || "#000000").toLowerCase(), basis, ziel,
-      rect: r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null,
-      oben: !!r && r.top + r.height / 2 > window.innerHeight / 2 });
-  }
+  function oeffneFarbRad(...args) { return oeffneFarbRadTeil({ setFarbRad, vollHex }, ...args); }
   // nur diese Element-Art: eigene Regel statt der Rolle
-  function oeffneElementFarbRad(schluessel, eigenschaft, titel, el) {
-    const r = el?.getBoundingClientRect();
-    const cs = el ? getComputedStyle(el) : null;
-    const jetzt = elementVorschau?.[schluessel]?.[eigenschaft] || (cs && farbeZuHex(cs.getPropertyValue(eigenschaft))) || "#000000";
-    setFarbRad({ rolle: `${schluessel}|${eigenschaft}`, titel, start: vollHex(jetzt).toLowerCase(), element: { schluessel, eigenschaft },
-      rect: r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null, oben: !!r && r.top + r.height / 2 > window.innerHeight / 2 });
-  }
+  function oeffneElementFarbRad(...args) { return oeffneElementFarbRadTeil({ elementVorschau, setFarbRad, vollHex }, ...args); }
   const liveElement = text => {
     let st = document.getElementById("farb-element-live");
     if (!st) { st = document.createElement("style"); st.id = "farb-element-live"; document.head.appendChild(st); }
@@ -3827,21 +2080,8 @@ export default function VokabelApp() {
     setzeSystemLeiste(f.leiste);
   };
   const liveEntfernen = () => { const root = document.documentElement.style; Object.keys(F).forEach(k => root.removeProperty("--" + k)); setzeSystemLeiste(F.leiste); liveElement(""); };
-  function farbRadAnwenden(hex) {
-    const { rolle, ziel } = farbRad;
-    const verlauf = [hex, ...(einstellungen.farbVerlauf || []).filter(x => x !== hex)].slice(0, 10);
-    if (farbRad.element) {
-      const { schluessel, eigenschaft } = farbRad.element;
-      setElementVorschau(e => ({ ...(e || {}), [schluessel]: { ...(e?.[schluessel] || {}), [eigenschaft]: hex } }));
-      speichereEinst({ ...einstellungen, farbVerlauf: verlauf });
-      liveEntfernen(); setFarbRad(null); return;
-    }
-    if (ziel === "vorschau") { setFarbVorschau(f => mitFestenSchriften(f || farbRad.basis, rolle, hex)); speichereEinst({ ...einstellungen, farbVerlauf: verlauf }); }
-    else speichereEinst({ ...einstellungen, farbVerlauf: verlauf,
-      eigeneSchemata: eigeneSchemata.map(x => x.id === ziel ? { ...x, farben: mitFestenSchriften(x.farben, rolle, hex) } : x) });
-    liveEntfernen(); setFarbRad(null);
-  }
-  function farbRadAbbrechen() { liveEntfernen(); setFarbRad(null); }
+  function farbRadAnwenden(...args) { return farbRadAnwendenTeil({ eigeneSchemata, einstellungen, farbRad, liveEntfernen, setElementVorschau, setFarbRad, setFarbVorschau, speichereEinst }, ...args); }
+  function farbRadAbbrechen(...args) { return farbRadAbbrechenTeil({ liveEntfernen, setFarbRad }, ...args); }
   // Farben des gerade bearbeiteten Schemas (Grundrollen + eigene Element-Farben), ohne Doppelte
   const farbenImSchema = () => {
     const sch = farbRad?.ziel && farbRad.ziel !== "vorschau" ? eigeneSchemata.find(x => x.id === farbRad.ziel) : null;
@@ -3859,20 +2099,10 @@ export default function VokabelApp() {
     </>, document.body) : null;
 
   // ── Farbmodus ──
-  function starteFarbModus() {
-    setFarbVorschau({ ...schemaVon(einstellungen).farben });
-    setElementVorschau({ ...(schemaVon(einstellungen).elemente || {}) });
-    setFarbModus(true); setSchemaBearbeiten(null);
-  }
-  function beendeFarbModus() { setFarbModus(false); setFarbVorschau(null); setElementVorschau(null); setFarbFeld(null); setFarbMarke(null); setFarbName(null); }
+  function starteFarbModus(...args) { return starteFarbModusTeil({ einstellungen, setElementVorschau, setFarbModus, setFarbVorschau, setSchemaBearbeiten }, ...args); }
+  function beendeFarbModus(...args) { return beendeFarbModusTeil({ setElementVorschau, setFarbFeld, setFarbMarke, setFarbModus, setFarbName, setFarbVorschau }, ...args); }
   // eigene Farbe einer Element-Art entfernen → wieder die Rolle
-  function entferneElementFarbe(schluessel, eigenschaft) {
-    setElementVorschau(e => {
-      const p = { ...(e?.[schluessel] || {}) }; delete p[eigenschaft];
-      const n = { ...(e || {}) }; if (Object.keys(p).length) n[schluessel] = p; else delete n[schluessel];
-      return n;
-    });
-  }
+  function entferneElementFarbe(...args) { return entferneElementFarbeTeil({ setElementVorschau }, ...args); }
   // „🎨 Farbe ändern“ aus einem Lang-Druck-Menü: Farbmodus an und gleich das Farbfeld dieser Stelle
   useEffect(() => {
     const hier = e => {
@@ -3883,70 +2113,9 @@ export default function VokabelApp() {
     window.addEventListener("vokabel-farbe-hier", hier);
     return () => window.removeEventListener("vokabel-farbe-hier", hier);
   });
-  function uebernehmeFarben(name = null) {
-    const sch = schemaVon(einstellungen);
-    if (FARB_VORLAGEN.includes(sch)) {
-      if (name === null) { setFarbName(schemaName(sch.name)); setFarbFeld(null); return; }   // Vorlage: erst Namen für die Kopie
-      const neu = { id: "eigen_" + Date.now(), name: name.trim() || schemaName(sch.name), basis: sch.id, dunkel: !!sch.dunkel, farben: { ...farbVorschau }, elemente: { ...(elementVorschau || {}) } };
-      speichereEinst({ ...einstellungen, eigeneSchemata: [...eigeneSchemata, neu], farbschema: neu.id });
-    } else {
-      aendereEigenesSchema(sch.id, () => ({ farben: { ...farbVorschau }, elemente: { ...(elementVorschau || {}) } }));
-    }
-    beendeFarbModus();
-  }
+  function uebernehmeFarben(...args) { return uebernehmeFarbenTeil({ aendereEigenesSchema, beendeFarbModus, eigeneSchemata, einstellungen, elementVorschau, farbVorschau, schemaName, setFarbFeld, setFarbName, speichereEinst }, ...args); }
   // Farbrollen der Elemente im Umkreis von (x, y): je Element Hintergrund, Schrift, Rahmen bzw. bei Grafik Füllung, Linie
-  function farbRollenBei(x, y) {
-    const zuHex = farbeZuHex;
-    // gleiche Farbe in mehreren Rollen (z. B. Weiß = Karten und Schrift auf Hauptfarbe): je nach Teil die naheliegende Rolle
-    const VORZUG = { Schrift: ["auf-haupt", "auf-start", "text-stark", "text", "text2", "text3", "haupt", "falsch", "richtig"],
-      Hintergrund: ["karte", "hintergrund", "flaeche", "haupt", "falsch", "gelb"], Füllung: ["karte", "haupt", "haupt-hell", "gelernt", "arbeit", "nie", "negativ"],
-      "Ring/Linie": ["haupt-hell", "rahmen", "haupt"], Linie: ["rahmen", "text3", "haupt"], Rahmen: ["rahmen", "haupt", "falsch"] };
-    const nachWert = (h, teil) => { if (!h) return null; const alle = Object.keys(F).filter(k => vollHex(F[k]).toLowerCase() === h);
-      return (VORZUG[teil] || []).find(k => alle.includes(k)) || alle[0]; };
-    const regeln = [];
-    for (const sh of document.styleSheets) { try { regeln.push(...[...sh.cssRules].filter(r => r.selectorText)); } catch { /* fremdes Stylesheet */ } }
-    const deklariert = (el, props) => {
-      const st = el.getAttribute?.("style") || "";
-      for (const p of props) { const m = st.match(new RegExp(`(?:^|;)\\s*${p}\\s*:[^;]*var\\(--([\\w-]+)\\)`)); if (m) return m[1]; }
-      let gef = null;
-      regeln.forEach(r => { let passt = false; try { passt = el.matches(r.selectorText); } catch { /* */ }
-        if (passt) props.forEach(p => { const m = r.style.getPropertyValue(p).match(/var\(--([\w-]+)\)/); if (m) gef = m[1]; }); });
-      return gef;
-    };
-    const elemente = new Set();
-    for (const [dx, dy] of [[0, 0], [-14, 0], [14, 0], [0, -14], [0, 14], [-10, -10], [10, 10], [-10, 10], [10, -10]])
-      document.elementsFromPoint(x + dx, y + dy).forEach(el => { if (!el.closest("[data-farbmodus-ui]") && el !== document.documentElement) elemente.add(el); });
-    // kleine Grafiken (Mini-Kreise …): alle Teile mitnehmen – dünne Ringe trifft der Finger sonst kaum
-    [...elemente].forEach(el => { const svg = el instanceof SVGElement ? el.ownerSVGElement || el : null;
-      if (svg && svg.getBoundingClientRect().width <= 60) svg.querySelectorAll("circle, path, rect, line, polyline, text").forEach(t => elemente.add(t)); });
-    const name = el => {
-      const eigenerText = [...el.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent.trim()).join(" ").trim();
-      const t = el.tagName.toLowerCase();
-      const info = el.closest("[data-info]")?.getAttribute("data-info");
-      if (t === "body") return "Seite";
-      if (["circle", "path", "rect", "line", "polyline", "text"].includes(t)) return `Grafik${info ? " · " + info.split(/[–:]/)[0].trim() : ""}`;
-      return (eigenerText || info || el.textContent.trim() || t).slice(0, 34);
-    };
-    const gruppen = [];
-    [...elemente].map(el => ({ el, r: el.getBoundingClientRect() })).sort((a, b) => a.r.width * a.r.height - b.r.width * b.r.height).forEach(({ el, r }) => {
-      const cs = getComputedStyle(el), teile = [];
-      const svg = el instanceof SVGElement && el.tagName.toLowerCase() !== "svg";
-      // Schrift ohne eigene Regel: von außen geerbte Rolle (z. B. Text im Start-Knopf), wenn die Farbe passt
-      const geerbt = h => { for (let pe = el.parentElement, i = 0; pe && i < 4; pe = pe.parentElement, i++) { const r = deklariert(pe, ["color"]); if (r) return F[r] !== undefined && vollHex(F[r]).toLowerCase() === h ? r : null; } return null; };
-      const dazu = (teil, wert, props) => { const h = zuHex(wert); if (!h) return; const rolle = (props && deklariert(el, props)) || (teil === "Schrift" && geerbt(h)) || nachWert(h, teil); if (rolle && F[rolle] !== undefined && !teile.some(t => t.rolle === rolle && t.teil === teil)) teile.push({ teil, rolle }); };
-      if (svg) {
-        if (cs.fill && cs.fill !== "none") dazu(el.tagName.toLowerCase() === "text" ? "Schrift" : "Füllung", cs.fill);
-        if (cs.stroke && cs.stroke !== "none") dazu(el.tagName.toLowerCase() === "line" || el.tagName.toLowerCase() === "path" && cs.fill === "none" ? "Linie" : "Ring/Linie", cs.stroke);
-      } else {
-        dazu("Hintergrund", cs.backgroundColor, ["background", "background-color"]);
-        if ([...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) dazu("Schrift", cs.color, ["color"]);
-        const seite = ["Top", "Right", "Bottom", "Left"].find(sd => parseFloat(cs[`border${sd}Width`]) > 0 && cs[`border${sd}Style`] !== "none");
-        if (seite) dazu("Rahmen", cs[`border${seite}Color`], ["border", "border-color", `border-${seite.toLowerCase()}`, `border-${seite.toLowerCase()}-color`]);
-      }
-      if (teile.length && gruppen.length < 7) gruppen.push({ name: name(el), titel: elementName(el), el, teile, schluessel: elementSchluessel(el) });
-    });
-    return gruppen;
-  }
+  function farbRollenBei(...args) { return farbRollenBeiTeil({ vollHex }, ...args); }
   // langer Druck / Rechtsklick im Farbmodus → Farbfeld; Klicks direkt danach (Loslassen) werden verschluckt
   useEffect(() => {
     if (!farbModus) return;
@@ -4077,41 +2246,9 @@ export default function VokabelApp() {
   function auswahlOrdnerZelle(...args) { return auswahlOrdnerZelleTeil({ listenIndex, listenOrdner, setListenOrdnerOffen, tt, vokabelAnzahl }, ...args); }
 
   // ── Beispielsätze ergänzen: Prompt für die nächste Portion, KI-Antwort einfügen, übernehmen ──
-  async function oeffneSatzFenster(listeId) {
-    setListenSaetze({ listeId, saetze: await saetzeLaden(listeId) });
-    setSatzFenster({ listeId, antwort: "", meldung: "" });
-    setModal("saetze");
-  }
-  function satzPortion(listeId, saetze, n) {
-    const liste = lsGet(SK.liste(listeId));
-    if (!liste) return null;
-    const fremd = TYPEN.find(t => t.startsWith("E") && liste.spalten[t]?.aktiv), deutsch = TYPEN.find(t => t.startsWith("D") && liste.spalten[t]?.aktiv);
-    const offen = liste.vokabeln.filter(v => v[fremd]?.wert && (saetze[`${listeId}__${v.id}`] || []).length < n);
-    const alsDatei = einstellungen.satzWeg === "datei";
-    const teil = offen.slice(0, alsDatei ? 2000 : SATZ_PORTION[n] || 30);
-    const sprachName = sprachInfo(listeSprache(liste)).name;
-    return { liste, offen: offen.length, gesamt: liste.vokabeln.length, teil, alsDatei,
-      prompt: satzPrompt(sprachName, teil.map(v => `${v.id} // ${ohneHinweis(v[fremd].wert)} // ${ohneHinweis(v[deutsch]?.wert || "")}`), n, alsDatei) };
-  }
-  async function uebernehmeSaetze(text) {
-    const f = satzFenster;
-    if (!f) return;
-    const neu = saetzeAusAntwort(typeof text === "string" ? text : f.antwort), liste = lsGet(SK.liste(f.listeId));
-    const eintraege = {};
-    let anzSaetze = 0;
-    Object.entries(neu).forEach(([id, liste2]) => {
-      if (!liste?.vokabeln.some(v => String(v.id) === id)) return;
-      const key = `${f.listeId}__${id}`, alt = listenSaetze.saetze[key] || [];
-      const zusammen = [...alt, ...liste2.filter(x => !alt.some(a => a.s === x.s))].slice(0, 10);
-      anzSaetze += zusammen.length - alt.length;
-      eintraege[key] = zusammen;
-    });
-    await saetzeSpeichern(eintraege);
-    ladeSatzStand();   // 202
-    const saetze = await saetzeLaden(f.listeId);
-    setListenSaetze({ listeId: f.listeId, saetze });
-    setSatzFenster({ ...f, antwort: "", meldung: Object.keys(eintraege).length ? `${anzSaetze} Sätze für ${Object.keys(eintraege).length} Vokabeln übernommen.` : "Keine passenden Zeilen gefunden – Format „ID // Satz // Übersetzung“ mit *Wort*." });
-  }
+  function oeffneSatzFenster(...args) { return oeffneSatzFensterTeil({ setListenSaetze, setModal, setSatzFenster }, ...args); }
+  function satzPortion(...args) { return satzPortionTeil({ einstellungen }, ...args); }
+  function uebernehmeSaetze(...args) { return uebernehmeSaetzeTeil({ ladeSatzStand, listenSaetze, satzFenster, setListenSaetze, setSatzFenster }, ...args); }
   // Sätze der Listen im Quiz-Tab für die Satz-Antwortarten bereithalten
   useEffect(() => {
     const ids = [...new Set([...quizTabListen, ...(aktiveListeId ? [aktiveListeId] : [])])];
@@ -4124,54 +2261,14 @@ export default function VokabelApp() {
   }, [ansicht, aktiveListeId]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Menü einer Liste (lang drücken auf die Kachel bzw. auf den Namen im Listenkopf); imKopf: ohne Verschieben/Auswählen
-  function oeffneListeDetail(id) {
-    setListeNurAus(false);
-    setAktiveListeId(id); setTab("listen"); setAnsicht("liste-detail"); window.scrollTo(0, 0); vorigerListenBereich.current = null; setListenBereich(null);
-  }
-  function listenMenue(l, imKopf = false) {
-    const gefiltert = sprachFilter !== "alle";
-    return [
-      { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
-      { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
-      { label: "📤 Exportieren", fn: () => oeffneExport([l.id]) },
-      ...(() => { const f = faelligVonListen([l.id]); return faelligAktion(f, imKopf ? { listeId: l.id, ziel: "liste" } : { listeId: l.id, ziel: "raster" }); })(),   // 204
-      ...(() => { const n = (lsGet(SK.liste(l.id))?.vokabeln || []).filter(v => v.herausgenommen).length;   // 176
-        return n ? [{ label: `🚫 Herausgenommene (${n})`, fn: () => { oeffneListeDetail(l.id); setListenBereich("vokabeln"); setListeNurAus(true); } }] : []; })(),
-      { label: "✨ Beispielsätze ergänzen", fn: () => oeffneSatzFenster(l.id) },
-      { label: "≈ Synonyme ergänzen", fn: () => oeffneSynFenster(l.id) },
-      ...(imKopf && sichtbareListen.some(x => x.id !== l.id) ? [{ label: "⇲ Zusammenführen", fn: () => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); } }] : []),
-      { label: "＋ Vokabeln importieren", fn: () => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(l.id); setTab("listen"); setAnsicht("import"); } },
-      { label: "( ) → Info", fn: () => {
-        const ll = lsGet(SK.liste(l.id));
-        if (!imKopf) oeffneListeDetail(l.id);
-        setKlammerZiel(ll?.spalten.i1?.aktiv && ll?.spalten.i2?.aktiv ? "i2" : "i1"); setModal("klammern");
-      } },
-      ...(gefiltert || imKopf ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenSortModus(true); setListenAuswahl([l.id]); } }]),
-      { label: "📁 In Ordner…", fn: () => setInGruppe({ art: "liste", ids: [l.id], name: "" }) },   // 193
-      ...(l.ordner && listenOrdner.some(o => o.id === l.ordner) ? [{ label: "↑ Aus dem Ordner", fn: () => verschiebeListenInOrdner([l.id], listenOrdner.find(o => o.id === l.ordner)?.ordner || null) }] : []),
-      ...(imKopf ? [] : [{ label: "☑ Auswählen", behalten: true, fn: () => { setListenSortModus(false); setListenWahl([l.id]); } }]),
-      { label: "▦ In mehrere Quiz aufteilen", fn: () => starteAufteilen(l.id) },
-      { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },
-      { label: "🗑 Löschen", gefahr: true, fn: () => { setListeMenueId(l.id); setModal("loeschen"); } },
-    ];
-  }
+  function oeffneListeDetail(...args) { return oeffneListeDetailTeil({ setAktiveListeId, setAnsicht, setListeNurAus, setListenBereich, setTab, vorigerListenBereich }, ...args); }
+  function listenMenue(...args) { return listenMenueTeil({ faelligAktion, faelligVonListen, listenKopieName, listenOrdner, oeffneExport, oeffneListeDetail, oeffneSatzFenster, oeffneSynFenster, resetImport, setAnsicht, setImportBestehendId, setImportZielTyp, setInGruppe, setKlammerZiel, setListeMenueId, setListeNurAus, setListenAuswahl, setListenBereich, setListenSortModus, setListenWahl, setMergeQuelleId, setModal, setModalFehler, setModalInput, setTab, setZuruecksetzenArten, sichtbareListen, sprachFilter, starteAufteilen, verschiebeListenInOrdner }, ...args); }
 
   // Listen-Übersicht als Raster wie bei den gespeicherten Konfigurationen: Lang-Druck → Menü
   // (Umbenennen, Duplizieren, Verschieben, Löschen), Lang-Druck und ziehen → verschieben; belegter Platz: tauschen.
   // Mit Sprachfilter rücken die sichtbaren Listen zusammen (Verschieben dann nur unter „Alle“).
   // Aktionen für eine Listen-Auswahl (Lang-Druck auf eine Kachel der Auswahl oder auf den Auswahl-Kopf)
-  function listenWahlMenue(ids) {
-    return [
-      { label: `📤 Exportieren (${ids.length})`, behalten: true, fn: () => oeffneExport(ids) },
-      ...(() => { const f = faelligVonListen(ids); return faelligAktion(f); })(),
-      ...(sprachFilter !== "alle" ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl(ids); } }]),
-      { label: `📁 In Ordner… (${ids.length})`, fn: () => setInGruppe({ art: "liste", ids, name: "" }) },   // 193
-      ...(listenOrdnerOffen ? [{ label: `↑ Aus dem Ordner (${ids.length})`, fn: () => verschiebeListenInOrdner(ids, listenOrdner.find(o => o.id === listenOrdnerOffen)?.ordner || null) }] : []),
-      { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "liste", ids }) },
-      { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "liste", id: ids[ids.length - 1] }) },
-      { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) },
-    ];
-  }
+  function listenWahlMenue(...args) { return listenWahlMenueTeil({ faelligAktion, faelligVonListen, listenOrdner, listenOrdnerOffen, oeffneExport, setAuswahlLoeschen, setInGruppe, setListenAuswahl, setListenSortModus, setListenWahl, setVonBis, sprachFilter, verschiebeListenInOrdner }, ...args); }
   // Listen-Auswahl: die Knopfzeile oben wird zum grünen Bestätigen-Knopf („☑ n ausgewählt / ✓ Bestätigen“) – antippen beendet die Auswahl
   function listenWahlKopf(...args) { return listenWahlKopfTeil({ blitzt, exportKopiert, headerH, listenWahl, listenWahlMenue, setListenWahl, tt }, ...args); }
   // Einstellungen › Listen: angetippte Liste – Knopfzeile wird grün „‹Name› öffnen“, darunter die Info (wie bei den Quiz)
@@ -4185,34 +2282,13 @@ export default function VokabelApp() {
   // Kopfzeile Verlauf & Gespeichert (Quiz- und Statistik-Tab): zu und auf gleich aufgebaut – Name + Ü/D/A;
   // aufgeklappt zusätzlich eine Info-Zeile (Listen · Nr. · Anzahl). Langer Druck (Quiz): Speichern.
   // Mehrfach-Auswahl übernehmen: mehrere → Multiquiz einstellen, eine → laden, keine → Auswahl beenden
-  function beendeMultiAuswahl(ids, onLaden) {
-    if (ids.length >= 2) stelleMultiquizEin(ids);
-    else { setMultiAuswahl(null); if (ids.length === 1) onLaden("gespeichert", ids[0]); }
-  }
+  function beendeMultiAuswahl(...args) { return beendeMultiAuswahlTeil({ setMultiAuswahl, stelleMultiquizEin }, ...args); }
   // Speichern-Menü des Quiz (lang drücken auf den Quiz-Namen bzw. den Start-Knopf)
-  function sessionSpeicherAktionen() {
-    if (!quizKombiListe) return null;
-    if (vokabelgruppeGeaendert && aktiverSlot?.typ === "gespeichert") {
-      const name = getSlotEintrag("gespeichert", aktiverSlot.id)?.name || "";
-      return [
-        { label: `💾 Überspeichern „${name}“`, fn: ueberspeichereSession },
-        { label: "💾 Als neues Quiz speichern", fn: () => { setModalInput(slotNamenVorschlag()); setModal("slot-speichern"); } },
-        { label: "↺ Verwerfen", fn: () => ladeSlot(aktiverSlot.typ, aktiverSlot.id) },
-      ];
-    }
-    return [{ label: "💾 Speichern", fn: () => oeffneModal("slot-speichern") }];
-  }
+  function sessionSpeicherAktionen(...args) { return sessionSpeicherAktionenTeil({ aktiverSlot, getSlotEintrag, ladeSlot, oeffneModal, quizKombiListe, setModal, setModalInput, slotNamenVorschlag, ueberspeichereSession, vokabelgruppeGeaendert }, ...args); }
   function renderSlotKopf(...args) { return renderSlotKopfTeil({ aktiverSlot, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenAendern, listenFlagge, listenIndex, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizErstellen, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setListenAendern, setListenAuswahlAufgeklappt, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, starteQuizErstellen, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert, toggleSlotSektion, tt, vokabelgruppeGeaendert, vonBis, wechsleQuizArt }, ...args); }
 
   // Lernfortschritt je Art (Mini-Kreise) für eine Vokabelmenge; aus = keine passenden Vokabeln
-  function lernstandJeArt(voks, listeId = null) {
-    const schwelle = einstellungen.gelerntSchwelle ?? 0;
-    voks = voks.filter(v => !v.herausgenommen);   // 176: zählen nicht mit
-    return Object.fromEntries(QUIZ_ARTEN.map(a => {
-      const sicht = statistikSicht(voks, a, listeId);
-      return [a, { pct: lernProzent(sicht.map(v => v.fortschritt?.score), schwelle), aus: sicht.length === 0 }];
-    }));
-  }
+  function lernstandJeArt(...args) { return lernstandJeArtTeil({ einstellungen }, ...args); }
   // Antwortarten einer Spalte: antippen wechselt sofort (die angetippte Art ersetzt die bisherigen); lang drücken › „☑ Mehrere wählen“:
   // dann schaltet antippen dazu/weg, mehrere → je Frage eine nach der Gewichtung; „Bestätigen“ im Zeilen-Knopf beendet die Mehrfach-Auswahl.
   // Akzente: Zusatz, der dazu- bzw. weggeschaltet wird; nur bei Fremdsprachen-Spalten und eingeschalteten Akzenten; mindestens eine Art außer Akzente bleibt an
@@ -4234,29 +2310,14 @@ export default function VokabelApp() {
   // 217: Pfad über den Listen in der Quiz-Auswahl
   function quizListenNavi(...args) { return quizListenNaviTeil({ headerH, listenOrdner, listenOrdnerOffen, pfadTeile, quizListenUmschalter, setBlaettern, setListenOrdnerOffen, setSlotVorschau, slotH, slotInfoH }, ...args); }
   // 217: Listen als Quiz-Kacheln – antippen fragt die Liste ab, kurz halten wählt nur (Blätter-Modus), Ordner antippen öffnet
-  function uebernimmListe(id) {
-    setBlaettern(false); setSlotVorschau(null); setSlotVorschauListe(false);
-    ladeSlot("listen", id); leuchte("slotkopf");
-  }
+  function uebernimmListe(...args) { return uebernimmListeTeil({ ladeSlot, leuchte, setBlaettern, setSlotVorschau, setSlotVorschauListe }, ...args); }
   function renderQuizListenRaster(...args) { return renderQuizListenRasterTeil({ FORTSCHRITT_FELD, aktiverSlot, auswahlOrdnerZelle, blaettern, blitzt, einstellungen, lernstandJeArt, leuchte, listenFlagge, listenRasterPlaetze, quizArt, setSlotVorschau, setSlotVorschauListe, slotVorschau, tt, uebernimmListe }, ...args); }
   function ordnerNavi(...args) { return ordnerNaviTeil({ einstellungen, faelligAktion, faelligAlle, faelligVonSlots, headerH, minSpalten, multiAuswahl, neuImOrdnerRef, pfadTeile, quizListenUmschalter, setAnordnen, setInGruppe, setModal, setMultiAuswahl, setNeueSessionSchritt, setSlotAuswahl, setSlotDragId, setSlotDragZiel, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSpaltenWahl, setStatistikAktiverSlot, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikFilter, setStatistikListenIds, setStatistikSlotGeleert, slotAuswahl, slotH, slotInfoH, slotOrdner, slotSichtbarRef, slotSortModus, slots, speichereEinst, tt }, ...args); }
   function wahlLeiste(...args) { return wahlLeisteTeil({ listenAuswahl, listenSortModus, listenWahl, multiAuswahl, setListenAuswahl, setListenSortModus, setListenWahl, setMultiAuswahl, setSlotAuswahl, setSlotDragId, setSlotDragZiel, setSlotSortModus, sichtbareListen, slotAuswahl, slotSichtbarRef, slotSortModus, tt }, ...args); }
   function renderSlotBereiche(...args) { return renderSlotBereicheTeil({ FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligAktion, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setListenAendern, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef }, ...args); }
 
   // Info-Fläche unter dem Quiz-Kopf: immer das Quiz, die oben steht (angetippt, sonst die geladene bzw. die aktuelle Auswahl)
-  function infoEintrag(statistik) {
-    if (multiAuswahl?.length === 1) return getSlotEintrag("gespeichert", multiAuswahl[0]);   // eine per Lang-Druck gewählt: ihre Info (voller Name)
-    if (multiAuswahl?.length) return { id: "_wahl", name: `${multiAuswahl.length} Quiz ausgewählt`,
-      multi: multiAuswahl.map(id => ({ id, name: getSlotEintrag("gespeichert", id)?.name || id })) };
-    const mitKonfig = e => e?.istListe && !e.konfiguration ? { ...e, konfiguration: { listenIds: [e.id], bereichTyp: "alle" } } : e;   // 217
-    if (slotVorschau) return mitKonfig(getSlotEintrag(slotVorschau.typ, slotVorschau.id));
-    const slot = statistik ? statistikAktiverSlot : aktiverSlot;
-    const e = slot ? mitKonfig(getSlotEintrag(slot.typ, slot.id)) : null;
-    if (e) return e;
-    if (statistik) return { id: "_auswahl", name: statistikSlotGeleert ? "Leer" : "Neue Auswahl",
-      konfiguration: { listenIds: statistikListenIds ? [...statistikListenIds] : sichtbareListen.map(l => l.id), bereichTyp: statistikBereichTyp, vokabelAuswahl: [...statistikCheckboxAuswahl] } };
-    return { id: "_auswahl", name: "Neues Quiz", konfiguration: { listenIds: quizTabListen, bereichTyp: quizBereichTyp, vokabelAuswahl: [...quizCheckboxAuswahl] } };
-  }
+  function infoEintrag(...args) { return infoEintragTeil({ aktiverSlot, getSlotEintrag, multiAuswahl, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, sichtbareListen, slotVorschau, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert }, ...args); }
   // feststehend unter dem Kopf (Quiz und Vokabel-Liste scrollen darunter hindurch), mit dem Pfeil auf eine Zeile einklappbar (gespeichert);
   // „📋 Vokabeln ansehen“ hängt die enthaltenen Vokabeln mit Listen-Nr. darunter an (Lücken als Trennzeile)
   // Gruppen kurz und einzeilig: „● 112 ✓ · ● 98 in Arbeit · ● 2850 nie · ● 11 ✗“ – der Punkt in der Farbe des Balken-Abschnitts (185)
@@ -4267,59 +2328,15 @@ export default function VokabelApp() {
   // Nach dem Quiz direkt zur Statistik: mit Quiz → deren Eintrag (ganze Vokabelgruppe),
   // sonst genau die Vokabeln dieser Runde
   // Nach einer Gruppen-Runde aus der Statistik: zurück in genau diese Statistik (Auswahl, Art, Filter unverändert)
-  function zurueckZurStatistik() {
-    setQuiz(null);
-    setAnsicht("uebersicht");
-    setTab("statistik");
-  }
+  function zurueckZurStatistik(...args) { return zurueckZurStatistikTeil({ setAnsicht, setQuiz, setTab }, ...args); }
 
   // Runde verlassen: zurück ins Lernen, in die Statistik (Gruppen-Runde) oder zur Übersicht
-  function verlasseRunde() { if (quiz?.ausLernen) zurueckZumLernen(); else if (quiz?.ausStatistik) zurueckZurStatistik(); else beendeQuiz(); }
-  function zurueckZumLernen() {
-    quizStufeRef.current = null;
-    setQuiz(null);
-    setAnsicht("uebersicht");
-    setLernen(l => l && naechstesLernPaket(l));
-  }
+  function verlasseRunde(...args) { return verlasseRundeTeil({ beendeQuiz, quiz, zurueckZumLernen, zurueckZurStatistik }, ...args); }
+  function zurueckZumLernen(...args) { return zurueckZumLernenTeil({ naechstesLernPaket, quizStufeRef, setAnsicht, setLernen, setQuiz }, ...args); }
 
-  function zurRundenStatistik(abschluss) {
-    const q = quiz;
-    if (q?.ausStatistik) { zurueckZurStatistik(); return; }
-    abschluss();
-    setStatistikListenAufgeklappt(false);
-    setStatistikEinzelauswahlAufgeklappt(false);
-    setStatistikVollbild(false);
-    setStatistikSlotGeleert(false);
-    setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']));
-    setStatistikArt(q?.modus === "diktat" ? "diktat" : q?.scoreFeld === "akzentFortschritt" ? "akzente" : "uebersetzung");
-    if (q?.istSessionModus && aktiverSlot && getSlotEintrag(aktiverSlot.typ, aktiverSlot.id)) {
-      ladeSlotStatistik(aktiverSlot.typ, aktiverSlot.id);
-    } else {
-      const ids = [...new Set((q?.vokabeln || []).map(v => String(v.id).includes("__") ? String(v.id) : `${aktiveListeId}__${v.id}`))];
-      setStatistikAktiverSlot(null);
-      setStatistikListenIds(new Set(ids.map(id => id.split("__")[0])));
-      setStatistikBereichTyp("bereich");
-      setStatistikCheckboxAuswahl(new Set(ids));
-    }
-    setTab("statistik");
-  }
+  function zurRundenStatistik(...args) { return zurRundenStatistikTeil({ aktiveListeId, aktiverSlot, getSlotEintrag, ladeSlotStatistik, quiz, setStatistikAktiverSlot, setStatistikArt, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikEinzelauswahlAufgeklappt, setStatistikFilter, setStatistikListenAufgeklappt, setStatistikListenIds, setStatistikSlotGeleert, setStatistikVollbild, setTab, zurueckZurStatistik }, ...args); }
 
-  function brecheQuizAb() {
-    if (!quiz) { beendeQuiz(); return; }
-    if (quiz.istSessionModus) {
-      // In der Wiederholung wurde das ganze Paket bereits einmal abgefragt
-      const answeredIds = quiz.zuordnung ? [...new Set(quiz.zuordnung.beantwortet || [])] : quiz.wiederholungDurchgang ? (quiz.sessionVokIds || []) : [...new Set(
-        (quiz.vokabeln || []).slice(0, quiz.index || 0).map(v => v.id)
-      )];
-      if (answeredIds.length > 0) updateSessionSlotFortschritt(answeredIds, false);
-    }
-    const ges = (quiz.quizRichtigAnzahl || 0) + (quiz.quizFalschAnzahl || 0);
-    if (ges > 0) {
-      setQuiz(prev => ({...prev, phase: "fertig", abgebrochen: true}));
-    } else {
-      beendeQuiz();
-    }
-  }
+  function brecheQuizAb(...args) { return brecheQuizAbTeil({ beendeQuiz, quiz, setQuiz, updateSessionSlotFortschritt }, ...args); }
 
   function starteDiktat(force = false, overrideSlot = null, gruppe = null) {
     // gruppe (Set von Vokabel-IDs, Quiz aus der Statistik): einmalige Runde nur mit diesen Vokabeln –
@@ -4405,12 +2422,7 @@ export default function VokabelApp() {
   // Regeln der laufenden Runde: Stufe der Einstellungen; Quiz nach dem Lernen ("lernen"): Regeln wie Leicht,
   // wie Schwer oder ohne Hilfen (Standard; „Lernen einstellen“), aber nie ein Punktabzug –
   // eine einmalige Gelegenheit, den Score zu verbessern
-  function quizRegeln() {
-    if (quizStufeRef.current !== "lernen") return stufenRegeln(einstellungen);
-    const qs = lernEinstellungen().quizStufe;
-    const r = { ...stufenRegeln({ ...einstellungen, modus: qs === "einfach" ? "einfach" : "schwer" }), falschAbzug: false, aufdeckenAbzug: false };
-    return qs === "ohne" ? { ...r, akzentHervorheben: false, akzentZaehler: false, akzenteTolerant: false } : r;
-  }
+  function quizRegeln(...args) { return quizRegelnTeil({ einstellungen, lernEinstellungen, quizStufeRef }, ...args); }
 
   // stufe (optional): "lernen" = Quiz nach dem Lernen (nur Verbesserung möglich)
   function starteQuiz(force = false, overrideSlot = null, gruppe = null, stufe = null) {
@@ -4576,173 +2588,24 @@ export default function VokabelApp() {
   }
 
   // ── Zuordnung: nächste Runde aus der Warteschlange (nicht beantwortete kommen vorne wieder hinein) ──
-  function zuordnungRunde(q) {
-    const z = q.zuordnung;
-    if (!z.queue.length) return { ...q, phase: "fertig" };
-    const art = gewichtetWaehlen(z.arten?.length ? z.arten : ["zuordnung"]);
-    const k = Math.min(art === "memory" ? Math.min(z.paare, 8) : z.paare, z.queue.length);
-    return zuordnungRundeAus({ ...q, zuordnung: { ...z, queue: z.queue.slice(k) } }, z.queue.slice(0, k), art);
-  }
-  function zuordnungRundeAus(q, ids, art = "zuordnung") {
-    const z = q.zuordnung, k = ids.length;
-    const alleSpalten = z.alleSpalten || z.spalten;
-    const fremdSp = alleSpalten.find(t => t.startsWith("E"));
-    const spalten = art !== "memory" ? alleSpalten : !fremdSp || alleSpalten.slice(0, 2).includes(fremdSp) ? alleSpalten.slice(0, 2) : [alleSpalten[0], fremdSp];
-    const vok = id => q.vokabeln.find(v => v.id === id);
-    const mische = a => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
-    // „wechselnd“: je Zeile zufällig, welche Spalte links steht (bei zwei Spalten: Seiten getauscht oder nicht)
-    const n = spalten.length, dreh = Object.fromEntries(ids.map(id => [id, z.wechselnd ? Math.floor(Math.random() * n) : 0]));
-    const karten = spalten.map((_, sp) => mische(ids.map(id => { const t = spalten[(sp + dreh[id]) % n]; return { id, typ: t, text: vok(id)?.[t]?.wert || "" }; })));
-    // Memory: je Vokabel zwei verdeckte Karten (Frage und Antwort), gemischt
-    const mKarten = art === "memory" ? mische(ids.flatMap(id => spalten.map((t, seite) => ({ id, seite, text: vok(id)?.[t]?.wert || "" })))) : null;
-    return { ...q, phase: "zuordnung", zuordnung: { ...z, art, alleSpalten, spalten, ids, karten, mKarten, mOffen: [], mZuege: 0, runde: z.runde + 1,
-      erledigt: {}, fehler: {}, offen: null, gruppen: [], offeneGruppe: null, blink: null, anzeige: null, zeitBis: art === "memory" ? null : zuordnungZeitBis({ ...z, spalten }, k) } };
-  }
+  function zuordnungRunde(...args) { return zuordnungRundeTeil({ zuordnungRundeAus }, ...args); }
+  function zuordnungRundeAus(...args) { return zuordnungRundeAusTeil({ zuordnungZeitBis }, ...args); }
   // Memory: zwei Karten aufdecken; Frage + Antwort derselben Vokabel → Paar gefunden (+1), sonst nach kurzer Zeit wieder zu
-  function memoryTippe(i) {
-    const q = quiz, z = q?.zuordnung;
-    if (!z || z.art !== "memory" || z.anzeige || z.mOffen.length >= 2) return;
-    const k = z.mKarten[i];
-    if (k.id in z.erledigt || z.mOffen.includes(i)) return;
-    if (einstellungen.autoplay && z.spalten[k.seite].startsWith("E")) { const v = q.vokabeln.find(x => x.id === k.id); sprich(k.text, vokLang(v, z.spalten[k.seite])); }
-    const offen = [...z.mOffen, i];
-    if (offen.length < 2) { setQuiz({ ...q, zuordnung: { ...z, mOffen: offen } }); return; }
-    const [a, b] = offen.map(x => z.mKarten[x]);
-    if (a.id === b.id && a.seite !== b.seite) {
-      let neu = zuordnungWerte({ ...q, zuordnung: { ...z, mOffen: [], mZuege: z.mZuege + 1, paarFarbe: { ...(z.paarFarbe || {}), [a.id]: Object.keys(z.paarFarbe || {}).length % ZUORDNUNG_FARBEN.length } } }, a.id, "richtig");
-      if (neu.zuordnung.ids.every(id => id in neu.zuordnung.erledigt)) neu = zuordnungRundeEnde(neu);
-      setQuiz(neu);
-      return;
-    }
-    setQuiz({ ...q, zuordnung: { ...z, mOffen: offen, mZuege: z.mZuege + 1 } });
-    setTimeout(() => setQuiz(prev => prev?.zuordnung?.mOffen?.length === 2 && prev.zuordnung.mOffen[1] === i ? { ...prev, zuordnung: { ...prev.zuordnung, mOffen: [] } } : prev), 1100);
-  }
-  function mitZuordnungMix(q) {
-    if (!q?.zuordnungMix || q.phase !== "eingabe") return q;
-    const typen = q.antwortTypen || [];
-    const art = typen.map(t => q.spalteModus?.[t]).find(istRunde);
-    if (!art) return q;
-    const rest = q.vokabeln.length - q.index;
-    if (rest < 3) {   // zu wenige für eine Runde: eine andere angehakte Art ziehen
-      const sp = { ...q.spalteModus };
-      typen.forEach(t => { if (!istRunde(sp[t])) return; const andere = modiVon(q.spalteModusBasis?.[t]).filter(x => !istRunde(x) && x !== "akzent"); sp[t] = andere.length ? gewichtetWaehlen(andere) : STANDARD_ANTWORT_MODUS; });
-      const mc = istMC(sp[typen[0]]) ? generiereButtons(q.vokabeln, q.vokabeln[q.index], typen[0], sp[typen[0]]) : null;
-      return { ...q, spalteModus: sp, ...(mc ? { mcButtons: mc.buttons, mcRichtig: mc.richtig } : {}) };
-    }
-    const k = Math.min(art === "memory" ? Math.min(q.zuordnungMix.paare, 8) : q.zuordnungMix.paare, rest);
-    const ids = q.vokabeln.slice(q.index, q.index + k).map(v => v.id);
-    const spalten = q.zuordnungMix.wechselnd ? q.zuordnungMix.spalten : [q.frageTyp, ...typen].slice(0, 4);
-    return zuordnungRundeAus({ ...q, zuordnung: { ...q.zuordnungMix, spalten, alleSpalten: spalten, mix: { start: q.index, ende: q.index + k }, queue: [],
-      beantwortet: q.vokabeln.slice(0, q.index).map(v => v.id) } }, ids, art);
-  }
+  function memoryTippe(...args) { return memoryTippeTeil({ einstellungen, quiz, setQuiz, vokLang, zuordnungRundeEnde, zuordnungWerte }, ...args); }
+  function mitZuordnungMix(...args) { return mitZuordnungMixTeil({ zuordnungRundeAus }, ...args); }
   // gemischt, Runde zu Ende: Beantwortete bleiben an ihrer Stelle, offen Gebliebene kommen ans Ende; weiter mit der nächsten Frage
-  function zuordnungMixWeiter(q) {
-    const z = q.zuordnung, { start, ende } = z.mix;
-    const runde = q.vokabeln.slice(start, ende);
-    const fertig = runde.filter(v => v.id in z.erledigt), offen = runde.filter(v => !(v.id in z.erledigt));
-    const vokabeln = [...q.vokabeln.slice(0, start), ...fertig, ...q.vokabeln.slice(ende), ...offen];
-    return naechsteVokabelState({ ...q, vokabeln, index: start + fertig.length - 1, zuordnung: null, phase: "eingabe", vokErgebnis: null, erstbewertung: false });
-  }
-  function zuordnungZeitBis(z, k) {
-    if (z.zeit === "aus") return null;
-    const proVok = z.sek * (ZUORDNUNG_ZEITFAKTOR[z.spalten.length] || 1) * 1000;
-    return Date.now() + (z.amEnde ? proVok * k : proVok);
-  }
+  function zuordnungMixWeiter(...args) { return zuordnungMixWeiterTeil({ naechsteVokabelState }, ...args); }
+  function zuordnungZeitBis(...args) { return zuordnungZeitBisTeil({  }, ...args); }
   // Ergebnis einer Vokabel speichern (nur vollständig Beantwortetes): richtig +1, falsch nach Regel −1
-  function zuordnungWerte(q, id, ergebnis) {
-    const lv = q.liste.vokabeln.find(v => v.id === id) || q.vokabeln.find(v => v.id === id);
-    const r = quizRegeln();
-    const neu = berechneNeuenScore(lv?.fortschritt, ergebnis, r.aufdeckenAbzug ? "schwer" : "einfach", q.zuordnung.abzug);
-    const erst = !(id in (q.gewertet || {}));
-    return { ...q, liste: speichereScore(q.liste, id, neu),
-      gewertet: erst ? { ...(q.gewertet || {}), [id]: ergebnis } : q.gewertet,
-      ...(ergebnis === "richtig" ? { richtigMap: { ...(q.richtigMap || {}), [id]: ((q.richtigMap || {})[id] || 0) + 1 } } : {}),
-      ...(q.spielZaehler != null && ergebnis === "richtig" ? { spielZaehler: q.spielZaehler + 1 } : {}),
-      quizRichtigAnzahl: (q.quizRichtigAnzahl || 0) + (erst && ergebnis === "richtig" ? 1 : 0),
-      quizFalschAnzahl: (q.quizFalschAnzahl || 0) + (erst && ergebnis !== "richtig" ? 1 : 0),
-      zuordnung: { ...q.zuordnung, erledigt: { ...q.zuordnung.erledigt, [id]: ergebnis }, beantwortet: [...q.zuordnung.beantwortet, id] } };
-  }
+  function zuordnungWerte(...args) { return zuordnungWerteTeil({ quizRegeln }, ...args); }
   // Rundenende: das Ergebnis bleibt stehen (✓ / ✗ je Paar), weiter mit „Weiter →“; „Lösung zeigen“ färbt die richtigen Paare.
   // Nicht Beantwortete kommen in der nächsten Runde wieder
-  function zuordnungRundeEnde(q) {
-    const z = q.zuordnung;
-    const offen = z.ids.filter(id => !(id in z.erledigt));
-    return { ...q, zuordnung: { ...z, queue: [...offen, ...z.queue], zeitBis: null, offen: null, offeneGruppe: null, anzeige: "ergebnis" } };
-  }
-  function zuordnungTippe(s, i) {
-    const q = quiz, z = q?.zuordnung;
-    if (!z || q.phase !== "zuordnung" || z.anzeige) return;
-    const karte = z.karten[s][i];
-    if (karte.id in z.erledigt) return;
-    const kt = karte.typ || z.spalten[s];
-    if (einstellungen.autoplay && kt.startsWith("E")) { const v = q.vokabeln.find(x => x.id === karte.id); sprich(karte.text, vokLang(v, kt)); }
-    if (z.amEnde) {
-      const nz = zuordnungGruppeTippe(z, s, i);
-      const alles = nz.gruppen.length === nz.ids.length && nz.gruppen.every(g => Object.keys(g.wahl).length === nz.spalten.length);
-      setQuiz(alles ? zuordnungPruefe({ ...q, zuordnung: nz }) : { ...q, zuordnung: nz });
-      return;
-    }
-    const o = z.offen;
-    if (!o) { setQuiz({ ...q, zuordnung: { ...z, offen: { id: karte.id, wahl: { [s]: i }, erst: s } } }); return; }
-    if (o.wahl[s] === i) {   // dieselbe Karte nochmal: erste → Gruppe aufheben, sonst nur diese abwählen
-      if (s === o.erst) { setQuiz({ ...q, zuordnung: { ...z, offen: null } }); return; }
-      const wahl = { ...o.wahl }; delete wahl[s];
-      setQuiz({ ...q, zuordnung: { ...z, offen: { ...o, wahl } } }); return;
-    }
-    if (s === o.erst && Object.keys(o.wahl).length === 1) {   // andere Karte in der Spalte der ersten: neu anfangen, kein Fehlgriff
-      setQuiz({ ...q, zuordnung: { ...z, offen: { id: karte.id, wahl: { [s]: i }, erst: s } } }); return;
-    }
-    if (karte.id !== o.id) {   // Fehlgriff: zählt für die Vokabel der zuerst angetippten Karte
-      setQuiz({ ...q, zuordnung: { ...z, fehler: { ...z.fehler, [o.id]: true }, blink: { s, i, t: Date.now() } } });
-      setTimeout(() => setQuiz(prev => prev?.zuordnung?.blink?.s === s && prev.zuordnung.blink.i === i ? { ...prev, zuordnung: { ...prev.zuordnung, blink: null } } : prev), 650);
-      return;
-    }
-    const wahl = { ...o.wahl, [s]: i };
-    if (Object.keys(wahl).length < z.spalten.length) { setQuiz({ ...q, zuordnung: { ...z, offen: { ...o, wahl } } }); return; }
-    // Gruppe vollständig
-    let neu = zuordnungWerte({ ...q, zuordnung: { ...z, offen: null, paarFarbe: { ...(z.paarFarbe || {}), [o.id]: Object.keys(z.paarFarbe || {}).length % ZUORDNUNG_FARBEN.length } } },
-      o.id, z.fehler[o.id] ? "falsch" : "richtig");
-    if (z.zeit !== "aus") neu = { ...neu, zuordnung: { ...neu.zuordnung, zeitBis: zuordnungZeitBis(z, 1) } };
-    if (neu.zuordnung.ids.every(id => id in neu.zuordnung.erledigt)) neu = zuordnungRundeEnde(neu);
-    setQuiz(neu);
-  }
+  function zuordnungRundeEnde(...args) { return zuordnungRundeEndeTeil({  }, ...args); }
+  function zuordnungTippe(...args) { return zuordnungTippeTeil({ einstellungen, quiz, setQuiz, vokLang, zuordnungGruppeTippe, zuordnungPruefe, zuordnungRundeEnde, zuordnungWerte, zuordnungZeitBis }, ...args); }
   // „am Ende“: Karten bilden farbige Gruppen in Tipp-Reihenfolge; eingefärbte Karte antippen nimmt sie heraus
-  function zuordnungGruppeTippe(z, s, i) {
-    let gruppen = z.gruppen.map(g => ({ ...g, wahl: { ...g.wahl } }));
-    let offen = z.offeneGruppe;
-    const gi = gruppen.findIndex(g => g.wahl[s] === i);
-    if (gi >= 0) {
-      delete gruppen[gi].wahl[s];
-      if (!Object.keys(gruppen[gi].wahl).length) { gruppen.splice(gi, 1); offen = offen === gi ? null : offen != null && offen > gi ? offen - 1 : offen; }
-      else { if (gruppen[gi].erst === s) gruppen[gi].erst = Number(Object.keys(gruppen[gi].wahl)[0]); offen = gi; }
-      return { ...z, gruppen, offeneGruppe: offen };
-    }
-    if (offen != null && gruppen[offen]) {
-      gruppen[offen].wahl[s] = i;
-      const voll = Object.keys(gruppen[offen].wahl).length === z.spalten.length;
-      return { ...z, gruppen, offeneGruppe: voll ? null : offen };
-    }
-    const belegt = new Set(gruppen.map(g => g.farbe));
-    const farbe = ZUORDNUNG_FARBEN.findIndex((_, k) => !belegt.has(k));
-    gruppen.push({ wahl: { [s]: i }, erst: s, farbe: farbe < 0 ? gruppen.length % ZUORDNUNG_FARBEN.length : farbe });
-    return { ...z, gruppen, offeneGruppe: gruppen.length - 1 };
-  }
+  function zuordnungGruppeTippe(...args) { return zuordnungGruppeTippeTeil({  }, ...args); }
   // „Prüfen“ (oder Zeit abgelaufen bei „am Ende“): nur vollständige Gruppen zählen
-  function zuordnungPruefe(q) {
-    const z = q.zuordnung;
-    let neu = q;
-    const ergebnis = {};
-    z.gruppen.forEach((g, gi) => {
-      if (Object.keys(g.wahl).length !== z.spalten.length) return;
-      const ids = Object.entries(g.wahl).map(([sp, k]) => z.karten[sp][k].id);
-      const erstId = z.karten[g.erst][g.wahl[g.erst]].id;
-      const richtig = ids.every(id => id === ids[0]);
-      ergebnis[gi] = richtig;
-      if (!(erstId in neu.zuordnung.erledigt)) neu = zuordnungWerte(neu, erstId, richtig ? "richtig" : "falsch");
-    });
-    neu = { ...neu, zuordnung: { ...neu.zuordnung, geprueft: ergebnis } };
-    return zuordnungRundeEnde(neu);
-  }
+  function zuordnungPruefe(...args) { return zuordnungPruefeTeil({ zuordnungRundeEnde, zuordnungWerte }, ...args); }
   // Zeit abgelaufen
   useEffect(() => {
     const z = quiz?.zuordnung;
@@ -4755,50 +2618,14 @@ export default function VokabelApp() {
   }, [quiz?.phase, quiz?.zuordnung?.zeitBis, quiz?.zuordnung?.anzeige]);   // eslint-disable-line react-hooks/exhaustive-deps
 
 
-  function getAktVok() {
-    if (!quiz) return null;
-    const vokId = quiz.vokabeln[quiz.index].id;
-    return quiz.liste.vokabeln.find(v => v.id === vokId) || quiz.vokabeln[quiz.index];
-  }
+  function getAktVok(...args) { return getAktVokTeil({ quiz }, ...args); }
 
   // Berechnet den nächsten Vokabel-State als reines Objekt (kein setQuiz)
   // 175: abgeschlossene Vokabel in den Rückblick (ganze Runde; Zuordnung nicht)
-  function mitRueckblick(prev) {
-    const v = prev.vokabeln[prev.index];
-    const rb = prev.rueckblick || [];
-    if (!v || !prev.vokErgebnis || prev.phase === "zuordnung") return { ...prev, letzteWertung: null, versuche: {}, rueckIdx: null };
-    const sp = t => prev.liste.spalten[t]?.name || t;
-    const eintrag = { art: "quiz", vokId: v.id, frage: { typ: prev.frageTyp, label: sp(prev.frageTyp), wert: v[prev.frageTyp]?.wert || "" },
-      antworten: (prev.vorigeAntworten || []).map(a => ({ ...a })), ergebnis: prev.vokErgebnis === "richtig" ? "richtig" : "falsch",
-      wertung: prev.letzteWertung || null, zaehlt: prev.erstbewertung !== false };
-    return { ...prev, rueckblick: [...rb, eintrag], letzteWertung: null, versuche: {}, rueckIdx: null };
-  }
-  function naechsteVokabelState(prev) {
-    prev = mitRueckblick(prev);
-    const sp = prev?.abfrageZiel?.modus, spiel = sp === "blitz" || sp === "serie";
-    if (spiel && prev.vokErgebnis) {
-      const richtig = prev.vokErgebnis === "richtig", id = prev.vokabeln[prev.index]?.id;
-      prev = { ...prev, spielZaehler: (prev.spielZaehler || 0) + (richtig ? 1 : 0), spielBeantwortet: [...new Set([...(prev.spielBeantwortet || []), id])] };
-      if (sp === "serie" && !richtig) return spielBeenden(prev);
-    }
-    if (spiel && prev.index + 1 >= prev.vokabeln.length) {
-      const basis = prev.spielBasis || prev.vokabeln, b = [...basis];
-      for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; }
-      prev = { ...prev, vokabeln: [...prev.vokabeln, ...b] };
-    }
-    return mitZuordnungMix(naechsteVokabelState0(prev));
-  }
+  function mitRueckblick(...args) { return mitRueckblickTeil({  }, ...args); }
+  function naechsteVokabelState(...args) { return naechsteVokabelStateTeil({ mitRueckblick, mitZuordnungMix, naechsteVokabelState0, spielBeenden }, ...args); }
   // Blitzrunde / Serie zu Ende: Rekord je Art und Quiz (bzw. Liste) festhalten
-  function spielBeenden(q) {
-    const art = q.abfrageZiel?.modus, n = q.spielZaehler || 0;
-    const key = `${art}|${aktiverSlot?.typ === "gespeichert" ? aktiverSlot.id : (q.liste?.id || "liste")}`;
-    let rekorde = {};
-    try { rekorde = JSON.parse(localStorage.getItem(REKORDE_KEY)) || {}; } catch { /* leer */ }
-    const alt = rekorde[key] || 0;
-    if (n > alt) { rekorde[key] = n; try { localStorage.setItem(REKORDE_KEY, JSON.stringify(rekorde)); } catch { /* egal */ } }
-    return { ...q, phase: "spielEnde", spielRekord: { alt, neu: n > alt },
-      ...(q.istSessionModus ? { sessionVokIds: q.spielBeantwortet || [] } : {}) };
-  }
+  function spielBeenden(...args) { return spielBeendenTeil({ aktiverSlot }, ...args); }
   // Blitzrunde: Zeit abgelaufen
   useEffect(() => {
     const ende = quiz?.abfrageZiel?.modus === "blitz" ? quiz.abfrageZiel.ende : null;
@@ -4807,644 +2634,85 @@ export default function VokabelApp() {
       Math.max(0, ende - Date.now()));
     return () => clearTimeout(t);
   }, [quiz?.abfrageZiel?.ende, quiz?.phase === "spielEnde"]);   // eslint-disable-line react-hooks/exhaustive-deps
-  function naechsteVokabelState0(prev) {
-    const naechsterIdx = prev.index + 1;
-    const aktVokId = prev.vokabeln[prev.index]?.id;
-    const warRichtig = prev.vokErgebnis === "richtig";
-    const richtigMap = (prev.abfrageZiel?.modus === "wiederholung" && aktVokId && warRichtig)
-      ? { ...(prev.richtigMap || {}), [aktVokId]: ((prev.richtigMap || {})[aktVokId] || 0) + 1 }
-      : (prev.richtigMap || {});
-    // Auswertung zählt jede Vokabel einmal (erste Bewertung der Runde); Wiederholungen nicht
-    const zaehlt = prev.erstbewertung !== false;
-    const quizRichtigAnzahl = (prev.quizRichtigAnzahl || 0) + (zaehlt && warRichtig ? 1 : 0);
-    const quizFalschAnzahl = (prev.quizFalschAnzahl || 0) + (zaehlt && !warRichtig ? 1 : 0);
-
-    function getFA(voks, idx) {
-      const basis = prev.basisFA || { frageTyp: prev.frageTyp, antwortTypen: prev.antwortTypen };
-      let fa = { frageTyp: basis.frageTyp, antwortTypen: basis.antwortTypen };
-      if (prev.modus === "rotierend") {
-        const alle = prev.basisFA ? [basis.frageTyp, ...basis.antwortTypen] : [...basis.antwortTypen, basis.frageTyp];   // = Reihenfolge wie beim Start
-        const ft = alle[idx % alle.length];
-        fa = { frageTyp: ft, antwortTypen: alle.filter(t => t !== ft) };
-      }
-      return { frageTyp: fa.frageTyp, antwortTypen: antwortSpaltenFuer(voks[idx], fa.antwortTypen, prev.spalteModusBasis || prev.spalteModus, prev.akzentOhneAuslassen, true) };
-    }
-
-    // Baut den State für vokabeln[idx] innerhalb von voks auf
-    function starteVokabel(voks, idx, extra = {}) {
-      const { frageTyp, antwortTypen } = getFA(voks, idx);
-      const vok = voks[idx];
-      const teile = vok[antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
-      const sp = prev.spalteModusBasis ? loeseSpaltenModusAuf(prev.spalteModusBasis, vok, frageTyp) : prev.spalteModus;
-      const mc = istMC(sp[antwortTypen[0]] || STANDARD_ANTWORT_MODUS) ? generiereButtons(voks, vok, antwortTypen[0], sp[antwortTypen[0]]) : null;
-      return { ...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, erstbewertung: null, flash: false, index: idx,
-        vokabeln: voks, frageTyp, antwortTypen, antwortTypIndex: 0,
-        phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
-        mcButtons: mc?.buttons || [], mcRichtig: mc?.richtig || [],
-        vorigeAntworten: [], infoSichtbar: false, synSichtbar: false, infoSeite: 0, feedback: "",
-        spalteModus: sp, mcWechsel: false, aktuelleFehlversuche: 0, falschFlash: false,
-        sessionFalsch: {}, ...extra };
-    }
-
-    if (naechsterIdx >= prev.vokabeln.length) {
-      if (prev.abfrageZiel) {
-        const ziel = prev.abfrageZiel;
-        // Vor jedem Wiederholungs-Durchgang eine Zwischenkarte "Wiederholung" zeigen
-        const wiederholungsStart = () => ({ phase: "wiederholungHinweis", wiederholungDurchgang: (prev.wiederholungDurchgang || 0) + 1 });
-        if (ziel.modus === "anzahl" && ziel.runde < ziel.anzahl - 1) {
-          const neuVoks = [...prev.vokabeln].sort(() => Math.random() - 0.5);
-          return starteVokabel(neuVoks, 0, { abfrageZiel: { ...ziel, runde: ziel.runde + 1 } });
-        }
-        if (ziel.modus === "wiederholung") {
-          const restVoks = prev.vokabeln.filter(v => (richtigMap[v.id] || 0) < ziel.wiederholung);
-          if (restVoks.length > 0) {
-            const neuVoks = [...restVoks].sort(() => Math.random() - 0.5);
-            return starteVokabel(neuVoks, 0, wiederholungsStart());
-          }
-        }
-        if (ziel.modus === "score" && ziel.scoreTyp === "session") {
-          const restVoks = prev.vokabeln.filter(v => {
-            const liveVok = prev.liste.vokabeln.find(lv => lv.id === v.id);
-            const score = liveVok?.[prev.scoreFeld || "fortschritt"]?.score ?? 0;
-            if (ziel.scoreTyp === "session") {
-              const startScore = (ziel.startScoresZiel || {})[v.id] ?? 0;
-              return (score - startScore) < ziel.score;
-            }
-            return score < ziel.score;
-          });
-          if (restVoks.length > 0) {
-            const neuVoks = [...restVoks].sort(() => Math.random() - 0.5);
-            return starteVokabel(neuVoks, 0, wiederholungsStart());
-          }
-        }
-      }
-      return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, erstbewertung: null, flash: false, phase: "fertig"};
-    }
-
-    const { frageTyp, antwortTypen } = getFA(prev.vokabeln, naechsterIdx);
-    const naechsteVok = prev.vokabeln[naechsterIdx];
-    const teile = naechsteVok[antwortTypen[0]]?.wert.split('/').map(s => s.trim()) || [];
-    // je Vokabel neu auflösen (setzt auch einen MC-Wechsel der vorigen Frage zurück)
-    const spalteModus = prev.spalteModusBasis ? loeseSpaltenModusAuf(prev.spalteModusBasis, naechsteVok, frageTyp)
-      : prev.mcWechsel ? {...prev.spalteModus, [antwortTypen[0]]: "tippen"} : prev.spalteModus;
-    const modusTyp0 = spalteModus[antwortTypen[0]] || STANDARD_ANTWORT_MODUS;
-    const mc = istMC(modusTyp0) ? generiereButtons(prev.vokabeln, naechsteVok, antwortTypen[0], modusTyp0) : null;
-    return {...prev, richtigMap, quizRichtigAnzahl, quizFalschAnzahl, spaltenErgebnisse: {}, vokErgebnis: null, erstbewertung: null, flash: false, index: naechsterIdx, frageTyp, antwortTypen, antwortTypIndex: 0,
-      phase: "eingabe", eingabe: "", antwortTeile: teile, weitereIndices: [], weiterePos: 0,
-      mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
-      vorigeAntworten: [], infoSichtbar: false, synSichtbar: false, infoSeite: 0, feedback: "",
-      spalteModus, mcWechsel: false, aktuelleFehlversuche: 0, falschFlash: false};
-  }
+  function naechsteVokabelState0(...args) { return naechsteVokabelState0Teil({  }, ...args); }
 
   // Setzt flash, wartet 500ms, führt dann advanceFn aus
   // Kurze Verzögerung vor der nächsten Vokabel; zwischen mehreren Antworten derselben Frage geht es sofort weiter
-  function mitVerzoegerung(quizUpdates, advanceFn, ms) {
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    if (sofortWeiter(quiz)) {
-      flashWeiterRef.current = null;
-      setQuiz(prev => advanceFn({...prev, ...quizUpdates, flash: false, karteNeinFlash: false}));
-      return;
-    }
-    flashWeiterRef.current = advanceFn;
-    setQuiz(prev => ({...prev, ...quizUpdates}));
-    flashTimerRef.current = setTimeout(beendeVerzoegerung, ms);
-  }
-  function mitFlash(quizUpdates, advanceFn) {
-    mitVerzoegerung({...quizUpdates, flash: true, eingabe: ""}, advanceFn, 1000);
-  }
+  function mitVerzoegerung(...args) { return mitVerzoegerungTeil({ beendeVerzoegerung, flashTimerRef, flashWeiterRef, quiz, setQuiz, sofortWeiter }, ...args); }
+  function mitFlash(...args) { return mitFlashTeil({ mitVerzoegerung }, ...args); }
   // Antippen während der Verzögerung: sofort weiter
-  function beendeVerzoegerung() {
-    const fn = flashWeiterRef.current;
-    if (!fn) return;
-    flashWeiterRef.current = null;
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    setQuiz(prev => prev && (prev.flash || prev.karteNeinFlash) ? fn({...prev, flash: false, karteNeinFlash: false}) : prev);
-  }
+  function beendeVerzoegerung(...args) { return beendeVerzoegerungTeil({ flashTimerRef, flashWeiterRef, setQuiz }, ...args); }
   // Weitere Antworten derselben Frage offen → ohne Verzögerung weiterfragen
   const sofortWeiter = q => q.antwortTypIndex < q.antwortTypen.length - 1;
 
   // Aktuelle Spalte abschließen: Antwort (gewusst oder nicht) bleibt oben stehen, dann nächste Spalte bzw. Vokabel
-  function weiterNachSpalte(prev, richtig) {
-    const typ = prev.antwortTypen[prev.antwortTypIndex];
-    const vorigeAntworten = [...prev.vorigeAntworten, {
-      typ, wert: prev.antwortTeile.join(" / "), label: prev.liste.spalten[typ]?.name || typ, richtig, eingaben: prev.versuche?.[prev.antwortTypIndex] || [],
-    }];
-    const naechsterIdx = prev.antwortTypIndex + 1;
-    if (naechsterIdx >= prev.antwortTypen.length) return naechsteVokabelState({...prev, vorigeAntworten, richtigAufgedeckt: false});
-    const nt = prev.antwortTypen[naechsterIdx];
-    const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
-    const ntModus = prev.mcWechsel ? "mc" : (prev.spalteModus?.[nt] || STANDARD_ANTWORT_MODUS);
-    const mc = istMC(ntModus) ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt, ntModus) : null;
-    return {...prev, flash: false, karteNeinFlash: false, phase: "eingabe", eingabe: "", antwortTypIndex: naechsterIdx,
-      antwortTeile: teile, mcButtons: mc?.buttons || prev.mcButtons, mcRichtig: mc?.richtig || prev.mcRichtig,
-      weitereIndices: [], weiterePos: 0, infoSichtbar: false, richtigAufgedeckt: false,
-      aktuelleFehlversuche: 0, falschFlash: false, feedback: "", vorigeAntworten};
-  }
+  function weiterNachSpalte(...args) { return weiterNachSpalteTeil({ naechsteVokabelState }, ...args); }
 
   // Score einmal pro Vokabel: Ergebnis je Antwort-Spalte sammeln, nach der letzten
   // Spalte auswerten (alle richtig → richtig, sonst falsch bzw. aufgedeckt)
   // Karten-Spalten, die per „Weiter“ übersprungen wurden, stehen auf „karte“: am Ende gilt ein gemeinsames Urteil (karteUrteil);
   // ist eine andere Spalte schon nicht gewusst, steht das Ergebnis fest; sonst fragt die letzte Spalte „Gewusst / Nicht gewusst“ (karteBewertungOffen)
-  function spaltenAbschluss(ergebnis, karteUrteil = null) {
-    const spaltenErgebnisse = { ...(quiz.spaltenErgebnisse || {}), [quiz.antwortTypIndex]: ergebnis };
-    const letzte = quiz.antwortTypIndex >= quiz.antwortTypen.length - 1;
-    if (!letzte || quiz.vokErgebnis) return { spaltenErgebnisse };
-    const offen = Object.keys(spaltenErgebnisse).filter(i => spaltenErgebnisse[i] === "karte");
-    if (offen.length) {
-      if (karteUrteil) offen.forEach(i => { spaltenErgebnisse[i] = karteUrteil; });
-      else if (quiz.antwortTypen.every((_, i) => spaltenErgebnisse[i] === "richtig" || spaltenErgebnisse[i] === "karte")) return { spaltenErgebnisse, karteBewertungOffen: true };
-      else offen.forEach(i => { spaltenErgebnisse[i] = "richtig"; });
-    }
-    const alle = quiz.antwortTypen.map((_, i) => spaltenErgebnisse[i] || "aufgedeckt");
-    const gesamt = liste => liste.every(e => e === "richtig") ? "richtig" : liste.includes("falsch") ? "falsch" : "aufgedeckt";
-    const vokErgebnis = gesamt(alle);
-    // Akzent-Spalten zählen nur für den eigenen Akzent-Score – gemischt gezogene Akzente zählen für die Übersetzung
-    const istAkzent = i => { const t = quiz.antwortTypen[i]; return quiz.spalteModus?.[t] === "akzent" && !Array.isArray(quiz.spalteModusBasis?.[t]); };
-    const normal = alle.filter((_, i) => !istAkzent(i));
-    const akzent = alle.filter((_, i) => istAkzent(i));
-    const aktVok = getAktVok();
-    // Pro Vokabel und Runde zählt nur die erste Bewertung (Wiederholungen sind reines Üben).
-    // Ausnahme Abfrage-Ziel "Score": dort muss jede Antwort zählen, sonst endet die Runde nie.
-    const erstbewertung = !(aktVok.id in (quiz.gewertet || {}));
-    const gewertet = erstbewertung ? { ...(quiz.gewertet || {}), [aktVok.id]: vokErgebnis } : quiz.gewertet;
-    if (!erstbewertung && quiz.abfrageZiel?.modus !== "score") return { spaltenErgebnisse, vokErgebnis, erstbewertung, gewertet, karteBewertungOffen: false };
-    let liste = quiz.liste, sessionFalsch = quiz.sessionFalsch, gelerntBlitz = null;
-    // 175: Stand vor der Antwort + Ergebnis je Teil – für das nachträgliche Umwerten
-    const letzteWertung = { vorher: { fortschritt: aktVok.fortschritt, akzentFortschritt: aktVok.akzentFortschritt },
-      normal: normal.length ? gesamt(normal) : null, akzent: akzent.length ? (gesamt(akzent) === "richtig" ? "richtig" : "aufgedeckt") : null,
-      modus: quizRegeln().aufdeckenAbzug ? "schwer" : "einfach", falschAbzug: quizRegeln().falschAbzug };
-    // Vokabel erreicht mit dieser Antwort die Gelernt-Schwelle → Karte leuchtet kurz auf (Farbe „Gelernt-Effekt“) + Sternenregen
-    const schwelle = einstellungen.gelerntSchwelle ?? 0;
-    const erreicht = (vorher, nachher) => schwelle > 0 && (vorher?.score ?? -Infinity) < schwelle && (nachher?.score ?? -Infinity) >= schwelle;
-    if (normal.length > 0) {
-      const erg = gesamt(normal);
-      const neuerCount = erg === "falsch" ? (quiz.sessionFalsch[aktVok.id] || 0) + 1 : 0;
-      const neu = berechneNeuenScore(aktVok.fortschritt, erg, quizRegeln().aufdeckenAbzug ? "schwer" : "einfach", quizRegeln().falschAbzug);
-      liste = speichereScore(liste, aktVok.id, neu);
-      if (erreicht(aktVok.fortschritt, neu)) gelerntBlitz = blitzKey(quiz);
-      if (erg === "falsch") sessionFalsch = { ...quiz.sessionFalsch, [aktVok.id]: neuerCount };
-    }
-    if (akzent.length > 0) {
-      const neu = berechneDiktatScore(aktVok.akzentFortschritt, gesamt(akzent) === "richtig" ? "richtig" : "aufgedeckt", quizRegeln().falschAbzug);
-      liste = speichereAkzentScore(liste, aktVok.id, neu);
-      if (erreicht(aktVok.akzentFortschritt, neu)) gelerntBlitz = blitzKey(quiz);
-    }
-    return { spaltenErgebnisse, vokErgebnis, erstbewertung, gewertet, liste, sessionFalsch, karteBewertungOffen: false, letzteWertung, ...(gelerntBlitz ? { gelerntBlitz } : {}) };
-  }
+  function spaltenAbschluss(...args) { return spaltenAbschlussTeil({ blitzKey, einstellungen, getAktVok, quiz, quizRegeln }, ...args); }
 
   // Akzent-Abfrage mit Wörtern ohne Akzent: nur so viele ohne Akzent wie eingestellt (Faktor × mit Akzent);
   // bevorzugt die mit schwächstem bzw. noch keinem Akzent-Score, bei Gleichstand zufällig.
   // festeIds: laufende Quiz – dann bleiben genau die Wörter ohne Akzent vom Quiz-Start
-  function begrenzeOhneAkzent(voks, antwortTypen, festeIds = null) {
-    const anteil = akzentOhneAnteil(einstellungen);
-    if (!quizRegeln().akzentOhneMischen || anteil == null) return voks;
-    const mitAkz = v => antwortTypen.some(t => hatAkzente(v[t]?.wert));
-    const mit = voks.filter(mitAkz);
-    const ohne = voks.filter(v => !mitAkz(v));
-    const max = Math.round(mit.length * anteil);
-    const kandidaten = festeIds ? ohne.filter(v => festeIds.has(v.id))
-      : ohne.map(v => [v, Math.random()]).sort((a, b) => ((a[0].akzentFortschritt?.score ?? -Infinity) - (b[0].akzentFortschritt?.score ?? -Infinity)) || a[1] - b[1]).map(x => x[0]);
-    const behalten = new Set(kandidaten.slice(0, max).map(v => v.id));
-    return voks.filter(v => mitAkz(v) || behalten.has(v.id));
-  }
+  function begrenzeOhneAkzent(...args) { return begrenzeOhneAkzentTeil({ einstellungen, quizRegeln }, ...args); }
   // Wörter ohne Akzent gleichmäßig zwischen die mit Akzent verteilen (Reihenfolge innerhalb bleibt)
-  function verteileOhneAkzent(voks, antwortTypen) {
-    const mitAkz = v => antwortTypen.some(t => hatAkzente(v[t]?.wert));
-    const mit = voks.filter(mitAkz), ohne = voks.filter(v => !mitAkz(v));
-    if (!mit.length || !ohne.length) return voks;
-    const n = voks.length, erg = [];
-    let a = 0, b = 0;
-    for (let i = 0; i < n; i++) {
-      if (b < ohne.length && (a >= mit.length || b < Math.round((i + 1) * ohne.length / n))) erg.push(ohne[b++]);
-      else erg.push(mit[a++]);
-    }
-    return erg;
-  }
+  function verteileOhneAkzent(...args) { return verteileOhneAkzentTeil({  }, ...args); }
 
   // Kennung der aktuellen Frage für das Gelernt-Aufleuchten (gilt nur für diese Karte)
   const blitzKey = q => `${q.wiederholungDurchgang || 0}|${q.index}|${q.vokabeln[q.index]?.id}`;
 
-  function pruefeAntwort(eingabeArg) {
-    const eingabe = (typeof eingabeArg === "string" ? eingabeArg : quiz?.eingabe || "").trim();
-    if (!quiz || !eingabe) return;
-    setQuiz(prev => prev ? { ...prev, versuche: { ...(prev.versuche || {}), [prev.antwortTypIndex]: [...(prev.versuche?.[prev.antwortTypIndex] || []), eingabe] } } : prev);   // 175
+  function pruefeAntwort(...args) { return pruefeAntwortTeil({ aktiveListeId, flashTimerRef, quiz, quizRegeln, setQuiz, sofortWeiter, spaltenAbschluss, weiterNachSpalte }, ...args); }
 
-    // Modus "Einfach": fehlende/falsche Akzente zählen als richtig (mit Hinweis); ebenso, wenn die Akzente der Sprache aus sind
-    const vokJetzt = quiz.vokabeln[quiz.index], spalteJetzt = quiz.antwortTypen[quiz.antwortTypIndex];
-    const tolerant = quizRegeln().akzenteTolerant || (spalteJetzt?.startsWith("E") && !AKZENTE_FUER_LISTE(vokJetzt?._listeId ?? aktiveListeId));
-    let akzentHinweis = false;
+  function klickeButton(...args) { return klickeButtonTeil({ quiz, setQuiz, sofortWeiter, spaltenAbschluss, weiterNachSpalte }, ...args); }
 
-    function setzeRichtigAufgedeckt(updates) {
-      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-      if (sofortWeiter(quiz) && !akzentHinweis) { setQuiz(prev => weiterNachSpalte({...prev, ...updates}, true)); return; }
-      setQuiz(prev => ({...prev, eingabe: "", phase: "aufgedeckt", flash: false,
-        richtigAufgedeckt: true, feedback: akzentHinweis ? AKZENT_HINWEIS : "", falschFlash: false, aktuelleFehlversuche: 0, ...updates}));
-    }
+  function zeigeLosung(...args) { return zeigeLosungTeil({ flashTimerRef, quiz, setQuiz, spaltenAbschluss }, ...args); }
 
-    if (quiz.phase === "weitere") {
-      const erwartet = quiz.antwortTeile[quiz.weitereIndices[quiz.weiterePos]];
-      const treffer = istRichtigeAntwort(eingabe, erwartet, tolerant);
-      if (treffer) {
-        if (treffer === "akzent") akzentHinweis = true;
-        const naechstePos = quiz.weiterePos + 1;
-        if (naechstePos >= quiz.weitereIndices.length) {
-          // Alle "weitere" erledigt → Lösung zeigen, warten
-          setzeRichtigAufgedeckt({});
-        } else {
-          // Nächstes "weitere" ohne Flash
-          setQuiz(prev => ({...prev, eingabe: "", weiterePos: naechstePos, feedback: akzentHinweis ? AKZENT_HINWEIS : ""}));
-        }
-      } else {
-        setQuiz(prev => ({...prev, eingabe: "", phase: "weitere", feedback: "Nicht ganz – versuch nochmal."}));
-      }
-      return;
-    }
+  function ueberspringeWeitere(...args) { return ueberspringeWeitereTeil({ mitFlash, quiz, setQuiz, weiterNachSpalte }, ...args); }
 
-    let matchIdx = quiz.antwortTeile.findIndex(t => istRichtigeAntwort(eingabe, t) === true);
-    if (matchIdx === -1 && tolerant) {
-      matchIdx = quiz.antwortTeile.findIndex(t => istRichtigeAntwort(eingabe, t, true));
-      if (matchIdx !== -1) akzentHinweis = true;
-    }
-
-    if (matchIdx !== -1) {
-      const abschluss = { ...spaltenAbschluss("richtig"), treffer: { k: `${quiz.index}|${quiz.antwortTypIndex}`, e: eingabe } };
-      const restIndices = quiz.antwortTeile.map((_, i) => i).filter(i => i !== matchIdx);
-
-      if (restIndices.length > 0) {
-        // Mehrere Teile (was/were): direkt zu "weitere", Spalte gilt bereits als richtig
-        setQuiz(prev => ({...prev, ...abschluss, eingabe: "", phase: "weitere", weitereIndices: restIndices, weiterePos: 0, feedback: akzentHinweis ? AKZENT_HINWEIS : ""}));
-      } else {
-        // Spalte fertig → Lösung zeigen, warten
-        setzeRichtigAufgedeckt(abschluss);
-      }
-    } else {
-      // Synonym statt des gesuchten Worts: kein Fehler, nochmal versuchen
-      const synonyme = TYPEN.filter(x => x.startsWith("i") && istSynonymSpalte(quiz.liste.spalten[x])).flatMap(x => synonymeAus(vokJetzt?.[x]?.wert));
-      if (synonyme.some(s => istRichtigeEinzeln(eingabe, s, true))) {
-        setQuiz(prev => ({...prev, eingabe: "", feedback: "Synonym – gesucht ist ein anderes Wort. Nochmal versuchen."}));
-        return;
-      }
-      const neueFehlversuche = (quiz.aktuelleFehlversuche || 0) + 1;
-      if (neueFehlversuche >= 3) {
-        // 3. Fehlversuch: Spalte falsch, Lösung automatisch anzeigen
-        const abschluss = spaltenAbschluss("falsch");
-        if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-        setQuiz(prev => ({...prev, ...abschluss, eingabe: "", phase: "aufgedeckt", flash: false,
-          feedback: "", falschFlash: false, aktuelleFehlversuche: 0}));
-      } else {
-        // 1. oder 2. Fehlversuch: kurz rot aufleuchten, dann zurück
-        if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-        setQuiz(prev => ({...prev, eingabe: "", falschFlash: true,
-          feedback: "Nicht richtig.", aktuelleFehlversuche: neueFehlversuche}));
-        flashTimerRef.current = setTimeout(() => {
-          setQuiz(prev => ({...prev, falschFlash: false, feedback: ""}));
-        }, 1500);
-      }
-    }
-  }
-
-  function klickeButton(idx) {
-    if (!quiz || quiz.flash) return;
-    const btn = quiz.mcButtons[idx];
-    if (!btn || btn.status === "richtig") return;
-
-    if (btn.korrekt) {
-      const neueButtons = quiz.mcButtons.map((b, i) => i === idx ? {...b, status: "richtig"} : b);
-      const alleGefunden = neueButtons.filter(b => b.korrekt).every(b => b.status === "richtig");
-
-      if (alleGefunden) {
-        // Nach einem Fehlklick darf weitergesucht werden – die Spalte zählt aber als nicht gewusst
-        const fehlklick = quiz.spaltenErgebnisse?.[quiz.antwortTypIndex] === "falsch";
-        const abschluss = spaltenAbschluss(fehlklick ? "falsch" : "richtig");
-        if (!fehlklick && sofortWeiter(quiz)) { setQuiz(prev => weiterNachSpalte({...prev, ...abschluss, mcButtons: neueButtons}, true)); return; }
-        setQuiz(prev => ({
-          ...prev, ...abschluss, mcButtons: neueButtons,
-          phase: "aufgedeckt", flash: false, richtigAufgedeckt: !fehlklick,
-          feedback: fehlklick ? MC_FEHLKLICK_HINWEIS : "",
-        }));
-      } else {
-        setQuiz(prev => ({...prev, mcButtons: neueButtons}));
-      }
-    } else {
-      setQuiz(prev => ({...prev,
-        versuche: { ...(prev.versuche || {}), [prev.antwortTypIndex]: [...(prev.versuche?.[prev.antwortTypIndex] || []), btn.text] },   // 175
-        spaltenErgebnisse: { ...(prev.spaltenErgebnisse || {}), [prev.antwortTypIndex]: "falsch" },
-        mcButtons: prev.mcButtons.map((b, i) => i === idx ? {...b, status: "falsch"} : b)}));
-      setTimeout(() => {
-        setQuiz(prev => ({...prev, mcButtons: prev.mcButtons.map((b, i) => i === idx ? {...b, status: "neutral"} : b)}));
-      }, 500);
-    }
-  }
-
-  function zeigeLosung() {
-    if (!quiz) return;
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    // Fehlklick bei Multiple Choice bleibt "falsch", auch wenn danach die Lösung angezeigt wird
-    const schonFalsch = quiz.spaltenErgebnisse?.[quiz.antwortTypIndex] === "falsch";
-    const abschluss = spaltenAbschluss(schonFalsch ? "falsch" : "aufgedeckt");
-    const aktModus = quiz.spalteModus?.[quiz.antwortTypen?.[quiz.antwortTypIndex]] || STANDARD_ANTWORT_MODUS;
-    const mcUpd = istMC(aktModus)
-      ? { mcButtons: quiz.mcButtons.map(b => b.korrekt ? {...b, status: "richtig"} : b) }
-      : {};
-    setQuiz(prev => ({...prev, ...abschluss, eingabe: "", flash: false, phase: "aufgedeckt",
-      feedback: "", falschFlash: false, aktuelleFehlversuche: 0, ...mcUpd}));
-  }
-
-  function ueberspringeWeitere() {
-    const naechstePos = quiz.weiterePos + 1;
-    if (naechstePos >= quiz.weitereIndices.length) {
-      mitFlash({}, prev => weiterNachSpalte(prev, true));
-    } else {
-      setQuiz(prev => ({...prev, eingabe: "", weiterePos: naechstePos, feedback: ""}));
-    }
-  }
-
-  function wechsleZuMC() {
-    const typ = quiz?.antwortTypen?.[quiz.antwortTypIndex];
-    const aktuellerModus = quiz?.spalteModus?.[typ] || STANDARD_ANTWORT_MODUS;
-    if (!quiz || !typ || aktuellerModus !== "tippen") return;
-    const mc = generiereButtons(quiz.liste.vokabeln, quiz.vokabeln[quiz.index], typ);
-    setQuiz(prev => ({
-      ...prev, antwortModus: "mc", mcWechsel: true,
-      spalteModus: {...prev.spalteModus, [typ]: "mc"},
-      mcButtons: mc.buttons, mcRichtig: mc.richtig,
-      phase: "eingabe", eingabe: "", feedback: "",
-    }));
-  }
+  function wechsleZuMC(...args) { return wechsleZuMCTeil({ quiz, setQuiz }, ...args); }
 
   // 175: Bewertung einer früheren Karte der Runde ändern (nur richtig ↔ falsch). Score: Stand vor der Antwort wiederherstellen
   // und alle späteren Wertungen derselben Vokabel neu rechnen; Rundenzählung, Wiederholungs-Zähler und Diktat-Ergebnis mitziehen
-  function umwerten(i) {
-    setQuiz(prev => {
-      const rb = [...(prev?.rueckblick || [])], e = rb[i];
-      if (!e) return prev;
-      const neu = e.ergebnis === "richtig" ? "falsch" : "richtig", ja = neu === "richtig";
-      const w0 = e.wertung;
-      rb[i] = { ...e, ergebnis: neu, umgewertet: !e.umgewertet,
-        antworten: e.antworten.map(a => ({ ...a, richtig: ja })),
-        wertung: w0 ? { ...w0, ...(w0.normal != null ? { normal: ja ? "richtig" : "falsch" } : {}), ...(w0.akzent != null ? { akzent: ja ? "richtig" : "aufgedeckt" } : {}),
-          ...(w0.diktat != null ? { diktat: ja ? "richtig" : "aufgedeckt" } : {}) } : null };
-      let liste = prev.liste, extra = {};
-      if (w0) {
-        const stand = { ...w0.vorher };
-        for (let j = i; j < rb.length; j++) {
-          const x = rb[j];
-          if (x.vokId !== e.vokId || !x.wertung) continue;
-          const w = { ...x.wertung, vorher: { ...x.wertung.vorher, ...stand } };
-          rb[j] = { ...x, wertung: w };
-          if (w.normal != null) stand.fortschritt = berechneNeuenScore(w.vorher.fortschritt, w.normal, w.modus, w.falschAbzug);
-          if (w.akzent != null) stand.akzentFortschritt = berechneDiktatScore(w.vorher.akzentFortschritt, w.akzent, w.falschAbzug);
-          if (w.diktat != null) stand.diktatFortschritt = berechneDiktatScore(w.vorher.diktatFortschritt, w.diktat, w.falschAbzug);
-        }
-        if (w0.normal != null) liste = speichereScore(liste, e.vokId, stand.fortschritt);
-        if (w0.akzent != null) liste = speichereAkzentScore(liste, e.vokId, stand.akzentFortschritt);
-        if (w0.diktat != null) liste = speichereDiktatScore(liste, e.vokId, stand.diktatFortschritt);
-      }
-      if (e.zaehlt && e.art === "quiz") {
-        extra.quizRichtigAnzahl = Math.max(0, (prev.quizRichtigAnzahl || 0) + (ja ? 1 : -1));
-        extra.quizFalschAnzahl = Math.max(0, (prev.quizFalschAnzahl || 0) + (ja ? -1 : 1));
-        extra.gewertet = { ...(prev.gewertet || {}), [e.vokId]: neu };
-      }
-      if (e.art === "diktat" && e.diktatIdx != null && prev.diktatErgebnisse?.[e.diktatIdx])
-        extra.diktatErgebnisse = prev.diktatErgebnisse.map((d, k) => k === e.diktatIdx ? { ...d, richtig: ja } : d);
-      let vokabeln = prev.vokabeln;
-      if (prev.abfrageZiel?.modus === "wiederholung") {
-        const rm = { ...(prev.richtigMap || {}) };
-        rm[e.vokId] = Math.max(0, (rm[e.vokId] || 0) + (ja ? 1 : -1));
-        extra.richtigMap = rm;
-        // falsch → richtig: eine noch geplante Wiederholung dieser Vokabel im laufenden Durchgang entfällt
-        if (ja && rm[e.vokId] >= prev.abfrageZiel.wiederholung) vokabeln = vokabeln.filter((v, k) => k <= prev.index || v.id !== e.vokId);
-      }
-      return { ...prev, ...extra, liste, vokabeln, rueckblick: rb };
-    });
-  }
+  function umwerten(...args) { return umwertenTeil({ setQuiz }, ...args); }
   // Wischen im Quiz: nach rechts = eine Karte zurück, nach links = vorwärts bis zur aktuellen
-  function rueckblickWischen(richtung) {
-    setQuiz(prev => {
-      const n = prev?.rueckblick?.length || 0;
-      if (!n || !["eingabe", "aufgedeckt", "weitere", "richtig"].includes(prev.phase) || prev.flash || prev.karteNeinFlash) return prev;
-      const akt = prev.rueckIdx ?? n, ziel = Math.max(0, Math.min(n, akt + richtung));
-      return ziel === akt ? prev : { ...prev, rueckIdx: ziel >= n ? null : ziel };
-    });
-  }
+  function rueckblickWischen(...args) { return rueckblickWischenTeil({ setQuiz }, ...args); }
   function renderRueckblick(...args) { return renderRueckblickTeil({ farbModusUI, farbRadUI, quiz, tt, umwerten }, ...args); }
-  function naechsteVokabel() {
-    if (!quiz) return;
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    // Auch nach falscher/aufgedeckter Spalte die restlichen Spalten abfragen
-    flashWeiterRef.current = null;
-    if (quiz.phase === "aufgedeckt") {
-      setQuiz(prev => weiterNachSpalte(prev, !!prev.richtigAufgedeckt));
-    } else {
-      setQuiz(prev => naechsteVokabelState(prev));
-    }
-  }
+  function naechsteVokabel(...args) { return naechsteVokabelTeil({ flashTimerRef, flashWeiterRef, naechsteVokabelState, quiz, setQuiz, weiterNachSpalte }, ...args); }
 
   // Zwischenkarte "Wiederholung": weiter zu den zu wiederholenden Vokabeln oder direkt zur Auswertung
-  function starteWiederholung() {
-    setQuiz(prev => prev?.phase === "wiederholungHinweis" ? mitZuordnungMix({...prev, phase: "eingabe"}) : prev);
-  }
-  function brecheWiederholungAb() {
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    setQuiz(prev => prev?.phase === "wiederholungHinweis" || prev?.wiederholungDurchgang
-      ? {...prev, phase: "fertig", flash: false} : prev);
-  }
+  function starteWiederholung(...args) { return starteWiederholungTeil({ mitZuordnungMix, setQuiz }, ...args); }
+  function brecheWiederholungAb(...args) { return brecheWiederholungAbTeil({ flashTimerRef, setQuiz }, ...args); }
 
   // Akzent-Modus: Auswahl gehört zu genau einer Vokabel-Spalte (Schlüssel), sonst Neustart mit Grundbuchstaben
-  function akzentStand(q) {
-    const typ = q.antwortTypen[q.antwortTypIndex];
-    const vok = q.vokabeln[q.index];
-    const key = `${vok?.id}|${q.antwortTypIndex}|${q.abfrageZiel?.runde || 0}|${q.wiederholungDurchgang || 0}`;
-    const kacheln = akzentKacheln(ersteAlt(ohneHinweis(vok?.[typ]?.wert || "")));
-    const a = q.akzent?.key === key ? q.akzent : null;
-    return { key, typ, kacheln, wahl: a ? a.wahl : kacheln.map(k => k.basis), aktiv: a ? a.aktiv : null,
-      geprueft: !!a?.geprueft, fehler: !!a?.fehler, blink: a ? a.blink : null, pruefFehler: !!a?.pruefFehler };
-  }
+  function akzentStand(...args) { return akzentStandTeil({  }, ...args); }
   // Kachel braucht einen Akzent bzw. eine Ligatur (die von der Ligatur verbrauchte Kachel nicht)
   const kachelMitAkzent = k => k.richtig !== "" && k.richtig !== k.basis;
   // Fehlgriff: Kachel kurz rot aufleuchten lassen; zählt wie ein Fehlklick bei MC (Vokabel gilt als nicht gewusst)
-  function akzentFehlgriff(s, i, extra = {}) {
-    if (akzentBlinkRef.current) clearTimeout(akzentBlinkRef.current);
-    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl: s.wahl, aktiv: null, fehler: true, blink: i, pruefFehler: s.pruefFehler, ...extra }}));
-    akzentBlinkRef.current = setTimeout(() => {
-      setQuiz(prev => prev?.akzent?.key === s.key ? {...prev, akzent: {...prev.akzent, blink: null}} : prev);
-    }, 600);
-  }
-  function waehleAkzentKachel(i) {
-    if (!quiz || quiz.phase !== "eingabe") return;
-    const s = akzentStand(quiz);
-    const k = s.kacheln[i];
-    if (s.wahl[i] === k.richtig && kachelMitAkzent(k)) return;   // schon richtig gesetzt
-    // Akzent-Buchstaben hervorgehoben → Fehlgriff nur anzeigen, nicht als Fehler werten
-    if (!kachelMitAkzent(k)) { akzentFehlgriff(s, i, quizRegeln().akzentHervorheben ? { fehler: s.fehler } : {}); return; }
-    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl: s.wahl, fehler: s.fehler, blink: null, pruefFehler: s.pruefFehler, aktiv: s.aktiv === i ? null : i }}));
-  }
-  function setzeAkzentVariante(v) {
-    if (!quiz || quiz.phase !== "eingabe") return;
-    const s = akzentStand(quiz);
-    const i = s.aktiv;
-    if (i == null) return;
-    if (v !== s.kacheln[i].richtig) { akzentFehlgriff(s, i); return; }
-    const wahl = [...s.wahl];
-    wahl[i] = v;
-    if (LIGATUR_TEILE[v]) wahl[i + 1] = "";
-    // Alle Akzente gefunden → automatisch als Antwort übernehmen (falls in der Stufe eingestellt)
-    if (quizRegeln().akzentAutoUebernahme && s.kacheln.every((k, j) => wahl[j] === k.richtig)) { schliesseAkzenteAb({ ...s, wahl }); return; }
-    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl, aktiv: null, fehler: s.fehler, blink: null, pruefFehler: s.pruefFehler }}));
-  }
-  function schliesseAkzenteAb(s) {
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    const komplett = s.kacheln.every((k, i) => s.wahl[i] === k.richtig);
-    const richtig = komplett && !s.fehler;
-    const abschluss = spaltenAbschluss(richtig ? "richtig" : "falsch");
-    if (richtig && sofortWeiter(quiz)) { setQuiz(prev => weiterNachSpalte({...prev, ...abschluss}, true)); return; }
-    setQuiz(prev => ({...prev, ...abschluss, akzent: { key: s.key, wahl: s.wahl, aktiv: null, geprueft: true, fehler: s.fehler, blink: null },
-      // richtig gelöst → Karte grün, auch nach Fehlgriff (zählt dann trotzdem als nicht gewusst, Hinweis rot)
-      eingabe: "", phase: "aufgedeckt", flash: false, richtigAufgedeckt: komplett,
-      feedback: richtig ? "" : komplett ? "Nicht fehlerfrei – richtig gelöst, zählt aber als nicht gewusst."
-        : "Nicht ganz – rot markierte Buchstaben fehlen noch.", falschFlash: false, aktuelleFehlversuche: 0}));
-  }
+  function akzentFehlgriff(...args) { return akzentFehlgriffTeil({ akzentBlinkRef, setQuiz }, ...args); }
+  function waehleAkzentKachel(...args) { return waehleAkzentKachelTeil({ akzentFehlgriff, akzentStand, kachelMitAkzent, quiz, quizRegeln, setQuiz }, ...args); }
+  function setzeAkzentVariante(...args) { return setzeAkzentVarianteTeil({ akzentFehlgriff, akzentStand, quiz, quizRegeln, schliesseAkzenteAb, setQuiz }, ...args); }
+  function schliesseAkzenteAb(...args) { return schliesseAkzenteAbTeil({ flashTimerRef, quiz, setQuiz, sofortWeiter, spaltenAbschluss, weiterNachSpalte }, ...args); }
   // Prüfen: vollständig → abschließen; sonst fehlende Akzente rot markieren, korrigieren oder Lösung anzeigen
-  function pruefeAkzente() {
-    if (!quiz || quiz.phase !== "eingabe") return;
-    const s = akzentStand(quiz);
-    if (s.kacheln.every((k, i) => s.wahl[i] === k.richtig)) { schliesseAkzenteAb(s); return; }
-    setQuiz(prev => ({...prev, akzent: { key: s.key, wahl: s.wahl, aktiv: null, fehler: true, blink: null, pruefFehler: true },
-      feedback: "Nicht ganz – rot markierte Buchstaben korrigieren oder „Lösung anzeigen“."}));
-  }
+  function pruefeAkzente(...args) { return pruefeAkzenteTeil({ akzentStand, quiz, schliesseAkzenteAb, setQuiz }, ...args); }
 
-  function deckeKarteAuf() {
-    if (!quiz || quiz.phase !== "eingabe") return;
-    const typ = quiz.antwortTypen?.[quiz.antwortTypIndex];
-    if ((quiz.spalteModus?.[typ] || STANDARD_ANTWORT_MODUS) !== "karte") return;
-    setQuiz(prev => ({...prev, phase: "aufgedeckt", eingabe: "", flash: false, feedback: ""}));
-  }
+  function deckeKarteAuf(...args) { return deckeKarteAufTeil({ quiz, setQuiz }, ...args); }
 
   // Mehrere Spalten: aufgedeckte Karte (nicht die letzte) → „Weiter“ ohne Pause; die nächste Karten-Spalte erscheint gleich aufgedeckt
-  function karteWeiter() {
-    if (!quiz) return;
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    flashWeiterRef.current = null;
-    setQuiz(prev => {
-      const n = weiterNachSpalte({ ...prev, spaltenErgebnisse: { ...(prev.spaltenErgebnisse || {}), [prev.antwortTypIndex]: "karte" } }, null);
-      const nt = n.antwortTypen?.[n.antwortTypIndex];
-      return n.index === prev.index && n.antwortTypIndex === prev.antwortTypIndex + 1 && (n.spalteModus?.[nt] || STANDARD_ANTWORT_MODUS) === "karte"
-        ? { ...n, phase: "aufgedeckt" } : n;
-    });
-  }
-  function bewerteKarte(gewusst) {
-    if (!quiz) return;
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    const urteil = gewusst ? "richtig" : "falsch";
-    if (quiz.karteBewertungOffen) {   // letzte Spalte schon beantwortet (z. B. Tastatur): das Urteil gilt für die Karten-Spalten
-      const abschluss = spaltenAbschluss(quiz.spaltenErgebnisse?.[quiz.antwortTypIndex] || "richtig", urteil);
-      setQuiz(prev => weiterNachSpalte({ ...prev, ...abschluss }, !!prev.richtigAufgedeckt));
-      return;
-    }
-    const abschluss = spaltenAbschluss(urteil, urteil);
+  function karteWeiter(...args) { return karteWeiterTeil({ flashTimerRef, flashWeiterRef, quiz, setQuiz, weiterNachSpalte }, ...args); }
+  function bewerteKarte(...args) { return bewerteKarteTeil({ flashTimerRef, mitFlash, mitVerzoegerung, quiz, setQuiz, spaltenAbschluss, weiterNachSpalte }, ...args); }
 
-    if (gewusst) mitFlash(abschluss, prev => weiterNachSpalte(prev, true));
-    else mitVerzoegerung({...abschluss, karteNeinFlash: true}, prev => weiterNachSpalte(prev, false), 800);
-  }
+  function pruefeDiktatAntwort(...args) { return pruefeDiktatAntwortTeil({ aktiveListeId, blitzKey, einstellungen, quiz, quizRegeln, setQuiz }, ...args); }
 
-  function pruefeDiktatAntwort() {
-    if (!quiz || !quiz.eingabe.trim()) return;
-    const aktVok = quiz.vokabeln[quiz.index];
-    const wort = aktVok[quiz.diktatSpalte]?.wert || "";
-    const treffer = istRichtigeAntwort(quiz.eingabe.trim(), wort, quizRegeln().akzenteTolerant || (quiz.diktatSpalte?.startsWith("E") && !AKZENTE_FUER_LISTE(aktVok._listeId ?? aktiveListeId)));
-    const diktatVersuche = [...(quiz.diktatVersuche || []), quiz.eingabe.trim()];   // 175
-    const diktatWertung = { vorher: { diktatFortschritt: aktVok.diktatFortschritt }, falschAbzug: true };
-    if (treffer) {
-      const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "richtig");
-      const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
-      const schwelle = einstellungen.gelerntSchwelle ?? 0;
-      const gelerntBlitz = schwelle > 0 && (aktVok.diktatFortschritt?.score ?? -Infinity) < schwelle && neuFortschritt.score >= schwelle ? blitzKey(quiz) : null;
-      const ergebnis = { vokId: aktVok.id, wort, uebersetzung: aktVok[quiz.diktatUeberspalte]?.wert, richtig: true };
-      setQuiz(prev => ({
-        ...prev, liste: neueListe, eingabe: "", phase: "richtig", flash: false, ...(gelerntBlitz ? { gelerntBlitz } : {}),
-        diktatVersuche, diktatWertung: { ...diktatWertung, diktat: "richtig" }, diktatIdx: prev.diktatErgebnisse.length,
-        diktatErgebnisse: [...prev.diktatErgebnisse, ergebnis], feedback: treffer === "akzent" ? AKZENT_HINWEIS : "",
-      }));
-    } else {
-      setQuiz(prev => ({
-        ...prev, eingabe: "", diktatVersuche,
-        diktatAufgedeckt: Math.min((prev.diktatAufgedeckt || 0) + 1, ohneHinweis(wort).length),
-        feedback: "Nicht richtig – ein Buchstabe mehr aufgedeckt.",
-      }));
-    }
-  }
+  function zeigeDiktatLoesung(...args) { return zeigeDiktatLoesungTeil({ flashTimerRef, quiz, quizRegeln, setQuiz }, ...args); }
 
-  function zeigeDiktatLoesung() {
-    if (!quiz) return;
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    const aktVok = quiz.vokabeln[quiz.index];
-    const neuFortschritt = berechneDiktatScore(aktVok.diktatFortschritt, "aufgedeckt", quizRegeln().falschAbzug);
-    const neueListe = speichereDiktatScore(quiz.liste, aktVok.id, neuFortschritt);
-    const wort = aktVok[quiz.diktatSpalte]?.wert || "";
-    const diktatWertung = { vorher: { diktatFortschritt: aktVok.diktatFortschritt }, falschAbzug: quizRegeln().falschAbzug, diktat: "aufgedeckt" };   // 175
-    const ergebnis = { vokId: aktVok.id, wort, uebersetzung: aktVok[quiz.diktatUeberspalte]?.wert, richtig: false };
-    setQuiz(prev => ({
-      ...prev, liste: neueListe, eingabe: "", phase: "aufgedeckt", flash: false,
-      diktatAufgedeckt: ohneHinweis(wort).length, diktatWertung, diktatIdx: prev.diktatErgebnisse.length,
-      diktatErgebnisse: [...prev.diktatErgebnisse, ergebnis],
-      feedback: "",
-    }));
-  }
+  function naechsteDiktatVokabel(...args) { return naechsteDiktatVokabelTeil({ diktatPlayCountRef, flashTimerRef, quiz, setDiktatManualPlays, setQuiz }, ...args); }
 
-  function naechsteDiktatVokabel() {
-    if (!quiz) return;
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    diktatPlayCountRef.current = 0;
-    setDiktatManualPlays(0);
-    setQuiz(prev0 => {
-      // 175: beantwortete Diktat-Vokabel in den Rückblick
-      const v = prev0.vokabeln[prev0.index], w = prev0.diktatWertung;
-      const sp = t => prev0.liste.spalten[t]?.name || t;
-      const prev = { ...prev0, diktatWertung: null, diktatVersuche: [], rueckIdx: null,
-        rueckblick: v && w ? [...(prev0.rueckblick || []), { art: "diktat", vokId: v.id, diktatIdx: prev0.diktatIdx,
-          frage: { typ: prev0.diktatUeberspalte, label: sp(prev0.diktatUeberspalte), wert: v[prev0.diktatUeberspalte]?.wert || "" },
-          antworten: [{ typ: prev0.diktatSpalte, label: sp(prev0.diktatSpalte), wert: v[prev0.diktatSpalte]?.wert || "", richtig: w.diktat === "richtig", eingaben: prev0.diktatVersuche || [] }],
-          ergebnis: w.diktat === "richtig" ? "richtig" : "falsch", wertung: w, zaehlt: true }] : (prev0.rueckblick || []) };
-      const naechsterIdx = prev.index + 1;
-      if (naechsterIdx >= prev.vokabeln.length) return { ...prev, phase: "fertig" };
-      return { ...prev, index: naechsterIdx, eingabe: "", diktatAufgedeckt: 0, phase: "eingabe", feedback: "" };
-    });
-  }
+  function sprichDiktatNochmal(...args) { return sprichDiktatNochmalTeil({ diktatPlayCountRef, setDiktatManualPlays }, ...args); }
 
-  function sprichDiktatNochmal(text, lang) {
-    if (!window.speechSynthesis) return;
-    const langCode = lang.split('-')[0].toLowerCase();
-    // Novelty/effects Stimmen aussortieren (iOS/macOS); die gewählte Stimme kommt zuerst
-    const alle = aktiveStimmen(langCode).length ? aktiveStimmen(langCode) : stimmenFuerSprache(langCode), gew = gewaehlteStimme(langCode);
-    const voices = gew ? [gew, ...alle.filter(v => v !== gew)] : alle;
-    diktatPlayCountRef.current += 1;
-    setDiktatManualPlays(p => p + 1);
-    window.speechSynthesis.cancel();
-    // Stimme wechselt alle 2 Plays: 0,0,1,1,2,2,… – immer eine Stimme der richtigen Sprache
-    const stimme = voices.length > 1 ? voices[Math.floor(diktatPlayCountRef.current / 2) % voices.length] : null;
-    window.speechSynthesis.speak(aeusserung(text.split('/')[0].trim(), lang, stimme));
-  }
-
-  function geheZurueck() {
-    if (!quiz || quiz.antwortTypIndex <= 0) return;
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    setQuiz(prev => {
-      const naechsterIdx = prev.antwortTypIndex - 1;
-      const nt = prev.antwortTypen[naechsterIdx];
-      const teile = prev.vokabeln[prev.index][nt]?.wert.split('/').map(s => s.trim()) || [];
-      const mc = prev.antwortModus === "mc"
-        ? generiereButtons(prev.vokabeln, prev.vokabeln[prev.index], nt) : null;
-      return {
-        ...prev, flash: false, phase: "eingabe", eingabe: "",
-        antwortTypIndex: naechsterIdx, antwortTeile: teile,
-        weitereIndices: [], weiterePos: 0,
-        vorigeAntworten: prev.vorigeAntworten.slice(0, -1),
-        mcButtons: mc?.buttons || prev.mcButtons,
-        mcRichtig: mc?.richtig || prev.mcRichtig,
-        feedback: "",
-      };
-    });
-  }
+  function geheZurueck(...args) { return geheZurueckTeil({ flashTimerRef, quiz, setQuiz }, ...args); }
 
   // ── Render: Diktat ───────────────────────────────────────────────────────
   if (lernen && !lernen.imQuiz) {
