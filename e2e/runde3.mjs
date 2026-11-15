@@ -22,7 +22,7 @@ const aktionen = () => page.evaluate(() => [...document.querySelectorAll("[data-
 const aktion = async label => { const da = await page.evaluate(l => { const b = document.querySelector(`[data-info-aktion="${l}"]`); b?.click(); return !!b; }, label); await sleep(350); return da; };
 const klickText = async (sel, text) => { const da = await page.evaluate((sel, text) => { const el = [...document.querySelectorAll(sel)].find(e => e.textContent.trim() === text); el?.click(); return !!el; }, sel, text); await sleep(400); return da; };
 const slots = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots") || "{}"));
-const schliesseTafel = async () => { await page.mouse.click(5, 120); await sleep(250); };
+const schliesseTafel = async () => { const b = await page.$("[data-info-aktion=\"✕ Auswahl beenden\"]"); if (b) await page.evaluate(() => document.querySelector("[data-info-aktion=\"✕ Auswahl beenden\"]").click()); else await page.mouse.click(5, 120); await sleep(250); };   // 234: Ordner-Menü kommt mit der Auswahl
 
 await page.goto(URL);
 await page.evaluate(() => {

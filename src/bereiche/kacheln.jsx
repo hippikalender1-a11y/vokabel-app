@@ -85,7 +85,7 @@ export function listenNavi(app) {
   }
 
 export function renderListenRaster(app) {
-  const { aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef } = app;
+  const { zugRand, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef } = app;
     const groesse = rasterGroesse(einstellungen, "listenRaster");
     // 193: die geöffnete Ebene (oberste oder ein Ordner) – Ordner-Kacheln und Listen
     const ordnerDaten = { ordner: listenOrdner, gespeichert: listenIndex };
@@ -100,7 +100,7 @@ export function renderListenRaster(app) {
     const gefiltert = sprachFilter !== "alle";
     const sortModus = listenSortModus && !gefiltert;
     const minS = minSpalten("liste", offen);   // 203
-    const anzSpalten = gefiltert ? 1 : ebenenSpalten(ebene, sortModus, minS);   // 196
+    const anzSpalten = gefiltert ? 1 : ebenenSpalten(ebene, sortModus && zugRand !== false, minS);   // 196; 231: beim Finger-Zug erst am Rand
     // Kachel-Aufbau nur nach den belegten Spalten: die freie Spalte beim Verschieben darf ihn nicht ändern
     // (sonst baut React den Inhalt unter dem Finger neu auf und das Ziehen verliert den Finger)
     const eng = (gefiltert ? 1 : ebenenSpalten(ebene, false, minS)) > 1;
@@ -111,10 +111,9 @@ export function renderListenRaster(app) {
     };
     // 225: Listen im Quiz-Tab – antippen fragt die Liste ab (Blätter-Modus: nur wählen, Kopf „📋 … laden“)
     const oeffne = l => {
-      if (listenWahl) {   // Antippen wählt wieder einzeln (ersetzt die Auswahl)
-        schliesseInfo(); auswahlTafelRef.current = null; setListenWahl(null); setBlaettern(true);
+      if (listenWahl) {   // 234: Antippen in der Auswahl – sie beginnt neu mit dieser Liste
+        auswahlTafelRef.current = "liste"; setListenWahl([l.id]);
         leuchte(`lw:${l.id}`, BLITZ_MS / 2);
-        setTimeout(() => setSlotVorschau({ typ: "listen", id: l.id }), 0);
       } else if (blaettern) {
         leuchte(`lw:${l.id}`, BLITZ_MS / 2);
         setSlotVorschau({ typ: "listen", id: l.id });
@@ -125,9 +124,24 @@ export function renderListenRaster(app) {
     // Auswahl-Modus: Aktionen für die Auswahl (Lang-Druck auf eine nicht gewählte Liste nimmt sie dazu)
     const wahlMit = l => listenWahl.includes(l.id) ? listenWahl : [...listenWahl, l.id];
     const wahlMenue = listenWahlMenue;
-    const wahlNamen = ids => ids.map(id => listenIndex.find(x => x.id === id)?.name).filter(Boolean).join(", ");
+    const wahlNamen = ids => ids.map(id => { const o = listenOrdner.find(x => x.id === id); return o ? `📁 ${o.name}` : listenIndex.find(x => x.id === id)?.name; }).filter(Boolean).join(", ");
+    // Menü eines Listen-Ordners (Auswahl-Tafel bzw. Rechtsklick)
+    const lordnerMenue = o => {
+      const drin = ordnerListen(o.id), unter = listenOrdner.filter(u => u.ordner === o.id).length;
+      return [
+        { label: "📂 Öffnen", fn: () => { setListenOrdnerOffen(o.id); setListeVorschau(null); } },
+        { label: "✎ Umbenennen", fn: () => setOrdnerUmbenennen({ art: "liste", id: o.id, name: o.name }) },
+        ...(gefiltert ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl([o.id]); } }]),
+        { label: "📁 In Ordner…", fn: () => setInGruppe({ art: "liste", ids: [o.id], name: "" }) },
+        ...(offen ? [{ label: "↑ Aus dem Ordner", fn: () => verschiebeListenInOrdner([o.id], hoch) }] : []),
+        ...(ordnerPfad(listenOrdner, o.id).length < ORDNER_TIEFE_MAX ? [{ label: "📁 Neuer Ordner darin", fn: () => setInGruppe({ art: "liste", ids: [], name: "", eltern: o.id }) }] : []),
+        (drin.length || unter) ? { label: "📤 Ordner auflösen", fn: () => loeseListenOrdnerAuf(o.id) } : { label: "🗑 Ordner löschen", gefahr: true, fn: () => loeseListenOrdnerAuf(o.id) },
+      ];
+    };
     // Auswahl-Tafel: eine Liste → ihr Menü, mehrere → Aktionen für die Auswahl
     const tafelInhalt = ids => {
+      const o = ids.length === 1 && listenOrdner.find(x => x.id === ids[0]);   // 234: ein Ordner → sein Menü
+      if (o) return { text: `📁 ${o.name}`, aktionen: [...lordnerMenue(o), { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) }] };
       const l = ids.length === 1 && listenIndex.find(x => x.id === ids[0]);
       if (l) return { text: l.name, aktionen: [...menue(l).filter(a => a.label !== "☑ Auswählen"), { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "liste", id: l.id }) }, { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) }] };
       return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: wahlMenue(ids) } : { text: "Nichts ausgewählt – Listen antippen", aktionen: [] };
@@ -142,10 +156,10 @@ export function renderListenRaster(app) {
       const aktSpalten = liste ? TYPEN.filter(t => liste.spalten[t].aktiv) : [];
       const ziel = slotDragZiel === key && slotDragId && slotDragId !== l.id;
       // Lang-Druck (Maus: Rechtsklick): Liste kommt in die Auswahl, die Tafel bleibt unten offen (weitere antippen wählt mit aus);
-      // Touch: Haltestufen (kurz halten + ziehen verschiebt, lang halten + fahren wählt aus)
+      // Touch (234): kurz halten wählt aus (weiterfahren sammelt ein), lang halten verschiebt
       const tafel = tafelInhalt(listenWahl ? wahlMit(l) : [l.id]);
       const erklaerung = sortModus && !listenWahl ? tt(`${l.name} – antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen – markierte wandern zusammen`)
-        : tt(`${l.name} – antippen: abfragen (nach kurzem Halten: nur wählen, laden mit dem grünen Kopf); kurz halten: wählen; lang halten: Mehrfach-Auswahl; Menü: lang halten ohne Bewegung (Maus: Rechtsklick)`,
+        : tt(`${l.name} – antippen: abfragen; kurz halten: auswählen (weitere kurz halten: dazu/heraus, weiterfahren: einsammeln; übernehmen mit dem grünen Kopf); lang halten: verschieben (Maus: Rechtsklick wählt aus)`,
           tafel.aktionen, { langText: tafel.text, auswahl: auswahlTafel("liste"), eigeneGeste: true,
             beimMenue: () => wahlUmschaltenRef.current("liste", l.id) });
       return (
@@ -184,7 +198,7 @@ export function renderListenRaster(app) {
         </div>
       );
     };
-    // 193: Ordner-Kachel (Listen): antippen öffnet, kurz halten + ziehen verschiebt, lang drücken: Menü
+    // 193/234: Ordner-Kachel (Listen): antippen öffnet (Auswahl endet), kurz halten wählt aus (Menü), lang halten verschiebt
     const ziehIds = slotDragId ? (listenAuswahl.includes(slotDragId) ? listenAuswahl : [slotDragId]) : [];
     const ring = key => (<span className={`gruppen-ring${gruppenZiel === key ? " fertig" : ""}`} data-gruppen-ring={gruppenZiel === key ? "fertig" : "laeuft"}>
       <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15"/></svg><span data-ring-symbol={gruppenZiel === key ? "ordner" : "tauschen"}>{gruppenZiel === key ? "📁" : "⇄"}</span></span>);
@@ -194,28 +208,22 @@ export function renderListenRaster(app) {
       const vokDrin = drin.reduce((m, l) => m + vokabelAnzahl(l.id), 0);
       const unter = listenOrdner.filter(u => u.ordner === o.id).length;
       const ziel = slotDragZiel === key && slotDragId && slotDragId !== o.id;
-      const menue = [
-        { label: "📂 Öffnen", fn: () => { setListenOrdnerOffen(o.id); setListeVorschau(null); } },
-        { label: "✎ Umbenennen", fn: () => setOrdnerUmbenennen({ art: "liste", id: o.id, name: o.name }) },
-        { label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl([o.id]); } },
-        { label: "📁 In Ordner…", fn: () => setInGruppe({ art: "liste", ids: [o.id], name: "" }) },
-        ...(offen ? [{ label: "↑ Aus dem Ordner", fn: () => verschiebeListenInOrdner([o.id], hoch) }] : []),
-        ...(ordnerPfad(listenOrdner, o.id).length < ORDNER_TIEFE_MAX ? [{ label: "📁 Neuer Ordner darin", fn: () => setInGruppe({ art: "liste", ids: [], name: "", eltern: o.id }) }] : []),
-        (drin.length || unter) ? { label: "📤 Ordner auflösen", fn: () => loeseListenOrdnerAuf(o.id) } : { label: "🗑 Ordner löschen", gefahr: true, fn: () => loeseListenOrdnerAuf(o.id) },
-      ];
+      const wahlNr = listenWahl ? listenWahl.indexOf(o.id) + 1 : 0;
+      const tafel = tafelInhalt(listenWahl ? wahlMit(o) : [o.id]);   // 234: wie Listen auswählbar
       return (
-        <div key={key} data-raster-zelle={gefiltert ? undefined : key} data-lordner-id={o.id}
-          className={`karte-zeile ordner-kachel${sortModus && listenAuswahl.includes(o.id) ? " kachel-gewaehlt" : ""}`}
+        <div key={key} data-raster-zelle={gefiltert ? undefined : key} data-lordner-id={o.id} data-auswahl-durchlass
+          className={`karte-zeile ordner-kachel${(sortModus && listenAuswahl.includes(o.id)) || wahlNr || (lasso?.art === "liste" && lasso.ids.includes(o.id)) ? " kachel-gewaehlt" : ""}`}
           data-kachel-geste={sortModus ? undefined : "lordner"} data-kachel-zieh={sortModus || gefiltert ? undefined : ""} data-angehoben={angehoben === o.id ? "" : undefined}
           style={{cursor: sortModus ? "grab" : "pointer", ...(sortModus ? {touchAction:"none"} : {}), position:"relative",
             ...(slotDragId && (slotDragId === o.id || (listenAuswahl.includes(slotDragId) && listenAuswahl.includes(o.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
             ...(ziel ? {outline:"3px dashed var(--bestaetigen)", outlineOffset:-3} : {})}}
           onPointerDown={sortModus ? (e => { slotZiehenRef.current = { art: "liste", id: o.id, x: e.clientX, y: e.clientY, aktiv: false }; }) : undefined}
-          onClick={() => sortModus ? tippeImRaster(o, o.platz) : (slotGezogenRef.current ? (slotGezogenRef.current = false) : (listenWahl ? null : (setListenOrdnerOffen(o.id), setListeVorschau(null))))}
+          onClick={() => sortModus ? tippeImRaster(o, o.platz) : (slotGezogenRef.current ? (slotGezogenRef.current = false) : (setListenOrdnerOffen(o.id), setListeVorschau(null)))}   // 234: öffnen – die Auswahl endet
           {...(sortModus ? tt(`Ordner „${o.name}“ – antippen markiert, dann freien Platz antippen; oder direkt ziehen`)
-            : tt(`Ordner „${o.name}“ mit ${drin.length} Liste${drin.length !== 1 ? "n" : ""} – antippen öffnet ihn`, listenWahl ? [] : menue,
-              { langText: `📁 ${o.name}`, beimZeigen: (px, py) => { slotZiehenRef.current = { art: "liste", id: o.id, x: px, y: py, aktiv: false, langdruck: true }; } }))}>
+            : tt(`Ordner „${o.name}“ mit ${drin.length} Liste${drin.length !== 1 ? "n" : ""} – antippen öffnet ihn; kurz halten: auswählen (zählt mit seinem ganzen Inhalt); lang halten: verschieben`, tafel.aktionen,
+              { langText: tafel.text, auswahl: auswahlTafel("liste"), eigeneGeste: true, beimMenue: () => wahlUmschaltenRef.current("liste", o.id) }))}>
           {sortModus && listenAuswahl.includes(o.id) && <span className="auswahl-nr" data-auswahl-nr>{listenAuswahl.indexOf(o.id) + 1}</span>}
+          {wahlNr ? <span className="auswahl-nr" data-wahl-nr={wahlNr}>{wahlNr}</span> : null}
           <div className="karte-zeile-info">
             <div className="karte-zeile-name"><span aria-hidden="true">📁 </span>{o.name}</div>
             <div className="karte-zeile-sub" data-ordner-anzahl={drin.length} data-vok-anzahl={vokDrin}>{zahlDe(drin.length)} {kurzL ? "L." : `Liste${drin.length !== 1 ? "n" : ""}`} · {zahlDe(vokDrin)} {kurzL ? "V." : "Vokabeln"}</div>
@@ -424,7 +432,7 @@ export function wahlLeiste(app, art, stil) {
   }
 
 export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) {
-  const { FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligAktion, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setListenAendern, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef } = app;
+  const { zugRand, FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligAktion, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setListenAendern, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef } = app;
     // Lernfortschritt je Art für die Mini-Kreise (jede Liste nur einmal lesen)
     const listenCache = new Map();
     const listeVon = id => { if (!listenCache.has(id)) listenCache.set(id, lsGet(SK.liste(id))); return listenCache.get(id); };
@@ -459,7 +467,7 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     slotSichtbarRef.current = sichtbar.map(x => x.id);
     plaetzeRef.current.slot = sichtbar.map(x => ({ id: x.id, z: x.platz.z, s: x.platz.s }));
     const ebeneLeer = raster.gespeichert.length === 0;   // 194: leerer Ordner – eine Zeile freier Plätze zeigen
-    const anzSpalten = ebenenSpalten(raster.gespeichert, slotSortModus, minSpalten("slot", ordnerOffen?.id || null));   // 196/203: belegt bzw. gewählt (+1 beim Verschieben)
+    const anzSpalten = ebenenSpalten(raster.gespeichert, slotSortModus && zugRand !== false, minSpalten("slot", ordnerOffen?.id || null));   // 231: beim Finger-Zug erst am Rand   // 196/203: belegt bzw. gewählt (+1 beim Verschieben)
     const kurzText = ebenenSpalten(raster.gespeichert, false, minSpalten("slot", ordnerOffen?.id || null)) > 1;   // 210: ab 2 Spalten abgekürzt
     const ordnerHierGeht = ordnerPfad(slots.ordner, ordnerOffen?.id || null).length < ORDNER_TIEFE_MAX;
     const zeilenSichtbar = Math.max(ebeneLeer && ordnerOffen ? 1 : 0, raster.gespeichert.filter(sichtbarE).reduce((m, x) => Math.max(m, x.platz.z + 1), 0));
@@ -468,19 +476,35 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     const zeilenAnzeige = slotSortModus ? raster.gespeichert.reduce((m, x) => Math.max(m, x.platz.z + 1), 0) + RASTER_FREI_ZEILEN
       : zeilenSichtbar + (alleBelegt ? 1 : 0);
     const sfVon = x => slotSFAlle(x)[aktiverSlot?.id === x.id ? quizAbfrageArt : slotKonfigArt(x)];
-    // Auswahl-Modus: Aktionen für die Auswahl (Lang-Druck auf eine nicht gewählte Kachel nimmt sie dazu)
+    // Auswahl-Modus: Aktionen für die Auswahl (Rechtsklick auf eine nicht gewählte Kachel nimmt sie dazu)
+    // 234: Ordner können mit in der Auswahl sein – sie zählen mit ihrem ganzen Inhalt; Löschen löst sie nur auf
     const wahlMit = x => multiAuswahl.includes(x.id) ? multiAuswahl : [...multiAuswahl, x.id];
-    const wahlMenue = ids => [
-      ...(ids.length >= 2 ? [tab === "quiz" ? { label: `🧩 Multiquiz starten (${ids.length})`, fn: () => starteMultiquiz(ids) } : { label: `🧩 Multiquiz (${ids.length})`, fn: () => stelleMultiquizEin(ids) }] : []),
-      ...(() => { const f = faelligVonSlots(ids); return faelligAktion(f); })(),
+    const istOrdnerId = id => (slots.ordner || []).some(o => o.id === id);
+    const wahlQuiz = ids => [...new Set(ids.flatMap(id => istOrdnerId(id) ? kinderVon(id).map(k => k.id) : [id]))];
+    const ordnerMenue = (x, kinder) => [
+      { label: "📂 Öffnen", fn: () => setSlotOrdner(x.id) },
+      ...(kinder.length >= 2 ? [{ label: `🧩 Multiquiz des Ordners (${kinder.length})`, fn: () => tab === "quiz" ? starteMultiquiz(kinder.map(k => k.id)) : stelleMultiquizEin(kinder.map(k => k.id)) }] : []),
+      { label: "✎ Umbenennen", fn: () => setOrdnerUmbenennen({ id: x.id, name: x.name }) },
+      { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl([x.id]); } },
+      { label: "📁 In Ordner…", fn: () => setInGruppe({ ids: [x.id], name: "" }) },
+      ...(ordnerOffen ? [{ label: "↑ Aus dem Ordner", fn: () => verschiebeInOrdner([x.id], hoch) }] : []),
+      ...(ordnerPfad(slots.ordner, x.id).length < ORDNER_TIEFE_MAX ? [{ label: "📁 Neuer Ordner darin", fn: () => setInGruppe({ ids: [], name: "", eltern: x.id }) }] : []),
+      (kinder.length || (slots.ordner || []).some(o => o.ordner === x.id)) ? { label: "📤 Ordner auflösen", fn: () => loeseOrdnerAuf(x.id) } : { label: "🗑 Ordner löschen", gefahr: true, fn: () => loeseOrdnerAuf(x.id) },
+    ];
+    const wahlMenue = ids => {
+      const quiz = wahlQuiz(ids), ordner = ids.filter(istOrdnerId), eintraege = ids.filter(id => !istOrdnerId(id));
+      return [
+      ...(quiz.length >= 2 ? [tab === "quiz" ? { label: `🧩 Multiquiz starten (${quiz.length})`, fn: () => starteMultiquiz(quiz) } : { label: `🧩 Multiquiz (${quiz.length})`, fn: () => stelleMultiquizEin(quiz) }] : []),
+      ...(() => { const f = faelligVonSlots(quiz); return faelligAktion(f); })(),
       { label: `📁 In Ordner… (${ids.length})`, fn: () => setInGruppe({ ids, name: "" }) },
       ...(ordnerOffen ? [{ label: `↑ Aus dem Ordner (${ids.length})`, fn: () => verschiebeInOrdner(ids, hoch) }] : []),
       { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl(ids); } },
-      { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "slot", ids }) },
+      eintraege.length ? { label: `🗑 Löschen (${eintraege.length})${ordner.length ? ` · ${ordner.length} Ordner auflösen` : ""}`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "slot", ids: eintraege, ordner }) }
+        : { label: `📤 Ordner auflösen (${ordner.length})`, fn: () => { setMultiAuswahl(null); ordner.forEach(o => loeseOrdnerAuf(o)); } },
       { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "slot", id: ids[ids.length - 1] }) },
       { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) },
-    ];
-    const wahlNamen = ids => ids.map(id => slots.gespeichert.find(g => g.id === id)?.name).filter(Boolean).join(", ");
+    ]; };
+    const wahlNamen = ids => ids.map(id => { const o = (slots.ordner || []).find(y => y.id === id); return o ? `📁 ${o.name}` : slots.gespeichert.find(g => g.id === id)?.name; }).filter(Boolean).join(", ");
     const einzelMenue = x => [
       { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
       { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: x.id, name: kopieName(x.name), kopie: true }) },
@@ -494,6 +518,8 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     ];
     // Auswahl-Tafel: ein Quiz → ihr Menü, mehrere → Aktionen für die Auswahl
     const tafelInhalt = ids => {
+      const o = ids.length === 1 && (slots.ordner || []).find(y => y.id === ids[0]);
+      if (o) return { text: `📁 ${o.name}`, aktionen: [...ordnerMenue(o, kinderVon(o.id)), { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) }] };
       const x = ids.length === 1 && slots.gespeichert.find(g => g.id === ids[0]);
       if (x) return { text: x.name, aktionen: [...einzelMenue(x).filter(a => a.label !== "☑ Auswählen"), { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "slot", id: x.id }) }, { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) }] };
       return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: wahlMenue(ids) } : { text: "Nichts ausgewählt – Quiz antippen", aktionen: [] };
@@ -558,23 +584,18 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
           </button>
         ) : x.istOrdner ? (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-ordner-id={x.id} data-kachel-geste="ordner" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined}
-            className={`slot-chip belegt raster-chip ordner-kachel${slotRef?.typ === "gespeichert" && kinder.some(k => k.id === slotRef.id) ? " ordner-aktiv" : ""}`}
+            data-multi-nr={multiNr || undefined} data-auswahl-durchlass
+            className={`slot-chip belegt raster-chip ordner-kachel${slotRef?.typ === "gespeichert" && kinder.some(k => k.id === slotRef.id) ? " ordner-aktiv" : ""}${multiNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) ? " kachel-gewaehlt" : ""}`}
             data-heute={heuteP}
             style={{position:"relative", ...(heuteP > 0 ? { backgroundImage: `linear-gradient(to right, var(--heute-farbe) ${heuteP}%, transparent ${heuteP}%)` } : {})}}
-            onClick={() => { if (slotGezogenRef.current) { slotGezogenRef.current = false; return; } if (!multiAuswahl) setSlotOrdner(x.id); }}
-            {...tt(`Ordner „${x.name}“ mit ${kinder.length} Quiz – antippen öffnet ihn`, multiAuswahl ? [] : [
-              { label: "📂 Öffnen", fn: () => setSlotOrdner(x.id) },
-              ...(kinder.length >= 2 ? [{ label: `🧩 Multiquiz des Ordners (${kinder.length})`, fn: () => tab === "quiz" ? starteMultiquiz(kinder.map(k => k.id)) : stelleMultiquizEin(kinder.map(k => k.id)) }] : []),
-              { label: "✎ Umbenennen", fn: () => setOrdnerUmbenennen({ id: x.id, name: x.name }) },
-              { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl([x.id]); } },
-              { label: "📁 In Ordner…", fn: () => setInGruppe({ ids: [x.id], name: "" }) },
-              ...(ordnerOffen ? [{ label: "↑ Aus dem Ordner", fn: () => verschiebeInOrdner([x.id], hoch) }] : []),
-              ...(ordnerPfad(slots.ordner, x.id).length < ORDNER_TIEFE_MAX ? [{ label: "📁 Neuer Ordner darin", fn: () => setInGruppe({ ids: [], name: "", eltern: x.id }) }] : []),
-              (kinder.length || (slots.ordner || []).some(o => o.ordner === x.id)) ? { label: "📤 Ordner auflösen", fn: () => loeseOrdnerAuf(x.id) } : { label: "🗑 Ordner löschen", gefahr: true, fn: () => loeseOrdnerAuf(x.id) },
-            ], { langText: `📁 ${x.name}`,
-                 beimZeigen: (px, py) => { slotZiehenRef.current = { id: x.id, x: px, y: py, aktiv: false, langdruck: true }; } })}>
+            onClick={() => { if (slotGezogenRef.current) { slotGezogenRef.current = false; return; } setSlotOrdner(x.id); }}   // 234: öffnen – die Auswahl endet (Ebene wechselt)
+            {...(() => {
+              const tafel = tafelInhalt(multiAuswahl ? wahlMit(x) : [x.id]);
+              return tt(`Ordner „${x.name}“ mit ${kinder.length} Quiz – antippen öffnet ihn; kurz halten: auswählen (zählt mit seinem ganzen Inhalt); lang halten: verschieben`, tafel.aktionen,
+                { langText: tafel.text, auswahl: auswahlTafel("slot"), beimMenue: () => wahlUmschaltenRef.current("slot", x.id), eigeneGeste: true });
+            })()}>
             {inhalt}
-            {null}
+            {multiNr ? <span className="auswahl-nr">{multiNr}</span> : null}
           </button>
         ) : (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-multi-nr={multiNr || undefined} data-auswahl-durchlass
@@ -582,18 +603,18 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
             data-heute={heuteP}
             className={`slot-chip belegt raster-chip${
               multiNr || teilNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) || (!multiAuswahl && (slotVorschau ? slotVorschau.typ === "gespeichert" && slotVorschau.id === x.id : slotRef?.typ === "gespeichert" && slotRef?.id === x.id)) ? " kachel-gewaehlt" : ""}${blitzt(`slot:${x.id}`)}`}
-            data-vorschau={slotVorschau?.typ === "gespeichert" && slotVorschau.id === x.id ? "" : undefined}
+            data-vorschau={(slotVorschau?.typ === "gespeichert" && slotVorschau.id === x.id) || (multiAuswahl?.length === 1 && multiAuswahl[0] === x.id) ? "" : undefined}
             style={{...chipStil('gespeichert', x.id, slotRef), position:"relative",
               ...(heuteP > 0 ? { backgroundImage: `linear-gradient(to right, var(--heute-farbe) ${heuteP}%, transparent ${heuteP}%)` } : {})}}
             onClick={() => multiAuswahl
-              ? (schliesseInfo(), auswahlTafelRef.current = null, setMultiAuswahl(null), setBlaettern(true), leuchte(`slot:${x.id}`, BLITZ_MS / 2), setSlotVorschauListe(false), setTimeout(() => setSlotVorschau({ typ: "gespeichert", id: x.id }), 0))
+              ? (auswahlTafelRef.current = "slot", setSlotVorschauListe(false), setMultiAuswahl([x.id]), leuchte(`slot:${x.id}`, BLITZ_MS / 2))   // 234: Auswahl beginnt neu mit dieser Kachel
               : blaettern ? (leuchte(`slot:${x.id}`, BLITZ_MS / 2), setSlotVorschauListe(false), setSlotVorschau({ typ: "gespeichert", id: x.id }))
               : uebernimmSlots([x.id])}   // 192: antippen übernimmt sofort – außer im Blätter-Modus (nach einem Lang-Druck)
             {...(() => {
-              // Lang-Druck (Maus: Rechtsklick): Quiz kommt in die Auswahl, die Tafel bleibt unten offen (weitere antippen wählt mit aus);
-              // Touch: Haltestufen (kurz halten + ziehen verschiebt, lang halten + fahren wählt aus)
+              // Rechtsklick: Quiz kommt in die Auswahl (bzw. heraus), die Tafel bleibt unten offen;
+              // Touch (234): kurz halten wählt aus (weiterfahren sammelt ein), lang halten verschiebt
               const tafel = tafelInhalt(multiAuswahl ? wahlMit(x) : [x.id]);
-              return tt(`${x.name} – antippen: laden (nach einem Lang-Druck: nur auswählen, laden mit dem grünen Knopf); kurz halten: auswählen; lang halten: Mehrfach-Auswahl (darin kurz halten: dazu/heraus, lang halten: übernehmen)`, tafel.aktionen,
+              return tt(`${x.name} – antippen: laden; kurz halten: auswählen (weitere kurz halten: dazu/heraus, weiterfahren: einsammeln; übernehmen mit dem grünen Kopf); lang halten: verschieben`, tafel.aktionen,
                { langText: tafel.text, auswahl: auswahlTafel("slot"),
                  beimMenue: () => wahlUmschaltenRef.current("slot", x.id),
                  eigeneGeste: true });

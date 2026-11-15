@@ -77,10 +77,11 @@ await page.evaluate(() => [...document.querySelectorAll(".tab")].find(b => /Stat
 ok(await tafel() !== null && await page.$("[data-slot-id]"), "Tippen daneben (Statistik-Tab) bewirkt nichts, Tafel bleibt");
 await tafelZu();
 ok(!(await tafel()) && await gewaehlt() === "", "„✕ Auswahl beenden“ beendet die Auswahl");
-// antippen in der Auswahl: Einzelauswahl
+// 234: antippen in der Auswahl – sie beginnt neu mit dieser Kachel
 await kontext(kachel("s1")); await kontext(kachel("s2"));
 await page.click(kachel("s3")); await sleep(300);
-ok(!(await tafel()) && await gewaehlt() === "" && await page.$('[data-slot-laden="gespeichert:s3"]'), "antippen: Auswahl ersetzt durch Teil 3 (Einzelauswahl, Tafel zu)");
+ok(await gewaehlt() === "s3" && await page.$('[data-slot-laden="gespeichert:s3"]'), `antippen: Auswahl beginnt neu mit Teil 3 (${await gewaehlt()})`);
+await tafelZu();
 
 // ── 167: kein Einsammeln von einer freien Stelle mehr – stattdessen „↔ Von–Bis“ (spaltenweise) ──
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
@@ -104,36 +105,41 @@ await finger("touchStart", h.x, h.y); await sleep(80);
 for (let i = 1; i <= 4; i++) { await finger("touchMove", h.x, h.y + i * 15); await sleep(30); }
 await finger("touchEnd"); await sleep(400);
 ok(!(await tafel()) && await gewaehlt() === "" && !(await page.$("[data-wahl-fertig]")) && !(await page.$("[data-slot-fertig]")), "sofort gewischt: weder verschoben noch ausgewählt");
-// lang halten und über weitere Kacheln fahren: auswählen
+// 234: kurz halten und über weitere Kacheln fahren: einsammeln
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 h = await mitte(kachel("s1")); const h3 = await mitte(kachel("s3"));
 await finger("touchStart", h.x, h.y); await sleep(350);
-ok(await page.$(`[data-angehoben][data-slot-id="s1"]`), "nach 0,25 s: Kachel angehoben");
-await sleep(1000);
-ok(!(await page.$("[data-angehoben]")), "nach 1,2 s: ausgewählt statt angehoben");
+ok(await page.$(`${kachel("s1")}.kachel-gewaehlt`) && !(await page.$("[data-angehoben]")), "nach 0,25 s: Kachel eingefärbt (noch nicht angehoben)");
 for (let i = 1; i <= 8; i++) { await finger("touchMove", h.x, h.y + (h3.y - h.y) * i / 8); await sleep(40); }
 await finger("touchEnd"); await sleep(400);
-ok(await gewaehlt() === "s1,s2,s3", `lang halten + fahren: Teil 1–3 ausgewählt (${await gewaehlt()})`);
+ok(await gewaehlt() === "s1,s2,s3", `kurz halten + fahren: Teil 1–3 ausgewählt (${await gewaehlt()})`);
 ok(/^3 Quiz ausgewählt/.test(await tafel() || ""), "danach Auswahl-Tafel „3 ausgewählt“");
 ok(!(await page.$("[data-slot-fertig]")) || await page.$("[data-wahl-fertig]"), "kein Verschieben-Modus");
 await tafelZu();
-// lang halten, loslassen: Tafel mit dem Menü der Kachel
-await finger("touchStart", h.x, h.y); await sleep(1450); await finger("touchEnd"); await sleep(400);
-ok((await tafel())?.startsWith("Teil 1") && await gewaehlt() === "s1", `lang halten + loslassen: Tafel „Teil 1“, nur Teil 1 ausgewählt (${await gewaehlt()})`);
-ok(await page.evaluate(() => !document.querySelector("[data-slot-kopf-name]") || document.querySelector("[data-slot-kopf-name]").textContent.trim() !== "Teil 1"), "lang halten lädt das Quiz nicht");
+// kurz halten, loslassen: Tafel mit dem Menü der Kachel
+await finger("touchStart", h.x, h.y); await sleep(450); await finger("touchEnd"); await sleep(400);
+ok((await tafel())?.startsWith("Teil 1") && await gewaehlt() === "s1", `kurz halten + loslassen: Tafel „Teil 1“, nur Teil 1 ausgewählt (${await gewaehlt()})`);
+ok(await page.evaluate(() => !document.querySelector("[data-slot-kopf-name]") || document.querySelector("[data-slot-kopf-name]").textContent.trim() !== "Teil 1"), "kurz halten lädt das Quiz nicht");
 await tafelZu();
+// lang halten ohne Bewegung: angehoben, danach nichts ausgewählt
+await finger("touchStart", h.x, h.y); await sleep(1250);
+ok(await page.$(`[data-angehoben][data-slot-id="s1"]`), "nach 1,0 s: Kachel angehoben (bereit zum Verschieben)");
+await finger("touchEnd"); await sleep(400);
+ok(await gewaehlt() === "" && !(await tafel()), "lang halten + loslassen: nichts ausgewählt");
 
 // ausgewählte Kachel lang halten und ziehen: die ganze Auswahl wandert (Teil 1 + 2 in die freie rechte Spalte)
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 h = await mitte(kachel("s1")); const h2 = await mitte(kachel("s2"));
-await finger("touchStart", h.x, h.y); await sleep(1450);
+await finger("touchStart", h.x, h.y); await sleep(450);
 for (let i = 1; i <= 4; i++) { await finger("touchMove", h.x, h.y + (h2.y - h.y) * i / 4); await sleep(40); }
 await finger("touchEnd"); await sleep(400);
 ok(await gewaehlt() === "s1,s2", `Teil 1 + 2 ausgewählt (${await gewaehlt()})`);
 h = await mitte(kachel("s1"));   // der Auswahl-Hinweis verschiebt das Raster
 await finger("touchStart", h.x, h.y); await sleep(1450);
 ok(await page.$(`[data-angehoben][data-slot-id="s1"]`), "ausgewählte Kachel lang gehalten: bleibt angehoben (kein Einsammeln)");
-await finger("touchMove", h.x + 30, h.y); await sleep(250);   // Ziehen beginnt – 196: rechts kommt eine freie Spalte dazu
+await finger("touchMove", h.x + 30, h.y); await sleep(250);   // Ziehen beginnt
+const randX = await page.evaluate(() => document.querySelector(".slot-raster[data-raster-spalten-anz]:not([data-quiz-listen-raster])").getBoundingClientRect().right);
+await finger("touchMove", randX - 4, h.y); await sleep(250);   // 231: erst am rechten Rand kommt eine freie Spalte dazu
 const zeile = (await slots()).gespeichert.find(x => x.id === "s1").platz.z;
 const rechts = await mitte(`[data-raster-zelle="${zeile}|1"]`);
 for (let i = 1; i <= 8; i++) { await finger("touchMove", h.x + (rechts.x - h.x) * i / 8, h.y + (rechts.y - h.y) * i / 8); await sleep(40); }
@@ -150,7 +156,7 @@ await page.reload(); await page.waitForSelector(kachel("s3")); await sleep(1200)
 const ziehe = async (von, nach, warten) => {
   await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
   const p = await mitte(von);
-  await finger("touchStart", p.x, p.y); await sleep(400);   // kurz halten: angehoben
+  await finger("touchStart", p.x, p.y); await sleep(1200);   // 234: lang halten: angehoben
   await finger("touchMove", p.x + 12, p.y + 12); await sleep(300);   // Ziehen beginnt (Verschieben-Modus: Raster kann sich verschieben)
   const q = await mitte(nach);
   for (let i = 1; i <= 8; i++) { await finger("touchMove", p.x + (q.x - p.x) * i / 8, p.y + (q.y - p.y) * i / 8); await sleep(40); }

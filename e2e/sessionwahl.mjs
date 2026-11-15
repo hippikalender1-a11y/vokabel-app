@@ -64,8 +64,8 @@ ok(info.kreise === 0, "163: im Quiz-Tab keine Ü/D/A-Kreise in der Info");
 await klick("[data-vorschau-vokabeln]");
 const liste = await page.evaluate(() => [...document.querySelectorAll("[data-vorschau-vokliste] > div > *")].map(e => e.dataset.vorschauNr || `L${e.dataset.vorschauLuecke}`).join(","));
 ok(liste === "1,2,3,4,L5-7,8,9,L10-10", `Vokabeln: nur enthaltene mit Nr., Lücken als Trennzeile (${liste})`);
-// andere Kachel antippen: wechselt
-await kurzHalten(page, '[data-slot-id="g_2"]');
+// 234: andere Kachel antippen (in der Auswahl): sie beginnt neu mit dieser
+await klick('[data-slot-id="g_2"]');
 ok(/Ganze Liste laden/.test(await kopf() || "") && !(await page.$("[data-vorschau-vokliste]")), `andere Kachel: wechselt, Liste wieder zu (${await kopf()})`);
 ok(/alle 10/.test(await page.evaluate(() => document.querySelector("[data-vorschau-listen]")?.innerText)), "ganze Liste: „alle 10“");
 // laden über den Kopf
@@ -122,16 +122,17 @@ ok(/2 ausgewählt/.test(await kopf() || "") && await page.$("[data-info-menue]")
 if (await page.$("[data-slot-info-zu]")) await klick("[data-slot-info]");
 ok(/2 Quiz ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText || "")) && /Vokabeln/.test(await page.evaluate(() => document.querySelector("[data-vorschau-zahlen]")?.innerText || "")), "148: Info zeigt die Auswahl zusammengefasst");
 await rechts('[data-slot-id="g_2"]');
-ok(/1 ausgewählt/.test(await kopf() || ""), "lang drücken auf ausgewählte Kachel: heraus");
+ok(/laden$/.test(await kopf() || "") && (await page.$$("[data-multi-nr]")).length === 1, `lang drücken auf ausgewählte Kachel: heraus (${await kopf()})`);
 await rechts('[data-slot-id="g_2"]');
 await klick('[data-slot-id="g_1"]');
-ok(await kopf() === "Stücke laden" && !(await page.$("[data-multi-nr]")) && !(await page.$("[data-info-menue]")), `antippen: Einzelauswahl, Menü zu (${await kopf()})`);
+ok(await kopf() === "Stücke laden" && await page.$('[data-slot-id="g_1"][data-multi-nr="1"]') && (await page.$$("[data-multi-nr]")).length === 1, `234: antippen – Auswahl beginnt neu mit „Stücke“ (${await kopf()})`);
 // 228: eine gewählte Kachel bleibt beim Start der Mehrfach-Auswahl als Nr. 1 drin
 await rechts('[data-slot-id="g_2"]');
 ok(/2 ausgewählt/.test(await kopf() || "") && await page.$('[data-slot-id="g_1"][data-multi-nr="1"]') && await page.$('[data-slot-id="g_2"][data-multi-nr="2"]'), `228: „Stücke“ bleibt Nr. 1, „Ganze Liste“ Nr. 2 (${await kopf()})`);
 // 153: die letzte herausgenommen → bleibt als Einzelauswahl
 await rechts('[data-slot-id="g_1"]'); await rechts('[data-slot-id="g_2"]');
-ok(await kopf() === "Ganze Liste laden" && !(await page.$("[data-info-menue]")), `153: letzte herausgenommen – Einzelauswahl bleibt (${await kopf()})`);
+ok(!(await page.$("[data-multi-nr]")) && !(await page.$("[data-info-menue]")), `234: letzte herausgenommen – die Auswahl endet (${await kopf()})`);
+await rechts('[data-slot-id="g_2"]');   // wieder eine gewählt (Info, Laden)
 // 155: Antippen der Info-Fläche klappt sie ein und aus
 await klick("[data-slot-info-name]");
 ok(await page.$("[data-slot-info-zu]"), "155: Antippen der Fläche klappt die Info ein");

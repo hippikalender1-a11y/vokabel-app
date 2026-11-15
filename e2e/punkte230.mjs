@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 import { zuListen } from "./hilfen.mjs";
 
 // 230: übernommene Mehrfach-Auswahl (Multiquiz) ohne Listen-/Bereichsauswahl;
-// 232: Kachel beim Anheben eingefärbt und deutlich angehoben, Schwelle 1,2 s, Rückmeldung wählbar (Einstellungen › App › Halten)
+// 232: Kachel deutlich angehoben, Rückmeldung wählbar (Einstellungen › App › Halten); 234: kurz halten färbt ein/wählt aus, lang (1,0 s) hebt an
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
@@ -57,25 +57,30 @@ await auswahlAuf();
 await page.evaluate(() => { window._vib = []; navigator.vibrate = m => { window._vib.push(JSON.stringify(m)); return true; }; });
 const hinter = sel => page.evaluate(s => getComputedStyle(document.querySelector(s)).backgroundColor, sel);
 
-// ── 232: schon beim Anheben (kurzes Halten) eingefärbt ──
+// ── 232/234: kurz halten färbt die Kachel ein (Auswahl), noch nicht angehoben ──
 const vorher = await hinter('[data-slot-id="s2"]');
 let p = await mitte('[data-slot-id="s2"]'); await sleep(150);
 await finger("touchStart", p.x, p.y); await sleep(450);
-const gehoben = await page.evaluate(() => { const el = document.querySelector('[data-slot-id="s2"]'); return { an: el.hasAttribute("data-angehoben"), bg: getComputedStyle(el).backgroundColor, tf: getComputedStyle(el).transform }; });
-ok(gehoben.an && gehoben.bg !== vorher, `232: beim Anheben schon eingefärbt (${vorher} → ${gehoben.bg})`);
-ok(gehoben.tf !== "none", `232: Kachel sichtbar angehoben (${gehoben.tf})`);
+const kurz = await page.evaluate(() => { const el = document.querySelector('[data-slot-id="s2"]'); return { an: el.hasAttribute("data-angehoben"), bg: getComputedStyle(el).backgroundColor }; });
+ok(!kurz.an && kurz.bg !== vorher, `234: kurz gehalten – eingefärbt, nicht angehoben (${vorher} → ${kurz.bg})`);
 await finger("touchEnd"); await sleep(450);
 ok(await page.evaluate(() => window._vib.length) === 0, "232: kurzes Halten – keine Vibration der App");
-
-// ── 232: Schwelle 1,2 s – nach 1 s noch nicht in der Mehrfach-Auswahl ──
-p = await mitte('[data-slot-id="s1"]'); await sleep(150);
-await finger("touchStart", p.x, p.y); await sleep(1000);
-ok(!(await page.evaluate(() => window._vib.length)) && !(await page.$("[data-multi-nr]")), "232: nach 1,0 s noch keine Mehrfach-Auswahl");
-await sleep(450);
-await finger("touchEnd"); await sleep(450);
 let k = await kopf();
-ok(k.multi === "s2,s1", `232/228: nach 1,2 s Mehrfach-Auswahl (Teil 2 Nr. 1, Teil 1 Nr. 2) (${k.multi})`);
+ok(k.multi === "s2", `234: losgelassen – „Teil 2“ ausgewählt (${k.multi})`);
+
+// ── 232/234: lang halten (1,0 s) hebt deutlich an, Doppel-Tipp; die Auswahl bleibt ──
+p = await mitte('[data-slot-id="s1"]'); await sleep(150);
+await finger("touchStart", p.x, p.y); await sleep(800);
+ok(!(await page.evaluate(() => window._vib.length)) && !(await page.$("[data-angehoben]")), "234: nach 0,8 s noch nicht angehoben");
+await sleep(450);
+const lang = await page.evaluate(() => { const el = document.querySelector('[data-slot-id="s1"]'); return { an: el.hasAttribute("data-angehoben"), tf: getComputedStyle(el).transform }; });
+ok(lang.an && lang.tf !== "none", `232: nach 1,0 s sichtbar angehoben (${lang.tf})`);
+await finger("touchEnd"); await sleep(450);
 ok(await page.evaluate(() => window._vib.join(" ")) === "[8,70,8]", `232: Rückmeldung Doppel-Tipp (${await page.evaluate(() => window._vib.join(" "))})`);
+ok((await kopf()).multi === "s2", `234: lang halten ohne Bewegung ändert die Auswahl nicht (${(await kopf()).multi})`);
+await halte('[data-slot-id="s1"]', 450);
+k = await kopf();
+ok(k.multi === "s2,s1", `kurz halten nimmt „Teil 1“ dazu (${k.multi})`);
 
 // ── 230: übernommene Mehrfach-Auswahl (Multiquiz) ohne Listen-/Bereichsauswahl ──
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]")?.click()); await sleep(700);

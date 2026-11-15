@@ -123,7 +123,7 @@ await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 const m = await page.evaluate(() => { const r = document.querySelector('[data-slot-id="g_fr"]').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await finger("touchStart", m.x, m.y); await sleep(550);
 await page.evaluate(m => { const el = document.elementFromPoint(m.x, m.y); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: m.x, clientY: m.y })); }, m);
-await sleep(950);
+await sleep(150);   // 234: kurz halten (unter 1,0 s) wählt aus
 await finger("touchEnd"); await sleep(500);
 ok(await page.$("[data-auswahl-tafel]") && await gewaehlt() === "g_fr", `171: nach dem Loslassen bleibt die Tafel offen, „Französisch“ ausgewählt (${await gewaehlt()})`);
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "✕ Auswahl beenden")?.click()); await sleep(300);

@@ -270,14 +270,15 @@ export function benenneSlotUm(app, id, name) {
 
 // Auswahl löschen (nach Rückfrage): Konfigurationen bzw. Listen mit Vokabeln
 export function loescheAuswahl(app) {
-  const { aktiveListeId, auswahlLoeschen, listenIndex, loescheSlotEintrag, setAktiveListe, setAktiveListeId, setAnsicht, setAuswahlLoeschen, setListenWahl, setMultiAuswahl, speichereIndex } = app;
+  const { aktiveListeId, auswahlLoeschen, listenIndex, loescheSlotEintrag, loeseListenOrdnerAuf, loeseOrdnerAuf, setAktiveListe, setAktiveListeId, setAnsicht, setAuswahlLoeschen, setListenWahl, setMultiAuswahl, speichereIndex } = app;
     const z = auswahlLoeschen;
     setAuswahlLoeschen(null);
     if (!z) return;
-    if (z.art === "slot") { z.ids.forEach(id => loescheSlotEintrag("gespeichert", id)); setMultiAuswahl(null); return; }
+    if (z.art === "slot") { z.ids.forEach(id => loescheSlotEintrag("gespeichert", id)); (z.ordner || []).forEach(o => loeseOrdnerAuf(o)); setMultiAuswahl(null); return; }   // 234: Ordner nur auflösen
     z.ids.forEach(id => lsDel(SK.liste(id)));
     speichereIndex(listenIndex.filter(l => !z.ids.includes(l.id)));
     if (z.ids.includes(aktiveListeId)) { setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null); }
+    (z.ordner || []).forEach(o => loeseListenOrdnerAuf(o));   // 234: Ordner nur auflösen
     setListenWahl(null);
   }
 

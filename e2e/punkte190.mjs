@@ -72,7 +72,7 @@ await halte('[data-slot-id="s1"]', 60); await sleep(500);
 let k = await kopf();
 ok(k.zustand !== "offen" && /Teil 1/.test(k.name), `antippen lädt „Teil 1“ sofort, Auswahl zu (${JSON.stringify(k)})`);
 
-// kurz halten: nur auswählen (Blätter-Modus) – danach wechselt antippen nur die Karte
+// 234: kurz halten wählt aus (nicht geladen) – antippen beginnt die Auswahl neu
 await auswahlAuf();
 await halte('[data-slot-id="s2"]', 450);
 k = await kopf();
@@ -81,22 +81,18 @@ const haken = await page.evaluate(() => document.querySelector("[data-slot-info]
 ok(/✓ \d+ % gelernt$/.test(haken || ""), `201: Info „✓ n % gelernt“ (${haken})`);
 await halte('[data-slot-id="s3"]', 60);
 k = await kopf();
-ok(k.zustand === "offen" && k.laden === "gespeichert:s3", `danach antippen wechselt nur die Karte (${JSON.stringify(k)})`);
+ok(k.zustand === "offen" && k.laden === "gespeichert:s3", `danach antippen: Auswahl neu mit „Teil 3“ (${JSON.stringify(k)})`);
 
-// lang halten: Mehrfach-Auswahl (228: die gewählte „Teil 3“ bleibt als Nr. 1 drin); kurz halten: dazu;
-// 227: lang halten in der Mehrfach-Auswahl tut nichts – übernommen wird über den grünen Kopf
-await halte('[data-slot-id="s1"]', 1500);
+// 234: weiteres kurz halten nimmt dazu; lang halten (ohne Bewegung) ändert die Auswahl nicht – übernommen wird über den grünen Kopf
+await halte('[data-slot-id="s1"]', 450);
 k = await kopf();
-ok(k.multi === "s3,s1", `228: lang halten startet die Mehrfach-Auswahl, „Teil 3“ bleibt Nr. 1, „Teil 1“ Nr. 2 (${k.multi})`);
+ok(k.multi === "s3,s1", `kurz halten nimmt „Teil 1“ dazu, „Teil 3“ bleibt Nr. 1 (${k.multi})`);
 await halte('[data-slot-id="s2"]', 450);
 k = await kopf();
 ok(k.multi === "s3,s1,s2", `darin kurz halten nimmt „Teil 2“ dazu (${k.multi})`);
 await halte('[data-slot-id="s3"]', 1500); await sleep(400);
 k = await kopf();
-ok(k.zustand === "offen" && k.multi === "s3,s1,s2", `227: lang halten in der Mehrfach-Auswahl: keine Funktion (${JSON.stringify(k)})`);
-await halte('[data-slot-id="s1"]', 1500); await sleep(400);
-k = await kopf();
-ok(k.zustand === "offen" && k.multi === "s3,s1,s2", `227: auch auf eine gewählte Kachel: keine Funktion (${k.multi})`);
+ok(k.zustand === "offen" && k.multi === "s3,s1,s2", `lang halten in der Mehrfach-Auswahl: keine Änderung (${JSON.stringify(k)})`);
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]")?.click()); await sleep(500);
 k = await kopf();
 ok(k.zustand !== "offen" && /Multiquiz/.test(k.name), `grüner Kopf übernimmt die Auswahl als Multiquiz (${JSON.stringify(k)})`);

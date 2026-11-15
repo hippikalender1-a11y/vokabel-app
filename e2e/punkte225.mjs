@@ -38,25 +38,23 @@ await page.reload(); await sleep(800);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
 ok(!(await page.$('[data-einst-kopf="listen"]')) && await page.$('[data-einst-kopf="sicherung"]'), "225: Einstellungen ohne „Listen“, mit „Sicherung“");
 
-// ── 228: kurz gehaltene Liste bleibt als Nr. 1 drin ──
+// ── 234: kurz halten beginnt die Listen-Auswahl, weiteres kurz halten nimmt dazu/heraus ──
 await zuListen(page);
 await halte('[data-liste-id="l_a"]', 450);
-ok(await gewaehlt() === "l_a" && await wahl() === "", `kurz halten wählt „Unit A“ (ohne Mehrfach-Auswahl) (${await gewaehlt()})`);
-await halte('[data-liste-id="l_b"]', 1500);
-ok(await wahl() === "l_a,l_b", `228: lang halten startet die Mehrfach-Auswahl, „Unit A“ Nr. 1, „Unit B“ Nr. 2 (${await wahl()})`);
-ok(/☑ 2 Listen ausgewählt/.test((await kopf()).text || ""), `226: grüner Kopf „2 Listen ausgewählt“ (${(await kopf()).text})`);
+ok(await wahl() === "l_a" && /📋 Unit A laden/.test((await kopf()).text || ""), `kurz halten: Auswahl mit „Unit A“, Kopf „📋 Unit A laden“ (${await wahl()} | ${(await kopf()).text})`);
+await halte('[data-liste-id="l_b"]', 450);
+ok(await wahl() === "l_a,l_b", `kurz halten nimmt „Unit B“ dazu (${await wahl()})`);
+ok(/☑ 2 ausgewählt/.test((await kopf()).text || ""), `226: grüner Kopf „☑ 2 ausgewählt“ (${(await kopf()).text})`);
 await halte('[data-liste-id="l_c"]', 450);
 ok(await wahl() === "l_a,l_b,l_c", `226: darin kurz halten nimmt „Unit C“ dazu (${await wahl()})`);
 await halte('[data-liste-id="l_b"]', 450);
 ok(await wahl() === "l_a,l_c", `kurz halten auf eine gewählte nimmt sie heraus (${await wahl()})`);
-await halte('[data-liste-id="l_b"]', 450);
 
-// ── 227: langer Lang-Druck in der Mehrfach-Auswahl tut nichts ──
+// ── 234: lang halten (ohne Bewegung) ändert die Auswahl nicht ──
 await halte('[data-liste-id="l_c"]', 1500);
-ok(await wahl() === "l_a,l_c,l_b" && (await kopf()).zustand === "offen", `227: lang halten auf eine gewählte: keine Funktion (${await wahl()})`);
-await halte('[data-liste-id="l_b"]', 450);
+ok(await wahl() === "l_a,l_c" && (await kopf()).zustand === "offen", `lang halten auf eine gewählte: keine Änderung (${await wahl()})`);
 await halte('[data-liste-id="l_b"]', 1500);
-ok(await wahl() === "l_a,l_c" && (await kopf()).zustand === "offen", `227: lang halten auf eine nicht gewählte: keine Funktion (${await wahl()})`);
+ok(await wahl() === "l_a,l_c" && (await kopf()).zustand === "offen", `lang halten auf eine nicht gewählte: keine Änderung (${await wahl()})`);
 
 // ── 226: grüner Kopf übernimmt → neues, ungespeichertes Quiz aus den Listen ──
 await tippe("[data-wahl-fertig]");
@@ -72,8 +70,8 @@ await zuListen(page);
 await tippe('[data-liste-id="l_a"]');   // antippen: lädt „Unit A“ als Quiz
 await zuListen(page);
 ok(await gewaehlt() === "l_a", `geladene „Unit A“ ist markiert (${await gewaehlt()})`);
-await halte('[data-liste-id="l_b"]', 1500);
-ok(await wahl() === "l_b", `228: das geladene Quiz kommt nicht mit (nur „Unit B“) (${await wahl()})`);
+await halte('[data-liste-id="l_b"]', 450);
+ok(await wahl() === "l_b", `das geladene Quiz kommt nicht mit (nur „Unit B“) (${await wahl()})`);
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

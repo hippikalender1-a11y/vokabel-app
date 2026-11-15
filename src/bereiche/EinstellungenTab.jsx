@@ -421,7 +421,7 @@ export function EinstellungenTab(app) {
               { k: "info", label: "Info", text: "📖 Anleitung", attrs: { "data-info-oeffnen": true }, hilfe: "Übersicht, Konzept und Anleitung der App öffnen",
                 aktion: () => schalteEinstBereich("info") },
               { k: "haptik", label: "Halten", text: (HALTEN_HAPTIK[einstellungen.haltenHaptik] || HALTEN_HAPTIK.doppel).label,
-                hilfe: "Rückmeldung am Finger, wenn langes Halten auf einer Kachel die Mehrfach-Auswahl startet (Android; auf dem iPhone ohne Vibration)" },
+                hilfe: "Rückmeldung am Finger, wenn langes Halten eine Kachel zum Verschieben anhebt (Android; auf dem iPhone ohne Vibration)" },
             ])}
             {einstUnter === "haptik" && (
               <div className="karte" data-haptik-einst style={{padding:"10px 16px"}}>

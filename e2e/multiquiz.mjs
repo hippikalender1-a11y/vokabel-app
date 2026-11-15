@@ -62,7 +62,7 @@ await langDruck('[data-slot-id="g_a"]');
 const menue = await aktionen();
 console.log("     Menü:", menue.join(" | "));
 ok(!menue.includes("☑ Auswählen") && !menue.some(m => m.startsWith("🧩")), "Lang-Druck auf eine Kachel: ausgewählt, Menü ohne Multiquiz (erst ab zwei)");
-ok(/1 ausgewählt/.test(await hinweis() || "") && await page.$("[data-wahl-fertig]"), `Auswahl: „1 ausgewählt“, grüner Kopf (${await hinweis()})`);
+ok(/Teil A laden/.test(await hinweis() || "") && await page.$("[data-wahl-fertig]"), `Auswahl: grüner Kopf „Teil A laden“ (234) (${await hinweis()})`);
 await langDruck('[data-slot-id="g_b"]');
 ok(/2 ausgewählt · 5 Vokabeln/.test(await hinweis() || ""), `Lang-Druck auf Teil B: dazu – 2 ausgewählt · 5 Vokabeln (${await hinweis()})`);
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId + ":" + b.dataset.multiNr).join(",")) === "g_a:1,g_b:2", "Kacheln nummeriert (1, 2)");
@@ -70,7 +70,7 @@ const wahlMenue = await aktionen();
 console.log("     Auswahl-Menü:", wahlMenue.join(" | "));
 ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|📁 In Ordner… (2)|⇄ Verschieben|🗑 Löschen (2)|↔ Von–Bis|✕ Auswahl beenden", "Menü der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
 await langDruck('[data-slot-id="g_b"]');
-ok(/1 ausgewählt/.test(await hinweis() || ""), "nochmal lang drücken nimmt die Kachel heraus");
+ok(/Teil A laden/.test(await hinweis() || ""), "nochmal lang drücken nimmt die Kachel heraus");
 await langDruck('[data-slot-id="g_b"]');
 ok(/2 ausgewählt/.test(await hinweis() || ""), "wieder dazu");
 // grüner Kopf mit 2 Kacheln: Multiquiz einstellen (laden, nicht starten)

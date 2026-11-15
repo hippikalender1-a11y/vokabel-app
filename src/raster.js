@@ -204,12 +204,12 @@ export function zielUnter(x, y) {
 export const GRUPPE_VERWEILEN_MS = 1200;
 // 191: „Alle Quiz“ / „Alle Listen“ im Pfad – gelb wie der Ordner
 export const ORDNER_KNOPF = { background: "var(--ordner)", color: "var(--auf-ordner)", borderColor: "color-mix(in srgb, var(--ordner) 70%, var(--text-stark))", fontWeight: 700 };
-// Kachel-Gesten (Touch): sofort wischen scrollt; so lange halten hebt die Kachel an (ziehen verschiebt) …
-export const KACHEL_ANHEBEN_MS = 250;
-// … und so lange halten wählt sie aus (weiterfahren sammelt weitere ein, loslassen öffnet die Auswahl-Tafel);
-// ist sie schon ausgewählt, bleibt sie angehoben – ziehen verschiebt dann die ganze Auswahl
-export const KACHEL_AUSWAEHLEN_MS = 1200;   // 232: 0,9 → 1,2 s
-// 232: Rückmeldung am Finger, wenn das lange Halten die Mehrfach-Auswahl startet (Einstellungen › App › Halten)
+// 234: Kachel-Gesten (Touch): sofort wischen scrollt; so lange halten färbt die Kachel ein – loslassen wählt sie aus
+// (Auswahl beginnt bzw. dazu/heraus), weiterfahren sammelt weitere ein …
+export const KACHEL_WAEHLEN_MS = 250;
+// … und so lange halten hebt sie an (Rückmeldung am Finger): ziehen verschiebt (ausgewählte: die ganze Auswahl)
+export const KACHEL_ZIEHEN_MS = 1000;
+// 232/234: Rückmeldung am Finger, wenn das lange Halten die Kachel zum Verschieben anhebt (Einstellungen › App › Halten)
 export const HALTEN_HAPTIK = { doppel: { label: "Doppel-Tipp", muster: [8, 70, 8] }, tick: { label: "Tick", muster: [6] },
   kurz: { label: "Vibration", muster: [20] }, aus: { label: "Aus", muster: null } };
 export const haltenHaptik = art => { const m = (HALTEN_HAPTIK[art] || HALTEN_HAPTIK.doppel).muster; if (m) navigator.vibrate?.(m); };

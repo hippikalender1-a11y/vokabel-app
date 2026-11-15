@@ -88,6 +88,7 @@ const info = await page.evaluate(() => document.querySelector("[data-liste-info-
 ok(info === "💬 6 Beispielsätze≈ 6 Synonyme", `202: Info „6 Beispielsätze · 6 Synonyme“ (${info})`);
 
 // ── 209: Knopfzeile der geöffneten Liste ──
+await page.evaluate(() => document.querySelector("[data-info-aktion=\"✕ Auswahl beenden\"]")?.click()); await sleep(250);   // 234: die kurz gehaltene Liste ist ausgewählt
 await kontext('[data-liste-id="liste_1700000000002"]'); await aktion("Liste öffnen"); await sleep(200);   // 225: öffnen über das Menü
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-listen-zeile] .quiz-zeile-label")].map(e => e.textContent.trim()).join("|"));
 ok(knoepfe === "Vokabeln|Beispielsätze|Spalten|Fremdsprache", `209: Vokabeln | Beispielsätze | Spalten | Fremdsprache (${knoepfe})`);

@@ -49,7 +49,7 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 // 1) Lang-Druck: Erklärung = voller Name, Knöpfe getrennt von der Blase
 let p = await mitte("0|0");
 await page.touchscreen.touchStart(p.x, p.y);
-await sleep(1500);
+await sleep(450);   // 234: kurz halten wählt aus (Menü)
 await page.touchscreen.touchEnd();
 await sleep(500);
 const blase = await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText.trim());
@@ -67,10 +67,10 @@ ok(Object.keys(await plaetze()).length === 2 && !(await page.evaluate(() => docu
 // 2) Kurz halten (angehoben) + Ziehen auf freien Platz 2|1 → Verschieben-Modus, Eintrag verschoben
 p = await mitte("0|0");
 await page.touchscreen.touchStart(p.x, p.y);
-await sleep(350);
+await sleep(1200);   // 234: lang halten hebt an (verschieben)
 const angehoben = await page.evaluate(() => !!document.querySelector("[data-angehoben]") && !document.querySelector("[data-info-menue]"));
-await page.touchscreen.touchMove(p.x + 15, p.y + 20);   // sofort weiter: nach 0,6 s würde der Druck auswählen
-ok(angehoben, "Nach kurzem Halten: Kachel angehoben, kein Menü");
+await page.touchscreen.touchMove(p.x + 15, p.y + 20);
+ok(angehoben, "Nach langem Halten: Kachel angehoben, kein Menü");
 await sleep(150);
 ok(!(await page.$('[role="status"]')) && !(await page.$("[data-info-menue]")) && !(await page.$("[data-angehoben]")), "Sobald gezogen wird: keine Erklärung, kein Menü")
 ok(await page.evaluate(() => /Fertig/.test(document.querySelector("[data-slot-fertig]")?.innerText || "")), "… und Verschieben-Modus an");
@@ -86,7 +86,7 @@ ok(pl["Unregelmäßige Verben Kapitel 3 – Wiederholung"] === "2|1", "Lang-Druc
 ok(!(await page.evaluate(() => /Fertig/.test(document.querySelector("[data-slot-fertig]")?.innerText || ""))), "nach dem Ablegen ist der Verschieben-Modus wieder aus");
 p = await mitte("0|1");
 await page.touchscreen.touchStart(p.x, p.y);
-await sleep(1500);
+await sleep(450);   // 234: kurz halten wählt aus (Menü)
 await page.touchscreen.touchEnd();
 await sleep(500);
 await page.evaluate(() => document.querySelector('[data-info-aktion="✎ Umbenennen"]').click());

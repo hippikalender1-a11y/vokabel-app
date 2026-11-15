@@ -59,7 +59,7 @@ await klick("[data-wahl-alle]");
 ok(await anzahl() === "3", "„Alle“: drei ausgewählt");
 ok(await menue() === "📤 Exportieren (3)|🔁 Keine fälligen Vokabeln|⇄ Verschieben|📁 In Ordner… (3)|🗑 Löschen (3)|↔ Von–Bis|✕ Auswahl beenden", `Aktionen für die Auswahl (${await menue()})`);
 await klick('[data-liste-id="l_c"]');
-ok(await anzahl() === null && await page.evaluate(() => document.querySelector('[data-liste-id="l_c"]').classList.contains("kachel-gewaehlt")), "antippen: Mehrfach-Auswahl endet, Unité C bleibt als Einzelauswahl markiert");
+ok(await anzahl() === "1" && await page.evaluate(() => document.querySelector('[data-liste-id="l_c"]').classList.contains("kachel-gewaehlt")), "234: antippen in der Auswahl – sie beginnt neu mit Unité C");
 await langDruck('[data-liste-id="l_a"]');
 ok(await anzahl() === "2" && await page.$('[data-liste-id="l_c"] [data-wahl-nr="1"]') && await page.$('[data-liste-id="l_a"] [data-wahl-nr="2"]'), "228: lang drücken – die vorher gewählte Liste bleibt als Nr. 1 drin (C, A)");
 await aktion("✕ Auswahl beenden");

@@ -91,14 +91,18 @@ export function listenMenue(app, l, imKopf = false) {
 // Mit Sprachfilter rücken die sichtbaren Listen zusammen (Verschieben dann nur unter „Alle“).
 // Aktionen für eine Listen-Auswahl (Lang-Druck auf eine Kachel der Auswahl oder auf den Auswahl-Kopf)
 export function listenWahlMenue(app, ids) {
-  const { faelligAktion, faelligVonListen, listenOrdner, listenOrdnerOffen, oeffneExport, setAuswahlLoeschen, setInGruppe, setListenAuswahl, setListenSortModus, setListenWahl, setVonBis, sprachFilter, verschiebeListenInOrdner } = app;
+  const { faelligAktion, faelligVonListen, listenOrdner, listenOrdnerOffen, loeseListenOrdnerAuf, oeffneExport, setAuswahlLoeschen, setInGruppe, setListenAuswahl, setListenSortModus, setListenWahl, setVonBis, sprachFilter, verschiebeListenInOrdner, wahlListenIds } = app;
+    // 234: Ordner in der Auswahl zählen mit ihrem ganzen Inhalt; Löschen löst sie nur auf
+    const istOrdner = id => listenOrdner.some(o => o.id === id);
+    const listen = wahlListenIds(ids), ordner = ids.filter(istOrdner), eintraege = ids.filter(id => !istOrdner(id));
     return [
-      { label: `📤 Exportieren (${ids.length})`, behalten: true, fn: () => oeffneExport(ids) },
-      ...(() => { const f = faelligVonListen(ids); return faelligAktion(f); })(),
+      ...(listen.length ? [{ label: `📤 Exportieren (${listen.length})`, behalten: true, fn: () => oeffneExport(listen) }] : []),
+      ...(() => { const f = faelligVonListen(listen); return faelligAktion(f); })(),
       ...(sprachFilter !== "alle" ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl(ids); } }]),
       { label: `📁 In Ordner… (${ids.length})`, fn: () => setInGruppe({ art: "liste", ids, name: "" }) },   // 193
       ...(listenOrdnerOffen ? [{ label: `↑ Aus dem Ordner (${ids.length})`, fn: () => verschiebeListenInOrdner(ids, listenOrdner.find(o => o.id === listenOrdnerOffen)?.ordner || null) }] : []),
-      { label: `🗑 Löschen (${ids.length})`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "liste", ids }) },
+      eintraege.length ? { label: `🗑 Löschen (${eintraege.length})${ordner.length ? ` · ${ordner.length} Ordner auflösen` : ""}`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "liste", ids: eintraege, ordner }) }
+        : { label: `📤 Ordner auflösen (${ordner.length})`, fn: () => { setListenWahl(null); ordner.forEach(o => loeseListenOrdnerAuf(o)); } },
       { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "liste", id: ids[ids.length - 1] }) },
       { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) },
     ];
@@ -149,10 +153,12 @@ export function uebernimmListe(app, id) {
 
 // Info-Fläche unter dem Quiz-Kopf: immer das Quiz, die oben steht (angetippt, sonst die geladene bzw. die aktuelle Auswahl)
 export function infoEintrag(app, statistik) {
-  const { aktiverSlot, getSlotEintrag, multiAuswahl, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, sichtbareListen, slotVorschau, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert } = app;
-    if (multiAuswahl?.length === 1) return getSlotEintrag("gespeichert", multiAuswahl[0]);   // eine per Lang-Druck gewählt: ihre Info (voller Name)
-    if (multiAuswahl?.length) return { id: "_wahl", name: `${multiAuswahl.length} Quiz ausgewählt`,
-      multi: multiAuswahl.map(id => ({ id, name: getSlotEintrag("gespeichert", id)?.name || id })) };
+  const { getSlotsData, wahlQuizIds, aktiverSlot, getSlotEintrag, multiAuswahl, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, sichtbareListen, slotVorschau, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert } = app;
+    // 234: Ordner in der Auswahl zählen mit ihrem Inhalt
+    const ordnerVon = id => (getSlotsData().ordner || []).find(o => o.id === id);
+    if (multiAuswahl?.length === 1 && !ordnerVon(multiAuswahl[0])) return getSlotEintrag("gespeichert", multiAuswahl[0]);   // eine gewählt: ihre Info (voller Name)
+    if (multiAuswahl?.length) return { id: "_wahl", name: multiAuswahl.length === 1 ? `📁 ${ordnerVon(multiAuswahl[0]).name}` : `${multiAuswahl.length}${multiAuswahl.some(ordnerVon) ? "" : " Quiz"} ausgewählt`,
+      multi: wahlQuizIds(multiAuswahl).map(id => ({ id, name: getSlotEintrag("gespeichert", id)?.name || id })) };
     const mitKonfig = e => e?.istListe && !e.konfiguration ? { ...e, konfiguration: { listenIds: [e.id], bereichTyp: "alle" } } : e;   // 217
     if (slotVorschau) return mitKonfig(getSlotEintrag(slotVorschau.typ, slotVorschau.id));
     const slot = statistik ? statistikAktiverSlot : aktiverSlot;

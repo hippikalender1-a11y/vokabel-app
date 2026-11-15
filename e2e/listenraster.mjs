@@ -63,13 +63,13 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); let ziel = await mitte("0|0");
-await finger("touchStart", p.x, p.y); await sleep(1500); await finger("touchEnd"); await sleep(400);
+await finger("touchStart", p.x, p.y); await sleep(450); await finger("touchEnd"); await sleep(400);   // 234: kurz halten = auswählen (Menü)
 ok((await aktionen()).join("|") === "📂 Liste öffnen|✎ Umbenennen|⧉ Duplizieren|📤 Exportieren|🔁 Keine fälligen Vokabeln|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|＋ Vokabeln importieren|( ) → Info|⇄ Verschieben|📁 In Ordner…|▦ In mehrere Quiz aufteilen|↺ Lernstand zurücksetzen|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
 await page.evaluate(() => document.querySelector('[data-info-aktion="✕ Auswahl beenden"]').click()); await sleep(300);
 p = await mitte("2|0"); ziel = await mitte("0|0");   // die Auswahl-Tafel kann die Seite verschoben haben
-// kurz halten (angehoben) und ziehen: verschieben
-await finger("touchStart", p.x, p.y); await sleep(400);
-await finger("touchMove", p.x, p.y - 30); await sleep(250);   // Ziehen beginnt – 196: rechts kommt eine freie Spalte dazu, die Plätze rücken
+// 234: lang halten (angehoben) und ziehen: verschieben
+await finger("touchStart", p.x, p.y); await sleep(1200);
+await finger("touchMove", p.x, p.y - 30); await sleep(250);   // Ziehen beginnt (231: freie Spalte erst am rechten Rand)
 for (let i = 1; i <= 8; i++) { ziel = await mitte("0|0"); await finger("touchMove", p.x + (ziel.x - p.x) * i / 8, p.y + (ziel.y - p.y) * i / 8); await sleep(40); }   // Ziel jedes Mal neu (das Raster rückt)
 ok((await aktionen()).length === 0 && await page.$("[data-listen-fertig]"), "beim Ziehen: kein Menü, Verschieben-Modus");
 await finger("touchEnd"); await sleep(300);
