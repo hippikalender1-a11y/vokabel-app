@@ -50,11 +50,11 @@ ok(await wahl() === "l_a,l_b,l_c", `226: darin kurz halten nimmt „Unit C“ da
 await halte('[data-liste-id="l_b"]', 450);
 ok(await wahl() === "l_a,l_c", `kurz halten auf eine gewählte nimmt sie heraus (${await wahl()})`);
 
-// ── 234: lang halten (ohne Bewegung) ändert die Auswahl nicht ──
+// ── 236: lang halten (ohne Ziehen) wählt wie kurz halten: dazu/heraus ──
 await halte('[data-liste-id="l_c"]', 1500);
-ok(await wahl() === "l_a,l_c" && (await kopf()).zustand === "offen", `lang halten auf eine gewählte: keine Änderung (${await wahl()})`);
+ok(await wahl() === "l_a" && (await kopf()).zustand === "offen", `lang halten auf eine gewählte: heraus (${await wahl()})`);
 await halte('[data-liste-id="l_b"]', 1500);
-ok(await wahl() === "l_a,l_c" && (await kopf()).zustand === "offen", `lang halten auf eine nicht gewählte: keine Änderung (${await wahl()})`);
+ok(await wahl() === "l_a,l_b" && (await kopf()).zustand === "offen", `lang halten auf eine nicht gewählte: dazu (${await wahl()})`);
 
 // ── 226: grüner Kopf übernimmt → neues, ungespeichertes Quiz aus den Listen ──
 await tippe("[data-wahl-fertig]");

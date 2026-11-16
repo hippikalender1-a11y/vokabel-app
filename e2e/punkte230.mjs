@@ -77,10 +77,8 @@ const lang = await page.evaluate(() => { const el = document.querySelector('[dat
 ok(lang.an && lang.tf !== "none", `232: nach 1,0 s sichtbar angehoben (${lang.tf})`);
 await finger("touchEnd"); await sleep(450);
 ok(await page.evaluate(() => window._vib.join(" ")) === "[8,70,8]", `232: Rückmeldung Doppel-Tipp (${await page.evaluate(() => window._vib.join(" "))})`);
-ok((await kopf()).multi === "s2", `234: lang halten ohne Bewegung ändert die Auswahl nicht (${(await kopf()).multi})`);
-await halte('[data-slot-id="s1"]', 450);
 k = await kopf();
-ok(k.multi === "s2,s1", `kurz halten nimmt „Teil 1“ dazu (${k.multi})`);
+ok(k.multi === "s2,s1", `236: lang halten ohne Ziehen nimmt „Teil 1“ dazu (${k.multi})`);
 
 // ── 230: übernommene Mehrfach-Auswahl (Multiquiz) ohne Listen-/Bereichsauswahl ──
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]")?.click()); await sleep(700);

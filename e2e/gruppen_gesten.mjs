@@ -122,11 +122,12 @@ await finger("touchStart", h.x, h.y); await sleep(450); await finger("touchEnd")
 ok((await tafel())?.startsWith("Teil 1") && await gewaehlt() === "s1", `kurz halten + loslassen: Tafel „Teil 1“, nur Teil 1 ausgewählt (${await gewaehlt()})`);
 ok(await page.evaluate(() => !document.querySelector("[data-slot-kopf-name]") || document.querySelector("[data-slot-kopf-name]").textContent.trim() !== "Teil 1"), "kurz halten lädt das Quiz nicht");
 await tafelZu();
-// lang halten ohne Bewegung: angehoben, danach nichts ausgewählt
+// 236: lang halten ohne Bewegung: angehoben, beim Loslassen ausgewählt (wie kurz halten)
 await finger("touchStart", h.x, h.y); await sleep(1250);
 ok(await page.$(`[data-angehoben][data-slot-id="s1"]`), "nach 1,0 s: Kachel angehoben (bereit zum Verschieben)");
 await finger("touchEnd"); await sleep(400);
-ok(await gewaehlt() === "" && !(await tafel()), "lang halten + loslassen: nichts ausgewählt");
+ok(await gewaehlt() === "s1" && (await tafel())?.startsWith("Teil 1"), `236: lang halten + loslassen: Teil 1 ausgewählt (${await gewaehlt()})`);
+await tafelZu();
 
 // ausgewählte Kachel lang halten und ziehen: die ganze Auswahl wandert (Teil 1 + 2 in die freie rechte Spalte)
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);

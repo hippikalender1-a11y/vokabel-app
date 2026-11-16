@@ -93,7 +93,7 @@ k = await kopf();
 ok(k.multi === "s3,s1,s2", `darin kurz halten nimmt „Teil 2“ dazu (${k.multi})`);
 await halte('[data-slot-id="s3"]', 1500); await sleep(400);
 k = await kopf();
-ok(k.zustand === "offen" && k.multi === "s3,s1,s2", `lang halten in der Mehrfach-Auswahl: keine Änderung (${JSON.stringify(k)})`);
+ok(k.zustand === "offen" && k.multi === "s1,s2", `236: lang halten (ohne Ziehen) nimmt „Teil 3“ heraus (${JSON.stringify(k)})`);
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]")?.click()); await sleep(500);
 k = await kopf();
 ok(k.zustand !== "offen" && /Multiquiz/.test(k.name), `grüner Kopf übernimmt die Auswahl als Multiquiz (${JSON.stringify(k)})`);

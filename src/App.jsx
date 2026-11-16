@@ -1047,7 +1047,8 @@ export default function VokabelApp() {
 
   // 234: Kachel-Gesten (Touch, Quiz, Listen und Ordner): sofort wischen scrollt; KACHEL_WAEHLEN_MS halten färbt die Kachel ein –
   // loslassen wählt sie aus (Auswahl beginnt bzw. dazu/heraus), weiterfahren sammelt weitere ein; KACHEL_ZIEHEN_MS halten hebt
-  // sie an (Rückmeldung am Finger) – ziehen verschiebt (ausgewählte: die ganze Auswahl; sonst nur sie, die Auswahl endet).
+  // sie an (Rückmeldung am Finger) – ziehen verschiebt (ausgewählte: die ganze Auswahl; sonst nur sie, die Auswahl endet);
+  // 236: angehoben und ohne Ziehen losgelassen wählt ebenfalls aus (dazu/heraus).
   useEffect(() => {
     const aus = () => {
       const g = kachelGesteRef.current;
@@ -1109,8 +1110,8 @@ export default function VokabelApp() {
       if (!g) return;
       if (g.stufe >= 1 && e.cancelable) e.preventDefault();   // kein Klick hinterher (würde laden bzw. die Auswahl neu beginnen)
       const ruhig = !g.bewegt && !slotZiehenRef.current?.aktiv;
-      if (ruhig && g.stufe === 1) kachelLangRef.current?.(g.art, g.id, 1);   // auswählen bzw. dazu/heraus (qliste: wählen)
-      // Stufe 2 ohne Bewegung: nur abgesetzt
+      // auswählen bzw. dazu/heraus (qliste: wählen) – 236: auch nach dem langen Halten (angehoben), solange nicht gezogen
+      if (ruhig && g.stufe >= 1) kachelLangRef.current?.(g.art, g.id, 1);
       if (slotZiehenRef.current && !slotZiehenRef.current.aktiv) slotZiehenRef.current = null;
       if (g.stufe === 1 && !g.lasso) setLasso(null);
       kachelGesteRef.current = null; clearTimeout(g.t1); clearTimeout(g.t2); setAngehoben(null);

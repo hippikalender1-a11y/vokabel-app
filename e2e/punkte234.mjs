@@ -85,12 +85,12 @@ for (let i = 1; i <= 8; i++) { await finger("touchMove", a.x, a.y + (b.y - a.y) 
 await finger("touchEnd"); await sleep(500);
 ok((await kopf()).multi === "s1,s2,s3", `kurz halten + weiterfahren sammelt ein (${(await kopf()).multi})`);
 
-// ── lang halten ohne Bewegung: nur angehoben, Auswahl bleibt, Doppel-Tipp ──
+// ── 236: lang halten ohne Bewegung: angehoben, Doppel-Tipp, beim Loslassen heraus (wie kurz halten) ──
 a = await mitte('[data-slot-id="s2"]'); await sleep(150);
 await finger("touchStart", a.x, a.y); await sleep(1250);
 ok(await page.$('[data-slot-id="s2"][data-angehoben]'), "lang halten (1,0 s): Kachel angehoben");
 await finger("touchEnd"); await sleep(450);
-ok((await kopf()).multi === "s1,s2,s3" && await page.evaluate(() => window._vib.join(" ")) === "[8,70,8]", `lang halten ohne Bewegung: Auswahl unverändert, Doppel-Tipp (${(await kopf()).multi}, ${await page.evaluate(() => window._vib.join(" "))})`);
+ok((await kopf()).multi === "s1,s3" && await page.evaluate(() => window._vib.join(" ")) === "[8,70,8]", `236: lang halten ohne Bewegung: „Teil 2“ heraus, Doppel-Tipp (${(await kopf()).multi}, ${await page.evaluate(() => window._vib.join(" "))})`);
 
 // ── Ordner auswählen: zählt mit seinem ganzen Inhalt ──
 await halte('[data-slot-id="s3"]', 60);   // neu mit Teil 3

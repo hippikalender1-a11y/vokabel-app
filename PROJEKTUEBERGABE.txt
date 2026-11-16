@@ -3207,3 +3207,9 @@ Offen: Kopf-Menüs (Quiz-Kopf, Listen-Kopf) – ggf. später.
 - Abweichung von der Absprache: „( ) → Info“ liegt unter Inhalt, nicht unter Lernen – es verschiebt Klammer-Text in die
   Info-Spalte (verändert den Inhalt), ist keine Info-Anzeige. Mit dem Nutzer klären.
 - Test: e2e/punkte235.mjs.
+
+=== 236 umgesetzt (16.11.2026) ===
+- Langes Halten (≥ 1,0 s, Kachel angehoben) und ohne Ziehen loslassen wählt jetzt ebenfalls aus (Auswahl beginnt bzw. dazu/heraus),
+  wie kurzes Halten. Ziehen nach dem Anheben verschiebt wie bisher. (Vorher: lang halten ohne Bewegung = keine Funktion.)
+  App.jsx Kachel-Gesten, loslassen: ruhig && g.stufe >= 1 → kachelLangRef(art, id, 1).
+- Tests angepasst: gruppen_gesten, punkte190, punkte225, punkte230, punkte234.
