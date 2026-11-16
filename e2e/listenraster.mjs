@@ -76,8 +76,8 @@ ok((await aktionen()).length === 0 && await page.$("[data-listen-fertig]"), "bei
 await finger("touchEnd"); await sleep(300);
 pl = await plaetze();
 console.log("     nach Ziehen:", JSON.stringify(pl));
-ok(pl.Gamma === "0|0" && pl.Alpha === "2|0" && pl.Beta === "1|0", "Gamma auf Alphas Platz gezogen: die beiden tauschen");
-ok(await indexNamen() === "Gamma,Beta,Alpha", "Reihenfolge gespeichert (Index folgt dem Raster)");
+ok(pl.Gamma === "0|0" && pl.Alpha === "1|0" && pl.Beta === "2|0", "242: Gamma auf Alphas Platz gezogen: Alpha und Beta rücken nach unten");
+ok(await indexNamen() === "Gamma,Alpha,Beta", `Reihenfolge gespeichert (Index folgt dem Raster) (${await indexNamen()})`);
 ok(!(await page.$("[data-listen-fertig]")), "nach dem Ablegen ist der Verschieben-Modus wieder aus");
 
 // Verschieben-Modus: antippen, dann freien Platz antippen
@@ -103,7 +103,7 @@ await menue("Alpha"); await aktion("✎ Umbenennen");
 await page.evaluate(() => { const i = document.querySelector(".modal input"); i.select(); });
 await page.keyboard.type("Alpha neu"); await clickText(".modal button", "Speichern", true);
 pl = await plaetze();
-ok(pl["Alpha neu"] === "2|0" && !pl.Alpha, "Umbenennen aus dem Menü: Name geändert, Platz bleibt");
+ok(pl["Alpha neu"] === "1|0" && !pl.Alpha, "Umbenennen aus dem Menü: Name geändert, Platz bleibt");
 
 // Duplizieren
 await menue("Gamma"); await aktion("⧉ Duplizieren");
@@ -160,7 +160,7 @@ ok(await page.evaluate(() => [...document.querySelectorAll("[data-auswahl-nr]")]
 await page.evaluate(() => document.querySelector('[data-raster-zelle="0|1"]').click()); await sleep(300);
 pl = await plaetze();
 console.log("     Gruppe:", JSON.stringify(pl));
-ok(pl.Gamma === "0|1" && pl.Beta === "1|1" && pl["Alpha neu"] === "2|0", "markierte Listen auf freien Platz: untereinander (0|1, 1|1)");
+ok(pl.Gamma === "0|1" && pl.Beta === "1|1" && pl["Alpha neu"] === "1|0", "markierte Listen auf freien Platz: untereinander (0|1, 1|1)");
 await page.click("[data-listen-fertig]"); await sleep(300);
 
 // Quiz und Statistik: gleiches Raster wie der Listen-Tab (Plätze inkl. Lücken)
@@ -191,7 +191,7 @@ await page.reload(); await sleep(500);
 await zuListen(page);
 pl = await plaetze();
 console.log("     Filter fr:", JSON.stringify(pl));
-ok(Object.keys(pl).join(",") === "Beta,Alpha neu" && Object.values(pl).every(v => v === "-"), "Sprachfilter: nur französische Listen, zusammengerückt");
+ok(Object.keys(pl).join(",") === "Alpha neu,Beta" && Object.values(pl).every(v => v === "-"), "Sprachfilter: nur französische Listen, zusammengerückt");
 await menue("Beta");
 ok(!(await aktionen()).includes("⇄ Verschieben"), "mit Sprachfilter kein „Verschieben“ im Menü");
 

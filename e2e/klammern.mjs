@@ -65,7 +65,7 @@ await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.t
 // (un)lucky bleibt ein Wort
 await page.type("input.inp", "unlucky"); await page.keyboard.press("Enter"); await sleep(400);
 ok(await page.evaluate(() => document.querySelector(".quiz-antwort-box")?.className.includes("richtig")), "angehängte Klammer „(un)lucky“: „unlucky“ richtig wie bisher");
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Beenden")?.click()); await sleep(400);
+await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Pausieren")?.click()); await sleep(400);
 await page.evaluate(() => document.querySelector("[data-zur-auswertung]")?.click()); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Zur Übersicht")?.click()); await sleep(400);
 

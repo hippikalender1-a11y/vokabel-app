@@ -35,7 +35,7 @@ const ladeSlot = async name => {
   await page.evaluate(n => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes(n)).click(), name); await sleep(700); await slotLaden(page);
 };
 const beenden = async () => {
-  await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Beenden")?.click()); await sleep(400);
+  await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Pausieren")?.click()); await sleep(400);
   await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(400);
 };
 

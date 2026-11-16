@@ -570,9 +570,9 @@ export function toggleEinzelauswahl(app) {
   }
 
 export function toggleSlotSektion(app) {
-  const { aktiverSlot, dropdownImmuneRef, headerH, leuchte, schliesseQuizBereiche, setAuswahlListen, setMultiAuswahl, setSlotAuswahl, setSlotSektionAufgeklappt, setSlotSortModus, slotContainerRef, slotH, slotSektionAufgeklappt, slotZuTimerRef, tab } = app;
+  const { kommtAusListen, aktiverSlot, dropdownImmuneRef, headerH, leuchte, schliesseQuizBereiche, setAuswahlListen, setMultiAuswahl, setSlotAuswahl, setSlotSektionAufgeklappt, setSlotSortModus, slotContainerRef, slotH, slotSektionAufgeklappt, slotZuTimerRef, tab } = app;
     const opening = !slotSektionAufgeklappt;
-    if (opening) setAuswahlListen(tab === "quiz" && aktiverSlot?.typ === "listen");   // 217: Listen-Kopf → Listen-Auswahl
+    if (opening) setAuswahlListen(tab === "quiz" && kommtAusListen);   // 217/250: aus den Listen gekommen → Listen-Auswahl
     clearTimeout(slotZuTimerRef.current);
     if (opening && tab === "quiz") schliesseQuizBereiche("slots");
     if (!opening) leuchte("slotkopf");

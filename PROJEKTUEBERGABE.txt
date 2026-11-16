@@ -3258,3 +3258,51 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   Helfer inGruppe(aktionen, name, punkt) in infoEreignisse.js.
 - Rückfrage 239 („andere Kachel markiert“) damit erledigt: kein „Auswahl beenden“ mehr; Einzelauswahl wird über den Kopf übernommen.
 - Tests: hilfen.mjs auswahlEnde(page) (Umschalter hin und zurück) statt „✕ Auswahl beenden“; neuer e2e/punkte241.mjs.
+
+=== 242/243 umgesetzt (16.11.2026, noch nicht veröffentlicht) ===
+- 242: Verschieben auf einen belegten Platz TAUSCHT nicht mehr: die übrigen Einträge der Zielspalte ab der Zielzeile rücken
+  nach unten, jeweils nur so weit wie nötig (Lücken darunter bleiben). raster.js platziereGruppe neu, belegteZeilen;
+  setzeSlotPlaetze / setzeListenPlaetze erweitern die Zeilen, falls nötig. Ring beim Darüberziehen: „↓“ statt „⇄“
+  (data-ring-symbol="einfuegen").
+- 243: Von–Bis – nach „↔ Von–Bis“ genügt ein TIPP auf die End-Kachel (Quiz und Listen); Kopf „Von–Bis: Ende antippen“.
+- Tests: neuer e2e/punkte242.mjs; angepasst slots, listenraster, gruppen_gesten.
+
+── gesammelt (16.11.2026) – NICHT umsetzen, bis der Nutzer bündelt ──
+244 Multiquiz während der Abfrage beendet → zurück in der Übersicht stehen Listen-Auswahl und Vokabel-Auswahl (Bereich) zur
+    Änderung bereit (Screenshot: Kopf „Englisch 6 · Nr. 101–225 nicht gespeichert“, Listen-Auswahl „Englisch 6“, Bereich).
+    Soll nicht sein (230: Paket-Quiz ohne Listen-/Bereichsauswahl). Vermutung: nach dem Abbruch greift istPaketQuiz nicht
+    mehr (Verlaufseintrag/aktiverSlot nach dem Beenden) – prüfen.
+245 Knopf oben während des Quiz: „Pausieren“ statt „Beenden“ – der Fortschritt wird ohnehin automatisch gespeichert.
+246 Vorschau beim Verschieben (Frage): angehobene Kachel folgt dem Finger und/oder die übrigen Kacheln zeigen schon beim
+    Darüberziehen, wohin sie rücken würden (242). Vorschlag siehe Antwort.
+247 Lang-Druck auf eine leere Fläche (freier Platz im Raster) = dasselbe Menü wie der aktuelle Ordner im Pfad (letztes Element):
+    Quiz: Neues Quiz, Fällige (dieses Ordners), Neuer Ordner, Spalten, Anordnen, Gelernte; Listen: Neue Liste, Neuer Ordner,
+    Spalten, Anordnen. Vorschlag: „Neu …“ und „Neuer Ordner“ landen dabei weiter GENAU auf dem gedrückten Platz (wie bisher
+    beim freien Platz). Geklärt: jedes Pfad-Element bezieht sich auf SEINEN Ordner (Alle = oberste Ebene); Gelernte gilt global.
+248 Pfad-Menüs: lang drücken auf einen Ordner im Pfad, der NICHT die aktuelle Ebene ist (auch „← Alle Quiz/Listen“ in einem
+    Ordner) → nur „🔁 Fällige wiederholen“ (dieses Ordners samt Unterordnern); KEIN Neues Quiz/Neue Liste, Neuer Ordner,
+    Spalten, Anordnen (Ordner nicht sichtbar). Volles Menü nur auf der aktuellen Ebene (letztes Pfad-Element bzw. „Alle …“
+    oben) und auf der leeren Fläche (247). „Gelernte aus-/einblenden“ ist ein globaler Schalter und bleibt ÜBERALL im Menü
+    (Nutzer). Quiz-Pfad oberhalb: also Fällige + Gelernte. Listen-Pfad: die Ordner darüber haben dann kein Menü mehr
+    (nur Erklärung; antippen öffnet).
+249 Mehrfach-Auswahl aus Listen als Quiz übernommen: Kopf zeigt nur „Neues Quiz · nicht gespeichert“, kein Hinweis auf die
+    Listen. Vorschlag: Kopf „📋 3 Listen“ (bei 2 ggf. beide Namen, wenn sie passen), Info-Zeile „Unit A + Unit B + Unit C ·
+    90 Vokabeln“; Speichern schlägt wie bisher einen Namen vor.
+250 Kopf antippen (Auswahl wieder öffnen) soll in die Auswahl zurückführen, aus der das Quiz kam: aus der Listen-Auswahl
+    übernommen → Listen (auswahlListen), aus den Quiz-Kacheln → Quiz. Gilt auch für eine einzelne übernommene Liste.
+
+=== 244–250 umgesetzt (16.11.2026) ===
+- 244: Paket bleibt Paket. Ursache: beim Start im Paket-Modus legte die App für einen Verlaufseintrag ohne laufendes Paket
+  immer einen NEUEN (gewöhnlichen) Verlaufseintrag an → Multiquiz-Kennzeichen weg, Listen-/Bereichsauswahl sichtbar.
+  Neu: paketVerlaufId(effSlot) (App.jsx) behält Multiquiz-/Paket-Einträge; ein aus der Listen-Auswahl übernommenes Quiz
+  bekommt im Verlauf „paket: true“; merkeRundeImVerlauf ebenso. istPaketQuiz = verlaufE.multi || verlaufE.paket || listenPaketAktiv.
+- 245: Knopf während der Abfrage „Pausieren“ (data-quiz-pause) statt „Beenden“ – Quiz, Zuordnung/Memory, Diktat;
+  Wiederholung abbrechen bleibt „Beenden“. Tests: „Beenden“ → „Pausieren“.
+- 246: Vorschau beim Ziehen: Abbild der Kachel folgt dem Finger (geistStart/geistZiehen/geistEnde, direkt im DOM, data-zug-geist,
+  bei mehreren mit Anzahl); Kacheln, die beim Ablegen nach unten rücken würden, rutschen 12 px tiefer (data-rueckt,
+  raster.js rueckendeIds) – sie bleiben an ihrem Platz, damit das Verweilen (Ordner bilden) weiter geht.
+- 247/248: gemeinsame Ebenen-Menüs slotEbenenMenue / listenEbenenMenue (App.jsx): freier Platz = Menü der Ebene (Neues genau
+  dort); Pfad: volles Menü nur für die sichtbare Ebene, Ordner darüber Fällige + Gelernte (Quiz) bzw. kein Menü (Listen).
+- 249: Kopf „📋 n Listen“ statt „Neues Quiz“ (≥ 2 Listen); Info-Zeile eines Listen-Pakets „📋 Unit 1 + Unit 2 · …“.
+- 250: Kopf antippen öffnet die Auswahl, aus der das Quiz kam (kommtAusListen: Liste, Listen-Paket).
+- Test: e2e/punkte244.mjs.

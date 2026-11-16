@@ -98,7 +98,7 @@ await auswahlZu(page);
 
 // Beenden während der Abfrage (ohne Antwort) → eingeklappt, Quiz-Auswahl offen
 await page.click("[data-start-knopf]"); await sleep(500);
-await clickText("button", "Beenden", true); await sleep(500);
+await clickText("button", "Pausieren", true); await sleep(500);
 const nachBeenden = await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf);
 await auswahlZu(page);
 ok(!(await reihenfolgeOffen()) && nachBeenden === "offen" && await page.$("[data-start-knopf]"), `Beenden: Übersicht mit eingeklappten Bereichen, Quiz-Auswahl offen (${nachBeenden})`);

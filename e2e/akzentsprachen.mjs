@@ -31,7 +31,7 @@ const tippeOhneAkzent = async () => {
   const ohne = { "ist": "esta", "morgen": "manana", "Haus": "casa" }[frage];
   await page.type(".quiz-aktionen input.inp, input.inp", ohne); await page.keyboard.press("Enter"); await sleep(500);
   const r = await page.evaluate(() => ({ richtig: (document.querySelector(".quiz-antwort-box")?.className || "").includes("richtig") }));
-  await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Beenden")?.click()); await sleep(400);
+  await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Pausieren")?.click()); await sleep(400);
   await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(400);
   return { frage, ...r };
 };

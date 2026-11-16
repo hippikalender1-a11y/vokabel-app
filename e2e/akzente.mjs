@@ -206,7 +206,7 @@ const starteUndZaehle = async () => {
   if ((await text()).includes("Weiter zur Wiederholung")) await clickText("button", "Weiter zur Wiederholung");
   const n = await markiert();
   zaehlerDa = !!(await page.$(".akzent-zaehler"));
-  await clickText("button", "Beenden", true);
+  await clickText("button", "Pausieren", true);
   await sleep(300);
   if (/Zur Übersicht/.test(await text())) await clickText("button", "Zur Übersicht");
   await auswahlZu(page);   // 190: Quiz-Auswahl ist offen
@@ -242,7 +242,7 @@ await sleep(400);
   for (const [i, v] of schritte) await setze(i, v);
   ok((await text()).includes("Weiter →") && (await kartenFarbe()).includes("richtig"), "Stufe „Einfach“: alle Akzente richtig → automatisch übernommen");
   ok(!(await text()).includes("Nicht fehlerfrei"), "Stufe „Einfach“ (hervorgehoben): Fehlgriff zählt nicht als Fehler");
-  await clickText("button", "Beenden", true);
+  await clickText("button", "Pausieren", true);
   await sleep(300);
   if (/Zur Übersicht/.test(await text())) await clickText("button", "Zur Übersicht");
   await auswahlZu(page);   // 190: Quiz-Auswahl ist offen

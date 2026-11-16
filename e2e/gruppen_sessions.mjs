@@ -102,7 +102,7 @@ await page.click("[data-ordner-umbenennen-ok]"); await sleep(300);
 ok((await slots()).ordner[0].name === "Kapitel B", "umbenannt: „Kapitel B“");
 await langDruck(`[data-ordner-id="${ordner.id}"]`); await aktion("🧩 Multiquiz des Ordners");
 ok(await page.$(".quiz-frage-text"), "Multiquiz der Gruppe gestartet");
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Beenden")?.click()); await sleep(400);
+await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Pausieren")?.click()); await sleep(400);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(400);
 if (await page.evaluate(() => document.querySelector("[data-quiz-ansicht]")?.dataset.quizAnsicht !== "auswahl")) { await page.click("[data-slot-kopf-name]"); await sleep(300); }
 if (await page.$("[data-ordner-zurueck]")) { await page.click("[data-ordner-zurueck]"); await sleep(300); }

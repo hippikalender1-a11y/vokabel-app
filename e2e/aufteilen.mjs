@@ -97,7 +97,7 @@ ok(!(await page.$("[data-aufteilen]")), "Kasten nach dem Anlegen weg");
 await clickText(".slot-chip", "Verben Teil 2 (31 - 40)"); await sleep(500); await slotLaden(page);
 await clickText("[data-start-knopf]", "");
 ok(await page.evaluate(() => document.querySelector(".topbar-title")?.textContent.trim()) === "1 / 10", "geladene Gruppe: Quiz mit 10 Vokabeln");
-await clickText(".topbar-back", "Beenden"); await sleep(400);
+await clickText(".topbar-back", "Pausieren"); await sleep(400);
 if (await page.evaluate(() => /Zur Übersicht/.test(document.body.innerText))) await clickText("button", "Zur Übersicht");
 
 // erneut aufteilen: vorhandene Namen werden übersprungen

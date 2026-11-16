@@ -56,7 +56,7 @@ await clickText("[data-start-knopf]", "");
 await sleep(600);
 // Frage „gehen“ (Deutsch) wird automatisch vorgelesen
 // Französisch: Vorlese-Knopf in der Vokabelliste der Liste
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Beenden")?.click()); await sleep(400);
+await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Pausieren")?.click()); await sleep(400);
 if (await page.evaluate(() => /Zur Übersicht/.test(document.body.innerText))) await clickText("button", "Zur Übersicht");
 await zuListen(page);
 await clickText(".karte-zeile", "Verbes"); await listeOeffnen(page);

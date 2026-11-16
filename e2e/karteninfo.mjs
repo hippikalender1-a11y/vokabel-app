@@ -95,7 +95,7 @@ ok((await kasten())?.zustand === "offen", "angeheftet: Antippen klappt nicht zu"
 // „i“: Kasten aus, dauerhaft
 await page.click("[data-karte-info-schalter]"); await sleep(200);
 ok(!(await kasten()) && await schalter() === "aus" && (await einst()).karteInfo === false, "„i“ aus: Kasten weg, gespeichert");
-await clickText(".topbar-back", "Beenden"); await sleep(500);
+await clickText(".topbar-back", "Pausieren"); await sleep(500);
 await page.reload(); await sleep(500);
 await starte();
 ok(!(await kasten()) && await schalter() === "aus", "nach Neustart: Info bleibt aus");
@@ -105,7 +105,7 @@ await page.click("[data-karte-info-pin]"); await sleep(200);
 ok((await einst()).karteInfoPin === false && (await kasten())?.zustand === "offen", "Pinnadel gelöst: bleibt für diese Karte offen");
 
 // Vokabeln ohne Info-Text: Kasten bleibt, Hinweis „Keine Zusatzinfo vorhanden“
-await clickText(".topbar-back", "Beenden"); await sleep(500);
+await clickText(".topbar-back", "Pausieren"); await sleep(500);
 await page.evaluate(() => {
   const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr"));
   l.vokabeln.forEach(v => { delete v.i1; });
@@ -120,7 +120,7 @@ await page.click("[data-karte-info]"); await sleep(200);
 ok(/Keine Zusatzinfo vorhanden/.test((await kasten())?.text || ""), "aufgeklappt: „Keine Zusatzinfo vorhanden“");
 
 // Liste ohne Info-Spalte: kein „i“, kein Kasten
-await clickText(".topbar-back", "Beenden"); await sleep(500);
+await clickText(".topbar-back", "Pausieren"); await sleep(500);
 await page.evaluate(() => {
   const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr"));
   l.spalten.i1.aktiv = false;

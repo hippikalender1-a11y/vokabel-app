@@ -1,6 +1,6 @@
 import { BLITZ_MS, SK, SLOT_ZU_VERZOEGERUNG, defaultEinstellungen, defaultSlots, formatSlotDatum, lsDel, lsGet, lsSet, neuerSlotId, lsLesen } from "../speicher.js";
 import { STANDARD_ANTWORT_MODUS, STANDARD_PAKET_GROESSE, STANDARD_SESSION_MODUS, artBereinigt, artFelderAus, artVonKonfig, istFaellig, slotKonfigArt, slotSFAlle, standardArtEinstellungen } from "../quiz.jsx";
-import { ORDNER_TIEFE_MAX, ebeneVon, gruppenName, legeInOrdner, loeseOrdnerDaten, ordneRaster, ordnerBereinigen, ordnerPfad, platziereGruppe, rasterGroesse, setzeEbene } from "../raster.js";
+import { ORDNER_TIEFE_MAX, ebeneVon, gruppenName, legeInOrdner, loeseOrdnerDaten, ordneRaster, ordnerBereinigen, ordnerPfad, platziereGruppe, rasterGroesse, setzeEbene, belegteZeilen } from "../raster.js";
 import { schliesseInfo } from "../infoEreignisse.js";
 
 // Stufe 2 (Aufteilung): Logik aus App.jsx. app = die Namen der Komponente, die eine Funktion braucht
@@ -101,12 +101,14 @@ export function setzeSlotPlaetze(app, ids, ziel) {
   const { getSlotsData, rasterEinordnen, setSlotAuswahl, setSlotsData, slotOrdnerRef, speichereEinst } = app;
     const einst = lsGet(SK.einstellungen, defaultEinstellungen());
     const g = rasterGroesse(einst);
-    const einstNeu = ziel.z + ids.length > g.zeilen ? { ...einst, slotRaster: { ...g, zeilen: ziel.z + ids.length } } : einst;
-    if (einstNeu !== einst) speichereEinst(einstNeu);
-    const data = rasterEinordnen(getSlotsData(), einstNeu);
+    const data = rasterEinordnen(getSlotsData(), einst);
     const ordnerId = slotOrdnerRef.current;
-    const ebene = ebeneVon(data, ordnerId);
-    setSlotsData(rasterEinordnen(setzeEbene(data, platziereGruppe(ebene, ids, ziel)), einstNeu));
+    const platziert = platziereGruppe(ebeneVon(data, ordnerId), ids, ziel);
+    // 242: nach unten gerückte Einträge brauchen evtl. mehr Zeilen (sonst ordnet das Raster sie woanders ein)
+    const noetig = belegteZeilen(platziert);
+    const einstNeu = noetig > g.zeilen ? { ...einst, slotRaster: { ...g, zeilen: noetig } } : einst;
+    if (einstNeu !== einst) speichereEinst(einstNeu);
+    setSlotsData(rasterEinordnen(setzeEbene(data, platziert), einstNeu));
     setSlotAuswahl([]);
   }
 
@@ -390,18 +392,20 @@ export function ladeSlotStatistik(app, typ, id, art = null) {
 // Abfrage ohne Pakete im Verlauf festhalten (mit Start-Scores für die Statistik).
 // Gespeicherte Konfiguration oder unveränderter Verlauf-Eintrag → kein neuer Eintrag.
 export function merkeRundeImVerlauf(app, effSlot, startScores) {
-  const { aktuelleKonfiguration, erstelleVerlaufEintrag, getSlotEintrag, getSlotsData, setSlotsData } = app;
+  const { aktuelleKonfiguration, erstelleVerlaufEintrag, getSlotEintrag, getSlotsData, listenPaketAktiv, setSlotsData } = app;
     if (effSlot?.typ === 'gespeichert') return;
     if (effSlot?.typ === "listen") return;   // 217: Listen erscheinen nicht im Verlauf
     if (effSlot?.typ === 'verlauf') {
       const e = getSlotEintrag('verlauf', effSlot.id);
-      if (e && JSON.stringify(e.konfiguration) === JSON.stringify(aktuelleKonfiguration())) {
+      // 244: ein Paket (Multiquiz bzw. Listen-Paket) bleibt derselbe Eintrag – die Einstellungen werden übernommen
+      const paket = e && (e.multi || e.paket);
+      if (e && (paket || JSON.stringify(e.konfiguration) === JSON.stringify(aktuelleKonfiguration()))) {
         const data = getSlotsData();
-        setSlotsData({ ...data, verlauf: [{ ...e, timestamp: Date.now(), startScores }, ...data.verlauf.filter(v => v.id !== e.id)] });
+        setSlotsData({ ...data, verlauf: [{ ...e, ...(paket ? { konfiguration: aktuelleKonfiguration() } : {}), timestamp: Date.now(), startScores }, ...data.verlauf.filter(v => v.id !== e.id)] });
         return;
       }
     }
-    erstelleVerlaufEintrag({ startScores });
+    erstelleVerlaufEintrag({ startScores, ...(listenPaketAktiv ? { paket: true } : {}) });   // 244: aus der Listen-Auswahl übernommen
   }
 
 export function erstelleVerlaufEintrag(app, extra = {}) {

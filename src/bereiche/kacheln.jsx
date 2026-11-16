@@ -1,4 +1,4 @@
-import { ORDNER_KNOPF, ORDNER_TIEFE_MAX, RASTER_FREI_ZEILEN, ebeneVon, ebenenSpalten, eintraegeImOrdner, ordneRaster, ordnerPfad, rasterGroesse, zahlDe } from "../raster.js";
+import { ORDNER_KNOPF, ORDNER_TIEFE_MAX, RASTER_FREI_ZEILEN, ebeneVon, ebenenSpalten, eintraegeImOrdner, ordneRaster, ordnerPfad, rasterGroesse, rueckendeIds, zahlDe } from "../raster.js";
 import { Fragment } from "react";
 import { BLITZ_MS, SK, TYPEN, lsGet, lsLesen } from "../speicher.js";
 import { listenInhalt } from "../saetze.js";
@@ -66,7 +66,7 @@ export function auswahlOrdnerZelle(app, o, key, gewaehlt, kurz = false) {
 
 // 193: Pfad über den Listen – „Alle Listen › 📁 A › 📁 B“ (gelb), lang drücken: neue Liste / neuer Ordner hier
 export function listenNavi(app) {
-  const { headerH, listenKopfH, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, minSpalten, pfadTeile, quizListenUmschalter, resetImport, setAnordnen, setAnsicht, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setSpaltenWahl, setTab, slotH, slotInfoH } = app;
+  const { slotEbenenMenue, listenEbenenMenue, headerH, listenKopfH, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, minSpalten, pfadTeile, quizListenUmschalter, resetImport, setAnordnen, setAnsicht, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setSpaltenWahl, setTab, slotH, slotInfoH } = app;
     const neuerOrdner = eltern => ordnerPfad(listenOrdner, eltern).length < ORDNER_TIEFE_MAX
       ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe({ art: "liste", ids: [], name: "", eltern }) }] : [];
     const neueListe = eltern => ({ label: "＋ Neue Liste", fn: () => { setListenOrdnerOffen(eltern); resetImport(); setTab("listen"); setAnsicht("import"); } });
@@ -78,14 +78,14 @@ export function listenNavi(app) {
         {pfadTeile({ alleText: "Alle Listen", alleAttr: "data-alle-listen", pfad: ordnerPfad(listenOrdner, listenOrdnerOffen), geheZu,
           alleTt: listenOrdnerOffen ? "Zurück zu allen Listen – Listen hierher ziehen legt sie auf die oberste Ebene; lang drücken: neue Liste, neuer Ordner"
             : "Alle Listen – lang drücken: neue Liste, neuer Ordner",
-          alleAktionen: [neueListe(null), ...neuerOrdner(null), spaltenL(null), anordnenL(null)], ordnerAktionen: o => [neueListe(o.id), ...neuerOrdner(o.id), spaltenL(o.id), anordnenL(o.id)], einheit: "Listen" })}
+          alleAktionen: listenEbenenMenue(null, { voll: !listenOrdnerOffen }), ordnerAktionen: o => listenEbenenMenue(o.id, { voll: o.id === listenOrdnerOffen }), einheit: "Listen" })}   {/* 248 */}
         {!listenSortModus && quizListenUmschalter()}
       </div>
     );
   }
 
 export function renderListenRaster(app) {
-  const { merkeVerschieben, zugRand, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef } = app;
+  const { slotEbenenMenue, listenEbenenMenue, vonBis, merkeVerschieben, zugRand, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef } = app;
     const groesse = rasterGroesse(einstellungen, "listenRaster");
     // 193: die geöffnete Ebene (oberste oder ein Ordner) – Ordner-Kacheln und Listen
     const ordnerDaten = { ordner: listenOrdner, gespeichert: listenIndex };
@@ -111,6 +111,7 @@ export function renderListenRaster(app) {
     };
     // 225: Listen im Quiz-Tab – antippen fragt die Liste ab (Blätter-Modus: nur wählen, Kopf „📋 … laden“)
     const oeffne = l => {
+      if (vonBis?.art === "liste") { wahlUmschaltenRef.current("liste", l.id); return; }   // 243: Von–Bis – antippen wählt das Ende
       if (listenWahl) {   // 234: Antippen in der Auswahl – sie beginnt neu mit dieser Liste
         auswahlTafelRef.current = "liste"; setListenWahl([l.id]);
         leuchte(`lw:${l.id}`, BLITZ_MS / 2);
@@ -151,6 +152,9 @@ export function renderListenRaster(app) {
       return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: inGruppe(wahlMenue(ids), GRUPPE.ablage, alleWahl) } : { text: "Nichts ausgewählt – Listen antippen", aktionen: [] };
     };
     auswahlTafelDaten.current.liste = () => listenWahl && tafelInhalt(listenWahl);
+    // 246: Vorschau – wer beim Ablegen hier nach unten rücken würde (nicht, wenn gleich ein Ordner entsteht)
+    const rueckL = slotDragId && gruppenZiel !== slotDragZiel
+      ? rueckendeIds(ebene, listenAuswahl.includes(slotDragId) ? listenAuswahl : [slotDragId], slotDragZiel) : new Set();
     const zelle = (l, key, ziehIdsL = []) => {
       const anzahl = vokabelAnzahl(l.id);
       const liste = lsLesen(SK.liste(l.id));
@@ -169,7 +173,7 @@ export function renderListenRaster(app) {
       return (
         <div {...erklaerung} key={key} data-raster-zelle={gefiltert ? undefined : key} data-liste-id={l.id} data-auswahl-durchlass
           className={`karte-zeile${(listenAuswahl.includes(l.id) && sortModus) || listenWahl?.includes(l.id) || (lasso?.art === "liste" && lasso.ids.includes(l.id)) || (!listenWahl && gewaehltL(l)) ? " kachel-gewaehlt" : ""}${blitzt(`lw:${l.id}`)}`}
-          data-kachel-geste={sortModus ? undefined : "liste"} data-kachel-zieh={sortModus || gefiltert ? undefined : ""} data-angehoben={angehoben === l.id ? "" : undefined}
+          data-kachel-geste={sortModus ? undefined : "liste"} data-kachel-zieh={sortModus || gefiltert ? undefined : ""} data-angehoben={angehoben === l.id ? "" : undefined} data-rueckt={rueckL.has(l.id) ? "" : undefined}
           style={{cursor: sortModus ? "grab" : "pointer", ...(sortModus ? {touchAction:"none"} : {}),
             ...(slotDragId && (slotDragId === l.id || (listenAuswahl.includes(slotDragId) && listenAuswahl.includes(l.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
             ...(ziel ? {outline:"3px dashed var(--bestaetigen)", outlineOffset:-3} : {}), position:"relative"}}
@@ -205,7 +209,7 @@ export function renderListenRaster(app) {
     // 193/234: Ordner-Kachel (Listen): antippen öffnet (Auswahl endet), kurz halten wählt aus (Menü), lang halten verschiebt
     const ziehIds = slotDragId ? (listenAuswahl.includes(slotDragId) ? listenAuswahl : [slotDragId]) : [];
     const ring = key => (<span className={`gruppen-ring${gruppenZiel === key ? " fertig" : ""}`} data-gruppen-ring={gruppenZiel === key ? "fertig" : "laeuft"}>
-      <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15"/></svg><span data-ring-symbol={gruppenZiel === key ? "ordner" : "tauschen"}>{gruppenZiel === key ? "📁" : "⇄"}</span></span>);
+      <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15"/></svg><span data-ring-symbol={gruppenZiel === key ? "ordner" : "einfuegen"}>{gruppenZiel === key ? "📁" : "↓"}</span></span>);
     const kurzL = (gefiltert ? 1 : ebenenSpalten(ebene, false, minS)) > 1;   // 210: ab 2 Spalten „L.“ / „V.“
     const ordnerZelle = (o, key) => {
       const drin = ordnerListen(o.id);
@@ -217,7 +221,7 @@ export function renderListenRaster(app) {
       return (
         <div key={key} data-raster-zelle={gefiltert ? undefined : key} data-lordner-id={o.id} data-auswahl-durchlass
           className={`karte-zeile ordner-kachel${(sortModus && listenAuswahl.includes(o.id)) || wahlNr || (lasso?.art === "liste" && lasso.ids.includes(o.id)) ? " kachel-gewaehlt" : ""}`}
-          data-kachel-geste={sortModus ? undefined : "lordner"} data-kachel-zieh={sortModus || gefiltert ? undefined : ""} data-angehoben={angehoben === o.id ? "" : undefined}
+          data-kachel-geste={sortModus ? undefined : "lordner"} data-kachel-zieh={sortModus || gefiltert ? undefined : ""} data-angehoben={angehoben === o.id ? "" : undefined} data-rueckt={rueckL.has(o.id) ? "" : undefined}
           style={{cursor: sortModus ? "grab" : "pointer", ...(sortModus ? {touchAction:"none"} : {}), position:"relative",
             ...(slotDragId && (slotDragId === o.id || (listenAuswahl.includes(slotDragId) && listenAuswahl.includes(o.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
             ...(ziel ? {outline:"3px dashed var(--bestaetigen)", outlineOffset:-3} : {})}}
@@ -257,9 +261,8 @@ export function renderListenRaster(app) {
           onClick={() => tippeImRaster(null, { z, s: sp })}
           {...tt("Freier Platz – markierte Listen hier untereinander einsetzen (oder Listen hierher ziehen)")}/>);
         else zellen.push(<div key={key} className="raster-leer" data-freier-platz={key} style={ebeneLeer ? {borderStyle:"dashed", opacity:0.5} : {border:"none"}}
-          {...tt("Freier Platz – lang drücken: neue Liste oder neuer Ordner genau hier", [
-            { label: "＋ Neue Liste", fn: () => { resetImport(); neuListePlatzRef.current = { ordner: offen, platz: { z, s: sp } }; setTab("listen"); setAnsicht("import"); } },
-            ...(ordnerHierGeht ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe({ art: "liste", ids: [], name: "", platz: { z, s: sp } }) }] : [])])}/>);
+          {...tt("Freier Platz – lang drücken: Menü dieser Ebene (Neues landet genau hier)",
+            listenEbenenMenue(offen || null, { platz: { z, s: sp } }))}/>);   // 247
       }
     }
     return (<>
@@ -373,7 +376,7 @@ export function renderQuizListenRaster(app) {
   }
 
 export function ordnerNavi(app, stil, statistik = false) {
-  const { einstellungen, faelligAktion, faelligAlle, faelligVonSlots, headerH, minSpalten, multiAuswahl, neuImOrdnerRef, pfadTeile, quizListenUmschalter, setAnordnen, setInGruppe, setModal, setMultiAuswahl, setNeueSessionSchritt, setSlotAuswahl, setSlotDragId, setSlotDragZiel, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSpaltenWahl, setStatistikAktiverSlot, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikFilter, setStatistikListenIds, setStatistikSlotGeleert, slotAuswahl, slotH, slotInfoH, slotOrdner, slotSichtbarRef, slotSortModus, slots, speichereEinst, tt } = app;
+  const { slotEbenenMenue, listenEbenenMenue, einstellungen, faelligAktion, faelligAlle, faelligVonSlots, headerH, minSpalten, multiAuswahl, neuImOrdnerRef, pfadTeile, quizListenUmschalter, setAnordnen, setInGruppe, setModal, setMultiAuswahl, setNeueSessionSchritt, setSlotAuswahl, setSlotDragId, setSlotDragZiel, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSpaltenWahl, setStatistikAktiverSlot, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikFilter, setStatistikListenIds, setStatistikSlotGeleert, slotAuswahl, slotH, slotInfoH, slotOrdner, slotSichtbarRef, slotSortModus, slots, speichereEinst, tt } = app;
     const ordnerOffen = (slots.ordner || []).find(o => o.id === slotOrdner) || null;
     const neueSession = imOrdner => ({ label: "＋ Neues Quiz aus Listen", fn: () => { neuImOrdnerRef.current = imOrdner; setNeueSessionSchritt("art"); setModal("neue-session"); } });
     const faellige = faelligAktion;
@@ -388,9 +391,9 @@ export function ordnerNavi(app, stil, statistik = false) {
       ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe({ ids: [], name: "", eltern }) }] : [];
     const spaltenAktion = ordnerId => ({ label: `▥ Spalten (${minSpalten("slot", ordnerId)})`, fn: () => setSpaltenWahl({ art: "slot", ordner: ordnerId }) });   // 203
     const anordnenAktion = ordnerId => ({ label: "⇅ Anordnen…", fn: () => setAnordnen({ art: "slot", ordner: ordnerId }) });   // 208
-    const alleAktionen = [...(statistik ? [alleListen] : [neueSession(null)]), ...faellige(faelligAlle), ...neuerOrdner(null), spaltenAktion(null), anordnenAktion(null), gelerntUmschalter];
-    const ordnerAktionen = o => [...(statistik ? [] : [neueSession(o.id)]),
-      ...faellige(faelligVonSlots(eintraegeImOrdner(slots, o.id).map(g => g.id))), ...neuerOrdner(o.id), spaltenAktion(o.id), anordnenAktion(o.id), gelerntUmschalter];
+    // 248: volles Menü nur für die sichtbare Ebene; Ordner darüber: Fällige + Gelernte
+    const alleAktionen = [...(statistik ? [alleListen] : []), ...slotEbenenMenue(null, { voll: !slotOrdner, ohneNeu: statistik })];
+    const ordnerAktionen = o => slotEbenenMenue(o.id, { voll: o.id === slotOrdner, ohneNeu: statistik });
     const markiert = slotAuswahl.length;
     const geheZu = id => { setSlotOrdner(id); setSlotSortModus(false); setSlotAuswahl([]); };
     return (
@@ -429,7 +432,7 @@ export function wahlLeiste(app, art, stil) {
 // neu berechnet nur, wenn sich die Konfiguration oder eine ihrer Listen (lsLesen: dasselbe Objekt, solange unverändert) ändert
 const kachelPuffer = new Map();
 export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) {
-  const { merkeVerschieben, zugRand, FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligAktion, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setListenAendern, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef } = app;
+  const { slotEbenenMenue, listenEbenenMenue, vonBis, merkeVerschieben, zugRand, FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligAktion, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setListenAendern, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef } = app;
     // Lernfortschritt je Art für die Mini-Kreise (jede Liste nur einmal lesen)
     const listenCache = new Map();
     const listeVon = id => { if (!listenCache.has(id)) listenCache.set(id, lsLesen(SK.liste(id))); return listenCache.get(id); };
@@ -538,6 +541,7 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     auswahlTafelDaten.current.slot = () => multiAuswahl && tafelInhalt(multiAuswahl);
     // Ziehen: diese Kacheln wandern mit; über einer anderen verweilen bildet eine Gruppe (nur oberste Ebene, keine Gruppen in Gruppen)
     const ziehIds = slotDragId ? (slotAuswahl.includes(slotDragId) ? slotAuswahl : [slotDragId]) : [];
+    const rueckS = slotDragId && gruppenZiel !== slotDragZiel ? rueckendeIds(raster.gespeichert, ziehIds, slotDragZiel) : new Set();   // 246: Vorschau
     const gruppierbar = !!slotDragId;   // 193: Ring nur, wenn der Verweil-Effekt ein Ziel setzt (prüft Tiefe und Ordner)
     const tippeImRaster = (x, platz) => {
       if (slotGezogenRef.current) { slotGezogenRef.current = false; return; }
@@ -576,7 +580,7 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
           </span>
         </>);
         zellen.push(slotSortModus ? (
-          <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-ordner-id={x.istOrdner ? x.id : undefined} className={`slot-chip belegt raster-chip${x.istOrdner ? " ordner-kachel" : ""}`}
+          <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-ordner-id={x.istOrdner ? x.id : undefined} data-rueckt={rueckS.has(x.id) ? "" : undefined} className={`slot-chip belegt raster-chip${x.istOrdner ? " ordner-kachel" : ""}`}
             style={{touchAction:"none", cursor:"grab",
               ...(slotAuswahl.includes(x.id) ? {boxShadow:"0 0 0 2px var(--karte), 0 0 0 5px var(--bestaetigen)"} : {}),
               ...(slotDragId && (slotDragId === x.id || (slotAuswahl.includes(slotDragId) && slotAuswahl.includes(x.id))) ? {opacity:0.4, borderStyle:"dashed"} : {}),
@@ -589,12 +593,12 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
             {slotAuswahl.includes(x.id) && <span className="auswahl-nr" data-auswahl-nr>{slotAuswahl.indexOf(x.id) + 1}</span>}
             {verweilen ? (
               <span className={`gruppen-ring${gruppenZiel === key ? " fertig" : ""}`} data-gruppen-ring={gruppenZiel === key ? "fertig" : "laeuft"}>
-                <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15"/></svg><span data-ring-symbol={gruppenZiel === key ? "ordner" : "tauschen"}>{gruppenZiel === key ? "📁" : "⇄"}</span>
+                <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15"/></svg><span data-ring-symbol={gruppenZiel === key ? "ordner" : "einfuegen"}>{gruppenZiel === key ? "📁" : "↓"}</span>
               </span>
             ) : null}
           </button>
         ) : x.istOrdner ? (
-          <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-ordner-id={x.id} data-kachel-geste="ordner" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined}
+          <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-ordner-id={x.id} data-kachel-geste="ordner" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined} data-rueckt={rueckS.has(x.id) ? "" : undefined}
             data-multi-nr={multiNr || undefined} data-auswahl-durchlass
             className={`slot-chip belegt raster-chip ordner-kachel${slotRef?.typ === "gespeichert" && kinder.some(k => k.id === slotRef.id) ? " ordner-aktiv" : ""}${multiNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) ? " kachel-gewaehlt" : ""}`}
             data-heute={heuteP}
@@ -610,14 +614,15 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
           </button>
         ) : (
           <button key={key} data-raster-zelle={key} data-slot-id={x.id} data-multi-nr={multiNr || undefined} data-auswahl-durchlass
-            data-kachel-geste="slot" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined}
+            data-kachel-geste="slot" data-kachel-zieh="" data-angehoben={angehoben === x.id ? "" : undefined} data-rueckt={rueckS.has(x.id) ? "" : undefined}
             data-heute={heuteP}
             className={`slot-chip belegt raster-chip${
               multiNr || teilNr || (lasso?.art === "slot" && lasso.ids.includes(x.id)) || (!multiAuswahl && (slotVorschau ? slotVorschau.typ === "gespeichert" && slotVorschau.id === x.id : slotRef?.typ === "gespeichert" && slotRef?.id === x.id)) ? " kachel-gewaehlt" : ""}${blitzt(`slot:${x.id}`)}`}
             data-vorschau={(slotVorschau?.typ === "gespeichert" && slotVorschau.id === x.id) || (multiAuswahl?.length === 1 && multiAuswahl[0] === x.id) ? "" : undefined}
             style={{...chipStil('gespeichert', x.id, slotRef), position:"relative",
               ...(heuteP > 0 ? { backgroundImage: `linear-gradient(to right, var(--heute-farbe) ${heuteP}%, transparent ${heuteP}%)` } : {})}}
-            onClick={() => multiAuswahl
+            onClick={() => vonBis?.art === "slot" ? wahlUmschaltenRef.current("slot", x.id)   // 243: Von–Bis – antippen wählt das Ende
+              : multiAuswahl
               ? (auswahlTafelRef.current = "slot", setSlotVorschauListe(false), setMultiAuswahl([x.id]), leuchte(`slot:${x.id}`, BLITZ_MS / 2))   // 234: Auswahl beginnt neu mit dieser Kachel
               : blaettern ? (leuchte(`slot:${x.id}`, BLITZ_MS / 2), setSlotVorschauListe(false), setSlotVorschau({ typ: "gespeichert", id: x.id }))
               : uebernimmSlots([x.id])}   // 192: antippen übernimmt sofort – außer im Blätter-Modus (nach einem Lang-Druck)
@@ -646,9 +651,8 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
       } else {
         // 194: freier Platz – lang drücken: neuer (leerer) Ordner genau hier; im leeren Ordner gestrichelt sichtbar
         zellen.push(<div key={key} className="raster-leer" data-freier-platz={key} style={ebeneLeer ? {borderStyle:"dashed", opacity:0.5} : {border:"none"}}
-          {...tt("Freier Platz – lang drücken: neues Quiz oder neuer Ordner genau hier", [
-            ...(tab === "statistik" ? [] : [{ label: "＋ Neues Quiz aus Listen", fn: () => { neuImOrdnerRef.current = ordnerOffen?.id || null; neuPlatzRef.current = { ordner: ordnerOffen?.id || null, platz: { z, s: sp } }; setNeueSessionSchritt("art"); setModal("neue-session"); } }]),
-            ...(ordnerHierGeht ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe({ ids: [], name: "", platz: { z, s: sp } }) }] : [])])}/>);
+          {...tt("Freier Platz – lang drücken: Menü dieser Ebene (Neues landet genau hier)",
+            slotEbenenMenue(ordnerOffen?.id || null, { platz: { z, s: sp }, ohneNeu: tab === "statistik" }))}/>);   // 247
       }
     }
     return (<>

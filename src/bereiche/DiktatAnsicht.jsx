@@ -122,7 +122,7 @@ export function DiktatAnsicht(app) {
         <style>{CSS}</style>{farbModusUI}{farbRadUI}{renderVokabelEditor()}
         <div className="app">
           <div className="topbar">
-            <button {...tt("Diktat abbrechen – bisherige Ergebnisse werden ausgewertet")} className="topbar-back" onClick={() => { beendeQuiz(); }}>Beenden</button>
+            <button {...tt("Diktat pausieren – bisherige Ergebnisse sind gespeichert und werden ausgewertet")} className="topbar-back" data-quiz-pause onClick={() => { beendeQuiz(); }}>Pausieren</button>
             <span className="topbar-title"><span>{quiz.index + 1} / {quiz.vokabeln.length}</span>{renderKopfFortschritt(quiz)}</span>
             <span className="quiz-fortschritt">Score: {diktatScore > 0 ? "+" : ""}{diktatScore}</span>
           </div>

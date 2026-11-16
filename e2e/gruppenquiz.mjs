@@ -111,7 +111,7 @@ for (let i = 0; i < 2; i++) {
   await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(250);
   await clickText(".karte-btn-nein", "Nicht gewusst"); await sleep(1200);   // 178: richtig hebt −1…−3 auf 0 – damit „Negativ“ gefüllt bleibt
 }
-await clickText(".topbar-back", "Beenden"); await sleep(500);
+await clickText(".topbar-back", "Pausieren"); await sleep(500);
 if (/Zur Übersicht/.test(await page.evaluate(() => document.body.innerText))) await clickText("button", "Zur Übersicht");
 await auswahlZu(page);   // 190: Quiz-Auswahl ist offen
 await sleep(400);

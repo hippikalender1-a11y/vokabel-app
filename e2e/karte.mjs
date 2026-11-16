@@ -70,7 +70,7 @@ await page.click("[data-karte-weiter]");
 await sleep(300);
 const zweite = await page.evaluate(() => ({ input: !!document.querySelector("input.inp"), bewertung: !!document.querySelector(".karte-bewertung") }));
 ok(!zweite.input && zweite.bewertung, `Spalte 2 im Quiz als Karte (kein Eingabefeld, aufgedeckt mit Gewusst/Nicht gewusst) ${JSON.stringify(zweite)}`);
-await clickText("button", "Beenden");
+await clickText("button", "Pausieren");
 await sleep(300);
 const zu = await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent)));
 if (zu) await clickText("button", "Zur Übersicht");

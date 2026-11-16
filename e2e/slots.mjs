@@ -145,7 +145,7 @@ await tippZelle("5|1"); await sleep(150); await tippZelle("6|1"); await sleep(20
 pl = await plaetze();
 console.log("     Gruppe gezogen:", JSON.stringify(pl));
 ok(pl[n1] === "0|0" && pl[n2] === "1|0" && pl[n3] === "3|1", "markierte Gruppe gezogen: wandert zusammen (0|0, 1|0)");
-// Ziehen (einzeln): n3 (3|1) auf n2 (1|0) → Tausch
+// Ziehen (einzeln): n3 (3|1) auf n2 (1|0) → 242: n2 rückt nach unten
 const box = k => page.evaluate(k => { const r = document.querySelector(`[data-raster-zelle="${k}"]`).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, k);
 const von = await box("3|1"), nach = await box("1|0");
 await page.mouse.move(von.x, von.y); await page.mouse.down();
@@ -159,7 +159,7 @@ for (let i = 2; i <= 10; i++) { await page.mouse.move(von.x + (nach.x - von.x) *
 await page.mouse.up(); await sleep(300);
 pl = await plaetze();
 console.log("     nach Ziehen:", JSON.stringify(pl));
-ok(pl[n3] === "1|0" && pl[n2] === "3|1", "Ziehen auf belegten Platz: tauschen");
+ok(pl[n3] === "1|0" && pl[n2] === "2|0", "242: Ziehen auf belegten Platz: der belegte rückt nach unten");
 await page.screenshot({ path: "slots_raster.png" });
 await clickText("button", "Fertig", true);
 const lang = await page.evaluate(n => document.querySelector(`[data-slot-id] [class="raster-name"]`) && [...document.querySelectorAll("[data-slot-id]")].find(b => b.textContent.includes(n))?.getAttribute("data-info"), n3);
@@ -195,9 +195,9 @@ pl = await plaetze();
 console.log("     nach Duplizieren:", JSON.stringify(pl));
 ok(dup && dup.id !== orig.id && JSON.stringify(dup.konfiguration) === JSON.stringify(orig.konfiguration) && !dup.sessionFortschritte?.uebersetzung,
   "Duplikat: eigene Kennung, gleiche Konfiguration, ohne Fortschritt");
-ok(pl["Meine Verben 2"] === "4|0" && pl["Meine Verben"] === platzN1, `Duplikat untereinander unter dem untersten Eintrag (4|0), Original bleibt (${pl["Meine Verben 2"]})`);
+ok(pl["Meine Verben 2"] === "3|0" && pl["Meine Verben"] === platzN1, `Duplikat untereinander unter dem untersten Eintrag (3|0), Original bleibt (${pl["Meine Verben 2"]})`);
 // für den weiteren Ablauf wieder entfernen
-await menue("4|0"); await aktion("🗑 Löschen"); await clickText(".modal .btn-danger", "Löschen", true);
+await menue("3|0"); await aktion("🗑 Löschen"); await clickText(".modal .btn-danger", "Löschen", true);   // 242: das Duplikat liegt jetzt auf 3|0
 
 // Einstellungen: nur noch Spalten (3); Zeilen wachsen von selbst – neuer Eintrag kommt unter den untersten
 ok(!(await page.$('[data-einst-kopf="raster"]')), "196: keine Raster-Einstellung mehr (Spalten wachsen mit)");

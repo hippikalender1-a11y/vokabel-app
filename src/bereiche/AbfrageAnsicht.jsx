@@ -212,7 +212,7 @@ export function AbfrageAnsicht(app) {
           <style>{CSS}</style>{farbModusUI}{farbRadUI}
           <div className="app">
             <div className="topbar">
-              <button {...tt("Abfrage beenden – Beantwortetes bleibt gewertet")} className="topbar-back" onClick={brecheQuizAb}>Beenden</button>
+              <button {...tt("Abfrage pausieren – Beantwortetes ist gespeichert, beim nächsten Start geht es weiter")} className="topbar-back" data-quiz-pause onClick={brecheQuizAb}>Pausieren</button>
               <span className="topbar-title">{z.art === "memory" ? "Memory" : "Zuordnung"}</span>
               <span className="quiz-fortschritt" data-zuo-fortschritt>{fertigAnz} / {gesamt}</span>
             </div>
@@ -415,7 +415,7 @@ export function AbfrageAnsicht(app) {
             {quiz.wiederholungDurchgang ? (
               <button {...tt("Wiederholung abbrechen und zur Auswertung")} className="topbar-back" onClick={brecheWiederholungAb}>Beenden</button>
             ) : (
-              <button {...tt("Quiz abbrechen – bisher beantwortete Vokabeln werden ausgewertet")} className="topbar-back" onClick={() => { brecheQuizAb(); }}>Beenden</button>
+              <button {...tt("Quiz pausieren – Beantwortetes ist gespeichert und wird ausgewertet, beim nächsten Start geht es weiter")} className="topbar-back" data-quiz-pause onClick={() => { brecheQuizAb(); }}>Pausieren</button>
             )}
             {karteMitInfo && (
               <button data-karte-info-schalter={karteInfoAn ? "an" : "aus"} className="topbar-back"

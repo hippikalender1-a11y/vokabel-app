@@ -69,7 +69,7 @@ ok(v.E1.wert === "aller (irr.)" && v.E1.falsch.join() === "allé" && v.fortschri
 ok(!(await page.$("[data-vokabel-editor]")) && await page.$(".quiz-frage-text"), "Dialog zu, Abfrage läuft weiter");
 await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click()); await sleep(300);
 ok(/aller \(irr\.\)/.test(await page.evaluate(() => document.querySelector("[data-karte-antwort]")?.textContent || "")), "aufgedeckte Karte zeigt die neue Antwort");
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Beenden")?.click()); await sleep(400);
+await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Pausieren")?.click()); await sleep(400);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(400);
 
 // ── Abfrage (Tippen): geänderte Antwort gilt sofort ──
@@ -81,7 +81,7 @@ await page.keyboard.press("Enter"); await sleep(300);
 ok((await vok(1)).E1.wert === "aller" && !(await page.$("[data-vokabel-editor]")), "Enter im Dialog speichert (auch über der Frage-Karte)");
 await page.type(".quiz-antwort-box input.inp, .quiz-aktionen input.inp", "aller"); await page.keyboard.press("Enter"); await sleep(400);
 ok(await page.evaluate(() => /richtig|gelernt-blitz/.test(document.querySelector(".quiz-antwort-box")?.className || "")), "die geänderte Antwort wird sofort als richtig erkannt (ggf. gleich gelernt)");
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Beenden")?.click()); await sleep(400);
+await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Pausieren")?.click()); await sleep(400);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(400);
 
 // ── Statistik: Bearbeiten (alle Spalten) und neue Vokabel ──

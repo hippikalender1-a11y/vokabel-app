@@ -5,7 +5,7 @@ import { F, FARB_BASIS, FARB_ROLLEN, FARB_VORLAGEN, TEIL_EIGENSCHAFT, elementCSS
 import { SPALTEN_TAG, dateiVorschau, findeJsonListen, generiereExportText, generierePrompt, istBinaer, parseKolumne, parseKopfZeile, parseZeile } from "./importexport.js";
 import { FarbRad, GelerntSterne, IcoBack, IcoCollapse, IcoDown, IcoExpand, IcoPencil, IcoSpk, IcoSpkOn, IcoUp, IcoX, MiniKreis } from "./komponenten.jsx";
 import { ABFRAGE_ART_NAMEN, AKZENTE_FUER_LISTE, AKZENT_HINWEIS, AKZENT_OHNE_ANTEILE, ANTWORT_MODUS_NAMEN, ART_KURZ, BLITZ_SEKUNDEN, FAELLIG_ANTEIL_WAHL, FESTES_ZEICHEN, FORTSCHRITT_BALKEN, GELERNT_SCHWELLE, GRUPPE_BALKEN, LERNEN_STANDARD, LERNEN_TIPPEN, LIGATUR_TEILE, MAX_STUFE, MC_FEHLKLICK_HINWEIS, MODI_REIHENFOLGE, PAKET_ALLE, QUIZ_ARTEN, REKORDE_KEY, SATZ_ARTEN, SATZ_CACHE, SCORE_FELD, STANDARD_ABFRAGE_ZIEL, STANDARD_ANTWORT_GEWICHTE, STANDARD_ANTWORT_MODUS, STANDARD_MAX_SCORE, STANDARD_PAKET_GROESSE, STANDARD_REIHENFOLGE, STANDARD_SESSION_MODUS, STANDARD_UNBEANTWORTET_ZUERST, START_TEXT, STATISTIK_ARTEN, STUFEN_REGELN, WIEDERHOL_TAGE_WAHL, ZUORDNUNG_FARBEN, ZUORDNUNG_SEKUNDEN, ZUORDNUNG_ZEITEN, ZUORDNUNG_ZEITFAKTOR, akzentKacheln, akzentOhneAnteil, akzentVarianten, alternativen, antwortSpaltenFuer, antwortStatus, artBereinigt, artFelderAus, artVonKonfig, artikelInfo, berechneDiktatScore, berechneNeuenScore, clampScore, diktatHint, ersteAlt, faelligAnteil, gelerntScore, generiereButtons, getQuizFeedback, gewichtetWaehlen, hatAkzentWort, hatAkzente, heuteAbgefragt, heuteAnteil, hinweiseAus, istFaellig, istMC, istRichtigeAntwort, istRichtigeEinzeln, istRunde, jubelText, lernLesezeit, lernProzent, loeseSpaltenModusAuf, lueckenPositionen, mischeFaellige, mitHinweis, modiVon, modusErlaubt, negativUmstellen, nrText, ohneAkzent, ohneHinweis, ordneVokabeln, puzzleKacheln, satzFuer, scoreSymbole, slotKonfigArt, slotSFAlle, speichereAkzentScore, speichereDiktatScore, speichereScore, standardArtEinstellungen, statistikSicht, stufenRegeln, stufenUmstellen, tagesSperre, umbruch, vokSprache, wiederholTage, zufallMitSeed, zuordnungEinst, setzeAKZENTE_FUER_LISTE, setzeANTWORT_GEWICHTE } from "./quiz.jsx";
-import { AUFTEILEN_GROESSEN, GRUPPE_VERWEILEN_MS, haltenHaptik, KACHEL_WAEHLEN_MS, KACHEL_ZIEHEN_MS, KACHEL_LASSO_FREI, MISCH_ARTEN, ORDNER_KNOPF, ORDNER_TIEFE_MAX, RASTER_FREI_ZEILEN, SUCHE_LEER, SUCH_SPALTEN, aufteilenGruppen, ebeneVon, ebenenSpalten, eintraegeImOrdner, gruppenName, nachPlatz, legeInOrdner, loeseOrdnerDaten, nachOrdnerBaum, nameVergleich, neuerOrdnerIn, ordneEbeneAn, ordneRaster, ordnerBereinigen, ordnerPasst, ordnerPfad, ordnerUnter, platziereGruppe, rasterGroesse, setzeEbene, sucheVokabeln, zahlDe, zielUnter } from "./raster.js";
+import { AUFTEILEN_GROESSEN, GRUPPE_VERWEILEN_MS, haltenHaptik, KACHEL_WAEHLEN_MS, KACHEL_ZIEHEN_MS, KACHEL_LASSO_FREI, MISCH_ARTEN, ORDNER_KNOPF, ORDNER_TIEFE_MAX, RASTER_FREI_ZEILEN, SUCHE_LEER, SUCH_SPALTEN, aufteilenGruppen, ebeneVon, ebenenSpalten, eintraegeImOrdner, gruppenName, nachPlatz, legeInOrdner, loeseOrdnerDaten, nachOrdnerBaum, nameVergleich, neuerOrdnerIn, ordneEbeneAn, ordneRaster, ordnerBereinigen, ordnerPasst, ordnerPfad, ordnerUnter, platziereGruppe, belegteZeilen, rasterGroesse, setzeEbene, sucheVokabeln, zahlDe, zielUnter } from "./raster.js";
 import { SATZ_ANZAHLEN, SATZ_BEGLEITSATZ, SATZ_PORTION, istSynonymSpalte, listenInhalt, saetzeAusAntwort, saetzeLaden, saetzeSpeichern, satzPrompt, satzStandAlle, synPrompt, synonymeAus, synonymeAusAntwort } from "./saetze.js";
 import { APP_VERSION, BLITZ_MS, SICHERUNG_TAGE, SICHERUNG_TAG_MS, SK, SLOT_ZU_VERZOEGERUNG, TYPEN, WAHL_ZU_MS, defaultEinstellungen, defaultSlots, ergaenzeSpalten, erstelleSicherung, formatDatum, formatSlotDatum, formatTag, istSicherung, leseDateiAlsText, listenAusSicherung, lsDel, lsGet, lsSet, neueListeObjekt, neuerSlotId, splitInSeiten, stelleSicherungWiederHer, lsLesen } from "./speicher.js";
 import { SPRACHEN, SPRACH_KUERZEL, STIMMEN_PROBE, STIMMEN_WAHL, aeusserung, aktiveStimmen, erkenneSprache, gewaehlteStimme, listeSprache, naechsteStimme, normLang, setzeStimmenWahl, spalteLang, sprachInfo, sprich, sprichAuto, stimmeFuer, stimmeGeschlecht, stimmenFuerSprache, stimmenVarianten, varianteText, vorleseTeile } from "./sprache.js";
@@ -424,8 +424,12 @@ export default function VokabelApp() {
   // Quiz-Fokus: ein offener Bereich zeigt nur seine Überschrift (klebt unter des Quiz-Leiste) und seinen Inhalt;
   // zu nur über die Überschrift (kein Zuklappen beim Weiterscrollen). Ohne offenen Bereich scrollt alles unter des Quiz-Leiste.
   // 230: ein aus der Mehrfach-Auswahl übernommenes Quiz (Multiquiz bzw. mehrere Listen) ist ein festes Paket – ohne Listen-/Bereichsauswahl
-  const istPaketQuiz = (aktiverSlot?.typ === "verlauf" && !!getSlotEintrag("verlauf", aktiverSlot.id)?.multi)
-    || (!aktiverSlot && !quizErstellen && !!listenPaket && listenPaket.join() === quizTabListen.join());
+  // 230/244: festes Paket – Multiquiz bzw. aus der Listen-Auswahl übernommen (auch nach dem Start: Verlaufseintrag mit „paket“)
+  const listenPaketAktiv = !aktiverSlot && !quizErstellen && !!listenPaket && listenPaket.join() === quizTabListen.join();
+  const verlaufE = aktiverSlot?.typ === "verlauf" ? getSlotEintrag("verlauf", aktiverSlot.id) : null;
+  const istPaketQuiz = !!verlaufE?.multi || !!verlaufE?.paket || listenPaketAktiv;
+  // 250: Kopf antippen öffnet die Auswahl, aus der das Quiz kam (Listen: eine Liste bzw. ein Listen-Paket)
+  const kommtAusListen = aktiverSlot?.typ === "listen" || !!verlaufE?.paket || listenPaketAktiv;
   const quizListenSichtbar = !((aktiverSlot?.typ === "gespeichert" || aktiverSlot?.typ === "listen" || istPaketQuiz) && !listenAendern);   // 217 (beim Erstellen bleibt die Vokabel-Auswahl sichtbar)
   const quizFokus = tab !== "quiz" || slotSektionAufgeklappt || quizTabListen.length === 0 || aufteilen ? null
     : quizListenSichtbar && listenOffen ? "listen"
@@ -815,6 +819,25 @@ export default function VokabelApp() {
     return () => { clearTimeout(t); document.removeEventListener("pointerdown", weg, true); };
   }, [rueckgaengig]);
 
+  // 246: Abbild der gezogenen Kachel folgt dem Finger (direkt im DOM, ohne neu zu zeichnen); bei mehreren mit Anzahl
+  const geistRef = useRef(null);
+  function geistStart(d, anzahl) {
+    geistEnde();
+    const el = document.querySelector(d.art === "liste" ? `[data-liste-id="${d.id}"], [data-lordner-id="${d.id}"]` : `[data-slot-id="${d.id}"]`);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const g = el.cloneNode(true);
+    [g, ...g.querySelectorAll("*")].forEach(n => [...n.attributes].forEach(at => { if (at.name.startsWith("data-") || at.name === "id") n.removeAttribute(at.name); }));
+    g.classList.add("zug-geist"); g.setAttribute("data-zug-geist", ""); g.setAttribute("aria-hidden", "true");
+    Object.assign(g.style, { position: "fixed", left: "0px", top: "0px", margin: "0px", width: `${r.width}px`, height: `${r.height}px`, pointerEvents: "none", zIndex: "10003", opacity: "0.92", transition: "none" });
+    if (anzahl > 1) { const b = document.createElement("span"); b.className = "zug-geist-anz"; b.textContent = String(anzahl); g.appendChild(b); }
+    document.body.appendChild(g);
+    geistRef.current = { g, dx: d.x - r.left, dy: d.y - r.top };
+    geistZiehen(d.x, d.y);
+  }
+  function geistZiehen(x, y) { const z = geistRef.current; if (z) z.g.style.transform = `translate(${x - z.dx}px, ${y - z.dy}px) scale(1.04)`; }
+  function geistEnde() { geistRef.current?.g.remove(); geistRef.current = null; }
+
   // Lang-Druck auf einen Raster-Eintrag und dann ziehen (auch außerhalb des Verschieben-Modus):
   // sobald der Finger sich bewegt, Menü/Erklärung weg, Verschieben-Modus an, Eintrag folgt dem Finger
   useEffect(() => {
@@ -837,9 +860,11 @@ export default function VokabelApp() {
           else if (!r.slot.includes(d.id)) setSlotAuswahl([]);
         }
         setSlotDragId(d.id); setZugRand(false);
+        geistStart(d, d.wahl ? d.wahl.length : ((d.art === "liste" ? r.liste : r.slot).includes(d.id) ? (d.art === "liste" ? r.liste : r.slot).length : 1));   // 246
       }
       if (!d.aktiv) return;
       if (e.cancelable) e.preventDefault();   // Seite nicht scrollen, solange gezogen wird
+      geistZiehen(t.clientX, t.clientY);   // 246
       if (!d.rand) {   // 231: Finger am rechten Rand des Rasters → eine freie Spalte dazu
         const feld = document.querySelector(d.art === "liste" ? ".listen-raster[data-raster-spalten-anz]" : ".slot-raster[data-raster-spalten-anz]:not([data-quiz-listen-raster])");
         const r = feld?.getBoundingClientRect(), n = Number(feld?.dataset.rasterSpaltenAnz) || 1;
@@ -852,6 +877,7 @@ export default function VokabelApp() {
       const d = slotZiehenRef.current;
       if (!d?.langdruck) return;
       slotZiehenRef.current = null;
+      geistEnde();   // 246
       if (!d.aktiv) return;   // nur Lang-Druck: Menü bleibt offen
       slotGezogenRef.current = true; setTimeout(() => { slotGezogenRef.current = false; }, 400);   // nur den Klick direkt danach schlucken
       const t = e.changedTouches[0];
@@ -880,7 +906,7 @@ export default function VokabelApp() {
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Raster verschieben per Ziehen: ab 8 px Bewegung wird gezogen, beim Loslassen auf den Platz darunter
-  // (belegt → tauschen). Ohne Bewegung bleibt es ein Antippen (Auswahl) bzw. Lang-Druck (Info).
+  // (belegt → die übrigen rücken nach unten, 242). Ohne Bewegung bleibt es ein Antippen (Auswahl) bzw. Lang-Druck (Info).
   useEffect(() => {
     if (!slotSortModus && !listenSortModus) return;
     const zelleUnter = e => zielUnter(e.clientX, e.clientY);
@@ -892,8 +918,10 @@ export default function VokabelApp() {
         const ausw = rasterAuswahlRef.current[d.art === "liste" ? "liste" : "slot"];
         if (!ausw.includes(d.id)) { setSlotAuswahl([]); setListenAuswahl([]); }
         clearTimeout(tooltipTimer.current); schliesseInfo();   // Lang-Druck-Erklärung weg, sobald gezogen wird
+        geistStart(d, ausw.includes(d.id) ? ausw.length : 1);   // 246
       }
       if (!d.aktiv) return;
+      geistZiehen(e.clientX, e.clientY);   // 246
       setSlotDragZiel(zelleUnter(e));
       if (e.clientY < 90) window.scrollBy(0, -12); else if (e.clientY > window.innerHeight - 60) window.scrollBy(0, 12);
     };
@@ -901,6 +929,7 @@ export default function VokabelApp() {
       const d = slotZiehenRef.current;
       if (d?.langdruck) return;
       slotZiehenRef.current = null;
+      geistEnde();   // 246
       if (!d?.aktiv) return;
       slotGezogenRef.current = true; setTimeout(() => { slotGezogenRef.current = false; }, 400);   // nur den Klick direkt danach schlucken
       const ziel = e.type === "pointerup" ? zelleUnter(e) : null;
@@ -1021,7 +1050,7 @@ export default function VokabelApp() {
   useEffect(() => {
     if (!slotSektionAufgeklappt || (tab !== "quiz" && tab !== "statistik") || multiAuswahl || slotSortModus) return;
     // 220: Liste im Kopf → Listen-Auswahl, ihr Ordner offen, Kachel in den Blick
-    if (tab === "quiz") { setAuswahlListen(listenAuswahlErzwingenRef.current || rasterSlot?.typ === "listen"); if (listenAuswahlErzwingenRef.current) { listenAuswahlErzwingenRef.current = false; return; } }
+    if (tab === "quiz") { setAuswahlListen(listenAuswahlErzwingenRef.current || kommtAusListen); if (listenAuswahlErzwingenRef.current) { listenAuswahlErzwingenRef.current = false; return; } }   // 250: zurück in die Auswahl, aus der das Quiz kam
     if (tab === "quiz" && rasterSlot?.typ === "listen") {
       const l = lsGet(SK.listenIndex, []).find(x => x.id === rasterSlot.id);
       if (!l) return;
@@ -1350,10 +1379,12 @@ export default function VokabelApp() {
   function setzeListenPlaetze(ids, ziel) {
     const einst = lsGet(SK.einstellungen, defaultEinstellungen());
     const g = rasterGroesse(einst, "listenRaster");
-    const einstNeu = ziel.z + ids.length > g.zeilen ? { ...einst, listenRaster: { ...g, zeilen: ziel.z + ids.length } } : einst;
-    if (einstNeu !== einst) speichereEinst(einstNeu);
     const data = listenOrdnerDaten();
-    speichereListenOrdnerDaten(setzeEbene(data, platziereGruppe(ebeneVon(data, listenOrdnerOffenRef.current), ids, ziel)), einstNeu);
+    const platziert = platziereGruppe(ebeneVon(data, listenOrdnerOffenRef.current), ids, ziel);
+    const noetig = belegteZeilen(platziert);   // 242: nach unten gerückte brauchen evtl. mehr Zeilen
+    const einstNeu = noetig > g.zeilen ? { ...einst, listenRaster: { ...g, zeilen: noetig } } : einst;
+    if (einstNeu !== einst) speichereEinst(einstNeu);
+    speichereListenOrdnerDaten(setzeEbene(data, platziert), einstNeu);
     setListenAuswahl([]);
   }
   // 193: Listen-Ordner – wie die Quiz-Ordner
@@ -1804,7 +1835,14 @@ export default function VokabelApp() {
 
   // Abfrage ohne Pakete im Verlauf festhalten (mit Start-Scores für die Statistik).
   // Gespeicherte Konfiguration oder unveränderter Verlauf-Eintrag → kein neuer Eintrag.
-  function merkeRundeImVerlauf(...args) { return merkeRundeImVerlaufTeil({ aktuelleKonfiguration, erstelleVerlaufEintrag, getSlotEintrag, getSlotsData, setSlotsData }, ...args); }
+  // 244: Verlaufseintrag für ein neues Paket-Quiz – Multiquiz bzw. Listen-Paket bleiben derselbe Eintrag, ein frisch
+  // aus der Listen-Auswahl übernommenes Quiz bekommt das Kennzeichen „paket“
+  function paketVerlaufId(effSlot) {
+    const e = effSlot?.typ === "verlauf" ? getSlotEintrag("verlauf", effSlot.id) : null;
+    if (e && (e.multi || e.paket)) return e.id;
+    return erstelleVerlaufEintrag(listenPaketAktiv ? { paket: true } : {});
+  }
+  function merkeRundeImVerlauf(...args) { return merkeRundeImVerlaufTeil({ aktuelleKonfiguration, erstelleVerlaufEintrag, getSlotEintrag, getSlotsData, listenPaketAktiv, setSlotsData }, ...args); }
 
   function erstelleVerlaufEintrag(...args) { return erstelleVerlaufEintragTeil({ aktuelleKonfiguration, getSlotsData, setAktiverSlot, setSlotGeaendert, setSlotsData }, ...args); }
 
@@ -1967,7 +2005,7 @@ export default function VokabelApp() {
 
   function toggleEinzelauswahl(...args) { return toggleEinzelauswahlTeil({ alleBereichH, dropdownImmuneRef, einzelauswahlRef, headerH, listenauswahlHeaderH, quizListeAufgeklappt, schliesseQuizBereiche, setQuizListeAufgeklappt, slotH }, ...args); }
 
-  function toggleSlotSektion(...args) { return toggleSlotSektionTeil({ aktiverSlot, dropdownImmuneRef, headerH, leuchte, schliesseQuizBereiche, setAuswahlListen, setMultiAuswahl, setSlotAuswahl, setSlotSektionAufgeklappt, setSlotSortModus, slotContainerRef, slotH, slotSektionAufgeklappt, slotZuTimerRef, tab }, ...args); }
+  function toggleSlotSektion(...args) { return toggleSlotSektionTeil({ kommtAusListen, aktiverSlot, dropdownImmuneRef, headerH, leuchte, schliesseQuizBereiche, setAuswahlListen, setMultiAuswahl, setSlotAuswahl, setSlotSektionAufgeklappt, setSlotSortModus, slotContainerRef, slotH, slotSektionAufgeklappt, slotZuTimerRef, tab }, ...args); }
 
   function toggleStatistikListenAuswahl(...args) { return toggleStatistikListenAuswahlTeil({ dropdownImmuneRef, headerH, setStatistikListenAufgeklappt, slotH, statistikListenAufgeklappt, statistikListenContainerRef }, ...args); }
 
@@ -2317,8 +2355,35 @@ export default function VokabelApp() {
   function listeOeffnenKopf(...args) { return listeOeffnenKopfTeil({ blitzt, headerH, listenMenue, oeffneListeDetail, setListeVorschau, tt }, ...args); }
   function renderListeInfo(...args) { return renderListeInfoTeil({ einstellungen, gruppenKurz, infoKlapp, infoZu, lernstandJeArt, renderMiniKreise, satzStand, tt }, ...args); }
   // 193: Pfad über den Listen – „Alle Listen › 📁 A › 📁 B“ (gelb), lang drücken: neue Liste / neuer Ordner hier
-  function listenNavi(...args) { return listenNaviTeil({ headerH, listenKopfH, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, minSpalten, pfadTeile, quizListenUmschalter, resetImport, setAnordnen, setAnsicht, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setSpaltenWahl, setTab, slotH, slotInfoH }, ...args); }
-  function renderListenRaster(...args) { return renderListenRasterTeil({ merkeVerschieben, zugRand, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef }, ...args); }
+  // 247/248: Menü einer Ebene (Pfad-Element bzw. freier Platz). voll = die sichtbare Ebene (Neu, Fällige, Neuer Ordner,
+  // Spalten, Anordnen, Gelernte); Ordner darüber im Pfad: nur Fällige + Gelernte (Quiz) bzw. kein Menü (Listen).
+  // platz: auf einem freien Platz – Neues landet genau dort.
+  function slotEbenenMenue(ordnerId, { voll = true, platz = null, ohneNeu = false } = {}) {
+    const daten = getSlotsData();
+    const faellig = faelligAktion(ordnerId ? faelligVonSlots(eintraegeImOrdner(daten, ordnerId).map(g => g.id)) : faelligAlle);
+    const gelernt = { label: einstellungen.gelernteAusblenden ? "👁 Gelernte einblenden" : "🙈 Gelernte ausblenden",
+      fn: () => speichereEinst({ ...einstellungen, gelernteAusblenden: !einstellungen.gelernteAusblenden }) };   // 181: global
+    if (!voll) return [...faellig, gelernt];
+    return [
+      ...(ohneNeu ? [] : [{ label: "＋ Neues Quiz aus Listen", fn: () => { neuImOrdnerRef.current = ordnerId; if (platz) neuPlatzRef.current = { ordner: ordnerId, platz }; setNeueSessionSchritt("art"); setModal("neue-session"); } }]),
+      ...faellig,
+      ...(ordnerPfad(daten.ordner || [], ordnerId).length < ORDNER_TIEFE_MAX ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe(platz ? { ids: [], name: "", platz } : { ids: [], name: "", eltern: ordnerId }) }] : []),
+      { label: `▥ Spalten (${minSpalten("slot", ordnerId)})`, fn: () => setSpaltenWahl({ art: "slot", ordner: ordnerId }) },   // 203
+      { label: "⇅ Anordnen…", fn: () => setAnordnen({ art: "slot", ordner: ordnerId }) },   // 208
+      gelernt,
+    ];
+  }
+  function listenEbenenMenue(ordnerId, { voll = true, platz = null } = {}) {
+    if (!voll) return null;
+    return [
+      { label: "＋ Neue Liste", fn: () => { setListenOrdnerOffen(ordnerId); resetImport(); if (platz) neuListePlatzRef.current = { ordner: ordnerId, platz }; setTab("listen"); setAnsicht("import"); } },
+      ...(ordnerPfad(listenOrdner, ordnerId).length < ORDNER_TIEFE_MAX ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe(platz ? { art: "liste", ids: [], name: "", platz } : { art: "liste", ids: [], name: "", eltern: ordnerId }) }] : []),
+      { label: `▥ Spalten (${minSpalten("liste", ordnerId)})`, fn: () => setSpaltenWahl({ art: "liste", ordner: ordnerId }) },
+      { label: "⇅ Anordnen…", fn: () => setAnordnen({ art: "liste", ordner: ordnerId }) },
+    ];
+  }
+  function listenNavi(...args) { return listenNaviTeil({ slotEbenenMenue, listenEbenenMenue, headerH, listenKopfH, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, minSpalten, pfadTeile, quizListenUmschalter, resetImport, setAnordnen, setAnsicht, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setSpaltenWahl, setTab, slotH, slotInfoH }, ...args); }
+  function renderListenRaster(...args) { return renderListenRasterTeil({ slotEbenenMenue, listenEbenenMenue, vonBis, merkeVerschieben, zugRand, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef }, ...args); }
 
   // Chips "Gespeichert" (sortierbar) und "Verlauf" (automatisch, letzte 5) – Quiz- und Statistik-Tab
   // Kopfzeile Verlauf & Gespeichert (Quiz- und Statistik-Tab): zu und auf gleich aufgebaut – Name + Ü/D/A;
@@ -2354,9 +2419,9 @@ export default function VokabelApp() {
   // 217: Listen als Quiz-Kacheln – antippen fragt die Liste ab, kurz halten wählt nur (Blätter-Modus), Ordner antippen öffnet
   function uebernimmListe(...args) { return uebernimmListeTeil({ ladeSlot, leuchte, setBlaettern, setSlotVorschau, setSlotVorschauListe }, ...args); }
   function renderQuizListenRaster(...args) { return renderQuizListenRasterTeil({ FORTSCHRITT_FELD, aktiverSlot, auswahlOrdnerZelle, blaettern, blitzt, einstellungen, lernstandJeArt, leuchte, listenFlagge, listenRasterPlaetze, quizArt, setSlotVorschau, setSlotVorschauListe, slotVorschau, tt, uebernimmListe }, ...args); }
-  function ordnerNavi(...args) { return ordnerNaviTeil({ einstellungen, faelligAktion, faelligAlle, faelligVonSlots, headerH, minSpalten, multiAuswahl, neuImOrdnerRef, pfadTeile, quizListenUmschalter, setAnordnen, setInGruppe, setModal, setMultiAuswahl, setNeueSessionSchritt, setSlotAuswahl, setSlotDragId, setSlotDragZiel, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSpaltenWahl, setStatistikAktiverSlot, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikFilter, setStatistikListenIds, setStatistikSlotGeleert, slotAuswahl, slotH, slotInfoH, slotOrdner, slotSichtbarRef, slotSortModus, slots, speichereEinst, tt }, ...args); }
+  function ordnerNavi(...args) { return ordnerNaviTeil({ slotEbenenMenue, listenEbenenMenue, einstellungen, faelligAktion, faelligAlle, faelligVonSlots, headerH, minSpalten, multiAuswahl, neuImOrdnerRef, pfadTeile, quizListenUmschalter, setAnordnen, setInGruppe, setModal, setMultiAuswahl, setNeueSessionSchritt, setSlotAuswahl, setSlotDragId, setSlotDragZiel, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSpaltenWahl, setStatistikAktiverSlot, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikFilter, setStatistikListenIds, setStatistikSlotGeleert, slotAuswahl, slotH, slotInfoH, slotOrdner, slotSichtbarRef, slotSortModus, slots, speichereEinst, tt }, ...args); }
   function wahlLeiste(...args) { return wahlLeisteTeil({ listenAuswahl, listenSortModus, listenWahl, multiAuswahl, setListenAuswahl, setListenSortModus, setListenWahl, setMultiAuswahl, setSlotAuswahl, setSlotDragId, setSlotDragZiel, setSlotSortModus, sichtbareListen, slotAuswahl, slotSichtbarRef, slotSortModus, tt }, ...args); }
-  function renderSlotBereiche(...args) { return renderSlotBereicheTeil({ merkeVerschieben, zugRand, FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligAktion, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setListenAendern, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef }, ...args); }
+  function renderSlotBereiche(...args) { return renderSlotBereicheTeil({ slotEbenenMenue, listenEbenenMenue, vonBis, merkeVerschieben, zugRand, FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligAktion, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setListenAendern, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef }, ...args); }
 
   // Info-Fläche unter dem Quiz-Kopf: immer das Quiz, die oben steht (angetippt, sonst die geladene bzw. die aktuelle Auswahl)
   function infoEintrag(...args) { return infoEintragTeil({ getSlotsData, wahlQuizIds, aktiverSlot, getSlotEintrag, multiAuswahl, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, sichtbareListen, slotVorschau, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert }, ...args); }
@@ -2419,7 +2484,7 @@ export default function VokabelApp() {
         }
       } else {
         if (!existingSlot || konflikt || !effSlot || overrideSlot !== null) {
-          const verlaufId = overrideSlot?.typ === 'verlauf' ? overrideSlot.id : erstelleVerlaufEintrag();
+          const verlaufId = overrideSlot?.typ === 'verlauf' ? overrideSlot.id : paketVerlaufId(effSlot);   // 244: ein Paket behält seinen Eintrag
           const startScores = {};
           voks.forEach(v => { startScores[v.id] = v.diktatFortschritt?.score ?? null; });
           speichereSessionSlotNeu(quizPaketGroesse, voks.length, startScores, 'verlauf', verlaufId);
@@ -2532,7 +2597,7 @@ export default function VokabelApp() {
         }
       } else {
         if (!existingSlot || konflikt || !effSlot || overrideSlot !== null) {
-          const verlaufId = overrideSlot?.typ === 'verlauf' ? overrideSlot.id : erstelleVerlaufEintrag();
+          const verlaufId = overrideSlot?.typ === 'verlauf' ? overrideSlot.id : paketVerlaufId(effSlot);   // 244: ein Paket behält seinen Eintrag
           const startScores = {};
           voks.forEach(v => { startScores[v.id] = v[scoreFeld]?.score ?? null; });
           speichereSessionSlotNeu(quizPaketGroesse, voks.length, startScores, 'verlauf', verlaufId);

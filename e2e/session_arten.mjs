@@ -103,7 +103,7 @@ for (let k = 0; k < 2; k++) {
   await clickText("button", "Weiter →");
   await sleep(300);
 }
-await clickText("button", "Beenden", true);
+await clickText("button", "Pausieren", true);
 await sleep(400);
 if ((await text()).includes("Wiederholung abbrechen")) await clickText("button", "Wiederholung abbrechen");
 if (/Zur Übersicht/.test(await text())) await clickText("button", "Zur Übersicht");

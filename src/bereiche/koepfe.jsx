@@ -131,7 +131,7 @@ export function renderSlotKopf(app, statistik) {
     const geaendert = !statistik && vokabelgruppeGeaendert;
     const gruen = (gespeichert || alsListe) && !geaendert;
     const multi = multiVonSlot(slot);
-    const name = gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : alsListe ? (listeE?.name || "Liste") : multi ? "Multiquiz" : statistik && statistikSlotGeleert ? "Leer" : statistik ? "Neue Auswahl" : (einListenName() || "Neues Quiz");   // 216/217
+    const name = gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : alsListe ? (listeE?.name || "Liste") : multi ? "Multiquiz" : statistik && statistikSlotGeleert ? "Leer" : statistik ? "Neue Auswahl" : (einListenName() || (quizTabListen.length >= 2 ? `📋 ${quizTabListen.length} Listen` : "Neues Quiz"));   // 216/217; 249
     const ungespeichert = !statistik && !gespeichert && !multi && !alsListe && !quizErstellen;
     // Vokabeln der Auswahl (für die Kreise) und Info-Zeile
     let voks = [], listenIds = [];
@@ -177,7 +177,7 @@ export function renderSlotKopf(app, statistik) {
     const vorschauName = vorschauE ? (vorschauE.multi ? `🧩 ${vorschauE.name}` : vorschauE.istListe ? `📋 ${vorschauE.name}` : vorschauE.name || "Abfrage") : "";
     // 234: genau ein Element ausgewählt → „‹Name› laden“ (Ordner: mit seinem ganzen Inhalt)
     const einzelName = id => { const o = (getSlotsData().ordner || []).find(x => x.id === id); return o ? `📁 ${o.name}` : getSlotEintrag("gespeichert", id)?.name || "Quiz"; };
-    const wahlText = wahl ? (vonBis?.art === "slot" ? "Von–Bis: Ziel lang drücken"
+    const wahlText = wahl ? (vonBis?.art === "slot" ? "Von–Bis: Ende antippen"
       : multiAuswahl.length === 1 ? `${einzelName(multiAuswahl[0])} laden`
       : multiAuswahl.length ? `${multiAuswahl.length} ausgewählt · ${multiZusammenstellung(multiAuswahl)?.anzahl || 0} Vokabeln` : "Nichts ausgewählt") : "";
     const lEinzelName = id => { const o = (listenOrdner || []).find(x => x.id === id); return o ? `📁 ${o.name}` : `📋 ${listenIndex.find(l => l.id === id)?.name || "Liste"}`; };
@@ -273,7 +273,7 @@ export function renderSlotInfo(app, statistik) {
     const zu = infoZu;
     // Name wie im Kopf: gespeichertes Quiz → ihr Name; Multiquiz aus dem Verlauf → seine Teile; Verlauf → Datum
     const gespeichert = slots.gespeichert.some(g => g.id === eintrag.id);
-    const name = eintrag.id === "_wahl" ? eintrag.name : `${multi ? "🧩 " : ""}${gespeichert ? eintrag.name : multi ? multi.map(m => m.name).join(" + ") : eintrag.id === "_auswahl" ? eintrag.name : eintrag.istListe ? `📋 ${eintrag.name}` : `🕘 ${eintrag.name || "Abfrage"}`}`;   // 217: Liste mit 📋
+    const name = eintrag.id === "_wahl" ? eintrag.name : `${multi ? "🧩 " : ""}${gespeichert ? eintrag.name : multi ? multi.map(m => m.name).join(" + ") : eintrag.id === "_auswahl" ? eintrag.name : eintrag.istListe ? `📋 ${eintrag.name}` : eintrag.paket ? `📋 ${(eintrag.konfiguration?.listenIds || []).map(id => listenIndex.find(l => l.id === id)?.name).filter(Boolean).join(" + ")}` : `🕘 ${eintrag.name || "Abfrage"}`}`;   // 249: Listen-Paket nennt seine Listen   // 217: Liste mit 📋
     const listenText = teile.map(x => `${sprachInfo(listeSprache(x.idx)).flagge} ${x.liste.name} · ${x.ganz ? `alle ${x.voks.length}` : `Nr. ${nrText(x.voks.map(v => v._nr))}`}`).join(" + ");
     return (<>
       <div ref={slotInfoRefCb} className="slot-info" data-slot-info={eintrag.id} data-slot-vorschau={eintrag.id} data-slot-info-zu={zu ? "" : undefined} data-auswahl-durchlass onClick={infoKlapp}

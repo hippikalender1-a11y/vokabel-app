@@ -168,6 +168,9 @@ export const CSS_BASIS = `
   .gruppen-ring{position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);width:46px;height:46px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3));}
   /* 232/234: Anheben (lang halten = verschieben) deutlich – hebt sich spürbar ab, sinkt sanft zurück */
   [data-kachel-geste]{transition:transform 0.2s ease-out, box-shadow 0.2s ease-out;}
+  [data-rueckt]{transform:translateY(12px);opacity:0.7;transition:transform 0.15s ease-out, opacity 0.15s;}
+  .zug-geist{position:fixed;left:0;top:0;z-index:10003;pointer-events:none;opacity:0.92;box-shadow:0 14px 28px rgba(0,0,0,0.35);border-radius:12px;margin:0;}
+  .zug-geist-anz{position:absolute;top:-8px;right:-8px;min-width:22px;height:22px;border-radius:11px;background:var(--haupt);color:var(--auf-haupt);font:700 0.75rem system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 2px 6px rgba(0,0,0,0.3);}
   [data-angehoben]{transform:translateY(-4px) scale(1.1);box-shadow:0 14px 28px rgba(0,0,0,0.35);z-index:4;transition:transform 0.16s cubic-bezier(.3,1.5,.6,1), box-shadow 0.16s;}
   .gruppen-ring svg{width:46px;height:46px;transform:rotate(-90deg);}
   .gruppen-ring circle{fill:var(--karte);stroke:var(--haupt);stroke-width:3;stroke-dasharray:94.25;stroke-dashoffset:94.25;animation:gruppenRing 1.2s linear forwards;}

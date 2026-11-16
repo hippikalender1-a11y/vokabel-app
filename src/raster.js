@@ -57,26 +57,31 @@ export function ordneRaster(gespeichert, { zeilen, spalten }) {
   });
   return { gespeichert: neu, zeilen: z, geaendert };
 }
-// Gruppe (ids in Reihenfolge) untereinander ab Platz ziel setzen; Einträge im Weg rücken auf die
-// frei gewordenen Plätze der Gruppe (ein einzelner Eintrag: die beiden tauschen)
+// Gruppe (ids in Reihenfolge) untereinander ab Platz ziel setzen; Einträge im Weg rücken in ihrer Spalte nach unten (242)
 export function platziereGruppe(eintraege, ids, ziel) {
   const gruppe = ids.map(id => eintraege.find(e => e.id === id)).filter(Boolean);
   if (gruppe.length === 0) return eintraege;
-  const key = p => `${p.z}|${p.s}`;
-  const ziele = gruppe.map((_, i) => ({ z: ziel.z + i, s: ziel.s }));
-  const zielKeys = new Set(ziele.map(key));
   const gruppenIds = new Set(gruppe.map(e => e.id));
-  const frei = gruppe.map(e => e.platz).filter(p => p && !zielKeys.has(key(p)));
-  const neu = new Map(gruppe.map((e, i) => [e.id, ziele[i]]));
-  eintraege.forEach(e => { if (!gruppenIds.has(e.id) && e.platz && zielKeys.has(key(e.platz))) neu.set(e.id, frei.shift() || null); });
-  return eintraege.map(e => {
-    if (!neu.has(e.id)) return e;
-    const p = neu.get(e.id);
-    if (p) return { ...e, platz: p };
-    const { platz: _p, ...ohne } = e;   // eslint-disable-line no-unused-vars
-    return ohne;
-  });
+  // die Gruppe untereinander ab dem Zielplatz
+  const neu = new Map(gruppe.map((e, i) => [e.id, { z: ziel.z + i, s: ziel.s }]));
+  // 242: Platz machen statt tauschen – die übrigen Einträge der Zielspalte ab der Zielzeile rücken nach unten,
+  // jeweils nur so weit wie nötig (freie Plätze darunter bleiben frei, solange niemand hineinrücken muss)
+  let naechste = ziel.z + gruppe.length;
+  eintraege.filter(e => !gruppenIds.has(e.id) && e.platz && e.platz.s === ziel.s && e.platz.z >= ziel.z)
+    .sort((x, y) => x.platz.z - y.platz.z)
+    .forEach(e => { const z = Math.max(e.platz.z, naechste); if (z !== e.platz.z) neu.set(e.id, { z, s: ziel.s }); naechste = z + 1; });
+  return eintraege.map(e => neu.has(e.id) ? { ...e, platz: neu.get(e.id) } : e);
 }
+// 246: Vorschau beim Ziehen – wer beim Ablegen auf zielKey („z|s“) nach unten rücken würde
+export function rueckendeIds(eintraege, ids, zielKey) {
+  if (!ids.length || !zielKey || zielKey.startsWith("raus")) return new Set();
+  const [z, s] = zielKey.split("|").map(Number);
+  const alt = new Map(eintraege.map(e => [e.id, e.platz]));
+  return new Set(platziereGruppe(eintraege, ids, { z, s })
+    .filter(e => !ids.includes(e.id) && e.platz && alt.get(e.id) && alt.get(e.id).z !== e.platz.z).map(e => e.id));
+}
+// 242: Zeilen, die eine Ebene nach dem Platzieren braucht
+export const belegteZeilen = eintraege => eintraege.reduce((m, e) => e.platz ? Math.max(m, e.platz.z + 1) : m, 0);
 // Quiz-Gruppen (Ordner): slots.ordner = [{ id, name, platz }]; Quiz darin tragen ordner: id und einen Platz
 // im Raster der Gruppe. Oberste Ebene = Gruppen + Quiz ohne Gruppe (beide mit Platz im Haupt-Raster).
 // 193: Ordner können in Ordnern liegen (o.ordner = Eltern-Id), bis ORDNER_TIEFE_MAX Ebenen. Gleiches Modell für
