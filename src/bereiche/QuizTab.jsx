@@ -102,10 +102,12 @@ export function QuizTab(app) {
           const lernAngesehen = lernStand ? Math.min(lernGesamt, lernStand.start + (lernStand.fertig ? Math.min(lernStand.groesse, lernGesamt - lernStand.start) : lernStand.index)) : 0;
           // Start-Knopf: was in des laufenden Quiz noch übrig ist (die Paketgröße steht auf dem Umfang-Knopf)
           // 188: Titel und Knopf-Zahl ohne die heute gesperrten (Fortschritt-Feld zählt sie weiter zur Quiz)
-          const heuteGesperrt = quizHeuteEinschliessen || !tagesSperre() ? 0 : reihenfolgeVoks.filter(v => heuteAbgefragt(feldVon(v))).length;
-          const titelAnzahl = Math.max(0, sessionAnzahl - heuteGesperrt);
-          const startRest = isPakete ? Math.max(0, sessionAnzahl - sessionAbgefragtAnzahl - (quizHeuteEinschliessen ? 0 : heuteAnzahl)) : verfuegbar;
-          const sessionPct = sessionAnzahl > 0 ? Math.round(sessionAbgefragtAnzahl / sessionAnzahl * 100) : 0;
+          // 255: Gesamtzahl der Anzeige = was mit den Schaltern (Gelernte, heute) abgefragt würde, dazu das in diesem Durchlauf
+          // schon Abgefragte; Start-Knopf = Gesamt − Fortschritt
+          const anzeigeGesamt = Math.max(sessionAbgefragtAnzahl, sessionAnzahl - (quizHeuteEinschliessen ? 0 : heuteAnzahl));
+          const titelAnzahl = Math.max(0, anzeigeGesamt);
+          const startRest = isPakete ? Math.max(0, anzeigeGesamt - sessionAbgefragtAnzahl) : verfuegbar;
+          const sessionPct = anzeigeGesamt > 0 ? Math.round(sessionAbgefragtAnzahl / anzeigeGesamt * 100) : 0;
 
           return (
             <>
@@ -745,7 +747,7 @@ export function QuizTab(app) {
                         <button data-session-zuruecksetzen={sessionHatFortschritt ? "" : undefined} className="start-fortschritt" disabled={!sessionHatFortschritt}
                           onClick={() => setSessionResetFrage(true)}
                           {...tt(sessionHatFortschritt ? "So viele Vokabeln dieses Quiz wurden schon abgefragt – antippen, um den Abgefragt-Stand zurückzusetzen (Scores und Lernfortschritt bleiben)" : "Fortschritt des Quiz – noch nichts abgefragt")}>
-                          {sessionHatFortschritt ? <span data-anzahl="fortschritt">{sessionAbgefragtAnzahl}/{sessionAnzahl}</span> : <span>0/{sessionAnzahl}</span>}
+                          {sessionHatFortschritt ? <span data-anzahl="fortschritt">{sessionAbgefragtAnzahl}/{anzeigeGesamt}</span> : <span>0/{anzeigeGesamt}</span>}
                         </button>
                       )}
                       {lernAktiv && !aufteilen ? (

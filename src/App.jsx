@@ -2384,6 +2384,9 @@ export default function VokabelApp() {
   // 247/248: Menü einer Ebene (Pfad-Element bzw. freier Platz). voll = die sichtbare Ebene (Neu, Fällige, Neuer Ordner,
   // Spalten, Anordnen, Gelernte); Ordner darüber im Pfad: nur Fällige + Gelernte (Quiz) bzw. kein Menü (Listen).
   // platz: auf einem freien Platz – Neues landet genau dort.
+  // 256: Anzeige ohne Lücken (Lesereihenfolge) bzw. die eigene Anordnung – global, nur Anzeige
+  const lueckenlosSchalter = { label: einstellungen.lueckenlos ? "▦ Eigene Anordnung zeigen" : "▤ Lückenlos anzeigen",
+    fn: () => speichereEinst({ ...einstellungen, lueckenlos: !einstellungen.lueckenlos }) };
   function slotEbenenMenue(ordnerId, { voll = true, platz = null, ohneNeu = false } = {}) {
     const daten = getSlotsData();
     const faellig = faelligAktion(ordnerId ? faelligVonSlots(eintraegeImOrdner(daten, ordnerId).map(g => g.id)) : faelligAlle);
@@ -2396,6 +2399,7 @@ export default function VokabelApp() {
       ...(ordnerPfad(daten.ordner || [], ordnerId).length < ORDNER_TIEFE_MAX ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe(platz ? { ids: [], name: "", platz } : { ids: [], name: "", eltern: ordnerId }) }] : []),
       { label: `▥ Spalten (${minSpalten("slot", ordnerId)})`, fn: () => setSpaltenWahl({ art: "slot", ordner: ordnerId }) },   // 203
       { label: "⇅ Anordnen…", fn: () => setAnordnen({ art: "slot", ordner: ordnerId }) },   // 208
+      lueckenlosSchalter,
       gelernt,
     ];
   }
@@ -2406,6 +2410,7 @@ export default function VokabelApp() {
       ...(ordnerPfad(listenOrdner, ordnerId).length < ORDNER_TIEFE_MAX ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe(platz ? { art: "liste", ids: [], name: "", platz } : { art: "liste", ids: [], name: "", eltern: ordnerId }) }] : []),
       { label: `▥ Spalten (${minSpalten("liste", ordnerId)})`, fn: () => setSpaltenWahl({ art: "liste", ordner: ordnerId }) },
       { label: "⇅ Anordnen…", fn: () => setAnordnen({ art: "liste", ordner: ordnerId }) },
+      lueckenlosSchalter,
     ];
   }
   function listenNavi(...args) { return listenNaviTeil({ slotEbenenMenue, listenEbenenMenue, headerH, listenKopfH, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, minSpalten, pfadTeile, quizListenUmschalter, resetImport, setAnordnen, setAnsicht, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setSpaltenWahl, setTab, slotH, slotInfoH }, ...args); }

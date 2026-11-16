@@ -3351,3 +3351,36 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
     vor dem Abbruch zurück (phase/index der Abfrage, abgebrochen weg); da brecheQuizAb die Beantworteten schon als
     abgefragt gespeichert hat, beim Paket-Ende nicht doppelt zählen (pakete) – alternativ Fortsetzen = Quiz neu starten
     mit den übrigen Vokabeln (Abfrage holt nur noch nicht abgefragte). Titel „Abgebrochen“ → „Pausiert“ (passend zu 245).
+
+── gesammelt (16.11.2026, nach 254) ──
+255 Quiz-Einstellungen: Start-Knopf „19 Vokabeln“ passt nicht zur Fortschrittsanzeige „0/57“ (38 heute schon abgefragt, in
+    einem anderen Quiz – Tagessperre). Gewünscht: Zahl auf dem Knopf = Gesamt − Fortschritt der Anzeige. Offen:
+    a) nur Anzeige: Fortschritt zählt die heute gesperrten mit („38/57“, eigener Abschnitt im Balken) – morgen fallen sie
+       wieder heraus; b) die heute schon abgefragten zählen im Durchlauf als erledigt (abgefragt), bleiben es auch morgen.
+    (Code: QuizTab heuteGesperrt / titelAnzahl / startRest / sessionPct.)
+    Klarstellung des Nutzers (ersetzt die Wahl b): die GESAMTZAHL der Anzeige richtet sich nach den Schaltern – nur was
+    mit den aktuellen Einstellungen abgefragt würde (Gelernte aus-/eingeblendet, „heute“ ein-/ausgeschlossen); Fortschritt =
+    in diesem Durchlauf abgefragt; Knopf = Gesamt − Fortschritt. Beispiele (Screenshot 18:18, Knopf 0 Vokabeln, Anzeige
+    0/38): richtig wäre 0/0; mit „38 heute“ dazu 0/38; nur Gelernte dazu z. B. 0/64. Im Durchlauf heute schon Beantwortete
+    zählen weiter mit (sonst bliebe der Fortschritt den ganzen Tag bei 0): Gesamt = gefilterte ∪ abgefragt.
+256 „🙈 Gelernte ausgeblendet“ (bzw. Sprachfilter): ausgeblendete Kacheln hinterlassen große Lücken im Raster (Screenshot
+    18:44, Ordner Englisch 6). „⇅ Anordnen… › Lücken schließen“ gibt es, ändert aber die gespeicherten Plätze. Vorschlag:
+    solange ausgeblendet, zeigt das Raster die sichtbaren Kacheln lückenlos – nur in der Anzeige, gespeicherte Plätze bleiben;
+    Einblenden zeigt wieder die eigene Anordnung. Offen: a) je Spalte nach oben rücken (Spalten bleiben) oder b) in
+    Lesereihenfolge neu fließen. Verschieben in der lückenlosen Ansicht: Ablegen auf/vor einer Kachel → in den echten Plätzen
+    vor ihr einordnen (Rest rückt nach unten, wie 242); freie Plätze am Ende = hinter die letzte der Spalte.
+    Geklärt: b – sichtbare Kacheln in Lesereihenfolge (Zeile für Zeile nach gespeichertem Platz z, dann s) lückenlos
+    neu verteilt, nur Anzeige. Ablegen auf einer Kachel → am echten Platz dieser Kachel einordnen (242: Rest der Spalte
+    rückt nach unten); auf freien Platz hinter der letzten → hinter die letzte sichtbare (echter Platz danach).
+    Nachtrag: NICHT an „Gelernte ausblenden“ gekoppelt, sondern eigener Schalter „Lückenlos anzeigen“ (an/aus) – im Menü der
+    Ebene neben „⇅ Anordnen…“ (bzw. darin); global wie „Gelernte ausblenden“, gilt für Quiz- und Listen-Raster. An =
+    automatische, lückenlose Lesereihenfolge (nur Anzeige); aus = eigene gespeicherte Anordnung (bleibt immer erhalten).
+
+── 255/256 umgesetzt (16.11.2026) ──
+- 255: QuizTab – anzeigeGesamt = max(abgefragt, sessionAnzahl − heute offen (ohne „+ heute“)); Anzeige „abgefragt/Gesamt“,
+  Titel „Quiz mit Gesamt“, Balken und Start-Knopf (startRest = Gesamt − abgefragt) danach. Gelernte über sessionAnzahl.
+- 256: Schalter „▤ Lückenlos anzeigen“ / „▦ Eigene Anordnung zeigen“ im Menü der Ebene (slotEbenenMenue / listenEbenenMenue,
+  global einstellungen.lueckenlos). An: Raster zeigt die sichtbaren Kacheln in Lesereihenfolge (lueckenlosReihe, kacheln.jsx)
+  ohne Lücken – nur Anzeige; beim Verschieben (auch Finger-Zug = Sortier-Modus) die echten Plätze, wie bei „Gelernte
+  ausblenden“. Freier Platz im lückenlosen Raster: Neues ohne festen Platz.
+- Test: e2e/punkte255.mjs.

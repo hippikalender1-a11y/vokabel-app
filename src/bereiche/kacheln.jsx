@@ -10,6 +10,9 @@ import { heuteAnteil, slotKonfigArt, slotSFAlle } from "../quiz.jsx";
 // Plätze des Listen-Rasters für die Listenauswahl in Quiz und Statistik: gleiche Spalten und Plätze
 // wie im Listen-Tab (leere Plätze bleiben frei); mit Sprachfilter zusammengerückt
 // 193: die geöffnete Ebene (Listen-Ordner) – Ordner kommen als { istOrdner } mit
+// 256: Lesereihenfolge der gespeicherten Plätze (Zeile, dann Spalte) – für die lückenlose Anzeige
+const lueckenlosReihe = eintraege => [...eintraege].filter(e => e.platz).sort((a, b) => a.platz.z - b.platz.z || a.platz.s - b.platz.s);
+
 export function listenRasterPlaetze(app) {
   const { listenIndex, listenOrdner, listenOrdnerOffen, minSpalten, sichtbareListen, sprachFilter } = app;
     const daten = { ordner: listenOrdner, gespeichert: listenIndex };
@@ -246,9 +249,14 @@ export function renderListenRaster(app) {
       [...ebene].sort((a, b) => (a.platz?.z ?? 0) - (b.platz?.z ?? 0) || (a.platz?.s ?? 0) - (b.platz?.s ?? 0)).filter(sichtbarE)
         .forEach(x => zellen.push(x.istOrdner ? ordnerZelle(x, x.id) : zelle(x, x.id)));
     } else {
-      const platzMap = new Map(ebene.filter(l => l.platz).map(l => [`${l.platz.z}|${l.platz.s}`, l]));
-      const belegtBis = ebene.reduce((m, l) => Math.max(m, (l.platz?.z ?? 0) + 1), 0);
-      const alleBelegtL = belegtBis > 0 && ebene.filter(l => l.platz && l.platz.z < belegtBis && l.platz.s < anzSpalten).length >= belegtBis * anzSpalten;   // 214
+      // 256: „Lückenlos anzeigen“ – Kacheln in Lesereihenfolge ihrer Plätze ohne Lücken (nur Anzeige; beim Verschieben die echten Plätze)
+      const lueckenlos = !!einstellungen.lueckenlos && !sortModus;
+      const reihe = lueckenlos ? lueckenlosReihe(ebene) : null;
+      const platzMap = lueckenlos ? new Map(reihe.map((l, i) => [`${Math.floor(i / anzSpalten)}|${i % anzSpalten}`, l]))
+        : new Map(ebene.filter(l => l.platz).map(l => [`${l.platz.z}|${l.platz.s}`, l]));
+      const belegtBis = lueckenlos ? Math.ceil(reihe.length / anzSpalten) : ebene.reduce((m, l) => Math.max(m, (l.platz?.z ?? 0) + 1), 0);
+      const alleBelegtL = belegtBis > 0 && (lueckenlos ? reihe.length % anzSpalten === 0
+        : ebene.filter(l => l.platz && l.platz.z < belegtBis && l.platz.s < anzSpalten).length >= belegtBis * anzSpalten);   // 214
       const zeilenAnzeige = sortModus ? belegtBis + RASTER_FREI_ZEILEN : Math.max(ebeneLeer && offen ? 1 : 0, belegtBis) + (alleBelegtL ? 1 : 0);
       for (let z = 0; z < zeilenAnzeige; z++) for (let sp = 0; sp < anzSpalten; sp++) {
         const key = `${z}|${sp}`;
@@ -262,7 +270,7 @@ export function renderListenRaster(app) {
           {...tt("Freier Platz – markierte Listen hier untereinander einsetzen (oder Listen hierher ziehen)")}/>);
         else zellen.push(<div key={key} className="raster-leer" data-freier-platz={key} style={ebeneLeer ? {borderStyle:"dashed", opacity:0.5} : {border:"none"}}
           {...tt("Freier Platz – lang drücken: Menü dieser Ebene (Neues landet genau hier)",
-            listenEbenenMenue(offen || null, { platz: { z, s: sp } }))}/>);   // 247
+            listenEbenenMenue(offen || null, { platz: lueckenlos ? null : { z, s: sp } }))}/>);   // 247; 256: lückenlos ohne festen Platz
       }
     }
     return (<>
@@ -469,7 +477,6 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     const gewaehltE = x => multiAuswahl?.includes(x.id) || (slotVorschau?.typ === "gespeichert" && slotVorschau.id === x.id) || (slotRef?.typ === "gespeichert" && slotRef.id === x.id);
     const sichtbarE = x => (x.istOrdner ? (sprachFilter === "alle" || kinderVon(x.id).length === 0 || kinderVon(x.id).some(slotSichtbar)) : slotSichtbar(x))
       && !(einstellungen.gelernteAusblenden && !slotSortModus && !gewaehltE(x) && gelerntVoll(x));
-    const platzMap = new Map(raster.gespeichert.map(x => [`${x.platz.z}|${x.platz.s}`, x]));
     const sichtbar = raster.gespeichert.filter(x => sichtbarE(x) && !x.istOrdner);
     slotSichtbarRef.current = sichtbar.map(x => x.id);
     plaetzeRef.current.slot = sichtbar.map(x => ({ id: x.id, z: x.platz.z, s: x.platz.s }));
@@ -480,7 +487,14 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     const zeilenSichtbar = Math.max(ebeneLeer && ordnerOffen ? 1 : 0, raster.gespeichert.filter(sichtbarE).reduce((m, x) => Math.max(m, x.platz.z + 1), 0));
     // 214: sind alle angezeigten Plätze belegt, eine Zeile mehr – damit es immer einen freien Platz (Lang-Druck) gibt
     const alleBelegt = zeilenSichtbar > 0 && raster.gespeichert.filter(x => x.platz.z < zeilenSichtbar && x.platz.s < anzSpalten).length >= zeilenSichtbar * anzSpalten;
+    // 256: „Lückenlos anzeigen“ – sichtbare Kacheln in Lesereihenfolge ihrer Plätze ohne Lücken (nur Anzeige; beim
+    // Verschieben – auch beim Finger-Zug – die echten Plätze, wie bei „Gelernte ausblenden“)
+    const lueckenlos = !!einstellungen.lueckenlos && !slotSortModus;
+    const reihe = lueckenlos ? lueckenlosReihe(raster.gespeichert.filter(sichtbarE)) : null;
+    const platzMap = lueckenlos ? new Map(reihe.map((x, i) => [`${Math.floor(i / anzSpalten)}|${i % anzSpalten}`, x]))
+      : new Map(raster.gespeichert.map(x => [`${x.platz.z}|${x.platz.s}`, x]));
     const zeilenAnzeige = slotSortModus ? raster.gespeichert.reduce((m, x) => Math.max(m, x.platz.z + 1), 0) + RASTER_FREI_ZEILEN
+      : lueckenlos ? Math.max(ebeneLeer && ordnerOffen ? 1 : 0, Math.ceil(reihe.length / anzSpalten) + (reihe.length && reihe.length % anzSpalten === 0 ? 1 : 0))
       : zeilenSichtbar + (alleBelegt ? 1 : 0);
     const sfVon = x => slotSFAlle(x)[aktiverSlot?.id === x.id ? quizAbfrageArt : slotKonfigArt(x)];
     // Auswahl-Modus: Aktionen für die Auswahl (Rechtsklick auf eine nicht gewählte Kachel nimmt sie dazu)
@@ -652,7 +666,7 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
         // 194: freier Platz – lang drücken: neuer (leerer) Ordner genau hier; im leeren Ordner gestrichelt sichtbar
         zellen.push(<div key={key} className="raster-leer" data-freier-platz={key} style={ebeneLeer ? {borderStyle:"dashed", opacity:0.5} : {border:"none"}}
           {...tt("Freier Platz – lang drücken: Menü dieser Ebene (Neues landet genau hier)",
-            slotEbenenMenue(ordnerOffen?.id || null, { platz: { z, s: sp }, ohneNeu: tab === "statistik" }))}/>);   // 247
+            slotEbenenMenue(ordnerOffen?.id || null, { platz: lueckenlos ? null : { z, s: sp }, ohneNeu: tab === "statistik" }))}/>);   // 247; 256
       }
     }
     return (<>
