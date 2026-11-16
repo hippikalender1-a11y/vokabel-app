@@ -818,11 +818,11 @@ export default function VokabelApp() {
         const r = rasterAuswahlRef.current;
         if (d.art === "liste") {
           setListenSortModus(true);
-          if (r.listeWahl) { setListenAuswahl(r.listeWahl.includes(d.id) ? r.listeWahl : []); setListenWahl(null); }   // 234
+          if (r.listeWahl) { setListenAuswahl(r.listeWahl.includes(d.id) ? r.listeWahl : [...r.listeWahl, d.id]); setListenWahl(null); }   // 237: nicht ausgewählte kommt dazu
           else if (!r.liste.includes(d.id)) setListenAuswahl([]);
         } else {
           setSlotSortModus(true);
-          if (r.slotWahl) { setSlotAuswahl(r.slotWahl.includes(d.id) ? r.slotWahl : []); setMultiAuswahl(null); }   // 234
+          if (r.slotWahl) { setSlotAuswahl(r.slotWahl.includes(d.id) ? r.slotWahl : [...r.slotWahl, d.id]); setMultiAuswahl(null); }   // 237: nicht ausgewählte kommt dazu
           else if (!r.slot.includes(d.id)) setSlotAuswahl([]);
         }
         setSlotDragId(d.id); setZugRand(false);
@@ -1047,7 +1047,7 @@ export default function VokabelApp() {
 
   // 234: Kachel-Gesten (Touch, Quiz, Listen und Ordner): sofort wischen scrollt; KACHEL_WAEHLEN_MS halten färbt die Kachel ein –
   // loslassen wählt sie aus (Auswahl beginnt bzw. dazu/heraus), weiterfahren sammelt weitere ein; KACHEL_ZIEHEN_MS halten hebt
-  // sie an (Rückmeldung am Finger) – ziehen verschiebt (ausgewählte: die ganze Auswahl; sonst nur sie, die Auswahl endet);
+  // sie an (Rückmeldung am Finger) – ziehen verschiebt (237: bei aktiver Auswahl die ganze Auswahl, eine nicht ausgewählte kommt dazu);
   // 236: angehoben und ohne Ziehen losgelassen wählt ebenfalls aus (dazu/heraus).
   useEffect(() => {
     const aus = () => {

@@ -3213,3 +3213,9 @@ Offen: Kopf-Menüs (Quiz-Kopf, Listen-Kopf) – ggf. später.
   wie kurzes Halten. Ziehen nach dem Anheben verschiebt wie bisher. (Vorher: lang halten ohne Bewegung = keine Funktion.)
   App.jsx Kachel-Gesten, loslassen: ruhig && g.stufe >= 1 → kachelLangRef(art, id, 1).
 - Tests angepasst: gruppen_gesten, punkte190, punkte225, punkte230, punkte234.
+
+=== 237 umgesetzt (16.11.2026) ===
+- Bei aktiver Auswahl: eine NICHT ausgewählte Kachel lang halten (angehoben) und ziehen → sie kommt zur Auswahl dazu,
+  alle wandern zusammen (vorher: nur sie, die Auswahl endete). Ohne Auswahl wandert nur die gezogene Kachel.
+  App.jsx Lang-Druck-Zug: setSlotAuswahl / setListenAuswahl mit [...Auswahl, d.id]. Ohne Ziehen loslassen: wie 236 (dazu).
+- Test: e2e/punkte237.mjs.
