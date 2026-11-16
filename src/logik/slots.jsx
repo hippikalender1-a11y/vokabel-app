@@ -295,7 +295,9 @@ export function ladeSlot(app, typ, id, art = null) {
     setQuizSessionAufgeklappt(false);
     setAktiverSlot({ typ, id });
     setSlotGeaendert(false);
-    if (typ === 'gespeichert') lsSet(SK.letzterSlot, id); else if (typ === "listen") lsSet(SK.letzterSlot, `listen:${id}`); else lsDel(SK.letzterSlot);
+    if (typ === 'gespeichert') lsSet(SK.letzterSlot, id); else if (typ === "listen") lsSet(SK.letzterSlot, `listen:${id}`);
+    else if (eintrag.multi || eintrag.paket) lsSet(SK.letzterSlot, `verlauf:${id}`);   // 254: Paket nach dem Neustart wieder laden
+    else lsDel(SK.letzterSlot);
     schliesseSlotsVerzoegert();   // nach der Auswahl nur noch die Kopfzeile zeigen
     aktiviereSlotFortschritt(eintrag, typ, id, art || slotKonfigArt(eintrag));
   }

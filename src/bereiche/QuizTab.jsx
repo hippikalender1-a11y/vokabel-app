@@ -144,7 +144,7 @@ export function QuizTab(app) {
 
                 {!slotSektionAufgeklappt && (<>
                 {/* LISTEN-AUSWAHL – sticky Header (ausgeblendet bei geladener gespeicherter Konfiguration) */}
-                {!((aktiverSlot?.typ === "gespeichert" || aktiverSlot?.typ === "listen" || quizErstellen || istPaketQuiz) && !listenAendern) && (<>
+                {!((aktiverSlot?.typ === "gespeichert" || aktiverSlot?.typ === "listen" || quizErstellen || (istPaketQuiz && quizTabListen.length > 0)) && !listenAendern) && (<>   {/* 254: leeres Paket nie ohne Inhalt */}
                 {(() => {
                   const n = quizTabListen.length;
                   const chipText = n === 0

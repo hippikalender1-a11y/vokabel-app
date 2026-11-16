@@ -152,7 +152,7 @@ let t3 = await text();
 ok(/2 Vokabeln wurden falsch beantwortet/.test(t3), "Zwischenkarte: 2 Vokabeln falsch");
 await clickText("button", "Wiederholung abbrechen");
 t3 = await text();
-ok(/Auswertung|Durchlauf abgeschlossen|Paket fertig/.test(t3) && !/Abgebrochen/.test(t3) && /0 von 2 richtig/.test(t3), "Wiederholung abbrechen → normale Auswertung, 0 von 2 richtig");
+ok(/Auswertung|Durchlauf abgeschlossen|Paket fertig/.test(t3) && !/Abgebrochen|Pausiert/.test(t3) && /0 von 2 richtig/.test(t3), "Wiederholung abbrechen → normale Auswertung, 0 von 2 richtig");
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);

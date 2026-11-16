@@ -489,20 +489,38 @@ export function mischeFaellige(voks, feld) {
   while (i < f.length && j < n.length) erg.push(Math.random() < p ? f[i++] : n[j++]);
   return [...erg, ...f.slice(i), ...n.slice(j)];
 }
-export function scoreSymbole(score, klein = false) {
+// Klassen der drei Symbole: Kreise bis 2 (negativ rot, 178), ab gelernt (3) Rauten – 252: Score 3 = drei LEERE Rauten,
+// jede bestandene Stufen-Prüfung füllt eine (drei volle = Stufe 4)
+function symKlassen(s) {
+  if (s < 0) { const tief = s <= -4, n = tief ? -s - 3 : -s;   // 178: rote Umrisse, darunter rot gefüllt
+    return [0, 1, 2].map(i => `kreis${tief || i < n ? " negativ" : ""}${tief && i < n ? " voll" : ""}`); }
+  if (s < GELERNT_SCHWELLE) return [0, 1, 2].map(i => `kreis${s >= i + 1 ? " voll" : ""}`);
+  return [0, 1, 2].map(i => `raute${s >= GELERNT_SCHWELLE + i + 1 ? " voll" : ""}`);
+}
+export function scoreSymbole(score, klein = false, puls = null, n = 0) {
   const s = score ?? 0;
   const st = stufeVon(s);
   const titel = s < 0 ? `${-s} × nicht gewusst` : st ? `Gelernt, Stufe ${st} von ${MAX_STUFE}` : `${Math.max(0, s)} von ${GELERNT_SCHWELLE} bis gelernt`;
   return (
     <span className={`score-symbole${klein ? " klein" : ""}`} data-score-symbole={s} title={titel}>
-      {s < 0
-        ? [0, 1, 2].map(i => { const tief = s <= -4, n = tief ? -s - 3 : -s;   // 178: rote Umrisse, darunter rot gefüllt
-            return <span key={"k" + i} className={`sym kreis${tief || i < n ? " negativ" : ""}${tief && i < n ? " voll" : ""}`}/>; })
-        : s <= GELERNT_SCHWELLE
-        ? [0, 1, 2].map(i => <span key={"k" + i} className={`sym kreis${s >= i + 1 ? " voll" : ""}`}/>)
-        : [0, 1, 2].map(i => <span key={"r" + i} className={`sym raute${s >= GELERNT_SCHWELLE + i + 1 ? " voll" : ""}`}/>)}
+      {symKlassen(s).map((k, i) => puls?.has(i)
+        ? <span key={`${i}p${n}`} className={`sym ${k} puls`} data-sym-puls=""/>
+        : <span key={i} className={`sym ${k}`}/>)}
     </span>
   );
+}
+// 252: auf der Abfragekarte skaliert das Symbol, das sich gerade ändert, kurz hoch. Der letzte Stand liegt außerhalb
+// der Komponente, damit er auch hält, wenn die Symbole zwischendurch kurz nicht gezeigt werden.
+let pulsStand = null;
+export function ScoreSymbolePuls({ score, id }) {
+  const s = score ?? 0;
+  let p = pulsStand;
+  if (!p || p.id !== id) p = pulsStand = { id, score: s, puls: null, n: 0, zeit: 0 };
+  else if (p.score !== s) {
+    const alt = symKlassen(p.score), neu = symKlassen(s);
+    p = pulsStand = { id, score: s, n: p.n + 1, zeit: Date.now(), puls: new Set([0, 1, 2].filter(i => alt[i] !== neu[i])) };
+  }
+  return scoreSymbole(s, false, p.puls && Date.now() - p.zeit < 700 ? p.puls : null, p.n);
 }
 // Stufen als Punkte (●●○○) neben dem Score
 export function stufenPunkte(score) {

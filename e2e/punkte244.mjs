@@ -91,7 +91,8 @@ t = await seite();
 ok(/📋 2 Listen/.test(await kopfText()) && !/Listen-Auswahl/.test(t), `244: Listen-Paket nach dem Start weiter ohne Listen-Auswahl (${await kopfText()})`);
 await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(600);
 ok(await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]")?.dataset.auswahlUmschalter) === "listen", "250: Kopf antippen öffnet die Listen-Auswahl");
-ok(/Unit 1 \+ Unit 2/.test(await seite()), "249: Info-Zeile (Auswahl offen) nennt die Listen");
+ok(/2 Listen ausgewählt/.test(await seite()) && await page.evaluate(() => [...document.querySelectorAll("[data-wahl-nr]")].map(e => e.closest("[data-liste-id]")?.dataset.listeId + e.dataset.wahlNr).sort().join()) === "l_a1,l_b2",
+  "251: Kopf antippen – die Listen des Pakets sind wieder ausgewählt (Info: 2 Listen ausgewählt)");
 
 // ── 247: freier Platz = Menü der Ebene; 248: Ordner darüber im Pfad nur Fällige + Gelernte ──
 await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]").click()); await sleep(500);   // zu den Quiz

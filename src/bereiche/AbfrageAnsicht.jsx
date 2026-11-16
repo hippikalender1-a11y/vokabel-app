@@ -1,4 +1,4 @@
-import { BLITZ_SEKUNDEN, FESTES_ZEICHEN, SATZ_ARTEN, STANDARD_ANTWORT_MODUS, ZUORDNUNG_FARBEN, akzentVarianten, alternativen, antwortStatus, artikelInfo, clampScore, ersteAlt, getQuizFeedback, istMC, istRichtigeAntwort, istRichtigeEinzeln, jubelText, lueckenPositionen, mitHinweis, ohneHinweis, puzzleKacheln, satzFuer, scoreSymbole, umbruch, vokSprache, zufallMitSeed } from "../quiz.jsx";
+import { BLITZ_SEKUNDEN, FESTES_ZEICHEN, SATZ_ARTEN, STANDARD_ANTWORT_MODUS, ZUORDNUNG_FARBEN, akzentVarianten, alternativen, antwortStatus, artikelInfo, clampScore, ersteAlt, getQuizFeedback, istMC, istRichtigeAntwort, istRichtigeEinzeln, jubelText, lueckenPositionen, mitHinweis, ohneHinweis, puzzleKacheln, satzFuer, scoreSymbole, ScoreSymbolePuls, umbruch, vokSprache, zufallMitSeed } from "../quiz.jsx";
 import { CSS } from "../stil.js";
 import { Fragment } from "react";
 import { GelerntSterne, IcoSpk, IcoSpkOn } from "../komponenten.jsx";
@@ -9,7 +9,7 @@ import { istSynonymSpalte, synonymeAus } from "../saetze.js";
 // Phase 2 (Aufteilung): Ansicht aus App.jsx – if (ansicht === "quiz" && quiz) { … }
 // app = die Zustände, Setter und Funktionen der Komponente, die diese Ansicht braucht
 export function AbfrageAnsicht(app) {
-  const { aendereStimmen, akzentStand, beendeQuiz, beendeVerzoegerung, bewerteKarte, blitzKey, brecheQuizAb, brecheWiederholungAb, deckeKarteAuf, eingabeRef, einstellungen, farbModusUI, farbRadUI, geheZurueck, getAktVok, heuteGesperrtOffen, kachelMitAkzent, karteWeiter, klickeButton, memoryTippe, naechsteVokabel, naechstesPaketUI, nimmVokabelHeraus, oeffneVokabelBearbeiten, pruefeAkzente, pruefeAntwort, quiz, quizRegeln, renderKopfFortschritt, renderRundenErgebnis, renderVokabelEditor, sessionAuswertungSeite, setQuiz, setQuizPaketGroesse, setzeAkzentVariante, speichereEinst, starteQuiz, starteWiederholung, tt, ttFeld, ueberspringeWeitere, updateSessionSlotFortschritt, verlasseRunde, vokLang, waehleAkzentKachel, wechsleStimme, weiterZurAuswertung, zeigeLosung, zuordnungMixWeiter, zuordnungRunde, zuordnungTippe, zurRundenStatistik, zurueckZumLernen, zurueckZurStatistik } = app;
+  const { setzeQuizFort, aendereStimmen, akzentStand, beendeQuiz, beendeVerzoegerung, bewerteKarte, blitzKey, brecheQuizAb, brecheWiederholungAb, deckeKarteAuf, eingabeRef, einstellungen, farbModusUI, farbRadUI, geheZurueck, getAktVok, heuteGesperrtOffen, kachelMitAkzent, karteWeiter, klickeButton, memoryTippe, naechsteVokabel, naechstesPaketUI, nimmVokabelHeraus, oeffneVokabelBearbeiten, pruefeAkzente, pruefeAntwort, quiz, quizRegeln, renderKopfFortschritt, renderRundenErgebnis, renderVokabelEditor, sessionAuswertungSeite, setQuiz, setQuizPaketGroesse, setzeAkzentVariante, speichereEinst, starteQuiz, starteWiederholung, tt, ttFeld, ueberspringeWeitere, updateSessionSlotFortschritt, verlasseRunde, vokLang, waehleAkzentKachel, wechsleStimme, weiterZurAuswertung, zeigeLosung, zuordnungMixWeiter, zuordnungRunde, zuordnungTippe, zurRundenStatistik, zurueckZumLernen, zurueckZurStatistik } = app;
 
     if (quiz.phase === "fertig") {
       if (quiz.istSessionModus) {
@@ -38,8 +38,9 @@ export function AbfrageAnsicht(app) {
             <style>{CSS}</style>{farbModusUI}{farbRadUI}
             <div className="app">
               <div className="topbar">
-                <button {...tt("Schließen – Fortschritt wird gespeichert, zurück zur Übersicht")} className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>
-                <span className="topbar-title">{quiz.abgebrochen ? "Abgebrochen" : istLetzteBatch ? "Durchlauf abgeschlossen" : heuteFertig ? "Für heute fertig" : "Paket fertig"}</span>
+                {quiz.abgebrochen && quiz.pause ? <button {...tt("Fortsetzen – weiter mit der Vokabel, bei der pausiert wurde")} className="topbar-back" data-quiz-fortsetzen onClick={setzeQuizFort}>▶ Fortsetzen</button>   /* 253 */
+                  : <button {...tt("Schließen – Fortschritt wird gespeichert, zurück zur Übersicht")} className="topbar-back" onClick={() => doBeende(istLetzteBatch)}>Schließen</button>}
+                <span className="topbar-title">{quiz.abgebrochen ? "Pausiert" : istLetzteBatch ? "Durchlauf abgeschlossen" : heuteFertig ? "Für heute fertig" : "Paket fertig"}</span>
                 <span className="quiz-fortschritt">{schonAbgefragt.size}/{quiz.sessionGesamt}</span>
               </div>
               <div className="sektion">
@@ -62,7 +63,7 @@ export function AbfrageAnsicht(app) {
                 )}
                 {/* Paket-Auswertung */}
                 {ges > 0 && (<>
-                  {renderRundenErgebnis(quiz, r, f, quiz.abgebrochen ? "Bis zum Abbruch" : istLetzteBatch ? "Letztes Paket" : "Dieses Paket")}
+                  {renderRundenErgebnis(quiz, r, f, quiz.abgebrochen ? "Bis zur Pause" : istLetzteBatch ? "Letztes Paket" : "Dieses Paket")}
                   {feedback && (
                     <div style={{background:"var(--info-kasten)", borderRadius:12, padding:"14px 16px", margin:"0 0 16px", fontSize:"1rem", lineHeight:1.6, color:"var(--text)", fontStyle:"italic", textAlign:"center"}}>
                       „{feedback}"
@@ -102,13 +103,14 @@ export function AbfrageAnsicht(app) {
             <style>{CSS}</style>{farbModusUI}{farbRadUI}
             <div className="app">
               <div className="topbar">
-                <button {...tt(quiz.ausLernen ? "Schließen und weiter lernen" : quiz.ausStatistik ? "Auswertung schließen und zurück zur Statistik" : "Auswertung schließen und zur Quiz-Übersicht")} className="topbar-back" onClick={() => { verlasseRunde(); }}>Schließen</button>
-                <span className="topbar-title">{quiz.abgebrochen ? "Abgebrochen" : "Auswertung"}</span>
+                {quiz.abgebrochen && quiz.pause ? <button {...tt("Fortsetzen – weiter mit der Vokabel, bei der pausiert wurde")} className="topbar-back" data-quiz-fortsetzen onClick={setzeQuizFort}>▶ Fortsetzen</button>   /* 253 */
+                  : <button {...tt(quiz.ausLernen ? "Schließen und weiter lernen" : quiz.ausStatistik ? "Auswertung schließen und zurück zur Statistik" : "Auswertung schließen und zur Quiz-Übersicht")} className="topbar-back" onClick={() => { verlasseRunde(); }}>Schließen</button>}
+                <span className="topbar-title">{quiz.abgebrochen ? "Pausiert" : "Auswertung"}</span>
                 <span className="quiz-fortschritt">{r}/{ges}</span>
               </div>
               <div className="sektion">
                 <div style={{height:8}}/>
-                {renderRundenErgebnis(quiz, r, f, quiz.abgebrochen ? "Bis zum Abbruch" : "Diese Runde")}
+                {renderRundenErgebnis(quiz, r, f, quiz.abgebrochen ? "Bis zur Pause" : "Diese Runde")}
                 {feedback && (
                   <div style={{background:"var(--info-kasten)", borderRadius:12, padding:"14px 16px", margin:"0 0 16px", fontSize:"1rem", lineHeight:1.6, color:"var(--text)", fontStyle:"italic", textAlign:"center"}}>
                     „{feedback}"
@@ -516,7 +518,7 @@ export function AbfrageAnsicht(app) {
                       {antwortBoxKlasse.includes("gelernt-blitz") && <GelerntSterne/>}
                       <div className="karten-kopf">
                         <span className="quiz-label" style={{display:"inline-flex", alignItems:"center"}}>{antwortStatus(antwortBoxKlasse)}{antwortLabel}{isWeitere && <span style={{color:"var(--info)", marginLeft:8}}>— weitere Antwort</span>}</span>
-                        {kartenKnoepfe(aktAntwortTyp, antwortGanz, "antwort", antwortSichtbar, (isKarteEingabe || isKarteAufgedeckt || quiz.karteNeinFlash) && scoreSymbole(akz ? aktVok?.akzentFortschritt?.score : aktVok?.fortschritt?.score))}
+                        {kartenKnoepfe(aktAntwortTyp, antwortGanz, "antwort", antwortSichtbar, (isKarteEingabe || isKarteAufgedeckt || quiz.karteNeinFlash) && <ScoreSymbolePuls score={akz ? aktVok?.akzentFortschritt?.score : aktVok?.fortschritt?.score} id={`${aktVok?.id}${akz ? "|a" : ""}`}/>)}   {/* 252 */}
                       </div>
                       {/* Karte-Modus: Platzhalter in Höhe der Antwort (ohne Text), damit beim Aufdecken nichts springt */}
                       {isKarteEingabe && <div className="karte-aufdecken" aria-hidden="true" style={{visibility:"hidden"}}>&nbsp;</div>}

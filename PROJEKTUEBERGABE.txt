@@ -3306,3 +3306,48 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
 - 249: Kopf „📋 n Listen“ statt „Neues Quiz“ (≥ 2 Listen); Info-Zeile eines Listen-Pakets „📋 Unit 1 + Unit 2 · …“.
 - 250: Kopf antippen öffnet die Auswahl, aus der das Quiz kam (kommtAusListen: Liste, Listen-Paket).
 - Test: e2e/punkte244.mjs.
+
+── 251–254 umgesetzt (16.11.2026; die Notizen darunter zur Herkunft) ──
+- 251: Listen-Paket – beim Aufgehen der Auswahl (Kopf antippen, Zur Übersicht nach Pausieren) sind seine Listen wieder als
+  echte Mehrfach-Auswahl aktiv (stellePaketWahlHer, App.jsx; nur beim Aufgehen, sektionVorherRef). Alle im selben Ordner →
+  dieser Ordner; sonst oberste Ebene, Listen in Ordnern über ihren obersten Ordner. Ordnerwechsel mit Wiederherstellung:
+  wahlNachOrdnerRef. Auswahl zu → Listen-Auswahl endet. Dieselben Listen übernehmen (grüner Kopf) legt nichts neu an,
+  der Fortschritt bleibt (uebernimmListenWahl). Info-Zeile zeigt dann „2 Listen ausgewählt“.
+- 252: scoreSymbole – Score 3 = drei leere Rauten (symKlassen); auf der Abfragekarte ScoreSymbolePuls: das geänderte
+  Symbol pulsiert (.sym.puls, @keyframes symPuls, scale 1,6, 0,45 s; Stand außerhalb der Komponente, 700 ms Fenster).
+- 253: Seite nach dem Pausieren: Titel „Pausiert“, „Bis zur Pause“, oben „▶ Fortsetzen“ (data-quiz-fortsetzen,
+  setzeQuizFort in quizStart.jsx: Phase von vorher zurück; das beim Pausieren gezählte Paket wird wieder abgezogen).
+  Behoben damit auch: „Schließen“ hatte den unbeantworteten Rest des Pakets als abgefragt markiert.
+- 254 (Fehler, Nutzer-Screenshot): nach dem Neustart der App war ein laufendes Multiquiz/Listen-Paket leer (nur Kopf
+  „Multiquiz“) – aktiverSlot kam aus dem Session-Slot, Listen/Einstellungen wurden nicht geladen (letzterSlot nur für
+  gespeichert/Liste). Neu: letzterSlot „verlauf:<id>“ für multi/paket; beim Start sonst Rückfall auf den Session-Slot
+  (Verlauf). QuizTab: Listen-Auswahl nur ausblenden, wenn das Paket Listen hat.
+- Test: e2e/punkte251.mjs; angepasst punkte225/244 (Paket wieder ausgewählt).
+
+── gesammelt (16.11.2026) ──
+251 Zurück in die Listen-Auswahl nach einem Quiz aus mehreren Listen (250 funktioniert): die Listen des Pakets sollen wieder
+    als Auswahl aktiv sein (Nummern in der ursprünglichen Reihenfolge) – bei den Quiz-Kacheln (Multiquiz) ist das so.
+    Offen: nur markiert (a) oder echte Mehrfach-Auswahl, die weiter bearbeitet und über den grünen Kopf neu übernommen
+    werden kann (b, Vorschlag).
+    Geklärt: b – nach dem Pausieren (bzw. Zurückkehren) entspricht die aktive Mehrfach-Auswahl genau den Listen des
+    pausierten Quiz (gleiche Reihenfolge), wie beim Multiquiz. Quelle: Paket-Listen des Verlaufseintrags (paket) bzw.
+    listenPaket/quizTabListen. Gilt für Pausieren, „Zur Übersicht“ und Kopf antippen.
+252 Wiederholung einer Vokabel, die alle drei Abfragen schon bestanden hat: Abfragekarte zeigt heute drei gefüllte Kreise,
+    richtige Antwort → eine gefüllte Raute. Gewünscht: statt der drei Kreise DREI LEERE RAUTEN, jede richtige Antwort füllt
+    eine Raute. Geklärt (nur Anzeige, Bewertung bleibt): Score 3 (gelernt, Stufe 1) → drei LEERE Rauten statt drei voller
+    Kreise (quiz.jsx scoreSymbole: s <= GELERNT_SCHWELLE → Kreise nur bis 2, ab 3 Rauten mit s-3 gefüllt). Richtig + fällig →
+    +1, eine Raute füllt sich; falsch (Schwer) → −1, eine Raute leert sich, unter 3 zurück auf Kreise (2 voll); drei volle
+    Rauten = Stufe 4, Prüfung alle 60 Tage. Titel/Tooltips und Stellen mit Kreisen (Kacheln, Statistik, Info) mitprüfen.
+    Zusatz (Highlight): auf der Abfragekarte skaliert das Symbol, das sich gerade ändert (Kreis/Raute füllt oder leert
+    sich), kurz hoch (~1,4×, ca. 0,4 s, dann zurück). Umsetzung: scoreSymbole(score, klein, vorher) – alter Score aus
+    startScores/vor der Antwort; Index des geänderten Symbols bekommt Klasse „puls“ (CSS-Keyframe, transform:scale).
+    Wechsel Kreise → Rauten (2 → 3, gelernt): alle drei leeren Rauten pulsieren einmal; Rauten → Kreise (3 → 2) ebenso
+    alle drei Kreise. Negativ-Bereich (rot) gleich behandeln. Nur auf der Karte, nicht in Listen/Statistik.
+253 Seite „Abgebrochen“ (nach Pausieren): „Schließen“ (oben) und „Zur Übersicht“ wirken scheinbar gleich – sind es aber
+    NICHT: Schließen ruft doBeende → updateSessionSlotFortschritt(quiz.sessionVokIds) = ALLE Vokabeln des laufenden
+    Pakets gelten als abgefragt (auch die noch nicht gefragten) und pakete+1; „Zur Übersicht“ (beendeQuiz) speichert nur
+    die beantworteten (brecheQuizAb). Unbeabsichtigt → Schließen überspringt den Rest des Pakets. Gewünscht: oben statt
+    „Schließen“ ein „▶ Fortsetzen“ (macht die Pause rückgängig, weiter mit der nächsten Vokabel). Umsetzung: Zustand
+    vor dem Abbruch zurück (phase/index der Abfrage, abgebrochen weg); da brecheQuizAb die Beantworteten schon als
+    abgefragt gespeichert hat, beim Paket-Ende nicht doppelt zählen (pakete) – alternativ Fortsetzen = Quiz neu starten
+    mit den übrigen Vokabeln (Abfrage holt nur noch nicht abgefragte). Titel „Abgebrochen“ → „Pausiert“ (passend zu 245).

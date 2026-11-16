@@ -377,6 +377,8 @@ export const CSS_BASIS = `
   .score-symbole .sym.voll{background:var(--bestaetigen);}
   .score-symbole .sym.negativ{border-color:var(--falsch);}
   .score-symbole .sym.negativ.voll{background:var(--falsch);}
+  .score-symbole .sym.puls{animation:symPuls 0.45s ease-out;}
+  @keyframes symPuls{0%{scale:1;}40%{scale:1.6;}100%{scale:1;}}
   .rueck-wahl.andere{opacity:.4;}
   .rueck-wahl.gewaehlt{box-shadow:0 0 0 3px var(--bestaetigen);}
   .rueck-eingabe{margin-top:6px;font-size:0.82rem;color:var(--text2);text-align:center;}

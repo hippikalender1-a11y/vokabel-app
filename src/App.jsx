@@ -32,7 +32,7 @@ import { aendereListenEintrag as aendereListenEintragTeil, aktiviereSlotFortschr
 import { beendeLernen as beendeLernenTeil, beendeQuiz as beendeQuizTeil, benenneSlotUm as benenneSlotUmTeil, dupliziereSlot as dupliziereSlotTeil, erstAusQuiz as erstAusQuizTeil, getKombinierteListe as getKombinierteListeTeil, initQuizDefaults as initQuizDefaultsTeil, klappeUebersichtEin as klappeUebersichtEinTeil, kopieName as kopieNameTeil, legeAufteilenAn as legeAufteilenAnTeil, lernEinstellungen as lernEinstellungenTeil, lernInfoZeigen as lernInfoZeigenTeil, lernPause as lernPauseTeil, lernStandVon as lernStandVonTeil, lernenVor as lernenVorTeil, lernenWeiter as lernenWeiterTeil, lernenZurueck as lernenZurueckTeil, loescheAuswahl as loescheAuswahlTeil, loescheSessionSlot as loescheSessionSlotTeil, loescheSlotEintrag as loescheSlotEintragTeil, multiZusammenstellung as multiZusammenstellungTeil, naechstesLernPaket as naechstesLernPaketTeil, neueQuizKonfiguration as neueQuizKonfigurationTeil, schliesseQuizBereiche as schliesseQuizBereicheTeil, sessionStandImQuiz as sessionStandImQuizTeil, setzeLernEinst as setzeLernEinstTeil, setzeLernStand as setzeLernStandTeil, setzeQuizEinstellungenZurueck as setzeQuizEinstellungenZurueckTeil, speichereAlsGespeichert as speichereAlsGespeichertTeil, starteAufteilen as starteAufteilenTeil, starteLernQuiz as starteLernQuizTeil, starteLernen as starteLernenTeil, toggleAbfrageModus as toggleAbfrageModusTeil, toggleEinstellungen as toggleEinstellungenTeil, toggleEinzelauswahl as toggleEinzelauswahlTeil, toggleListenAuswahl as toggleListenAuswahlTeil, toggleQuizTabListe as toggleQuizTabListeTeil, toggleReihenfolge as toggleReihenfolgeTeil, toggleSessionBereich as toggleSessionBereichTeil, toggleSlotSektion as toggleSlotSektionTeil, toggleStatistikEinzelauswahl as toggleStatistikEinzelauswahlTeil, toggleStatistikListenAuswahl as toggleStatistikListenAuswahlTeil, ueberspeichereSession as ueberspeichereSessionTeil, updateSessionSlotFortschritt as updateSessionSlotFortschrittTeil, updateSlotSF as updateSlotSFTeil } from "./logik/lernenSessions.jsx";
 import { auswahlStuecke as auswahlStueckeTeil, einListenName as einListenNameTeil, sessionAuswertungDaten as sessionAuswertungDatenTeil, sessionAuswertungSeite as sessionAuswertungSeiteTeil, sichtbarHalten as sichtbarHaltenTeil, slotNamenVorschlag as slotNamenVorschlagTeil, springeZuTreffer as springeZuTrefferTeil, sprungKnopf as sprungKnopfTeil, suchInfo as suchInfoTeil, suchMarke as suchMarkeTeil, vonBisLangDruck as vonBisLangDruckTeil, zeileImBlick as zeileImBlickTeil, zuEinstListen as zuEinstListenTeil } from "./logik/auswertung.jsx";
 import { aendereEigenesSchema as aendereEigenesSchemaTeil, beendeFarbModus as beendeFarbModusTeil, dupliziereSchema as dupliziereSchemaTeil, entferneElementFarbe as entferneElementFarbeTeil, farbRadAbbrechen as farbRadAbbrechenTeil, farbRadAnwenden as farbRadAnwendenTeil, farbRollenBei as farbRollenBeiTeil, klammerAenderungen as klammerAenderungenTeil, loescheSchema as loescheSchemaTeil, oeffneElementFarbRad as oeffneElementFarbRadTeil, oeffneFarbRad as oeffneFarbRadTeil, starteFarbModus as starteFarbModusTeil, uebernehmeFarben as uebernehmeFarbenTeil, verschiebeKlammern as verschiebeKlammernTeil, zufallsSchema as zufallsSchemaTeil } from "./logik/farbmodus.jsx";
-import { beendeMultiAuswahl as beendeMultiAuswahlTeil, brecheQuizAb as brecheQuizAbTeil, infoEintrag as infoEintragTeil, lernstandJeArt as lernstandJeArtTeil, listenMenue as listenMenueTeil, listenWahlMenue as listenWahlMenueTeil, oeffneListeDetail as oeffneListeDetailTeil, oeffneSatzFenster as oeffneSatzFensterTeil, quizRegeln as quizRegelnTeil, satzPortion as satzPortionTeil, sessionSpeicherAktionen as sessionSpeicherAktionenTeil, uebernehmeSaetze as uebernehmeSaetzeTeil, uebernimmListe as uebernimmListeTeil, verlasseRunde as verlasseRundeTeil, zurRundenStatistik as zurRundenStatistikTeil, zurueckZumLernen as zurueckZumLernenTeil, zurueckZurStatistik as zurueckZurStatistikTeil } from "./logik/quizStart.jsx";
+import { beendeMultiAuswahl as beendeMultiAuswahlTeil, brecheQuizAb as brecheQuizAbTeil, setzeQuizFort as setzeQuizFortTeil, infoEintrag as infoEintragTeil, lernstandJeArt as lernstandJeArtTeil, listenMenue as listenMenueTeil, listenWahlMenue as listenWahlMenueTeil, oeffneListeDetail as oeffneListeDetailTeil, oeffneSatzFenster as oeffneSatzFensterTeil, quizRegeln as quizRegelnTeil, satzPortion as satzPortionTeil, sessionSpeicherAktionen as sessionSpeicherAktionenTeil, uebernehmeSaetze as uebernehmeSaetzeTeil, uebernimmListe as uebernimmListeTeil, verlasseRunde as verlasseRundeTeil, zurRundenStatistik as zurRundenStatistikTeil, zurueckZumLernen as zurueckZumLernenTeil, zurueckZurStatistik as zurueckZurStatistikTeil } from "./logik/quizStart.jsx";
 import { akzentFehlgriff as akzentFehlgriffTeil, akzentStand as akzentStandTeil, beendeVerzoegerung as beendeVerzoegerungTeil, begrenzeOhneAkzent as begrenzeOhneAkzentTeil, bewerteKarte as bewerteKarteTeil, brecheWiederholungAb as brecheWiederholungAbTeil, deckeKarteAuf as deckeKarteAufTeil, geheZurueck as geheZurueckTeil, getAktVok as getAktVokTeil, karteWeiter as karteWeiterTeil, klickeButton as klickeButtonTeil, memoryTippe as memoryTippeTeil, mitFlash as mitFlashTeil, mitRueckblick as mitRueckblickTeil, mitVerzoegerung as mitVerzoegerungTeil, mitZuordnungMix as mitZuordnungMixTeil, naechsteDiktatVokabel as naechsteDiktatVokabelTeil, naechsteVokabel as naechsteVokabelTeil, naechsteVokabelState as naechsteVokabelStateTeil, naechsteVokabelState0 as naechsteVokabelState0Teil, pruefeAkzente as pruefeAkzenteTeil, pruefeAntwort as pruefeAntwortTeil, pruefeDiktatAntwort as pruefeDiktatAntwortTeil, rueckblickWischen as rueckblickWischenTeil, schliesseAkzenteAb as schliesseAkzenteAbTeil, setzeAkzentVariante as setzeAkzentVarianteTeil, spaltenAbschluss as spaltenAbschlussTeil, spielBeenden as spielBeendenTeil, sprichDiktatNochmal as sprichDiktatNochmalTeil, starteWiederholung as starteWiederholungTeil, ueberspringeWeitere as ueberspringeWeitereTeil, umwerten as umwertenTeil, verteileOhneAkzent as verteileOhneAkzentTeil, waehleAkzentKachel as waehleAkzentKachelTeil, wechsleZuMC as wechsleZuMCTeil, weiterNachSpalte as weiterNachSpalteTeil, zeigeDiktatLoesung as zeigeDiktatLoesungTeil, zeigeLosung as zeigeLosungTeil, zuordnungGruppeTippe as zuordnungGruppeTippeTeil, zuordnungMixWeiter as zuordnungMixWeiterTeil, zuordnungPruefe as zuordnungPruefeTeil, zuordnungRunde as zuordnungRundeTeil, zuordnungRundeAus as zuordnungRundeAusTeil, zuordnungRundeEnde as zuordnungRundeEndeTeil, zuordnungTippe as zuordnungTippeTeil, zuordnungWerte as zuordnungWerteTeil, zuordnungZeitBis as zuordnungZeitBisTeil } from "./logik/abfrage.jsx";
 
 export default function VokabelApp() {
@@ -616,7 +616,12 @@ export default function VokabelApp() {
     letzterSlotGeladenRef.current = true;
     const id = lsGet(SK.letzterSlot);
     if (typeof id === "string" && id.startsWith("listen:")) { if (getSlotEintrag("listen", id.slice(7))) ladeSlot("listen", id.slice(7)); }   // 217
+    else if (typeof id === "string" && id.startsWith("verlauf:")) { if (getSlotEintrag("verlauf", id.slice(8))) ladeSlot("verlauf", id.slice(8)); }   // 254: Multiquiz / Listen-Paket
     else if (id && getSlotEintrag('gespeichert', id)) ladeSlot('gespeichert', id);
+    else {   // 254: laufendes Quiz aus dem Verlauf (z. B. pausiertes Paket) – seine Listen und Einstellungen wieder laden
+      const s = lsGet(SK.sessionAktiv);
+      if (s?.slotTyp === "verlauf" && getSlotEintrag("verlauf", s.slotId)) ladeSlot("verlauf", s.slotId);
+    }
   }, [listenIndex]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wechsel der Abfrageart (Übersetzung / Diktat / Akzente) → Quiz-Fortschritt dieser Art laden
@@ -1015,7 +1020,21 @@ export default function VokabelApp() {
   };
   // 234: in einen Ordner hinein bzw. die Ebene wechseln hebt die Auswahl auf (eine Auswahl auf einer anderen Ebene wäre nicht zu überblicken)
   useEffect(() => { setMultiAuswahl(null); }, [slotOrdner]);
-  useEffect(() => { setListenWahl(null); }, [listenOrdnerOffen]);
+  // 251: beim Ordnerwechsel endet die Auswahl – außer sie wird gerade wiederhergestellt (Paket-Listen in ihrem Ordner)
+  const wahlNachOrdnerRef = useRef(null);
+  const sektionVorherRef = useRef(false);
+  useEffect(() => { const w = wahlNachOrdnerRef.current; wahlNachOrdnerRef.current = null; if (w) auswahlTafelRef.current = "liste"; setListenWahl(w); }, [listenOrdnerOffen]);
+  // 251: Quiz aus mehreren Listen (Listen-Paket) – zurück in der Listen-Auswahl sind genau seine Listen wieder ausgewählt
+  function stellePaketWahlHer() {
+    // alle im selben Ordner → dort; sonst oberste Ebene, Listen in Ordnern zählen über ihren obersten Ordner (wie gewählt, 234)
+    const ordnerVon = id => { const o = listenIndex.find(l => l.id === id)?.ordner; return o && listenOrdner.some(x => x.id === o) ? o : null; };
+    const ordner = [...new Set(quizTabListen.map(ordnerVon))];
+    const ziel = ordner.length === 1 ? ordner[0] : null;
+    const ids = ziel || ordner.length === 1 ? [...quizTabListen]
+      : [...new Set(quizTabListen.map(id => { const o = ordnerVon(id); return o ? ordnerPfad(listenOrdner, o)[0]?.id || id : id; }))];
+    if (ziel !== listenOrdnerOffen) { wahlNachOrdnerRef.current = ids; setListenOrdnerOffen(ziel); return; }
+    auswahlTafelRef.current = "liste"; setListenSortModus(false); setListenWahl(ids);
+  }
   // 192: Blätter-Modus endet, wenn die Auswahl zugeht (Quiz-Auswahl zu, anderer Tab/Bereich)
   useEffect(() => { setBlaettern(false); }, [slotSektionAufgeklappt, tab, einstBereich, einstUnter, ansicht]);
   // 226: Listen-Mehrfach-Auswahl übernehmen – eine Liste → als Quiz laden, mehrere → neues, ungespeichertes Quiz aus ihnen
@@ -1023,6 +1042,8 @@ export default function VokabelApp() {
     setListenWahl(null); setBlaettern(false); auswahlTafelRef.current = null; schliesseInfo(); setSlotVorschau(null);
     ids = wahlListenIds(ids);   // 234: Ordner zählen mit ihrem ganzen Inhalt
     if (!ids.length) return;
+    // 251: dieselben Listen wie das geladene (evtl. pausierte) Paket – nichts neu anlegen, der Fortschritt bleibt
+    if (ids.length >= 2 && istPaketQuiz && kommtAusListen && ids.join() === quizTabListen.join()) { schliesseSlotsVerzoegert(); leuchte("slotkopf"); return; }
     if (ids.length === 1) { uebernimmListe(ids[0]); return; }
     applyKonfiguration({ ...aktuelleKonfiguration(false), listenIds: ids, vokabelAuswahl: [], bereichTyp: "alle", quizBereichTyp: "alle" });
     setListenPaket([...ids]);   // 230
@@ -1048,9 +1069,14 @@ export default function VokabelApp() {
   };
   wahlBeendenRef.current = art => { setWahlBeendet(w => ({ ...w, [art]: true })); auswahlTafelRef.current = art; setTimeout(() => zeigeAuswahlTafel(art), 0); };
   useEffect(() => {
+    // 251: nur beim Aufgehen der Auswahl (nicht, während sie nach dem Übernehmen noch kurz offen ist); zu → Listen-Auswahl endet
+    const geradeAuf = slotSektionAufgeklappt && !sektionVorherRef.current;
+    sektionVorherRef.current = slotSektionAufgeklappt;
+    if (!slotSektionAufgeklappt && listenWahl) setListenWahl(null);
     if (!slotSektionAufgeklappt || (tab !== "quiz" && tab !== "statistik") || multiAuswahl || slotSortModus) return;
     // 220: Liste im Kopf → Listen-Auswahl, ihr Ordner offen, Kachel in den Blick
     if (tab === "quiz") { setAuswahlListen(listenAuswahlErzwingenRef.current || kommtAusListen); if (listenAuswahlErzwingenRef.current) { listenAuswahlErzwingenRef.current = false; return; } }   // 250: zurück in die Auswahl, aus der das Quiz kam
+    if (geradeAuf && tab === "quiz" && kommtAusListen && istPaketQuiz && quizTabListen.length >= 2 && !listenWahl) { stellePaketWahlHer(); return; }   // 251
     if (tab === "quiz" && rasterSlot?.typ === "listen") {
       const l = lsGet(SK.listenIndex, []).find(x => x.id === rasterSlot.id);
       if (!l) return;
@@ -2444,6 +2470,7 @@ export default function VokabelApp() {
   function zurRundenStatistik(...args) { return zurRundenStatistikTeil({ aktiveListeId, aktiverSlot, getSlotEintrag, ladeSlotStatistik, quiz, setStatistikAktiverSlot, setStatistikArt, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikEinzelauswahlAufgeklappt, setStatistikFilter, setStatistikListenAufgeklappt, setStatistikListenIds, setStatistikSlotGeleert, setStatistikVollbild, setTab, zurueckZurStatistik }, ...args); }
 
   function brecheQuizAb(...args) { return brecheQuizAbTeil({ beendeQuiz, quiz, setQuiz, updateSessionSlotFortschritt }, ...args); }
+  function setzeQuizFort(...args) { return setzeQuizFortTeil({ quiz, setQuiz, setSessionSlotAktiv }, ...args); }
 
   function starteDiktat(force = false, overrideSlot = null, gruppe = null) {
     // gruppe (Set von Vokabel-IDs, Quiz aus der Statistik): einmalige Runde nur mit diesen Vokabeln –
@@ -2821,7 +2848,7 @@ export default function VokabelApp() {
 
   // ── Render: Quiz-Aktiv ────────────────────────────────────────────────────
   if (ansicht === "quiz" && quiz) {
-    return AbfrageAnsicht({ aendereStimmen, akzentStand, beendeQuiz, beendeVerzoegerung, bewerteKarte, blitzKey, brecheQuizAb, brecheWiederholungAb, deckeKarteAuf, eingabeRef, einstellungen, farbModusUI, farbRadUI, geheZurueck, getAktVok, heuteGesperrtOffen, kachelMitAkzent, karteWeiter, klickeButton, memoryTippe, naechsteVokabel, naechstesPaketUI, nimmVokabelHeraus, oeffneVokabelBearbeiten, pruefeAkzente, pruefeAntwort, quiz, quizRegeln, renderKopfFortschritt, renderRundenErgebnis, renderVokabelEditor, sessionAuswertungSeite, setQuiz, setQuizPaketGroesse, setzeAkzentVariante, speichereEinst, starteQuiz, starteWiederholung, tt, ttFeld, ueberspringeWeitere, updateSessionSlotFortschritt, verlasseRunde, vokLang, waehleAkzentKachel, wechsleStimme, weiterZurAuswertung, zeigeLosung, zuordnungMixWeiter, zuordnungRunde, zuordnungTippe, zurRundenStatistik, zurueckZumLernen, zurueckZurStatistik });
+    return AbfrageAnsicht({ setzeQuizFort, aendereStimmen, akzentStand, beendeQuiz, beendeVerzoegerung, bewerteKarte, blitzKey, brecheQuizAb, brecheWiederholungAb, deckeKarteAuf, eingabeRef, einstellungen, farbModusUI, farbRadUI, geheZurueck, getAktVok, heuteGesperrtOffen, kachelMitAkzent, karteWeiter, klickeButton, memoryTippe, naechsteVokabel, naechstesPaketUI, nimmVokabelHeraus, oeffneVokabelBearbeiten, pruefeAkzente, pruefeAntwort, quiz, quizRegeln, renderKopfFortschritt, renderRundenErgebnis, renderVokabelEditor, sessionAuswertungSeite, setQuiz, setQuizPaketGroesse, setzeAkzentVariante, speichereEinst, starteQuiz, starteWiederholung, tt, ttFeld, ueberspringeWeitere, updateSessionSlotFortschritt, verlasseRunde, vokLang, waehleAkzentKachel, wechsleStimme, weiterZurAuswertung, zeigeLosung, zuordnungMixWeiter, zuordnungRunde, zuordnungTippe, zurRundenStatistik, zurueckZumLernen, zurueckZurStatistik });
   }
 
 

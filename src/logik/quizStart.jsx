@@ -1,5 +1,5 @@
 import { SATZ_PORTION, saetzeAusAntwort, saetzeLaden, saetzeSpeichern, satzPrompt } from "../saetze.js";
-import { SK, TYPEN, lsGet, lsLesen } from "../speicher.js";
+import { SK, TYPEN, lsGet, lsLesen, lsSet } from "../speicher.js";
 import { GRUPPE, gruppe } from "../infoEreignisse.js";
 import { listeSprache, sprachInfo } from "../sprache.js";
 import { QUIZ_ARTEN, SCORE_FELD, lernProzent, ohneHinweis, statistikSicht, stufenRegeln } from "../quiz.jsx";
@@ -233,12 +233,27 @@ export function brecheQuizAb(app) {
       )];
       if (answeredIds.length > 0) updateSessionSlotFortschritt(answeredIds, false);
     }
+    const gezaehlt = !!quiz.istSessionModus && !!lsGet(SK.sessionAktiv) && ((quiz.zuordnung ? (quiz.zuordnung.beantwortet || []).length : quiz.wiederholungDurchgang ? (quiz.sessionVokIds || []).length : (quiz.index || 0)) > 0);
     const ges = (quiz.quizRichtigAnzahl || 0) + (quiz.quizFalschAnzahl || 0);
     if (ges > 0) {
-      setQuiz(prev => ({...prev, phase: "fertig", abgebrochen: true}));
+      // 253: Zustand vor der Pause merken – „▶ Fortsetzen“ macht weiter, wo pausiert wurde
+      setQuiz(prev => ({...prev, phase: "fertig", abgebrochen: true, pause: { phase: prev.phase, gezaehlt }}));
     } else {
       beendeQuiz();
     }
+  }
+
+// 253: Pause zurücknehmen – weiter mit der Vokabel, bei der pausiert wurde. Das Pausieren hat das Paket im
+// Session-Slot schon einmal gezählt; beim Paket-Ende wird es erneut gezählt, daher hier wieder abziehen.
+export function setzeQuizFort(app) {
+  const { quiz, setQuiz, setSessionSlotAktiv } = app;
+    const p = quiz?.pause;
+    if (!p) return;
+    if (p.gezaehlt) {
+      const slot = lsGet(SK.sessionAktiv);
+      if (slot && slot.pakete > 0) { const neu = { ...slot, pakete: slot.pakete - 1 }; lsSet(SK.sessionAktiv, neu); setSessionSlotAktiv(neu); }
+    }
+    setQuiz(prev => { if (!prev?.pause) return prev; const { pause, ...rest } = prev; return { ...rest, phase: pause.phase, abgebrochen: false }; });
   }
 
 // Regeln der laufenden Runde: Stufe der Einstellungen; Quiz nach dem Lernen ("lernen"): Regeln wie Leicht,

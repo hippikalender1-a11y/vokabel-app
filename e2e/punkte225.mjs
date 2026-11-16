@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer-core";
 import { zuListen } from "./hilfen.mjs";
+import { auswahlEnde } from "./hilfen.mjs";
 
 // 225: Listen nur noch im Quiz-Tab (Einstellungen › Listen entfällt, „Sicherung“ eigener Bereich);
 // 226: Mehrfach-Auswahl der Listen wie bei den Quiz – grüner Kopf übernimmt mehrere Listen als neues, ungespeichertes Quiz;
@@ -67,6 +68,8 @@ ok(/6 Vokabeln/.test(info) && !/Listen-Auswahl/.test(info), "226/230: das Quiz e
 
 // ── 228: das bloß geladene Quiz zählt nicht ──
 await zuListen(page);
+ok(await wahl() === "l_a,l_b", `251: zurück in den Listen ist das Paket wieder ausgewählt (${await wahl()})`);
+await auswahlEnde(page); await sleep(300);
 await tippe('[data-liste-id="l_a"]');   // antippen: lädt „Unit A“ als Quiz
 await zuListen(page);
 ok(await gewaehlt() === "l_a", `geladene „Unit A“ ist markiert (${await gewaehlt()})`);
