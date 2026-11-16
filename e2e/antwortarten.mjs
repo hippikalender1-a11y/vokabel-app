@@ -103,7 +103,9 @@ const ARTW = ["la maison", "le chat", "l'école", "la forêt", "le garçon", "un
 ok(await starte("artikel", ARTW), "Modus-Knopf „Artikel“");
 let artikelGesehen = 0, ohneArtikel = 0;
 for (let k = 0; k < ARTW.length; k++) {
-  const frage = await frageText(), w = ARTW[Number(frage.replace("Wort", "")) - 1];
+  const frage = await frageText();
+  if (!frage) break;   // 257: nur „Artikel“ – Wörter ohne erkennbaren Artikel kommen nicht dran
+  const w = ARTW[Number(frage.replace("Wort", "")) - 1];
   const wort = await page.evaluate(() => document.querySelector("[data-artikel-wort]")?.textContent.trim());
   if (wort) {
     artikelGesehen++;
@@ -121,7 +123,7 @@ for (let k = 0; k < ARTW.length; k++) {
     await page.evaluate(() => [...document.querySelectorAll(".karte-btn")].find(b => /Gewusst/.test(b.textContent) && !/Nicht/.test(b.textContent))?.click()); await sleep(1300);
   }
 }
-ok(artikelGesehen === 5 && ohneArtikel === 1, `5 Wörter mit Artikel, 1 ohne (${artikelGesehen}/${ohneArtikel})`);
+ok(artikelGesehen === 5 && ohneArtikel === 0, `257: nur die 5 Wörter mit Artikel, „l'école“ ausgelassen (${artikelGesehen}/${ohneArtikel})`);
 
 // ── Serie und Blitzrunde (Abfrage-Ziel) ──
 const mitZiel = async ziel => {

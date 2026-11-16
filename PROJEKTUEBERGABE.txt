@@ -3384,3 +3384,24 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   ohne Lücken – nur Anzeige; beim Verschieben (auch Finger-Zug = Sortier-Modus) die echten Plätze, wie bei „Gelernte
   ausblenden“. Freier Platz im lückenlosen Raster: Neues ohne festen Platz.
 - Test: e2e/punkte255.mjs.
+
+── gesammelt (16.11.2026, nach 256) ──
+257 Antwortart „Artikel“ in einer Englisch-Liste gewählt (Screenshot 20:31: Fahrt – drive): Englisch hat keine Artikel-
+    Kategorien (ARTIKEL_KAT nur fr/es/it/pt/nl/de), also fällt jede Vokabel still auf „Karte“ zurück
+    (loeseSpaltenModusAuf) – der Sinn ist nicht erkennbar. Vorschlag: „Artikel“ nur anbieten, wenn die gewählten Vokabeln
+    Wörter mit erkennbarem Artikel enthalten (wie akzentMoeglich in teile.jsx); ist „Artikel“ die einzige Art, nur diese
+    Wörter abfragen (wie beim Akzent-Modus), sonst bei den übrigen eine der anderen gewählten Arten.
+258 Score sichtbar überall, wo eine Vokabel einen Score speichert: heute zeigt nur die Karte die Kreise/Rauten
+    (AbfrageAnsicht ~520, ScoreSymbolePuls). Gewünscht: dieselben Symbole samt Puls (252) auch bei MC, Hören, Tastatur, Puzzle,
+    Lücken, Artikel, Satz-Arten (Score fortschritt), Akzente (akzentFortschritt) und Diktat (diktatFortschritt) – an derselben
+    Stelle in der Antwort-Box. Zuordnung/Memory (mehrere Vokabeln): Symbole je gefundenem Paar bzw. in den Ergebnis-Zeilen.
+    Hinweis an den Nutzer: gespeichert wird bei allen schon (Tests antwortarten.mjs), es fehlte nur die Anzeige.
+
+── 257/258 umgesetzt (16.11.2026) ──
+- 257: Knopf „Artikel“ nur, wenn unter den Vokabeln Wörter mit erkennbarem Artikel sind (teile.jsx artikelMoeglich; bleibt
+  sichtbar, solange gewählt). Spalte nur mit „Artikel“ (quiz.jsx nurArtikel): antwortSpaltenFuer lässt sie bei Wörtern
+  ohne Artikel aus → allein gewählt nur diese Wörter (Start und Zählung in QuizTab), mit mehreren Spalten die übrigen.
+  vokSprache liest den Listen-Index gepuffert (lsLesen).
+- 258: Score-Symbole (mit Puls, 252) in der Antwort-Box bei allen Antwortarten, nicht nur Karte; Diktat: Diktat-Score im
+  Kopf der Lautsprecher-Box; Zuordnung/Memory: Symbole je Vokabel in den Ergebnis-Zeilen (data-zuo-score).
+- Test: e2e/punkte257.mjs; angepasst gemischt/richtung/antwortarten (Artikel nur bei Wörtern mit Artikel).

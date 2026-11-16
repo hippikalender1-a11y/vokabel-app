@@ -1,4 +1,4 @@
-import { ANTWORT_MODUS_NAMEN, MODI_REIHENFOLGE, PAKET_ALLE, QUIZ_ARTEN, START_TEXT, antwortSpaltenFuer, gelerntScore, hatAkzente, heuteAbgefragt, istFaellig, modiVon, ordneVokabeln, stufenRegeln, tagesSperre } from "../quiz.jsx";
+import { ANTWORT_MODUS_NAMEN, MODI_REIHENFOLGE, PAKET_ALLE, QUIZ_ARTEN, START_TEXT, antwortSpaltenFuer, gelerntScore, hatAkzente, heuteAbgefragt, istFaellig, modiVon, ordneVokabeln, stufenRegeln, tagesSperre, nurArtikel } from "../quiz.jsx";
 import { IcoDown, IcoUp, IcoX } from "../komponenten.jsx";
 import { SK, TYPEN, WAHL_ZU_MS, lsGet } from "../speicher.js";
 import { SPRACH_KUERZEL, sprachInfo } from "../sprache.js";
@@ -27,9 +27,12 @@ export function QuizTab(app) {
           const nurAkzent = quizModus === "sequenziell" && quizAntwortTypenGeordnet.length > 0
             && quizAntwortTypenGeordnet.every(t => quizSpalteModus[t] === "akzent");
           // Zählt Vokabeln mit mindestens einer abzufragenden Spalte (= größte Anzahl je Antwortspalte)
-          const akzentVoks = akzentSpalten.length > 0 && !stufenRegeln(einstellungen).akzentOhneMischen
+          // 257: Spalten nur mit „Artikel“ – Wörter ohne Artikel fallen dort weg (wie bei Akzenten)
+          const akzentAuslassen = akzentSpalten.length > 0 && !stufenRegeln(einstellungen).akzentOhneMischen;
+          const artikelNurDa = quizModus !== "diktat" && (quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet).some(t => nurArtikel(quizSpalteModus[t]));
+          const akzentVoks = akzentAuslassen || artikelNurDa
             ? gefilterteVoks.filter(v => antwortSpaltenFuer(v, quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet,
-              quizSpalteModus, true).length > 0) : gefilterteVoks;
+              quizSpalteModus, akzentAuslassen).length > 0) : gefilterteVoks;
           // Score-Filter (nur schlechteste-Modus) → Basis für Reihenfolge-Header; eingeschaltete Gelernte bleiben dabei
           const feldVon = v => nurAkzent ? v.akzentFortschritt : quizModus === "diktat" ? v.diktatFortschritt : v.fortschritt;
           const gelerntDabei = v => (quizGelerntEinschliessen && (einstellungen.gelerntSchwelle ?? 0) > 0

@@ -255,6 +255,7 @@ export function AbfrageAnsicht(app) {
                           ))}
                         </div>
                         {wahl && <div className="zuo-wahl" data-zuo-wahl>deine Wahl: {wahl}</div>}
+                        <div className="zuo-score" data-zuo-score={id}>{scoreSymbole(quiz.liste.vokabeln.find(x => x.id === id)?.fortschritt?.score ?? v?.fortschritt?.score, true)}</div>   {/* 258 */}
                       </div>
                     );
                   })}
@@ -518,7 +519,7 @@ export function AbfrageAnsicht(app) {
                       {antwortBoxKlasse.includes("gelernt-blitz") && <GelerntSterne/>}
                       <div className="karten-kopf">
                         <span className="quiz-label" style={{display:"inline-flex", alignItems:"center"}}>{antwortStatus(antwortBoxKlasse)}{antwortLabel}{isWeitere && <span style={{color:"var(--info)", marginLeft:8}}>— weitere Antwort</span>}</span>
-                        {kartenKnoepfe(aktAntwortTyp, antwortGanz, "antwort", antwortSichtbar, (isKarteEingabe || isKarteAufgedeckt || quiz.karteNeinFlash) && <ScoreSymbolePuls score={akz ? aktVok?.akzentFortschritt?.score : aktVok?.fortschritt?.score} id={`${aktVok?.id}${akz ? "|a" : ""}`}/>)}   {/* 252 */}
+                        {kartenKnoepfe(aktAntwortTyp, antwortGanz, "antwort", antwortSichtbar, <ScoreSymbolePuls score={akz ? aktVok?.akzentFortschritt?.score : aktVok?.fortschritt?.score} id={`${aktVok?.id}${akz ? "|a" : ""}`}/>)}   {/* 252 */}
                       </div>
                       {/* Karte-Modus: Platzhalter in Höhe der Antwort (ohne Text), damit beim Aufdecken nichts springt */}
                       {isKarteEingabe && <div className="karte-aufdecken" aria-hidden="true" style={{visibility:"hidden"}}>&nbsp;</div>}

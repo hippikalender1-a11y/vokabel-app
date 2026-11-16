@@ -1,7 +1,7 @@
 import { CSS } from "../stil.js";
 import { GelerntSterne, IcoDown, IcoSpkOn, IcoUp } from "../komponenten.jsx";
 import { SK, lsGet } from "../speicher.js";
-import { diktatHint, jubelText, mitHinweis, ohneHinweis } from "../quiz.jsx";
+import { ScoreSymbolePuls, diktatHint, jubelText, mitHinweis, ohneHinweis } from "../quiz.jsx";
 import { sprich } from "../sprache.js";
 
 // Phase 2 (Aufteilung): Ansicht aus App.jsx – if (ansicht === "quiz" && quiz && quiz.modus === "diktat") { … }
@@ -133,7 +133,8 @@ export function DiktatAnsicht(app) {
                 { label: "✎ Richtige Antwort bearbeiten", fn: () => oeffneVokabelBearbeiten(quiz.vokabeln[quiz.index], quiz.vokabeln[quiz.index]._listeId ?? quiz.liste.id, quiz.diktatSpalte) },
                 { label: "🚫 Nicht mehr abfragen", fn: nimmVokabelHeraus },
               ], { langText: `${quiz.liste.spalten[quiz.diktatSpalte]?.name || quiz.diktatSpalte}: richtige Antwort bearbeiten` })}>
-              <div className="quiz-label">{quiz.liste.spalten[quiz.diktatSpalte]?.name || quiz.diktatSpalte} — hör genau hin!</div>
+              <div className="karten-kopf"><div className="quiz-label">{quiz.liste.spalten[quiz.diktatSpalte]?.name || quiz.diktatSpalte} — hör genau hin!</div>
+                <ScoreSymbolePuls score={quiz.liste.vokabeln.find(v => v.id === aktVok.id)?.diktatFortschritt?.score ?? aktVok.diktatFortschritt?.score} id={`${aktVok.id}|d`}/></div>   {/* 258 */}
               {quiz.diktatSpalte.startsWith('E') && (
                 <button {...tt("Wort vorlesen")} className="diktat-play-btn"
                   onClick={() => { setDiktatManualPlays(p => p + 1); sprich(diktatWort, vokLang(aktVok, quiz.diktatSpalte)); }}>

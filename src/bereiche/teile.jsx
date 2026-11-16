@@ -1,6 +1,6 @@
 import { BLITZ_MS, TYPEN } from "../speicher.js";
 import { fv } from "../farben.js";
-import { ABFRAGE_ART_NAMEN, AKZENTE_FUER_LISTE, ART_KURZ, GRUPPE_BALKEN, MODI_REIHENFOLGE, QUIZ_ARTEN, STANDARD_ANTWORT_MODUS, hatAkzentWort, istRunde, lernProzent, mitHinweis, modiVon, modusErlaubt, scoreSymbole, umbruch } from "../quiz.jsx";
+import { ABFRAGE_ART_NAMEN, AKZENTE_FUER_LISTE, ARTIKEL_KAT, ART_KURZ, artikelInfo, vokSprache, GRUPPE_BALKEN, MODI_REIHENFOLGE, QUIZ_ARTEN, STANDARD_ANTWORT_MODUS, hatAkzentWort, istRunde, lernProzent, mitHinweis, modiVon, modusErlaubt, scoreSymbole, umbruch } from "../quiz.jsx";
 import { AUFTEILEN_GROESSEN, SUCH_SPALTEN, sucheVokabeln } from "../raster.js";
 import { MiniKreis } from "../komponenten.jsx";
 import { CSS } from "../stil.js";
@@ -381,10 +381,13 @@ export function renderAufteilenKasten(app) {
 // dann schaltet antippen dazu/weg, mehrere → je Frage eine nach der Gewichtung; „Bestätigen“ im Zeilen-Knopf beendet die Mehrfach-Auswahl.
 // Akzente: Zusatz, der dazu- bzw. weggeschaltet wird; nur bei Fremdsprachen-Spalten und eingeschalteten Akzenten; mindestens eine Art außer Akzente bleibt an
 export function renderModusKnoepfe(app, typ) {
-  const { artenMehrfach, blitzt, einstellungen, leuchte, quizAntwortTypenGeordnet, quizAusgewaehlt, quizModus, quizSpalteModus, quizTabListen, setAntwortMehrfach, setArtenMehrfach, setQuizDiktatSpalte, setQuizSpalteModus, speichereEinst, tt, wechsleQuizArt } = app;
+  const { quizKombiListe, spracheVonListe, artenMehrfach, blitzt, einstellungen, leuchte, quizAntwortTypenGeordnet, quizAusgewaehlt, quizModus, quizSpalteModus, quizTabListen, setAntwortMehrfach, setArtenMehrfach, setQuizDiktatSpalte, setQuizSpalteModus, speichereEinst, tt, wechsleQuizArt } = app;
     const aktiv = modiVon(quizSpalteModus[typ]);
     const mehrfach = !!artenMehrfach;
     const akzentMoeglich = typ.startsWith("E") && quizTabListen.some(id => AKZENTE_FUER_LISTE(id));
+    // 257: „Artikel“ nur, wenn unter den Vokabeln Wörter mit erkennbarem Artikel sind (bzw. die Art schon gewählt ist)
+    const artikelMoeglich = aktiv.includes("artikel") || (typ.startsWith("E") && quizTabListen.some(id => ARTIKEL_KAT[spracheVonListe(id)])
+      && (quizKombiListe?.vokabeln || []).some(v => artikelInfo(v[typ]?.wert, vokSprache(v))));
     const spalten = quizModus === "rotierend" ? (quizAusgewaehlt.length ? quizAusgewaehlt : [typ]) : quizAntwortTypenGeordnet.length ? quizAntwortTypenGeordnet : [typ];
     const waehle = m => {
       if (m === "akzent") { umschalten(m); return; }
@@ -450,7 +453,7 @@ export function renderModusKnoepfe(app, typ) {
       zuordnung: ["Zuordnung", "Zuordnen: Kacheln der Spalten einander zuordnen, mehrere Vokabeln je Runde – gilt für alle Spalten; bei „wechselnd“ steht die Fremdsprache je Zeile zufällig links oder rechts; mit anderen Arten gemischt startet je Ziehung eine Runde"],
       memory: ["Memory", "Memory: verdeckte Karten (Frage und Antwort) aufdecken und Paare finden – mehrere Vokabeln je Runde; gefundene Paare +1, Fehlversuche kosten nichts"],
     };
-    const gruppe = ms => ms.filter(m => modusErlaubt(typ, m) && (m !== "akzent" || akzentMoeglich)).map(m => knopf([m, ...ARTEN[m]]));
+    const gruppe = ms => ms.filter(m => modusErlaubt(typ, m) && (m !== "akzent" || akzentMoeglich) && (m !== "artikel" || artikelMoeglich)).map(m => knopf([m, ...ARTEN[m]]));
     // Übersetzung des Beispielsatzes während der Frage (Satz finden / Lückensatz) – einstellbar
     const uebArten = [["satzfinden", "Satz finden", "satzUebFinden", false], ["lueckensatz", "Lückensatz", "satzUebLuecke", true]].filter(([m]) => aktiv.includes(m));
     const ueb = uebArten.length ? (

@@ -349,6 +349,7 @@ export const CSS_BASIS = `
   .karte-btn-nein{background:var(--falsch);color:var(--auf-falsch);}
   .karte-aufdecken{text-align:center;padding:20px 0;color:var(--text3);font-size:0.9rem;font-style:italic;}
   .karten-kopf{display:flex;align-items:center;gap:8px;margin-bottom:6px;min-height:40px;}
+  .karten-kopf > .score-symbole{margin-left:auto;}   /* 258: Diktat – Symbole rechts */
   .karten-kopf .quiz-label,.karten-kopf .quiz-vorig-label{margin-bottom:0;flex:1;min-width:0;}
   .karten-knoepfe{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:auto;}
   .karten-knopf{min-width:40px;height:40px;border-radius:20px;border:1.5px solid var(--rahmen);background:var(--karte);color:var(--text2);display:flex;align-items:center;justify-content:center;padding:0 10px;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;}
@@ -440,6 +441,7 @@ export const CSS_BASIS = `
   .zuo-reihe.falsch{border-color:var(--falsch);background:var(--falsch-flaeche, transparent);}
   .zuo-reihe.offen{border-style:dashed;}
   .zuo-reihe .zuo-karte{min-height:40px;}
+  .zuo-score{display:flex;justify-content:flex-end;margin:4px 4px 0;}   /* 258: Score je Vokabel in den Ergebnis-Zeilen */
   .zuo-wahl{font-size:0.75rem;color:var(--falsch-dunkel, var(--falsch));margin:4px 4px 0;font-weight:600;}
   @keyframes zuoEin{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
   .zuo-kopf{font-size:0.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.04em;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}

@@ -2430,7 +2430,7 @@ export default function VokabelApp() {
   // Antwortarten einer Spalte: antippen wechselt sofort (die angetippte Art ersetzt die bisherigen); lang drücken › „☑ Mehrere wählen“:
   // dann schaltet antippen dazu/weg, mehrere → je Frage eine nach der Gewichtung; „Bestätigen“ im Zeilen-Knopf beendet die Mehrfach-Auswahl.
   // Akzente: Zusatz, der dazu- bzw. weggeschaltet wird; nur bei Fremdsprachen-Spalten und eingeschalteten Akzenten; mindestens eine Art außer Akzente bleibt an
-  function renderModusKnoepfe(...args) { return renderModusKnoepfeTeil({ artenMehrfach, blitzt, einstellungen, leuchte, quizAntwortTypenGeordnet, quizAusgewaehlt, quizModus, quizSpalteModus, quizTabListen, setAntwortMehrfach, setArtenMehrfach, setQuizDiktatSpalte, setQuizSpalteModus, speichereEinst, tt, wechsleQuizArt }, ...args); }
+  function renderModusKnoepfe(...args) { return renderModusKnoepfeTeil({ quizKombiListe, spracheVonListe, artenMehrfach, blitzt, einstellungen, leuchte, quizAntwortTypenGeordnet, quizAusgewaehlt, quizModus, quizSpalteModus, quizTabListen, setAntwortMehrfach, setArtenMehrfach, setQuizDiktatSpalte, setQuizSpalteModus, speichereEinst, tt, wechsleQuizArt }, ...args); }
 
   // Mini-Kreise Ü D A (zum Anzeigen; mit beiKlick zum Umschalten)
   function renderMiniKreise(...args) { return renderMiniKreiseTeil({ ttFeld }, ...args); }

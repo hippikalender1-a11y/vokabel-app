@@ -1,4 +1,4 @@
-import { SK, TYPEN, lsGet, lsSet } from "./speicher.js";
+import { SK, TYPEN, lsGet, lsLesen, lsSet } from "./speicher.js";
 
 
 // ── Quiz-Feedback ───────────────────────────────────────────────────────────
@@ -147,7 +147,7 @@ export function artikelInfo(wert, sprache) {
 export function vokSprache(vok) {
   const id = vok?._listeId;
   if (!id) return null;
-  try { return (JSON.parse(localStorage.getItem("vokabel_listen_index")) || []).find(l => l.id === id)?.sprache || "en"; } catch { return null; }
+  try { return (lsLesen(SK.listenIndex, []) || []).find(l => l.id === id)?.sprache || "en"; } catch { return null; }   // 257: gepuffert gelesen
 }
 export const modiVon = m => Array.isArray(m) ? m : [m || STANDARD_ANTWORT_MODUS];
 // je Frage und Spalte: aus mehreren angehakten Antwortarten gleich verteilt eine wählen;
@@ -656,10 +656,13 @@ export function hatAkzente(wert) { return akzentKacheln(wert).some(k => k.richti
 export function nachSpaltenReihenfolge(typen) {
   return [...typen].sort((a, b) => TYPEN.indexOf(a) - TYPEN.indexOf(b));
 }
+// 257: Spalte nur mit „Artikel“ – Wörter ohne erkennbaren Artikel lassen sie aus (wie Akzente)
+export const nurArtikel = m => m === "artikel" || (Array.isArray(m) && m.length === 1 && m[0] === "artikel");
 export function antwortSpaltenFuer(vok, typen, spalteModus, ohneAkzentAuslassen, nieLeer = false) {
   typen = nachSpaltenReihenfolge(typen);
-  if (!ohneAkzentAuslassen || !vok) return typen;
-  const r = typen.filter(t => spalteModus?.[t] !== "akzent" || hatAkzente(vok[t]?.wert));
+  if (!vok) return typen;
+  const r = typen.filter(t => (!ohneAkzentAuslassen || spalteModus?.[t] !== "akzent" || hatAkzente(vok[t]?.wert))
+    && (!nurArtikel(spalteModus?.[t]) || !!artikelInfo(vok[t]?.wert, vokSprache(vok))));
   return nieLeer && r.length === 0 ? typen : r;
 }
 // Auswahl-Tasten für Kachel i (leer = nicht antippbar)
