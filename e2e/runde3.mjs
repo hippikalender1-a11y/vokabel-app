@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen, menueShim } from "./hilfen.mjs";
+import { listeOeffnen, menueShim, auswahlEnde } from "./hilfen.mjs";
 import { zuListen, neueEineSession, listenZu, quizEinstellungen } from "./hilfen.mjs";
 
 // Runde 3: Speichern-Fenster (Knöpfe oben, Eingabetaste), Vokabelbereich einer gespeicherten Quiz ändern (rot,
@@ -23,7 +23,7 @@ const aktionen = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.
 const aktion = async label => { const da = await page.evaluate(l => { const b = __aktion(`${l}`); b?.click(); return !!b; }, label); await sleep(350); return da; };
 const klickText = async (sel, text) => { const da = await page.evaluate((sel, text) => { const el = [...document.querySelectorAll(sel)].find(e => e.textContent.trim() === text); el?.click(); return !!el; }, sel, text); await sleep(400); return da; };
 const slots = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots") || "{}"));
-const schliesseTafel = async () => { const b = await page.evaluate(() => !!__aktion("✕ Auswahl beenden")); if (b) await page.evaluate(() => __aktion("✕ Auswahl beenden").click()); else await page.mouse.click(5, 120); await sleep(250); };   // 234: Ordner-Menü kommt mit der Auswahl
+const schliesseTafel = async () => { const b = await page.evaluate(() => !!document.querySelector("[data-auswahl-tafel]")); if (b) await auswahlEnde(page); else await page.mouse.click(5, 120); await sleep(250); };   // 234: Ordner-Menü kommt mit der Auswahl
 
 await page.goto(URL);
 await page.evaluate(() => {

@@ -1,8 +1,8 @@
 import { ORDNER_KNOPF, ORDNER_TIEFE_MAX, RASTER_FREI_ZEILEN, ebeneVon, ebenenSpalten, eintraegeImOrdner, ordneRaster, ordnerPfad, rasterGroesse, zahlDe } from "../raster.js";
 import { Fragment } from "react";
-import { BLITZ_MS, SK, TYPEN, lsGet } from "../speicher.js";
+import { BLITZ_MS, SK, TYPEN, lsGet, lsLesen } from "../speicher.js";
 import { listenInhalt } from "../saetze.js";
-import { GRUPPE, gruppe, schliesseInfo } from "../infoEreignisse.js";
+import { GRUPPE, gruppe, inGruppe, schliesseInfo } from "../infoEreignisse.js";
 import { heuteAnteil, slotKonfigArt, slotSFAlle } from "../quiz.jsx";
 
 // Phase 2 (Aufteilung): Zeichen-Funktionen aus App.jsx. app = die Namen der Komponente, die sie brauchen.
@@ -79,13 +79,13 @@ export function listenNavi(app) {
           alleTt: listenOrdnerOffen ? "Zurück zu allen Listen – Listen hierher ziehen legt sie auf die oberste Ebene; lang drücken: neue Liste, neuer Ordner"
             : "Alle Listen – lang drücken: neue Liste, neuer Ordner",
           alleAktionen: [neueListe(null), ...neuerOrdner(null), spaltenL(null), anordnenL(null)], ordnerAktionen: o => [neueListe(o.id), ...neuerOrdner(o.id), spaltenL(o.id), anordnenL(o.id)], einheit: "Listen" })}
-        {!listenWahl && !listenSortModus && quizListenUmschalter()}
+        {!listenSortModus && quizListenUmschalter()}
       </div>
     );
   }
 
 export function renderListenRaster(app) {
-  const { zugRand, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef } = app;
+  const { merkeVerschieben, zugRand, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef } = app;
     const groesse = rasterGroesse(einstellungen, "listenRaster");
     // 193: die geöffnete Ebene (oberste oder ein Ordner) – Ordner-Kacheln und Listen
     const ordnerDaten = { ordner: listenOrdner, gespeichert: listenIndex };
@@ -107,7 +107,7 @@ export function renderListenRaster(app) {
     const tippeImRaster = (l, platz) => {
       if (slotGezogenRef.current) { slotGezogenRef.current = false; return; }
       if (l) { setListenAuswahl(a => a.includes(l.id) ? a.filter(x => x !== l.id) : [...a, l.id]); return; }
-      if (listenAuswahl.length) setzeListenPlaetze(listenAuswahl, platz);
+      if (listenAuswahl.length) { merkeVerschieben(); setzeListenPlaetze(listenAuswahl, platz); }   // 239
     };
     // 225: Listen im Quiz-Tab – antippen fragt die Liste ab (Blätter-Modus: nur wählen, Kopf „📋 … laden“)
     const oeffne = l => {
@@ -141,17 +141,19 @@ export function renderListenRaster(app) {
       ];
     };
     // Auswahl-Tafel: eine Liste → ihr Menü, mehrere → Aktionen für die Auswahl
+    // 241: „☑ Alle auswählen“ (sichtbare Listen dieser Ebene) unter Ablage; „Auswahl beenden“ entfällt (Quiz/Listen-Knopf beendet sie)
+    const alleWahl = { label: "☑ Alle auswählen", behalten: true, fn: () => (auswahlTafelRef.current = "liste", setListenWahl(a => [...(a || []), ...plaetzeRef.current.liste.map(x => x.id).filter(id => !(a || []).includes(id))])) };   // Tafel geht mit der neuen Auswahl wieder auf
     const tafelInhalt = ids => {
       const o = ids.length === 1 && listenOrdner.find(x => x.id === ids[0]);   // 234: ein Ordner → sein Menü
-      if (o) return { text: `📁 ${o.name}`, aktionen: [...lordnerMenue(o), { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) }] };
+      if (o) return { text: `📁 ${o.name}`, aktionen: inGruppe(lordnerMenue(o), GRUPPE.ablage, alleWahl) };
       const l = ids.length === 1 && listenIndex.find(x => x.id === ids[0]);
-      if (l) return { text: l.name, aktionen: [...menue(l).filter(a => a.label !== "☑ Auswählen"), { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "liste", id: l.id }) }, { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) }] };
-      return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: wahlMenue(ids) } : { text: "Nichts ausgewählt – Listen antippen", aktionen: [] };
+      if (l) return { text: l.name, aktionen: [...inGruppe(menue(l).filter(a => a.label !== "☑ Auswählen"), GRUPPE.ablage, alleWahl), { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "liste", id: l.id }) }] };
+      return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: inGruppe(wahlMenue(ids), GRUPPE.ablage, alleWahl) } : { text: "Nichts ausgewählt – Listen antippen", aktionen: [] };
     };
     auswahlTafelDaten.current.liste = () => listenWahl && tafelInhalt(listenWahl);
     const zelle = (l, key, ziehIdsL = []) => {
       const anzahl = vokabelAnzahl(l.id);
-      const liste = lsGet(SK.liste(l.id));
+      const liste = lsLesen(SK.liste(l.id));
       // 202: Inhalt kurz – Beispielsätze (gesamt) und Synonyme, nur was vorhanden ist
       const inh = listenInhalt(liste, satzStand);
       const inhaltKurz = <span data-listen-inhalt={`${inh.saetze}|${inh.synonyme}`}>{inh.saetze ? ` · 💬 ${inh.saetze}` : ""}{inh.synonyme ? ` · ≈ ${inh.synonyme}` : ""}</span>;
@@ -308,7 +310,7 @@ export function pfadTeile(app, { alleText, alleAttr, pfad, geheZu, alleTt, alleA
 export function quizListenUmschalter(app) {
   const { auswahlListen, setAuswahlListen, setBlaettern, setListenSortModus, setListenWahl, setMultiAuswahl, setSlotSortModus, setSlotVorschau, tt } = app;
     return (
-      <button className={`typ-btn aktiv${auswahlListen ? " eckig" : ""}`} data-auswahl-umschalter={auswahlListen ? "listen" : "quiz"}
+      <button className={`typ-btn aktiv${auswahlListen ? " eckig" : ""}`} data-auswahl-umschalter={auswahlListen ? "listen" : "quiz"} data-auswahl-durchlass
         style={{fontSize:"0.75rem", padding:"4px 12px", alignSelf:"stretch", flexShrink:0, minWidth:64}}
         onClick={() => { setAuswahlListen(!auswahlListen); setSlotVorschau(null); setMultiAuswahl(null); setListenWahl(null); setListenSortModus(false); setSlotSortModus(false); setBlaettern(false); }}
         {...tt(auswahlListen ? "Hier stehen die Listen – antippen zeigt die gespeicherten Quiz" : "Hier stehen die gespeicherten Quiz – antippen zeigt die Listen")}>
@@ -339,7 +341,7 @@ export function renderQuizListenRaster(app) {
     const zellen = plaetze.map(({ key, l }) => {
       if (!l) return <div key={key} className="raster-leer" style={{border:"none"}}/>;
       if (l.istOrdner) return auswahlOrdnerZelle(l, key, id => aktiverSlot?.typ === "listen" && aktiverSlot.id === id, kurz);
-      const liste = lsGet(SK.liste(l.id));
+      const liste = lsLesen(SK.liste(l.id));
       const voks = (liste?.vokabeln || []).filter(v => !v.herausgenommen);
       const pct = Math.round(lernstandJeArt(voks, l.id).uebersetzung.pct || 0);
       const heuteP = heuteAnteil(voks, heuteFeld, schwelle);
@@ -397,12 +399,7 @@ export function ordnerNavi(app, stil, statistik = false) {
           alleTt: ordnerOffen ? "Zurück zu allen Quiz – Quiz hierher ziehen legt sie auf die oberste Ebene; lang drücken: neues Quiz, fällige wiederholen, neuer Ordner"
             : `Alle Quiz – lang drücken: ${statistik ? "alle Listen anzeigen" : "neues Quiz aus Listen"}, fällige wiederholen, neuer Ordner`,
           alleAktionen, ordnerAktionen, einheit: "Quiz" })}
-        {!statistik && !multiAuswahl && !slotSortModus && quizListenUmschalter()}
-        {multiAuswahl && (<span style={{display:"flex", gap:6, flexShrink:0}}>
-          <button className="typ-btn" data-wahl-alle data-auswahl-durchlass style={{fontSize:"0.75rem", padding:"4px 10px"}}
-            onClick={() => setMultiAuswahl(a => [...a, ...slotSichtbarRef.current.filter(id => !a.includes(id))])} {...tt("Alle sichtbaren Quiz auswählen")}>Alle</button>
-          <button className="typ-btn" data-wahl-keine data-auswahl-durchlass style={{fontSize:"0.75rem", padding:"4px 10px"}} onClick={() => setMultiAuswahl([])} {...tt("Alle abwählen")}>Keine</button>
-        </span>)}
+        {!statistik && !slotSortModus && quizListenUmschalter()}   {/* 241: auch in der Auswahl – wechseln beendet sie */}
         {slotSortModus && (
           <button className="typ-btn aktiv" data-slot-fertig style={{fontSize:"0.75rem", padding:"4px 10px", flexShrink:0}}
             onClick={() => { setSlotSortModus(false); setSlotAuswahl([]); setSlotDragId(null); setSlotDragZiel(null); }}
@@ -419,12 +416,7 @@ export function wahlLeiste(app, art, stil) {
     const markiert = (liste ? listenAuswahl : slotAuswahl).length;
     return (
       <div className="wahl-leiste" data-wahl-leiste={art} style={stil}>
-        {wahl ? (<>
-          <button className="btn btn-ghost" data-wahl-alle data-auswahl-durchlass
-            onClick={() => liste ? setListenWahl(a => [...a, ...sichtbareListen.map(x => x.id).filter(id => !a.includes(id))]) : setMultiAuswahl(a => [...a, ...slotSichtbarRef.current.filter(id => !a.includes(id))])}
-            {...tt(liste ? "Alle sichtbaren Listen auswählen" : "Alle sichtbaren Quiz auswählen")}>Alle</button>
-          <button className="btn btn-ghost" data-wahl-keine data-auswahl-durchlass onClick={() => liste ? setListenWahl([]) : setMultiAuswahl([])} {...tt("Alle abwählen")}>Keine</button>
-        </>) : sort ? (
+        {sort && !wahl ? (   // 241: „Alle“ steht im Menü (Ablage), „Keine“ entfällt
           <button className="btn btn-primary" {...(liste ? { "data-listen-fertig": true } : { "data-slot-fertig": true })}
             onClick={() => { if (liste) { setListenSortModus(false); setListenAuswahl([]); } else { setSlotSortModus(false); setSlotAuswahl([]); } setSlotDragId(null); setSlotDragZiel(null); }}
             {...tt("Verschieben beenden – Kacheln antippen markiert (mehrere möglich), dann freien Platz antippen; oder direkt ziehen")}>Fertig{markiert ? ` · ${markiert} markiert` : ""}</button>
@@ -433,20 +425,30 @@ export function wahlLeiste(app, art, stil) {
     );
   }
 
+// 238: Vokabeln und Lernstand je Quiz-Kachel über das Neuzeichnen hinweg (Ziehen/Einsammeln zeichnet oft neu) –
+// neu berechnet nur, wenn sich die Konfiguration oder eine ihrer Listen (lsLesen: dasselbe Objekt, solange unverändert) ändert
+const kachelPuffer = new Map();
 export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) {
-  const { zugRand, FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligAktion, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setListenAendern, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef } = app;
+  const { merkeVerschieben, zugRand, FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligAktion, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setListenAendern, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef } = app;
     // Lernfortschritt je Art für die Mini-Kreise (jede Liste nur einmal lesen)
     const listenCache = new Map();
-    const listeVon = id => { if (!listenCache.has(id)) listenCache.set(id, lsGet(SK.liste(id))); return listenCache.get(id); };
+    const listeVon = id => { if (!listenCache.has(id)) listenCache.set(id, lsLesen(SK.liste(id))); return listenCache.get(id); };
     const aktArt = tab === "statistik" ? statistikArt : quizArt;
-    const kachelVoks = x => {
+    const kachelEintrag = x => {
       const k = x.konfiguration || {};
-      let voks = (k.listenIds || []).flatMap(id => (listeVon(id)?.vokabeln || []).map(v => ({ ...v, _key: `${id}__${v.id}`, _listeId: id })));
+      const ids = k.listenIds || [], listen = ids.map(listeVon);
+      const sig = `${ids.join(",")}|${k.bereichTyp}|${(k.vokabelAuswahl || []).join(",")}`;
+      const alt = kachelPuffer.get(x.id);
+      if (alt && alt.sig === sig && alt.listen.length === listen.length && alt.listen.every((l, i) => l === listen[i])) return alt;
+      let voks = ids.flatMap((id, i) => (listen[i]?.vokabeln || []).map(v => ({ ...v, _key: `${id}__${v.id}`, _listeId: id })));
       if (k.bereichTyp === "bereich" && k.vokabelAuswahl?.length) { const a = new Set(k.vokabelAuswahl); voks = voks.filter(v => a.has(v._key)); }
-      return voks;
+      const neu = { sig, listen, voks };
+      kachelPuffer.set(x.id, neu);
+      return neu;
     };
-    const lernstandCache = new Map();
-    const lernstand = x => { if (!lernstandCache.has(x.id)) lernstandCache.set(x.id, lernstandJeArt(kachelVoks(x))); return lernstandCache.get(x.id); };
+    const kachelVoks = x => kachelEintrag(x).voks;   // nicht verändern (gepuffert)
+    const schwelleLS = einstellungen.gelerntSchwelle ?? 0;
+    const lernstand = x => { const e = kachelEintrag(x); if (!e.ls || e.lsSchwelle !== schwelleLS) { e.ls = lernstandJeArt(e.voks); e.lsSchwelle = schwelleLS; } return e.ls; };
     // 181: Anteil der heute (in der gewählten Abfrageart) abgefragten Vokabeln eines Quiz
     const heuteFeld = FORTSCHRITT_FELD[aktArt] || "fortschritt";
     const heuteProzent = x => heuteAnteil(kachelVoks(x).filter(y => !y.herausgenommen), heuteFeld, einstellungen.gelerntSchwelle ?? 0);
@@ -508,7 +510,6 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
           : { label: `📤 Ordner auflösen (${ordner.length})`, fn: () => { setMultiAuswahl(null); ordner.forEach(o => loeseOrdnerAuf(o)); } },
       ]),
       { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "slot", id: ids[ids.length - 1] }) },
-      { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) },
     ]; };
     const wahlNamen = ids => ids.map(id => { const o = (slots.ordner || []).find(y => y.id === id); return o ? `📁 ${o.name}` : slots.gespeichert.find(g => g.id === id)?.name; }).filter(Boolean).join(", ");
     const einzelMenue = x => [   // 235: Lernen (Fällige) und Inhalt (Listen/Vokabeln ändern) haben je einen Punkt → direkt; Ablage gruppiert
@@ -525,12 +526,14 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
       { label: "☑ Auswählen", behalten: true, fn: () => { setSlotSortModus(false); setMultiAuswahl([x.id]); } },
     ];
     // Auswahl-Tafel: ein Quiz → ihr Menü, mehrere → Aktionen für die Auswahl
+    // 241: „☑ Alle auswählen“ (sichtbare Quiz dieser Ebene) unter Ablage; „Auswahl beenden“ entfällt (Quiz/Listen-Knopf beendet sie)
+    const alleWahl = { label: "☑ Alle auswählen", behalten: true, fn: () => (auswahlTafelRef.current = "slot", setMultiAuswahl(a => [...(a || []), ...slotSichtbarRef.current.filter(id => !(a || []).includes(id))])) };   // Tafel geht mit der neuen Auswahl wieder auf
     const tafelInhalt = ids => {
       const o = ids.length === 1 && (slots.ordner || []).find(y => y.id === ids[0]);
-      if (o) return { text: `📁 ${o.name}`, aktionen: [...ordnerMenue(o, kinderVon(o.id)), { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) }] };
+      if (o) return { text: `📁 ${o.name}`, aktionen: inGruppe(ordnerMenue(o, kinderVon(o.id)), GRUPPE.ablage, alleWahl) };
       const x = ids.length === 1 && slots.gespeichert.find(g => g.id === ids[0]);
-      if (x) return { text: x.name, aktionen: [...einzelMenue(x).filter(a => a.label !== "☑ Auswählen"), { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "slot", id: x.id }) }, { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) }] };
-      return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: wahlMenue(ids) } : { text: "Nichts ausgewählt – Quiz antippen", aktionen: [] };
+      if (x) return { text: x.name, aktionen: [...inGruppe(einzelMenue(x).filter(a => a.label !== "☑ Auswählen"), GRUPPE.ablage, alleWahl), { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "slot", id: x.id }) }] };
+      return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: inGruppe(wahlMenue(ids), GRUPPE.ablage, alleWahl) } : { text: "Nichts ausgewählt – Quiz antippen", aktionen: [] };
     };
     auswahlTafelDaten.current.slot = () => multiAuswahl && tafelInhalt(multiAuswahl);
     // Ziehen: diese Kacheln wandern mit; über einer anderen verweilen bildet eine Gruppe (nur oberste Ebene, keine Gruppen in Gruppen)
@@ -539,7 +542,7 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     const tippeImRaster = (x, platz) => {
       if (slotGezogenRef.current) { slotGezogenRef.current = false; return; }
       if (x) { setSlotAuswahl(a => a.includes(x.id) ? a.filter(v => v !== x.id) : [...a, x.id]); return; }
-      if (slotAuswahl.length) setzeSlotPlaetze(slotAuswahl, platz);
+      if (slotAuswahl.length) { merkeVerschieben(); setzeSlotPlaetze(slotAuswahl, platz); }   // 239
     };
     const zellen = [];
     for (let z = 0; z < zeilenAnzeige; z++) for (let sp = 0; sp < anzSpalten; sp++) {

@@ -3219,3 +3219,42 @@ Offen: Kopf-Menüs (Quiz-Kopf, Listen-Kopf) – ggf. später.
   alle wandern zusammen (vorher: nur sie, die Auswahl endete). Ohne Auswahl wandert nur die gezogene Kachel.
   App.jsx Lang-Druck-Zug: setSlotAuswahl / setListenAuswahl mit [...Auswahl, d.id]. Ohne Ziehen loslassen: wie 236 (dazu).
 - Test: e2e/punkte237.mjs.
+
+=== 238 umgesetzt (16.11.2026) ===
+- Flüssigeres Ziehen/Einsammeln: jedes Neuzeichnen las und entpackte alle Listen aus localStorage (auch für die Statistik,
+  wenn sie gar nicht offen ist). Neu: lsLesen (speicher.js) – nur-lesender Zwischenspeicher, entpackt nur neu, wenn sich der
+  gespeicherte Text geändert hat; eingesetzt beim Zeichnen (Kacheln, Kopf/Info, Statistik-Grundlage, Menü „Herausgenommene“,
+  fällige Vokabeln, kombinierte Quiz-Liste). Ergebnis NICHT verändern – zum Ändern+Speichern weiter lsGet.
+  kacheln.jsx: kachelPuffer (Vokabeln + Lernstand je Quiz-Kachel über das Neuzeichnen hinweg). zahlDe mit festem Intl.NumberFormat.
+  Messung (24 Quiz, 30 Listen à 80 Vokabeln, CPU 4× gedrosselt): Ziehen 25 lange Aufgaben (50–200 ms) → 0–1;
+  Einsammeln 7 → 2 (nur Start/Ende mit der Auswahl-Tafel). Messskript: Scratchpad _perf.mjs (nicht im Repo).
+- Eine verschobene Auswahl bleibt nach dem Ablegen ausgewählt (mit Tafel); in einen Ordner gelegt (Ring/Pfad) endet sie.
+  App.jsx Lang-Druck-Zug: d.wahl merken, nach legeGezogenAb setMultiAuswahl/setListenWahl(d.wahl).
+- Tests: punkte237 erweitert, gruppen_gesten angepasst.
+
+=== 239 umgesetzt (16.11.2026) ===
+- Nach dem Verschieben (Finger-Zug, Ziehen im Verschieben-Modus, Antippen eines Platzes im Verschieben-Modus, auch in einen
+  Ordner bzw. auf den Pfad) erscheint „↶ Rückgängig“ unten rechts (über der Auswahl-Tafel: bottom = var(--tafel-platz) + 16).
+  Holt Quiz-Daten (vokabel_slots) sowie Listen-Index und Listen-Ordner von vor dem Verschieben zurück; verschwindet mit der
+  nächsten Berührung irgendwo anders (pointerdown, Capture). Nur ein Schritt. Nicht erfasst: Menü „In Ordner…“/„Aus dem Ordner“.
+  App.jsx: rueckgaengig, merkeVerschieben, macheRueckgaengig; kacheln.jsx tippeImRaster ruft merkeVerschieben.
+- Test: e2e/punkte239.mjs.
+Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel markiert – das ist das GELADENE Quiz
+  (gewaehltE: slotRef/aktiverSlot), die Markierung sieht aus wie „ausgewählt“.
+
+=== 240 umgesetzt (16.11.2026) ===
+- Score-Filter bei „Schlechteste zuerst“ entfernt (Regler „Nur Vokabeln mit Score ≤ …“, „Filter aktivieren/entfernen“):
+  es kommen alle Vokabeln, die schlechtesten zuerst. Gespeicherte quizSchlechtesteMaxScore (Standard war „3“!) werden ignoriert
+  (Zustand bleibt nur zum Mitspeichern). QuizTab.jsx (Anzeige/Zählung), App.jsx (Diktat- und Quiz-Start). Hilfetext angepasst.
+- Test einbereich: kleinere Fensterhöhe (Bereich kürzer).
+
+=== 241 umgesetzt (16.11.2026) ===
+- Auswahl muss nicht mehr eigens beendet werden: antippen macht daraus eine Einzelauswahl, die der grüne Kopf übernimmt.
+  „✕ Auswahl beenden“ (alle Auswahl-Menüs) und die Knöpfe „Alle“/„Keine“ (Pfad-Zeile Quiz, Listen-Leiste) entfallen.
+- Der Quiz/Listen-Umschalter steht immer in der Pfad-Zeile (außer im Verschieben-Modus: „Fertig“); antippen beendet die Auswahl
+  und wechselt (data-auswahl-durchlass, damit er bei offener Auswahl-Tafel geht).
+- „☑ Alle auswählen“ unter 🗂 Ablage in allen Auswahl-Menüs (eine Kachel, Ordner, mehrere; Quiz und Listen): sichtbare Kacheln
+  dieser Ebene (ohne Ordner), Tafel geht mit der neuen Auswahl wieder auf. Kopf-Menü der Listen-Auswahl = Menü der Tafel.
+  Helfer inGruppe(aktionen, name, punkt) in infoEreignisse.js.
+- Rückfrage 239 („andere Kachel markiert“) damit erledigt: kein „Auswahl beenden“ mehr; Einzelauswahl wird über den Kopf übernommen.
+- Tests: hilfen.mjs auswahlEnde(page) (Umschalter hin und zurück) statt „✕ Auswahl beenden“; neuer e2e/punkte241.mjs.

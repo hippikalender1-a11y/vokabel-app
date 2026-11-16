@@ -86,6 +86,7 @@ const n = await lage();
 ok(n.kopf === v.kopf && n.listen === v.listen - 100 && n.zeile1 === v.zeile1 - 100, `Quiz-Leiste bleibt, Listen-Zeile und Zeile 1 scrollen mit (${JSON.stringify(v)} → ${JSON.stringify(n)})`);
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 await tippe("[data-reihenfolge]");
+await page.setViewport({ width: 375, height: 420 }); await sleep(300);   // 240: Bereich ohne Score-Filter kürzer – Seite muss scrollen können
 await page.evaluate(() => window.scrollTo(0, 100)); await sleep(300);
 const z1 = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]").getBoundingClientRect(); const z = document.querySelector("[data-reihenfolge]").closest(".quiz-zeile").getBoundingClientRect(); return Math.round(z.top - k.bottom); });
 ok(Math.abs(z1) <= 12, `offener Bereich: seine Zeile klebt unter des Quiz-Leiste (Abstand ${z1})`);

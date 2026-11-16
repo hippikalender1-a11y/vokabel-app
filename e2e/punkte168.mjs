@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { einstUnter, zuListen, listeOeffnen, kurzHalten, auswahlZu } from "./hilfen.mjs";
+import { einstUnter, zuListen, listeOeffnen, kurzHalten, auswahlZu, auswahlEnde } from "./hilfen.mjs";
 
 // 168–174: Farbe je Sprache schon bei des Quiz-Wahl (Einstellung „erst im Quiz“), Kopf-Balken auch bei offener Auswahl,
 // inaktiver „Keine fälligen“-Knopf, Kachel-Lang-Druck mit zusätzlichem Kontextmenü (Android), fällige einstreuen,
@@ -59,7 +59,7 @@ ok(await gewaehlt() === "g_en,g_fr" && await haupt() === STD, `zwei Sprachen gew
 await kontext('[data-slot-id="g_en"]');
 ok(await gewaehlt() === "g_fr" && await haupt() === FR, `„Englisch“ heraus (Mehrfachauswahl mit nur „Französisch“): französische Farbe (${await haupt()})`);
 ok(await page.$("[data-slot-kopf-name] [data-kopf-balken]"), "169: Balken auch bei Mehrfachauswahl");
-await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "✕ Auswahl beenden")?.click()); await sleep(300);
+await auswahlEnde(page); await sleep(300);
 await klick('[data-slot-id="g_en"]'); await klick("[data-slot-laden]");
 ok(await haupt() === EN, `„Englisch“ geladen (Auswahl zu): englische Farbe (${await haupt()})`);
 ok(await page.$("[data-slot-kopf-name] [data-kopf-balken]"), "169: Balken im geschlossenen Kopf");
@@ -114,7 +114,7 @@ ok(await page.evaluate(() => { const b = [...document.querySelectorAll("[data-in
   "170: Kachel ohne fällige: inaktiver Knopf „🔁 Keine fälligen Vokabeln“");
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => /fällig/i.test(b.dataset.infoAktion))?.click()); await sleep(300);
 ok(await page.$("[data-auswahl-tafel]"), "inaktiver Knopf: antippen bewirkt nichts (Tafel bleibt)");
-await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "✕ Auswahl beenden")?.click()); await sleep(300);
+await auswahlEnde(page); await sleep(300);
 
 // ── 171: Lang-Druck per Finger, der Browser meldet zusätzlich ein Kontextmenü (Android) ──
 const cdp = await page.createCDPSession();
@@ -126,7 +126,7 @@ await page.evaluate(m => { const el = document.elementFromPoint(m.x, m.y); el.di
 await sleep(150);   // 234: kurz halten (unter 1,0 s) wählt aus
 await finger("touchEnd"); await sleep(500);
 ok(await page.$("[data-auswahl-tafel]") && await gewaehlt() === "g_fr", `171: nach dem Loslassen bleibt die Tafel offen, „Französisch“ ausgewählt (${await gewaehlt()})`);
-await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "✕ Auswahl beenden")?.click()); await sleep(300);
+await auswahlEnde(page); await sleep(300);
 
 // ── 173: Kreise ODER Rauten ──
 await zuListen(page);

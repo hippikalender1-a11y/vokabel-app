@@ -1,5 +1,5 @@
 import { SATZ_PORTION, saetzeAusAntwort, saetzeLaden, saetzeSpeichern, satzPrompt } from "../saetze.js";
-import { SK, TYPEN, lsGet } from "../speicher.js";
+import { SK, TYPEN, lsGet, lsLesen } from "../speicher.js";
 import { GRUPPE, gruppe } from "../infoEreignisse.js";
 import { listeSprache, sprachInfo } from "../sprache.js";
 import { QUIZ_ARTEN, SCORE_FELD, lernProzent, ohneHinweis, statistikSicht, stufenRegeln } from "../quiz.jsx";
@@ -60,7 +60,7 @@ export function oeffneListeDetail(app, id) {
 export function listenMenue(app, l, imKopf = false) {
   const { faelligAktion, faelligVonListen, listenKopieName, listenOrdner, oeffneExport, oeffneListeDetail, oeffneSatzFenster, oeffneSynFenster, resetImport, setAnsicht, setImportBestehendId, setImportZielTyp, setInGruppe, setKlammerZiel, setListeMenueId, setListeNurAus, setListenAuswahl, setListenBereich, setListenSortModus, setListenWahl, setMergeQuelleId, setModal, setModalFehler, setModalInput, setTab, setZuruecksetzenArten, sichtbareListen, sprachFilter, starteAufteilen, verschiebeListenInOrdner } = app;
     const gefiltert = sprachFilter !== "alle";
-    const herausN = (lsGet(SK.liste(l.id))?.vokabeln || []).filter(v => v.herausgenommen).length;   // 176
+    const herausN = (lsLesen(SK.liste(l.id))?.vokabeln || []).filter(v => v.herausgenommen).length;   // 176
     // 235: gruppiert – direkt Öffnen, dann Lernen / Ablage / Inhalt
     return [
       ...(imKopf ? [] : [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(l.id) }]),   // 225: antippen fragt ab, öffnen über das Menü
@@ -114,7 +114,6 @@ export function listenWahlMenue(app, ids) {
           : { label: `📤 Ordner auflösen (${ordner.length})`, fn: () => { setListenWahl(null); ordner.forEach(o => loeseListenOrdnerAuf(o)); } },
       ]),
       { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "liste", id: ids[ids.length - 1] }) },
-      { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) },
     ];
   }
 

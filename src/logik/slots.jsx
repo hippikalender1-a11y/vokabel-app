@@ -1,4 +1,4 @@
-import { BLITZ_MS, SK, SLOT_ZU_VERZOEGERUNG, defaultEinstellungen, defaultSlots, formatSlotDatum, lsDel, lsGet, lsSet, neuerSlotId } from "../speicher.js";
+import { BLITZ_MS, SK, SLOT_ZU_VERZOEGERUNG, defaultEinstellungen, defaultSlots, formatSlotDatum, lsDel, lsGet, lsSet, neuerSlotId, lsLesen } from "../speicher.js";
 import { STANDARD_ANTWORT_MODUS, STANDARD_PAKET_GROESSE, STANDARD_SESSION_MODUS, artBereinigt, artFelderAus, artVonKonfig, istFaellig, slotKonfigArt, slotSFAlle, standardArtEinstellungen } from "../quiz.jsx";
 import { ORDNER_TIEFE_MAX, ebeneVon, gruppenName, legeInOrdner, loeseOrdnerDaten, ordneRaster, ordnerBereinigen, ordnerPfad, platziereGruppe, rasterGroesse, setzeEbene } from "../raster.js";
 import { schliesseInfo } from "../infoEreignisse.js";
@@ -219,7 +219,7 @@ export function faelligeSchluessel(app, konfigs) {
   const { FORTSCHRITT_FELD, quizArt } = app;
     const feld = FORTSCHRITT_FELD[quizArt] || "fortschritt", jetzt = Date.now(), erg = new Set();
     konfigs.forEach(k => (k.listenIds || []).forEach(id => {
-      const l = lsGet(SK.liste(id));
+      const l = lsLesen(SK.liste(id));
       const auswahl = k.bereichTyp === "bereich" && (k.vokabelAuswahl || []).length ? new Set(k.vokabelAuswahl) : null;
       l?.vokabeln.forEach(v => { const key = `${id}__${v.id}`; if (!v.herausgenommen && (!auswahl || auswahl.has(key)) && istFaellig(v[feld], jetzt)) erg.add(key); });
     }));

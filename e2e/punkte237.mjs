@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, menueShim } from "./hilfen.mjs";
+import { zuListen, menueShim, auswahlEnde } from "./hilfen.mjs";
 
-// 237: bei aktiver Auswahl eine nicht ausgewählte Kachel lang halten und ziehen – sie kommt dazu, alle wandern zusammen
+// 237/238: bei aktiver Auswahl eine nicht ausgewählte Kachel lang halten und ziehen – sie kommt dazu, alle wandern zusammen
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
@@ -55,6 +55,7 @@ await page.reload(); await sleep(800);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await auswahlAuf();
 await page.evaluate(() => { window._vib = []; navigator.vibrate = m => { window._vib.push(JSON.stringify(m)); return true; }; });
+const kopfText = () => page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.innerText.replace(/\s+/g, " ").trim());
 const pl = async () => Object.fromEntries((await slots()).gespeichert.map(x => [x.id, `${x.platz.z}|${x.platz.s}`]));
 const lpl = () => page.evaluate(() => Object.fromEntries(JSON.parse(localStorage.getItem("vokabel_listen_index")).map(l => [l.id, `${l.platz.z}|${l.platz.s}`])));
 const gestrichelt = () => page.evaluate(() => [...document.querySelectorAll("[data-slot-id],[data-liste-id]")].filter(e => e.style.borderStyle === "dashed").map(e => e.dataset.slotId || e.dataset.listeId).sort().join(","));
@@ -78,12 +79,21 @@ let g = await zieh('[data-slot-id="s3"]', '[data-raster-zelle="5|0"]');
 ok(g === "s1,s2,s3", `beim Ziehen: Teil 3 kommt dazu, alle drei gestrichelt (${g})`);
 let p = await pl();
 ok(p.s1 === "5|0" && p.s2 === "6|0" && p.s3 === "7|0", `alle drei verschoben (${JSON.stringify(p)})`);
-ok((await kopf()).multi === "" && !(await page.$("[data-slot-fertig]")), "danach: Auswahl beendet, kein Verschieben-Modus");
+ok((await kopf()).multi === "s1,s2,s3" && !(await page.$("[data-slot-fertig]")), `238: danach bleiben alle drei ausgewählt, kein Verschieben-Modus (${(await kopf()).multi})`);
+ok(/3 ausgewählt/.test(await kopfText()) && await page.$("[data-auswahl-tafel]"), `238: grüner Kopf „3 ausgewählt“, Auswahl-Tafel offen (${await kopfText()})`);
+
+// ── 238: verschobene Auswahl nochmal verschieben – bleibt ebenfalls ausgewählt ──
+g = await zieh('[data-slot-id="s2"]', '[data-raster-zelle="0|0"]');
+p = await pl();
+ok(g === "s1,s2,s3" && p.s1 === "0|0" && p.s2 === "1|0" && p.s3 === "2|0", `zweites Ziehen: alle drei wandern (${g} | ${JSON.stringify(p)})`);
+ok((await kopf()).multi === "s1,s2,s3", `und bleiben ausgewählt (${(await kopf()).multi})`);
+await auswahlEnde(page);
 
 // ── ohne Auswahl: nur die gezogene Kachel ──
-g = await zieh('[data-slot-id="s1"]', '[data-raster-zelle="0|0"]');
+g = await zieh('[data-slot-id="s1"]', '[data-raster-zelle="5|0"]');
 p = await pl();
-ok(g === "s1" && p.s1 === "0|0" && p.s2 === "6|0", `ohne Auswahl wandert nur sie (${g} | ${JSON.stringify(p)})`);
+ok(g === "s1" && p.s1 === "5|0" && p.s2 === "1|0", `ohne Auswahl wandert nur sie (${g} | ${JSON.stringify(p)})`);
+ok((await kopf()).multi === "", `ohne Auswahl: danach nichts ausgewählt (${(await kopf()).multi})`);
 
 // ── Listen: Unit 1 ausgewählt, Unit 2 (nicht ausgewählt) lang halten und ziehen ──
 await zuListen(page);
@@ -92,6 +102,8 @@ g = await zieh('[data-liste-id="l_b"]', '[data-raster-zelle="2|0"]');
 let lp = await lpl();
 ok(g === "l_a,l_b", `Listen: beim Ziehen beide gestrichelt (${g})`);
 ok(lp.l_a !== "0|0" && lp.l_b !== "1|0", `Listen: beide verschoben (${JSON.stringify(lp)})`);
+const lw = await page.evaluate(() => [...document.querySelectorAll("[data-wahl-nr]")].sort((a, b) => a.dataset.wahlNr - b.dataset.wahlNr).map(e => e.closest("[data-liste-id]")?.dataset.listeId).join(","));
+ok(lw === "l_a,l_b", `238: Listen bleiben nach dem Verschieben ausgewählt (${lw})`);
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

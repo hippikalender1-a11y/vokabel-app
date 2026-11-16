@@ -34,11 +34,7 @@ export function QuizTab(app) {
           const feldVon = v => nurAkzent ? v.akzentFortschritt : quizModus === "diktat" ? v.diktatFortschritt : v.fortschritt;
           const gelerntDabei = v => (quizGelerntEinschliessen && (einstellungen.gelerntSchwelle ?? 0) > 0
             && (nurAkzent ? (v.akzentFortschritt?.score ?? -Infinity) : gelerntScore(v, quizModus === "diktat")) >= einstellungen.gelerntSchwelle) || istFaellig(feldVon(v));
-          let reihenfolgeVoks = akzentVoks;
-          if (quizReihenfolge === "schlechteste" && quizSchlechtesteMaxScore !== "" && !isNaN(parseFloat(quizSchlechtesteMaxScore))) {
-            const thr = parseFloat(quizSchlechtesteMaxScore);
-            reihenfolgeVoks = akzentVoks.filter(v => gelerntDabei(v) || ((nurAkzent ? v.akzentFortschritt : quizModus === "diktat" ? v.diktatFortschritt : v.fortschritt)?.score ?? 0) < thr);
-          }
+          let reihenfolgeVoks = akzentVoks;   // 240: keine Score-Grenze mehr bei „schlechteste zuerst“
           const schwelle = einstellungen.gelerntSchwelle ?? 0;
           const istDiktat = quizModus === "diktat";
           const startScore = v => nurAkzent ? (v.akzentFortschritt?.score ?? -Infinity) : gelerntScore(v, istDiktat);
@@ -110,9 +106,6 @@ export function QuizTab(app) {
           const titelAnzahl = Math.max(0, sessionAnzahl - heuteGesperrt);
           const startRest = isPakete ? Math.max(0, sessionAnzahl - sessionAbgefragtAnzahl - (quizHeuteEinschliessen ? 0 : heuteAnzahl)) : verfuegbar;
           const sessionPct = sessionAnzahl > 0 ? Math.round(sessionAbgefragtAnzahl / sessionAnzahl * 100) : 0;
-          const sliderActive = quizSchlechtesteMaxScore !== "";
-          const sliderVal = sliderActive ? parseInt(quizSchlechtesteMaxScore) : 0;
-          const sliderPct = (sliderVal + 10) / 20;
 
           return (
             <>
@@ -140,7 +133,7 @@ export function QuizTab(app) {
                       <div ref={slotContainerRef} style={{overflow:'clip', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 8 : 0, margin:"0 -8px", paddingLeft:8, paddingRight:8}}>
                         {slotSektionAufgeklappt && sicherungErinnerungUI()}
                         {slotSektionAufgeklappt && (auswahlListen ? listenNavi() : ordnerNavi())}
-                        {slotSektionAufgeklappt && auswahlListen && (listenWahl || listenSortModus) && wahlLeiste("liste")}
+                        {slotSektionAufgeklappt && auswahlListen && listenSortModus && wahlLeiste("liste")}
                         {slotSektionAufgeklappt && (auswahlListen ? (sichtbareListen.length === 0 && listenOrdner.length === 0
                           ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div> : renderListenRaster())
                           : renderSlotBereiche(null, ladeSlot, aktiverSlot))}
@@ -588,53 +581,6 @@ export function QuizTab(app) {
                             <button className={`toggle-opt${quizReihenfolge==="listennr"?" aktiv":""}`} data-reihenfolge-wahl="listennr" onClick={() => { if (quizReihenfolge === "listennr") return; setQuizReihenfolge("listennr"); setTimeout(() => setQuizReihenfolgeAufgeklappt(false), WAHL_ZU_MS); }} {...tt("Vokabeln in der Reihenfolge der Liste (Listenplatz) abfragen")}>Listenplatz</button>
                           </div>
                         </div>
-                        {quizReihenfolge === "schlechteste" && (
-                          <div style={{padding:"0 16px 16px"}}>
-                            {sliderActive ? (
-                              <>
-                                <div style={{fontSize:"0.78rem", color:"var(--text2)", marginBottom:8, textAlign:"center"}}>
-                                  {`Nur Vokabeln mit Score ≤ ${sliderVal} (${verfuegbarReihenfolge} V.)`}
-                                </div>
-                                <div style={{position:"relative", paddingTop:28}}>
-                                  <div style={{
-                                    position:"absolute", top:0,
-                                    left:`calc(${sliderPct} * (100% - 28px) + 14px)`,
-                                    transform:"translateX(-50%)",
-                                    background:"var(--haupt)", color:"var(--auf-haupt)",
-                                    borderRadius:6, padding:"3px 9px",
-                                    fontSize:"0.82rem", fontWeight:600,
-                                    pointerEvents:"none",
-                                  }}>{sliderVal}</div>
-                                  <input {...ttFeld("Höchster Score, der noch abgefragt wird")}
-                                    type="range" min={-10} max={10} step={1}
-                                    value={sliderVal}
-                                    onChange={e => setQuizSchlechtesteMaxScore(String(e.target.value))}
-                                    className="score-slider"
-                                    style={{width:"100%", display:"block"}}
-                                  />
-                                </div>
-                                <button {...tt("Score-Grenze entfernen – alle Vokabeln, schlechteste zuerst")}
-                                  className="toggle-opt"
-                                  style={{width:"100%", marginTop:8, padding:"5px 0", borderRadius:8, fontSize:"0.78rem"}}
-                                  onClick={() => setQuizSchlechtesteMaxScore("")}>
-                                  × Filter entfernen
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <div style={{fontSize:"0.78rem", color:"var(--text2)", marginBottom:8, textAlign:"center"}}>
-                                  Vokabeln mit dem niedrigsten Score werden abgefragt.
-                                </div>
-                                <button {...tt("Nur Vokabeln bis zu einem bestimmten Score abfragen")}
-                                  className="toggle-opt"
-                                  style={{width:"100%", padding:"7px 0", borderRadius:8}}
-                                  onClick={() => setQuizSchlechtesteMaxScore("0")}>
-                                  Filter aktivieren (optional)
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        )}
                         <div className="toggle-row" style={{cursor:"pointer", padding:"12px 16px", borderTop:"1px solid var(--rahmen)"}}
                           onClick={() => setQuizUnbeantwortetZuerst(prev => ({...prev, [quizReihenfolge]: !prev[quizReihenfolge]}))}
                           {...tt("Noch nie abgefragte Vokabeln werden vorgezogen")}>

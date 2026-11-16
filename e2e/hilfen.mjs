@@ -214,3 +214,9 @@ export function menueShim() {
   };
   window.__aktion = l => window.__aktionen().find(b => b.dataset.infoAktion === l) || null;
 }
+
+// 241: „✕ Auswahl beenden“ gibt es nicht mehr – die Auswahl endet beim Wechsel Quiz/Listen; für Tests: hin und zurück
+export async function auswahlEnde(page) {
+  const s = ms => new Promise(r => setTimeout(r, ms));
+  for (let i = 0; i < 2; i++) { await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]")?.click()); await s(250); }
+}

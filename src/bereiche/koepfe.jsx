@@ -1,5 +1,5 @@
 import { FORTSCHRITT_BALKEN, GRUPPE_BALKEN, clampScore, heuteAbgefragt, heuteAnteil, istFaellig, lernProzent, nrText, ohneHinweis, scoreSymbole, slotKonfigArt, slotSFAlle, statistikSicht } from "../quiz.jsx";
-import { SK, TYPEN, formatDatum, lsGet } from "../speicher.js";
+import { SK, TYPEN, formatDatum, lsGet, lsLesen } from "../speicher.js";
 import { listeSprache, sprachInfo } from "../sprache.js";
 import { listenInhalt } from "../saetze.js";
 
@@ -70,7 +70,7 @@ export function listeOeffnenKopf(app, l) {
 
 export function renderListeInfo(app, l, mehrere = null) {
   const { einstellungen, gruppenKurz, infoKlapp, infoZu, lernstandJeArt, renderMiniKreise, satzStand, tt } = app;
-    const gruppeL = (mehrere || [l]).map(x => ({ x, liste: lsGet(SK.liste(x.id)) })).filter(y => y.liste);
+    const gruppeL = (mehrere || [l]).map(x => ({ x, liste: lsLesen(SK.liste(x.id)) })).filter(y => y.liste);
     if (!gruppeL.length) return null;
     const liste = gruppeL[0].liste;
     const ausAnz = gruppeL.reduce((a, y) => a + y.liste.vokabeln.filter(v => v.herausgenommen).length, 0);   // 176
@@ -148,7 +148,7 @@ export function renderSlotKopf(app, statistik) {
     let bereichText = "";
     const bereichAktiv = statistik ? statistikBereichTyp === "bereich" && statistikCheckboxAuswahl.size > 0 : quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0;
     if (bereichAktiv && listenIds.length === 1) {
-      const alle = lsGet(SK.liste(listenIds[0]))?.vokabeln || [];
+      const alle = lsLesen(SK.liste(listenIds[0]))?.vokabeln || [];
       const auswahl = statistik ? statistikCheckboxAuswahl : quizCheckboxAuswahl;
       const nr = alle.map((v, i) => auswahl.has(`${listenIds[0]}__${v.id}`) ? i + 1 : null).filter(Boolean);
       bereichText = nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}–${nr[nr.length - 1]}` : "Auswahl";
@@ -183,7 +183,7 @@ export function renderSlotKopf(app, statistik) {
     const lEinzelName = id => { const o = (listenOrdner || []).find(x => x.id === id); return o ? `📁 ${o.name}` : `📋 ${listenIndex.find(l => l.id === id)?.name || "Liste"}`; };
     // 169: Fortschrittsbalken immer – bei offener Auswahl für das, was der Kopf zeigt (Vorschau bzw. Mehrfachauswahl)
     const kopfVoks = e => { const k = e?.konfiguration || {};
-      let v = (k.listenIds || []).flatMap(id => (lsGet(SK.liste(id))?.vokabeln || []).map(x => ({ ...x, _key: `${id}__${x.id}`, _listeId: id })));
+      let v = (k.listenIds || []).flatMap(id => (lsLesen(SK.liste(id))?.vokabeln || []).map(x => ({ ...x, _key: `${id}__${x.id}`, _listeId: id })));
       if (k.bereichTyp === "bereich" && k.vokabelAuswahl?.length) { const a = new Set(k.vokabelAuswahl); v = v.filter(x => a.has(x._key)); }
       return v; };
     const balkenVoks = wahl && multiAuswahl.length ? [...new Map(wahlQuizIds(multiAuswahl).flatMap(id => kopfVoks(getSlotEintrag("gespeichert", id))).map(v => [v._key, v])).values()]
@@ -210,7 +210,7 @@ export function renderSlotKopf(app, statistik) {
               : vorschauE ? `„${vorschauName}“ laden (Listen, Vokabelauswahl, Einstellungen, Fortschritt)`
               : aendern ? "Ändern beenden – Listen und Vokabeln übernehmen"
               : geaendert ? `${name} – Vokabelauswahl geändert, noch nicht gespeichert; lang drücken: überspeichern, als neues Quiz speichern, verwerfen, umbenennen, duplizieren, Vokabeln ändern oder löschen`
-              : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern, umbenennen, duplizieren, Vokabeln ändern, löschen" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, (lwahl ? (listenWahl.length ? listenWahlMenue(listenWahl) : null) : wahl ? (auswahlTafelDaten.current.slot?.()?.aktionen || null) : aktionen), { langText: name })}>
+              : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern, umbenennen, duplizieren, Vokabeln ändern, löschen" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, (lwahl ? (listenWahl.length ? (auswahlTafelDaten.current.liste?.()?.aktionen || listenWahlMenue(listenWahl)) : null) : wahl ? (auswahlTafelDaten.current.slot?.()?.aktionen || null) : aktionen), { langText: name })}>
             {balkenPct !== null && <span className="kopf-balken" data-kopf-balken={balkenPct}><span style={{width:`${balkenPct}%`}}/></span>}
             {lwahl ? <span data-wahl-anzahl={listenWahl.length} data-listen-wahl-kopf>{listenWahl.length === 1 ? `${lEinzelName(listenWahl[0])} laden` : listenWahl.length ? `☑ ${listenWahl.length} ausgewählt` : "Nichts ausgewählt"}</span>
               : wahl ? <span data-wahl-anzahl={multiAuswahl.length}>{wahlText}</span> : vorschauE ? <span data-bestaetigen>{vorschauName} laden</span> : aendern ? <span data-bestaetigen>Bestätigen</span>
@@ -250,7 +250,7 @@ export function renderSlotInfo(app, statistik) {
     const listenIds = [...new Set(ks.flatMap(x => x.listenIds || []))];
     const auswahl = new Set(ks.flatMap(x => x.bereichTyp === "bereich" && (x.vokabelAuswahl || []).length ? x.vokabelAuswahl : (x.listenIds || []).map(id => `${id}__*`)));
     const teile = listenIds.map(id => {
-      const liste = lsGet(SK.liste(id));
+      const liste = lsLesen(SK.liste(id));
       if (!liste) return null;
       const voks = [];
       liste.vokabeln.forEach((v, i) => { if (!v.herausgenommen && (auswahl.has(`${id}__*`) || auswahl.has(`${id}__${v.id}`))) voks.push({ ...v, _nr: i + 1, _listeId: id }); });

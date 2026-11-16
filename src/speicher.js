@@ -24,6 +24,23 @@ export function lsGet(key, fallback = null) {
   }
   catch { return fallback; }
 }
+// 238: nur lesen, zwischengespeichert – entpackt (JSON) nur neu, wenn sich der gespeicherte Text geändert hat.
+// Für das Zeichnen (Kacheln, Kopf, Statistik), das bei jedem Ziehen/Einsammeln läuft. Das Ergebnis NICHT verändern
+// (es ist für alle Leser dasselbe Objekt) – wer ändern und speichern will, nimmt lsGet.
+const lesePuffer = new Map();
+export function lsLesen(key, fallback = null) {
+  try {
+    const v = localStorage.getItem(key);
+    if (!v) { lesePuffer.delete(key); return fallback; }
+    const alt = lesePuffer.get(key);
+    if (alt && alt.text === v) return alt.daten;
+    const roh = JSON.parse(v);
+    const daten = key.startsWith("vokabel_liste_") ? ergaenzeSpalten(roh) : roh;
+    lesePuffer.set(key, { text: v, daten });
+    return daten;
+  }
+  catch { return fallback; }
+}
 export function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 }

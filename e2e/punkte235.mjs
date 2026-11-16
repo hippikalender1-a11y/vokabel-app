@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, auswahlEnde } from "./hilfen.mjs";
 
 // 235: Menüs gruppiert – „Name ›“ ersetzt das Menü durch die Unterpunkte, oben „‹ zurück“; Gruppen mit einem Punkt direkt
 const URL = "http://localhost:4199/vokabel-app/";
@@ -55,16 +55,16 @@ await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.tex
 await auswahlAuf();
 await page.evaluate(() => { window._vib = []; navigator.vibrate = m => { window._vib.push(JSON.stringify(m)); return true; }; });
 const kopfText = () => page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.innerText.replace(/\s+/g, " ").trim());
-const tafelZu = async () => { await aktion("✕ Auswahl beenden"); };
+const tafelZu = async () => { await auswahlEnde(page); };
 const gruppeOffen = () => page.evaluate(() => document.querySelector("[data-info-menue]")?.dataset.infoGruppeOffen || null);
 
 // ── ein Quiz: Fällige und Listen/Vokabeln ändern direkt, Ablage als Gruppe ──
 await halte('[data-slot-id="s1"]', 450);
 let m = await menue();
-ok(m.join("|") === "🔁 Keine fälligen Vokabeln|📝 Listen/Vokabeln ändern|🗂 Ablage ›|↔ Von–Bis|✕ Auswahl beenden", `Quiz: Hauptebene (${m.join(" | ")})`);
+ok(m.join("|") === "🔁 Keine fälligen Vokabeln|📝 Listen/Vokabeln ändern|🗂 Ablage ›|↔ Von–Bis", `Quiz: Hauptebene (${m.join(" | ")})`);
 await aktion("🗂 Ablage ›");
 m = await menue();
-ok(await gruppeOffen() === "🗂 Ablage ›" && m.join("|") === "‹ zurück|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen", `Ablage ersetzt das Menü, oben „‹ zurück“ (${m.join(" | ")})`);
+ok(await gruppeOffen() === "🗂 Ablage ›" && m.join("|") === "‹ zurück|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Ablage ersetzt das Menü, oben „‹ zurück“ (${m.join(" | ")})`);
 ok((await kopf()).multi === "s1", "Gruppe öffnen lässt die Auswahl stehen");
 await aktion("‹ zurück");
 ok(!(await gruppeOffen()) && (await menue())[2] === "🗂 Ablage ›", "‹ zurück: wieder die Hauptebene");
@@ -83,28 +83,28 @@ ok(!(await gruppeOffen()) && (await menue()).includes("🗂 Ablage ›"), `ander
 // ── mehrere Quiz: Multiquiz, Fällige direkt, Ablage-Gruppe ──
 await halte('[data-slot-id="s1"]', 450);
 m = await menue();
-ok(m.join("|") === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|🗂 Ablage ›|↔ Von–Bis|✕ Auswahl beenden", `mehrere Quiz: Hauptebene (${m.join(" | ")})`);
+ok(m.join("|") === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|🗂 Ablage ›|↔ Von–Bis", `mehrere Quiz: Hauptebene (${m.join(" | ")})`);
 await aktion("🗂 Ablage ›");
-ok((await menue()).join("|") === "‹ zurück|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)", `mehrere: Ablage (${(await menue()).join(" | ")})`);
+ok((await menue()).join("|") === "‹ zurück|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)|☑ Alle auswählen", `mehrere: Ablage (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück"); await tafelZu();
 
 // ── Quiz-Ordner: Öffnen direkt, Ablage-Gruppe ──
 await halte('[data-slot-id="o1"]', 450);
 m = await menue();
-ok(m.join("|") === "📂 Öffnen|🗂 Ablage ›|✕ Auswahl beenden", `Ordner: Hauptebene (${m.join(" | ")})`);
+ok(m.join("|") === "📂 Öffnen|🗂 Ablage ›", `Ordner: Hauptebene (${m.join(" | ")})`);
 await aktion("🗂 Ablage ›");
-ok((await menue()).join("|") === "‹ zurück|✎ Umbenennen|⇄ Verschieben|📁 In Ordner…|📁 Neuer Ordner darin|📤 Ordner auflösen", `Ordner: Ablage (${(await menue()).join(" | ")})`);
+ok((await menue()).join("|") === "‹ zurück|✎ Umbenennen|⇄ Verschieben|📁 In Ordner…|📁 Neuer Ordner darin|📤 Ordner auflösen|☑ Alle auswählen", `Ordner: Ablage (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück"); await tafelZu();
 
 // ── eine Liste: Öffnen, Lernen / Ablage / Inhalt ──
 await zuListen(page);
 await halte('[data-liste-id="l_a"]', 450);
 m = await menue();
-ok(m.join("|") === "📂 Liste öffnen|📊 Lernen ›|🗂 Ablage ›|📚 Inhalt ›|↔ Von–Bis|✕ Auswahl beenden", `Liste: Hauptebene (${m.join(" | ")})`);
+ok(m.join("|") === "📂 Liste öffnen|📊 Lernen ›|🗂 Ablage ›|📚 Inhalt ›|↔ Von–Bis", `Liste: Hauptebene (${m.join(" | ")})`);
 await aktion("📊 Lernen ›");
 ok((await menue()).join("|") === "‹ zurück|🔁 Keine fälligen Vokabeln|↺ Lernstand zurücksetzen", `Liste: Lernen (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück"); await aktion("🗂 Ablage ›");
-ok((await menue()).join("|") === "‹ zurück|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen", `Liste: Ablage (${(await menue()).join(" | ")})`);
+ok((await menue()).join("|") === "‹ zurück|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Liste: Ablage (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück"); await aktion("📚 Inhalt ›");
 ok((await menue()).join("|") === "‹ zurück|＋ Vokabeln importieren|📤 Exportieren|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|( ) → Info|▦ In mehrere Quiz aufteilen", `Liste: Inhalt (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück");
@@ -112,15 +112,15 @@ await aktion("‹ zurück");
 // ── mehrere Listen: Export, Fällige direkt, Ablage-Gruppe ──
 await halte('[data-liste-id="l_b"]', 450);
 m = await menue();
-ok(m.join("|") === "📤 Exportieren (2)|🔁 Keine fälligen Vokabeln|🗂 Ablage ›|↔ Von–Bis|✕ Auswahl beenden", `mehrere Listen: Hauptebene (${m.join(" | ")})`);
+ok(m.join("|") === "📤 Exportieren (2)|🔁 Keine fälligen Vokabeln|🗂 Ablage ›|↔ Von–Bis", `mehrere Listen: Hauptebene (${m.join(" | ")})`);
 await aktion("🗂 Ablage ›");
-ok((await menue()).join("|") === "‹ zurück|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)", `mehrere Listen: Ablage (${(await menue()).join(" | ")})`);
+ok((await menue()).join("|") === "‹ zurück|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)|☑ Alle auswählen", `mehrere Listen: Ablage (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück"); await tafelZu();
 
 // ── Listen-Ordner ──
 await halte('[data-lordner-id="lo1"]', 450);
 m = await menue();
-ok(m.join("|") === "📂 Öffnen|🗂 Ablage ›|✕ Auswahl beenden", `Listen-Ordner: Hauptebene (${m.join(" | ")})`);
+ok(m.join("|") === "📂 Öffnen|🗂 Ablage ›", `Listen-Ordner: Hauptebene (${m.join(" | ")})`);
 await tafelZu();
 
 await browser.close();

@@ -1,5 +1,5 @@
 import { LERNEN_STANDARD, STANDARD_ABFRAGE_ZIEL, STANDARD_MAX_SCORE, STANDARD_PAKET_GROESSE, STANDARD_REIHENFOLGE, STANDARD_SESSION_MODUS, STANDARD_UNBEANTWORTET_ZUERST, slotSFAlle } from "../quiz.jsx";
-import { SK, TYPEN, lsDel, lsGet, lsSet, neuerSlotId } from "../speicher.js";
+import { SK, TYPEN, lsDel, lsGet, lsSet, neuerSlotId, lsLesen } from "../speicher.js";
 import { ORDNER_TIEFE_MAX, ordnerPfad } from "../raster.js";
 
 // Stufe 2 (Aufteilung): Logik aus App.jsx. app = die Namen der Komponente, die eine Funktion braucht
@@ -413,7 +413,7 @@ export function setzeQuizEinstellungenZurueck(app) {
 
 export function getKombinierteListe(app, listenIds) {
   const {  } = app;
-    const listen = listenIds.map(id => lsGet(SK.liste(id))).filter(Boolean);
+    const listen = listenIds.map(id => lsLesen(SK.liste(id))).filter(Boolean);   // 238: nur gelesen
     if (listen.length === 0) return null;
     const spalten = {};
     TYPEN.forEach(typ => {

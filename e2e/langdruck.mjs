@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, bereichZu, menueShim } from "./hilfen.mjs";
+import { quizEinstellungen, bereichZu, menueShim, auswahlEnde } from "./hilfen.mjs";
 
 // Lang-Druck per Touch auf gespeicherte Konfiguration: nur Name in der Erklärung, Menü-Knöpfe frei schwebend,
 // Lang-Druck + Ziehen → Menü weg, Verschieben-Modus, Eintrag auf neuen Platz; Fenster oben (Tastatur)
@@ -57,12 +57,12 @@ const blase = await page.evaluate(() => document.querySelector("[data-slot-info-
 console.log("     Info:", blase);
 ok((blase || "").startsWith("Unregelmäßige Verben Kapitel 3 – Wiederholung"), "Lang-Druck: ausgewählt, die Info oben zeigt den vollen Namen");
 ok(await page.$("[data-info-menue]") && !(await page.$("[data-info-blase]")), "Menü-Knöpfe unten, ohne schwarze Box");
-// Auswahl-Tafel: Tipp daneben bewirkt nichts, „✕ Auswahl beenden“ schließt
+// Auswahl-Tafel: Tipp daneben bewirkt nichts, der Wechsel Quiz/Listen schließt (241)
 { const k = await page.evaluate(() => { const r = document.querySelector("[data-slot-info-name]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
   await page.touchscreen.tap(k.x, k.y); await sleep(300); }   // eindeutig neben den Kacheln (Name in der Info-Fläche)
 ok(await page.$("[data-info-menue]"), "Tipp daneben: Auswahl-Tafel bleibt offen");
-await page.evaluate(() => __aktion('✕ Auswahl beenden').click()); await sleep(300);
-ok(!(await page.$("[data-info-menue]")), "„✕ Auswahl beenden“ schließt das Menü");
+await auswahlEnde(page); await sleep(300);
+ok(!(await page.$("[data-info-menue]")), "241: Wechsel Quiz/Listen schließt das Menü");
 ok(Object.keys(await plaetze()).length === 2 && !(await page.evaluate(() => document.body.innerText.includes("Jetzt den Zielplatz"))), "Nichts geladen oder verschoben");
 
 // 2) Kurz halten (angehoben) + Ziehen auf freien Platz 2|1 → Verschieben-Modus, Eintrag verschoben

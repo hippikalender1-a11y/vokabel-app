@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, menueShim } from "./hilfen.mjs";
+import { zuListen, menueShim, auswahlEnde } from "./hilfen.mjs";
 
 // Auswahl-Modus für Listen und gespeicherte Konfigurationen: Lang-Druck → „☑ Auswählen“, antippen wählt aus/ab,
 // Lang-Druck → Aktionen für die Auswahl (Listen: JSON, TXT, Kopieren, Verschieben, Löschen; Konfigurationen:
@@ -51,20 +51,20 @@ await page.reload(); await sleep(500);
 await zuListen(page);
 await langDruck('[data-liste-id="l_a"]');
 ok(await anzahl() === "1" && await page.$('[data-liste-id="l_a"] [data-wahl-nr="1"]'), "lang drücken: Unité A ausgewählt (Nr. 1)");
-ok(!(await menue()).includes("☑ Auswählen") && (await menue()).includes("✕ Auswahl beenden") && !(await page.$("[data-info-blase]")), `Menü ohne schwarze Box, ohne „☑ Auswählen“ (${await menue()})`);
+ok(!(await menue()).includes("☑ Auswählen") && (await menue()).includes("🗂 Ablage ›") && !(await page.$("[data-info-blase]")), `Menü ohne schwarze Box, ohne „☑ Auswählen“ (${await menue()})`);
 await langDruck('[data-liste-id="l_b"]');
 ok(await anzahl() === "2" && await page.evaluate(() => !document.querySelector(".liste-detail-header-name")?.textContent.includes("Unité")), "lang drücken auf Unité B: kommt dazu, öffnet nichts");
 await langDruck('[data-liste-id="l_a"]');
 ok(await anzahl() === "1" && !(await page.$('[data-liste-id="l_a"] [data-wahl-nr]')), "nochmal lang drücken nimmt Unité A heraus");
-await klick("[data-wahl-alle]");
+await aktion("☑ Alle auswählen");
 ok(await anzahl() === "3", "„Alle“: drei ausgewählt");
-ok(await menue() === "📤 Exportieren (3)|🔁 Keine fälligen Vokabeln|🗂 Ablage ›|↔ Von–Bis|✕ Auswahl beenden|⇄ Verschieben|📁 In Ordner… (3)|🗑 Löschen (3)", `Aktionen für die Auswahl (${await menue()})`);
+ok(await menue() === "📤 Exportieren (3)|🔁 Keine fälligen Vokabeln|🗂 Ablage ›|↔ Von–Bis|⇄ Verschieben|📁 In Ordner… (3)|🗑 Löschen (3)|☑ Alle auswählen", `Aktionen für die Auswahl (${await menue()})`);
 await klick('[data-liste-id="l_c"]');
 ok(await anzahl() === "1" && await page.evaluate(() => document.querySelector('[data-liste-id="l_c"]').classList.contains("kachel-gewaehlt")), "234: antippen in der Auswahl – sie beginnt neu mit Unité C");
 await langDruck('[data-liste-id="l_a"]');
 ok(await anzahl() === "2" && await page.$('[data-liste-id="l_c"] [data-wahl-nr="1"]') && await page.$('[data-liste-id="l_a"] [data-wahl-nr="2"]'), "228: lang drücken – die vorher gewählte Liste bleibt als Nr. 1 drin (C, A)");
-await aktion("✕ Auswahl beenden");
-ok(await anzahl() === null, "„Auswahl beenden“");
+await auswahlEnde(page);
+ok(await anzahl() === null, "241: Wechsel Quiz/Listen beendet die Auswahl");
 
 // Verschieben mit der Auswahl
 await langDruck('[data-liste-id="l_a"]'); await langDruck('[data-liste-id="l_b"]');
@@ -92,7 +92,7 @@ ok(idx.map(l => l.id).join(",") === "l_c" && await page.evaluate(() => !localSto
 await tab("Quiz");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await langDruck('[data-slot-id="g1"]'); await langDruck('[data-slot-id="g2"]');
-ok(await menue() === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|🗂 Ablage ›|↔ Von–Bis|✕ Auswahl beenden|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)", `Konfigurationen: Aktionen für die Auswahl (${await menue()})`);
+ok(await menue() === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|🗂 Ablage ›|↔ Von–Bis|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)|☑ Alle auswählen", `Konfigurationen: Aktionen für die Auswahl (${await menue()})`);
 ok(/2 Quiz ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-info]")?.innerText || "")), "148: Info zeigt die Auswahl zusammengefasst");
 await aktion("🗑 Löschen");
 ok(await page.evaluate(() => /2 Konfigurationen löschen\?/.test(document.querySelector('[data-auswahl-loeschen="slot"]')?.textContent || "")
@@ -106,7 +106,7 @@ await tab("Statistik");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await langDruck('[data-slot-id="g3"]');
 ok(!/Multiquiz/.test(await menue()) && /📁 In Ordner…/.test(await menue()), `Statistik: Menü ohne Multiquiz (${await menue()})`);
-await aktion("✕ Auswahl beenden");
+await auswahlEnde(page);
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

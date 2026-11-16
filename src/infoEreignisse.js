@@ -9,6 +9,13 @@ export function gruppe(name, unter) {
   const u = unter.filter(Boolean);
   return u.length > 1 ? [{ label: `${name} ›`, gruppe: u }] : u;
 }
+// 241: einen Punkt in die Gruppe `name` eines fertigen Menüs hängen (fehlt sie, ans Ende)
+export function inGruppe(aktionen, name, punkt) {
+  const label = `${name} ›`;
+  let drin = false;
+  const neu = aktionen.map(a => a.gruppe && a.label === label ? (drin = true, { ...a, gruppe: [...a.gruppe, punkt] }) : a);
+  return drin ? neu : [...neu, punkt];
+}
 export function zeigeInfo(text, x, y, aktionen, extra) {
   window.dispatchEvent(new CustomEvent("vokabel-info", { detail: { text, x, y, aktionen, ...extra } }));
 }

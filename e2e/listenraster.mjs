@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, quizEinstellungen, bereichZu, einstUnter, neueEineSession, menueShim } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen, bereichZu, einstUnter, neueEineSession, menueShim, auswahlEnde } from "./hilfen.mjs";
 
 // Listen-Tab als Raster: Lang-Druck → Menü (Umbenennen, Duplizieren, Verschieben, Löschen),
 // Lang-Druck + Ziehen verschiebt (belegt → tauschen), Größe unter Einstellungen → Listen, Sprachfilter rückt zusammen
@@ -65,8 +65,8 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); let ziel = await mitte("0|0");
 await finger("touchStart", p.x, p.y); await sleep(450); await finger("touchEnd"); await sleep(400);   // 234: kurz halten = auswählen (Menü)
-ok((await aktionen()).join("|") === "📂 Liste öffnen|📊 Lernen ›|🗂 Ablage ›|📚 Inhalt ›|↔ Von–Bis|✕ Auswahl beenden|🔁 Keine fälligen Vokabeln|↺ Lernstand zurücksetzen|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|＋ Vokabeln importieren|📤 Exportieren|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|( ) → Info|▦ In mehrere Quiz aufteilen", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
-await page.evaluate(() => __aktion('✕ Auswahl beenden').click()); await sleep(300);
+ok((await aktionen()).join("|") === "📂 Liste öffnen|📊 Lernen ›|🗂 Ablage ›|📚 Inhalt ›|↔ Von–Bis|🔁 Keine fälligen Vokabeln|↺ Lernstand zurücksetzen|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen|＋ Vokabeln importieren|📤 Exportieren|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|( ) → Info|▦ In mehrere Quiz aufteilen", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
+await auswahlEnde(page); await sleep(300);
 p = await mitte("2|0"); ziel = await mitte("0|0");   // die Auswahl-Tafel kann die Seite verschoben haben
 // 234: lang halten (angehoben) und ziehen: verschieben
 await finger("touchStart", p.x, p.y); await sleep(1200);

@@ -100,7 +100,8 @@ export function ordneEbeneAn(data, ordnerId, vergleich, spalten) {
   const zeilen = Math.max(1, Math.ceil(reihe.length / sp));
   return setzeEbene(data, reihe.map((x, i) => ({ ...x, platz: { z: i % zeilen, s: Math.floor(i / zeilen) } })));
 }
-export const zahlDe = n => Number(n || 0).toLocaleString("de-DE");   // 210: 4.000
+const ZAHL_DE = new Intl.NumberFormat("de-DE");   // 238: einmal anlegen (toLocaleString legt es jedes Mal neu an)
+export const zahlDe = n => ZAHL_DE.format(Number(n || 0));   // 210: 4.000
 export const nameVergleich = (a, b) => String(a.name || "").localeCompare(String(b.name || ""), "de", { numeric: true, sensitivity: "base" });
 // Pfad von oben bis zum Ordner id (Ordner-Objekte); [] = oberste Ebene
 export function ordnerPfad(ordner, id) {

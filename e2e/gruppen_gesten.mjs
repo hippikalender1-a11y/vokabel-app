@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen, menueShim } from "./hilfen.mjs";
+import { listeOeffnen, menueShim, auswahlEnde } from "./hilfen.mjs";
 import { zuListen } from "./hilfen.mjs";
 
 // Gesten im Quiz- und Listen-Raster: Lang-Druck öffnet die Auswahl-Tafel (unten, bleibt offen; weitere antippen
@@ -24,7 +24,7 @@ const cdp = await page.createCDPSession();
 const finger = (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
 // Auswahl-Tafel ohne schwarze Box (147): offen = Menü-Knöpfe da; der Name der Auswahl steht oben in der Info-Fläche
 const tafel = () => page.evaluate(() => document.querySelector("[data-auswahl-tafel]") ? (document.querySelector("[data-slot-info-name]")?.innerText.trim() || "") : null);
-const tafelZu = async () => { await page.evaluate(() => [...__aktionen()].find(b => b.dataset.infoAktion === "✕ Auswahl beenden")?.click()); await sleep(300); };
+const tafelZu = async () => { await auswahlEnde(page); await sleep(100); };
 const menue = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
 const gewaehlt = () => page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId).join(","));
 const kontext = async sel => {
@@ -77,7 +77,7 @@ ok(await gewaehlt() === "s1" && (await tafel())?.startsWith("Teil 1"), "nochmal 
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(b => /Statistik/.test(b.textContent))?.click()); await sleep(300);
 ok(await tafel() !== null && await page.$("[data-slot-id]"), "Tippen daneben (Statistik-Tab) bewirkt nichts, Tafel bleibt");
 await tafelZu();
-ok(!(await tafel()) && await gewaehlt() === "", "„✕ Auswahl beenden“ beendet die Auswahl");
+ok(!(await tafel()) && await gewaehlt() === "", "241: Wechsel Quiz/Listen beendet die Auswahl");
 // 234: antippen in der Auswahl – sie beginnt neu mit dieser Kachel
 await kontext(kachel("s1")); await kontext(kachel("s2"));
 await page.click(kachel("s3")); await sleep(300);
@@ -148,7 +148,8 @@ for (let i = 1; i <= 8; i++) { await finger("touchMove", h.x + (rechts.x - h.x) 
 await finger("touchEnd"); await sleep(400);
 let d = await slots();
 ok(["s1", "s2"].every(id => d.gespeichert.find(x => x.id === id).platz.s === 1), `ganze Auswahl verschoben (Teil 1: ${JSON.stringify(d.gespeichert.find(x => x.id === "s1").platz)}, Teil 2: ${JSON.stringify(d.gespeichert.find(x => x.id === "s2").platz)})`);
-ok(!(await tafel()) && !(await page.$("[data-slot-fertig]")), "danach: Tafel zu, kein Verschieben-Modus");
+ok(await gewaehlt() === "s1,s2" && !(await page.$("[data-slot-fertig]")), `238: danach bleibt die Auswahl, kein Verschieben-Modus (${await gewaehlt()})`);
+await tafelZu();
 // zurück in die linke Spalte (für die folgenden Schritte)
 await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("vokabel_slots")); d.gespeichert.forEach(x => { if (x.id === "s1") x.platz = { z: 0, s: 0 }; if (x.id === "s2") x.platz = { z: 1, s: 0 }; }); localStorage.setItem("vokabel_slots", JSON.stringify(d)); });
 await page.reload(); await page.waitForSelector(kachel("s3")); await sleep(1200);
