@@ -2,6 +2,13 @@
 // aktionen (optional): [{ label, fn, gefahr, behalten }] – Knöpfe unter der Erklärung (Lang-Druck-Menü)
 // extra.auswahl ({ zu(behalten) }): Auswahl-Tafel – bleibt unten offen, Kacheln ([data-auswahl-durchlass]) bleiben
 // antippbar, alles andere ist gesperrt; schließen nur über die Tafel selbst bzw. einen Menü-Knopf
+// 235: Menü-Gruppe – „Name ›“ ersetzt das Menü durch die Unterpunkte (oben „‹ zurück“);
+// leere Gruppe entfällt, eine Gruppe mit nur einem Punkt wird zum direkten Knopf. Ergebnis zum Einspreizen (...gruppe()).
+export const GRUPPE = { lernen: "📊 Lernen", ablage: "🗂 Ablage", inhalt: "📚 Inhalt" };
+export function gruppe(name, unter) {
+  const u = unter.filter(Boolean);
+  return u.length > 1 ? [{ label: `${name} ›`, gruppe: u }] : u;
+}
 export function zeigeInfo(text, x, y, aktionen, extra) {
   window.dispatchEvent(new CustomEvent("vokabel-info", { detail: { text, x, y, aktionen, ...extra } }));
 }

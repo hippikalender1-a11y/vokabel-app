@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, bereichZu, einstUnter } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, einstUnter, menueShim } from "./hilfen.mjs";
 import { auswahlZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -8,6 +8,7 @@ const browser = await puppeteer.launch({
   headless: true, args: ["--no-first-run"],
 });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 820, height: 1200 });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -70,7 +71,7 @@ ok(sl.verlauf.length === 1, `Gleiche Konfiguration nochmal: kein doppelter Eintr
 
 // ── 2) Namensvorschlag ──
 const speichern = async () => {
-  await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Speichern"]').click()); await new Promise(r => setTimeout(r, 300));
+  await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => __aktion('💾 Speichern').click()); await new Promise(r => setTimeout(r, 300));
   const vorschlag = await page.$eval(".modal input.inp", e => e.value);
   await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].pop()?.click());
   await sleep(300);
@@ -111,12 +112,12 @@ ok(!t.includes("⇄ Verschieben") && !/Lang drücken: Menü/.test(t) && !(await 
 // Lang-Druck (am Rechner: Rechtsklick) → Erklärung mit Menü
 const menue = async key => { await page.evaluate(k => { const el = document.querySelector(`[data-raster-zelle="${k}"]`); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, key); await sleep(200); };
-const aktion = async label => { await page.evaluate(l => document.querySelector(`[data-info-aktion="${l}"]`).click(), label); await sleep(250); };
+const aktion = async label => { await page.evaluate(l => __aktion(`${l}`).click(), label); await sleep(250); };
 await menue("2|0");
-const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.textContent.trim()));
+const knoepfe = await page.evaluate(() => [...__aktionen()].map(b => b.textContent.trim()));
 const blase = await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText || "");
 console.log("     Menü:", knoepfe.join(" | "));
-ok(blase.startsWith(n3) && knoepfe.join("|") === "✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|📝 Listen/Vokabeln ändern|🔁 Keine fälligen Vokabeln|🗑 Löschen|↔ Von–Bis|✕ Auswahl beenden", `Lang-Druck: voller Name (Info oben) + Menü (${knoepfe.join("|")})`);
+ok(blase.startsWith(n3) && knoepfe.join("|") === "🔁 Keine fälligen Vokabeln|📝 Listen/Vokabeln ändern|🗂 Ablage ›|↔ Von–Bis|✕ Auswahl beenden|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen", `Lang-Druck: voller Name (Info oben) + Menü (${knoepfe.join("|")})`);
 await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
 ok(!(await page.$('[role="status"]')) && /Fertig · 1/.test(await page.evaluate(() => document.querySelector("[data-slot-fertig]")?.innerText || "")),

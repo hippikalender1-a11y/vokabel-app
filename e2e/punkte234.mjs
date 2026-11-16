@@ -1,11 +1,12 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, menueShim } from "./hilfen.mjs";
 
 // 234: neue Kachel-Bedienung – kurz halten wählt aus (dazu/heraus, weiterfahren sammelt ein), lang halten verschiebt;
 // antippen in der Auswahl beginnt sie neu; Ordner auswählbar (zählen mit Inhalt), Ordner öffnen hebt die Auswahl auf; 231: Randspalte
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 844, hasTouch: true, isMobile: true });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -20,8 +21,8 @@ const kontext = async sel => {
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, sel);
   await sleep(350);
 };
-const menue = () => page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
-const aktion = async label => { await page.evaluate(l => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === l)?.click(), label); await sleep(400); };
+const menue = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
+const aktion = async label => { await page.evaluate(l => [...__aktionen()].find(b => b.dataset.infoAktion === l)?.click(), label); await sleep(400); };
 const ordnerAnlegen = async name => {
   await page.evaluate(n => { const f = document.querySelector("[data-in-gruppe-dialog] [data-ordner-name-feld]");
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(f, n); f.dispatchEvent(new Event("input", { bubbles: true })); }, name);
@@ -56,7 +57,7 @@ await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.tex
 await auswahlAuf();
 await page.evaluate(() => { window._vib = []; navigator.vibrate = m => { window._vib.push(JSON.stringify(m)); return true; }; });
 const kopfText = () => page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.innerText.replace(/\s+/g, " ").trim());
-const aktionen = () => page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion).join("|"));
+const aktionen = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion).join("|"));
 
 // ── Quiz: kurz halten beginnt die Auswahl ──
 await halte('[data-slot-id="s1"]', 450);

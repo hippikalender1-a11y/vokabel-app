@@ -1,5 +1,6 @@
 import { SATZ_PORTION, saetzeAusAntwort, saetzeLaden, saetzeSpeichern, satzPrompt } from "../saetze.js";
 import { SK, TYPEN, lsGet } from "../speicher.js";
+import { GRUPPE, gruppe } from "../infoEreignisse.js";
 import { listeSprache, sprachInfo } from "../sprache.js";
 import { QUIZ_ARTEN, SCORE_FELD, lernProzent, ohneHinweis, statistikSicht, stufenRegeln } from "../quiz.jsx";
 
@@ -59,30 +60,37 @@ export function oeffneListeDetail(app, id) {
 export function listenMenue(app, l, imKopf = false) {
   const { faelligAktion, faelligVonListen, listenKopieName, listenOrdner, oeffneExport, oeffneListeDetail, oeffneSatzFenster, oeffneSynFenster, resetImport, setAnsicht, setImportBestehendId, setImportZielTyp, setInGruppe, setKlammerZiel, setListeMenueId, setListeNurAus, setListenAuswahl, setListenBereich, setListenSortModus, setListenWahl, setMergeQuelleId, setModal, setModalFehler, setModalInput, setTab, setZuruecksetzenArten, sichtbareListen, sprachFilter, starteAufteilen, verschiebeListenInOrdner } = app;
     const gefiltert = sprachFilter !== "alle";
+    const herausN = (lsGet(SK.liste(l.id))?.vokabeln || []).filter(v => v.herausgenommen).length;   // 176
+    // 235: gruppiert – direkt Öffnen, dann Lernen / Ablage / Inhalt
     return [
       ...(imKopf ? [] : [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(l.id) }]),   // 225: antippen fragt ab, öffnen über das Menü
-      { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
-      { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
-      { label: "📤 Exportieren", fn: () => oeffneExport([l.id]) },
-      ...(() => { const f = faelligVonListen([l.id]); return faelligAktion(f, imKopf ? { listeId: l.id, ziel: "liste" } : { listeId: l.id, ziel: "raster" }); })(),   // 204
-      ...(() => { const n = (lsGet(SK.liste(l.id))?.vokabeln || []).filter(v => v.herausgenommen).length;   // 176
-        return n ? [{ label: `🚫 Herausgenommene (${n})`, fn: () => { oeffneListeDetail(l.id); setListenBereich("vokabeln"); setListeNurAus(true); } }] : []; })(),
-      { label: "✨ Beispielsätze ergänzen", fn: () => oeffneSatzFenster(l.id) },
-      { label: "≈ Synonyme ergänzen", fn: () => oeffneSynFenster(l.id) },
-      ...(imKopf && sichtbareListen.some(x => x.id !== l.id) ? [{ label: "⇲ Zusammenführen", fn: () => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); } }] : []),
-      { label: "＋ Vokabeln importieren", fn: () => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(l.id); setTab("listen"); setAnsicht("import"); } },
-      { label: "( ) → Info", fn: () => {
-        const ll = lsGet(SK.liste(l.id));
-        if (!imKopf) oeffneListeDetail(l.id);
-        setKlammerZiel(ll?.spalten.i1?.aktiv && ll?.spalten.i2?.aktiv ? "i2" : "i1"); setModal("klammern");
-      } },
-      ...(gefiltert || imKopf ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenSortModus(true); setListenAuswahl([l.id]); } }]),
-      { label: "📁 In Ordner…", fn: () => setInGruppe({ art: "liste", ids: [l.id], name: "" }) },   // 193
-      ...(l.ordner && listenOrdner.some(o => o.id === l.ordner) ? [{ label: "↑ Aus dem Ordner", fn: () => verschiebeListenInOrdner([l.id], listenOrdner.find(o => o.id === l.ordner)?.ordner || null) }] : []),
+      ...gruppe(GRUPPE.lernen, [
+        ...(() => { const f = faelligVonListen([l.id]); return faelligAktion(f, imKopf ? { listeId: l.id, ziel: "liste" } : { listeId: l.id, ziel: "raster" }); })(),   // 204
+        herausN && { label: `🚫 Herausgenommene (${herausN})`, fn: () => { oeffneListeDetail(l.id); setListenBereich("vokabeln"); setListeNurAus(true); } },
+        { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },
+      ]),
+      ...gruppe(GRUPPE.ablage, [
+        { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
+        { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
+        !gefiltert && !imKopf && { label: "⇄ Verschieben", fn: () => { setListenSortModus(true); setListenAuswahl([l.id]); } },
+        { label: "📁 In Ordner…", fn: () => setInGruppe({ art: "liste", ids: [l.id], name: "" }) },   // 193
+        l.ordner && listenOrdner.some(o => o.id === l.ordner) && { label: "↑ Aus dem Ordner", fn: () => verschiebeListenInOrdner([l.id], listenOrdner.find(o => o.id === l.ordner)?.ordner || null) },
+        { label: "🗑 Löschen", gefahr: true, fn: () => { setListeMenueId(l.id); setModal("loeschen"); } },
+      ]),
+      ...gruppe(GRUPPE.inhalt, [
+        { label: "＋ Vokabeln importieren", fn: () => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(l.id); setTab("listen"); setAnsicht("import"); } },
+        { label: "📤 Exportieren", fn: () => oeffneExport([l.id]) },
+        imKopf && sichtbareListen.some(x => x.id !== l.id) && { label: "⇲ Zusammenführen", fn: () => { setMergeQuelleId(''); setModal('liste-zusammenfuehren'); } },
+        { label: "✨ Beispielsätze ergänzen", fn: () => oeffneSatzFenster(l.id) },
+        { label: "≈ Synonyme ergänzen", fn: () => oeffneSynFenster(l.id) },
+        { label: "( ) → Info", fn: () => {   // Klammer-Inhalt in die Info-Spalte (verändert den Inhalt)
+          const ll = lsGet(SK.liste(l.id));
+          if (!imKopf) oeffneListeDetail(l.id);
+          setKlammerZiel(ll?.spalten.i1?.aktiv && ll?.spalten.i2?.aktiv ? "i2" : "i1"); setModal("klammern");
+        } },
+        { label: "▦ In mehrere Quiz aufteilen", fn: () => starteAufteilen(l.id) },
+      ]),
       ...(imKopf ? [] : [{ label: "☑ Auswählen", behalten: true, fn: () => { setListenSortModus(false); setListenWahl([l.id]); } }]),
-      { label: "▦ In mehrere Quiz aufteilen", fn: () => starteAufteilen(l.id) },
-      { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },
-      { label: "🗑 Löschen", gefahr: true, fn: () => { setListeMenueId(l.id); setModal("loeschen"); } },
     ];
   }
 
@@ -95,14 +103,16 @@ export function listenWahlMenue(app, ids) {
     // 234: Ordner in der Auswahl zählen mit ihrem ganzen Inhalt; Löschen löst sie nur auf
     const istOrdner = id => listenOrdner.some(o => o.id === id);
     const listen = wahlListenIds(ids), ordner = ids.filter(istOrdner), eintraege = ids.filter(id => !istOrdner(id));
-    return [
+    return [   // 235: direkt Export, Fällige; Ablage gruppiert
       ...(listen.length ? [{ label: `📤 Exportieren (${listen.length})`, behalten: true, fn: () => oeffneExport(listen) }] : []),
       ...(() => { const f = faelligVonListen(listen); return faelligAktion(f); })(),
-      ...(sprachFilter !== "alle" ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl(ids); } }]),
-      { label: `📁 In Ordner… (${ids.length})`, fn: () => setInGruppe({ art: "liste", ids, name: "" }) },   // 193
-      ...(listenOrdnerOffen ? [{ label: `↑ Aus dem Ordner (${ids.length})`, fn: () => verschiebeListenInOrdner(ids, listenOrdner.find(o => o.id === listenOrdnerOffen)?.ordner || null) }] : []),
-      eintraege.length ? { label: `🗑 Löschen (${eintraege.length})${ordner.length ? ` · ${ordner.length} Ordner auflösen` : ""}`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "liste", ids: eintraege, ordner }) }
-        : { label: `📤 Ordner auflösen (${ordner.length})`, fn: () => { setListenWahl(null); ordner.forEach(o => loeseListenOrdnerAuf(o)); } },
+      ...gruppe(GRUPPE.ablage, [
+        sprachFilter === "alle" && { label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl(ids); } },
+        { label: `📁 In Ordner… (${ids.length})`, fn: () => setInGruppe({ art: "liste", ids, name: "" }) },   // 193
+        listenOrdnerOffen && { label: `↑ Aus dem Ordner (${ids.length})`, fn: () => verschiebeListenInOrdner(ids, listenOrdner.find(o => o.id === listenOrdnerOffen)?.ordner || null) },
+        eintraege.length ? { label: `🗑 Löschen (${eintraege.length})${ordner.length ? ` · ${ordner.length} Ordner auflösen` : ""}`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "liste", ids: eintraege, ordner }) }
+          : { label: `📤 Ordner auflösen (${ordner.length})`, fn: () => { setListenWahl(null); ordner.forEach(o => loeseListenOrdnerAuf(o)); } },
+      ]),
       { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "liste", id: ids[ids.length - 1] }) },
       { label: "✕ Auswahl beenden", fn: () => setListenWahl(null) },
     ];

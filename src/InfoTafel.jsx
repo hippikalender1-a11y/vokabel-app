@@ -7,6 +7,7 @@ import { schalteInfoModus, farbeImMenueAn, farbeHier } from "./infoEreignisse.js
 export default function InfoTafel() {
   const [info, setInfo] = useState(null);
   const [modus, setModus] = useState(false);
+  const [gruppeOffen, setGruppeOffen] = useState(null);   // 235: { text, label } – geöffnete Menü-Gruppe (gilt nur für diese Tafel)
   // Lang-Druck (iPad): Der Finger liegt noch auf, wenn die Tafel aufgeht. Beim Loslassen schickt iOS
   // oft noch einen Klick hinterher – der darf die Tafel nicht gleich wieder schließen.
   const fingerAufRef = useRef(0);          // aktuell aufliegende Finger
@@ -108,7 +109,10 @@ export default function InfoTafel() {
   const breite = unten ? Math.min(480, window.innerWidth - 24) : Math.min(300, window.innerWidth - 24);
   const links = unten ? (window.innerWidth - breite) / 2 : info ? Math.max(12, Math.min(info.x - breite / 2, window.innerWidth - breite - 12)) : 0;
   // Menü: Aktionen des Elements, dazu „🎨 Farbe ändern“ (startet den Farbmodus an dieser Stelle)
-  const menue = info ? [...(info.aktionen || []), ...(!modus && farbeImMenueAn() && info.x != null ? [{ label: "🎨 Farbe ändern", farbe: true, fn: () => farbeHier(info.x, info.y) }] : [])] : [];
+  // 235: geöffnete Gruppe – ihre Unterpunkte ersetzen das Menü, oben „‹ zurück“
+  const grp = info && gruppeOffen?.text === info.text ? (info.aktionen || []).find(a => a.gruppe && a.label === gruppeOffen.label) : null;
+  const menue = !info ? [] : grp ? [{ label: "‹ zurück", zurueck: true }, ...grp.gruppe]
+    : [...(info.aktionen || []), ...(!modus && farbeImMenueAn() && info.x != null ? [{ label: "🎨 Farbe ändern", farbe: true, fn: () => farbeHier(info.x, info.y) }] : [])];
   const mitMenue = menue.length > 0;
   const obenHin = info && info.y != null && info.y > window.innerHeight / 2;
   return (
@@ -128,13 +132,19 @@ export default function InfoTafel() {
           </div>}
           {info.regler && <TafelRegler key={info.text} regler={info.regler}/>}
           {mitMenue && (
-            <div data-info-menue style={{ display: "flex", flexDirection: unten ? "row" : "column", flexWrap: unten ? "wrap" : undefined, gap: unten ? 6 : 8 }}>
+            <div data-info-menue data-info-gruppe-offen={grp ? grp.label : undefined} style={{ display: "flex", flexDirection: unten ? "row" : "column", flexWrap: unten ? "wrap" : undefined, gap: unten ? 6 : 8 }}>
               {menue.map(a => (
                 <button key={a.label} data-info-aktion={a.farbe ? undefined : a.label} data-info-farbe={a.farbe ? "" : undefined}
+                  data-info-gruppe={a.gruppe ? a.gruppe.map(u => u.label).join("|") : undefined} data-info-zurueck={a.zurueck ? "" : undefined}
                   disabled={a.aus} data-info-aus={a.aus ? "" : undefined}
-                  onClick={() => { if (a.aus) return; setInfo(null); info.auswahl?.zu?.(!!a.behalten); a.fn(); }} style={{
+                  onClick={() => {
+                    if (a.aus) return;
+                    if (a.gruppe) { setGruppeOffen({ text: info.text, label: a.label }); return; }   // 235: Gruppe öffnen, Tafel bleibt
+                    if (a.zurueck) { setGruppeOffen(null); return; }
+                    setGruppeOffen(null); setInfo(null); info.auswahl?.zu?.(!!a.behalten); a.fn();
+                  }} style={{
                   opacity: a.aus ? 0.45 : 1,
-                  background: "var(--karte)", color: a.gefahr ? "var(--falsch)" : a.farbe ? "var(--text2)" : "var(--haupt)", textAlign: "left", whiteSpace: "nowrap",
+                  background: "var(--karte)", color: a.gefahr ? "var(--falsch)" : a.farbe || a.zurueck ? "var(--text2)" : "var(--haupt)", textAlign: "left", whiteSpace: "nowrap",
                   border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: unten ? "8px 12px" : "11px 18px",
                   fontSize: unten ? "0.85rem" : "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: a.aus ? "default" : "pointer",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.22)",

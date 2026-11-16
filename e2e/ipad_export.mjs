@@ -1,10 +1,11 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen } from "./hilfen.mjs";
+import { listeOeffnen, menueShim } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setUserAgent("Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1");
 await page.setViewport({ width: 820, height: 1100 });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
@@ -45,7 +46,7 @@ await zuListen(page);
 await clickText(".karte-zeile", "Englisch Buch 5. Klasse"); await listeOeffnen(page);
 await sleep(300);
 await page.evaluate(() => { const el = document.querySelector("[data-liste-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(300);
-await page.evaluate(() => document.querySelector('[data-info-aktion="📤 Exportieren"]').click()); await sleep(300);
+await page.evaluate(() => __aktion('📤 Exportieren').click()); await sleep(300);
 await page.click('[data-export-art="json"]'); await sleep(300);
 await clickText(".modal button", "Exportieren", true);
 await sleep(500);

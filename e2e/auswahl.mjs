@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, menueShim } from "./hilfen.mjs";
 
 // Auswahl-Modus für Listen und gespeicherte Konfigurationen: Lang-Druck → „☑ Auswählen“, antippen wählt aus/ab,
 // Lang-Druck → Aktionen für die Auswahl (Listen: JSON, TXT, Kopieren, Verschieben, Löschen; Konfigurationen:
@@ -10,6 +10,7 @@ const browser = await puppeteer.launch({
   headless: true, args: ["--no-first-run"],
 });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 900 });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 page.on("dialog", d => { console.log("FAIL Browser-Fenster erschienen:", d.message()); d.dismiss(); });
@@ -22,9 +23,9 @@ const langDruck = async sel => {
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, sel);
   await sleep(250);
 };
-const menue = () => page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion).join("|"));
+const menue = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion).join("|"));
 const blase = () => page.evaluate(() => document.querySelector("[data-info-menue]")?.previousElementSibling?.textContent || "");
-const aktion = async p => { await page.evaluate(p => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion.startsWith(p)).click(), p); await sleep(300); };
+const aktion = async p => { await page.evaluate(p => [...__aktionen()].find(b => b.dataset.infoAktion.startsWith(p)).click(), p); await sleep(300); };
 const klick = async sel => { await page.evaluate(sel => document.querySelector(sel).click(), sel); await sleep(250); };
 const anzahl = () => page.evaluate(() => document.querySelector("[data-wahl-anzahl]")?.dataset.wahlAnzahl || null);
 const index = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_listen_index") || "[]"));
@@ -57,7 +58,7 @@ await langDruck('[data-liste-id="l_a"]');
 ok(await anzahl() === "1" && !(await page.$('[data-liste-id="l_a"] [data-wahl-nr]')), "nochmal lang drücken nimmt Unité A heraus");
 await klick("[data-wahl-alle]");
 ok(await anzahl() === "3", "„Alle“: drei ausgewählt");
-ok(await menue() === "📤 Exportieren (3)|🔁 Keine fälligen Vokabeln|⇄ Verschieben|📁 In Ordner… (3)|🗑 Löschen (3)|↔ Von–Bis|✕ Auswahl beenden", `Aktionen für die Auswahl (${await menue()})`);
+ok(await menue() === "📤 Exportieren (3)|🔁 Keine fälligen Vokabeln|🗂 Ablage ›|↔ Von–Bis|✕ Auswahl beenden|⇄ Verschieben|📁 In Ordner… (3)|🗑 Löschen (3)", `Aktionen für die Auswahl (${await menue()})`);
 await klick('[data-liste-id="l_c"]');
 ok(await anzahl() === "1" && await page.evaluate(() => document.querySelector('[data-liste-id="l_c"]').classList.contains("kachel-gewaehlt")), "234: antippen in der Auswahl – sie beginnt neu mit Unité C");
 await langDruck('[data-liste-id="l_a"]');
@@ -91,7 +92,7 @@ ok(idx.map(l => l.id).join(",") === "l_c" && await page.evaluate(() => !localSto
 await tab("Quiz");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await langDruck('[data-slot-id="g1"]'); await langDruck('[data-slot-id="g2"]');
-ok(await menue() === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|📁 In Ordner… (2)|⇄ Verschieben|🗑 Löschen (2)|↔ Von–Bis|✕ Auswahl beenden", `Konfigurationen: Aktionen für die Auswahl (${await menue()})`);
+ok(await menue() === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|🗂 Ablage ›|↔ Von–Bis|✕ Auswahl beenden|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)", `Konfigurationen: Aktionen für die Auswahl (${await menue()})`);
 ok(/2 Quiz ausgewählt/.test(await page.evaluate(() => document.querySelector("[data-slot-info]")?.innerText || "")), "148: Info zeigt die Auswahl zusammengefasst");
 await aktion("🗑 Löschen");
 ok(await page.evaluate(() => /2 Konfigurationen löschen\?/.test(document.querySelector('[data-auswahl-loeschen="slot"]')?.textContent || "")

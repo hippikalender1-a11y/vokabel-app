@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, bereichZu } from "./hilfen.mjs";
+import { quizEinstellungen, bereichZu, menueShim } from "./hilfen.mjs";
 
 // Multiquiz: Lang-Druck auf eine Kachel → „☑ Auswählen“, weitere Kacheln antippen, Lang-Druck → „🧩 Multiquiz starten“;
 // Vokabeln zusammen (auch verschiedene Sprachen), Einstellungen von Nr. 1, Kopfzeile „Multiquiz“, speicherbar, Statistik zusammen
@@ -9,6 +9,7 @@ const browser = await puppeteer.launch({
   headless: true, args: ["--no-first-run"],
 });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 900 });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 page.on("dialog", d => { console.log("FAIL Browser-Fenster erschienen:", d.message()); d.dismiss(); });
@@ -30,9 +31,9 @@ const langDruck = async sel => {
   await page.evaluate(sel => { const el = document.querySelector(sel); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, sel);
   await sleep(250);
 };
-const aktionen = () => page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
+const aktionen = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
 const hinweis = () => page.evaluate(() => document.querySelector("[data-wahl-hinweis]")?.textContent.trim() || null);
-const aktion = async prefix => { await page.evaluate(p => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion.startsWith(p)).click(), prefix); await sleep(300); };
+const aktion = async prefix => { await page.evaluate(p => [...__aktionen()].find(b => b.dataset.infoAktion.startsWith(p)).click(), prefix); await sleep(300); };
 const oeffneKopf = () => page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); });
 
 await page.goto(URL);
@@ -68,7 +69,7 @@ ok(/2 ausgewählt · 5 Vokabeln/.test(await hinweis() || ""), `Lang-Druck auf Te
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId + ":" + b.dataset.multiNr).join(",")) === "g_a:1,g_b:2", "Kacheln nummeriert (1, 2)");
 const wahlMenue = await aktionen();
 console.log("     Auswahl-Menü:", wahlMenue.join(" | "));
-ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|📁 In Ordner… (2)|⇄ Verschieben|🗑 Löschen (2)|↔ Von–Bis|✕ Auswahl beenden", "Menü der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
+ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|🗂 Ablage ›|↔ Von–Bis|✕ Auswahl beenden|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)", "Menü der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
 await langDruck('[data-slot-id="g_b"]');
 ok(/Teil A laden/.test(await hinweis() || ""), "nochmal lang drücken nimmt die Kachel heraus");
 await langDruck('[data-slot-id="g_b"]');
@@ -119,7 +120,7 @@ ok(await page.evaluate(() => document.querySelector("[data-reihenfolge]")?.textC
 // Speichern: Name-Vorschlag „Multiquiz: Teil A + Teil B“
 await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(300);
 await langDruck("[data-slot-kopf-name]");
-await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Speichern"]').click()); await sleep(300);
+await page.evaluate(() => __aktion('💾 Speichern').click()); await sleep(300);
 const vorschlag = await page.evaluate(() => document.querySelector(".modal input.inp")?.value);
 ok(vorschlag === "Multiquiz: Teil A + Teil B", `Namensvorschlag (${vorschlag})`);
 await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].pop()?.click()); await sleep(400);
@@ -133,7 +134,7 @@ ok(await page.evaluate(id => document.querySelector(`[data-slot-id="${id}"] .ras
 await clickText(".tab", "Statistik"); await sleep(400);
 const t = await page.evaluate(() => document.body.innerText);
 ok(/GESAMT\s*\n?\s*5/i.test(t), "Statistik: Multiquiz zusammen (5 Vokabeln)");
-ok(!(await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].length)), "kein Menü offen");
+ok(!(await page.evaluate(() => [...__aktionen()].length)), "kein Menü offen");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

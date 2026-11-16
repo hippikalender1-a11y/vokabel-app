@@ -1,11 +1,12 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, kurzHalten } from "./hilfen.mjs";
+import { quizEinstellungen, kurzHalten, menueShim } from "./hilfen.mjs";
 
 // 109–113: Quiz-Auswahl – antippen wählt nur aus (Info darunter), grüner Kopf-Knopf lädt; Vokabeln ansehen mit Listen-Nr. und Lücken;
 // Namensvorschlag „Engl 11.11.“; Duplizieren im Ordner
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 844 });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -80,7 +81,7 @@ const lage = await page.evaluate(() => { const n = document.querySelector("[data
   return n && b && k ? { navOben: n.getBoundingClientRect().bottom <= b.getBoundingClientRect().top + 1, abstand: Math.round(k.getBoundingClientRect().top - b.getBoundingClientRect().bottom) } : null; });
 ok(lage && lage.abstand <= 10, `160: Pfad-Zeile, Kacheln direkt darunter (${JSON.stringify(lage)})`);
 await page.evaluate(() => { const el = document.querySelector('[data-slot-id="g_3"]'); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(300);
-await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "⧉ Duplizieren")?.click()); await sleep(300);
+await page.evaluate(() => [...__aktionen()].find(b => b.dataset.infoAktion === "⧉ Duplizieren")?.click()); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b => /Duplizieren|Speichern|OK/.test(b.textContent))?.click()); await sleep(400);
 const kopie = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")).gespeichert.find(g => g.name.includes("Kopie")));
 ok(kopie && kopie.ordner === "o_1", `Duplikat liegt im selben Ordner (${JSON.stringify(kopie && { name: kopie.name, ordner: kopie.ordner })})`);
@@ -93,9 +94,9 @@ await kurzHalten(page, "[data-slot-id=\"g_2\"]");
 await klick("[data-slot-laden]"); await sleep(500);
 // Neues Quiz → Speichern
 await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(300);
-const aktionen = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
+const aktionen = await page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
 const speichern = aktionen.find(a => /Als neues Quiz|Speichern/.test(a));
-if (speichern) { await page.evaluate(l => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === l)?.click(), speichern); await sleep(300); }
+if (speichern) { await page.evaluate(l => [...__aktionen()].find(b => b.dataset.infoAktion === l)?.click(), speichern); await sleep(300); }
 const feld = await page.evaluate(() => document.querySelector(".modal input")?.value || "");
 ok(feld === vorschlag, `Namensvorschlag „${vorschlag}“ (${feld || "kein Speichern-Fenster: " + aktionen.join("|")})`);
 

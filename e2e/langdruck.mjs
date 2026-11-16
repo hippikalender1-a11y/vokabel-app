@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, bereichZu } from "./hilfen.mjs";
+import { quizEinstellungen, bereichZu, menueShim } from "./hilfen.mjs";
 
 // Lang-Druck per Touch auf gespeicherte Konfiguration: nur Name in der Erklärung, Menü-Knöpfe frei schwebend,
 // Lang-Druck + Ziehen → Menü weg, Verschieben-Modus, Eintrag auf neuen Platz; Fenster oben (Tastatur)
@@ -9,6 +9,7 @@ const browser = await puppeteer.launch({
   headless: true, args: ["--no-first-run"],
 });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -60,7 +61,7 @@ ok(await page.$("[data-info-menue]") && !(await page.$("[data-info-blase]")), "M
 { const k = await page.evaluate(() => { const r = document.querySelector("[data-slot-info-name]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
   await page.touchscreen.tap(k.x, k.y); await sleep(300); }   // eindeutig neben den Kacheln (Name in der Info-Fläche)
 ok(await page.$("[data-info-menue]"), "Tipp daneben: Auswahl-Tafel bleibt offen");
-await page.evaluate(() => document.querySelector('[data-info-aktion="✕ Auswahl beenden"]').click()); await sleep(300);
+await page.evaluate(() => __aktion('✕ Auswahl beenden').click()); await sleep(300);
 ok(!(await page.$("[data-info-menue]")), "„✕ Auswahl beenden“ schließt das Menü");
 ok(Object.keys(await plaetze()).length === 2 && !(await page.evaluate(() => document.body.innerText.includes("Jetzt den Zielplatz"))), "Nichts geladen oder verschoben");
 
@@ -89,7 +90,7 @@ await page.touchscreen.touchStart(p.x, p.y);
 await sleep(450);   // 234: kurz halten wählt aus (Menü)
 await page.touchscreen.touchEnd();
 await sleep(500);
-await page.evaluate(() => document.querySelector('[data-info-aktion="✎ Umbenennen"]').click());
+await page.evaluate(() => __aktion('✎ Umbenennen').click());
 await sleep(300);
 const oben = await page.evaluate(() => document.querySelector(".modal").getBoundingClientRect().top);
 console.log("     Umbenennen-Fenster oben bei", Math.round(oben), "px von", 844);

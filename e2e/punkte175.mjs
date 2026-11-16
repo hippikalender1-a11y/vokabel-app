@@ -1,11 +1,12 @@
 import puppeteer from "puppeteer-core";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, menueShim } from "./hilfen.mjs";
 
 // 175–179: im Quiz zurückwischen und Bewertung ändern, Vokabel herausnehmen (und wieder hineinnehmen),
 // lange Zeilen umbrechen, rote Kreise (zwei Stufen des Nichtwissens, −6), Altlasten (−100 → −6)
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 844, hasTouch: true, isMobile: true });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -24,7 +25,7 @@ const kontext = async sel => {
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, sel);
   await sleep(300);
 };
-const aktion = async label => { await page.evaluate(l => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === l)?.click(), label); await sleep(400); };
+const aktion = async label => { await page.evaluate(l => [...__aktionen()].find(b => b.dataset.infoAktion === l)?.click(), label); await sleep(400); };
 const frage = () => page.evaluate(() => document.querySelector(".quiz-frage-text")?.textContent.trim());
 const bewerte = async gewusst => {
   await page.evaluate(() => document.querySelector("[data-frei-klick]")?.click()); await sleep(250);
@@ -74,7 +75,7 @@ ok((await vok(4)).fortschritt.score === -1, `0 + falsch → −1 (${(await vok(4
 // ── 176: Vokabel im Quiz herausnehmen ──
 ok(await frage() === "Bäckerstraße", `nächste Frage „Bäckerstraße“ (${await frage()})`);
 await kontext("[data-karte-frage]");
-ok(await page.$('[data-info-aktion="🚫 Nicht mehr abfragen"]'), "Lang-Druck auf die Karte: „🚫 Nicht mehr abfragen“");
+ok(await page.evaluate(() => !!__aktion('🚫 Nicht mehr abfragen')), "Lang-Druck auf die Karte: „🚫 Nicht mehr abfragen“");
 await aktion("🚫 Nicht mehr abfragen");
 ok((await vok(5)).herausgenommen === true && (await vok(5)).fortschritt.score === -6, "herausgenommen (gespeichert), Score unverändert");
 ok((await frage())?.replace(/\u200B/g, "") === LANG, `weiter mit der nächsten Karte (${await frage()})`);
@@ -91,7 +92,7 @@ ok(await page.evaluate(() => document.querySelector('[data-rueck-bewertung="fals
 await page.evaluate(() => document.querySelector('[data-rueck-bewertung="richtig"]').click()); await sleep(300);
 ok((await vok(4)).fortschritt.score === -1, "antippen der anderen Bewertung ändert nichts");
 await kontext('[data-rueck-bewertung="richtig"]');
-ok(await page.$('[data-info-aktion="✓ Doch gewusst – umwerten"]'), "Lang-Druck auf „Gewusst“: Rückfrage „✓ Doch gewusst – umwerten“");
+ok(await page.evaluate(() => !!__aktion('✓ Doch gewusst – umwerten')), "Lang-Druck auf „Gewusst“: Rückfrage „✓ Doch gewusst – umwerten“");
 await aktion("✓ Doch gewusst – umwerten");
 ok((await vok(4)).fortschritt.score === 1, `umgewertet: Score aus dem Stand vor der Antwort neu (0 + richtig = 1) (${(await vok(4)).fortschritt.score})`);
 ok(await page.evaluate(() => document.querySelector('[data-rueck-bewertung="richtig"]')?.dataset.gewaehlt) === "ja" && await page.$("[data-rueck-geaendert]"), "Rückblick zeigt jetzt „Gewusst“, als geändert markiert");
@@ -116,7 +117,7 @@ await page.evaluate(() => document.querySelector(".topbar-back")?.click()); awai
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(300);
 await zuListen(page);
 await kontext('[data-liste-id="l_a"]');
-ok(await page.$('[data-info-aktion="🚫 Herausgenommene (1)"]'), "Listen-Menü: „🚫 Herausgenommene (1)“");
+ok(await page.evaluate(() => !!__aktion('🚫 Herausgenommene (1)')), "Listen-Menü: „🚫 Herausgenommene (1)“");
 await aktion("🚫 Herausgenommene (1)");
 const zeilen = await page.evaluate(() => [...document.querySelectorAll("[data-such-ziel='liste']")].map(z => (z.dataset.herausgenommen !== undefined ? "🚫" : "") + z.textContent.slice(0, 30)));
 ok(zeilen.length === 1 && zeilen[0].startsWith("🚫"), `nur die herausgenommene Vokabel, ausgegraut mit 🚫 (${zeilen.join(" | ")})`);

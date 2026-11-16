@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, listeOeffnen } from "./hilfen.mjs";
+import { zuListen, listeOeffnen, menueShim } from "./hilfen.mjs";
 
 // 202: Listen zeigen Beispielsätze (gesamt) und Synonyme – Kachel kurz, Info ausführlich; 203: Mindest-Spalten je Ebene
 // (Listen: Knopf „Spalten“, Quiz: Menü „▥ Spalten“); 204: Quiz aus einer Liste → am Ende zurück zur Liste;
@@ -7,6 +7,7 @@ import { zuListen, listeOeffnen } from "./hilfen.mjs";
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 844 });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -17,8 +18,8 @@ const kontext = async sel => {
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, sel);
   await sleep(350);
 };
-const menue = () => page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
-const aktion = async re => { await page.evaluate(r => [...document.querySelectorAll("[data-info-aktion]")].find(b => new RegExp(r).test(b.dataset.infoAktion))?.click(), re); await sleep(400); };
+const menue = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
+const aktion = async re => { await page.evaluate(r => [...__aktionen()].find(b => new RegExp(r).test(b.dataset.infoAktion))?.click(), re); await sleep(400); };
 const tab = async name => { await page.evaluate(n => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes(n))?.click(), name); await sleep(400); };
 const idx = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_listen_index")));
 const quizUndZurueck = async () => {
@@ -88,7 +89,7 @@ const info = await page.evaluate(() => document.querySelector("[data-liste-info-
 ok(info === "💬 6 Beispielsätze≈ 6 Synonyme", `202: Info „6 Beispielsätze · 6 Synonyme“ (${info})`);
 
 // ── 209: Knopfzeile der geöffneten Liste ──
-await page.evaluate(() => document.querySelector("[data-info-aktion=\"✕ Auswahl beenden\"]")?.click()); await sleep(250);   // 234: die kurz gehaltene Liste ist ausgewählt
+await page.evaluate(() => __aktion("✕ Auswahl beenden")?.click()); await sleep(250);   // 234: die kurz gehaltene Liste ist ausgewählt
 await kontext('[data-liste-id="liste_1700000000002"]'); await aktion("Liste öffnen"); await sleep(200);   // 225: öffnen über das Menü
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-listen-zeile] .quiz-zeile-label")].map(e => e.textContent.trim()).join("|"));
 ok(knoepfe === "Vokabeln|Beispielsätze|Spalten|Fremdsprache", `209: Vokabeln | Beispielsätze | Spalten | Fremdsprache (${knoepfe})`);

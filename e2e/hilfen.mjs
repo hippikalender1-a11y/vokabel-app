@@ -197,3 +197,20 @@ export async function listeKachelOeffnen(page, id) {
   await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "📂 Liste öffnen")?.click());
   await s(500);
 }
+
+// 235: Menüs sind gruppiert („Name ›“ öffnet die Unterpunkte). Für Tests, die Menüpunkte direkt suchen:
+// __aktionen() liefert die sichtbaren Knöpfe und dahinter die Punkte aller Gruppen; click() auf einen Gruppenpunkt
+// öffnet erst die Gruppe und tippt dann den Punkt an (async – page.evaluate wartet darauf). Einbinden vor page.goto:
+// await page.evaluateOnNewDocument(menueShim);   (das echte Öffnen der Gruppen prüft punkte235)
+export function menueShim() {
+  window.__aktionen = () => {
+    const direkt = [...document.querySelectorAll("[data-info-aktion]")];
+    const mehr = [];
+    for (const g of document.querySelectorAll("[data-info-gruppe]")) for (const l of g.dataset.infoGruppe.split("|")) mehr.push({
+      dataset: { infoAktion: l }, textContent: l, disabled: false, hasAttribute: () => false, getAttribute: () => null,
+      click: async () => { g.click(); await new Promise(r => setTimeout(r, 60)); [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === l)?.click(); },
+    });
+    return [...direkt, ...mehr];
+  };
+  window.__aktion = l => window.__aktionen().find(b => b.dataset.infoAktion === l) || null;
+}

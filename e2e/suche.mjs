@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen } from "./hilfen.mjs";
+import { listeOeffnen, menueShim } from "./hilfen.mjs";
 import { zuListen, neueEineSession, listenZu, listeBereich } from "./hilfen.mjs";
 
 // Vokabel-Suche: Einzelauswahl (Quiz + Statistik), Aufteilen (🔍 bei Von/Bis), Listenansicht.
@@ -10,6 +10,7 @@ const browser = await puppeteer.launch({
   headless: true, args: ["--no-first-run"],
 });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 844, hasTouch: true, isMobile: true });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -104,7 +105,7 @@ ok(await anzahl("statistik") === "1" && /le chat/.test(a?.text || "") && a.sicht
 await zuListen(page);
 await page.evaluate(() => { const el = document.querySelector('[data-liste-id="l_a"]'); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 20 })); }); await sleep(300);
-await page.evaluate(() => document.querySelector('[data-info-aktion="▦ In mehrere Quiz aufteilen"]').click()); await sleep(600);
+await page.evaluate(() => __aktion('▦ In mehrere Quiz aufteilen').click()); await sleep(600);
 ok(await page.$("[data-aufteilen]"), "Aufteilen-Kasten offen");
 await page.click('[data-aufteilen-suche="von"]'); await sleep(300);
 await tippe('[data-aufteilen-suchfeld="von"] [data-such-feld]', "maison");

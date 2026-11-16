@@ -2,7 +2,7 @@ import { ORDNER_KNOPF, ORDNER_TIEFE_MAX, RASTER_FREI_ZEILEN, ebeneVon, ebenenSpa
 import { Fragment } from "react";
 import { BLITZ_MS, SK, TYPEN, lsGet } from "../speicher.js";
 import { listenInhalt } from "../saetze.js";
-import { schliesseInfo } from "../infoEreignisse.js";
+import { GRUPPE, gruppe, schliesseInfo } from "../infoEreignisse.js";
 import { heuteAnteil, slotKonfigArt, slotSFAlle } from "../quiz.jsx";
 
 // Phase 2 (Aufteilung): Zeichen-Funktionen aus App.jsx. app = die Namen der Komponente, die sie brauchen.
@@ -128,14 +128,16 @@ export function renderListenRaster(app) {
     // Menü eines Listen-Ordners (Auswahl-Tafel bzw. Rechtsklick)
     const lordnerMenue = o => {
       const drin = ordnerListen(o.id), unter = listenOrdner.filter(u => u.ordner === o.id).length;
-      return [
+      return [   // 235: direkt Öffnen; Ablage gruppiert
         { label: "📂 Öffnen", fn: () => { setListenOrdnerOffen(o.id); setListeVorschau(null); } },
-        { label: "✎ Umbenennen", fn: () => setOrdnerUmbenennen({ art: "liste", id: o.id, name: o.name }) },
-        ...(gefiltert ? [] : [{ label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl([o.id]); } }]),
-        { label: "📁 In Ordner…", fn: () => setInGruppe({ art: "liste", ids: [o.id], name: "" }) },
-        ...(offen ? [{ label: "↑ Aus dem Ordner", fn: () => verschiebeListenInOrdner([o.id], hoch) }] : []),
-        ...(ordnerPfad(listenOrdner, o.id).length < ORDNER_TIEFE_MAX ? [{ label: "📁 Neuer Ordner darin", fn: () => setInGruppe({ art: "liste", ids: [], name: "", eltern: o.id }) }] : []),
-        (drin.length || unter) ? { label: "📤 Ordner auflösen", fn: () => loeseListenOrdnerAuf(o.id) } : { label: "🗑 Ordner löschen", gefahr: true, fn: () => loeseListenOrdnerAuf(o.id) },
+        ...gruppe(GRUPPE.ablage, [
+          { label: "✎ Umbenennen", fn: () => setOrdnerUmbenennen({ art: "liste", id: o.id, name: o.name }) },
+          !gefiltert && { label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl([o.id]); } },
+          { label: "📁 In Ordner…", fn: () => setInGruppe({ art: "liste", ids: [o.id], name: "" }) },
+          offen && { label: "↑ Aus dem Ordner", fn: () => verschiebeListenInOrdner([o.id], hoch) },
+          ordnerPfad(listenOrdner, o.id).length < ORDNER_TIEFE_MAX && { label: "📁 Neuer Ordner darin", fn: () => setInGruppe({ art: "liste", ids: [], name: "", eltern: o.id }) },
+          (drin.length || unter) ? { label: "📤 Ordner auflösen", fn: () => loeseListenOrdnerAuf(o.id) } : { label: "🗑 Ordner löschen", gefahr: true, fn: () => loeseListenOrdnerAuf(o.id) },
+        ]),
       ];
     };
     // Auswahl-Tafel: eine Liste → ihr Menü, mehrere → Aktionen für die Auswahl
@@ -481,40 +483,46 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     const wahlMit = x => multiAuswahl.includes(x.id) ? multiAuswahl : [...multiAuswahl, x.id];
     const istOrdnerId = id => (slots.ordner || []).some(o => o.id === id);
     const wahlQuiz = ids => [...new Set(ids.flatMap(id => istOrdnerId(id) ? kinderVon(id).map(k => k.id) : [id]))];
-    const ordnerMenue = (x, kinder) => [
+    const ordnerMenue = (x, kinder) => [   // 235: direkt Öffnen, Multiquiz; Ablage gruppiert
       { label: "📂 Öffnen", fn: () => setSlotOrdner(x.id) },
       ...(kinder.length >= 2 ? [{ label: `🧩 Multiquiz des Ordners (${kinder.length})`, fn: () => tab === "quiz" ? starteMultiquiz(kinder.map(k => k.id)) : stelleMultiquizEin(kinder.map(k => k.id)) }] : []),
-      { label: "✎ Umbenennen", fn: () => setOrdnerUmbenennen({ id: x.id, name: x.name }) },
-      { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl([x.id]); } },
-      { label: "📁 In Ordner…", fn: () => setInGruppe({ ids: [x.id], name: "" }) },
-      ...(ordnerOffen ? [{ label: "↑ Aus dem Ordner", fn: () => verschiebeInOrdner([x.id], hoch) }] : []),
-      ...(ordnerPfad(slots.ordner, x.id).length < ORDNER_TIEFE_MAX ? [{ label: "📁 Neuer Ordner darin", fn: () => setInGruppe({ ids: [], name: "", eltern: x.id }) }] : []),
-      (kinder.length || (slots.ordner || []).some(o => o.ordner === x.id)) ? { label: "📤 Ordner auflösen", fn: () => loeseOrdnerAuf(x.id) } : { label: "🗑 Ordner löschen", gefahr: true, fn: () => loeseOrdnerAuf(x.id) },
+      ...gruppe(GRUPPE.ablage, [
+        { label: "✎ Umbenennen", fn: () => setOrdnerUmbenennen({ id: x.id, name: x.name }) },
+        { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl([x.id]); } },
+        { label: "📁 In Ordner…", fn: () => setInGruppe({ ids: [x.id], name: "" }) },
+        ordnerOffen && { label: "↑ Aus dem Ordner", fn: () => verschiebeInOrdner([x.id], hoch) },
+        ordnerPfad(slots.ordner, x.id).length < ORDNER_TIEFE_MAX && { label: "📁 Neuer Ordner darin", fn: () => setInGruppe({ ids: [], name: "", eltern: x.id }) },
+        (kinder.length || (slots.ordner || []).some(o => o.ordner === x.id)) ? { label: "📤 Ordner auflösen", fn: () => loeseOrdnerAuf(x.id) } : { label: "🗑 Ordner löschen", gefahr: true, fn: () => loeseOrdnerAuf(x.id) },
+      ]),
     ];
     const wahlMenue = ids => {
       const quiz = wahlQuiz(ids), ordner = ids.filter(istOrdnerId), eintraege = ids.filter(id => !istOrdnerId(id));
       return [
       ...(quiz.length >= 2 ? [tab === "quiz" ? { label: `🧩 Multiquiz starten (${quiz.length})`, fn: () => starteMultiquiz(quiz) } : { label: `🧩 Multiquiz (${quiz.length})`, fn: () => stelleMultiquizEin(quiz) }] : []),
       ...(() => { const f = faelligVonSlots(quiz); return faelligAktion(f); })(),
-      { label: `📁 In Ordner… (${ids.length})`, fn: () => setInGruppe({ ids, name: "" }) },
-      ...(ordnerOffen ? [{ label: `↑ Aus dem Ordner (${ids.length})`, fn: () => verschiebeInOrdner(ids, hoch) }] : []),
-      { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl(ids); } },
-      eintraege.length ? { label: `🗑 Löschen (${eintraege.length})${ordner.length ? ` · ${ordner.length} Ordner auflösen` : ""}`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "slot", ids: eintraege, ordner }) }
-        : { label: `📤 Ordner auflösen (${ordner.length})`, fn: () => { setMultiAuswahl(null); ordner.forEach(o => loeseOrdnerAuf(o)); } },
+      ...gruppe(GRUPPE.ablage, [   // 235
+        { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl(ids); } },
+        { label: `📁 In Ordner… (${ids.length})`, fn: () => setInGruppe({ ids, name: "" }) },
+        ordnerOffen && { label: `↑ Aus dem Ordner (${ids.length})`, fn: () => verschiebeInOrdner(ids, hoch) },
+        eintraege.length ? { label: `🗑 Löschen (${eintraege.length})${ordner.length ? ` · ${ordner.length} Ordner auflösen` : ""}`, gefahr: true, fn: () => setAuswahlLoeschen({ art: "slot", ids: eintraege, ordner }) }
+          : { label: `📤 Ordner auflösen (${ordner.length})`, fn: () => { setMultiAuswahl(null); ordner.forEach(o => loeseOrdnerAuf(o)); } },
+      ]),
       { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "slot", id: ids[ids.length - 1] }) },
       { label: "✕ Auswahl beenden", fn: () => setMultiAuswahl(null) },
     ]; };
     const wahlNamen = ids => ids.map(id => { const o = (slots.ordner || []).find(y => y.id === id); return o ? `📁 ${o.name}` : slots.gespeichert.find(g => g.id === id)?.name; }).filter(Boolean).join(", ");
-    const einzelMenue = x => [
-      { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
-      { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: x.id, name: kopieName(x.name), kopie: true }) },
-      { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl([x.id]); } },
+    const einzelMenue = x => [   // 235: Lernen (Fällige) und Inhalt (Listen/Vokabeln ändern) haben je einen Punkt → direkt; Ablage gruppiert
+      ...gruppe(GRUPPE.lernen, faelligAktion(faelligVonSlots([x.id]))),
+      ...gruppe(GRUPPE.inhalt, [{ label: "📝 Listen/Vokabeln ändern", fn: () => { if (slotRef?.id !== x.id) onLaden('gespeichert', x.id); setListenAendern(true); setSlotSektionAufgeklappt(false); } }]),
+      ...gruppe(GRUPPE.ablage, [
+        { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
+        { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: x.id, name: kopieName(x.name), kopie: true }) },
+        { label: "⇄ Verschieben", fn: () => { setMultiAuswahl(null); setSlotSortModus(true); setSlotAuswahl([x.id]); } },
+        { label: "📁 In Ordner…", fn: () => setInGruppe({ ids: [x.id], name: "" }) },
+        ordnerOffen && { label: "↑ Aus dem Ordner", fn: () => verschiebeInOrdner([x.id], hoch) },
+        { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
+      ]),
       { label: "☑ Auswählen", behalten: true, fn: () => { setSlotSortModus(false); setMultiAuswahl([x.id]); } },
-      { label: "📁 In Ordner…", fn: () => setInGruppe({ ids: [x.id], name: "" }) },
-      ...(ordnerOffen ? [{ label: "↑ Aus dem Ordner", fn: () => verschiebeInOrdner([x.id], hoch) }] : []),
-      { label: "📝 Listen/Vokabeln ändern", fn: () => { if (slotRef?.id !== x.id) onLaden('gespeichert', x.id); setListenAendern(true); setSlotSektionAufgeklappt(false); } },
-      ...(() => { const f = faelligVonSlots([x.id]); return faelligAktion(f); })(),
-      { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: 'gespeichert', id: x.id }) },
     ];
     // Auswahl-Tafel: ein Quiz → ihr Menü, mehrere → Aktionen für die Auswahl
     const tafelInhalt = ids => {

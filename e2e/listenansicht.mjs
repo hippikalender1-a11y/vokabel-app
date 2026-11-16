@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen } from "./hilfen.mjs";
+import { listeOeffnen, menueShim } from "./hilfen.mjs";
 import { zuListen, listeBereich, neueEineSession } from "./hilfen.mjs";
 
 // Tabs Statistik | Quiz | Einstellungen; geöffnete Liste: Kopf = Namens-Knopf (antippen zurück, lang drücken Menü) mit Info-Zeile;
@@ -8,6 +8,7 @@ import { zuListen, listeBereich, neueEineSession } from "./hilfen.mjs";
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 844 });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -40,7 +41,7 @@ const kopf = await page.evaluate(() => ({ name: document.querySelector("[data-li
   stift: !!document.querySelector(".liste-detail-header .btn-ghost-filled"), pfeil: !!document.querySelector(".liste-detail-header .btn-icon") }));
 ok(kopf.name === "Unit 1" && /Englisch · 60 Vokabeln/.test(kopf.info) && !kopf.stift && !kopf.pfeil, `Kopf: Namens-Knopf mit Info-Zeile, ohne Pfeil und Stift (${JSON.stringify(kopf)})`);
 await langDruck("[data-liste-kopf-name]"); await sleep(300);
-const menue = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
+const menue = await page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
 ok(menue.includes("✎ Umbenennen") && menue.includes("⇲ Zusammenführen"), `lang drücken: Menü mit Umbenennen und Zusammenführen (${menue.length} Einträge)`);
 await page.keyboard.press("Escape"); await page.mouse.click(5, 400); await sleep(200);
 

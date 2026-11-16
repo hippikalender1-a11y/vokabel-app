@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen } from "./hilfen.mjs";
+import { listeOeffnen, menueShim } from "./hilfen.mjs";
 import { zuListen } from "./hilfen.mjs";
 
 // Gesten im Quiz- und Listen-Raster: Lang-Druck öffnet die Auswahl-Tafel (unten, bleibt offen; weitere antippen
@@ -11,6 +11,7 @@ const browser = await puppeteer.launch({
   headless: true, args: ["--no-first-run"],
 });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 844, hasTouch: true, isMobile: true });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -23,8 +24,8 @@ const cdp = await page.createCDPSession();
 const finger = (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
 // Auswahl-Tafel ohne schwarze Box (147): offen = Menü-Knöpfe da; der Name der Auswahl steht oben in der Info-Fläche
 const tafel = () => page.evaluate(() => document.querySelector("[data-auswahl-tafel]") ? (document.querySelector("[data-slot-info-name]")?.innerText.trim() || "") : null);
-const tafelZu = async () => { await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "✕ Auswahl beenden")?.click()); await sleep(300); };
-const menue = () => page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
+const tafelZu = async () => { await page.evaluate(() => [...__aktionen()].find(b => b.dataset.infoAktion === "✕ Auswahl beenden")?.click()); await sleep(300); };
+const menue = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
 const gewaehlt = () => page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId).join(","));
 const kontext = async sel => {
   await page.evaluate(sel => { const el = document.querySelector(sel); const r = el.getBoundingClientRect();
@@ -92,7 +93,7 @@ for (let i = 1; i <= 8; i++) { await finger("touchMove", a1.x, a1.y + (a3.y - a1
 await finger("touchEnd"); await sleep(400);
 ok(await gewaehlt() === "", `von freier Stelle ziehen: nichts ausgewählt (${await gewaehlt()})`);
 await kontext(kachel("s1"));
-await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "↔ Von–Bis")?.click()); await sleep(300);
+await page.evaluate(() => [...__aktionen()].find(b => b.dataset.infoAktion === "↔ Von–Bis")?.click()); await sleep(300);
 await kontext(kachel("s3"));
 ok(await gewaehlt() === "s1,s2,s3", `Von–Bis: Teil 1 bis 3 ausgewählt (${await gewaehlt()})`);
 ok(/^3 Quiz ausgewählt/.test(await tafel() || ""), `danach Auswahl-Tafel „3 ausgewählt“ (${await tafel()})`);
@@ -211,7 +212,7 @@ await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);   // Unité 
 const b1 = await mitte('[data-liste-id="l_a"]'), b3 = await mitte('[data-liste-id="l_c"]');
 // Listen: Von–Bis
 await kontext('[data-liste-id="l_a"]');
-await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "↔ Von–Bis")?.click()); await sleep(300);
+await page.evaluate(() => [...__aktionen()].find(b => b.dataset.infoAktion === "↔ Von–Bis")?.click()); await sleep(300);
 await kontext('[data-liste-id="l_c"]');
 const lw = await page.evaluate(() => [...document.querySelectorAll("[data-wahl-nr]")].map(e => e.closest("[data-liste-id]").dataset.listeId).join(","));
 ok(lw === "l_a,l_b,l_c", `Listen: Von–Bis Unité 1 bis 3 (${lw})`);

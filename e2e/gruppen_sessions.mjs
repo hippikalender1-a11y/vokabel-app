@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueSessionMenue } from "./hilfen.mjs";
+import { neueSessionMenue, menueShim } from "./hilfen.mjs";
 
 // Quiz-Gruppen (Ordner): „📁 In Ordner…“ (neu / vorhanden), Gruppen-Kachel öffnet die Gruppe („← Alle Quiz“),
 // „↑ Aus dem Ordner“, Gruppe umbenennen / auflösen, Multiquiz der Gruppe, Aufteilen legt eine Gruppe an
@@ -9,6 +9,7 @@ const browser = await puppeteer.launch({
   headless: true, args: ["--no-first-run"],
 });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 900 });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -21,8 +22,8 @@ const langDruck = async sel => {
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, sel);
   await sleep(250);
 };
-const menue = () => page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
-const aktion = async p => { await page.evaluate(p => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion.startsWith(p)).click(), p); await sleep(300); };
+const menue = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
+const aktion = async p => { await page.evaluate(p => [...__aktionen()].find(b => b.dataset.infoAktion.startsWith(p)).click(), p); await sleep(300); };
 const kachel = name => `[data-slot-id="${name}"]`;
 
 await page.goto(URL);

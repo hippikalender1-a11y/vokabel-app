@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen } from "./hilfen.mjs";
+import { listeOeffnen, menueShim } from "./hilfen.mjs";
 import { zuListen, neueEineSession, listenZu, quizEinstellungen } from "./hilfen.mjs";
 
 // Runde 3: Speichern-Fenster (Knöpfe oben, Eingabetaste), Vokabelbereich einer gespeicherten Quiz ändern (rot,
@@ -11,6 +11,7 @@ const browser = await puppeteer.launch({
   headless: true, args: ["--no-first-run"],
 });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 844, hasTouch: true, isMobile: true });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -18,11 +19,11 @@ const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FA
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const lang = async sel => { const da = await page.evaluate(s => { const el = document.querySelector(s); if (!el) return false; const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); return true; }, sel); await sleep(300); return da; };
-const aktionen = () => page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
-const aktion = async label => { const da = await page.evaluate(l => { const b = document.querySelector(`[data-info-aktion="${l}"]`); b?.click(); return !!b; }, label); await sleep(350); return da; };
+const aktionen = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
+const aktion = async label => { const da = await page.evaluate(l => { const b = __aktion(`${l}`); b?.click(); return !!b; }, label); await sleep(350); return da; };
 const klickText = async (sel, text) => { const da = await page.evaluate((sel, text) => { const el = [...document.querySelectorAll(sel)].find(e => e.textContent.trim() === text); el?.click(); return !!el; }, sel, text); await sleep(400); return da; };
 const slots = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots") || "{}"));
-const schliesseTafel = async () => { const b = await page.$("[data-info-aktion=\"✕ Auswahl beenden\"]"); if (b) await page.evaluate(() => document.querySelector("[data-info-aktion=\"✕ Auswahl beenden\"]").click()); else await page.mouse.click(5, 120); await sleep(250); };   // 234: Ordner-Menü kommt mit der Auswahl
+const schliesseTafel = async () => { const b = await page.evaluate(() => !!__aktion("✕ Auswahl beenden")); if (b) await page.evaluate(() => __aktion("✕ Auswahl beenden").click()); else await page.mouse.click(5, 120); await sleep(250); };   // 234: Ordner-Menü kommt mit der Auswahl
 
 await page.goto(URL);
 await page.evaluate(() => {

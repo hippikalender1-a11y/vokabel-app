@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { zuListen } from "./hilfen.mjs";
+import { zuListen, menueShim } from "./hilfen.mjs";
 
 // 190: Quiz schließen → Quiz-Tab mit offener Quiz-Auswahl; 191: „Alle Quiz“ gelb;
 // 192: Gesten – antippen übernimmt sofort, kurz halten wählt (Blätter-Modus), lang halten startet die Mehrfach-Auswahl,
@@ -12,6 +12,7 @@ import { zuListen } from "./hilfen.mjs";
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 844, hasTouch: true, isMobile: true });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -26,8 +27,8 @@ const kontext = async sel => {
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, sel);
   await sleep(350);
 };
-const menue = () => page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
-const aktion = async label => { await page.evaluate(l => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === l)?.click(), label); await sleep(400); };
+const menue = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
+const aktion = async label => { await page.evaluate(l => [...__aktionen()].find(b => b.dataset.infoAktion === l)?.click(), label); await sleep(400); };
 const ordnerAnlegen = async name => {
   await page.evaluate(n => { const f = document.querySelector("[data-in-gruppe-dialog] [data-ordner-name-feld]");
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(f, n); f.dispatchEvent(new Event("input", { bubbles: true })); }, name);

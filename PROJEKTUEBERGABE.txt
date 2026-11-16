@@ -3178,3 +3178,32 @@ Entscheidungen:
 - 232-Einfärben beim Anheben entfällt (CSS-Regel entfernt) – eingefärbt wird beim kurzen Halten; Anheben bleibt deutlich.
 - Tests: neuer e2e/punkte234.mjs; angepasst: langdruck, listenraster, multiquiz, auswahl, gruppen_gesten, runde3, sessionwahl,
   punkte168/190/202/225/230.
+
+── 235 Menüs gruppieren (gesammelt, 16.11.2026) ──
+Anlass: Menüs der Auswahl-Tafel zu lang (bis 19 Punkte), Knopfkette mit beliebigen Längen. Zwei Tipps bis zum Befehl sind ok.
+Abgestimmt für „eine Liste ausgewählt“:
+  ungruppiert (direkt): 📂 Öffnen · ↔ Von–Bis · ✕ Auswahl beenden
+  Lernen:  ( ) → Info · 🔁 Fällige · 🚫 Herausgenommene · ↺ Lernstand zurücksetzen
+  Ablage:  ✎ Umbenennen · ⧉ Duplizieren · ⇄ Verschieben · 📁 In Ordner… · ↑ Aus dem Ordner · 🗑 Löschen
+  Inhalt:  ＋ Importieren · 📤 Exportieren · ⇲ Zusammenführen · ✨ Beispielsätze · ≈ Synonyme · ▦ In mehrere Quiz aufteilen
+  Gruppennamen vorerst Lernen / Ablage / Inhalt. Löschen bewusst in Ablage (betrifft die ganze Liste, nicht ihren Inhalt).
+Übertragung (vorgeschlagen, ohne Widerspruch – Gruppen mit nur einem Punkt werden zum direkten Knopf):
+  Ein Quiz:   direkt Von–Bis · 🔁 Fällige · 📝 Listen/Vokabeln ändern · Auswahl beenden
+              Ablage: Umbenennen · Duplizieren · Verschieben · In Ordner · Aus dem Ordner · Löschen
+  Ein Ordner: direkt 📂 Öffnen · 🧩 Multiquiz des Ordners · Auswahl beenden
+              Ablage: Umbenennen · Verschieben · In Ordner · Aus dem Ordner · Neuer Ordner darin · Auflösen/Löschen
+  Mehrere:    direkt 🧩 Multiquiz starten (Quiz) bzw. 📤 Exportieren (Listen) · Fällige · Von–Bis · Auswahl beenden
+              Ablage: Verschieben · In Ordner · Aus dem Ordner · Löschen
+Untermenü: Variante a) – Antippen von „Ablage ›“ ERSETZT das Menü durch die Unterpunkte, oben „‹ zurück“;
+  das Menü wird nie größer als die Hauptebene.
+Offen: Kopf-Menüs (Quiz-Kopf, Listen-Kopf) – ggf. später.
+
+=== 235 umgesetzt (16.11.2026) ===
+- Helfer gruppe(name, unter) + GRUPPE {lernen „📊 Lernen“, ablage „🗂 Ablage“, inhalt „📚 Inhalt“} in src/infoEreignisse.js:
+  leere Gruppe entfällt, ein Punkt → direkter Knopf, sonst { label: "Name ›", gruppe: [...] }.
+- InfoTafel: Gruppenknopf öffnet die Gruppe (Zustand gruppeOffen {text,label}, gilt nur für dieselbe Tafel), Menü zeigt
+  „‹ zurück“ + Unterpunkte; 🎨 Farbe ändern nur auf der Hauptebene. data-info-gruppe (Unterpunkte), data-info-gruppe-offen, data-info-zurueck.
+- Umgestellt: listenMenue (auch Kopf-Menü der geladenen Liste), listenWahlMenue, lordnerMenue, ordnerMenue, einzelMenue, wahlMenue (Quiz).
+- Abweichung von der Absprache: „( ) → Info“ liegt unter Inhalt, nicht unter Lernen – es verschiebt Klammer-Text in die
+  Info-Spalte (verändert den Inhalt), ist keine Info-Anzeige. Mit dem Nutzer klären.
+- Test: e2e/punkte235.mjs.
