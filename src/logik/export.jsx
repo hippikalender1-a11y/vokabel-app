@@ -1,3 +1,4 @@
+import { mitKuerzel, sprachKuerzelFuer } from "../sprache.js";
 import { SK, lsDel, lsGet } from "../speicher.js";
 import { generiereExportText } from "../importexport.js";
 import { schliesseInfo } from "../infoEreignisse.js";
@@ -26,7 +27,7 @@ export async function kopiereListen(app, ids) {
 // Export-Dateien: Endung immer .txt (nimmt jedes Ziel an), Inhalt steht im Namen: "Name - JSON.txt" / "Name - TXT.txt"
 export function exportStandardName(app, ids, art) {
   const { listenIndex } = app;
-    const basis = ids.length === 1 ? (listenIndex.find(l => l.id === ids[0])?.name || 'Vokabeln') : `${ids.length} Listen`;
+    const basis = ids.length === 1 ? (listenIndex.find(l => l.id === ids[0])?.name || 'Vokabeln') : mitKuerzel(sprachKuerzelFuer(ids), `${ids.length} Listen`, " ");   // 264
     return `${basis} - ${art}`;
   }
 

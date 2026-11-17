@@ -64,12 +64,12 @@ export function FarbRad({ titel, start, verlauf, schema = [], beiLive, beiAnwend
     setze({ ...hsv, h: (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360, s: Math.min(1, Math.hypot(dx, dy) / r) });
   };
   const winkel = hsv.h * Math.PI / 180, mx = groesse / 2 + Math.cos(winkel) * hsv.s * groesse / 2, my = groesse / 2 + Math.sin(winkel) * hsv.s * groesse / 2;
-  const regler = (name, attr, wert, aendern, verlaufCss) => (
-    <div style={{marginBottom:6}}>
-      <div style={{fontSize:"0.68rem", color:"var(--text2)", marginBottom:2}}>{name}</div>
-      <input type="range" min={0} max={100} value={Math.round(wert * 100)} {...{ [attr]: true }}
-        onChange={e => aendern(e.target.value / 100)}
-        style={{width:"100%", height:22, accentColor:hex, background:verlaufCss, borderRadius:11, WebkitAppearance:"none", appearance:"none", display:"block"}}/>
+  const regler = (name, attr, wert, aendern, verlaufCss, max = 100) => (
+    <div style={{marginBottom:4}}>
+      <div style={{fontSize:"0.68rem", color:"var(--text2)", marginBottom:1}}>{name}</div>
+      <input type="range" min={0} max={max} value={Math.round(wert * max)} {...{ [attr]: true }}
+        onChange={e => aendern(e.target.value / max)}
+        style={{width:"100%", height:20, accentColor:hex, background:verlaufCss, borderRadius:10, WebkitAppearance:"none", appearance:"none", display:"block"}}/>
     </div>
   );
   return (
@@ -89,6 +89,8 @@ export function FarbRad({ titel, start, verlauf, schema = [], beiLive, beiAnwend
             <span style={{position:"absolute", left:mx - 10, top:my - 10, width:20, height:20, borderRadius:"50%", border:"3px solid #fff", boxShadow:"0 0 0 1.5px rgba(0,0,0,0.6)", background:hex, pointerEvents:"none"}}/>
           </div>
           <div style={{flex:1, minWidth:0}}>
+            {regler("Farbton", "data-farbrad-ton", hsv.h / 360, v => setze({ ...hsv, h: v * 360 }),   // 259
+              `linear-gradient(to right, ${[0, 60, 120, 180, 240, 300, 360].map(h => hsvZuHex(h, Math.max(0.35, hsv.s), Math.max(0.35, hsv.v))).join(", ")})`, 360)}
             {regler("Helligkeit", "data-farbrad-hell", hsv.v, v => setze({ ...hsv, v }), `linear-gradient(to right, #000, ${hsvZuHex(hsv.h, hsv.s, 1)})`)}
             {regler("Sättigung", "data-farbrad-saett", hsv.s, v => setze({ ...hsv, s: v }), `linear-gradient(to right, ${hsvZuHex(hsv.h, 0, hsv.v)}, ${hsvZuHex(hsv.h, 1, hsv.v)})`)}
             <input className="inp" data-farbrad-hex value={hexText} style={{width:"100%", padding:"4px 8px", fontFamily:"monospace", fontSize:"0.85rem", marginBottom:6}}

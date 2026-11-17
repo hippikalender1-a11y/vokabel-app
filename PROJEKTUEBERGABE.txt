@@ -3405,3 +3405,46 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
 - 258: Score-Symbole (mit Puls, 252) in der Antwort-Box bei allen Antwortarten, nicht nur Karte; Diktat: Diktat-Score im
   Kopf der Lautsprecher-Box; Zuordnung/Memory: Symbole je Vokabel in den Ergebnis-Zeilen (data-zuo-score).
 - Test: e2e/punkte257.mjs; angepasst gemischt/richtung/antwortarten (Artikel nur bei Wörtern mit Artikel).
+
+── gesammelt (16.11.2026, nach 258) ──
+259 Farben: im Farbrad (komponenten.jsx FarbRad) gibt es Kreis + Regler „Helligkeit“ und „Sättigung“ – gewünscht zusätzlich
+    ein Regler „Farbton“ (Hue, 0–360°, Regenbogen-Verlauf bei aktueller Sättigung/Helligkeit), z. B. über den beiden
+    anderen; bewegt den Punkt im Kreis mit (hsv.h), Vorschau live wie bei den anderen Reglern.
+260 „Satz finden“ bei mehrteiligen Lösungen (Screenshot 21:38: spannend – spannender – am spannendsten → exciting – more
+    exciting – the most exciting; Satz „That was the most exciting day of my life.“): „most“ angetippt wurde nicht akzeptiert.
+    Heute: ein Antippen entscheidet; Ziel ist nur das im Satz mit *…* markierte Stück (quiz.jsx satzFuer, mehrere markierte
+    Wörter werden zu EINEM Knopf zusammengezogen). Gewünscht: bei Lösungen aus mehreren Teilen müssen alle Teile angetippt
+    werden. Vorschlag: Zielwörter = markiertes Stück, erweitert um die Nachbarwörter, die zusammen mit ihm eine Form der
+    Lösung bilden (hier „the most exciting“); jedes Wort einzeln antippbar, angetippte Ziele werden markiert, richtig erst,
+    wenn alle Ziel-Wörter angetippt sind (Reihenfolge egal); ein Nicht-Ziel-Wort = falsch.
+    Vom Nutzer bestätigt (16.11.2026).
+261 Menü der Ebene (lang drücken auf freien Platz, Listen und Quiz; Screenshot 22:38): „▥ Spalten (n)“, „⇅ Anordnen…“ und
+    „▤ Lückenlos anzeigen“ in einen Eintrag „Ansicht…“ gruppieren (App.jsx slotEbenenMenue/listenEbenenMenue, ~Z. 2400/2411);
+    „Ansicht…“ öffnet ein Untermenü mit diesen drei Punkten (Lückenlos bleibt Schalter mit wechselnder Beschriftung).
+262 Lang drücken auf eine Liste (Listen-Raster, Screenshot 22:42 – Menü mit zurück, Importieren, Exportieren, Beispielsätze,
+    Synonyme, ()→Info, In mehrere Quiz aufteilen): neuer Eintrag, um ein Quiz mit einer Vokabel-Auswahl dieser Liste zu starten.
+    Vorschlag: „☑ Quiz mit Auswahl…“ – öffnet den Quiz-Tab mit nur dieser Liste, Bereich-Modus („bereich“, quizCheckboxAuswahl)
+    aktiv und die Vokabel-Liste aufgeklappt zum Ankreuzen bzw. Von–Bis; danach Einstellungen wie gewohnt und starten
+    (ähnlicher Ablauf wie „In mehrere Quiz aufteilen“).
+263 Form unterscheidet Listen und Quiz: Listen-Kacheln (Listen-Raster, auch in Quiz-/Statistik-Tab) und ihr Auswahl-/Markier-
+    rahmen (grüner Rahmen, Nummern-Rahmen) 100 % eckig (border-radius 0); gespeicherte Quiz/Multiquiz/Verlauf-Kacheln
+    und deren Rahmen immer abgerundet. Ebenso im Kopf: das Element für das Geladene (Kopf-Leiste „🇬🇧 Englisch 6 · 22 % gelernt“,
+    ggf. auch der Lade-Knopf „✓ 📋 … laden“) eckig, wenn eine Liste/ein Listen-Paket geladen ist, abgerundet bei einem Quiz.
+264 Sprach-Kürzel in automatischen Namen ohne Sprachbezug: Verlauf-Einträge („Engl · 17.11.26, 22:40“), Kopf beim
+    Listen-Paket („📋 Engl · 2 Listen“), Export mehrerer Listen („Engl 3 Listen“). Vom Nutzer bestätigt (17.11.2026).
+
+── 259–264 umgesetzt (17.11.2026) ──
+- 259: FarbRad-Regler „Farbton“ (data-farbrad-ton, 0–360, Regenbogen-Verlauf) über Helligkeit/Sättigung; Regler etwas
+  kompakter (Höhe 20), damit die Leiste niedrig bleibt (Test farbmodus: Höhe < 370).
+- 260: quiz.jsx satzFindenWoerter(satz, antwort): Wörter einzeln; Ziel = markiertes Stück + Nachbarwörter, die mit ihm eine
+  Form der Lösung bilden (Lösung an „ – “ ; , / | getrennt, Formen ab 2 Wörtern, längste passende). AbfrageAnsicht: Ziele
+  antippen (puzzleWahl, Klasse .satz-wort.gewaehlt), alle → richtig; Nicht-Ziel → falsch. Hinweis: auch Artikel zählen,
+  z. B. „la maison“ → „la“ und „maison“ antippen.
+- 261: Menü der Ebene: Spalten, Anordnen, Lückenlos in der Gruppe „🖼 Ansicht ›“ (GRUPPE.ansicht, infoEreignisse.js).
+- 262: Listen-Menü › Lernen: „🎯 Quiz mit Auswahl…“ (lernenSessions.jsx starteQuizMitAuswahl: wie starteAufteilen ohne
+  Kasten, Bereich an, Vokabelliste offen).
+- 263: --liste-ecke 0px (Listen-Kacheln, Auswahlrahmen, Auswahl-Nummer eckig); Kopf-Knopf eckig auch bei Listen-Paket
+  (kommtAusListen) und Vorschau eines Paket-Verlaufs; Quiz bleibt abgerundet.
+- 264: sprache.js sprachKuerzelFuer/mitKuerzel: Verlauf-Namen „Engl · 17.11.26, 22:40“ (auch Multiquiz), Kopf
+  „📋 Engl · 2 Listen“, Export mehrerer Listen „Engl + Frz 3 Listen“. Alte Verlauf-Einträge behalten ihren Namen.
+- Test: e2e/punkte260.mjs (260–264), farbmodus (259); angepasst export, listenraster, punkte235/244/251, saetze.

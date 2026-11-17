@@ -123,6 +123,25 @@ export function satzFuer(vok, seed) {
   const form = (x.s.match(/\*([^*]+)\*/) || [])[1] || "";
   return { satz: x.s.replace(/\*/g, ""), woerter, form, ueb: x.u };
 }
+// 260: „Satz finden“ – jedes Wort einzeln; Ziel = markiertes Stück, erweitert um die Nachbarwörter, die mit ihm zusammen eine
+// Form der Lösung bilden (Lösung „exciting – more exciting – the most exciting“, Satz „… the *most exciting* day …“ → the, most, exciting)
+export function satzFindenWoerter(satz, antwort) {
+  const norm = w => w.toLowerCase().replace(/[^\p{L}\p{N}'’]/gu, "");
+  const woerter = satz.woerter.flatMap(w => w.text.split(" ").filter(Boolean).map(t => ({ text: t, ziel: w.ziel })));
+  const n = woerter.map(w => norm(w.text));
+  const ziele = woerter.map((w, i) => w.ziel ? i : -1).filter(i => i >= 0);
+  if (ziele.length) {
+    const formen = ohneHinweis(antwort || "").split(/\s[–—-]\s|[;,/|]/).map(f => f.trim().split(/\s+/).map(norm).filter(Boolean)).filter(f => f.length > 1);
+    let best = null;
+    for (const f of formen) for (let a = 0; a + f.length <= n.length; a++) {
+      const b = a + f.length - 1;
+      if (b < ziele[0] || a > ziele[ziele.length - 1]) continue;   // muss das markierte Stück berühren
+      if (f.every((t, k) => n[a + k] === t) && (!best || f.length > best[1] - best[0] + 1)) best = [a, b];
+    }
+    if (best) for (let i = best[0]; i <= best[1]; i++) woerter[i].ziel = true;
+  }
+  return woerter;
+}
 // Runden-Arten: eine Ziehung startet eine Runde mit mehreren Vokabeln
 export const RUNDEN_ARTEN = ["zuordnung", "memory"];
 export const istRunde = m => RUNDEN_ARTEN.includes(m);

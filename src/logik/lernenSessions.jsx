@@ -207,6 +207,16 @@ export function starteAufteilen(app, listeId) {
     window.scrollTo(0, 0);
   }
 
+// 262: Quiz mit einer Vokabel-Auswahl dieser Liste – Quiz-Tab mit nur dieser Liste, „Bereich“ an, Vokabelliste offen zum Ankreuzen / Von–Bis
+export function starteQuizMitAuswahl(app, listeId) {
+  const { schliesseQuizBereiche, setAufteilen, setQuizBereichTyp, setQuizListeAufgeklappt, starteAufteilen } = app;
+    starteAufteilen(listeId);
+    setAufteilen(null);
+    setQuizBereichTyp("bereich");
+    schliesseQuizBereiche("einzel");
+    setQuizListeAufgeklappt(true);
+  }
+
 export function legeAufteilenAn(app) {
   const { aktuelleKonfiguration, aufteilen, aufteilenStand, getSlotsData, neuImOrdnerRef, rasterEinordnen, setAufteilen, setSlotOrdner, setSlotSektionAufgeklappt, setSlotsData } = app;
     const stand = aufteilenStand();

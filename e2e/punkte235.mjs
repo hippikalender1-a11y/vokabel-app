@@ -102,7 +102,7 @@ await halte('[data-liste-id="l_a"]', 450);
 m = await menue();
 ok(m.join("|") === "📂 Liste öffnen|📊 Lernen ›|🗂 Ablage ›|📚 Inhalt ›|↔ Von–Bis", `Liste: Hauptebene (${m.join(" | ")})`);
 await aktion("📊 Lernen ›");
-ok((await menue()).join("|") === "‹ zurück|🔁 Keine fälligen Vokabeln|↺ Lernstand zurücksetzen", `Liste: Lernen (${(await menue()).join(" | ")})`);
+ok((await menue()).join("|") === "‹ zurück|🎯 Quiz mit Auswahl…|🔁 Keine fälligen Vokabeln|↺ Lernstand zurücksetzen", `Liste: Lernen (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück"); await aktion("🗂 Ablage ›");
 ok((await menue()).join("|") === "‹ zurück|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Liste: Ablage (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück"); await aktion("📚 Inhalt ›");

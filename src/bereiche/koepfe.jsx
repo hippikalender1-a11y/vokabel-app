@@ -1,6 +1,6 @@
 import { FORTSCHRITT_BALKEN, GRUPPE_BALKEN, clampScore, heuteAbgefragt, heuteAnteil, istFaellig, lernProzent, nrText, ohneHinweis, scoreSymbole, slotKonfigArt, slotSFAlle, statistikSicht } from "../quiz.jsx";
 import { SK, TYPEN, formatDatum, lsGet, lsLesen } from "../speicher.js";
-import { listeSprache, sprachInfo } from "../sprache.js";
+import { listeSprache, mitKuerzel, sprachInfo, sprachKuerzelFuer } from "../sprache.js";
 import { listenInhalt } from "../saetze.js";
 
 // Phase 2 (Aufteilung): Zeichen-Funktionen aus App.jsx. app = die Namen der Komponente, die sie brauchen.
@@ -122,7 +122,7 @@ export function renderListeInfo(app, l, mehrere = null) {
   }
 
 export function renderSlotKopf(app, statistik) {
-  const { getSlotsData, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenAendern, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizErstellen, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setListenAendern, setListenAuswahlAufgeklappt, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, starteQuizErstellen, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
+  const { getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenAendern, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizErstellen, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setListenAendern, setListenAuswahlAufgeklappt, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, starteQuizErstellen, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
     const zu = !slotSektionAufgeklappt;
     const slot = statistik ? statistikAktiverSlot : aktiverSlot;
     const gespeichert = slot?.typ === "gespeichert";
@@ -131,7 +131,7 @@ export function renderSlotKopf(app, statistik) {
     const geaendert = !statistik && vokabelgruppeGeaendert;
     const gruen = (gespeichert || alsListe) && !geaendert;
     const multi = multiVonSlot(slot);
-    const name = gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : alsListe ? (listeE?.name || "Liste") : multi ? "Multiquiz" : statistik && statistikSlotGeleert ? "Leer" : statistik ? "Neue Auswahl" : (einListenName() || (quizTabListen.length >= 2 ? `📋 ${quizTabListen.length} Listen` : "Neues Quiz"));   // 216/217; 249
+    const name = gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : alsListe ? (listeE?.name || "Liste") : multi ? "Multiquiz" : statistik && statistikSlotGeleert ? "Leer" : statistik ? "Neue Auswahl" : (einListenName() || (quizTabListen.length >= 2 ? `📋 ${mitKuerzel(sprachKuerzelFuer(quizTabListen), `${quizTabListen.length} Listen`)}` : "Neues Quiz"));   // 216/217; 249
     const ungespeichert = !statistik && !gespeichert && !multi && !alsListe && !quizErstellen;
     // Vokabeln der Auswahl (für die Kreise) und Info-Zeile
     let voks = [], listenIds = [];
@@ -199,7 +199,7 @@ export function renderSlotKopf(app, statistik) {
       <div ref={slotSektionRef} data-slot-kopf={zu ? (gruen ? "gruen" : "zu") : "offen"} className={`slot-kopf${gruen ? " gruen" : ""}`}
         style={{top:headerH, ...(statistik ? {} : {marginLeft:"-16px", marginRight:"-16px"}), ...(!statistik && quizVokMax ? {display:"none"} : {})}}>
         <div style={{display:"flex", alignItems:"center", gap:8}}>
-          <button onClick={kopfKlick} className={`toggle-opt aktiv slot-kopf-name${wahl || lwahl || aendern || vorschauE || !zu || (erstellen && zu) ? " bestaetigen-knopf" : ""}${lwahl ? " eckig" : ""}${(alsListe && !wahl && !vorschauE) || vorschauE?.istListe ? " eckig" : ""}${blitzt("slotkopf")}${lwahl ? blitzt("wahl") : ""}`} data-slot-kopf-name data-geaendert={geaendert ? "" : undefined}
+          <button onClick={kopfKlick} className={`toggle-opt aktiv slot-kopf-name${wahl || lwahl || aendern || vorschauE || !zu || (erstellen && zu) ? " bestaetigen-knopf" : ""}${lwahl ? " eckig" : ""}${((alsListe || (!statistik && kommtAusListen && !geaendert)) && !wahl && !vorschauE) || vorschauE?.istListe || vorschauE?.paket ? " eckig" : ""}${blitzt("slotkopf")}${lwahl ? blitzt("wahl") : ""}`} data-slot-kopf-name data-geaendert={geaendert ? "" : undefined}
             data-kopf-art={alsListe ? "liste" : erstellen ? "erstellen" : gespeichert ? "quiz" : undefined}
             {...(wahl || lwahl ? { "data-wahl-fertig": true, "data-wahl-hinweis": true, "data-auswahl-durchlass": true } : {})} {...(aendern ? { "data-aendern-bestaetigen": true } : {})}
             {...(vorschauE ? { "data-slot-laden": `${slotVorschau.typ}:${slotVorschau.id}` }

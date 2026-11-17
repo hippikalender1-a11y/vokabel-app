@@ -27,8 +27,9 @@ export const CSS_BASIS = `
   .topbar-back:active{opacity:.8;}
   .tabs{display:flex;background:var(--app-kopf);border-bottom:1px solid var(--rahmen);}
   .statistik-listen-header{background:var(--kopfzeile);color:var(--kopf-schrift);border-bottom:1px solid var(--rahmen);padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;z-index:8;}
-  :root{--liste-ecke:3px;}   /* 221: alles, was Listen betrifft, eckig; Quiz abgerundet */
+  :root{--liste-ecke:0px;}   /* 221/263: alles, was Listen betrifft, ganz eckig (auch Auswahlrahmen); Quiz abgerundet */
   .eckig{border-radius:var(--liste-ecke) !important;}
+  .listen-raster .karte-zeile > .auswahl-nr, .eckig > .auswahl-nr{border-radius:var(--liste-ecke);}   /* 263: Nummer der Listen-Auswahl eckig */
   .liste-detail-header{background:var(--kopfzeile);color:var(--kopf-schrift);border-bottom:1px solid var(--rahmen);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;z-index:9;}
   .tab{flex:1;padding:12px 4px;font-size:0.82rem;font-weight:600;color:var(--app-kopf-schrift-leise);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;}
   .tab.aktiv{color:var(--tab-aktiv);border-bottom-color:var(--tab-aktiv);}
@@ -409,6 +410,7 @@ export const CSS_BASIS = `
   .antwort-status.falsch{background:var(--falsch);color:#fff;}
   .antwort-status.aufgedeckt{background:var(--flaeche);font-size:0.85rem;}
   .satz-band{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;border-radius:12px;background:var(--flaeche);padding:10px;margin:4px 0 8px;max-width:100%;box-sizing:border-box;}
+  .satz-wort.gewaehlt{background:var(--haupt);border-color:var(--haupt);color:var(--auf-haupt);cursor:default;}
   .satz-wort{min-width:2.6em;max-width:100%;overflow-wrap:anywhere;border:1.5px solid var(--rahmen);background:var(--karte);border-radius:10px;padding:8px 10px;font-family:inherit;font-size:1.05rem;font-weight:700;color:var(--text-stark);cursor:pointer;}
   .satz-text{font-size:1.1rem;line-height:1.6;text-align:center;color:var(--abfrage-schrift, var(--text-stark));}
   .satz-gebaut{min-height:2.2em;border-bottom:2px solid var(--rahmen);margin-bottom:10px;}

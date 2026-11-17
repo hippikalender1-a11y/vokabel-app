@@ -80,7 +80,7 @@ const lage = await page.evaluate(() => { const f = document.querySelector("[data
   const b = [...document.querySelectorAll("button")].find(x => x.matches("[data-start-knopf]")).getBoundingClientRect();
   return { seite: document.querySelector("[data-farbrad]").dataset.farbradSeite, frei: f.bottom <= b.top || f.top >= b.bottom, hoehe: Math.round(f.height), feld: !!document.querySelector("[data-farbfeld]") }; });
 console.log("     Farbwähler:", JSON.stringify(lage));
-ok(lage.seite === "oben" && lage.frei && lage.hoehe < 330, "Farbwähler als Leiste auf der freien Seite – der Knopf bleibt sichtbar");
+ok(lage.seite === "oben" && lage.frei && lage.hoehe < 370, "Farbwähler als Leiste auf der freien Seite – der Knopf bleibt sichtbar");
 ok(!lage.feld, "Farbfeld „Farben hier“ ausgeblendet, solange der Farbwähler offen ist");
 const kr = await page.evaluate(() => { const r = document.querySelector("[data-farbrad-kreis]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, r: r.width / 2 }; });
 await page.mouse.move(kr.x + kr.r * 0.9, kr.y); await page.mouse.down(); await page.mouse.move(kr.x + kr.r * 0.9, kr.y + 2); await sleep(150);
@@ -91,6 +91,14 @@ await page.mouse.up();
 console.log("     Kreis Rand/Mitte:", amRand, kreisMitte);
 const satt = h => { const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); return (Math.max(r, g, b) - Math.min(r, g, b)) / Math.max(1, r, g, b); };
 ok(amRand !== startVorher && satt(amRand) > 0.8 && satt(kreisMitte) < 0.1, "Ziehen im Kreis: App färbt sich live um, außen kräftig, Mitte kaum gesättigt");
+// 259: Regler „Farbton“ – dreht den Farbton (hier auf Blau 240°), live
+const regler = (sel, v) => page.evaluate((sel, v) => { const el = document.querySelector(sel);
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, String(v)); el.dispatchEvent(new Event("input", { bubbles: true })); }, sel, v);
+await regler("[data-farbrad-saett]", 100); await regler("[data-farbrad-hell]", 100); await sleep(100);
+await regler("[data-farbrad-ton]", 240); await sleep(150);
+const blau = await variable("bestaetigen");
+const [rB, gB, bB] = [1, 3, 5].map(i => parseInt(blau.slice(i, i + 2), 16));
+ok(await page.evaluate(() => document.querySelector("[data-farbrad-ton]")?.max) === "360" && bB > 200 && rB < 30 && gB < 30, `259: Regler „Farbton“ (0–360°) – 240° färbt live blau (${blau})`);
 await page.click("[data-farbrad-abbrechen]"); await sleep(300);
 ok(await variable("bestaetigen") === startVorher && !(await page.$("[data-farbrad]")), "Abbrechen: alte Farbe wieder da");
 ok(await page.$("[data-farbfeld]"), "danach ist das Farbfeld wieder da");

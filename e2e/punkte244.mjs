@@ -84,11 +84,11 @@ await zuListen(page);
 await halte('[data-liste-id="l_a"]', 450); await halte('[data-liste-id="l_b"]', 450);
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]")?.click()); await sleep(700);
 await einstellungenAuf();
-ok(/📋 2 Listen/.test(await kopfText()), `249: Kopf „📋 2 Listen“ (${await kopfText()})`);
+ok(/📋 Engl · 2 Listen/.test(await kopfText()), `249: Kopf „📋 2 Listen“ (${await kopfText()})`);
 await startePausiere();
 await einstellungenAuf();
 t = await seite();
-ok(/📋 2 Listen/.test(await kopfText()) && !/Listen-Auswahl/.test(t), `244: Listen-Paket nach dem Start weiter ohne Listen-Auswahl (${await kopfText()})`);
+ok(/📋 Engl · 2 Listen/.test(await kopfText()) && !/Listen-Auswahl/.test(t), `244: Listen-Paket nach dem Start weiter ohne Listen-Auswahl (${await kopfText()})`);
 await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(600);
 ok(await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]")?.dataset.auswahlUmschalter) === "listen", "250: Kopf antippen öffnet die Listen-Auswahl");
 ok(/2 Listen ausgewählt/.test(await seite()) && await page.evaluate(() => [...document.querySelectorAll("[data-wahl-nr]")].map(e => e.closest("[data-liste-id]")?.dataset.listeId + e.dataset.wahlNr).sort().join()) === "l_a1,l_b2",

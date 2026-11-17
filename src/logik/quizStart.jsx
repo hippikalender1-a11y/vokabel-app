@@ -58,13 +58,14 @@ export function oeffneListeDetail(app, id) {
   }
 
 export function listenMenue(app, l, imKopf = false) {
-  const { faelligAktion, faelligVonListen, listenKopieName, listenOrdner, oeffneExport, oeffneListeDetail, oeffneSatzFenster, oeffneSynFenster, resetImport, setAnsicht, setImportBestehendId, setImportZielTyp, setInGruppe, setKlammerZiel, setListeMenueId, setListeNurAus, setListenAuswahl, setListenBereich, setListenSortModus, setListenWahl, setMergeQuelleId, setModal, setModalFehler, setModalInput, setTab, setZuruecksetzenArten, sichtbareListen, sprachFilter, starteAufteilen, verschiebeListenInOrdner } = app;
+  const { faelligAktion, faelligVonListen, listenKopieName, listenOrdner, oeffneExport, oeffneListeDetail, oeffneSatzFenster, oeffneSynFenster, resetImport, setAnsicht, setImportBestehendId, setImportZielTyp, setInGruppe, setKlammerZiel, setListeMenueId, setListeNurAus, setListenAuswahl, setListenBereich, setListenSortModus, setListenWahl, setMergeQuelleId, setModal, setModalFehler, setModalInput, setTab, setZuruecksetzenArten, sichtbareListen, sprachFilter, starteAufteilen, starteQuizMitAuswahl, verschiebeListenInOrdner } = app;
     const gefiltert = sprachFilter !== "alle";
     const herausN = (lsLesen(SK.liste(l.id))?.vokabeln || []).filter(v => v.herausgenommen).length;   // 176
     // 235: gruppiert – direkt Öffnen, dann Lernen / Ablage / Inhalt
     return [
       ...(imKopf ? [] : [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(l.id) }]),   // 225: antippen fragt ab, öffnen über das Menü
       ...gruppe(GRUPPE.lernen, [
+        { label: "🎯 Quiz mit Auswahl…", fn: () => starteQuizMitAuswahl(l.id) },   // 262
         ...(() => { const f = faelligVonListen([l.id]); return faelligAktion(f, imKopf ? { listeId: l.id, ziel: "liste" } : { listeId: l.id, ziel: "raster" }); })(),   // 204
         herausN && { label: `🚫 Herausgenommene (${herausN})`, fn: () => { oeffneListeDetail(l.id); setListenBereich("vokabeln"); setListeNurAus(true); } },
         { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },

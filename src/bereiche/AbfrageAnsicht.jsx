@@ -1,4 +1,4 @@
-import { BLITZ_SEKUNDEN, FESTES_ZEICHEN, SATZ_ARTEN, STANDARD_ANTWORT_MODUS, ZUORDNUNG_FARBEN, akzentVarianten, alternativen, antwortStatus, artikelInfo, clampScore, ersteAlt, getQuizFeedback, istMC, istRichtigeAntwort, istRichtigeEinzeln, jubelText, lueckenPositionen, mitHinweis, ohneHinweis, puzzleKacheln, satzFuer, scoreSymbole, ScoreSymbolePuls, umbruch, vokSprache, zufallMitSeed } from "../quiz.jsx";
+import { BLITZ_SEKUNDEN, FESTES_ZEICHEN, SATZ_ARTEN, STANDARD_ANTWORT_MODUS, ZUORDNUNG_FARBEN, akzentVarianten, alternativen, antwortStatus, artikelInfo, clampScore, ersteAlt, getQuizFeedback, istMC, istRichtigeAntwort, istRichtigeEinzeln, jubelText, lueckenPositionen, mitHinweis, ohneHinweis, puzzleKacheln, satzFindenWoerter, satzFuer, scoreSymbole, ScoreSymbolePuls, umbruch, vokSprache, zufallMitSeed } from "../quiz.jsx";
 import { CSS } from "../stil.js";
 import { Fragment } from "react";
 import { GelerntSterne, IcoSpk, IcoSpkOn } from "../komponenten.jsx";
@@ -568,15 +568,27 @@ export function AbfrageAnsicht(app) {
                         if (!satz) return null;
                         const antworte = richtig => { setQuiz(prev => ({ ...prev, puzzleKey: key, puzzleWahl: [], lueckeText: "" })); pruefeAntwort(richtig ? quiz.antwortTeile[0] : "\u0000"); };
                         const wahl = quiz.puzzleKey === key ? (quiz.puzzleWahl || []) : [];
-                        if (aktSpaltModus === "satzfinden") return (
+                        if (aktSpaltModus === "satzfinden") {
+                          // 260: alle Teile der Lösung antippen (Reihenfolge egal); ein Wort, das nicht dazugehört = falsch
+                          const sw = satzFindenWoerter(satz, quiz.antwortTeile[0]);
+                          const zielAnz = sw.filter(w => w.ziel).length;
+                          const tippe = i => {
+                            if (!sw[i].ziel) { antworte(false); return; }
+                            if (wahl.includes(i)) return;
+                            const neu = [...wahl, i];
+                            if (neu.length >= zielAnz) antworte(true);
+                            else setQuiz(prev => ({ ...prev, puzzleKey: key, puzzleWahl: neu }));
+                          };
+                          return (
                           <div data-satzfinden onClick={e => e.stopPropagation()} style={{marginTop:6}}>
                             <div className="satz-band">
-                              {satz.woerter.map((w, i) => <button key={i} className="satz-wort" data-satz-wort={i} data-satz-ziel={w.ziel ? "" : undefined}
-                                onClick={() => antworte(w.ziel)} {...tt("Antippen, wenn das das gesuchte Wort ist")}>{w.text}</button>)}
+                              {sw.map((w, i) => <button key={i} className={`satz-wort${wahl.includes(i) ? " gewaehlt" : ""}`} data-satz-wort={i} data-satz-ziel={w.ziel ? "" : undefined}
+                                onClick={() => tippe(i)} {...tt("Antippen, wenn das Wort zur gesuchten Lösung gehört – bei mehrteiligen Lösungen alle Teile")}>{w.text}</button>)}
                             </div>
                             {(einstellungen.satzUebFinden ?? false) && <div className="satz-ueb">{satz.ueb}</div>}
                           </div>
-                        );
+                          );
+                        }
                         if (aktSpaltModus === "lueckensatz") {
                           const txt = quiz.puzzleKey === key ? (quiz.lueckeText || "") : "";
                           const pruefe = () => { const t = txt.trim(); if (!t) return; antworte(!!istRichtigeAntwort(t, satz.form, quizRegeln().akzenteTolerant)); };

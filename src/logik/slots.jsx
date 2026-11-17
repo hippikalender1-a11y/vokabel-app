@@ -1,3 +1,4 @@
+import { mitKuerzel, sprachKuerzelFuer } from "../sprache.js";
 import { BLITZ_MS, SK, SLOT_ZU_VERZOEGERUNG, defaultEinstellungen, defaultSlots, formatSlotDatum, lsDel, lsGet, lsSet, neuerSlotId, lsLesen } from "../speicher.js";
 import { STANDARD_ANTWORT_MODUS, STANDARD_PAKET_GROESSE, STANDARD_SESSION_MODUS, artBereinigt, artFelderAus, artVonKonfig, istFaellig, slotKonfigArt, slotSFAlle, standardArtEinstellungen } from "../quiz.jsx";
 import { ORDNER_TIEFE_MAX, ebeneVon, gruppenName, legeInOrdner, loeseOrdnerDaten, ordneRaster, ordnerBereinigen, ordnerPfad, platziereGruppe, rasterGroesse, setzeEbene, belegteZeilen } from "../raster.js";
@@ -413,7 +414,8 @@ export function merkeRundeImVerlauf(app, effSlot, startScores) {
 export function erstelleVerlaufEintrag(app, extra = {}) {
   const { aktuelleKonfiguration, getSlotsData, setAktiverSlot, setSlotGeaendert, setSlotsData } = app;
     const id = neuerSlotId('v');
-    const neuerEintrag = { id, name: formatSlotDatum(), timestamp: Date.now(), konfiguration: aktuelleKonfiguration(), sessionFortschritt: null, ...extra };
+    const konf = aktuelleKonfiguration();
+    const neuerEintrag = { id, name: mitKuerzel(sprachKuerzelFuer(konf.listenIds), formatSlotDatum()), timestamp: Date.now(), konfiguration: konf, sessionFortschritt: null, ...extra };   // 264: „Engl · 17.11.26, 22:40“
     const data = getSlotsData();
     const neuerVerlauf = [neuerEintrag, ...data.verlauf].slice(0, 10);   // 212
     const updated = { ...data, verlauf: neuerVerlauf };

@@ -89,7 +89,7 @@ const abgefragt = (await session())?.abgefragt?.length || 0;
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]")?.click()); await sleep(800);
 const s2 = await session();
 ok(s2 && (s2.abgefragt || []).length === abgefragt && abgefragt > 0, `251: dieselben Listen übernehmen – Fortschritt bleibt (${abgefragt} → ${(s2?.abgefragt || []).length})`);
-ok(/📋 2 Listen/.test(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.innerText || "")), "251: weiter das Paket „📋 2 Listen“");
+ok(/📋 Engl · 2 Listen/.test(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.innerText || "")), "251: weiter das Paket „📋 2 Listen“");
 
 // ── 254: App neu laden (auch ohne gemerktes letztes Quiz) – das pausierte Paket kommt samt Listen und Einstellungen zurück ──
 await page.evaluate(() => localStorage.removeItem("vokabel_letzter_slot"));
@@ -97,7 +97,7 @@ await page.reload(); await sleep(1000);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(400);
 await page.evaluate(() => { if (document.querySelector('[data-quiz-ansicht="auswahl"]')) document.querySelector("[data-slot-kopf-name]")?.click(); }); await sleep(600);
 const nachStart = await page.evaluate(() => ({ kopf: document.querySelector("[data-slot-kopf-name]")?.innerText || "", start: !![...document.querySelectorAll("button")].find(b => /starten/.test(b.textContent)) }));
-ok(/📋 2 Listen/.test(nachStart.kopf) && nachStart.start, `254: nach dem Neuladen Paket mit Einstellungen und Start-Knopf (${JSON.stringify(nachStart)})`);
+ok(/📋 Engl · 2 Listen/.test(nachStart.kopf) && nachStart.start, `254: nach dem Neuladen Paket mit Einstellungen und Start-Knopf (${JSON.stringify(nachStart)})`);
 ok(((await session())?.abgefragt || []).length === abgefragt, "254: Fortschritt bleibt beim Neuladen");
 
 await browser.close();

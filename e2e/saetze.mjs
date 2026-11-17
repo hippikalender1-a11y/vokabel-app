@@ -112,7 +112,9 @@ ok(!lage.ueb, "Satz finden: keine Übersetzung (Standard)");
 await page.evaluate(() => [...document.querySelectorAll("[data-satz-wort]")].find(b => !b.hasAttribute("data-satz-ziel"))?.click()); await sleep(300);
 ok(/Nicht richtig/.test(await page.evaluate(() => document.body.innerText)) && await score(f) === null, "falsches Wort: Fehlversuch");
 await sleep(1600);
-await page.click("[data-satz-ziel]"); await sleep(400);
+// 260: mehrteilige Lösung („la maison“) – alle Teile antippen
+for (const i of await page.evaluate(() => [...document.querySelectorAll("[data-satz-ziel]")].map(b => b.dataset.satzWort))) { await page.click(`[data-satz-wort="${i}"]`); await sleep(150); }
+await sleep(300);
 ok(await score(f) === 1 && await page.evaluate(() => document.querySelector("[data-satz-loesung] b")?.textContent) === FORM[f], `richtiges Wort „${FORM[f]}“: +1, Satz mit markiertem Wort`);
 
 await starte("lueckensatz");

@@ -19,6 +19,13 @@ export const SPRACHEN = [
 ];
 export function sprachInfo(code) { return SPRACHEN.find(s => s.code === code) || SPRACHEN[0]; }
 export function listeSprache(l) { return l?.sprache || "en"; }
+// 264: Sprach-Kürzel der Listen für automatische Namen, z. B. „Engl“ bzw. „Engl + Frz“ ("" ohne bekannte Listen)
+export function sprachKuerzelFuer(listenIds) {
+  let idx = []; try { idx = JSON.parse(localStorage.getItem("vokabel_listen_index")) || []; } catch { idx = []; }
+  const codes = [...new Set((listenIds || []).map(id => idx.find(l => l.id === id)).filter(Boolean).map(listeSprache))];
+  return codes.map(c => SPRACH_KUERZEL[c] || sprachInfo(c).name).join(" + ");
+}
+export const mitKuerzel = (k, text, trenner = " · ") => k ? `${k}${trenner}${text}` : text;
 // Erste Sprache, deren Stichwort in einem Spaltennamen vorkommt (Import)
 export function erkenneSprache(headerNamen) {
   const low = headerNamen.map(n => (n || "").toLowerCase());

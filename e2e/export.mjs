@@ -91,10 +91,10 @@ let vorher = fs.readdirSync(DL);
 await kopfMenue();   // Menü der Auswahl: lang drücken auf den grünen Kopf
 ok((await menueLabels()).replace(/\|🔁[^|]*/, "") === "📤 Exportieren (3)|🗂 Ablage ›|↔ Von–Bis|⇄ Verschieben|📁 In Ordner… (3)|🗑 Löschen (3)|☑ Alle auswählen", `Lang-Druck in der Auswahl: Exportieren, Verschieben, Löschen (${await menueLabels()})`);
 await menueAktion("📤 Exportieren"); await page.click('[data-export-art="txt"]'); await sleep(300);
-ok(await page.evaluate(() => document.querySelector("[data-datei-export] [data-export-name]")?.value) === "3 Listen - TXT", "TXT: Fenster mit Dateiname, Vorschlag „3 Listen - TXT“");
+ok(await page.evaluate(() => document.querySelector("[data-datei-export] [data-export-name]")?.value) === "Engl + Frz + Span 3 Listen - TXT", "TXT: Fenster mit Dateiname, Vorschlag „Engl + Frz + Span 3 Listen - TXT“ (264)");
 await page.click("[data-datei-export-ok]"); await sleep(300);
 const txtAlle = await warteAufDatei(" - TXT.txt", vorher);
-ok(!!txtAlle && path.basename(txtAlle) === "3 Listen - TXT.txt", `TXT (alle) heruntergeladen: ${txtAlle && path.basename(txtAlle)}`);
+ok(!!txtAlle && path.basename(txtAlle) === "Engl + Frz + Span 3 Listen - TXT.txt", `TXT (alle) heruntergeladen: ${txtAlle && path.basename(txtAlle)}`);
 const txtInhalt = txtAlle ? fs.readFileSync(txtAlle, "utf8") : "";
 console.log("---- TXT-Inhalt ----\n" + txtInhalt + "\n--------------------");
 ok(txtInhalt.includes("# Unité 1 {fr}") && txtInhalt.includes("# Unidad 1 {es}") && txtInhalt.includes("# Irregular Verbs\n"), "TXT enthält Sprach-Kennungen");
@@ -105,14 +105,14 @@ ok(await page.evaluate(() => document.querySelector("[data-wahl-anzahl]")?.datas
 await kopfMenue(); await menueAktion("📤 Exportieren"); await page.click('[data-export-art="json"]'); await sleep(300);
 await clickText(".modal button", "Exportieren", true);
 const jsonAlle = await warteAufDatei(" - JSON.txt", vorher);
-ok(!!jsonAlle && path.basename(jsonAlle) === "3 Listen - JSON.txt", `JSON (alle) heruntergeladen: ${jsonAlle && path.basename(jsonAlle)}`);
+ok(!!jsonAlle && path.basename(jsonAlle) === "Engl + Frz + Span 3 Listen - JSON.txt", `JSON (alle) heruntergeladen: ${jsonAlle && path.basename(jsonAlle)}`);
 const jsonDaten = jsonAlle ? JSON.parse(fs.readFileSync(jsonAlle, "utf8")) : [];
 ok(jsonDaten.map(l => l.sprache).join(",") === "en,fr,es", `JSON enthält Sprachen: ${jsonDaten.map(l => l.sprache)}`);
 
 // ── Export 2b: JSON mit eigenem Namen (unerlaubte Zeichen werden zu „-“) ──
 vorher = fs.readdirSync(DL);
 await kopfMenue(); await menueAktion("📤 Exportieren"); await page.click('[data-export-art="json"]'); await sleep(300);
-ok(await page.evaluate(() => document.querySelector(".modal [data-export-name]")?.value) === "3 Listen - JSON", "JSON: Dateiname mit Vorschlag „3 Listen - JSON“");
+ok(await page.evaluate(() => document.querySelector(".modal [data-export-name]")?.value) === "Engl + Frz + Span 3 Listen - JSON", "JSON: Dateiname mit Vorschlag „Engl + Frz + Span 3 Listen - JSON“");
 await page.click(".modal [data-export-name]", { clickCount: 3 }); await page.keyboard.press("Backspace");
 await page.type(".modal [data-export-name]", "Französisch Klasse 7: Teil/1");
 await page.keyboard.press("Enter"); await sleep(300);
