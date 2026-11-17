@@ -3448,3 +3448,70 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
 - 264: sprache.js sprachKuerzelFuer/mitKuerzel: Verlauf-Namen „Engl · 17.11.26, 22:40“ (auch Multiquiz), Kopf
   „📋 Engl · 2 Listen“, Export mehrerer Listen „Engl + Frz 3 Listen“. Alte Verlauf-Einträge behalten ihren Namen.
 - Test: e2e/punkte260.mjs (260–264), farbmodus (259); angepasst export, listenraster, punkte235/244/251, saetze.
+
+── gesammelt (17.11.2026, nach 264) ──
+265 Farbeinstellung gegen unlesbare Kombinationen (Nutzer: „zu leicht verstellt man eine Farbe und anderen Orts ist die
+    Schrift nicht mehr lesbar“; Bedienung einfach, eindeutig, Blick auf das Editierte bleibt).
+    Grundlage: Fläche und Schrift gehören fest zusammen – jeder Hintergrund ist eine „Fläche“ mit eigenen Schriften
+    (kräftig, normal, leise, sehr leise, ggf. hervorgehoben/Akzent wie Etiketten); eine Schriftfarbe gilt nur auf ihrer
+    Fläche, globale Rollen text/text2/text3/text-stark nicht mehr direkt einstellbar. Technik: die Fläche setzt ihre
+    Schrift-Variablen für ihren Bereich (--text usw. lokal überschreiben); Startwerte = heutige Werte (nichts ändert sich).
+    Ablauf: lang drücken → 🎨 Farbe ändern → direkt die Fläche unter dem Finger; oben im Farbwähler immer eine Vorschau-
+    karte dieser Fläche mit ALLEN Schriftarten, die dort vorkommen können (auch wenn am Element nicht sichtbar); darunter
+    Auswahl-Reihe „Hintergrund · Kräftig · Normal · Leise · …“, dann Farbrad/Regler, live.
+    Dazu (Nutzer-Auswahl):
+    A Lesbarkeits-Ampel ✓/⚠ je Vorschauzeile (Kontrast) – ABER „sehr leise“ darf bewusst wenig Kontrast haben: dort nur
+      Hinweis/lockere Schwelle (Schwellen je Schriftart abstufen). Nutzer: NIE sperren, bestenfalls nachfragen
+      (Rückfrage beim Anwenden höchstens bei kräftig/normal unter der Schwelle).
+    B Sperrzone im Regler – NEIN.
+    C „Automatisch lesbar“ – erstmal nicht.
+    D Rückgängig: „↶“ letzter Schritt, außerdem „Fläche auf Vorlage zurücksetzen“ – ja.
+    E Gesamtprüfung „n Stellen schlecht lesbar“ (antippen springt hin; beim Übernehmen eines Schemas/auf Wunsch) – ausprobieren.
+    F Ausblicken: Farbwähler kurz auf die Vorschauzeile einklappen, ganze Seite mit neuer Farbe ansehen – unbedingt.
+
+── 265 Schritt 1 umgesetzt (18.11.2026) ──
+- farben.js: TEXT_FLAECHEN (hintergrund, karte, knopf, flaeche, info-kasten, haupt-flaeche, dialog, kopfzeile, app-kopf,
+  abfrage-karte, kopf-offen) mit eigenen Schriften „<fläche>-t-stark/-t/-t2/-t3“ (+ -t4 abgeleitet); farbenAus: ohne eigenen
+  Wert = allgemeine Schrift (sieht aus wie bisher). FLAECHEN: je Fläche Hintergrund + Schriften (eigene wie kopf-schrift,
+  dialog-schrift, abfrage-schrift…; farbige Flächen haupt/start/bestaetigen/ordner/falsch/gelb/haupt-hell/gelernt mit auf-…).
+  flaechenRegeln(CSS_BASIS): liest das Stylesheet (CSSOM), jede Regel mit Text-Fläche als Hintergrund setzt dort
+  --text-stark/--text/--text2/--text3/--text4 auf die Flächen-Schriften; dazu [style*="background: var(--x)"] für Inline-Styles.
+  An setzeCSS angehängt (App.jsx, 3 Stellen). kontrast() schon da (für Schritt 2).
+- farbmodus.jsx: farbRollenBei ordnet allgemeine Schrift der Fläche darunter zu (karte-t2 …); oeffneFarbRad öffnet bei einer
+  Flächen-Rolle den Flächen-Editor (arbeitRef: Arbeitsstand aller Teile + Rückgängig-Stapel, neuer Schritt nach 700 ms Pause);
+  mitArbeit wendet geänderte Teile an (Hintergrund zuerst, mitFestenSchriften). „Nur dieses Element“ (Schrift/Hintergrund):
+  Vorschau mit dem jeweils anderen Teil (paar).
+- FarbRad (komponenten.jsx): Vorschau-Karte (data-flaeche-vorschau, Proben je Schrift antippbar, Akzente Haupt/Richtig/Falsch
+  nur zur Ansicht), Auswahl-Reihe (data-flaeche-teil), ↺ Vorlage, ↶ Rückgängig, ▾ Einklappen (nur Kopf + Vorschau).
+- Schema-Editor: keine losen Schrift-Rollen mehr (text…, auf-…, dialog-schrift …), Flächen mit „Aa“-Tupfer öffnen den Editor.
+- Tests: e2e/punkte265.mjs; angepasst farbmodus (Höhe < 480), schrift_hintergrund (Kräftig je Fläche).
+- Offen Schritt 2: Lesbarkeits-Ampel (A, nie sperren, Rückfrage höchstens kräftig/normal), Gesamtprüfung (E, ausprobieren).
+
+── gesammelt (18.11.2026, nach 265 Schritt 1) ──
+266 Mehrfach-Auswahl und Ordnerpfad: während einer Mehrfach-Auswahl (Quiz bzw. Listen) lässt sich im Ordnerpfad nicht
+    navigieren. Gewünscht: Antippen eines Pfad-Elements beendet die Auswahl und öffnet ggf. diesen Ordner; Antippen des
+    aktuellen Ordners beendet nur die Auswahl (danach öffnet ein Klick wieder sofort das Element). Bedenken/Vorschläge siehe
+    Antwort 18.11.: versehentlicher Verlust einer größeren Auswahl (evtl. kurz „↶ Auswahl zurück“), Lang-Druck auf Pfad
+    während der Auswahl (Menü wie bisher?), Alternative: Auswahl über Ordner hinweg behalten.
+267 Langzeit-Wiederholungen (fällige gelernte Vokabeln) in Paketen und Auswertung. Heute (App.jsx ~2640/2684, quiz.jsx
+    mischeFaellige): fällige gehören zum Quiz (auch wenn Gelernte ausgeblendet), zählen in „x/Gesamt“; Mischung je Platz
+    mit Wahrscheinlichkeit „Anteil Fällige“ → im 5er-Paket ersetzen sie neue Vokabeln (Paket bleibt 5), nicht zusätzlich;
+    in der Auswertung erscheinen sie wie alle anderen, ohne Kennzeichnung. Ideen: feste Regel (z. B. jede 3. Vokabel)
+    statt Wahrscheinlichkeit → vorhersagbar; Anzeige getrennt (z. B. „0/20 + 5 🔁“); Schalter „🔁 Fällige“ neben
+    Gelernte/heute (ins Quiz nehmen ja/nein); in der Auswertung kennzeichnen. Begriff: „Wiederholung“ heißt heute auch das
+    Wiederholen falscher Antworten am Rundenende – für die Langzeit-Wiederholung eigenen Namen („Fällige“).
+268 Auswertungs-/Abrechnungsbildschirme umgestalten – zum passenden Zeitpunkt (z. B. mit 267) den Nutzer fragen, wie.
+
+── 265 Schritt 2 umgesetzt (18.11.2026) ──
+- A Lesbarkeits-Ampel: farben.js LESBAR_SOLL { kraeftig 3, normal 4,5, leise 3, sehrleise 1,5 } (WCAG-Kontrast, kontrast()).
+  FarbRad: je Vorschau-Zeile ✓/⚠ mit Wert (data-lesbar), Akzente mit ⚠ unter 3. Anwenden: Rückfrage (data-lesbar-frage,
+  „Zurück“ / „Trotzdem anwenden“) nur, wenn kräftig/normal unter der Schwelle liegt UND schlechter als beim Öffnen ist –
+  nie sperren. Auch bei „Nur dieses Element“ (Paar).
+- E Gesamtprüfung: farbmodus.jsx lesbarkeitPruefen() – alle sichtbaren Texte gegen den tatsächlichen Hintergrund
+  (Ebenen mit Transparenz verrechnet, ausgegraute < 60 % Deckkraft übersprungen; Schwelle: Farbe = --text3/--text4 →
+  sehr leise, --text2 → leise, fett/groß → 3, sonst 4,5). Farbmodus-Leiste „🔍 Prüfen“ (data-farbmodus-pruefen) → Liste
+  (data-pruefung="seite"), Treffer antippen → Stelle zeigen + Farbfeld. „Farben übernehmen“ prüft: nur Stellen, die gegenüber
+  dem gespeicherten Schema schlechter geworden sind (alte Farben kurz auf :root gemessen) → Rückfrage
+  (data-pruefung="uebernehmen", „Trotzdem übernehmen“). Vorlagen: höchstens „nicht gespeichert“ auf dem Orange-Knopf (3,0).
+- Werkzeug-Fenster (Farbrad, Farbfeld, Leiste) haben feste Schriftfarben (nicht von der bearbeiteten Fläche).
+- Tests: punkte265 erweitert; farbfeld_namen/schrift_hintergrund bestätigen die Rückfragen.

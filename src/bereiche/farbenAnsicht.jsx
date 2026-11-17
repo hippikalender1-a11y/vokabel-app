@@ -1,4 +1,7 @@
-import { FARB_ROLLEN, FARB_VORLAGEN, TEIL_EIGENSCHAFT, farbenAus, schemaVon } from "../farben.js";
+import { FARB_ROLLEN, FARB_VORLAGEN, FLAECHEN, TEIL_EIGENSCHAFT, farbenAus, schemaVon } from "../farben.js";
+
+// 265: Schriften gibt es nur zusammen mit ihrer Fläche (Flächen-Editor) – in der Liste nur Flächen und übrige Farben
+const NUR_MIT_FLAECHE = new Set(["text-stark", "text", "text2", "text3", ...Object.values(FLAECHEN).flatMap(f => f.schriften.map(s => s.rolle))]);
 
 // Phase 2 (Aufteilung): Zeichen-Funktionen aus App.jsx. app = die Namen der Komponente, die sie brauchen.
 
@@ -127,10 +130,11 @@ export function renderFarbschemata(app) {
                 {...tt(`Alle Farben auf die Vorlage „${vorlageVon(bearb).name}“ zurücksetzen`)}>Zurücksetzen</button>
               <button className="btn btn-primary btn-sm" data-schema-fertig onClick={() => setSchemaBearbeiten(null)} {...tt("Bearbeiten beenden – die Farben sind schon gespeichert")}>Fertig</button>
             </div>
-            {FARB_ROLLEN.map(([rolle, name, sub]) => (
+            {FARB_ROLLEN.filter(([rolle]) => !NUR_MIT_FLAECHE.has(rolle)).map(([rolle, name, sub]) => (
               <div key={rolle} className="farb-zeile" data-farbrolle={rolle} onClick={() => oeffneFarbRad(rolle, name, bearb.farben, bearb.id)}
-                {...ttFeld(`${name}${sub ? " – " + sub : ""}: antippen, um die Farbe im Farbkreis zu wählen`)}>
-                <span className="farb-tupfer" style={{background: bearb.farben[rolle] || farbenAus(bearb.farben)[rolle]}}/>
+                {...ttFeld(`${name}${sub ? " – " + sub : ""}: antippen, um die Farbe im Farbkreis zu wählen${FLAECHEN[rolle] ? " (Fläche: Hintergrund mit ihren Schriften)" : ""}`)}>
+                <span className="farb-tupfer" style={{background: bearb.farben[rolle] || farbenAus(bearb.farben)[rolle], ...(FLAECHEN[rolle] ? {display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:"0.85rem",
+                  color: farbenAus(bearb.farben)[FLAECHEN[rolle].schriften.find(s => s.stufe !== "leise" && s.stufe !== "sehrleise")?.rolle || FLAECHEN[rolle].schriften[0].rolle]} : {})}}>{FLAECHEN[rolle] ? "Aa" : null}</span>
                 <span style={{flex:1}}>
                   <span style={{display:"block", fontSize:"0.85rem", fontWeight:600, color:"var(--text)"}}>{name}</span>
                   {sub && <span style={{display:"block", fontSize:"0.7rem", color:"var(--text3)"}}>{sub}</span>}

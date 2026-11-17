@@ -202,10 +202,24 @@ export const CSS_BASIS = `
   [data-farbmodus-ui] .btn.btn-ghost{background:#fff !important;color:#2d6a4f !important;border-color:#2d6a4f !important;}
   [data-farbmodus-ui] .btn.btn-ghost-filled{background:#f4f4f2 !important;color:#2d6a4f !important;border-color:#2d6a4f !important;}
   [data-farbmodus-ui] .farbmodus-leiste,[data-farbmodus-ui] .farbfeld,[data-farbmodus-ui] .farbrad{background:#fff !important;color:#1a1a1a !important;}
+  [data-farbmodus-ui] .farbmodus-leiste,[data-farbmodus-ui] .farbfeld,[data-farbmodus-ui] .farbrad{--text-stark:#1a1a1a !important;--text:#2a2622 !important;--text2:#5f5953 !important;--text3:#857e76 !important;--text4:#a39d95 !important;}   /* 265: Werkzeuge immer lesbar, unabhängig von der bearbeiteten Fläche */
   .farbrad-rahmen{position:fixed;left:0;right:0;bottom:0;z-index:10006;display:flex;justify-content:center;pointer-events:none;}
   .farbrad-rahmen.oben{bottom:auto;top:0;}
   .farbrad{pointer-events:auto;width:100%;max-width:520px;background:var(--karte);border-radius:16px 16px 0 0;padding:10px 14px 12px;box-shadow:0 -4px 22px rgba(0,0,0,0.28);font-family:system-ui,sans-serif;box-sizing:border-box;}
   .farbrad-rahmen.oben .farbrad{border-radius:0 0 16px 16px;box-shadow:0 4px 22px rgba(0,0,0,0.28);}
+  .fv-karte{border:1px solid #d8d4cc;border-radius:10px;padding:8px 10px;margin-bottom:8px;display:flex;flex-direction:column;align-items:flex-start;gap:1px;}
+  .fv-probe{background:none;border:none;padding:1px 4px;margin-left:-4px;font-family:inherit;text-align:left;cursor:pointer;border-radius:4px;color:inherit;}
+  .fv-probe.aktiv{outline:2px dashed currentColor;outline-offset:1px;}
+  .fv-kraeftig{font-weight:800;font-size:0.95rem;} .fv-normal{font-size:0.88rem;} .fv-leise{font-size:0.8rem;} .fv-sehrleise{font-size:0.74rem;}
+  .fv-zeile{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;}
+  .fv-ampel{flex-shrink:0;font-size:0.68rem;font-weight:700;padding:1px 6px;border-radius:8px;background:#fff;color:#1a1a1a;border:1px solid #d8d4cc;white-space:nowrap;}
+  .fv-ampel.warn{background:#fff3cd;color:#7a4b00;border-color:#e0a800;}
+  .fv-frage{margin-top:10px;padding:10px;border-radius:10px;background:#fff3cd;color:#4a3500;font-size:0.85rem;border:1px solid #e0a800;}
+  .fv-akzente{display:flex;gap:10px;font-size:0.76rem;font-weight:700;margin-top:2px;}
+  .fv-teile{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+  .fv-teile .typ-btn{padding:4px 9px;font-size:0.78rem;}
+  .fv-knopf{width:30px;height:28px;font-size:1rem;flex-shrink:0;color:#1a1a1a;}
+  .fv-knopf:disabled{opacity:0.3;}
   .farbrad input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid rgba(0,0,0,0.5);box-shadow:0 1px 4px rgba(0,0,0,0.3);}
   .farb-zeile input[type=color]{width:42px;height:32px;border:1px solid var(--rahmen);border-radius:8px;padding:2px;background:var(--karte);flex-shrink:0;}
   .gelernt-blitz{animation:gelerntBlitz .4s ease-out;position:relative;}

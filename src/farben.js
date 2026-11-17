@@ -307,7 +307,7 @@ export function farbenAus(f) {
   const farbAbstand = (x, y) => { const a = hexZuHsv(x), b = hexZuHsv(y); const d = Math.abs(a.h - b.h) % 360; return Math.min(d, 360 - d) + (Math.abs(a.s - b.s) + Math.abs(a.v - b.v)) * 60; };
   const bestaetigen = f.bestaetigen || (farbAbstand(f.richtig, f.haupt) >= 45 ? f.richtig : "#e07a10");
   // Schrift auf Liste & Start: gewählte Farbe, sonst wie auf der Hauptfarbe (keine automatische Umstellung)
-  return { ...f, "start": start, "auf-start": f["auf-start"] || f["auf-haupt"],
+  const r = { ...f, "start": start, "auf-start": f["auf-start"] || f["auf-haupt"],
     "auf-falsch": f["auf-falsch"] || f["auf-haupt"], "auf-gelb": f["auf-gelb"] || f["auf-haupt"],
     "auf-haupt-hell": f["auf-haupt-hell"] || f["auf-haupt"], "auf-gelernt": f["auf-gelernt"] || f["auf-haupt"],
     "app-kopf-schrift": f["app-kopf-schrift"] || f["text-stark"], "app-kopf-schrift-leise": f["app-kopf-schrift-leise"] || f.text2,
@@ -330,6 +330,78 @@ export function farbenAus(f) {
     "gelb-dunkel": mische(f.gelb, f["text-stark"], 0.45), "gelb-zart": mische(f.gelb, k, 0.5), "gelb-flaeche": mische(f.gelb, k, 0.9),
     "info-flaeche": mische(f.info, k, 0.9),
   };
+  // 265: Schriften je Fläche – ohne eigenen Wert wie die allgemeine Schrift (sieht aus wie bisher)
+  TEXT_FLAECHEN.forEach(fl => {
+    TEXT_STUFEN.forEach(([g, kurz]) => { r[`${fl}-${kurz}`] = f[`${fl}-${kurz}`] || r[g]; });
+    r[`${fl}-t4`] = f[`${fl}-t3`] ? mische(f[`${fl}-t3`], r[fl] || k, 0.35) : r.text4;
+  });
+  return r;
+}
+// ── 265: Flächen – Hintergrund und die Schriften darauf gehören zusammen ──
+// Text-Flächen: enthalten allgemeinen Text (kräftig/normal/leise/sehr leise); dort gelten eigene Variablen „fläche-t…“,
+// die eine erzeugte Regel (flaechenRegeln) für jede Stelle mit diesem Hintergrund als --text-stark/--text/… einsetzt
+export const TEXT_FLAECHEN = ["hintergrund", "karte", "knopf", "flaeche", "info-kasten", "haupt-flaeche", "dialog", "kopfzeile", "app-kopf", "abfrage-karte", "kopf-offen"];
+export const TEXT_STUFEN = [["text-stark", "t-stark", "Kräftig", "Überschrift"], ["text", "t", "Normal", "Normaler Text"], ["text2", "t2", "Leise", "leiser Hinweis"], ["text3", "t3", "Sehr leise", "(12) sehr leise"]];
+const EIGENE_SCHRIFTEN = {
+  "app-kopf": [["app-kopf-schrift", "Titel", "Vokabel-Trainer"], ["app-kopf-schrift-leise", "Titel leise", "Statistik · Einstellungen"], ["tab-aktiv", "Aktiver Tab", "Quiz"]],
+  "kopfzeile": [["kopf-schrift", "Kopf-Schrift", "Überschrift im Kopf"], ["kopf-schrift-leise", "Kopf leise", "Unterzeile ▼"]],
+  "kopf-offen": [["kopf-offen-schrift", "Kopf-Schrift", "Geöffneter Kopf ▲"]],
+  "dialog": [["dialog-schrift", "Titel", "Titel des Fensters"]],
+  "abfrage-karte": [["abfrage-schrift", "Frage / Antwort", "the house"], ["abfrage-schrift-leise", "Spaltenname", "Englisch"]],
+};
+// farbige Flächen mit genau einer Schrift
+const FARB_FLAECHEN = { haupt: "auf-haupt", start: "auf-start", bestaetigen: "auf-bestaetigen", ordner: "auf-ordner", falsch: "auf-falsch",
+  gelb: "auf-gelb", "haupt-hell": "auf-haupt-hell", gelernt: "auf-gelernt" };
+export const FLAECHEN = Object.fromEntries([
+  ...TEXT_FLAECHEN.map(fl => [fl, [...(EIGENE_SCHRIFTEN[fl] || []), ...TEXT_STUFEN.map(([, kurz, label, bsp]) => [`${fl}-${kurz}`, label, bsp])]]),
+  ...Object.entries(FARB_FLAECHEN).map(([fl, s]) => [fl, [[s, "Schrift", "Text auf der Fläche"]]]),
+].map(([fl, schriften]) => [fl, { name: FARB_ROLLEN.find(([k]) => k === fl)?.[1] || fl, schriften: schriften.map(([rolle, label, beispiel]) => ({ rolle, label, beispiel,
+  stufe: { "t-stark": "kraeftig", t: "normal", t2: "leise", t3: "sehrleise" }[rolle.slice(fl.length + 1)] || (rolle.endsWith("-leise") ? "leise" : FARB_FLAECHEN[fl] ? "normal" : "kraeftig") })) }]));
+// Fläche zu einer Rolle: der Hintergrund selbst oder eine ihrer Schriften
+export function flaecheVon(rolle) {
+  if (FLAECHEN[rolle]) return rolle;
+  return Object.keys(FLAECHEN).find(fl => FLAECHEN[fl].schriften.some(s => s.rolle === rolle)) || null;
+}
+// allgemeine Schrift-Rolle (text2 …) → Kürzel der Stufe (t2 …); text4 zählt zu „sehr leise“
+export const STUFE_VON = { "text-stark": "t-stark", text: "t", text2: "t2", text3: "t3", text4: "t3" };
+// Akzent-Schriften, die auf jeder Fläche vorkommen können (nur zur Ansicht in der Vorschau)
+export const AKZENT_SCHRIFTEN = [["haupt", "Hauptfarbe"], ["richtig", "Richtig"], ["falsch", "Falsch"]];
+// Regeln aus dem Stylesheet: jede Stelle mit einer Text-Fläche als Hintergrund bekommt deren Schriften
+let flaechenCache = null;
+export function flaechenRegeln(cssText) {
+  if (flaechenCache !== null) return flaechenCache;
+  if (typeof document === "undefined") return "";
+  const zuweisung = (fl, wichtig) => [...TEXT_STUFEN.map(([g, kurz]) => `--${g}:var(--${fl}-${kurz})`), `--text4:var(--${fl}-t4)`].map(x => x + (wichtig ? " !important" : "")).join(";");
+  const aus = [];
+  try {
+    const st = document.createElement("style"); st.textContent = cssText; document.head.appendChild(st);
+    const gehe = regeln => [...regeln].flatMap(r => {
+      if (r.cssRules && !r.selectorText) {   // @media u. Ä.: Regeln darin mit derselben Bedingung
+        const innen = gehe(r.cssRules);
+        return innen.length && r.media ? [`@media ${r.media.mediaText}{${innen.join("")}}`] : r.media ? [] : innen;
+      }
+      if (!r.selectorText || !r.style) return [];
+      for (const p of ["background", "background-color"]) {
+        const m = (r.style.getPropertyValue(p) || "").trim().match(/^var\(--([\w-]+)\)$/);
+        if (m && TEXT_FLAECHEN.includes(m[1])) return [`${r.selectorText}{${zuweisung(m[1], r.style.getPropertyPriority(p) === "important")}}`];
+      }
+      return [];
+    });
+    aus.push(...gehe(st.sheet.cssRules));
+    st.remove();
+  } catch { /* ohne Regeln: allgemeine Schrift */ }
+  // Hintergrund im style-Attribut (React schreibt „background: var(--karte)“)
+  TEXT_FLAECHEN.forEach(fl => aus.push(`[style*="background: var(--${fl})"],[style*="background-color: var(--${fl})"]{${zuweisung(fl, false)}}`));
+  flaechenCache = aus.join("");
+  return flaechenCache;
+}
+// 265 A: Mindest-Kontrast je Schriftart – nur Hinweis (✓/⚠), gesperrt wird nie; „sehr leise“ darf bewusst blass sein
+export const LESBAR_SOLL = { kraeftig: 3, normal: 4.5, leise: 3, sehrleise: 1.5 };
+export const kontrastText = k => `${k.toFixed(1).replace(".", ",")} : 1`;
+// Kontrast (WCAG) zweier Farben, 1 … 21
+export function kontrast(a, b) {
+  const x = helligkeit(a), y = helligkeit(b);
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
 }
 // Schriften und Flächen, die (noch ohne eigenen Wert) von einer anderen Rolle übernommen werden – eine Schrift gilt nur
 // auf ihrem Hintergrund: Ändert man eine Rolle, werden die davon abhängigen vorher mit ihrem bisherigen Wert festgeschrieben

@@ -1,4 +1,4 @@
-import { F, FARB_VORLAGEN, elementName, elementSchluessel, farbeZuHex, farbenAus, mitFestenSchriften, schemaVon, zufallsFarben } from "../farben.js";
+import { AKZENT_SCHRIFTEN, F, FARB_VORLAGEN, LESBAR_SOLL, kontrast, FLAECHEN, STUFE_VON, TEXT_FLAECHEN, flaecheVon, elementName, elementSchluessel, farbeZuHex, farbenAus, mitFestenSchriften, schemaVon, zufallsFarben } from "../farben.js";
 import { SK, TYPEN, lsSet } from "../speicher.js";
 import { hinweiseAus, ohneHinweis } from "../quiz.jsx";
 
@@ -62,13 +62,25 @@ export function verschiebeKlammern(app) {
   }
 
 // ── Farbwähler (Farbkreis): live über CSS-Variablen, ohne die App neu aufzubauen ──
+// 265: Rolle einer Fläche (Hintergrund oder eine ihrer Schriften) → Flächen-Editor: Vorschau mit allen Schriften,
+// Auswahl, was eingestellt wird; Arbeitsstand (alle Teile der Fläche) und Rückgängig-Stapel in arbeitRef
 export function oeffneFarbRad(app, rolle, titel, basis, ziel, el = null) {
-  const { setFarbRad, vollHex } = app;
+  const { arbeitRef, setFarbRad, vollHex } = app;
     const r = el?.getBoundingClientRect();
-    setFarbRad({ rolle, titel, start: vollHex(basis[rolle] || farbenAus(basis)[rolle] || "#000000").toLowerCase(), basis, ziel,
+    const alle = farbenAus(basis);
+    const wert = x => vollHex(basis[x] || alle[x] || "#000000").toLowerCase();
+    const fl = flaecheVon(rolle);
+    const flaeche = fl ? { key: fl, werte0: Object.fromEntries([fl, ...FLAECHEN[fl].schriften.map(s => s.rolle)].map(x => [x, wert(x)])),
+      akzente: TEXT_FLAECHEN.includes(fl) ? AKZENT_SCHRIFTEN.map(([k, l]) => [wert(k), l]) : [] } : null;
+    if (flaeche) arbeitRef.current = { werte: { ...flaeche.werte0 }, stapel: [], zeit: 0 };
+    setFarbRad({ rolle, titel: fl ? FLAECHEN[fl].name : titel, start: wert(rolle), basis, ziel, flaeche, gen: 0,
       rect: r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null,
       oben: !!r && r.top + r.height / 2 > window.innerHeight / 2 });
   }
+// Arbeitsstand einer Fläche auf ein Schema anwenden (nur Geändertes; Hintergrund zuerst, abhängige Schriften bleiben)
+export function mitArbeit(basis, werte, werte0) {
+  return Object.entries(werte).filter(([r, v]) => v !== werte0[r]).reduce((b, [r, v]) => mitFestenSchriften(b, r, v), basis);
+}
 
 // nur diese Element-Art: eigene Regel statt der Rolle
 export function oeffneElementFarbRad(app, schluessel, eigenschaft, titel, el) {
@@ -76,12 +88,16 @@ export function oeffneElementFarbRad(app, schluessel, eigenschaft, titel, el) {
     const r = el?.getBoundingClientRect();
     const cs = el ? getComputedStyle(el) : null;
     const jetzt = elementVorschau?.[schluessel]?.[eigenschaft] || (cs && farbeZuHex(cs.getPropertyValue(eigenschaft))) || "#000000";
-    setFarbRad({ rolle: `${schluessel}|${eigenschaft}`, titel, start: vollHex(jetzt).toLowerCase(), element: { schluessel, eigenschaft },
+    // 265: Schrift oder Hintergrund nur dieses Elements – Vorschau mit dem jeweils anderen Teil
+    let bg = null; for (let pe = el; pe && !bg; pe = pe.parentElement) bg = farbeZuHex(getComputedStyle(pe).backgroundColor);
+    const paar = cs && (eigenschaft === "background-color" || eigenschaft === "color")
+      ? { bg: bg || "#ffffff", schrift: farbeZuHex(cs.color) || "#000000", teil: eigenschaft === "color" ? "schrift" : "bg" } : null;
+    setFarbRad({ rolle: `${schluessel}|${eigenschaft}`, titel, start: vollHex(jetzt).toLowerCase(), element: { schluessel, eigenschaft }, paar,
       rect: r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null, oben: !!r && r.top + r.height / 2 > window.innerHeight / 2 });
   }
 
 export function farbRadAnwenden(app, hex) {
-  const { eigeneSchemata, einstellungen, farbRad, liveEntfernen, setElementVorschau, setFarbRad, setFarbVorschau, speichereEinst } = app;
+  const { arbeitRef, eigeneSchemata, einstellungen, farbRad, liveEntfernen, setElementVorschau, setFarbRad, setFarbVorschau, speichereEinst } = app;
     const { rolle, ziel } = farbRad;
     const verlauf = [hex, ...(einstellungen.farbVerlauf || []).filter(x => x !== hex)].slice(0, 10);
     if (farbRad.element) {
@@ -90,9 +106,11 @@ export function farbRadAnwenden(app, hex) {
       speichereEinst({ ...einstellungen, farbVerlauf: verlauf });
       liveEntfernen(); setFarbRad(null); return;
     }
-    if (ziel === "vorschau") { setFarbVorschau(f => mitFestenSchriften(f || farbRad.basis, rolle, hex)); speichereEinst({ ...einstellungen, farbVerlauf: verlauf }); }
+    // 265: Fläche – alle geänderten Teile zusammen
+    const anwenden = farbRad.flaeche ? (b => mitArbeit(b, { ...arbeitRef.current.werte, [rolle]: hex }, farbRad.flaeche.werte0)) : (b => mitFestenSchriften(b, rolle, hex));
+    if (ziel === "vorschau") { setFarbVorschau(f => anwenden(f || farbRad.basis)); speichereEinst({ ...einstellungen, farbVerlauf: verlauf }); }
     else speichereEinst({ ...einstellungen, farbVerlauf: verlauf,
-      eigeneSchemata: eigeneSchemata.map(x => x.id === ziel ? { ...x, farben: mitFestenSchriften(x.farben, rolle, hex) } : x) });
+      eigeneSchemata: eigeneSchemata.map(x => x.id === ziel ? { ...x, farben: anwenden(x.farben) } : x) });
     liveEntfernen(); setFarbRad(null);
   }
 
@@ -172,8 +190,11 @@ export function farbRollenBei(app, x, y) {
       const cs = getComputedStyle(el), teile = [];
       const svg = el instanceof SVGElement && el.tagName.toLowerCase() !== "svg";
       // Schrift ohne eigene Regel: von außen geerbte Rolle (z. B. Text im Start-Knopf), wenn die Farbe passt
-      const geerbt = h => { for (let pe = el.parentElement, i = 0; pe && i < 4; pe = pe.parentElement, i++) { const r = deklariert(pe, ["color"]); if (r) return F[r] !== undefined && vollHex(F[r]).toLowerCase() === h ? r : null; } return null; };
-      const dazu = (teil, wert, props) => { const h = zuHex(wert); if (!h) return; const rolle = (props && deklariert(el, props)) || (teil === "Schrift" && geerbt(h)) || nachWert(h, teil); if (rolle && F[rolle] !== undefined && !teile.some(t => t.rolle === rolle && t.teil === teil)) teile.push({ teil, rolle }); };
+      const geerbt = h => { for (let pe = el.parentElement, i = 0; pe && i < 4; pe = pe.parentElement, i++) { const r = deklariert(pe, ["color"]); if (r) { const rr = zurFlaeche("Schrift", r); return F[rr] !== undefined && vollHex(F[rr]).toLowerCase() === h ? r : null; } } return null; };
+      // 265: allgemeine Schrift (text2 …) gehört zur Fläche darunter → deren eigene Schrift („karte-t2“)
+      const flaecheUnter = () => { for (let pe = el; pe && pe !== document.documentElement; pe = pe.parentElement) { const b = deklariert(pe, ["background", "background-color"]); if (b && TEXT_FLAECHEN.includes(b)) return b; } return "hintergrund"; };
+      const zurFlaeche = (teil, rolle) => teil === "Schrift" && STUFE_VON[rolle] ? `${flaecheUnter()}-${STUFE_VON[rolle]}` : rolle;
+      const dazu = (teil, wert, props) => { const h = zuHex(wert); if (!h) return; const rolle = zurFlaeche(teil, (props && deklariert(el, props)) || (teil === "Schrift" && geerbt(h)) || nachWert(h, teil)); if (rolle && F[rolle] !== undefined && !teile.some(t => t.rolle === rolle && t.teil === teil)) teile.push({ teil, rolle }); };
       if (svg) {
         if (cs.fill && cs.fill !== "none") dazu(el.tagName.toLowerCase() === "text" ? "Schrift" : "Füllung", cs.fill);
         if (cs.stroke && cs.stroke !== "none") dazu(el.tagName.toLowerCase() === "line" || el.tagName.toLowerCase() === "path" && cs.fill === "none" ? "Linie" : "Ring/Linie", cs.stroke);
@@ -186,4 +207,50 @@ export function farbRollenBei(app, x, y) {
       if (teile.length && gruppen.length < 7) gruppen.push({ name: name(el), titel: elementName(el), el, teile, schluessel: elementSchluessel(el) });
     });
     return gruppen;
+  }
+
+// ── 265 E: Gesamtprüfung – alle sichtbaren Texte der Seite gegen ihren tatsächlichen Hintergrund ──
+const rgbaVon = c => { const m = (c || "").match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(/[\s,/]+/).filter(Boolean).map(Number); return [p[0], p[1], p[2], p[3] ?? 1]; };
+const auf = (oben, unten) => [0, 1, 2].map(i => oben[i] * oben[3] + unten[i] * (1 - oben[3]));
+const zuHex6 = c => "#" + c.slice(0, 3).map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
+function grundVon(el) {
+  const schichten = [];
+  for (let p = el; p && p.nodeType === 1; p = p.parentElement) { const c = rgbaVon(getComputedStyle(p).backgroundColor); if (c && c[3] > 0.02) { schichten.push(c); if (c[3] >= 0.99) break; } }
+  return schichten.reverse().reduce((u, s) => auf(s, u), [255, 255, 255]);
+}
+// Schwelle: sehr leise (--text3/--text4 an dieser Stelle) locker, leise (--text2) 3, groß/fett 3, sonst 4,5
+function sollVon(el, cs) {
+  const farbe = cs.color.replace(/\s/g, "");
+  const gleich = v => { const h = cs.getPropertyValue(v).trim(); if (!h) return false; const t = document.createElement("i"); t.style.color = h; return t.style.color && rgbaVon(t.style.color) && zuHex6(rgbaVon(t.style.color)) === zuHex6(rgbaVon(farbe)); };
+  if (gleich("--text3") || gleich("--text4")) return LESBAR_SOLL.sehrleise;
+  if (gleich("--text2")) return LESBAR_SOLL.leise;
+  return (parseFloat(cs.fontWeight) >= 600 || parseFloat(cs.fontSize) >= 18.5) ? LESBAR_SOLL.kraeftig : LESBAR_SOLL.normal;
+}
+// Kontrast eines Textes an seiner Stelle (für den Vergleich vorher/nachher)
+export function kontrastVon(el) {
+  const c = rgbaVon(getComputedStyle(el).color); if (!c) return 99;
+  const grund = grundVon(el);
+  return kontrast(zuHex6(auf(c, grund)), zuHex6(grund));
+}
+export function lesbarkeitPruefen() {
+    const treffer = [], gesehen = new Set();
+    for (const el of document.querySelectorAll("body *")) {
+      if (el instanceof SVGElement || el.closest("[data-farbmodus-ui], [data-info-blase], .farbfeld-hintergrund")) continue;
+      const text = [...el.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent.trim()).join(" ").trim();
+      if (!text || !el.getClientRects().length) continue;
+      const cs = getComputedStyle(el);
+      if (cs.visibility === "hidden") continue;
+      let deckkraft = 1; for (let p = el; p && p.nodeType === 1; p = p.parentElement) deckkraft *= parseFloat(getComputedStyle(p).opacity) || 0;
+      if (deckkraft < 0.6) continue;   // abgeschaltete / ausgegraute Elemente
+      const c = rgbaVon(cs.color); if (!c || c[3] < 0.3) continue;
+      const grund = grundVon(el), schrift = auf(c, grund);
+      const k = kontrast(zuHex6(schrift), zuHex6(grund)), soll = sollVon(el, cs);
+      if (k >= soll) continue;
+      const name = elementName(el), schl = `${name}|${zuHex6(schrift)}|${zuHex6(grund)}`;
+      if (gesehen.has(schl)) continue;
+      gesehen.add(schl);
+      treffer.push({ el, name, text: text.slice(0, 40), k, soll });
+      if (treffer.length >= 40) break;
+    }
+    return treffer;
   }

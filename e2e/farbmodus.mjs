@@ -80,7 +80,7 @@ const lage = await page.evaluate(() => { const f = document.querySelector("[data
   const b = [...document.querySelectorAll("button")].find(x => x.matches("[data-start-knopf]")).getBoundingClientRect();
   return { seite: document.querySelector("[data-farbrad]").dataset.farbradSeite, frei: f.bottom <= b.top || f.top >= b.bottom, hoehe: Math.round(f.height), feld: !!document.querySelector("[data-farbfeld]") }; });
 console.log("     Farbwähler:", JSON.stringify(lage));
-ok(lage.seite === "oben" && lage.frei && lage.hoehe < 370, "Farbwähler als Leiste auf der freien Seite – der Knopf bleibt sichtbar");
+ok(lage.seite === "oben" && lage.frei && lage.hoehe < 480, "Farbwähler als Leiste auf der freien Seite – der Knopf bleibt sichtbar");
 ok(!lage.feld, "Farbfeld „Farben hier“ ausgeblendet, solange der Farbwähler offen ist");
 const kr = await page.evaluate(() => { const r = document.querySelector("[data-farbrad-kreis]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, r: r.width / 2 }; });
 await page.mouse.move(kr.x + kr.r * 0.9, kr.y); await page.mouse.down(); await page.mouse.move(kr.x + kr.r * 0.9, kr.y + 2); await sleep(150);

@@ -37,7 +37,8 @@ const feldZeilen = () => page.evaluate(() => [...document.querySelectorAll("[dat
 const farbradHex = async (wert, anwenden = true) => {
   await page.evaluate(w => { const i = document.querySelector("[data-farbrad-hex]"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, w); i.dispatchEvent(new Event("input", { bubbles: true })); }, wert);
   await new Promise(r => setTimeout(r, 200));
-  if (anwenden) { await page.click("[data-farbrad-anwenden]"); await new Promise(r => setTimeout(r, 300)); }
+  if (anwenden) { await page.click("[data-farbrad-anwenden]"); await new Promise(r => setTimeout(r, 150)); if (await page.$("[data-lesbar-trotzdem]")) await page.click("[data-lesbar-trotzdem]");   // 265: Rückfrage Lesbarkeit
+  await new Promise(r => setTimeout(r, 300)); }
 };
 const setzeFarbe = async (rolle, wert) => { await page.evaluate(r => document.querySelector(`[data-farbfeld-zeile="${r}"]`).click(), rolle); await sleep(300); await farbradHex(wert); };
 const eigene = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}").eigeneSchemata || []);

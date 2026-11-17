@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { GRUPPE, gruppe, zeigeInfo, schliesseInfo, schalteInfoModus, setzeFarbeImMenue } from "./infoEreignisse.js";
-import { F, FARB_BASIS, FARB_ROLLEN, FARB_VORLAGEN, TEIL_EIGENSCHAFT, elementCSS, elementName, elementSchluessel, farbVariablen, farbeZuHex, farbenAus, fv, hervorgehoben, mische, mitFestenSchriften, schemaVon, setzeSystemLeiste, teilName, zufallsFarben, setzeF } from "./farben.js";
+import { F, FARB_BASIS, FARB_ROLLEN, FLAECHEN, STUFE_VON, TEXT_FLAECHEN, flaecheVon, flaechenRegeln, kontrast, kontrastText, FARB_VORLAGEN, TEIL_EIGENSCHAFT, elementCSS, elementName, elementSchluessel, farbVariablen, farbeZuHex, farbenAus, fv, hervorgehoben, mische, mitFestenSchriften, schemaVon, setzeSystemLeiste, teilName, zufallsFarben, setzeF } from "./farben.js";
 import { SPALTEN_TAG, dateiVorschau, findeJsonListen, generiereExportText, generierePrompt, istBinaer, parseKolumne, parseKopfZeile, parseZeile } from "./importexport.js";
 import { FarbRad, GelerntSterne, IcoBack, IcoCollapse, IcoDown, IcoExpand, IcoPencil, IcoSpk, IcoSpkOn, IcoUp, IcoX, MiniKreis } from "./komponenten.jsx";
 import { ABFRAGE_ART_NAMEN, AKZENTE_FUER_LISTE, AKZENT_HINWEIS, AKZENT_OHNE_ANTEILE, ANTWORT_MODUS_NAMEN, ART_KURZ, BLITZ_SEKUNDEN, FAELLIG_ANTEIL_WAHL, FESTES_ZEICHEN, FORTSCHRITT_BALKEN, GELERNT_SCHWELLE, GRUPPE_BALKEN, LERNEN_STANDARD, LERNEN_TIPPEN, LIGATUR_TEILE, MAX_STUFE, MC_FEHLKLICK_HINWEIS, MODI_REIHENFOLGE, PAKET_ALLE, QUIZ_ARTEN, REKORDE_KEY, SATZ_ARTEN, SATZ_CACHE, SCORE_FELD, STANDARD_ABFRAGE_ZIEL, STANDARD_ANTWORT_GEWICHTE, STANDARD_ANTWORT_MODUS, STANDARD_MAX_SCORE, STANDARD_PAKET_GROESSE, STANDARD_REIHENFOLGE, STANDARD_SESSION_MODUS, STANDARD_UNBEANTWORTET_ZUERST, START_TEXT, STATISTIK_ARTEN, STUFEN_REGELN, WIEDERHOL_TAGE_WAHL, ZUORDNUNG_FARBEN, ZUORDNUNG_SEKUNDEN, ZUORDNUNG_ZEITEN, ZUORDNUNG_ZEITFAKTOR, akzentKacheln, akzentOhneAnteil, akzentVarianten, alternativen, antwortSpaltenFuer, antwortStatus, artBereinigt, artFelderAus, artVonKonfig, artikelInfo, berechneDiktatScore, berechneNeuenScore, clampScore, diktatHint, ersteAlt, faelligAnteil, gelerntScore, generiereButtons, getQuizFeedback, gewichtetWaehlen, hatAkzentWort, hatAkzente, heuteAbgefragt, heuteAnteil, hinweiseAus, istFaellig, istMC, istRichtigeAntwort, istRichtigeEinzeln, istRunde, jubelText, lernLesezeit, lernProzent, loeseSpaltenModusAuf, lueckenPositionen, mischeFaellige, mitHinweis, modiVon, modusErlaubt, negativUmstellen, nrText, ohneAkzent, ohneHinweis, ordneVokabeln, puzzleKacheln, satzFuer, scoreSymbole, slotKonfigArt, slotSFAlle, speichereAkzentScore, speichereDiktatScore, speichereScore, standardArtEinstellungen, statistikSicht, stufenRegeln, stufenUmstellen, tagesSperre, umbruch, vokSprache, wiederholTage, zufallMitSeed, zuordnungEinst, setzeAKZENTE_FUER_LISTE, setzeANTWORT_GEWICHTE } from "./quiz.jsx";
@@ -31,7 +31,7 @@ import { analysiereImport as analysiereImportTeil, autoMappeKolumnen as autoMapp
 import { aendereListenEintrag as aendereListenEintragTeil, aktiviereSlotFortschritt as aktiviereSlotFortschrittTeil, aktuelleKonfiguration as aktuelleKonfigurationTeil, applyKonfiguration as applyKonfigurationTeil, artEinstellungenJetzt as artEinstellungenJetztTeil, benenneOrdnerUm as benenneOrdnerUmTeil, erstelleQuiz as erstelleQuizTeil, erstelleVerlaufEintrag as erstelleVerlaufEintragTeil, faelligeSchluessel as faelligeSchluesselTeil, getSlotEintrag as getSlotEintragTeil, getSlotsData as getSlotsDataTeil, gruppiere as gruppiereTeil, ladeFaellige as ladeFaelligeTeil, ladeSlot as ladeSlotTeil, ladeSlotStatistik as ladeSlotStatistikTeil, listeAlsQuizVorbereiten as listeAlsQuizVorbereitenTeil, loeseOrdnerAuf as loeseOrdnerAufTeil, merkeRundeImVerlauf as merkeRundeImVerlaufTeil, rasterEinordnen as rasterEinordnenTeil, schliesseSlotsVerzoegert as schliesseSlotsVerzoegertTeil, setSlotsData as setSlotsDataTeil, setzeSlotPlaetze as setzeSlotPlaetzeTeil, speichereListenKonfig as speichereListenKonfigTeil, starteQuizErstellen as starteQuizErstellenTeil, toggleInfoSpalte as toggleInfoSpalteTeil, toggleQuizSpalte as toggleQuizSpalteTeil, toggleSpalteRolle as toggleSpalteRolleTeil, toggleVokCheckbox as toggleVokCheckboxTeil, verschiebeInOrdner as verschiebeInOrdnerTeil, wendeArtEinstellungenAn as wendeArtEinstellungenAnTeil, zurUebersetzung as zurUebersetzungTeil } from "./logik/slots.jsx";
 import { beendeLernen as beendeLernenTeil, beendeQuiz as beendeQuizTeil, benenneSlotUm as benenneSlotUmTeil, dupliziereSlot as dupliziereSlotTeil, erstAusQuiz as erstAusQuizTeil, getKombinierteListe as getKombinierteListeTeil, initQuizDefaults as initQuizDefaultsTeil, klappeUebersichtEin as klappeUebersichtEinTeil, kopieName as kopieNameTeil, legeAufteilenAn as legeAufteilenAnTeil, lernEinstellungen as lernEinstellungenTeil, lernInfoZeigen as lernInfoZeigenTeil, lernPause as lernPauseTeil, lernStandVon as lernStandVonTeil, lernenVor as lernenVorTeil, lernenWeiter as lernenWeiterTeil, lernenZurueck as lernenZurueckTeil, loescheAuswahl as loescheAuswahlTeil, loescheSessionSlot as loescheSessionSlotTeil, loescheSlotEintrag as loescheSlotEintragTeil, multiZusammenstellung as multiZusammenstellungTeil, naechstesLernPaket as naechstesLernPaketTeil, neueQuizKonfiguration as neueQuizKonfigurationTeil, schliesseQuizBereiche as schliesseQuizBereicheTeil, sessionStandImQuiz as sessionStandImQuizTeil, setzeLernEinst as setzeLernEinstTeil, setzeLernStand as setzeLernStandTeil, setzeQuizEinstellungenZurueck as setzeQuizEinstellungenZurueckTeil, speichereAlsGespeichert as speichereAlsGespeichertTeil, starteAufteilen as starteAufteilenTeil, starteQuizMitAuswahl as starteQuizMitAuswahlTeil, starteLernQuiz as starteLernQuizTeil, starteLernen as starteLernenTeil, toggleAbfrageModus as toggleAbfrageModusTeil, toggleEinstellungen as toggleEinstellungenTeil, toggleEinzelauswahl as toggleEinzelauswahlTeil, toggleListenAuswahl as toggleListenAuswahlTeil, toggleQuizTabListe as toggleQuizTabListeTeil, toggleReihenfolge as toggleReihenfolgeTeil, toggleSessionBereich as toggleSessionBereichTeil, toggleSlotSektion as toggleSlotSektionTeil, toggleStatistikEinzelauswahl as toggleStatistikEinzelauswahlTeil, toggleStatistikListenAuswahl as toggleStatistikListenAuswahlTeil, ueberspeichereSession as ueberspeichereSessionTeil, updateSessionSlotFortschritt as updateSessionSlotFortschrittTeil, updateSlotSF as updateSlotSFTeil } from "./logik/lernenSessions.jsx";
 import { auswahlStuecke as auswahlStueckeTeil, einListenName as einListenNameTeil, sessionAuswertungDaten as sessionAuswertungDatenTeil, sessionAuswertungSeite as sessionAuswertungSeiteTeil, sichtbarHalten as sichtbarHaltenTeil, slotNamenVorschlag as slotNamenVorschlagTeil, springeZuTreffer as springeZuTrefferTeil, sprungKnopf as sprungKnopfTeil, suchInfo as suchInfoTeil, suchMarke as suchMarkeTeil, vonBisLangDruck as vonBisLangDruckTeil, zeileImBlick as zeileImBlickTeil, zuEinstListen as zuEinstListenTeil } from "./logik/auswertung.jsx";
-import { aendereEigenesSchema as aendereEigenesSchemaTeil, beendeFarbModus as beendeFarbModusTeil, dupliziereSchema as dupliziereSchemaTeil, entferneElementFarbe as entferneElementFarbeTeil, farbRadAbbrechen as farbRadAbbrechenTeil, farbRadAnwenden as farbRadAnwendenTeil, farbRollenBei as farbRollenBeiTeil, klammerAenderungen as klammerAenderungenTeil, loescheSchema as loescheSchemaTeil, oeffneElementFarbRad as oeffneElementFarbRadTeil, oeffneFarbRad as oeffneFarbRadTeil, starteFarbModus as starteFarbModusTeil, uebernehmeFarben as uebernehmeFarbenTeil, verschiebeKlammern as verschiebeKlammernTeil, zufallsSchema as zufallsSchemaTeil } from "./logik/farbmodus.jsx";
+import { kontrastVon, lesbarkeitPruefen, mitArbeit, aendereEigenesSchema as aendereEigenesSchemaTeil, beendeFarbModus as beendeFarbModusTeil, dupliziereSchema as dupliziereSchemaTeil, entferneElementFarbe as entferneElementFarbeTeil, farbRadAbbrechen as farbRadAbbrechenTeil, farbRadAnwenden as farbRadAnwendenTeil, farbRollenBei as farbRollenBeiTeil, klammerAenderungen as klammerAenderungenTeil, loescheSchema as loescheSchemaTeil, oeffneElementFarbRad as oeffneElementFarbRadTeil, oeffneFarbRad as oeffneFarbRadTeil, starteFarbModus as starteFarbModusTeil, uebernehmeFarben as uebernehmeFarbenTeil, verschiebeKlammern as verschiebeKlammernTeil, zufallsSchema as zufallsSchemaTeil } from "./logik/farbmodus.jsx";
 import { beendeMultiAuswahl as beendeMultiAuswahlTeil, brecheQuizAb as brecheQuizAbTeil, setzeQuizFort as setzeQuizFortTeil, infoEintrag as infoEintragTeil, lernstandJeArt as lernstandJeArtTeil, listenMenue as listenMenueTeil, listenWahlMenue as listenWahlMenueTeil, oeffneListeDetail as oeffneListeDetailTeil, oeffneSatzFenster as oeffneSatzFensterTeil, quizRegeln as quizRegelnTeil, satzPortion as satzPortionTeil, sessionSpeicherAktionen as sessionSpeicherAktionenTeil, uebernehmeSaetze as uebernehmeSaetzeTeil, uebernimmListe as uebernimmListeTeil, verlasseRunde as verlasseRundeTeil, zurRundenStatistik as zurRundenStatistikTeil, zurueckZumLernen as zurueckZumLernenTeil, zurueckZurStatistik as zurueckZurStatistikTeil } from "./logik/quizStart.jsx";
 import { akzentFehlgriff as akzentFehlgriffTeil, akzentStand as akzentStandTeil, beendeVerzoegerung as beendeVerzoegerungTeil, begrenzeOhneAkzent as begrenzeOhneAkzentTeil, bewerteKarte as bewerteKarteTeil, brecheWiederholungAb as brecheWiederholungAbTeil, deckeKarteAuf as deckeKarteAufTeil, geheZurueck as geheZurueckTeil, getAktVok as getAktVokTeil, karteWeiter as karteWeiterTeil, klickeButton as klickeButtonTeil, memoryTippe as memoryTippeTeil, mitFlash as mitFlashTeil, mitRueckblick as mitRueckblickTeil, mitVerzoegerung as mitVerzoegerungTeil, mitZuordnungMix as mitZuordnungMixTeil, naechsteDiktatVokabel as naechsteDiktatVokabelTeil, naechsteVokabel as naechsteVokabelTeil, naechsteVokabelState as naechsteVokabelStateTeil, naechsteVokabelState0 as naechsteVokabelState0Teil, pruefeAkzente as pruefeAkzenteTeil, pruefeAntwort as pruefeAntwortTeil, pruefeDiktatAntwort as pruefeDiktatAntwortTeil, rueckblickWischen as rueckblickWischenTeil, schliesseAkzenteAb as schliesseAkzenteAbTeil, setzeAkzentVariante as setzeAkzentVarianteTeil, spaltenAbschluss as spaltenAbschlussTeil, spielBeenden as spielBeendenTeil, sprichDiktatNochmal as sprichDiktatNochmalTeil, starteWiederholung as starteWiederholungTeil, ueberspringeWeitere as ueberspringeWeitereTeil, umwerten as umwertenTeil, verteileOhneAkzent as verteileOhneAkzentTeil, waehleAkzentKachel as waehleAkzentKachelTeil, wechsleZuMC as wechsleZuMCTeil, weiterNachSpalte as weiterNachSpalteTeil, zeigeDiktatLoesung as zeigeDiktatLoesungTeil, zeigeLosung as zeigeLosungTeil, zuordnungGruppeTippe as zuordnungGruppeTippeTeil, zuordnungMixWeiter as zuordnungMixWeiterTeil, zuordnungPruefe as zuordnungPruefeTeil, zuordnungRunde as zuordnungRundeTeil, zuordnungRundeAus as zuordnungRundeAusTeil, zuordnungRundeEnde as zuordnungRundeEndeTeil, zuordnungTippe as zuordnungTippeTeil, zuordnungWerte as zuordnungWerteTeil, zuordnungZeitBis as zuordnungZeitBisTeil } from "./logik/abfrage.jsx";
 
@@ -48,16 +48,18 @@ export default function VokabelApp() {
   const [elementVorschau, setElementVorschau] = useState(null);     // Element-Farben während des Farbmodus
   const [farbFeld, setFarbFeld] = useState(null);                   // {gruppen, zeit} nach langem Druck
   const [farbMarke, setFarbMarke] = useState(null);                 // Rechteck des hervorgehobenen Elements
+  const [pruefung, setPruefung] = useState(null);   // 265 E: { treffer, uebernehmen } – Lesbarkeit der Seite
   const [farbName, setFarbName] = useState(null);                   // Name beim Übernehmen einer Vorlage
   const farbModusRef = useRef(false);
   const [farbRad, setFarbRad] = useState(null);
+  const arbeitRef = useRef(null);   // 265: Flächen-Editor – { werte, stapel (Rückgängig), zeit }
   const [klammerZiel, setKlammerZiel] = useState("i1");                // Aufräum-Werkzeug: Ziel-Info-Spalte                     // {rolle, titel, start, basis, ziel: "vorschau"|schemaId}
   farbModusRef.current = farbModus;
   const [schemaMenueId, setSchemaMenueId] = useState(null);         // Schema für Umbenennen / Löschen
   // Farbschema: Farben je Rolle (CSS-Variablen + F für SVG); vor dem Laden der Einstellungen aus dem Speicher
   const farbSchema = schemaVon(einstellungen.farbschema || einstellungen.eigeneSchemata ? einstellungen : lsGet(SK.einstellungen, {}));
   setzeF(farbenAus(farbModus && farbVorschau ? farbVorschau : farbSchema.farben));
-  setzeCSS(farbVariablen(F, farbSchema.dunkel) + CSS_BASIS + elementCSS(farbModus && elementVorschau ? elementVorschau : farbSchema.elemente));
+  setzeCSS(farbVariablen(F, farbSchema.dunkel) + CSS_BASIS + flaechenRegeln(CSS_BASIS) + elementCSS(farbModus && elementVorschau ? elementVorschau : farbSchema.elemente));
   setzeFarbeImMenue(einstellungen.farbeImMenue !== false && !farbModus);
   setzeANTWORT_GEWICHTE({ ...STANDARD_ANTWORT_GEWICHTE, ...(einstellungen.antwortGewichte || {}) });
   useEffect(() => { setzeSystemLeiste(F.leiste); });
@@ -1498,7 +1500,7 @@ export default function VokabelApp() {
     ? ((einstellungen.eigeneSchemata || []).find(x => x.id === sprachSchemaId) || FARB_VORLAGEN.find(x => x.id === sprachSchemaId)) : null;
   if (sprachSchema) {
     setzeF(farbenAus(sprachSchema.farben));
-    setzeCSS(farbVariablen(F, sprachSchema.dunkel) + CSS_BASIS + elementCSS(sprachSchema.elemente));
+    setzeCSS(farbVariablen(F, sprachSchema.dunkel) + CSS_BASIS + flaechenRegeln(CSS_BASIS) + elementCSS(sprachSchema.elemente));
   }
   // Zufallsfarben je Abschnitt: neues Zufalls-Schema bei jedem Quiz (bzw. Paket), am Ende und zurück in der Übersicht
   const farbWechselAn = !!einstellungen.farbWechsel && !einstellungen.sprachFarben?.an && !farbModus;
@@ -1508,7 +1510,7 @@ export default function VokabelApp() {
   useEffect(() => { if (farbWechselAn) setWechselFarben(zufallsFarben()); }, [abschnitt, farbWechselAn]);   // eslint-disable-line react-hooks/exhaustive-deps
   if (farbWechselAn && wechselFarben) {
     setzeF(farbenAus(wechselFarben));
-    setzeCSS(farbVariablen(F, false) + CSS_BASIS);
+    setzeCSS(farbVariablen(F, false) + CSS_BASIS + flaechenRegeln(CSS_BASIS));
   }
   const sichtbareIds = new Set(sichtbareListen.map(l => l.id));
   // Slot ist sichtbar, wenn alle seine (noch vorhandenen) Listen zur gewählten Sprache gehören
@@ -2170,7 +2172,7 @@ export default function VokabelApp() {
   function verschiebeKlammern(...args) { return verschiebeKlammernTeil({ aktiveListe, klammerAenderungen, klammerZiel, listenIndex, setAktiveListe, setModal, speichereIndex }, ...args); }
 
   // ── Farbwähler (Farbkreis): live über CSS-Variablen, ohne die App neu aufzubauen ──
-  function oeffneFarbRad(...args) { return oeffneFarbRadTeil({ setFarbRad, vollHex }, ...args); }
+  function oeffneFarbRad(...args) { return oeffneFarbRadTeil({ arbeitRef, setFarbRad, vollHex }, ...args); }
   // nur diese Element-Art: eigene Regel statt der Rolle
   function oeffneElementFarbRad(...args) { return oeffneElementFarbRadTeil({ elementVorschau, setFarbRad, vollHex }, ...args); }
   const liveElement = text => {
@@ -2181,13 +2183,41 @@ export default function VokabelApp() {
   const liveFarbe = hex => {
     if (!farbRad) return;
     if (farbRad.element) { liveElement(`${farbRad.element.schluessel}{${farbRad.element.eigenschaft}:${hex} !important}`); return; }
+    if (farbRad.flaeche) {   // 265: Arbeitsstand der Fläche; nach einer Pause beginnt ein neuer Rückgängig-Schritt
+      const a = arbeitRef.current, jetzt = Date.now();
+      if (jetzt - a.zeit > 700) a.stapel.push({ ...a.werte });
+      a.zeit = jetzt; a.werte = { ...a.werte, [farbRad.rolle]: hex };
+      flaecheLive(); return;
+    }
     const f = farbenAus(mitFestenSchriften(farbRad.basis, farbRad.rolle, hex));
     const root = document.documentElement.style;
     Object.entries(f).forEach(([k, v]) => root.setProperty("--" + k, v));
     setzeSystemLeiste(f.leiste);
   };
+  const flaecheLive = () => {
+    const f = farbenAus(mitArbeit(farbRad.basis, arbeitRef.current.werte, farbRad.flaeche.werte0));
+    const root = document.documentElement.style;
+    Object.entries(f).forEach(([k, v]) => root.setProperty("--" + k, v));
+    setzeSystemLeiste(f.leiste);
+  };
+  // 265: Flächen-Editor – anderen Teil wählen, Rückgängig, Vorlage
+  const flaecheWahl = rolle => setFarbRad(fr => ({ ...fr, rolle, start: arbeitRef.current.werte[rolle], gen: (fr.gen || 0) + 1 }));
+  const flaecheZurueck = () => {
+    const a = arbeitRef.current; if (!a?.stapel.length) return;
+    a.werte = a.stapel.pop(); a.zeit = 0; flaecheLive();
+    setFarbRad(fr => ({ ...fr, start: a.werte[fr.rolle], gen: (fr.gen || 0) + 1 }));
+  };
+  const flaecheVorlage = () => {
+    const sch = farbRad.ziel === "vorschau" ? schemaVon(einstellungen) : eigeneSchemata.find(x => x.id === farbRad.ziel);
+    const vorl = FARB_VORLAGEN.find(v => v.id === (sch?.basis || sch?.id)) || FARB_VORLAGEN[0];
+    const fv2 = farbenAus(vorl.farben), a = arbeitRef.current;
+    a.stapel.push({ ...a.werte }); a.zeit = 0;
+    a.werte = Object.fromEntries(Object.keys(a.werte).map(r => [r, vollHex(fv2[r] || a.werte[r]).toLowerCase()]));
+    flaecheLive();
+    setFarbRad(fr => ({ ...fr, start: a.werte[fr.rolle], gen: (fr.gen || 0) + 1 }));
+  };
   const liveEntfernen = () => { const root = document.documentElement.style; Object.keys(F).forEach(k => root.removeProperty("--" + k)); setzeSystemLeiste(F.leiste); liveElement(""); };
-  function farbRadAnwenden(...args) { return farbRadAnwendenTeil({ eigeneSchemata, einstellungen, farbRad, liveEntfernen, setElementVorschau, setFarbRad, setFarbVorschau, speichereEinst }, ...args); }
+  function farbRadAnwenden(...args) { return farbRadAnwendenTeil({ arbeitRef, eigeneSchemata, einstellungen, farbRad, liveEntfernen, setElementVorschau, setFarbRad, setFarbVorschau, speichereEinst }, ...args); }
   function farbRadAbbrechen(...args) { return farbRadAbbrechenTeil({ liveEntfernen, setFarbRad }, ...args); }
   // Farben des gerade bearbeiteten Schemas (Grundrollen + eigene Element-Farben), ohne Doppelte
   const farbenImSchema = () => {
@@ -2201,8 +2231,11 @@ export default function VokabelApp() {
     <>
       {farbRad.rect && <div data-farbmodus-ui style={{position:"fixed", left: farbRad.rect.x - 3, top: farbRad.rect.y - 3, width: Math.max(farbRad.rect.w, 6) + 6, height: Math.max(farbRad.rect.h, 6) + 6,
         border:"2.5px dashed var(--falsch)", borderRadius:6, zIndex:10005, pointerEvents:"none", boxShadow:"0 0 0 2px var(--karte)"}}/>}
-      <FarbRad key={farbRad.rolle + farbRad.start} titel={farbRad.titel} start={farbRad.start} verlauf={einstellungen.farbVerlauf || []} schema={farbenImSchema()} oben={farbRad.oben}
-        beiLive={liveFarbe} beiAnwenden={farbRadAnwenden} beiAbbrechen={farbRadAbbrechen}/>
+      <FarbRad key={farbRad.rolle + farbRad.start + (farbRad.gen || 0)} titel={farbRad.titel} start={farbRad.start} verlauf={einstellungen.farbVerlauf || []} schema={farbenImSchema()} oben={farbRad.oben}
+        beiLive={liveFarbe} beiAnwenden={farbRadAnwenden} beiAbbrechen={farbRadAbbrechen} paar={farbRad.paar}
+        flaeche={farbRad.flaeche ? { teile: [{ rolle: farbRad.flaeche.key, label: "Hintergrund" }, ...FLAECHEN[farbRad.flaeche.key].schriften], werte: arbeitRef.current.werte,
+          aktiv: farbRad.rolle, bg: farbRad.flaeche.key, werte0: farbRad.flaeche.werte0, akzente: farbRad.flaeche.akzente, beiWahl: flaecheWahl, beiZurueck: flaecheZurueck,
+          kannZurueck: () => (arbeitRef.current?.stapel.length || 0) > 0, beiVorlage: flaecheVorlage } : null}/>
     </>, document.body) : null;
 
   // ── Farbmodus ──
@@ -2220,6 +2253,26 @@ export default function VokabelApp() {
     window.addEventListener("vokabel-farbe-hier", hier);
     return () => window.removeEventListener("vokabel-farbe-hier", hier);
   });
+  // 265 E: Gesamtprüfung – auf Wunsch alle schlecht lesbaren Stellen der Seite; beim Übernehmen nur die durch die
+  // Änderungen schlechter gewordenen (Vergleich mit dem gespeicherten Schema), dann Rückfrage – nie sperren
+  const pruefeSeite = () => { setFarbFeld(null); setPruefung({ treffer: lesbarkeitPruefen() }); };
+  const uebernehmeGeprueft = () => {
+    const jetzt = lesbarkeitPruefen();
+    if (jetzt.length) {
+      const root = document.documentElement.style;
+      Object.entries(farbenAus(schemaVon(einstellungen).farben)).forEach(([k, v]) => root.setProperty("--" + k, v));
+      const neu = jetzt.filter(t => t.k < kontrastVon(t.el) - 0.05);
+      liveEntfernen();
+      if (neu.length) { setFarbFeld(null); setPruefung({ treffer: neu, uebernehmen: true }); return; }
+    }
+    uebernehmeFarben();
+  };
+  const zeigeStelle = el => {
+    setPruefung(null);
+    el.scrollIntoView({ block: "center" });
+    setTimeout(() => { const r = el.getBoundingClientRect(); const x = r.left + Math.min(12, r.width / 2), y = r.top + r.height / 2;
+      setFarbFeld({ gruppen: farbRollenBei(x, y), zeit: Date.now(), y }); markiere(el); }, 300);
+  };
   function uebernehmeFarben(...args) { return uebernehmeFarbenTeil({ aendereEigenesSchema, beendeFarbModus, eigeneSchemata, einstellungen, elementVorschau, farbVorschau, schemaName, setFarbFeld, setFarbName, speichereEinst }, ...args); }
   // Farbrollen der Elemente im Umkreis von (x, y): je Element Hintergrund, Schrift, Rahmen bzw. bei Grafik Füllung, Linie
   function farbRollenBei(...args) { return farbRollenBeiTeil({ vollHex }, ...args); }
@@ -2258,6 +2311,8 @@ export default function VokabelApp() {
     return () => clearTimeout(t);
   }, [farbMarke]);
   const rollenName = rolle => {
+    const fl = flaecheVon(rolle), s = fl && FLAECHEN[fl].schriften.find(x => x.rolle === rolle);
+    if (s && !FARB_ROLLEN.some(([k]) => k === rolle)) return `${FLAECHEN[fl].name} · ${s.label}`;   // 265: Schrift einer Fläche
     const basis = FARB_BASIS[rolle] || rolle;
     const n = FARB_ROLLEN.find(([k]) => k === basis)?.[1] || basis;
     return FARB_BASIS[rolle] ? `${n} (abgestuft)` : n;
@@ -2324,6 +2379,31 @@ export default function VokabelApp() {
         </div>
         );
       })()}
+      {pruefung && !farbRad && (
+        <div className="farbfeld-hintergrund" onClick={() => setPruefung(null)}>
+          <div className="farbfeld" data-pruefung={pruefung.uebernehmen ? "uebernehmen" : "seite"} onClick={e => e.stopPropagation()}>
+            <div style={{display:"flex", alignItems:"center", marginBottom:6}}>
+              <span style={{flex:1, fontWeight:800, color:"var(--text)"}} data-pruefung-titel>{pruefung.treffer.length === 0 ? "✓ Alles gut lesbar" : pruefung.uebernehmen
+                ? `⚠ ${pruefung.treffer.length} Stelle${pruefung.treffer.length > 1 ? "n" : ""} schlechter lesbar` : `⚠ ${pruefung.treffer.length} Stelle${pruefung.treffer.length > 1 ? "n" : ""} schlecht lesbar`}</span>
+              <button className="btn btn-ghost btn-sm" onClick={() => setPruefung(null)} {...ttFeld("Prüfung schließen")}>{pruefung.uebernehmen ? "Zurück" : "Schließen"}</button>
+            </div>
+            {pruefung.treffer.map((t, i) => (
+              <div key={i} className="farb-zeile" data-pruefung-treffer={i} onClick={() => zeigeStelle(t.el)}
+                {...ttFeld("Antippen: zur Stelle springen und ihre Farben zeigen")}>
+                <span className="farb-tupfer" style={{background: getComputedStyle(t.el).backgroundColor, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:"0.8rem", color: getComputedStyle(t.el).color}}>Aa</span>
+                <span style={{flex:1, minWidth:0, color:"var(--text)"}}>
+                  <span style={{display:"block", fontSize:"0.85rem", fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{t.name} · „{t.text}“</span>
+                  <span style={{display:"block", fontSize:"0.75rem", color:"var(--text2)"}}>Kontrast {kontrastText(t.k)} – empfohlen ab {kontrastText(t.soll)}</span>
+                </span>
+              </div>
+            ))}
+            {pruefung.uebernehmen && (
+              <button className="btn btn-primary" style={{width:"100%", marginTop:10}} data-pruefung-trotzdem onClick={() => { setPruefung(null); uebernehmeFarben(); }}
+                {...ttFeld("Farben trotzdem speichern")}>Trotzdem übernehmen</button>
+            )}
+          </div>
+        </div>
+      )}
       {farbName !== null && (
         <div className="farbfeld-hintergrund">
           <div className="farbfeld" data-farb-name onClick={e => e.stopPropagation()}>
@@ -2339,8 +2419,9 @@ export default function VokabelApp() {
       )}
       <div className="farbmodus-leiste">
         <span style={{fontSize:"1rem", alignSelf:"center"}} {...ttFeld("Farbmodus: langer Druck auf ein Element ändert seine Farben")}>🎨</span>
+        <button className="btn btn-ghost btn-sm" data-farbmodus-pruefen onClick={pruefeSeite} {...ttFeld("Lesbarkeit prüfen: alle Texte dieser Seite gegen ihren Hintergrund – antippen springt zur Stelle")}>🔍 Prüfen</button>
         <button className="btn btn-ghost btn-sm" data-farbmodus-zuruecksetzen onClick={beendeFarbModus} {...ttFeld("Alle Änderungen verwerfen und den Farbmodus beenden")}>Zurücksetzen</button>
-        <button className="btn btn-primary btn-sm" data-farbmodus-uebernehmen onClick={() => uebernehmeFarben()} {...ttFeld("Farben speichern und den Farbmodus beenden")}>Farben übernehmen</button>
+        <button className="btn btn-primary btn-sm" data-farbmodus-uebernehmen onClick={uebernehmeGeprueft} {...ttFeld("Farben speichern und den Farbmodus beenden")}>Farben übernehmen</button>
       </div>
     </div>, document.body) : null;
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { fv, hexZuHsv, hexZuRgb, hsvZuHex } from "./farben.js";
+import { LESBAR_SOLL, fv, hexZuHsv, hexZuRgb, hsvZuHex, kontrast, kontrastText } from "./farben.js";
 
 
 // Gelernt-Effekt: Sternenregen von der Antwort-Karte nach außen (8 Sterne, leicht versetzt)
@@ -36,8 +36,13 @@ export function MiniKreis({ pct, buchstabe, aktiv, aus, groesse = 24, aufGruen =
   );
 }
 // oben: Leiste am oberen Rand (Element liegt unten), sonst am unteren Rand – das Element bleibt sichtbar
-export function FarbRad({ titel, start, verlauf, schema = [], beiLive, beiAnwenden, beiAbbrechen, oben = false }) {
+// 265: flaeche = { teile: [{ rolle, label, beispiel }], werte: { rolle: hex }, aktiv, bg (Rolle des Hintergrunds), akzente: [[hex, label]],
+// beiWahl(rolle), beiZurueck(), kannZurueck(), beiVorlage() } – Vorschau der Fläche mit allen Schriften, Auswahl, was eingestellt wird
+// paar = { bg, schrift, teil: "bg" | "schrift" } – nur dieses Element: Schrift und Hintergrund des Elements als Vorschau
+export function FarbRad({ titel, start, verlauf, schema = [], beiLive, beiAnwenden, beiAbbrechen, oben = false, flaeche = null, paar = null }) {
   const [hsv, setHsv] = useState(() => hexZuHsv(start));
+  const [klein, setKlein] = useState(false);   // 265 F: auf die Vorschau eingeklappt – Blick auf die ganze Seite
+  const [frage, setFrage] = useState(null);    // 265 A: Rückfrage beim Anwenden (schlechter lesbar geworden)
   const [hexText, setHexText] = useState(start);
   const canvasRef = useRef(null);
   const groesse = Math.max(130, Math.min(170, ((typeof window !== "undefined" ? window.innerWidth : 360) - 40) * 0.46));
@@ -72,15 +77,52 @@ export function FarbRad({ titel, start, verlauf, schema = [], beiLive, beiAnwend
         style={{width:"100%", height:20, accentColor:hex, background:verlaufCss, borderRadius:10, WebkitAppearance:"none", appearance:"none", display:"block"}}/>
     </div>
   );
+  // Werte der Vorschau: gespeicherter Arbeitsstand, die gerade bearbeitete Rolle live
+  const wert = r => flaeche ? (r === flaeche.aktiv ? hex : flaeche.werte[r]) : null;
+  // 265 A: Lesbarkeit je Schrift (jetzt und beim Öffnen) – Ampel in der Vorschau, Rückfrage nur, wenn kräftig/normal durch
+  // die Änderung unter die Schwelle fällt bzw. dort schlechter wird
+  const zeilen = flaeche ? flaeche.teile.filter(t => t.rolle !== flaeche.bg).map(t => ({ ...t, stufe: t.stufe || "normal",
+      k: kontrast(wert(t.rolle), wert(flaeche.bg)), k0: flaeche.werte0 ? kontrast(flaeche.werte0[t.rolle], flaeche.werte0[flaeche.bg]) : 99 }))
+    : paar ? [{ rolle: "paar", label: "Schrift", stufe: "normal", k: kontrast(paar.teil === "schrift" ? hex : paar.schrift, paar.teil === "bg" ? hex : paar.bg), k0: kontrast(paar.schrift, paar.bg) }] : [];
+  const ampel = z => { const gut = z.k >= LESBAR_SOLL[z.stufe]; return <span className={`fv-ampel${gut ? " ok" : " warn"}`} data-lesbar={gut ? "ok" : "warn"} title={`Kontrast ${kontrastText(z.k)}${gut ? "" : ` – empfohlen ab ${kontrastText(LESBAR_SOLL[z.stufe])}`}`}>{gut ? "✓" : "⚠"} {z.k.toFixed(1).replace(".", ",")}</span>; };
+  const schlechter = zeilen.filter(z => (z.stufe === "kraeftig" || z.stufe === "normal") && z.k < LESBAR_SOLL[z.stufe] && z.k < z.k0 - 0.05);
+  const anwenden = () => { if (schlechter.length && !frage) { setFrage(schlechter); setKlein(false); return; } beiAnwenden(hex); };
+  const vorschau = flaeche ? (
+    <div className="fv-karte" data-flaeche-vorschau style={{background: wert(flaeche.bg)}}>
+      {zeilen.map(t => (
+        <div key={t.rolle} className="fv-zeile">
+          <button className={`fv-probe fv-${t.stufe}${t.rolle === flaeche.aktiv ? " aktiv" : ""}`} data-flaeche-probe={t.rolle}
+            style={{color: wert(t.rolle)}} onClick={() => t.rolle !== flaeche.aktiv && flaeche.beiWahl(t.rolle)}>{t.beispiel}</button>
+          {ampel(t)}
+        </div>
+      ))}
+      {flaeche.akzente?.length > 0 && <div className="fv-akzente" data-flaeche-akzente>{flaeche.akzente.map(([f, l]) => <span key={l} style={{color: f}}>{l}{kontrast(f, wert(flaeche.bg)) < 3 ? " ⚠" : ""}</span>)}</div>}
+    </div>
+  ) : paar ? (
+    <div className="fv-karte" data-paar-vorschau style={{background: paar.teil === "bg" ? hex : paar.bg}}>
+      <div className="fv-zeile"><span className="fv-probe fv-normal" style={{color: paar.teil === "schrift" ? hex : paar.schrift}}>Schrift auf diesem Hintergrund</span>{ampel(zeilen[0])}</div>
+    </div>
+  ) : null;
   return (
     <div className={`farbrad-rahmen${oben ? " oben" : ""}`} data-farbmodus-ui>
-      <div className="farbrad" data-farbrad data-farbrad-seite={oben ? "oben" : "unten"} onClick={e => e.stopPropagation()}>
+      <div className="farbrad" data-farbrad data-farbrad-seite={oben ? "oben" : "unten"} data-farbrad-klein={klein ? "" : undefined} onClick={e => e.stopPropagation()}>
         <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:8}}>
           <span style={{flex:1, minWidth:0, fontWeight:800, color:"var(--text)", fontSize:"0.85rem", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"}}>{titel}</span>
           <span title="vorher" style={{width:28, height:22, borderRadius:6, background:start, border:"1px solid var(--rahmen)", flexShrink:0}}/>
           <span style={{color:"var(--text3)", fontSize:"0.8rem"}}>→</span>
           <span title="neu" data-farbrad-neu style={{width:28, height:22, borderRadius:6, background:hex, border:"1px solid var(--rahmen)", flexShrink:0}}/>
+          {flaeche && <button className="btn-icon fv-knopf" data-farbrad-zurueck disabled={!flaeche.kannZurueck()} onClick={flaeche.beiZurueck} title="Rückgängig">↶</button>}
+          {vorschau && <button className="btn-icon fv-knopf" data-farbrad-klein-knopf onClick={() => setKlein(k => !k)} title={klein ? "Farbwähler wieder aufklappen" : "Einklappen – ganze Seite ansehen"}>{klein ? (oben ? "▾" : "▴") : (oben ? "▴" : "▾")}</button>}
         </div>
+        {vorschau}
+        {flaeche && !klein && (
+          <div className="fv-teile" data-flaeche-teile>
+            {flaeche.teile.map(t => <button key={t.rolle} className={`typ-btn${t.rolle === flaeche.aktiv ? " aktiv" : ""}`} data-flaeche-teil={t.rolle}
+              onClick={() => t.rolle !== flaeche.aktiv && flaeche.beiWahl(t.rolle)}>{t.label}</button>)}
+            {flaeche.beiVorlage && <button className="typ-btn" data-flaeche-vorlage onClick={flaeche.beiVorlage} title="Hintergrund und Schriften dieser Fläche wie in der Vorlage">↺ Vorlage</button>}
+          </div>
+        )}
+        {!klein && <>
         <div style={{display:"flex", gap:12, alignItems:"flex-start"}}>
           <div style={{position:"relative", width:groesse, height:groesse, flexShrink:0, touchAction:"none"}}>
             <canvas ref={canvasRef} data-farbrad-kreis style={{width:groesse, height:groesse, display:"block", borderRadius:"50%", filter:`brightness(${Math.max(0.15, hsv.v)})`, cursor:"crosshair"}}
@@ -106,10 +148,20 @@ export function FarbRad({ titel, start, verlauf, schema = [], beiLive, beiAnwend
             ))}
           </div>
         </div>
-        <div style={{display:"flex", gap:8, marginTop:10}}>
+        </>}
+        {frage && (
+          <div className="fv-frage" data-lesbar-frage>
+            <div>{frage.map(z => `„${z.label}“`).join(", ")} {frage.length > 1 ? "sind" : "ist"} damit schlecht lesbar ({frage.map(z => kontrastText(z.k)).join(", ")}). Trotzdem anwenden?</div>
+            <div style={{display:"flex", gap:8, marginTop:8}}>
+              <button className="btn btn-ghost btn-sm" style={{flex:1}} data-lesbar-zurueck onClick={() => setFrage(null)}>Zurück</button>
+              <button className="btn btn-primary btn-sm" style={{flex:1}} data-lesbar-trotzdem onClick={() => beiAnwenden(hex)}>Trotzdem anwenden</button>
+            </div>
+          </div>
+        )}
+        {!frage && <div style={{display:"flex", gap:8, marginTop:10}}>
           <button className="btn btn-ghost" style={{flex:1, padding:"8px"}} data-farbrad-abbrechen onClick={beiAbbrechen}>Abbrechen</button>
-          <button className="btn btn-primary" style={{flex:1, padding:"8px"}} data-farbrad-anwenden onClick={() => beiAnwenden(hex)}>Anwenden</button>
-        </div>
+          <button className="btn btn-primary" style={{flex:1, padding:"8px"}} data-farbrad-anwenden onClick={anwenden}>Anwenden</button>
+        </div>}
       </div>
     </div>
   );

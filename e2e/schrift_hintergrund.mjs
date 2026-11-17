@@ -41,7 +41,7 @@ const feldZeilen = () => page.evaluate(() => [...document.querySelectorAll("[dat
 const farbradHex = async (wert, anwenden = true) => {
   await page.evaluate(w => { const i = document.querySelector("[data-farbrad-hex]"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, w); i.dispatchEvent(new Event("input", { bubbles: true })); }, wert);
   await new Promise(r => setTimeout(r, 200));
-  if (anwenden) { await page.click("[data-farbrad-anwenden]"); await new Promise(r => setTimeout(r, 300)); }
+  if (anwenden) { await page.click("[data-farbrad-anwenden]"); await new Promise(r => setTimeout(r, 150)); if (await page.$("[data-lesbar-trotzdem]")) await page.click("[data-lesbar-trotzdem]"); await new Promise(r => setTimeout(r, 300)); }
 };
 const setzeFarbe = async (rolle, wert) => { await page.evaluate(r => document.querySelector(`[data-farbfeld-zeile="${r}"]`).click(), rolle); await sleep(300); await farbradHex(wert); };
 const eigene = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}").eigeneSchemata || []);
@@ -79,6 +79,8 @@ ok(await page.evaluate(() => getComputedStyle(document.querySelector("[data-star
 // übernehmen: festgeschriebene Werte im Schema
 if (await page.$("[data-farbfeld]")) await clickText("[data-farbfeld] button", "Schließen", true);
 await page.click("[data-farbmodus-uebernehmen]"); await sleep(300);
+ok(!!(await page.$("[data-pruefung-trotzdem]")), "265: rote Schrift auf der Hauptfarbe – Rückfrage beim Übernehmen");
+await page.click("[data-pruefung-trotzdem]"); await sleep(300);
 await page.click("[data-farb-name-speichern]"); await sleep(400);
 const sch = (await eigene())[0]?.farben || {};
 ok(sch["auf-haupt"] === "#ff0000" && sch["auf-falsch"] === vorher["auf-falsch"] && sch["auf-start"] === vorher["auf-start"], "gespeichert: neue Schrift und die übrigen mit ihrem bisherigen Wert");
@@ -104,8 +106,14 @@ await oeffneEinst("lernen");
 await page.evaluate(() => document.querySelector('[data-einst-unter="akzente"]').click()); await sleep(250);
 const z = await mitte("[data-akzent-sprachen] .toggle-label");
 await rechtsklick(z.x, z.y);
-await setzeFarbe("text-stark", "#003300");
-ok(await variable("text-stark") === "#003300" && await farbe('[data-einst-kopf="stimmen"]') === "rgb(255, 255, 255)", "„Text kräftig“ geändert, Kopf-Schrift bleibt weiß");
+// 265: „Kräftig“ gehört zur Fläche darunter – nur dort ändert es sich
+const zeileStark = await page.evaluate(() => [...document.querySelectorAll("[data-farbfeld-zeile]")].map(z => z.dataset.farbfeldZeile).find(z => z.endsWith("-t-stark")));
+const flaeche = zeileStark?.slice(0, -"-t-stark".length);
+ok(!!zeileStark && flaeche !== "hintergrund", `265: Schrift „Kräftig“ der Fläche darunter (${zeileStark})`);
+await setzeFarbe(zeileStark, "#003300");
+const anderer = flaeche === "karte" ? "hintergrund" : "karte";
+ok(await variable(zeileStark) === "#003300" && await variable("text-stark") === kartenTextVorher && await variable(`${anderer}-t-stark`) === kartenTextVorher && await farbe('[data-einst-kopf="stimmen"]') === "rgb(255, 255, 255)",
+  "265: nur die Schrift dieser Fläche geändert – allgemeine Schrift, andere Flächen und Kopf-Schrift bleiben");
 ok(await variable("abfrage-schrift") === kartenTextVorher && await variable("dialog-schrift") === kartenTextVorher, "Abfrage- und Dialog-Schrift bleiben beim alten Wert");
 
 await browser.close();
