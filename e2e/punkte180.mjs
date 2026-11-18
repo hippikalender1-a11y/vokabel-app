@@ -45,7 +45,7 @@ await page.evaluate(() => {
     { id:"g_b", name:"Gelernt", timestamp:2, platz:{z:1,s:0}, sessionFortschritt:null, konfiguration:k([4]) },
     { id:"g_c", name:"Ganz heute", timestamp:3, platz:{z:2,s:0}, sessionFortschritt:null, konfiguration:k([1]) }] }));
 });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await auswahlAuf();
 

@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, listeWaehlen } from "./hilfen.mjs";
 
 // Quiz-Tab: immer nur ein Bereich offen – ein anderer Knopf schließt den vorherigen
 const URL = "http://localhost:4199/vokabel-app/";
@@ -33,9 +33,9 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l", name:"Englisch 6", sprache:"en" }]));
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", gelerntSchwelle:6, sprache:"alle" }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300); await quizEinstellungen(page);
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(t => t.textContent.includes("Englisch")).click()); await sleep(300);
+await listeWaehlen(page, "Englisch"); await sleep(300);
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 // Listen-Auswahl zu (falls offen)
 await page.evaluate(() => window.scrollTo(0, 0));

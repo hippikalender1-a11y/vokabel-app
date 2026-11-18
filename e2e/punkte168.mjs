@@ -45,7 +45,7 @@ await page.evaluate(alt => {
     { id:"g_fr", name:"Französisch", timestamp:1, platz:{z:0,s:0}, sessionFortschritt:null, konfiguration:k("l_fr") },
     { id:"g_en", name:"Englisch", timestamp:2, platz:{z:1,s:0}, sessionFortschritt:null, konfiguration:k("l_en") }] }));
 }, tageHer(10));
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await auswahlAuf();
 

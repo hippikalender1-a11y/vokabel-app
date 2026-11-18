@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, quizEinstellungen, bereichZu, einstUnter, neueEineSession, menueShim, auswahlEnde } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen, bereichZu, einstUnter, neueEineSession, menueShim, auswahlEnde, listeWaehlen } from "./hilfen.mjs";
 
 // Listen-Tab als Raster: Lang-Druck → Menü (Umbenennen, Duplizieren, Verschieben, Löschen),
 // Lang-Druck + Ziehen verschiebt (belegt → tauschen), Größe unter Einstellungen → Listen, Sprachfilter rückt zusammen
@@ -55,7 +55,7 @@ await page.evaluate(() => {
   // alter Index ohne Plätze
   localStorage.setItem("vokabel_listen_index", JSON.stringify(listen.map(([id, name, sprache]) => ({ id, name, sprache }))));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await zuListen(page);
 
 let pl = await plaetze();
@@ -94,7 +94,10 @@ ok(!(await page.$("[data-listen-fertig]")) && await maxZ() === 4, `„Fertig“ 
 
 // Reihenfolge auch im Quiz-Tab
 await clickText(".tab", "Quiz"); await sleep(300); await quizEinstellungen(page);
-const quizReihe = await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].map(d => d.textContent.trim()).filter(t => /Alpha|Beta|Gamma/.test(t)).map(t => t.match(/Alpha|Beta|Gamma/)[0]).join(","));
+// 289: ohne geladenes Quiz steht die Auswahl mit den Listen offen – dort die Reihenfolge der Listen-Kacheln
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
+await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "listen") b.click(); }); await sleep(300);
+const quizReihe = await page.evaluate(() => [...document.querySelectorAll('[data-kachel-geste="liste"][data-liste-id]')].map(d => d.textContent.trim()).filter(t => /Alpha|Beta|Gamma/.test(t)).map(t => t.match(/Alpha|Beta|Gamma/)[0]).join(","));
 ok(quizReihe === "Gamma,Alpha,Beta", `Quiz-Tab zeigt die Listen in Raster-Reihenfolge (${quizReihe})`);
 await zuListen(page);
 
@@ -174,6 +177,9 @@ const erwartet = "2:" + Object.entries(pl).sort((a, b) => a[1].localeCompare(b[1
 await clickText(".tab", "Quiz"); await sleep(300);
 await neueEineSession(page); await sleep(300);   // 225: freies Quiz – nur dort gibt es die Listen-Auswahl mit Häkchen
 await quizEinstellungen(page);
+// 289: die Häkchen-Liste gibt es nur mit gewählter Liste – erst eine wählen, dann die Listen-Auswahl aufklappen
+await listeWaehlen(page, "Gamma");
+await page.evaluate(() => document.querySelector("[data-listen-kopf]")?.click()); await sleep(400);
 let qr = await auswahlRaster();
 if (!qr) { await clickText("span, div", "Listen-Auswahl", true); qr = await auswahlRaster(); }
 console.log("     Quiz-Raster:", qr, "| erwartet:", erwartet);
@@ -189,7 +195,7 @@ await zuListen(page);
 
 // Sprachfilter: rückt zusammen, kein Verschieben
 await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"); e.sprache = "fr"; localStorage.setItem("vokabel_einstellungen", JSON.stringify(e)); });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await zuListen(page);
 pl = await plaetze();
 console.log("     Filter fr:", JSON.stringify(pl));

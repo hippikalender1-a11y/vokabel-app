@@ -26,7 +26,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_en", JSON.stringify({ id:"l_en", name:"Unit 1", sprache:"en", spalten: sp, naechste_id: 5, vokabeln: vok("word") }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }, { id:"l_en", name:"Unit 1", sprache:"en", platz:{z:1,s:0} }]));
 });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // Sprachen an, dann Zufallsfarben an → Sprachen aus (und umgekehrt)
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);

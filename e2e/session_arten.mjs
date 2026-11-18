@@ -52,7 +52,7 @@ await page.evaluate(() => {
     quizInfoTypenSession:[], quizSpalteModus:{E1:"karte"}, quizZeigeInfo:{}, quizModus:"sequenziell", quizReihenfolge:"listennr" };
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g_1", name:"Mein Paket", timestamp:1, konfiguration:k, sessionFortschritt:null }] }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 if (!(await text()).includes("Mein Paket")) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
@@ -138,7 +138,7 @@ await sleep(300);
 ok(await fortschritt() === "10/14", "Übersetzungs-Fortschritt bleibt nach dem Zurücksetzen von Akzente");
 
 // nach Neuladen bleibt alles erhalten
-await page.reload(); await sleep(600);
+await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await sleep(300);
 ok(await kopf() === "gruen" && (await text()).includes("Mein Paket") && await fortschritt() === "10/14",
@@ -160,7 +160,7 @@ await sleep(300);
 await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
 await neueEineSession(page);
-await page.reload(); await sleep(600);
+await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await sleep(300);
 ok(await kopf() !== "gruen" && await fortschritt() === null, "Nach „Neu“ und Neuladen: kein Quiz automatisch geladen");

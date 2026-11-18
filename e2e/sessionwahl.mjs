@@ -32,7 +32,7 @@ await page.evaluate(() => {
     { id:"g_2", name:"Ganze Liste", timestamp:2, platz:{z:0,s:1}, sessionFortschritt:null, konfiguration: k([]) },
     { id:"g_3", name:"Im Ordner", timestamp:3, ordner:"o_1", platz:{z:0,s:0}, sessionFortschritt:null, konfiguration: k([5]) } ] }));
 });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await quizEinstellungen(page);
 if (!(await kopfOffen())) { await klick("[data-slot-kopf-name]"); }
@@ -102,7 +102,7 @@ ok(feld === vorschlag, `Namensvorschlag „${vorschlag}“ (${feld || "kein Spei
 
 // ── 125, 130, 133, 134, 137 ──
 await page.evaluate(() => { const s = JSON.parse(localStorage.getItem("vokabel_slots")); s.verlauf = [{ id: "v_1", timestamp: 5, konfiguration: s.gespeichert[1].konfiguration }]; localStorage.setItem("vokabel_slots", JSON.stringify(s)); });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await quizEinstellungen(page);
 if (!(await kopfOffen())) await klick("[data-slot-kopf-name]");

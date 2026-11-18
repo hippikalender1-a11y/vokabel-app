@@ -33,7 +33,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify(L.map(([id, name], i) => ({ id, name, sprache:"en", platz:{ z:i, s:0 } }))));
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf: [], gespeichert: [] }));
 });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── 225: Einstellungen ohne Listen ──
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);

@@ -27,7 +27,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unit 1", sprache:"en", spalten: sp, naechste_id: 2, vokabeln:[{ id:1, E1:{wert:"dog",falsch:[]}, D1:{wert:"Hund",falsch:[]} }] }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unit 1", sprache:"en", platz:{z:0,s:0} }]));
 });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await zuListen(page);
 
 // ── ohne Änderung sieht alles aus wie bisher ──

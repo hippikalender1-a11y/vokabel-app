@@ -27,7 +27,7 @@ await page.evaluate(() => {
     gelernt: "#2d6a4f", arbeit: "#e9c46a", nie: "#d6d2cb", negativ: "#e57373", kopfzeile: "#335544", "kopf-schrift": "#ffffff", "kopf-schrift-leise": "#ddeedd", "fortschritt-gelernt": "#ff00aa" };
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 3, sprache: "alle", farbschema: "e1", eigeneSchemata: [{ id: "e1", name: "Test", basis: "natur", farben: basis, elemente: {} }] }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Statistik")).click()); await sleep(500);
 await page.evaluate(() => { const c = [...document.querySelectorAll(".quiz-setup-check, .karte-zeile")].find(e => e.textContent.includes("Englisch 6")); c?.click(); }); await sleep(400);
 console.log("     Kopf:", await farbe("[data-statistik-kopf-titel]"), await farbe("[data-statistik-kopf-zahl]"), await farbe("[data-statistik-kopf-prozent]"));

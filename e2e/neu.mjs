@@ -46,7 +46,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await listeWaehlen(page, "Verbes");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
@@ -73,7 +73,7 @@ await sleep(400);
 z = await zustand();
 console.log("     Nach Neu:", JSON.stringify(z));
 ok(z.gewaehlt === 0 && !/^[1-9]/.test(z.start), "Neu: keine Liste mehr ausgewählt");
-ok(z.kopfChip === "Neues Quiznicht gespeichert", "Neu: kein Preset aktiv („Neues Quiz · nicht gespeichert“)");
+ok(z.kopfChip === "Liste oder Quiz wählen", `289: Neu – kein Preset aktiv, die Auswahl wartet („Liste oder Quiz wählen“) (${z.kopfChip})`);
 const sa = await page.evaluate(() => localStorage.getItem("vokabel_session_aktiv"));
 ok(sa === null, "Neu: keine aktive Quiz");
 

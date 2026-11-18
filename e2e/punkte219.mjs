@@ -27,7 +27,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf: [], gespeichert: [{ id: "g1", name: "Teil 1", timestamp: 1, konfiguration: k, sessionFortschritt: null, platz: { z: 0, s: 0 } }] }));
   localStorage.setItem("vokabel_letzter_slot", JSON.stringify("listen:l12"));   // Liste im Ordner „Fortgeschritten“
 });
-await page.reload(); await sleep(1000);
+await page.reload(); await sleep(1000); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 
 // ── 220: Listen-Kopf → Listen-Auswahl, Ordner offen, Kachel gewählt und sichtbar ──

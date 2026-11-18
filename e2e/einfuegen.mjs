@@ -17,7 +17,7 @@ const backup = JSON.stringify([{ id: "x", name: "Unité 1", sprache: "fr",
 async function einfuegen(text) {
   await page.goto(URL);
   await page.evaluate(() => localStorage.clear());
-  await page.reload(); await sleep(400);
+  await page.reload(); await sleep(400); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
   await zuListen(page); await sleep(200);
   await neueListe(page);
   await page.evaluate(t => {

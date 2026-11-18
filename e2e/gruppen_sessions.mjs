@@ -40,7 +40,7 @@ await page.evaluate(() => {
     { id:"s2", name:"Teil 2", timestamp:2, konfiguration:k(11, 20), sessionFortschritt:null, platz:{z:1,s:0} },
     { id:"s3", name:"Teil 3", timestamp:3, konfiguration:k(21, 30), sessionFortschritt:null, platz:{z:2,s:0} } ] }));
 });
-await page.reload(); await sleep(600);
+await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // Neue Gruppe aus Teil 1
 await langDruck(kachel("s1"));

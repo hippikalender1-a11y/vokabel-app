@@ -42,7 +42,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await listeWaehlen(page, "Verbes");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
@@ -164,7 +164,7 @@ await page.screenshot({ path: "slots_raster.png" });
 await clickText("button", "Fertig", true);
 const lang = await page.evaluate(n => document.querySelector(`[data-slot-id] [class="raster-name"]`) && [...document.querySelectorAll("[data-slot-id]")].find(b => b.textContent.includes(n))?.getAttribute("data-info"), n3);
 ok((lang || "").startsWith(n3), "Info-Text (Lang-Druck) nennt den kompletten Namen");
-await page.reload(); await sleep(400);
+await page.reload(); await sleep(400); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 ok(JSON.stringify(await plaetze()) === JSON.stringify(pl), "Plätze bleiben nach Neuladen erhalten");
 
 // Umbenennen über das Menü: Name ändert sich, Platz bleibt; doppelter Name wird abgelehnt
@@ -227,7 +227,7 @@ await aktion("🗑 Löschen");
 await clickText(".modal .btn-danger", "Löschen", true);
 pl = await plaetze();
 ok(Object.keys(pl).length === 3 && !(neuName in pl), "Löschen über das Menü: Eintrag weg");
-await page.reload(); await sleep(400);
+await page.reload(); await sleep(400); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── 5) Statistik: Verlauf-Eintrag zeigt Quiz-Modus ──
 await clickText(".tab", "Statistik");

@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, farbZeige } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, farbZeige, listeWaehlen } from "./hilfen.mjs";
 
 // Element-Farben: im Farbfeld je Teil „Alle Stellen“ (Rolle) oder „Nur dieses Element“ (eigene Farbe der Element-Art,
 // Rolle bleibt); gespeichert im Farbschema, im Schema-Editor sichtbar und entfernbar
@@ -37,9 +37,9 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 3, sprache: "alle" }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await tab("Quiz"); await quizEinstellungen(page);
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(c => c.textContent.includes("Unité 1")).click()); await sleep(400);
+await listeWaehlen(page, "Unité 1"); await sleep(400);
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 const haupt = await variable("haupt");
 const neuBgVorher = await bg("[data-start-knopf]");
@@ -70,9 +70,9 @@ await page.click("[data-farb-name-speichern]"); await sleep(400);
 const e = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen")));
 const sch = e.eigeneSchemata?.find(x => x.id === e.farbschema);
 ok(sch?.elemente?.["[data-start-knopf]"]?.["background-color"] === "#123456", "gespeichert im neuen Schema (elemente)");
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await tab("Quiz"); await quizEinstellungen(page);
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(c => c.textContent.includes("Unité 1"))?.click()); await sleep(400);
+await listeWaehlen(page, "Unité 1"); await sleep(400);
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 ok(await bg("[data-start-knopf]") === "rgb(18, 52, 86)", "nach dem Neuladen weiterhin umgefärbt");
 

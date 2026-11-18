@@ -55,7 +55,7 @@ await page.evaluate(() => {
     { id:"g_m", name:"Auswahl", timestamp:2, konfiguration:k(["E1"], {E1:"mc"}, []), sessionFortschritt:null, platz:{z:0,s:1} } ] }));
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", gelerntSchwelle:6, sprache:"alle", karteInfoPin:true }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await tab("Quiz");
 
 // ── Karte: Frage, Info, beantwortete Spalte ──

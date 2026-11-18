@@ -3823,3 +3823,8 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   Auswahl hat den Umschalter „Quiz | 📋 Listen“: Liste antippen → ihre Statistik (ladeSlotStatistik("listen") auch ohne eigenes
   Quiz), mehrere halten → Kopf „n ausgewählt · x Vokabeln“ → zeigeListenStatistik (Kopf „📋 n Listen“). Alle Listen weiter über
   „Alle Quiz“ › „▦ Alle Listen“. Tests statistik/bremse/gruppenquiz/tabwechsel/listenraster/suche/vonbis_langdruck angepasst.
+- 289 UMGESETZT: nichts geladen (Quiz-Tab) → die Auswahl steht mit „📋 Listen“ offen und bleibt offen, bis etwas gewählt ist
+  (Kopf „Liste oder Quiz wählen“, ohne Haken/„nicht gespeichert“; Antippen leuchtet nur). Der alte leere Zustand „Neues Quiz“
+  mit Häkchen-Liste entfällt; „Neues Quiz“ mit einer Liste + „Alle | Bereich“ entsteht über „🎯 Quiz mit Auswahl…“.
+  Tests: listeWaehlen() (hilfen.mjs) geht über „🎯 Quiz mit Auswahl…“ (Farbmodus: Liste antippen); nach jedem Neuladen schaltet
+  ein Zusatz auf „Quiz“, wenn der Kopf „Liste oder Quiz wählen“ zeigt; neue_session/vonbis_langdruck/neu/punkte210 prüfen 289.

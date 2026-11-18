@@ -56,7 +56,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "schwer", gelerntSchwelle: 6, sprache: "alle",
     stufen: { schwer: { akzentOhneMischen: true } } }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await listeWaehlen(page, "Akzente");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar

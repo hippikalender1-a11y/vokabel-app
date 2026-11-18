@@ -31,7 +31,7 @@ await page.evaluate(t => {
     quizSpalteModus:{ E1:"karte" }, quizInfoTypenSession:[], quizZeigeInfo:{}, quizModus:"sequenziell", quizReihenfolge:"listennr" };
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g_1", name:"Unit 1", timestamp:1, platz:{z:0,s:0}, sessionFortschritt:null, konfiguration:k }] }));
 }, { alt: tageHer(10), heute: new Date().toISOString() });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_liste_l_a")).vokabeln.find(v => v.id === 3).fortschritt.score) === 3, "Umstellung: alter Score 7 → 3 (Stufe 1)");
 

@@ -582,8 +582,9 @@ export function toggleEinzelauswahl(app) {
   }
 
 export function toggleSlotSektion(app) {
-  const { statistikAktiverSlot, kommtAusListen, aktiverSlot, dropdownImmuneRef, headerH, leuchte, schliesseQuizBereiche, setAuswahlListen, setMultiAuswahl, setSlotAuswahl, setSlotSektionAufgeklappt, setSlotSortModus, slotContainerRef, slotH, slotSektionAufgeklappt, slotZuTimerRef, tab } = app;
+  const { nichtsGeladen, statistikAktiverSlot, kommtAusListen, aktiverSlot, dropdownImmuneRef, headerH, leuchte, schliesseQuizBereiche, setAuswahlListen, setMultiAuswahl, setSlotAuswahl, setSlotSektionAufgeklappt, setSlotSortModus, slotContainerRef, slotH, slotSektionAufgeklappt, slotZuTimerRef, tab } = app;
     const opening = !slotSektionAufgeklappt;
+    if (!opening && nichtsGeladen) { leuchte("slotkopf"); return; }   // 289: erst etwas wählen – die Auswahl bleibt offen
     if (opening) setAuswahlListen((tab === "quiz" && kommtAusListen) || (tab === "statistik" && statistikAktiverSlot?.typ === "listen"));   // 294: Statistik einer Liste → Listen   // 217/250: aus den Listen gekommen → Listen-Auswahl
     clearTimeout(slotZuTimerRef.current);
     if (opening && tab === "quiz") schliesseQuizBereiche("slots");

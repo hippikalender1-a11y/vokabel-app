@@ -46,7 +46,7 @@ const farbradHex = async (wert, anwenden = true) => {
 };
 await page.goto(URL);
 await page.evaluate(() => localStorage.clear());
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
 await page.click('[data-farb-tab="vorlagen"]'); await sleep(200);   // Knopfzeile: anfangs ist nichts offen
 
@@ -61,7 +61,7 @@ for (const id of ["freudig", "pastelle", "maedchen", "jungs", "dunkel"]) {
   if (process.env.SHOT) await page.screenshot({ path: `schema_${id}.png` });
 }
 ok(await bodyBg() === "rgb(22, 24, 22)" && await variable("text") === "#e3e0da", "Dunkel: dunkler Hintergrund, heller Text");
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 ok(await bodyBg() === "rgb(22, 24, 22)", "Auswahl bleibt nach Neuladen erhalten");
 
 const leiste = () => page.evaluate(() => document.querySelector('meta[name="theme-color"]')?.getAttribute("content"));

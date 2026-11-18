@@ -54,7 +54,7 @@ await page.evaluate(() => {
     { id:"g_a", name:"Teil A", timestamp:1, konfiguration:kA, sessionFortschritt:null, platz:{z:0,s:0} },
     { id:"g_b", name:"Teil B", timestamp:2, konfiguration:kB, sessionFortschritt:null, platz:{z:0,s:1} } ] }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await oeffneKopf(); await sleep(300);
 

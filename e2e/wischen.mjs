@@ -26,7 +26,7 @@ await page.evaluate(() => {
     vokabeln: [{ id:1, E1:{wert:"one",falsch:[]}, D1:{wert:"eins",falsch:[]} }, { id:2, E1:{wert:"two",falsch:[]}, D1:{wert:"zwei",falsch:[]} }] }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unit 1", sprache:"en", platz:{z:0,s:0} }]));
 });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 ok(await tab() === "Quiz", "Start: Quiz");
 

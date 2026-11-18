@@ -52,7 +52,7 @@ await page.evaluate(() => {
     { id:"g_fr", name:"Franz", timestamp:1, konfiguration:k("l_fr"), sessionFortschritt:null, platz:{z:0,s:0} },
     { id:"g_es", name:"Span", timestamp:2, konfiguration:k("l_es"), sessionFortschritt:null, platz:{z:0,s:1} } ] }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // Einstellungen: Französisch an, Spanisch aus
 await tab("Einstellungen"); await oeffneEinstAkz();

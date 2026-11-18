@@ -37,7 +37,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_b", JSON.stringify(liste("l_b", "Unit 2", 3)));   // 3 (fällig) → 4: eine Raute füllt sich
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unit 1", sprache:"en", platz:{z:0,s:0} }, { id:"l_b", name:"Unit 2", sprache:"en", platz:{z:1,s:0} }]));
 });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(400);
 await zuListen(page);
@@ -93,7 +93,7 @@ ok(/📋 Engl · 2 Listen/.test(await page.evaluate(() => document.querySelector
 
 // ── 254: App neu laden (auch ohne gemerktes letztes Quiz) – das pausierte Paket kommt samt Listen und Einstellungen zurück ──
 await page.evaluate(() => localStorage.removeItem("vokabel_letzter_slot"));
-await page.reload(); await sleep(1000);
+await page.reload(); await sleep(1000); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(400);
 await page.evaluate(() => { if (document.querySelector('[data-quiz-ansicht="auswahl"]')) document.querySelector("[data-slot-kopf-name]")?.click(); }); await sleep(600);
 const nachStart = await page.evaluate(() => ({ kopf: document.querySelector("[data-slot-kopf-name]")?.innerText || "", start: !![...document.querySelectorAll("button")].find(b => /starten/.test(b.textContent)) }));

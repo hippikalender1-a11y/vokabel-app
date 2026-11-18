@@ -51,7 +51,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[{ id:"v_1", name:"25.10.2026, 10:00", timestamp:1, konfiguration:{ listenIds:["l_en"], vokabelAuswahl:[], bereichTyp:"alle" }, sessionFortschritt:null }],
     gespeichert:[{ id:"g_1", name:"Englisch 25.10.2026", timestamp:1, konfiguration:{ listenIds:["l_en"], vokabelAuswahl:[], bereichTyp:"alle" }, sessionFortschritt:null }, { id:"g_2", name:"Test 2", timestamp:2, konfiguration:{ listenIds:["l_en"], vokabelAuswahl:[], bereichTyp:"alle" }, sessionFortschritt:null }] }));
 });
-await page.reload(); await sleep(600);
+await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // Kopf + Sprachmenü
 await pruefe("Kopf");

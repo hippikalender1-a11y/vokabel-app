@@ -33,7 +33,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 3, sprache: "alle" }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── neue Rollen: eigene Variablen, Standard aus den bisherigen Farben ──
 const v = {};
@@ -57,7 +57,7 @@ await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_e
     farben: { haupt: "#2d6a4f", "haupt-hell": "#52b788", "auf-haupt": "#fff", hintergrund: "#ff0000", karte: "#fff", flaeche: "#f0ede8", knopf: "#f7f5f0",
       "text-stark": "#1a1a1a", text: "#3b3832", text2: "#6b6560", text3: "#9b9590", rahmen: "#e0dbd2", richtig: "#2d6a4f", falsch: "#c0392b",
       gelb: "#f9a825", orange: "#e67e22", info: "#6a1b9a", gelernt: "#2d6a4f", arbeit: "#e9c46a", nie: "#d6d2cb", negativ: "#e57373" } }] })); });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 ok(await bg("body") === "rgb(255, 0, 0)" && await variable("knopf") === "#f7f5f0", "Seite rot, Knöpfe & Felder behalten ihre eigene Farbe");
 await tab("Einstellungen");
 await page.click('[data-einst-kopf="app"]'); await sleep(300); await page.click('[data-info-oeffnen]'); await sleep(300);

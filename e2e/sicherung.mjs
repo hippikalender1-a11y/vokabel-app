@@ -57,7 +57,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "einfach", gelerntSchwelle: 5, sprache: "alle", farbschema: "freudig" }));
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf: [], gespeichert: [{ id: "g1", name: "Mein Quiz", timestamp: 1, konfiguration: { listenIds: ["l_fr"] }, sessionFortschritt: null, platz: { z: 0, s: 0 } }] }));
 });
-await page.reload(); await sleep(600);
+await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // Erste Start: Erinnerung zählt ab jetzt → noch keine
 ok(await page.evaluate(() => !!localStorage.getItem("vokabel_sicherung_basis")), "Start: Beginn der Erinnerungs-Frist gemerkt");
@@ -67,7 +67,7 @@ console.log("     Speicher dauerhaft:", await page.evaluate(() => navigator.stor
 
 // 8 Tage ohne Sicherung → Erinnerung
 await setze("vokabel_sicherung_basis", Date.now() - 8 * TAG);
-await page.reload(); await sleep(600); await zurAuswahl();
+await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300); await zurAuswahl();
 ok(/Noch keine Sicherung/.test(await erinnerung() || ""), `nach 8 Tagen: Erinnerung „Noch keine Sicherung“ (${await erinnerung()})`);
 
 // Jetzt sichern → Datei, Erinnerung weg
@@ -96,7 +96,7 @@ ok(eigen, "Sicherung mit eigenem Namen „Backup Handy.txt“");
 
 // Datenverlust nachstellen
 await page.evaluate(() => localStorage.clear());
-await page.reload(); await sleep(600);
+await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 ok(await page.evaluate(() => !localStorage.getItem("vokabel_listen_index")), "alles gelöscht (wie vom Browser aufgeräumt)");
 
 // Wiederherstellen über Einstellungen
@@ -126,7 +126,7 @@ await (await page.$("[data-sicherung-datei]")).uploadFile(fremd); await sleep(50
 ok(await page.evaluate(() => /keine Gesamtsicherung/.test(document.querySelector("[data-sicherung]").textContent)), "andere Datei: Hinweis „keine Gesamtsicherung“");
 
 // Import-Ansicht erkennt die Gesamtsicherung
-await page.evaluate(() => localStorage.clear()); await page.reload(); await sleep(600);
+await page.evaluate(() => localStorage.clear()); await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await zuListen(page);
 await neueListe(page);
 await (await page.$('input[type="file"]')).uploadFile(datei); await sleep(600);
@@ -137,14 +137,14 @@ ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellun
 
 // Letzte Sicherung 10 Tage alt → Erinnerung; „Später“ → einen Tag still
 await setze("vokabel_letzte_sicherung", Date.now() - 10 * TAG);
-await page.reload(); await sleep(600); await zurAuswahl();
+await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300); await zurAuswahl();
 ok(/vor 10 Tagen/.test(await erinnerung() || ""), `Erinnerung „Letzte Sicherung vor 10 Tagen“ (${await erinnerung()})`);
 await page.click("[data-sicherung-spaeter]"); await sleep(300);
 ok(await erinnerung() === null, "„Später“: Erinnerung weg");
-await page.reload(); await sleep(600); await zurAuswahl();
+await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300); await zurAuswahl();
 ok(await erinnerung() === null, "„Später“ gilt auch nach dem Neuladen");
 await setze("vokabel_sicherung_spaeter", Date.now() - 2 * TAG);
-await page.reload(); await sleep(600); await zurAuswahl();
+await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300); await zurAuswahl();
 ok(await erinnerung() !== null, "nach einem Tag: Erinnerung wieder da");
 
 // Erinnerung aus / 14 Tage
@@ -157,7 +157,7 @@ await tab("Einstellungen"); await oeffneEinst("sicherung");
 await page.evaluate(() => { if (!document.querySelector("[data-sicherung-tage]")) document.querySelector('[data-einst-unter="erinnerung"]').click(); }); await sleep(250);
 await page.click('[data-sicherung-tage-wahl="0"]'); await sleep(200);
 await setze("vokabel_letzte_sicherung", Date.now() - 100 * TAG);
-await page.reload(); await sleep(600); await zurAuswahl();
+await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300); await zurAuswahl();
 ok(await erinnerung() === null, "Erinnerung aus: keine Erinnerung");
 
 await browser.close();

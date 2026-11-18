@@ -57,7 +57,7 @@ await page.evaluate(() => new Promise(res => {
     [1, 2, 3].forEach(i => st.put([{ s: `A *big${i}* dog.`, u: "Ein großer Hund." }, { s: `So *big${i}*!`, u: "So groß!" }], `liste_1700000000002__${i}`));
     tx.oncomplete = () => { r.result.close(); res(); }; };
 }));
-await page.reload(); await sleep(900);
+await page.reload(); await sleep(900); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── 202: Kachel kurz, Info ausführlich ──
 await zuListen(page);

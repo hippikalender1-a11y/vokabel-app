@@ -37,7 +37,7 @@ await page.evaluate(() => {
     { id:"g_3", name:"Karte", timestamp:3, platz:{z:0,s:2}, sessionFortschritt:null,
       konfiguration:{ ...basis, quizAusgewaehlt:["D1","E1"], quizFrageTyp:"D1", quizAntwortTypenGeordnet:["E1"], quizSpalteModus:{ E1:"karte" } } } ] }));
 });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── 121: Alternativen, 117: getipptes Synonym ist kein Fehler ──
 await sessionLaden(page, "Deutsch-Englisch");

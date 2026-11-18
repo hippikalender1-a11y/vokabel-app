@@ -44,7 +44,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify({ id: "l_fr", name: "Verbes", sprache: "fr", spalten: sp, naechste_id: 88, vokabeln: voks }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id: "l_fr", name: "Verbes", sprache: "fr" }]));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await zuListen(page);
 await page.evaluate(() => { const el = document.querySelector("[data-liste-id]"); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 20 })); });

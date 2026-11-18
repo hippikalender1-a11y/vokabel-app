@@ -28,7 +28,7 @@ await page.evaluate(async () => {
   localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unité 1", sprache:"fr", spalten: sp, naechste_id: 5, vokabeln }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
 });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await zuListen(page);
 await page.click('[data-liste-id="l_a"]'); await sleep(600); await listeOeffnen(page);
 await listeBereich(page, "saetze");
@@ -49,7 +49,7 @@ await page.click("[data-satz-uebernehmen]"); await sleep(500);
 ok(await page.$("[data-saetze-fertig]"), "alle Vokabeln haben Sätze: ✓");
 await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b => b.textContent.trim() === "Schließen")?.click()); await sleep(300);
 ok(/4 von 4/.test(await page.evaluate(() => document.querySelector("[data-liste-saetze-anzahl]")?.textContent)), "Liste: 💬 4 von 4");
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await zuListen(page);
 await page.click('[data-liste-id="l_a"]'); await sleep(800); await listeOeffnen(page);
 await listeBereich(page, "saetze");
@@ -60,7 +60,7 @@ ok(!(await page.evaluate(() => Object.keys(localStorage).some(k => (localStorage
 
 // ── Datei laden, „Als Datei“, „📋 Einfügen“ ──
 await page.evaluate(async () => { await new Promise(r => { const d = indexedDB.deleteDatabase("vokabel_saetze"); d.onsuccess = d.onerror = d.onblocked = () => r(); }); });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await zuListen(page);
 await page.click('[data-liste-id="l_a"]'); await sleep(600); await listeOeffnen(page);
 await listeBereich(page, "saetze");

@@ -25,7 +25,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_en", JSON.stringify(l));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_en", name:l.name, sprache:"en" }]));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Statistik").click()); await sleep(400);
 
 // Standard: Akzente für Englisch aus → die Mitte überspringt „Akzente“
@@ -34,7 +34,7 @@ const a1 = await art(); await mitte();
 ok(a1 === "Diktat" && await art() === "Übersetzung", `Englisch ohne Akzente (Standard): Mitte wechselt Übersetzung → Diktat → Übersetzung (${a1}, ${await art()})`);
 // Akzente für Englisch einschalten: Akzente-Statistik mit Hinweis „keine Akzente“
 await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"); localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 3, ...e, akzenteSprachen: { en: true } })); });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Statistik").click()); await sleep(400);
 
 ok(await art() === "Übersetzung", "Start: Übersetzung");

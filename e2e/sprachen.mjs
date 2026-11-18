@@ -42,7 +42,7 @@ await page.evaluateOnNewDocument(() => {
   window.__gesprochen = [];
   if (window.speechSynthesis) window.speechSynthesis.speak = u => window.__gesprochen.push({ text: u.text, lang: u.lang });
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 const idx = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_listen_index")));
 ok(idx[0].sprache === "en", `Migration Index-Sprache: ${JSON.stringify(idx)}`);
 

@@ -33,7 +33,7 @@ await page.evaluate(() => {
     { id: "s2", name: "Teil 2", timestamp: 2, ordner: "o1", konfiguration: k("l_a", 2, 5), sessionFortschritt: null, platz: { z: 1, s: 0 } },
     { id: "s3", name: "Teil 3", timestamp: 3, konfiguration: k("l_c", 1, 5), sessionFortschritt: null, platz: { z: 1, s: 0 } }] }));
 });
-await page.reload(); await sleep(900);
+await page.reload(); await sleep(900); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── 210: Quiz (eine Spalte → ausgeschrieben) ──
 await tab("Quiz");
@@ -52,7 +52,8 @@ ok(v.spalten === 2 && v.breiten.length === 1 && /^\d{2}\.11\.26, /.test(v.erster
 
 // ── 215: Quiz-Tab ──
 await tab("Quiz");
-ok((await kopf()).zustand !== "offen", "215: Auswahl offen, nichts geändert → Quiz-Tab schließt sie");
+{ const k = await kopf(), leer = await page.evaluate(() => /Liste oder Quiz wählen/.test(document.querySelector("[data-slot-kopf-name]")?.textContent || ""));
+  ok(k.zustand !== "offen" || leer, `215: Auswahl offen, nichts geändert → Quiz-Tab schließt sie (289: außer es ist nichts geladen – dann bleibt sie offen) (${k.zustand}${leer ? ", nichts geladen" : ""})`); }
 await tab("Quiz");
 ok((await kopf()).zustand === "offen", "215: Quiz-Tab öffnet die Quiz-Auswahl");
 await kurzHalten(page, '[data-slot-id="s3"]');

@@ -49,13 +49,13 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert: [1, 2, 3, 4].map(i =>
     ({ id:"s"+i, name:"Teil "+i, timestamp:i, konfiguration:k(i * 10 - 9, i * 10), sessionFortschritt:null, platz:{z:i - 1,s:0} })) }));
 });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("vokabel_slots"));
   d.ordner = [{ id: "o1", name: "Mappe", platz: { z: 2, s: 1 } }];
   d.gespeichert.find(x => x.id === "s4").ordner = "o1"; d.gespeichert.find(x => x.id === "s4").platz = { z: 0, s: 0 };
   localStorage.setItem("vokabel_slots", JSON.stringify(d)); });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 // 287: iPhone – nach dem Halten kommt trotzdem ein Klick; auf einem Ordner darf er die Tafel nicht schließen (Ordner öffnen)
 const h = await mitte('[data-ordner-id="o1"]');
 await finger("touchStart", h.x, h.y); await sleep(450); await finger("touchEnd");

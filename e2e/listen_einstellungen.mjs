@@ -23,7 +23,7 @@ const beiListen = () => page.evaluate(() => document.querySelector(".tab.aktiv")
 // leere App
 await page.goto(URL);
 await page.evaluate(() => localStorage.clear());
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 ok(await aktiverTab() === "Quiz" && await page.$("[data-keine-listen]"), "leere App: Quiz-Tab mit Hinweis „Noch keine Listen“");
 await page.click("[data-liste-importieren]"); await sleep(400);
 ok(await aktiverTab() === "Quiz" && /Importieren/.test(await page.evaluate(() => document.body.innerText)), "„Liste importieren“ öffnet den Import (Tab Quiz)");
@@ -36,7 +36,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unité 1", sprache:"fr", spalten: sp, naechste_id: 2, vokabeln: [{ id: 1, E1: { wert: "mot", falsch: [] }, D1: { wert: "Wort", falsch: [] } }] }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 ok(!(await page.$("[data-keine-listen]")), "mit Listen: kein Hinweis");
 await zuListen(page);
 await page.click('[data-liste-id="l_a"]'); await sleep(400); await listeOeffnen(page);

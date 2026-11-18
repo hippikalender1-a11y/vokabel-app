@@ -55,7 +55,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unité 1", sprache:"fr", spalten: sp, naechste_id: 2, vokabeln: [{ id: 1, E1: { wert: "mot", falsch: [] }, D1: { wert: "Wort", falsch: [] } }] }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.click("[data-slot-kopf-name]"); await sleep(300);
 await listeWaehlen(page, "Unité 1");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
@@ -84,7 +84,7 @@ await page.click("[data-pruefung-trotzdem]"); await sleep(300);
 await page.click("[data-farb-name-speichern]"); await sleep(400);
 const sch = (await eigene())[0]?.farben || {};
 ok(sch["auf-haupt"] === "#ff0000" && sch["auf-falsch"] === vorher["auf-falsch"] && sch["auf-start"] === vorher["auf-start"], "gespeichert: neue Schrift und die übrigen mit ihrem bisherigen Wert");
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 const geladen = await werte();
 ok(geladen["auf-haupt"] === "#ff0000" && schriften.filter(n => n !== "auf-haupt").every(n => geladen[n] === vorher[n]), "nach dem Neuladen gleich");
 

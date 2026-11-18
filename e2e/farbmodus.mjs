@@ -52,7 +52,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:"Nomen", sprache:"fr" }]));
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], gelerntSchwelle: 3, sprache: "alle" }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
 await farbZeige(page, "[data-farbmodus-start]"); await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
 ok(await page.$("[data-farbmodus-zuruecksetzen]") && await page.$("[data-farbmodus-uebernehmen]"), "Farbmodus an: unten rechts „Zurücksetzen“ und „Farben übernehmen“");
@@ -144,7 +144,7 @@ await page.click("[data-farb-name-speichern]"); await sleep(400);
 const eig = await eigene();
 ok(eig.length === 1 && eig[0].farben["tab-aktiv"] === "#123456" && await variable("tab-aktiv") === "#123456" && !(await page.$("[data-farbmodus-uebernehmen]")),
   "„Farben übernehmen“: neues Schema „Natur (Kopie)“ gespeichert und gewählt, Farbmodus aus");
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 ok(await variable("tab-aktiv") === "#123456", "nach Neuladen: eigene Farben bleiben");
 
 await browser.close();

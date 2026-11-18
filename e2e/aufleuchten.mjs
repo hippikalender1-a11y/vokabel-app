@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen } from "./hilfen.mjs";
+import { listeOeffnen, listeWaehlen } from "./hilfen.mjs";
 import { neueEineSession, zuListen, listeBereich } from "./hilfen.mjs";
 
 // Kurzes Aufleuchten in der Bestätigen-Farbe (sofort an und aus, ohne Überblendung): gewählte Listen-Kachel,
@@ -35,11 +35,14 @@ await page.evaluate(() => {
     quizInfoTypenSession:[], quizSpalteModus:{E1:"karte"}, quizZeigeInfo:{}, quizModus:"sequenziell", quizReihenfolge:"listennr" };
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g", name:"Mein Quiz", timestamp:1, konfiguration:k, sessionFortschritt:null, platz:{z:0,s:0} }] }));
 });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 const B = await best();
 
 // ── Listen-Auswahl: gewählte Kachel leuchtet sofort, danach normal ──
+// 289: ohne Liste steht die Auswahl offen – erst eine Liste wählen („Neues Quiz“), dann die Häkchen-Liste aufklappen
 await neueEineSession(page);
+await listeWaehlen(page, "Unité 2");
+await page.evaluate(() => document.querySelector("[data-listen-kopf]")?.click()); await sleep(400);
 await page.click('[data-quiz-liste="l_a"]'); await sleep(80);
 let z = await zustand('[data-quiz-liste="l_a"]');
 ok(z?.an && z.farbe === B && z.uebergang === "0s", `Listen-Kachel gewählt: sofort Bestätigen-Farbe (${JSON.stringify(z)})`);

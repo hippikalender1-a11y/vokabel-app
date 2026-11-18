@@ -55,7 +55,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert: [1, 2, 3].map(i =>
     ({ id:"s"+i, name:"Teil "+i, timestamp:i, konfiguration:k(i * 3 - 2, i * 3), sessionFortschritt:null, platz:{z:i - 1,s:0} })) }));
 });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await auswahlAuf();
 
@@ -176,7 +176,7 @@ ok(anzahlA === "1", `Ordner-Kachel „A“ zählt das Quiz in „C“ mit (${anz
 // 200: Tagesstand des Ordners – Anteil über alle Vokabeln darin (Teil 3 = Nr. 7–9, davon 2 heute geübt)
 await page.evaluate(() => { const l = JSON.parse(localStorage.getItem("vokabel_liste_l_a")); const jetzt = new Date().toISOString();
   l.vokabeln.forEach(v => { if (v.id === 7 || v.id === 8) v.fortschritt = { score: 1, letzteAbfrage: jetzt }; }); localStorage.setItem("vokabel_liste_l_a", JSON.stringify(l)); });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await auswahlAuf();
 if (await page.$("[data-ordner-zurueck]")) { await page.evaluate(() => document.querySelector("[data-ordner-zurueck]").click()); await sleep(300); }

@@ -26,7 +26,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_en", JSON.stringify({ id:"l_en", name:"Unit 1", sprache:"en", spalten: sp, naechste_id: 5, vokabeln: vok("word") }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }, { id:"l_en", name:"Unit 1", sprache:"en", platz:{z:1,s:0} }]));
 });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 ok(await haupt() === "#2d6a4f", `Start: Standard-Schema Natur (${await haupt()})`);
 
 // Tab „Sprachen“: aus, Länder-Vorlagen vorbelegt
@@ -40,7 +40,7 @@ await page.click("[data-sprachfarben-an]"); await sleep(200);
 ok(await haupt() === "#2d6a4f", "an, Sprachfilter „Alle“: Standard-Schema");
 
 // Sprachfilter Französisch → französisches Schema
-await einst({ sprache: "fr" }); await page.reload(); await sleep(600);
+await einst({ sprache: "fr" }); await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 ok(await haupt() === "#0055a4", `Sprachfilter Französisch: Schema „Französisch 🇫🇷“ (${await haupt()})`);
 const bg = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--hintergrund").trim());
 ok(bg === "#fcf0f3", `Französisch: Hintergrund dezent rosa (${bg})`);
@@ -55,7 +55,7 @@ await page.select('[data-sprachfarbe="fr"]', "standard"); await sleep(300);
 ok(await haupt() === "#2d6a4f", "„wie Standard“: Standard-Schema");
 
 // Abfrage einer englischen Liste (Filter „Alle“): englisches Schema, danach wieder Standard
-await einst({ sprache: "alle" }); await page.reload(); await sleep(600);
+await einst({ sprache: "alle" }); await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await neueEineSession(page);
 await listeWaehlen(page, "Unit 1"); await sleep(300);
 await listenZu(page);
@@ -64,7 +64,7 @@ await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click())
 ok(await haupt() === "#1d3c78", `Abfrage der englischen Liste: Schema „Englisch 🇬🇧“ (${await haupt()})`);
 
 // ausgeschaltet: immer Standard
-await einst({ sprache: "fr", sprachFarben: { an: false } }); await page.reload(); await sleep(600);
+await einst({ sprache: "fr", sprachFarben: { an: false } }); await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 ok(await haupt() === "#2d6a4f", "ausgeschaltet: Standard-Schema trotz Sprachfilter");
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");

@@ -56,7 +56,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await starte();
 
 let k = await kasten();
@@ -96,7 +96,7 @@ ok((await kasten())?.zustand === "offen", "angeheftet: Antippen klappt nicht zu"
 await page.click("[data-karte-info-schalter]"); await sleep(200);
 ok(!(await kasten()) && await schalter() === "aus" && (await einst()).karteInfo === false, "„i“ aus: Kasten weg, gespeichert");
 await clickText(".topbar-back", "Pausieren"); await sleep(500);
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await starte();
 ok(!(await kasten()) && await schalter() === "aus", "nach Neustart: Info bleibt aus");
 await page.click("[data-karte-info-schalter]"); await sleep(200);
@@ -111,7 +111,7 @@ await page.evaluate(() => {
   l.vokabeln.forEach(v => { delete v.i1; });
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await starte();
 k = await kasten();
 console.log("     ohne Info-Text:", JSON.stringify(k));
@@ -126,7 +126,7 @@ await page.evaluate(() => {
   l.spalten.i1.aktiv = false;
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await starte();
 ok(!(await schalter()) && !(await kasten()), "ohne Info-Spalte: kein „i“, kein Kasten");
 

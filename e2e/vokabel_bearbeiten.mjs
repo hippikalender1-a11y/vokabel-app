@@ -48,7 +48,7 @@ await page.evaluate(() => {
     { id:"g_t", name:"Tippen", timestamp:2, konfiguration:k("tippen"), sessionFortschritt:null, platz:{z:0,s:1} } ] }));
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus:"schwer", gelerntSchwelle:6, sprache:"alle" }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── Abfrage (Karte): Lang-Druck → nur richtige Antwort ──
 await tab("Quiz");

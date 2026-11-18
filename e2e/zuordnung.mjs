@@ -26,7 +26,7 @@ const vorbereiten = async stufe => {
     localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
     localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "schwer", stufen: { schwer: stufe } }));
   }, stufe);
-  await page.reload(); await sleep(700);
+  await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
   await neueEineSession(page);
   await listeWaehlen(page, "Unité 1"); await sleep(300);
   await listenZu(page);
@@ -47,7 +47,7 @@ const vorbereitenMix = async () => {
     localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "schwer", stufen: { schwer: { zuordnungAmEnde: false, zuordnungZeit: "aus", zuordnungPaare: 5 } },
       antwortGewichte: { karte: 0, zuordnung: 100 } }));
   });
-  await page.reload(); await sleep(700);
+  await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
   await neueEineSession(page);
   await listeWaehlen(page, "Unité 1"); await sleep(300);
   await listenZu(page);

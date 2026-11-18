@@ -52,7 +52,7 @@ const warteAufDatei = async (endung, vorher) => {
   }
   return null;
 };
-const leeren = async () => { await page.evaluate(() => localStorage.clear()); await page.reload(); await sleep(500); };
+const leeren = async () => { await page.evaluate(() => localStorage.clear()); await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300); };
 const lese = () => page.evaluate(() => {
   const idx = JSON.parse(localStorage.getItem("vokabel_listen_index") || "[]");
   return idx.map(e => ({ index: e, liste: JSON.parse(localStorage.getItem("vokabel_liste_" + e.id)) }));
@@ -79,7 +79,7 @@ await page.evaluate(() => {
   listen.forEach(l => localStorage.setItem("vokabel_liste_" + l.id, JSON.stringify(l)));
   localStorage.setItem("vokabel_listen_index", JSON.stringify(listen.map(l => ({ id:l.id, name:l.name, sprache:l.sprache }))));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await zuListen(page);
 
 // ── Export 1: alle drei als TXT (Lang-Druck → Auswählen, antippen, Lang-Druck → TXT) ──
@@ -121,7 +121,7 @@ ok(!!jsonEigen && path.basename(jsonEigen) === "Französisch Klasse 7- Teil-1.tx
 ok(jsonEigen && JSON.parse(fs.readFileSync(jsonEigen, "utf8")).length === 3, "Datei mit eigenem Namen enthält die drei Listen");
 
 // ── Export 3: einzelne französische Liste als TXT ──
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await zuListen(page);
 await clickText(".karte-zeile", "Unité 1"); await listeOeffnen(page);
 await sleep(300);

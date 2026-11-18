@@ -45,7 +45,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_fr", name:l.name, sprache:"fr" }]));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 await oeffneListe();
 let t = await text();
@@ -60,7 +60,7 @@ await page.click('[data-ansicht-spalte="i1"]'); await sleep(200);
 t = await text();
 ok(/aller/.test(t) && !/gehen/.test(t) && /unregelmäßig/.test(t), "Notiz eingeblendet");
 
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await oeffneListe();
 t = await text();
 ok(/unregelmäßig/.test(t) && !/gehen/.test(t) && await knopf("i1"), "Auswahl bleibt nach Neuladen gemerkt");
@@ -75,7 +75,7 @@ const zeile = () => page.evaluate(() => /aller – gehen/.test(document.body.inn
 ok(!await zeile() && /2 Vokabeln/i.test(await text()), "Statistik: Vokabelliste eingeklappt, Anzahl sichtbar");
 await page.click("[data-statistik-liste-kopf]"); await sleep(200);
 ok(await zeile(), "Statistik: ausgeklappt");
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Statistik"); await sleep(300);
 ok(await zeile(), "Ausgeklappt bleibt nach Neuladen");
 await page.click("[data-statistik-liste-kopf]"); await sleep(200);

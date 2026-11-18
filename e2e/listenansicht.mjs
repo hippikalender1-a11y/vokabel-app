@@ -27,7 +27,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_b", JSON.stringify({ id:"l_b", name:"Unit 2", sprache:"en", spalten: sp, naechste_id: 5, vokabeln: vok(4) }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unit 1", sprache:"en", platz:{z:0,s:0} }, { id:"l_b", name:"Unit 2", sprache:"en", platz:{z:1,s:0} }]));
 });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── 75: Tab-Reihenfolge ──
 const tabs = await page.evaluate(() => [...document.querySelectorAll(".tab")].map(t => t.textContent.trim()).join("|"));

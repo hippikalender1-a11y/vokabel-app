@@ -45,7 +45,7 @@ await page.evaluate(() => {
     { id:"g2", name:"Quiz B", timestamp:2, konfiguration:k("l_b"), sessionFortschritt:null, platz:{z:0,s:1} },
     { id:"g3", name:"Quiz C", timestamp:3, konfiguration:k("l_c"), sessionFortschritt:null, platz:{z:1,s:0} } ] }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── Listen (147: lang drücken nimmt auf/heraus, antippen = Einzelauswahl) ──
 await zuListen(page);

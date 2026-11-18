@@ -49,7 +49,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert: [1, 2, 3, 4].map(i =>
     ({ id:"s"+i, name:"Teil "+i, timestamp:i, konfiguration:k(i * 10 - 9, i * 10), sessionFortschritt:null, platz:{z:i - 1,s:0} })) }));
 });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── Tafel verdeckt die gedrückte Kachel nicht (kleiner Bildschirm, unterste Kachel) ──
 await page.setViewport({ width: 390, height: 520, hasTouch: true, isMobile: true }); await sleep(300);
@@ -152,7 +152,9 @@ ok(await gewaehlt() === "s1,s2" && !(await page.$("[data-slot-fertig]")), `238: 
 await tafelZu();
 // zurück in die linke Spalte (für die folgenden Schritte)
 await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("vokabel_slots")); d.gespeichert.forEach(x => { if (x.id === "s1") x.platz = { z: 0, s: 0 }; if (x.id === "s2") x.platz = { z: 1, s: 0 }; }); localStorage.setItem("vokabel_slots", JSON.stringify(d)); });
-await page.reload(); await page.waitForSelector(kachel("s3")); await sleep(1200);
+await page.reload(); await sleep(600);
+await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); });   // 289
+await page.waitForSelector(kachel("s3")); await sleep(1200);
 
 // ── Ziehen + verweilen: Gruppe ──
 // schnell loslassen tauscht (keine Gruppe)

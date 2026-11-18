@@ -32,8 +32,12 @@ await page.evaluate(() => {
 await page.reload(); await sleep(600);
 
 // Start: nur die Auswahl
-ok(await ansicht() === "auswahl" && await page.$("[data-alle-sessions]") && !(await sichtbar("[data-start-knopf]")) && !(await sichtbar(".quiz-setup-check")),
-  "App-Start: Quiz-Auswahl ohne Einstellungen, Listen und Start-Knopf");
+// 289: nichts geladen → die Auswahl steht mit den Listen offen („Liste oder Quiz wählen“); Umschalter → Quiz
+ok(await ansicht() === "auswahl" && await page.$('[data-auswahl-umschalter="listen"]') && await page.$("[data-liste-id]") && !(await sichtbar("[data-start-knopf]")) && !(await sichtbar(".quiz-setup-check"))
+  && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent) === "Liste oder Quiz wählen",
+  "App-Start (289): Auswahl mit den Listen, ohne Einstellungen und Start-Knopf, Kopf „Liste oder Quiz wählen“");
+await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="listen"]').click()); await sleep(300);
+ok(!!(await page.$("[data-alle-sessions]")), "Umschalter: Quiz-Auswahl");
 // Quiz wählen → Einstellungen
 await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Mein Quiz")).click()); await sleep(900); await slotLaden(page);
 ok(await ansicht() === "einstellungen" && await sichtbar("[data-start-knopf]"), "Quiz gewählt: Einstellungen mit Start-Knopf");
@@ -48,11 +52,13 @@ await page.click("[data-slot-kopf-name]"); await sleep(300);
 await neueSessionMenue(page); await sleep(300);
 ok(await page.$('[data-neue-session-dialog="art"]') && await page.$('[data-neue-session-art="eine"]') && await page.$('[data-neue-session-art="mehrere"]'), "Dialog: Ein Quiz / Mehrere Quiz");
 await page.click('[data-neue-session-art="eine"]'); await sleep(400);
-ok(await ansicht() === "einstellungen" && await sichtbar(".quiz-setup-check") && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Neues Quiznicht gespeichert",
-  "Ein Quiz: „Neues Quiz · nicht gespeichert“ mit Listen-Auswahl");
+// 289: „Ein Quiz“ → die Auswahl mit den Listen (eine Liste antippen bzw. mehrere halten)
+ok(await page.$('[data-auswahl-umschalter="listen"]') && await page.$("[data-liste-id]") && !(await sichtbar(".quiz-setup-check"))
+  && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Liste oder Quiz wählen",
+  "Ein Quiz (289): Auswahl mit den Listen, Kopf „Liste oder Quiz wählen“");
 
 // Neues Quiz: Mehrere → Liste wählen → Aufteilen
-await page.click("[data-slot-kopf-name]"); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="listen"]')?.click()); await sleep(300);
 await neueSessionMenue(page); await sleep(300);
 await page.click('[data-neue-session-art="mehrere"]'); await sleep(300);
 ok(await page.$('[data-neue-session-dialog="liste"]') && await page.$('[data-aufteilen-liste="l_a"]') && await page.$('[data-aufteilen-liste="l_b"]'), "Mehrere: Listen zur Wahl");

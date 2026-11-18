@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, listeWaehlen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
@@ -37,9 +37,9 @@ await page.evaluate(() => {
   // nur die Erklärung selbst prüfen (ohne „🎨 Farbe ändern“ darunter – eigener Test: farbrollen)
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], farbeImMenue: false }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent === "Quiz").click()); await sleep(200); await quizEinstellungen(page);
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(d => d.textContent.includes("Verbes")).click()); await sleep(300);
+await listeWaehlen(page, "Verbes"); await sleep(300);
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 
 // 1) Langes Drücken (oben) → Tafel unten, bleibt nach dem Loslassen

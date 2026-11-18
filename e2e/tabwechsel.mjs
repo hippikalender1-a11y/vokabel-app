@@ -50,7 +50,7 @@ await page.evaluate(() => {
     { id:"g_a", name:"Paket Tiere", timestamp:1, konfiguration:k(["l_a"]), platz:{z:0,s:0} },
     { id:"g_b", name:"Paket Farben", timestamp:1, konfiguration:k(["l_b"]), platz:{z:0,s:1} } ] }));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // Quiz: Paket Tiere wählen → Statistik zeigt dasselbe
 await clickText(".tab", "Quiz");

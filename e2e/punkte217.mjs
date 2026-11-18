@@ -28,7 +28,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unit 1", sprache:"en", platz:{z:0,s:0} }, { id:"l_b", name:"Unit 2", sprache:"en", platz:{z:1,s:0} }]));
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf: [], ordner: [{ id: "o1", name: "Englisch", platz: { z: 0, s: 0 } }], gespeichert: [] }));
 });
-await page.reload(); await sleep(900);
+await page.reload(); await sleep(900); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── Liste › „Quiz starten“: Kopf zeigt die Liste, ohne „nicht gespeichert“, ohne Listenauswahl ──
 await oeffneListe("l_a");

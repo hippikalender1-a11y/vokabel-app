@@ -117,6 +117,7 @@ export const CSS_BASIS = `
   .quiz-zeile-knopf.offen{background:var(--bestaetigen);color:var(--auf-bestaetigen);border-color:var(--bestaetigen);font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,0.22);}
   .bestaetigen-knopf,.toggle-opt.bestaetigen-knopf,.quiz-zeile-knopf.bestaetigen-knopf{background:var(--bestaetigen);color:var(--auf-bestaetigen);border-color:var(--bestaetigen);font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,0.22);}
   .bestaetigen-knopf::before{content:"✓ ";}
+  .bestaetigen-knopf.ohne-haken::before{content:none;}   /* 289: „Liste oder Quiz wählen“ – noch nichts zu bestätigen */
   .leuchten,.toggle-opt.leuchten,.quiz-zeile-knopf.leuchten,.slot-chip.leuchten{background:var(--bestaetigen) !important;color:var(--auf-bestaetigen) !important;border-color:var(--bestaetigen) !important;}
   .leuchten .raster-name,.quiz-setup-check.leuchten > div > div,.leuchten .karte-zeile-name,.leuchten .karte-zeile-sub{color:inherit !important;}
   .quiz-zeile-knopf.zweizeilig.bestaetigen-knopf::before{content:none;}

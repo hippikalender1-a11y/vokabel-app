@@ -60,7 +60,7 @@ await page.evaluate(() => {
   listen.forEach(l => localStorage.setItem("vokabel_liste_" + l.id, JSON.stringify(l)));
   localStorage.setItem("vokabel_listen_index", JSON.stringify(listen.map(l => ({ id:l.id, name:l.name, sprache:l.sprache }))));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // Verben über Liste-Detail "Quiz starten" (setzt Standard D1 → E1)
 await zuListen(page);

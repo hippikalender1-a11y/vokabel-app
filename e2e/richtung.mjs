@@ -34,9 +34,10 @@ const vorbereiten = async (einst = {}) => {
     localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
     if (Object.keys(einst).length) localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage:[3650,3650,3650,3650], modus: "schwer", vorlesen: ["E1"], gelerntSchwelle: 3, sprache: "alle", ...einst }));
   }, WOERTER, einst);
-  await page.reload(); await sleep(700);
+  await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
   await neueEineSession(page);
   await listeWaehlen(page, "Unité 1"); await sleep(300);
+  if (!(await page.$("[data-listen-bestaetigen]"))) { await page.evaluate(() => document.querySelector("[data-listen-kopf]")?.click()); await sleep(400); }   // 289: Listen-Auswahl aufklappen
   const knopf = await page.evaluate(() => { const b = document.querySelector("[data-listen-bestaetigen]"); return b ? { kl: b.classList.contains("bestaetigen-knopf"), text: b.innerText.trim() } : null; });
   await listenZu(page);
   await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);

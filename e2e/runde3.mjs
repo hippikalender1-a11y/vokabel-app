@@ -33,7 +33,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unité 1", sprache:"fr", spalten: sp, naechste_id: 31, vokabeln }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
 });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── 18: Speichern-Fenster – Namensfeld, direkt darunter die Knöpfe; Eingabetaste speichert ──
 await neueEineSession(page);
@@ -98,7 +98,7 @@ await page.evaluate((a, b) => {
   localStorage.setItem("vokabel_slots", JSON.stringify(d));
   localStorage.setItem("vokabel_letzter_slot", JSON.stringify(b));
 }, id1, id2);
-await page.reload(); await sleep(900);
+await page.reload(); await sleep(900); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 // 15: App-Start mit geladener S2 (in Gruppe G): Auswahl öffnen zeigt die Gruppe
 await page.click("[data-slot-kopf-name]"); await sleep(400);
 ok(await page.$(`[data-slot-id="${id2}"]`) && /Gruppe G/i.test(await page.evaluate(() => document.body.innerText)), "App-Start, Auswahl geöffnet: Gruppe des geladenen Quiz ist offen, Kachel sichtbar");

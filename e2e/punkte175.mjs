@@ -50,7 +50,7 @@ await page.evaluate(lang => {
     quizSpalteModus:{ E1:"karte" }, quizInfoTypenSession:[], quizZeigeInfo:{}, quizModus:"sequenziell", quizReihenfolge:"listennr" };
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], gespeichert:[{ id:"g_1", name:"Unit 1", timestamp:1, platz:{z:0,s:0}, sessionFortschritt:null, konfiguration:k }] }));
 }, LANG);
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
 // ── 179: Altlast −100 → −6 ──
 ok((await vok(5)).fortschritt.score === -6, `179: alter Score −100 einmalig auf −6 (${(await vok(5)).fortschritt.score})`);

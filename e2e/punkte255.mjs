@@ -38,7 +38,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_slots", JSON.stringify({ verlauf:[], ordner:[], gespeichert: [["A",0,0],["B",3,0],["C",1,1]].map(([n, z, s], i) =>
     ({ id:"s"+n, name:"Teil "+n, timestamp:i, konfiguration:k, sessionFortschritt:null, platz:{z, s} })) }));
 });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(400);
 
@@ -57,7 +57,7 @@ ok(nachher.sA[1] === nachher.sC[1] && nachher.sC[1] === nachher.sB[1] && nachher
   `256/291/292: automatisch, 1 Spalte gewählt: A, B, C untereinander (${JSON.stringify(nachher)})`);
 // 291: 2 Spalten gewählt → A, C | B
 await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"); e.ebenenSpalten = { ...(e.ebenenSpalten || {}), slot: 2 }; localStorage.setItem("vokabel_einstellungen", JSON.stringify(e)); });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(400);
 nachher = await lage();
@@ -73,7 +73,7 @@ ok(plaetzeN === "sA:0|0,sB:1|0,sC:0|1" && lageN.sA[0] === lageN.sC[0] && lageN.s
   `292: Anordnen nach Name in 2 Spalten: A, B | C (${plaetzeN}, ${JSON.stringify(lageN)})`);
 // zurück auf die Ausgangsplätze (für die folgenden Prüfungen)
 await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("vokabel_slots")); const p = { sA: {z:0,s:0}, sB: {z:3,s:0}, sC: {z:1,s:1} }; d.gespeichert.forEach(g => g.platz = p[g.id]); localStorage.setItem("vokabel_slots", JSON.stringify(d)); });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
 const plaetze = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")).gespeichert.map(g => `${g.id}:${g.platz.z}|${g.platz.s}`).join(","));

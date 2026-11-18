@@ -40,7 +40,7 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_en", JSON.stringify(l));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_en", name:l.name, sprache:"en", platz:{z:0,s:0} }]));
 });
-await page.reload(); await sleep(700);
+await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await neueEineSession(page);
 await listeWaehlen(page, "Irregular Verbs"); await sleep(300);
 await listenZu(page);

@@ -20,7 +20,7 @@ const zufallsSchemata = async () => ((await einst()).eigeneSchemata || []).filte
 
 await page.goto(URL);
 await page.evaluate(() => localStorage.clear());
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
 await page.evaluate(() => { const k = document.querySelector('[data-einst-kopf="farben"]'); if (k.dataset.offen !== "ja") k.click(); }); await sleep(300);
 
@@ -47,7 +47,7 @@ const h2 = await variable("haupt");
 ok(z.length === 1 && h2 !== h1, `erneut 🎲: dasselbe Schema „Zufall“ mit neuen Farben (${h2})`);
 // umbenennen → bleibt, neuer Tipp legt ein neues „Zufall“ an
 await page.evaluate(id => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen")); e.eigeneSchemata = e.eigeneSchemata.map(x => x.id === id ? { ...x, name: "Mein Zufall" } : x); localStorage.setItem("vokabel_einstellungen", JSON.stringify(e)); }, z[0].id);
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
 await page.evaluate(() => { const k = document.querySelector('[data-einst-kopf="farben"]'); if (k.dataset.offen !== "ja") k.click(); }); await sleep(300);
 await farbZeige(page, "[data-farbschema-zufall]"); await page.click("[data-farbschema-zufall]"); await sleep(300);
@@ -64,7 +64,7 @@ await page.evaluate(() => {
   e.eigeneSchemata = e.eigeneSchemata.map(x => x.name === "Zufall" ? { ...x, farben: { ...x.farben, ...w }, elemente: { ".btn.btn-primary": { "background-color": "#ffffff", color: "#ffffff" } } } : x);
   localStorage.setItem("vokabel_einstellungen", JSON.stringify(e));
 });
-await page.reload(); await sleep(500);
+await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen")).click()); await sleep(300);
 await page.evaluate(() => { const k = document.querySelector('[data-einst-kopf="farben"]'); if (k.dataset.offen !== "ja") k.click(); }); await sleep(300);
 await farbZeige(page, "[data-farbmodus-start]"); await page.click("[data-farbmodus-start]"); await sleep(300);

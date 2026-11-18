@@ -42,23 +42,19 @@ await page.evaluate(() => {
   localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unité 1", sprache:"fr", spalten: sp, naechste_id: 81, vokabeln }));
   localStorage.setItem("vokabel_listen_index", JSON.stringify([{ id:"l_a", name:"Unité 1", sprache:"fr", platz:{z:0,s:0} }]));
 });
-await page.reload(); await sleep(800);
+await page.reload(); await sleep(800); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 
-// ── Neues Quiz: „Neues Quiz · nicht gespeichert“, Listen-Auswahl ohne Liste: Hinweis statt Knopf ──
+// ── 289: Neues Quiz ohne Liste – die Auswahl steht mit den Listen offen („Liste oder Quiz wählen“, ohne „nicht gespeichert“) ──
 await neueEineSession(page);
-const kopf = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf-name]"); return { text: k.textContent, ng: !!k.querySelector("[data-nicht-gespeichert]") }; });
-ok(/^Neues Quiz/.test(kopf.text) && kopf.ng, `Kopf: „Neues Quiz“ + „nicht gespeichert“ (${kopf.text})`);
-const rechts = () => page.evaluate(() => { const h = document.querySelector(".liste-detail-header"); return { hinweis: h.querySelector("[data-listen-hinweis]")?.textContent ?? null, knopf: h.querySelector(".zeile-rechts")?.textContent ?? null }; });
-let re = await rechts();
-ok(re.hinweis === "Bitte Liste auswählen" && re.knopf === null && await page.$(".quiz-setup-check"), `ohne Liste: rechts nur Hinweis, kein Knopf, Listen offen (${JSON.stringify(re)})`);
-await page.evaluate(() => document.querySelector("[data-listen-hinweis]").click()); await sleep(300);
-ok(await page.$(".quiz-setup-check") && (await rechts()).hinweis === "Bitte Liste auswählen", "Hinweis antippen schließt nichts");
+const kopf = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf-name]"); return { text: k.textContent, ng: !!k.querySelector("[data-nicht-gespeichert]"),
+  umsch: document.querySelector("[data-auswahl-umschalter]")?.dataset.auswahlUmschalter, haken: !!document.querySelector(".quiz-setup-check") }; });
+ok(kopf.text === "Liste oder Quiz wählen" && !kopf.ng && kopf.umsch === "listen" && !kopf.haken, `289: Kopf „Liste oder Quiz wählen“, Auswahl mit Listen, keine Häkchen-Liste (${JSON.stringify(kopf)})`);
+await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(300);
+ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf) === "offen", "289: Kopf antippen schließt nichts – erst etwas wählen");
+const rechts = () => page.evaluate(() => { const h = document.querySelector(".liste-detail-header"); return { hinweis: h?.querySelector("[data-listen-hinweis]")?.textContent ?? null, knopf: h?.querySelector(".zeile-rechts")?.textContent.trim() ?? null }; });
 await listeWaehlen(page, "Unité 1"); await sleep(400);
-re = await rechts();
-ok(re.knopf === "Bestätigen" && re.hinweis === null, `Liste gewählt, Auswahl offen: Knopf „Bestätigen“ (${JSON.stringify(re)})`);
-await page.evaluate(() => document.querySelector(".liste-detail-header .zeile-rechts").click()); await sleep(400);
-re = await rechts();
-ok(!(await page.$(".quiz-setup-check")) && re.knopf === "Unité 1", `„Bestätigen“ klappt die Listen-Auswahl zu, danach steht der Name da (${JSON.stringify(re)})`);
+let re = await rechts();
+ok(re.knopf === "Unité 1" && re.hinweis === null && !(await page.$(".quiz-setup-check")), `Liste gewählt (Quiz mit Auswahl): Listen-Auswahl zu, rechts der Name (${JSON.stringify(re)})`);
 await page.evaluate(() => document.querySelector(".liste-detail-header .zeile-rechts").click()); await sleep(400);
 re = await rechts();
 ok(await page.$(".quiz-setup-check") && re.knopf === "Bestätigen", `Name antippen öffnet die Auswahl wieder – „Bestätigen“ (${JSON.stringify(re)})`);
