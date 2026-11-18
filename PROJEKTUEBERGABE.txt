@@ -3776,3 +3776,8 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
     links (gestrichelt abgesetzt, antippen blendet aus, lange drücken: Quiz), Überschrift „Lernstand · n Vokabeln“ (antippen:
     alles einblenden, data-st-kachel="gesamt"), Klammer „x abgefragt“ (= 100 %, wenn Nie ausgeblendet) unter den drei Balken;
     „Langzeitgedächtnis · n gelernte · 🔁 f fällig“ (data-st-kachel gelernt/faellig).
+- 287 (iPhone-Fehler, behoben): Ordner (Quiz- und Listen-Ordner) kurz/lang halten zeigte keine Tafel – iOS schickt nach dem
+  Halten trotzdem einen Klick; der öffnete den Ordner und beendete damit die Auswahl samt Tafel (bei normalen Kacheln fiel es
+  nicht auf, dort wählt der Klick nur neu). Jetzt wird nach dem Halten (Stufe ≥ 1) der nächste Klick auf eine Kachel 600 ms lang
+  verschluckt (klickWeg = "kachel" im Kachel-Gesten-Effekt). Test punkte287.
+  Hinweis: Ordner mit Inhalt haben in der Ablage „📤 Ordner auflösen“ (Inhalt bleibt), „🗑 Ordner löschen“ nur bei leeren Ordnern.

@@ -1192,6 +1192,8 @@ export default function VokabelApp() {
       const g = kachelGesteRef.current;
       if (!g) return;
       if (g.stufe >= 1 && e.cancelable) e.preventDefault();   // kein Klick hinterher (würde laden bzw. die Auswahl neu beginnen)
+      // iPhone: der Klick kommt nach dem Halten trotzdem – auf einem Ordner würde er ihn öffnen und die Tafel schließen
+      if (g.stufe >= 1) { klickWeg = "kachel"; clearTimeout(klickWegT); klickWegT = setTimeout(() => { klickWeg = false; }, 600); }
       const ruhig = !g.bewegt && !slotZiehenRef.current?.aktiv;
       // auswählen bzw. dazu/heraus (qliste: wählen) – 236: auch nach dem langen Halten (angehoben), solange nicht gezogen
       if (ruhig && g.stufe >= 1) kachelLangRef.current?.(g.art, g.id, 1);
@@ -1201,7 +1203,7 @@ export default function VokabelApp() {
     };
     // 192: Maus – Kachel gedrückt halten (ab KACHEL_WAEHLEN_MS, ohne Bewegung) wirkt wie kurzes Halten mit dem Finger;
     // der Klick danach wird verschluckt. (Rechtsklick bleibt der Lang-Druck.)
-    let maus = null, klickWeg = false;
+    let maus = null, klickWeg = false, klickWegT = null;
     const mausAb = e => {
       maus = null;
       if (e.pointerType !== "mouse" || e.button !== 0 || farbModusRef.current) return;
@@ -1217,7 +1219,10 @@ export default function VokabelApp() {
       klickWeg = true; setTimeout(() => { klickWeg = false; }, 400);
       kachelLangRef.current?.(m.art, m.id, 1);
     };
-    const klickSchlucken = e => { if (klickWeg) { klickWeg = false; e.stopPropagation(); e.preventDefault(); } };
+    const klickSchlucken = e => {
+      if (!klickWeg || (klickWeg === "kachel" && !e.target.closest?.("[data-kachel-geste]"))) return;   // nach Touch nur den Klick auf eine Kachel
+      klickWeg = false; e.stopPropagation(); e.preventDefault();
+    };
     document.addEventListener("pointerdown", mausAb, true);
     document.addEventListener("pointerup", mausAuf, true);
     document.addEventListener("click", klickSchlucken, true);
