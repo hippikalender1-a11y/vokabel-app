@@ -85,6 +85,11 @@ await menue('[data-liste-id="l_b"]');
 t = await tafel();
 console.log("     ", JSON.stringify(t));
 ok(t.raster.length === 5 && t.klein && t.rest.includes("🗂 Ablage ›") && t.rest.at(-1) === "↔ Von–Bis" && /Unit 1 laden/.test(t.kopf), `288: eine Liste – Raster, kleine Zeile, „Unit 1 laden“ (${t.rest.join("|")}, ${t.kopf})`);
+// 296: eine Liste – lang drücken auf „Vokabeln (n)“ öffnet die Bereichswahl (wie „🎯 Quiz mit Auswahl…“)
+await page.evaluate(() => { const b = document.querySelector('[data-schalter-raster] [data-schalter="grund"]'), r = b.getBoundingClientRect();
+  b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(900);
+const b296 = await page.evaluate(() => ({ tafel: !!document.querySelector("[data-schalter-raster]"), liste: !!document.querySelector("[data-vok-bestaetigen]"), zeilen: document.querySelectorAll(".vok-zeile").length }));
+ok(!b296.tafel && b296.liste && b296.zeilen === 11, `296: lang drücken auf „Vokabeln“ → Bereichswahl der Liste offen (${JSON.stringify(b296)})`);
 await browser.close();
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 process.exit(fehler ? 1 : 0);

@@ -3828,3 +3828,5 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   mit Häkchen-Liste entfällt; „Neues Quiz“ mit einer Liste + „Alle | Bereich“ entsteht über „🎯 Quiz mit Auswahl…“.
   Tests: listeWaehlen() (hilfen.mjs) geht über „🎯 Quiz mit Auswahl…“ (Farbmodus: Liste antippen); nach jedem Neuladen schaltet
   ein Zusatz auf „Quiz“, wenn der Kopf „Liste oder Quiz wählen“ zeigt; neue_session/vonbis_langdruck/neu/punkte210 prüfen 289.
+- 296 UMGESETZT: Auswahl-Tafel einer einzelnen Liste – lang drücken auf „Vokabeln (n)“ öffnet die Bereichswahl (wie
+  „🎯 Quiz mit Auswahl…“: Neues Quiz mit der Liste, „Bereich“, Vokabelliste offen). Test punkte288 erweitert.

@@ -106,7 +106,7 @@ export function listenNavi(app) {
 // darunter Negative · Gelernt / Heute · Fällige); Multiquiz, Fällige wiederholen und Negative abfragen entfallen dort
 // (der Kopf lädt die Auswahl); unten nur eine kleine Zeile (🎨 · Ablage › · Von–Bis). art: "slot" (ids = Quiz) | "liste" (ids = Listen)
 export function mitSchalterRaster(app, d, art, ids) {
-  const { schalterZaehlung, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots, tab } = app;
+  const { starteQuizMitAuswahl, setListenWahl, schalterZaehlung, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots, tab } = app;
   if (!d || tab !== "quiz" || !ids.length) return d;
   const z = schalterZaehlung(ids, art);
   const sk = sprachKuerzelFuer(art === "liste" ? ids : [...new Set(ids.flatMap(id => slots.gespeichert.find(g => g.id === id)?.konfiguration?.listenIds || []))]);
@@ -116,7 +116,9 @@ export function mitSchalterRaster(app, d, art, ids) {
     aus: !frei || (n === 0 && k !== "faellig"), fn: () => set(v => !v), ...extra });
   const zurueck = () => setTimeout(() => zeigeAuswahlTafel(art), 0);
   const raster = [
-    s("grund", "Vokabeln", z.grund, quizGrund, setQuizGrund, true, { breit: true }),   // 282: immer „Vokabeln“
+    s("grund", "Vokabeln", z.grund, quizGrund, setQuizGrund, true, { breit: true,   // 282: immer „Vokabeln“
+      // 296: eine Liste – lang drücken wählt einen Bereich (wie „🎯 Quiz mit Auswahl…“)
+      ...(art === "liste" && ids.length === 1 ? { lang: () => { setListenWahl(null); starteQuizMitAuswahl(ids[0]); } } : {}) }),
     s("negativ", "✗ Negative", z.negativ, quizNegativ, setQuizNegativ, true),
     s("gelernt", "✓ Gelernt", z.gelernt, quizGelerntEinschliessen, setQuizGelerntEinschliessen, z.faelligMoeglich),
     s("heute", "Heute", z.heute, quizHeuteEinschliessen, setQuizHeuteEinschliessen, tagesSperre()),
