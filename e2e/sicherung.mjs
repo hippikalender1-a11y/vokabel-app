@@ -33,7 +33,7 @@ const setze = (k, v) => page.evaluate((k, v) => localStorage.setItem(k, JSON.str
 // Erinnerung steht oben in des Quiz-Auswahl (Quiz-Tab)
 const zurAuswahl = async () => {
   await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
-  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(300);
 };
 const erinnerung = () => page.evaluate(() => document.querySelector("[data-sicherung-erinnerung]")?.textContent || null);
 const warteAufDatei = async () => {

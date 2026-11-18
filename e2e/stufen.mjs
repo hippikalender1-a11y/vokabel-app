@@ -60,7 +60,7 @@ await page.evaluate(() => document.querySelector(".topbar-back")?.click()); awai
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(300);
 
 // normale Quiz: „one“ (2) gewusst → 3 (Stufe 1); gelernte, nicht fällige kommen nicht
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(300);
 await klick('[data-slot-id="g_1"]'); await klick("[data-slot-laden]"); await sleep(400);
 ok(await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl) === "2", `Quiz: nur „one“ und „four“ (gelernte nicht fällig ausgeblendet) (${await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl)})`);
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);

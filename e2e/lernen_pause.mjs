@@ -21,7 +21,7 @@ await page.evaluateOnNewDocument(() => {
   Object.defineProperty(window, "speechSynthesis", { value: { getVoices: () => [], cancel() {}, addEventListener() {}, speaking: false, speak() {} } });
 });
 const ladeSlot = async name => {
-  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(300);
   await page.evaluate(n => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes(n)).click(), name); await sleep(700); await slotLaden(page);
 };
 const knopf = () => page.evaluate(() => { const b = document.querySelector("[data-start-knopf]"); return { art: b?.dataset.lernenStart, text: b?.textContent.trim(), stand: document.querySelector('[data-anzahl="lernstand"]')?.textContent.trim() || null }; });

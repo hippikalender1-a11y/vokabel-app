@@ -34,7 +34,7 @@ const langDruck = async sel => {
 const aktionen = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
 const hinweis = () => page.evaluate(() => document.querySelector("[data-wahl-hinweis]")?.textContent.trim() || null);
 const aktion = async prefix => { await page.evaluate(p => [...__aktionen()].find(b => b.dataset.infoAktion.startsWith(p)).click(), prefix); await sleep(300); };
-const oeffneKopf = () => page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); });
+const oeffneKopf = () => page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } });
 
 await page.goto(URL);
 await page.evaluate(() => {

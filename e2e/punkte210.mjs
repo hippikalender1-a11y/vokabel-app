@@ -37,7 +37,7 @@ await page.reload(); await sleep(900);
 
 // ── 210: Quiz (eine Spalte → ausgeschrieben) ──
 await tab("Quiz");
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(400);
 const s = await page.evaluate(() => ({ ordner: document.querySelector('[data-ordner-id="o1"] .ordner-anzahl')?.textContent.trim(), ordnerV: document.querySelector('[data-ordner-id="o1"] .raster-anz')?.textContent.trim(),
   teil: document.querySelector('[data-slot-id="s3"] .raster-anz')?.textContent.trim() }));
 ok(s.ordner === "· 2 Quiz" && s.ordnerV === "5 Vokabeln" && s.teil === "5 Vokabeln", `210: Ordner „· 2 Quiz“ + „5 Vokabeln“ (jede einmal), Quiz „5 Vokabeln“ (${JSON.stringify(s)})`);

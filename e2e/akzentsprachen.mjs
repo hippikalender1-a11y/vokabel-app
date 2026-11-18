@@ -21,7 +21,7 @@ const oeffneEinstAkz = async () => { await oeffneEinst("lernen"); await page.eva
 const tab = async name => { await page.evaluate(n => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes(n)).click(), name); await sleep(400); };
 const arten = () => page.evaluate(() => [...document.querySelectorAll("[data-start-arten] [data-quiz-art]")].map(b => b.dataset.quizArt).join(","));
 const ladeSlot = async name => {
-  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(300);
   await page.evaluate(n => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes(n)).click(), name); await sleep(700); await slotLaden(page);
 };
 // Tastatur-Runde: „esta“ statt „está“ tippen → richtig?

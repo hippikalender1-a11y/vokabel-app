@@ -37,12 +37,12 @@ await page.evaluate(alt => {
 await page.reload(); await sleep(800);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 const ladeQuiz = async () => {
-  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(400);
   await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "quiz") b.click(); }); await sleep(300);
   await page.evaluate(() => document.querySelector('[data-slot-id="sA"]').click()); await sleep(900);
 };
 // Quiz-Kacheln sichtbar (Kopf offen, Ansicht Quiz)
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(400);
 await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "quiz") b.click(); }); await sleep(300);
 // ── 276 ──
 const k = await page.evaluate(() => { const b = document.querySelector('[data-slot-id="sA"] .kachel-balken'); const m = b?.style.maskImage || b?.style.webkitMaskImage || "";
@@ -50,7 +50,7 @@ const k = await page.evaluate(() => { const b = document.querySelector('[data-sl
 ok(k.n === "2" && k.maske && /davon 2 fällig/.test(k.info || ""), `276: Quiz-Kachel – 2 fällige als hohler Anfang des Balkens (${JSON.stringify(k)})`);
 // ── 275: Info des Quiz – Balken und Legende nie · negativ · arbeit · gelernt ──
 await page.evaluate(() => document.querySelector('[data-slot-id="sA"]').click()); await sleep(900);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(400);
 await page.evaluate(() => { if (!document.querySelector("[data-vorschau-gruppen]")) document.querySelector("[data-slot-info]")?.click(); }); await sleep(300);
 const r = await page.evaluate(() => ({ balken: [...document.querySelectorAll("[data-vorschau-balken] [data-gruppe]")].map(x => x.dataset.gruppe).join(","),
   legende: [...document.querySelectorAll("[data-vorschau-gruppen] [data-gruppe-text]")].map(x => x.dataset.gruppeText).join(","),

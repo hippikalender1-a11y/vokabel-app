@@ -11,7 +11,7 @@ let fehler = 0;
 const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FAIL", msg); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const klick = async sel => { await page.evaluate(s => document.querySelector(s)?.click(), sel); await sleep(300); };
-const auswahlAuf = async () => { await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300); };
+const auswahlAuf = async () => { await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(300); };
 const laden = async id => { await auswahlAuf(); await klick(`[data-slot-id="${id}"]`); await klick("[data-slot-laden]"); await sleep(300); };
 const heute = id => page.evaluate(i => document.querySelector(`[data-slot-id="${i}"]`)?.dataset.heute, id);
 

@@ -48,7 +48,7 @@ await page.reload(); await sleep(800);
 
 // ── 263: Formen – Quiz-Kachel abgerundet, Listen-Kachel ganz eckig ──
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(400);
 await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "quiz") b.click(); }); await sleep(300);
 const quizEcke = await ecke('[data-slot-id="sA"]');
 ok(quizEcke && parseFloat(quizEcke) >= 6, `263: Quiz-Kachel abgerundet (${quizEcke})`);
@@ -99,7 +99,7 @@ await page.evaluate(() => document.querySelector("[data-wahl-fertig]")?.click())
 await page.evaluate(() => { if (document.querySelector('[data-quiz-ansicht="auswahl"]')) document.querySelector("[data-slot-kopf-name]")?.click(); }); await sleep(500);
 const kopfP = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf-name]"); return { text: k.innerText, eckig: k.classList.contains("eckig"), ecke: getComputedStyle(k).borderTopLeftRadius }; });
 ok(/📋 Engl · 2 Listen/.test(kopfP.text) && kopfP.eckig && kopfP.ecke === "0px", `263/264: Listen-Paket – Kopf „📋 Engl · 2 Listen“, eckig (${JSON.stringify(kopfP)})`);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(400);
 await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "quiz") b.click(); }); await sleep(300);
 await page.evaluate(() => document.querySelector('[data-slot-id="sA"]').click()); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-slot-laden]")?.click()); await sleep(900);

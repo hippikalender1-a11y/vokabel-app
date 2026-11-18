@@ -207,7 +207,7 @@ export default function VokabelApp() {
   const slotInfoRefCb = useMemo(() => hoeheBeobachten(setSlotInfoH), []);   // eslint-disable-line react-hooks/exhaustive-deps
   const listenKopfRefCb = useMemo(() => hoeheBeobachten(setListenKopfH), []);   // eslint-disable-line react-hooks/exhaustive-deps       // 217: Quiz-Auswahl zeigt die Listen (Umschalter „Quiz | Listen“)   // 208: { art, ordner } – Fenster „Anordnen“
   // 208: anordnen nach name | datum | lernstand | luecken (Spalten = gewählte bzw. belegte)
-  function ordneAn(...args) { return ordneAnTeil({ getSlotsData, lernstandJeArt, listenOrdnerDaten, minSpalten, rasterEinordnen, setAnordnen, setSlotsData, speichereListenOrdnerDaten }, ...args); }   // 203: { art, ordner } – Fenster „Spalten“ (Quiz)
+  function ordneAn(...args) { return ordneAnTeil({ einstellungen, getSlotsData, lernstandJeArt, listenOrdnerDaten, minSpalten, rasterEinordnen, setAnordnen, setSlotsData, speichereListenOrdnerDaten }, ...args); }   // 203: { art, ordner } – Fenster „Spalten“ (Quiz)
   const [satzStand, setSatzStand] = useState({});   // 202: { listeId: { vokId: Anzahl Sätze } }
   const ladeSatzStand = () => satzStandAlle().then(setSatzStand);
   useEffect(() => { ladeSatzStand(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -2478,7 +2478,7 @@ export default function VokabelApp() {
   // Spalten, Anordnen, Gelernte); Ordner darüber im Pfad: nur Fällige + Gelernte (Quiz) bzw. kein Menü (Listen).
   // platz: auf einem freien Platz – Neues landet genau dort.
   // 256: Anzeige ohne Lücken (Lesereihenfolge) bzw. die eigene Anordnung – global, nur Anzeige
-  const lueckenlosSchalter = { label: einstellungen.lueckenlos ? "▦ Eigene Anordnung" : "▤ Automatische Anordnung",   // 290
+  const lueckenlosSchalter = { label: einstellungen.lueckenlos ? "▦ Freie Anordnung" : "▤ Automatische Anordnung",   // 290
     fn: () => speichereEinst({ ...einstellungen, lueckenlos: !einstellungen.lueckenlos }) };
   function slotEbenenMenue(ordnerId, { voll = true, platz = null, ohneNeu = false } = {}) {
     const daten = getSlotsData();

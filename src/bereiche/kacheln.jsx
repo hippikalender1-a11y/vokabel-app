@@ -24,7 +24,9 @@ function kachelBalken(pct, n, ges) {
 // wie im Listen-Tab (leere Plätze bleiben frei); mit Sprachfilter zusammengerückt
 // 193: die geöffnete Ebene (Listen-Ordner) – Ordner kommen als { istOrdner } mit
 // 256: Lesereihenfolge der gespeicherten Plätze (Zeile, dann Spalte) – für die lückenlose Anzeige
-const lueckenlosReihe = eintraege => [...eintraege].filter(e => e.platz).sort((a, b) => a.platz.z - b.platz.z || a.platz.s - b.platz.s);
+// 256/292: automatische Anordnung – spaltenweise (wie „Anordnen…“ und Von–Bis): Spalte für Spalte von oben nach unten
+const lueckenlosReihe = eintraege => [...eintraege].filter(e => e.platz).sort((a, b) => a.platz.s - b.platz.s || a.platz.z - b.platz.z);
+const autoPlatz = (i, n, spalten) => { const zeilen = Math.max(1, Math.ceil(n / spalten)); return `${i % zeilen}|${Math.floor(i / zeilen)}`; };
 
 export function listenRasterPlaetze(app) {
   const { listenIndex, listenOrdner, listenOrdnerOffen, minSpalten, sichtbareListen, sprachFilter } = app;
@@ -311,7 +313,7 @@ export function renderListenRaster(app) {
       // 256: „Lückenlos anzeigen“ – Kacheln in Lesereihenfolge ihrer Plätze ohne Lücken (nur Anzeige; beim Verschieben die echten Plätze)
       const lueckenlos = !!einstellungen.lueckenlos && !sortModus;
       const reihe = lueckenlos ? lueckenlosReihe(ebene) : null;
-      const platzMap = lueckenlos ? new Map(reihe.map((l, i) => [`${Math.floor(i / anzSpalten)}|${i % anzSpalten}`, l]))
+      const platzMap = lueckenlos ? new Map(reihe.map((l, i) => [autoPlatz(i, reihe.length, anzSpalten), l]))
         : new Map(ebene.filter(l => l.platz).map(l => [`${l.platz.z}|${l.platz.s}`, l]));
       const belegtBis = lueckenlos ? Math.ceil(reihe.length / anzSpalten) : ebene.reduce((m, l) => Math.max(m, (l.platz?.z ?? 0) + 1), 0);
       const alleBelegtL = belegtBis > 0 && (lueckenlos ? reihe.length % anzSpalten === 0
@@ -553,7 +555,7 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     // Verschieben – auch beim Finger-Zug – die echten Plätze, wie bei „Gelernte ausblenden“)
     const lueckenlos = !!einstellungen.lueckenlos && !slotSortModus;
     const reihe = lueckenlos ? lueckenlosReihe(raster.gespeichert.filter(sichtbarE)) : null;
-    const platzMap = lueckenlos ? new Map(reihe.map((x, i) => [`${Math.floor(i / anzSpalten)}|${i % anzSpalten}`, x]))
+    const platzMap = lueckenlos ? new Map(reihe.map((x, i) => [autoPlatz(i, reihe.length, anzSpalten), x]))
       : new Map(raster.gespeichert.map(x => [`${x.platz.z}|${x.platz.s}`, x]));
     const zeilenAnzeige = slotSortModus ? raster.gespeichert.reduce((m, x) => Math.max(m, x.platz.z + 1), 0) + RASTER_FREI_ZEILEN
       : lueckenlos ? Math.max(ebeneLeer && ordnerOffen ? 1 : 0, Math.ceil(reihe.length / anzSpalten) + (reihe.length && reihe.length % anzSpalten === 0 ? 1 : 0))

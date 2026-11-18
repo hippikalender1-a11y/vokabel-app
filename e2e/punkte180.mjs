@@ -18,7 +18,7 @@ const kontext = async sel => {
   await sleep(300);
 };
 const aktion = async label => { await page.evaluate(l => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === l)?.click(), label); await sleep(400); };
-const auswahlAuf = async () => { await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300); };
+const auswahlAuf = async () => { await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(300); };
 const laden = async id => { await auswahlAuf(); await klick(`[data-slot-id="${id}"]`); await klick("[data-slot-laden]"); await sleep(300);
   if (await page.$('[data-schalter-klapp="zu"]')) { await klick('[data-schalter-klapp]'); await sleep(200); } };   // 278: aus der Auswahl geladen → Schalter-Zeile aufklappen
 const anzahl = () => page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl);

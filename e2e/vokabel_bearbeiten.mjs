@@ -29,7 +29,7 @@ const feld = (typ, wert) => page.evaluate((typ, wert) => { const i = document.qu
   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, wert); i.dispatchEvent(new Event("input", { bubbles: true })); }, typ, wert);
 const vok = id => page.evaluate(id => JSON.parse(localStorage.getItem("vokabel_liste_l_fr")).vokabeln.find(v => v.id === id), id);
 const ladeSlot = async (name, modus) => {
-  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(300);
   await page.evaluate(n => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes(n)).click(), name); await sleep(700); await slotLaden(page);
 };
 

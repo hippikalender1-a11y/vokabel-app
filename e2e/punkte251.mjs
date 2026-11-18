@@ -39,7 +39,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(800);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(400);
 await zuListen(page);
 await halte('[data-liste-id="l_a"]', 450); await halte('[data-liste-id="l_b"]', 450);
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]")?.click()); await sleep(700);

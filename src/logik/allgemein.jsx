@@ -16,11 +16,12 @@ export function setzeMinSpalten(app, art, ordnerId, n) {
 // eslint-disable-line react-hooks/exhaustive-deps       // 217: Quiz-Auswahl zeigt die Listen (Umschalter „Quiz | Listen“)   // 208: { art, ordner } – Fenster „Anordnen“
 // 208: anordnen nach name | datum | lernstand | luecken (Spalten = gewählte bzw. belegte)
 export function ordneAn(app, art, ordnerId, nach) {
-  const { getSlotsData, lernstandJeArt, listenOrdnerDaten, minSpalten, rasterEinordnen, setAnordnen, setSlotsData, speichereListenOrdnerDaten } = app;
+  const { einstellungen, getSlotsData, lernstandJeArt, listenOrdnerDaten, minSpalten, rasterEinordnen, setAnordnen, setSlotsData, speichereListenOrdnerDaten } = app;
     const liste = art === "liste";
     const data = liste ? listenOrdnerDaten() : rasterEinordnen(getSlotsData());
     const ebene = ebeneVon(data, ordnerId);
-    const spalten = ebenenSpalten(ebene, false, minSpalten(art, ordnerId));
+    // 292: automatische Anordnung – genau die gewählte Spaltenzahl (wie die Anzeige)
+    const spalten = einstellungen?.lueckenlos ? Math.max(1, minSpalten(art, ordnerId) || 1) : ebenenSpalten(ebene, false, minSpalten(art, ordnerId));
     const datum = x => liste ? Number(String(x.id).match(/(\d{10,})/)?.[1] || 0) : (x.timestamp || 0);
     const pctListe = id => lernstandJeArt(lsGet(SK.liste(id))?.vokabeln || [], id).uebersetzung.pct || 0;
     const pctSession = x => { const k = x.konfiguration || {};

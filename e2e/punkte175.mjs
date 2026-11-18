@@ -57,7 +57,7 @@ ok((await vok(5)).fortschritt.score === -6, `179: alter Score −100 einmalig au
 
 // Quiz laden und starten
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(300);
 await page.evaluate(() => document.querySelector('[data-slot-id="g_1"]').click()); await sleep(650);   // 192: antippen lädt sofort
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(700);
 

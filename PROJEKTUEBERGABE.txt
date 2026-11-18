@@ -3806,3 +3806,9 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   Test punkte255 erweitert (1 Spalte: untereinander; 2 Spalten: A, C | B).
 - 289-Tests: 33 Tests wählen Listen über listeWaehlen() (hilfen.mjs) – funktioniert mit alter und neuer Ansicht.
   289 selbst weiter beiseite (scratchpad/p289/289.patch); offen: 56 Tests, die beim Start eine geschlossene/Quiz-Auswahl erwarten.
+- 292 UMGESETZT: „▦ Eigene Anordnung“ heißt jetzt „▦ Freie Anordnung“. Automatische Anordnung spaltenweise (wie „Anordnen…“
+  und Von–Bis: Spalte für Spalte von oben nach unten, autoPlatz in kacheln.jsx); „⇅ Anordnen…“ nutzt in der automatischen
+  Anordnung die gewählte Spaltenzahl. Test punkte255 erweitert.
+- 289 OFFENE FRAGE: Mit 289 entfällt der Zustand „Neues Quiz“ (Listen angekreuzt, Zeile „Vokabel-Auswahl Alle | Bereich“).
+  Liste antippen lädt sie als Listen-Quiz (ohne „Alle | Bereich“; Bereich über „🎯 Quiz mit Auswahl…“). ~25 Tests bauen auf
+  dem alten Zustand auf. Die Tests haben einen Zusatz (Kopf „Liste oder Quiz wählen“ → auf „Quiz“ umschalten), harmlos ohne 289.

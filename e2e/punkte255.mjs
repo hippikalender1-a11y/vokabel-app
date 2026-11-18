@@ -40,7 +40,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(800);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(400);
 
 // ── 256: Lückenlos anzeigen ──
 const lage = () => page.evaluate(() => Object.fromEntries(["sA","sB","sC"].map(id => { const r = document.querySelector(`[data-slot-id="${id}"]`)?.getBoundingClientRect(); return [id, r ? [Math.round(r.top), Math.round(r.left)] : null]; })));
@@ -52,23 +52,36 @@ ok(m.includes("▤ Automatische Anordnung"), `256: Schalter im Menü der Ebene (
 await aktion("▤ Automatische Anordnung");
 await page.mouse.click(5, 300); await sleep(300);
 let nachher = await lage();
-// 291: gewählte Spaltenzahl (hier 1) gilt – Lesereihenfolge A (0|0), C (1|1), B (3|0) untereinander
-ok(nachher.sA[1] === nachher.sC[1] && nachher.sC[1] === nachher.sB[1] && nachher.sA[0] < nachher.sC[0] && nachher.sC[0] < nachher.sB[0] && nachher.sB[0] < vorher.sB[0],
-  `256/291: automatisch, 1 Spalte gewählt: A, C, B untereinander (${JSON.stringify(nachher)})`);
+// 291/292: gewählte Spaltenzahl (hier 1) gilt – spaltenweise A (0|0), B (3|0), C (1|1) untereinander
+ok(nachher.sA[1] === nachher.sC[1] && nachher.sC[1] === nachher.sB[1] && nachher.sA[0] < nachher.sB[0] && nachher.sB[0] < nachher.sC[0],
+  `256/291/292: automatisch, 1 Spalte gewählt: A, B, C untereinander (${JSON.stringify(nachher)})`);
 // 291: 2 Spalten gewählt → A, C | B
 await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"); e.ebenenSpalten = { ...(e.ebenenSpalten || {}), slot: 2 }; localStorage.setItem("vokabel_einstellungen", JSON.stringify(e)); });
 await page.reload(); await sleep(800);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(400);
 nachher = await lage();
 ok(nachher.sA[0] === nachher.sC[0] && nachher.sC[1] > nachher.sA[1] && nachher.sB[0] > nachher.sA[0] && nachher.sB[1] === nachher.sA[1] && nachher.sB[0] < vorher.sB[0],
-  `256/291: automatisch, 2 Spalten gewählt: A, C | B (${JSON.stringify(nachher)})`);
+  `256/291/292: automatisch, 2 Spalten gewählt: A, B in Spalte 1, C in Spalte 2 (${JSON.stringify(nachher)})`);
+// 292: „Anordnen…“ wirkt auch in der automatischen Anordnung – mit der gewählten Spaltenzahl (2), spaltenweise
+await kontext("[data-freier-platz]");
+await aktion("🖼 Ansicht ›"); await aktion("⇅ Anordnen…");
+await page.evaluate(() => document.querySelector('[data-anordnen="name"]')?.click()); await sleep(400);
+const plaetzeN = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")).gespeichert.map(g => `${g.id}:${g.platz.z}|${g.platz.s}`).sort().join(","));
+const lageN = await lage();
+ok(plaetzeN === "sA:0|0,sB:1|0,sC:0|1" && lageN.sA[0] === lageN.sC[0] && lageN.sB[1] === lageN.sA[1] && lageN.sB[0] > lageN.sA[0],
+  `292: Anordnen nach Name in 2 Spalten: A, B | C (${plaetzeN}, ${JSON.stringify(lageN)})`);
+// zurück auf die Ausgangsplätze (für die folgenden Prüfungen)
+await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("vokabel_slots")); const p = { sA: {z:0,s:0}, sB: {z:3,s:0}, sC: {z:1,s:1} }; d.gespeichert.forEach(g => g.platz = p[g.id]); localStorage.setItem("vokabel_slots", JSON.stringify(d)); });
+await page.reload(); await sleep(800);
+await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
 const plaetze = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")).gespeichert.map(g => `${g.id}:${g.platz.z}|${g.platz.s}`).join(","));
 ok(plaetze === "sA:0|0,sB:3|0,sC:1|1", `256: gespeicherte Plätze unverändert (${plaetze})`);
 await kontext("[data-freier-platz]");
 m = await menue();
-ok(m.includes("▦ Eigene Anordnung"), "256: Schalter zurück heißt „Eigene Anordnung zeigen“");
-await aktion("▦ Eigene Anordnung");
+ok(m.includes("▦ Freie Anordnung"), "256: Schalter zurück heißt „Eigene Anordnung zeigen“");
+await aktion("▦ Freie Anordnung");
 await page.mouse.click(5, 300); await sleep(300);
 ok(JSON.stringify(await lage()) === JSON.stringify(vorher), "256: eigene Anordnung wieder da");
 

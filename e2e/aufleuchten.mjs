@@ -67,7 +67,7 @@ await sleep(800);
 ok(!(await zustand('[data-vokwahl="alle"]')).an, "… und hört wieder auf");
 
 // ── Quiz: geladene Kachel leuchtet, danach des Quiz-Name im Kopf ──
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(300);
 { const r = await page.evaluate(() => { const b = document.querySelector('[data-slot-id="g"]').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
   await page.mouse.move(r.x, r.y); await page.mouse.down(); await sleep(400); await page.mouse.up(); await sleep(80); }   // 192: kurz halten wählt (antippen lädt sofort)
 z = await zustand('[data-slot-id="g"]');
