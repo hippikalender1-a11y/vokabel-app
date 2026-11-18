@@ -49,7 +49,7 @@ const stand = () => page.evaluate(() => ({ knopf: __txt(document.querySelector("
 
 // ── Standard: an, alle Listen der Sprache (A 2 + B 3 = 5 fällig; fr nicht), 25 % von 9 neuen (8 + die negative) = 2 ──
 let s = await stand();
-ok(s.an === "an" && s.modus === "sprache" && s.knopf === "🔁 2" && /Quiz mit 9 Vokabeln \+ 🔁 2/.test(s.titel), `Standard: Fällige an, alle der Sprache, 9 neue + 🔁 2 (${JSON.stringify(s)})`);
+ok(s.an === "an" && s.modus === "sprache" && s.knopf === "+ 🔁 2" && /Quiz mit 9 Vokabeln \+ 🔁 2/.test(s.titel), `Standard: Fällige an, alle der Sprache, 9 neue + 🔁 2 (${JSON.stringify(s)})`);
 
 // ── lang drücken: Herkunft und Anteil ──
 const lang = async () => { await page.evaluate(() => { const el = document.querySelector("[data-faellig]"); const r = el.getBoundingClientRect();
@@ -60,11 +60,11 @@ ok(menue.includes("◉ Alle Engl") && menue.includes("○ Nur dieses Quiz") && !
 await page.evaluate(() => { const i = document.querySelector("[data-info-regler] input"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, "100"); i.dispatchEvent(new Event("input", { bubbles: true })); }); await sleep(300);
 await page.mouse.click(5, 400); await sleep(300);
 s = await stand();
-ok(s.knopf === "🔁 5", `Anteil 100 %: alle 5 Fälligen der Sprache (${s.knopf})`);
+ok(s.knopf === "+ 🔁 5", `Anteil 100 %: alle 5 Fälligen der Sprache (${s.knopf})`);
 await lang();
 await page.evaluate(() => __aktion("○ Nur dieses Quiz").click()); await sleep(300);
 s = await stand();
-ok(s.modus === "quiz" && s.knopf === "🔁 2", `Nur dieses Quiz: 2 Fällige (${JSON.stringify(s)})`);
+ok(s.modus === "quiz" && s.knopf === "+ 🔁 2", `Nur dieses Quiz: 2 Fällige (${JSON.stringify(s)})`);
 await lang();
 await page.evaluate(() => __aktion("○ Alle Engl").click()); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-faellig]").click()); await sleep(200);

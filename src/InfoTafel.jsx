@@ -140,8 +140,9 @@ export default function InfoTafel() {
             const raster = menue.filter(a => a.raster);
             let rest = menue.filter(a => !a.raster);
             if (unten && raster.length) rest = [...rest.filter(a => a.farbe), ...rest.filter(a => !a.farbe)];
+            const klein = unten && raster.length > 0 && !grp;   // 281: unter dem Raster nur eine kleine Zeile
             const knopf = a => (
-                <button key={a.label} data-info-aktion={a.farbe ? undefined : a.label} data-info-farbe={a.farbe ? "" : undefined}
+                <button key={a.label} className={a.schalter ? `quiz-zeile-knopf${a.an ? " an" : ""}` : undefined} data-info-aktion={a.farbe ? undefined : a.label} data-info-farbe={a.farbe ? "" : undefined}
                   data-info-gruppe={a.gruppe ? a.gruppe.map(u => u.label).join("|") : undefined} data-info-zurueck={a.zurueck ? "" : undefined}
                   data-schalter={a.schalter} data-an={a.schalter ? (a.an ? "an" : "aus") : undefined}
                   disabled={a.aus} data-info-aus={a.aus ? "" : undefined}
@@ -156,19 +157,19 @@ export default function InfoTafel() {
                     if (a.gruppe) { setGruppeOffen({ text: info.text, label: a.label }); return; }   // 235: Gruppe öffnen, Tafel bleibt
                     if (a.zurueck) { setGruppeOffen(null); return; }
                     setGruppeOffen(null); setInfo(null); info.auswahl?.zu?.(!!a.behalten); a.fn();
-                  }} style={{
+                  }} style={a.schalter ? { gridColumn: a.breit ? "1 / -1" : undefined } : {   // 280: Schalter wie im Quiz-Tab (Klasse quiz-zeile-knopf)
                   opacity: a.aus ? 0.45 : 1,
                   background: a.schalter && a.an ? "var(--haupt)" : "var(--karte)", color: a.schalter && a.an ? "var(--auf-haupt)" : a.gefahr ? "var(--falsch)" : a.farbe || a.zurueck ? "var(--text2)" : "var(--haupt)",
                   textAlign: a.schalter ? "center" : "left", whiteSpace: "nowrap", gridColumn: a.breit ? "1 / -1" : undefined,
-                  border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : a.schalter ? "var(--haupt)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: unten ? "8px 12px" : "11px 18px",
-                  fontSize: unten ? "0.85rem" : "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: a.aus ? "default" : "pointer",
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.22)",
+                  border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: klein ? "4px 10px" : unten ? "8px 12px" : "11px 18px",
+                  fontSize: klein ? "0.78rem" : unten ? "0.85rem" : "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: a.aus ? "default" : "pointer",
+                  boxShadow: klein ? "0 2px 8px rgba(0,0,0,0.18)" : "0 4px 16px rgba(0,0,0,0.22)",
                 }}>{mitSymbolen(a.label)}</button>
             );
             return (
               <div data-info-menue data-info-gruppe-offen={grp ? grp.label : undefined} style={{ display: "flex", flexDirection: "column", gap: unten ? 6 : 8 }}>
                 {raster.length > 0 && <div data-schalter-raster style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>{raster.map(knopf)}</div>}
-                {rest.length > 0 && <div style={{ display: "flex", flexDirection: unten ? "row" : "column", flexWrap: unten ? "wrap" : undefined, gap: unten ? 6 : 8 }}>{rest.map(knopf)}</div>}
+                {rest.length > 0 && <div data-tafel-unten={klein ? "klein" : undefined} style={{ display: "flex", flexDirection: unten ? "row" : "column", flexWrap: unten ? "wrap" : undefined, gap: unten ? 6 : 8, justifyContent: klein ? "center" : undefined }}>{rest.map(knopf)}</div>}
               </div>
             );
           })()}

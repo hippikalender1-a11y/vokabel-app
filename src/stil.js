@@ -125,7 +125,10 @@ export const CSS_BASIS = `
   .nach-oben{position:fixed;right:max(16px, calc(50vw - 284px));bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:30;width:46px;height:46px;border-radius:50%;border:none;background:var(--haupt);color:var(--auf-haupt);font-size:1.3rem;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.25);opacity:0.92;}
   .schalter-zeile .quiz-zeile-label{text-align:center;}
   .schalter-zeile .quiz-zeile-zelle .quiz-zeile-knopf{padding-left:2px;padding-right:2px;}
-  .quiz-zeile-knopf[data-schalter]:disabled{opacity:0.4;cursor:default;}   /* 274: nicht verfügbar */
+  .quiz-zeile-knopf[data-schalter]:disabled{cursor:default;}   /* 279: nicht verfügbar – nicht ausgegraut, nur gesperrt */
+  .start-titel-zeile{position:relative;}
+  .start-titel-zeile .start-titel{padding:0 34px;}
+  .schalter-klapp{position:absolute;right:0;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:1.5px solid var(--rahmen);background:var(--karte);color:var(--text2);font-size:0.85rem;cursor:pointer;padding:0;line-height:1;}   /* 278 */
   .quiz-zeile-knopf[data-schalter],.quiz-zeile-knopf[data-gelernte],.quiz-zeile-knopf[data-heute],.quiz-zeile-knopf[data-faellig]{background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);flex:0 0 auto;padding-left:12px;padding-right:12px;}
   .quiz-zeile-knopf[data-schalter].an,.quiz-zeile-knopf[data-gelernte].an,.quiz-zeile-knopf[data-heute].an,.quiz-zeile-knopf[data-faellig].an{background:var(--haupt);color:var(--auf-haupt);}
   .quiz-zeile-hinweis{font-size:0.75rem;color:var(--text3);text-align:center;padding:6px 0 0;}

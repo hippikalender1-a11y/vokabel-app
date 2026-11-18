@@ -3707,3 +3707,33 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   einen Menü-Knopf; gedrückte Kachel bleibt frei, auch wenn die Tafel wächst (zielRef).
 - Kopf der Auswahl (koepfe.jsx): „n ausgewählt · x Vokabeln + 🔁 f“ (Summe der eingeschalteten, nichts doppelt).
 - Tests: neu punkte274; angepasst slots, auswahl, multiquiz, gruppen_gesten, gruppen_sessions, info, punkte168/180/235/267.
+
+── GESAMMELT (nach 274) ──
+- 277: Vokabel-Schalter, die ZUSÄTZLICHE Vokabeln hinzunehmen (Gelernte, Heute, Fällige), zeigen eingeschaltet zur
+  Farb-Inversion ein „+“ („+ ✓ 23“, „+ 2“, „+ 🔁 5“) – Quiz-Tab-Zeile und Auswahl-Tafel. Vokabeln/Negative (Grundmenge) ohne +.
+- 278: Wurde die Auswahl schon in der Auswahl-Tafel getroffen (Laden über den grünen Kopf), ist die Schalter-Zeile im
+  Quiz-Tab eingeklappt. Kleiner Pfeil an der Überschrift „Quiz mit n Vokabeln“ beim Start-Knopf klappt sie auf – an ihrem
+  jetzigen Platz (oberhalb der Überschrift). Sonst (normal geladen) wie bisher offen.
+- 279: Nicht verfügbare Schalter (0 Vokabeln) NICHT ausgrauen (wirkt unruhig) – normal aussehen, aber deaktiviert
+  (disabled, nicht antippbar). Quiz-Tab und Auswahl-Tafel.
+  277 Entscheidung: Negative gehören zur Grundmenge (kein „+“). Zu überlegen (noch nicht umsetzen): Vokabeln abschalten
+  und Negative behalten geht; Negative abschalten nur, wenn auch die Vokabeln aus sind (Negative ohne Grundmenge nie weg).
+- 280: Schalter in der Auswahl-Tafel sehen GENAU wie die Schalter im Quiz-Tab aus (gleiche Form/Ecken 10 px, Rahmen,
+  Farben an = gefüllt var(--haupt) / aus = var(--haupt-flaeche) mit Rahmen var(--haupt), Schrift, ohne Pillenform/Schatten).
+- 281: „📝 Listen/Vokabeln ändern“ in die Ablage-Gruppe verschieben (Auswahl-Tafel). Die übrigen Knöpfe („🗂 Ablage ›“,
+  „↔ Von–Bis“, ggf. „🎨 Farbe ändern“) nur eine kleine, niedrige Zeile am unteren Rand.
+- 282: Breiter Schalter oben in der Auswahl-Tafel heißt immer „Vokabeln (n)“ – auch bei mehreren Kacheln (statt „🧩 Multiquiz (n)“).
+
+── 277–282 umgesetzt (18.11.2026) ──
+- 277: „+“ vor zusätzlichen Schaltern (Gelernte, Heute, Fällige), wenn eingeschaltet und n > 0 – Quiz-Tab-Zeile
+  („+ ✓ 23“, „+ 2“, „+ 🔁 3“) und Auswahl-Tafel („+ ✓ Gelernt (23)“ …). Vokabeln/Negative = Grundmenge ohne „+“.
+- 278: App schalterZeileZu (applyKonfiguration → false; grüner Kopf der Auswahl → true). Quiz-Tab: Pfeil ▾/▴
+  (data-schalter-klapp, .schalter-klapp) rechts an der Überschrift „Quiz mit n Vokabeln“ (.start-titel-zeile) klappt
+  die Schalter-Zeile an ihrem Platz auf/zu.
+- 279: gesperrte Schalter nicht mehr ausgegraut (nur disabled) – Quiz-Tab und Tafel.
+- 280: Schalter der Auswahl-Tafel mit Klasse quiz-zeile-knopf (+ an) → gleiches Aussehen wie im Quiz-Tab.
+- 281: „📝 Listen/Vokabeln ändern“ als erster Punkt in die Ablage (kacheln.jsx inAblage); darunter eine kleine Zeile
+  (data-tafel-unten="klein": 🎨 Farbe ändern · 🗂 Ablage › · ↔ Von–Bis, kleiner, zentriert).
+- 282: breiter Schalter heißt immer „Vokabeln (n)“.
+- Tests: punkte274 (278/279), Aufschriften in auswahl, gruppen_gesten, gruppen_sessions, multiquiz, punkte235, slots, punkte267.
+- Offen (Idee, nicht umgesetzt): Negative nur abschaltbar, wenn auch die Vokabeln aus sind.

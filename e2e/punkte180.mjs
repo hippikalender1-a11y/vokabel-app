@@ -19,7 +19,8 @@ const kontext = async sel => {
 };
 const aktion = async label => { await page.evaluate(l => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === l)?.click(), label); await sleep(400); };
 const auswahlAuf = async () => { await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300); };
-const laden = async id => { await auswahlAuf(); await klick(`[data-slot-id="${id}"]`); await klick("[data-slot-laden]"); await sleep(300); };
+const laden = async id => { await auswahlAuf(); await klick(`[data-slot-id="${id}"]`); await klick("[data-slot-laden]"); await sleep(300);
+  if (await page.$('[data-schalter-klapp="zu"]')) { await klick('[data-schalter-klapp]'); await sleep(200); } };   // 278: aus der Auswahl geladen → Schalter-Zeile aufklappen
 const anzahl = () => page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl);
 const kachel = id => page.evaluate(i => { const k = document.querySelector(`[data-slot-id="${i}"]`); return k ? { dunkel: k.classList.contains("aktiv-kachel"), heute: k.dataset.heute, bild: k.style.backgroundImage, haken: !!k.querySelector(".kachel-voll") } : null; }, id);
 

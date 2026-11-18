@@ -574,10 +574,12 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
       if (tab !== "quiz" || !quizIds.length) return [];
       const z = schalterZaehlung(quizIds);
       const sk = sprachKuerzelFuer([...new Set(quizIds.flatMap(id => slots.gespeichert.find(g => g.id === id)?.konfiguration?.listenIds || []))]);
-      const s = (k, label, n, an, set, frei, extra = {}) => ({ label: `${label} (${n})`, raster: true, schalter: k, an, aus: !frei || (n === 0 && k !== "faellig"), fn: () => set(v => !v), ...extra });
+      // 277: zusätzliche (Gelernt, Heute, Fällige) eingeschaltet mit „+“
+      const s = (k, label, n, an, set, frei, extra = {}) => ({ label: `${an && n > 0 && ["gelernt", "heute", "faellig"].includes(k) ? "+ " : ""}${label} (${n})`, raster: true, schalter: k, an,
+        aus: !frei || (n === 0 && k !== "faellig"), fn: () => set(v => !v), ...extra });
       const zurueck = () => setTimeout(() => zeigeAuswahlTafel("slot"), 0);
       return [
-        s("grund", quizIds.length >= 2 ? "🧩 Multiquiz" : "Vokabeln", z.grund, quizGrund, setQuizGrund, true, { breit: true }),
+        s("grund", "Vokabeln", z.grund, quizGrund, setQuizGrund, true, { breit: true }),   // 282: immer „Vokabeln“
         s("negativ", "✗ Negative", z.negativ, quizNegativ, setQuizNegativ, true),
         s("gelernt", "✓ Gelernt", z.gelernt, quizGelerntEinschliessen, setQuizGelerntEinschliessen, z.faelligMoeglich),
         s("heute", "Heute", z.heute, quizHeuteEinschliessen, setQuizHeuteEinschliessen, tagesSperre()),
@@ -595,7 +597,12 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     const LERNEN_ALT = /^(🧩 Multiquiz|🔁 |✗ Negative abfragen)/;
     const ohneLernen = akt => akt.map(a => a?.gruppe ? { ...a, gruppe: a.gruppe.filter(u => !LERNEN_ALT.test(u.label)) } : a)
       .filter(a => a && !LERNEN_ALT.test(a.label) && !(a.gruppe && !a.gruppe.length));
-    const mitRaster = (d, quizIds) => { const r = schalterRaster(quizIds); return d && r.length ? { ...d, aktionen: [...r, ...ohneLernen(d.aktionen)] } : d; };
+    // 281: „📝 Listen/Vokabeln ändern“ in die Ablage – unten bleibt eine kleine Zeile
+    const inAblage = akt => { const L = "📝 Listen/Vokabeln ändern", p = akt.find(a => a.label === L) || akt.flatMap(a => a.gruppe || []).find(u => u.label === L);
+      if (!p) return akt;
+      const ohne = akt.map(a => a.gruppe ? { ...a, gruppe: a.gruppe.filter(u => u.label !== L) } : a).filter(a => a.label !== L && !(a.gruppe && !a.gruppe.length));
+      return inGruppe(ohne, GRUPPE.ablage, p).map(a => a.gruppe && a.label === `${GRUPPE.ablage} ›` ? { ...a, gruppe: [p, ...a.gruppe.filter(u => u !== p)] } : a); };
+    const mitRaster = (d, quizIds) => { const r = schalterRaster(quizIds); return d && r.length ? { ...d, aktionen: [...r, ...inAblage(ohneLernen(d.aktionen))] } : d; };
     auswahlTafelDaten.current.slot = () => multiAuswahl && mitRaster(tafelInhalt(multiAuswahl), wahlQuiz(multiAuswahl));
     // Ziehen: diese Kacheln wandern mit; über einer anderen verweilen bildet eine Gruppe (nur oberste Ebene, keine Gruppen in Gruppen)
     const ziehIds = slotDragId ? (slotAuswahl.includes(slotDragId) ? slotAuswahl : [slotDragId]) : [];

@@ -61,13 +61,13 @@ const gruppeOffen = () => page.evaluate(() => document.querySelector("[data-info
 // ── ein Quiz: Fällige und Listen/Vokabeln ändern direkt, Ablage als Gruppe ──
 await halte('[data-slot-id="s1"]', 450);
 let m = await menue();
-ok(m.join("|") === "Vokabeln (2)|✗ Negative (0)|✓ Gelernt (0)|Heute (0)|🔁 Fällige (0)|📝 Listen/Vokabeln ändern|🗂 Ablage ›|↔ Von–Bis", `Quiz: Hauptebene (274: Schalter-Raster oben) (${m.join(" | ")})`);
+ok(m.join("|") === "Vokabeln (2)|✗ Negative (0)|✓ Gelernt (0)|Heute (0)|🔁 Fällige (0)|🗂 Ablage ›|↔ Von–Bis", `Quiz: Hauptebene (274: Schalter-Raster oben) (${m.join(" | ")})`);
 await aktion("🗂 Ablage ›");
 m = await menue();
-ok(await gruppeOffen() === "🗂 Ablage ›" && m.join("|") === "‹ zurück|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Ablage ersetzt das Menü, oben „‹ zurück“ (${m.join(" | ")})`);
+ok(await gruppeOffen() === "🗂 Ablage ›" && m.join("|") === "‹ zurück|📝 Listen/Vokabeln ändern|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Ablage ersetzt das Menü, oben „‹ zurück“ (${m.join(" | ")})`);
 ok((await kopf()).multi === "s1", "Gruppe öffnen lässt die Auswahl stehen");
 await aktion("‹ zurück");
-ok(!(await gruppeOffen()) && (await menue())[6] === "🗂 Ablage ›", "‹ zurück: wieder die Hauptebene");
+ok(!(await gruppeOffen()) && (await menue())[5] === "🗂 Ablage ›", "‹ zurück: wieder die Hauptebene");
 await aktion("🗂 Ablage ›"); await aktion("✎ Umbenennen");
 ok(await page.$(".modal") && !(await page.$("[data-info-menue]")), "Punkt aus der Gruppe führt aus (Umbenennen-Fenster), Tafel zu");
 await page.keyboard.press("Escape"); await sleep(300);
@@ -83,7 +83,7 @@ ok(!(await gruppeOffen()) && (await menue()).includes("🗂 Ablage ›"), `ander
 // ── mehrere Quiz: Multiquiz, Fällige direkt, Ablage-Gruppe ──
 await halte('[data-slot-id="s1"]', 450);
 m = await menue();
-ok(m.join("|") === "🧩 Multiquiz (4)|✗ Negative (0)|✓ Gelernt (0)|Heute (0)|🔁 Fällige (0)|🗂 Ablage ›|↔ Von–Bis", `mehrere Quiz: Hauptebene (${m.join(" | ")})`);
+ok(m.join("|") === "Vokabeln (4)|✗ Negative (0)|✓ Gelernt (0)|Heute (0)|🔁 Fällige (0)|🗂 Ablage ›|↔ Von–Bis", `mehrere Quiz: Hauptebene (${m.join(" | ")})`);
 await aktion("🗂 Ablage ›");
 ok((await menue()).join("|") === "‹ zurück|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)|☑ Alle auswählen", `mehrere: Ablage (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück"); await tafelZu();

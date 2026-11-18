@@ -117,7 +117,7 @@ await menue("2|0");
 const knoepfe = await page.evaluate(() => [...__aktionen()].map(b => (b.dataset.infoAktion || b.textContent).trim()));
 const blase = await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText || "");
 console.log("     Menü:", knoepfe.join(" | "));
-ok(blase.startsWith(n3) && knoepfe.join("|") === "Vokabeln (3)|✗ Negative (0)|✓ Gelernt (0)|Heute (0)|🔁 Fällige (0)|📝 Listen/Vokabeln ändern|🗂 Ablage ›|↔ Von–Bis|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Lang-Druck: voller Name (Info oben) + Menü (${knoepfe.join("|")})`);
+ok(blase.startsWith(n3) && knoepfe.join("|") === "Vokabeln (3)|✗ Negative (0)|✓ Gelernt (0)|Heute (0)|🔁 Fällige (0)|🗂 Ablage ›|↔ Von–Bis|📝 Listen/Vokabeln ändern|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Lang-Druck: voller Name (Info oben) + Menü (${knoepfe.join("|")})`);
 await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
 ok(!(await page.$('[role="status"]')) && /Fertig · 1/.test(await page.evaluate(() => document.querySelector("[data-slot-fertig]")?.innerText || "")),
