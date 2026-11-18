@@ -151,16 +151,7 @@ await klickText(".toggle-opt", "Bereich"); await sleep(400);
 ok(await page.$('[data-suchleiste="quiz"]') && await page.$("[data-vok-bestaetigen]"), "„Bereich“ öffnet die Liste wieder");
 await page.click("[data-vok-bestaetigen]"); await sleep(400);
 
-// ── Statistik ──
-await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => /Statistik/.test(t.textContent)).click()); await sleep(500);
-if (!(await page.$('[data-suchleiste="statistik"]'))) { await klickText(".toggle-opt", "Bereich"); await sleep(400); }
-const statZahl = () => page.evaluate(() => document.querySelectorAll('[data-such-ziel="statistik"] .checkbox.checked').length);
-const vorher = await statZahl();
-await page.evaluate(s => { const el = document.querySelector(s); el.scrollIntoView({ block: "center" }); const b = el.getBoundingClientRect();
-  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: b.x + 20, clientY: b.y + 10 })); }, zeile("statistik", 1)); await sleep(500);
-ok(await gelb("statistik", 1) && /Von–Bis abbrechen/.test(await tafel() || ""), "Statistik: Lang-Druck auf Nr. 1 ist Anfang");
-await tipp("statistik", 4);
-ok(await statZahl() - vorher === 4 && !(await tafel()), `Statistik: Ende Nr. 4 → 4 Vokabeln dazu, Tafel zu (${vorher} → ${await statZahl()})`);
+// 294: Statistik ohne eigene Vokabel-Auswahl – Von–Bis dort entfällt
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();

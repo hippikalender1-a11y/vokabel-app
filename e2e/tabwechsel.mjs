@@ -103,17 +103,25 @@ await sleep(300);
 await listeWaehlen(page, "Farben");
 await clickText(".tab", "Statistik");
 await sleep(300);
-st = await stand();
-ok(st.listen === "Tiere", "Quiz-Listenauswahl → Statistik: Tiere");
-// Statistik: Liste Farben dazu → Quiz zeigt beide
-await page.evaluate(() => document.querySelector("button.zeile-rechts[title^='Listen für']").click());
-await sleep(300);
-await listeWaehlen(page, "Farben");
-await clickText(".tab", "Quiz");
-await sleep(300);
-st = await stand();
-console.log("     Quiz nach Statistik-Auswahl:", JSON.stringify(st));
-ok(st.listen === "2 Listen", "Statistik-Listenauswahl → Quiz: beide Listen");
+const gesamt = () => page.evaluate(() => document.querySelector('[data-st-kachel="gesamt"] b')?.textContent);
+ok(await gesamt() === "2", `Quiz-Listenauswahl → Statistik: Tiere (2 Vokabeln) (${await gesamt()})`);
+// 294: Statistik – Listen über die Auswahl (Umschalter „📋 Listen“): beide auswählen, der Kopf zeigt sie zusammen
+await oeffneKopf();
+await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="quiz"]')?.click()); await sleep(300);
+ok(!!(await page.$('[data-liste-id="l_a"]')), "294: Statistik-Auswahl hat den Umschalter „📋 Listen“");
+for (const id of ["l_a", "l_b"]) { await page.evaluate(id => { const el = document.querySelector(`[data-liste-id="${id}"]`); const r = el.getBoundingClientRect();
+  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, id); await sleep(400); }
+const kopfW = await page.evaluate(() => document.querySelector("[data-wahl-anzahl]")?.textContent.trim());
+ok(kopfW === "2 ausgewählt · 5 Vokabeln", `294: Kopf „2 ausgewählt · 5 Vokabeln“ (${kopfW})`);
+await page.evaluate(() => document.querySelector("[data-wahl-fertig]").click()); await sleep(800);
+ok(await gesamt() === "5" && /2 Listen/.test(await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent || "")), `294: Statistik beider Listen (${await gesamt()})`);
+// eine Liste antippen → ihre Statistik
+await oeffneKopf();
+await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="quiz"]')?.click()); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-liste-id="l_b"]').click()); await sleep(800);
+const nameF = await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.textContent || "");
+ok(await gesamt() === "3" && /Farben/.test(nameF), `294: Liste antippen → Statistik „Farben“ (${await gesamt()} · ${nameF})`);
+ok(!(await page.$("button.zeile-rechts[title^='Listen für']")), "294: keine Zeile „Listen-Auswahl“ in der Statistik");
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);

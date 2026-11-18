@@ -3819,3 +3819,7 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
 - 295 UMGESETZT: „Quiz erstellen“ (aus einer Liste) abbrechen: im Fenster „Abbrechen“ (das bisherige heißt „Zurück“) und
   lang drücken auf den Kopf „✕ Erstellen abbrechen“ – nichts angelegt, zurück zur Auswahl mit den Listen (brecheErstellenAb).
 - 289 ENTSCHIEDEN: „Neues Quiz“ mit „Alle | Bereich“ darf wegfallen – Bereich über „🎯 Quiz mit Auswahl…“ ausprobieren.
+- 294 UMGESETZT: Statistik ohne die Zeilen „Listen-Auswahl“ / „Vokabel-Auswahl“ (StatistikKopf1/2 entfernt). Die Statistik-
+  Auswahl hat den Umschalter „Quiz | 📋 Listen“: Liste antippen → ihre Statistik (ladeSlotStatistik("listen") auch ohne eigenes
+  Quiz), mehrere halten → Kopf „n ausgewählt · x Vokabeln“ → zeigeListenStatistik (Kopf „📋 n Listen“). Alle Listen weiter über
+  „Alle Quiz“ › „▦ Alle Listen“. Tests statistik/bremse/gruppenquiz/tabwechsel/listenraster/suche/vonbis_langdruck angepasst.

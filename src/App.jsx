@@ -22,7 +22,7 @@ import { renderAufteilenKasten as renderAufteilenKastenTeil, renderExportArtWahl
 import { gruppenKurz as gruppenKurzTeil, listeOeffnenKopf as listeOeffnenKopfTeil, listenWahlKopf as listenWahlKopfTeil, renderListeInfo as renderListeInfoTeil, renderSlotInfo as renderSlotInfoTeil, renderSlotKopf as renderSlotKopfTeil, renderVollbildKopf as renderVollbildKopfTeil } from "./bereiche/koepfe.jsx";
 import { renderFarbschemata as renderFarbschemataTeil } from "./bereiche/farbenAnsicht.jsx";
 import { auswahlOrdnerZelle as auswahlOrdnerZelleTeil, listenAuswahlPfad as listenAuswahlPfadTeil, listenNavi as listenNaviTeil, listenRasterPlaetze as listenRasterPlaetzeTeil, ordnerNavi as ordnerNaviTeil, pfadTeile as pfadTeileTeil, quizListenNavi as quizListenNaviTeil, quizListenUmschalter as quizListenUmschalterTeil, renderListenRaster as renderListenRasterTeil, renderQuizListenRaster as renderQuizListenRasterTeil, renderSlotBereiche as renderSlotBereicheTeil, wahlLeiste as wahlLeisteTeil } from "./bereiche/kacheln.jsx";
-import { DialogErstellenFenster, DialogGruppenAenderungsDialog, DialogInGruppe, DialogJsonExport, DialogKlammern, DialogLernenEinst, DialogListeZuruecksetzen, DialogListeZusammenfuehren, DialogNeueSession, DialogSaetze, DialogSlotSpeichern, DialogSlotUmbenennen, DialogStimmenHilfe, DialogStufenRegeln, DialogSynonyme, DialogVorlesen, KiPromptAnsicht, StatistikKopf1, StatistikKopf2 } from "./bereiche/dialoge.jsx";
+import { DialogErstellenFenster, DialogGruppenAenderungsDialog, DialogInGruppe, DialogJsonExport, DialogKlammern, DialogLernenEinst, DialogListeZuruecksetzen, DialogListeZusammenfuehren, DialogNeueSession, DialogSaetze, DialogSlotSpeichern, DialogSlotUmbenennen, DialogStimmenHilfe, DialogStufenRegeln, DialogSynonyme, DialogVorlesen, KiPromptAnsicht } from "./bereiche/dialoge.jsx";
 import { klappeFreieZu as klappeFreieZuTeil, ordneAn as ordneAnTeil, setzeMinSpalten as setzeMinSpaltenTeil, tt as ttTeil, ttFeld as ttFeldTeil, wechsleStimme as wechsleStimmeTeil } from "./logik/allgemein.jsx";
 import { auswahlTafel as auswahlTafelTeil, benenneListenOrdnerUm as benenneListenOrdnerUmTeil, dupliziereListe as dupliziereListeTeil, erstelleListe as erstelleListeTeil, gruppiereListen as gruppiereListenTeil, importOrdnerWahl as importOrdnerWahlTeil, importZielOrdner as importZielOrdnerTeil, legeGezogenAb as legeGezogenAbTeil, listenKopieName as listenKopieNameTeil, listenOrdnerDaten as listenOrdnerDatenTeil, loeschen as loeschenTeil, loeseListenOrdnerAuf as loeseListenOrdnerAufTeil, oeffneModal as oeffneModalTeil, oeffneSynFenster as oeffneSynFensterTeil, setzeListeZurueck as setzeListeZurueckTeil, setzeListenSprache as setzeListenSpracheTeil, setzeSpaltenArt as setzeSpaltenArtTeil, speichereEinst as speichereEinstTeil, speichereIndex as speichereIndexTeil, speichereSpaltenname as speichereSpaltennameTeil, synPortion as synPortionTeil, synZiel as synZielTeil, uebernehmeSynonyme as uebernehmeSynonymeTeil, umbenennen as umbenennenTeil, verweilGeht as verweilGehtTeil, wechsleSprache as wechsleSpracheTeil, zeigeAuswahlTafel as zeigeAuswahlTafelTeil } from "./logik/listen.jsx";
 import { fuehreListenZusammen as fuehreListenZusammenTeil, loescheVokabel as loescheVokabelTeil, nimmVokabelHeraus as nimmVokabelHerausTeil, schliesseVokabelBearbeiten as schliesseVokabelBearbeitenTeil, setzeHerausgenommen as setzeHerausgenommenTeil, speichereVokabelBearbeitung as speichereVokabelBearbeitungTeil } from "./logik/vokabeln.jsx";
@@ -1875,6 +1875,16 @@ export default function VokabelApp() {
   // Quiz-Fortschritt der Abfrageart aus dem Slot-Eintrag aktivieren (oder kein Quiz, wenn es keinen gibt)
   function aktiviereSlotFortschritt(...args) { return aktiviereSlotFortschrittTeil({ setQuizPaketGroesse, setQuizSessionModus, setSessionSlotAktiv }, ...args); }
 
+  // 294: mehrere Listen (Auswahl in der Statistik) zusammen zeigen
+  const zeigeListenStatistik = ids => {
+    ids = wahlListenIds(ids);
+    setListenWahl(null); auswahlTafelRef.current = null; schliesseInfo();
+    if (!ids.length) return;
+    if (ids.length === 1) { ladeSlotStatistik("listen", ids[0]); return; }
+    setStatistikListenIds(new Set(ids)); setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
+    setStatistikAktiverSlot(null); setStatistikSlotGeleert(false);
+    schliesseSlotsVerzoegert(); leuchte("slotkopf");
+  };
   function ladeSlotStatistik(...args) { return ladeSlotStatistikTeil({ getSlotEintrag, schliesseSlotsVerzoegert, setListenAendern, setStatistikAktiverSlot, setStatistikArt, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikEinzelauswahlAufgeklappt, setStatistikListenAufgeklappt, setStatistikListenIds, setStatistikSlotGeleert }, ...args); }
 
   // Abfrage ohne Pakete im Verlauf festhalten (mit Start-Scores für die Statistik).
@@ -2051,7 +2061,7 @@ export default function VokabelApp() {
 
   function toggleEinzelauswahl(...args) { return toggleEinzelauswahlTeil({ alleBereichH, dropdownImmuneRef, einzelauswahlRef, headerH, listenauswahlHeaderH, quizListeAufgeklappt, schliesseQuizBereiche, setQuizListeAufgeklappt, slotH }, ...args); }
 
-  function toggleSlotSektion(...args) { return toggleSlotSektionTeil({ kommtAusListen, aktiverSlot, dropdownImmuneRef, headerH, leuchte, schliesseQuizBereiche, setAuswahlListen, setMultiAuswahl, setSlotAuswahl, setSlotSektionAufgeklappt, setSlotSortModus, slotContainerRef, slotH, slotSektionAufgeklappt, slotZuTimerRef, tab }, ...args); }
+  function toggleSlotSektion(...args) { return toggleSlotSektionTeil({ statistikAktiverSlot, kommtAusListen, aktiverSlot, dropdownImmuneRef, headerH, leuchte, schliesseQuizBereiche, setAuswahlListen, setMultiAuswahl, setSlotAuswahl, setSlotSektionAufgeklappt, setSlotSortModus, slotContainerRef, slotH, slotSektionAufgeklappt, slotZuTimerRef, tab }, ...args); }
 
   function toggleStatistikListenAuswahl(...args) { return toggleStatistikListenAuswahlTeil({ dropdownImmuneRef, headerH, setStatistikListenAufgeklappt, slotH, statistikListenAufgeklappt, statistikListenContainerRef }, ...args); }
 
@@ -2515,7 +2525,7 @@ export default function VokabelApp() {
     ];
   }
   function listenNavi(...args) { return listenNaviTeil({ slotEbenenMenue, listenEbenenMenue, headerH, listenKopfH, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, minSpalten, pfadTeile, quizListenUmschalter, resetImport, setAnordnen, setAnsicht, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setSpaltenWahl, setTab, slotH, slotInfoH }, ...args); }
-  function renderListenRaster(...args) { return renderListenRasterTeil({ wahlListenIds, schalterZaehlung, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots, tab, slotEbenenMenue, listenEbenenMenue, vonBis, merkeVerschieben, zugRand, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef }, ...args); }
+  function renderListenRaster(...args) { return renderListenRasterTeil({ ladeSlotStatistik, statistikAktiverSlot, wahlListenIds, schalterZaehlung, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots, tab, slotEbenenMenue, listenEbenenMenue, vonBis, merkeVerschieben, zugRand, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef }, ...args); }
 
   // Chips "Gespeichert" (sortierbar) und "Verlauf" (automatisch, letzte 5) – Quiz- und Statistik-Tab
   // Kopfzeile Verlauf & Gespeichert (Quiz- und Statistik-Tab): zu und auf gleich aufgebaut – Name + Ü/D/A;
@@ -2524,7 +2534,7 @@ export default function VokabelApp() {
   function beendeMultiAuswahl(ids, ...rest) { return beendeMultiAuswahlTeil({ setMultiAuswahl, stelleMultiquizEin }, wahlQuizIds(ids), ...rest); }
   // Speichern-Menü des Quiz (lang drücken auf den Quiz-Namen bzw. den Start-Knopf)
   function sessionSpeicherAktionen(...args) { return sessionSpeicherAktionenTeil({ aktiverSlot, getSlotEintrag, ladeSlot, oeffneModal, quizKombiListe, setModal, setModalInput, slotNamenVorschlag, ueberspeichereSession, vokabelgruppeGeaendert }, ...args); }
-  function renderSlotKopf(...args) { return renderSlotKopfTeil({ brecheErstellenAb, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenAendern, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizErstellen, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setListenAendern, setListenAuswahlAufgeklappt, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, starteQuizErstellen, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt }, ...args); }
+  function renderSlotKopf(...args) { return renderSlotKopfTeil({ zeigeListenStatistik, brecheErstellenAb, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenAendern, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizErstellen, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setListenAendern, setListenAuswahlAufgeklappt, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, starteQuizErstellen, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt }, ...args); }
 
   // Lernfortschritt je Art (Mini-Kreise) für eine Vokabelmenge; aus = keine passenden Vokabeln
   function lernstandJeArt(...args) { return lernstandJeArtTeil({ einstellungen }, ...args); }
@@ -3254,19 +3264,17 @@ export default function VokabelApp() {
               {slotSektionAufgeklappt && renderSlotInfo(true)}
               <div ref={slotContainerRef} style={{overflow:'clip', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 8 : 0}}>
                 {slotSektionAufgeklappt && (<>
-                  {ordnerNavi({margin:"0 16px 8px"}, true)}
-                  {renderSlotBereiche(null, ladeSlotStatistik, statistikAktiverSlot, 16)}
+                  {auswahlListen ? <div style={{margin:"0 16px"}}>{listenNavi()}</div> : ordnerNavi({margin:"0 16px 8px"}, true)}
+                  {auswahlListen ? <div style={{margin:"0 16px"}}>{sichtbareListen.length === 0 && listenOrdner.length === 0
+                    ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div> : renderListenRaster()}</div>
+                    : renderSlotBereiche(null, ladeSlotStatistik, statistikAktiverSlot, 16)}
                 </>)}
               </div>
             </>
           );
         })()}
 
-        {/* ── Statistik: Listen-Auswahl Header (ausgeblendet bei geladener gespeicherter Konfiguration) ── */}
-        {tab === "statistik" && StatistikKopf1(app)}
-
-        {/* ── Statistik: Vokabel-Auswahl Header ── */}
-        {tab === "statistik" && StatistikKopf2(app)}
+        {/* 294: Statistik ohne eigene Listen-/Vokabel-Auswahl – gewählt wird oben in der Auswahl (Quiz | 📋 Listen) */}
 
         {/* ── Statistik: Inhalte ── */}
         {tab === "statistik" && StatistikTab(app)}

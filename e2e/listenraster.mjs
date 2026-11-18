@@ -179,10 +179,12 @@ if (!qr) { await clickText("span, div", "Listen-Auswahl", true); qr = await ausw
 console.log("     Quiz-Raster:", qr, "| erwartet:", erwartet);
 ok(qr === erwartet, "Quiz-Tab: Listenauswahl im gleichen Raster");
 await clickText(".tab", "Statistik"); await sleep(300);
-let sr = await auswahlRaster();
-if (!sr) { await page.evaluate(() => [...document.querySelectorAll("button.zeile-rechts")].find(b => b.title === "Listen für die Statistik auswählen")?.click()); await sleep(400); sr = await auswahlRaster(); }
-console.log("     Statistik-Raster:", sr);
-ok(sr === erwartet, "Statistik: Listenauswahl im gleichen Raster");
+// 294: die Statistik wählt Listen über ihre Auswahl (Umschalter „📋 Listen“) – dasselbe Listen-Raster mit denselben Plätzen
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="quiz"]')?.click()); await sleep(400);
+const sr = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('[data-kachel-geste="liste"][data-liste-id]')].map(e => [e.querySelector(".karte-zeile-name")?.textContent.trim().replace(/^[^\p{L}]+/u, ""), e.dataset.rasterZelle])));
+console.log("     Statistik-Raster:", JSON.stringify(sr));
+ok(Object.entries(pl).every(([n, p]) => sr[n] === p), "Statistik: Listen-Auswahl im gleichen Raster (294: über den Umschalter)");
 await zuListen(page);
 
 // Sprachfilter: rückt zusammen, kein Verschieben

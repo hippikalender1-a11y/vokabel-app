@@ -386,9 +386,9 @@ export function aktiviereSlotFortschritt(app, eintrag, typ, id, art) {
 export function ladeSlotStatistik(app, typ, id, art = null) {
   const { getSlotEintrag, schliesseSlotsVerzoegert, setListenAendern, setStatistikAktiverSlot, setStatistikArt, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikEinzelauswahlAufgeklappt, setStatistikListenAufgeklappt, setStatistikListenIds, setStatistikSlotGeleert } = app;
     const eintrag = getSlotEintrag(typ, id);
-    if (!eintrag || !eintrag.konfiguration) return;
+    if (!eintrag || (!eintrag.konfiguration && typ !== "listen")) return;
     setListenAendern(false);
-    const k = eintrag.konfiguration;
+    const k = eintrag.konfiguration || { listenIds: [id], bereichTyp: "alle", vokabelAuswahl: [] };   // 294: Liste ohne eigenes Quiz
     if (art) setStatistikArt(art);
     setStatistikListenIds(k.listenIds?.length > 0 ? new Set(k.listenIds) : null);
     setStatistikBereichTyp(k.bereichTyp || "alle");

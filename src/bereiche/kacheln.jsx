@@ -148,7 +148,7 @@ export function mitSchalterRaster(app, d, art, ids) {
 }
 
 export function renderListenRaster(app) {
-  const { wahlListenIds, slotEbenenMenue, listenEbenenMenue, vonBis, merkeVerschieben, zugRand, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef } = app;
+  const { tab, ladeSlotStatistik, statistikAktiverSlot, wahlListenIds, slotEbenenMenue, listenEbenenMenue, vonBis, merkeVerschieben, zugRand, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, einstellungen, gruppenZiel, lasso, lernstandJeArt, leuchte, listeVorschau, listenAuswahl, listenFlagge, listenIndex, listenMenue, listenOrdner, listenOrdnerOffen, listenSortModus, listenWahl, listenWahlMenue, loeseListenOrdnerAuf, minSpalten, neuListePlatzRef, oeffneListeDetail, plaetzeRef, renderMiniKreise, resetImport, satzStand, setAnsicht, setBlaettern, setInGruppe, setListeVorschau, setListenAuswahl, setListenOrdnerOffen, setListenSortModus, setListenWahl, setOrdnerUmbenennen, setSlotVorschau, setTab, setVonBis, setzeListenPlaetze, sichtbareListen, slotDragId, slotDragZiel, slotGezogenRef, slotVorschau, slotZiehenRef, sprachFilter, tt, uebernimmListe, verschiebeListenInOrdner, verweilGeht, vokabelAnzahl, wahlUmschaltenRef } = app;
     const groesse = rasterGroesse(einstellungen, "listenRaster");
     // 193: die geöffnete Ebene (oberste oder ein Ordner) – Ordner-Kacheln und Listen
     const ordnerDaten = { ordner: listenOrdner, gespeichert: listenIndex };
@@ -182,9 +182,11 @@ export function renderListenRaster(app) {
       } else if (blaettern) {
         leuchte(`lw:${l.id}`, BLITZ_MS / 2);
         setSlotVorschau({ typ: "listen", id: l.id });
-      } else uebernimmListe(l.id);
+      } else if (tab === "statistik") ladeSlotStatistik("listen", l.id);   // 294: Statistik der Liste
+      else uebernimmListe(l.id);
     };
-    const gewaehltL = l => slotVorschau ? slotVorschau.typ === "listen" && slotVorschau.id === l.id : aktiverSlot?.typ === "listen" && aktiverSlot.id === l.id;
+    const geladenL = tab === "statistik" ? statistikAktiverSlot : aktiverSlot;
+    const gewaehltL = l => slotVorschau ? slotVorschau.typ === "listen" && slotVorschau.id === l.id : geladenL?.typ === "listen" && geladenL.id === l.id;
     const menue = l => listenMenue(l);
     // Auswahl-Modus: Aktionen für die Auswahl (Lang-Druck auf eine nicht gewählte Liste nimmt sie dazu)
     const wahlMit = l => listenWahl.includes(l.id) ? listenWahl : [...listenWahl, l.id];
@@ -473,7 +475,7 @@ export function ordnerNavi(app, stil, statistik = false) {
           alleTt: ordnerOffen ? "Zurück zu allen Quiz – Quiz hierher ziehen legt sie auf die oberste Ebene; lang drücken: neues Quiz, fällige wiederholen, neuer Ordner"
             : `Alle Quiz – lang drücken: ${statistik ? "alle Listen anzeigen" : "neues Quiz aus Listen"}, fällige wiederholen, neuer Ordner`,
           alleAktionen, ordnerAktionen, einheit: "Quiz" })}
-        {!statistik && !slotSortModus && quizListenUmschalter()}   {/* 241: auch in der Auswahl – wechseln beendet sie */}
+        {!slotSortModus && quizListenUmschalter()}   {/* 294: auch in der Statistik */}   {/* 241: auch in der Auswahl – wechseln beendet sie */}
         {slotSortModus && (
           <button className="typ-btn aktiv" data-slot-fertig style={{fontSize:"0.75rem", padding:"4px 10px", flexShrink:0}}
             onClick={() => { setSlotSortModus(false); setSlotAuswahl([]); setSlotDragId(null); setSlotDragZiel(null); }}

@@ -89,7 +89,11 @@ ok(gefragt[0] === "Katze", "schlechteste zuerst (Katze −6)");
 
 // Gelernt (Score 4 > Standard-Grenze 3) lässt sich trotzdem abfragen
 await weiterZurAuswertung(); await page.click("[data-zurueck-statistik]"); await sleep(400);
-await clickText(".toggle-btn.zeile-rechts .toggle-opt", "Alle", true); await sleep(300);   // Statistik zeigt danach die Quiz-Auswahl → wieder alle
+// 294: wieder alle Vokabeln – Auswahl › lang drücken auf „Alle Quiz“ › „▦ Alle Listen“ (die Zeile „Vokabel-Auswahl“ gibt es nicht mehr)
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="listen"]')?.click()); await sleep(300);
+await menue("[data-alle-sessions]");
+await page.evaluate(() => document.querySelector('[data-info-aktion="▦ Alle Listen"]')?.click()); await sleep(500);
 await menue('[data-kreis-gruppe="gelernt"]');
 await page.evaluate(() => document.querySelector('[data-info-aktion="▶ Quiz mit 1 Vokabel"]').click()); await sleep(250);
 await clickText("[data-gruppen-quiz] button", "Starten", true); await sleep(600);

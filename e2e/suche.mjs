@@ -93,13 +93,7 @@ await tippe('[data-suchleiste="quiz"] [data-such-feld]', "maison");
 await page.click('[data-suchleiste="quiz"] [data-such-leeren]'); await sleep(300);
 ok(await page.evaluate(() => document.querySelector('[data-suchleiste="quiz"] [data-such-feld]').value) === "" && !(await aktuell("quiz")), "✕ leert die Suche");
 
-// ── Statistik: Einzelauswahl ──
-await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => /Statistik/.test(t.textContent)).click()); await sleep(500);
-if (!(await page.$('[data-suchleiste="statistik"]'))) { await klickText(".toggle-opt", "Bereich"); await sleep(400); }
-ok(await page.$('[data-suchleiste="statistik"]'), "Statistik-Einzelauswahl: Suchleiste vorhanden");
-await tippe('[data-suchleiste="statistik"] [data-such-feld]', "chat"); await sleep(1000);   // weiches Scrollen über eine weite Strecke
-a = await aktuell("statistik");
-ok(await anzahl("statistik") === "1" && /le chat/.test(a?.text || "") && a.sichtbar, `Statistik: „chat“ → „le chat“ angesprungen (${a?.text})`);
+// 294: Statistik ohne eigene Vokabel-Auswahl – deren Suchleiste entfällt
 
 // ── Aufteilen: 🔍 bei Von und Bis ──
 await zuListen(page);

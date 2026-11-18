@@ -62,46 +62,9 @@ ok(!(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].som
 await page.click("[data-vok-bestaetigen]"); await sleep(400);
 ok(!(await liste()).offen && await page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv")].some(b => b.textContent.trim() === "Alle")), "Quiz: „Bestätigen“ schließt die Liste – nichts angehakt → wieder „Alle“");
 
-// Bremse an der langen Vokabel-Auswahl der Statistik
-await clickText(".tab", "Statistik"); await sleep(500);
-await clickText(".toggle-opt", "Bereich", true); await sleep(600);
-z = await liste();
-ok(z.offen && z.letzteUnten > z.hoehe, `Statistik: lange Vokabel-Auswahl offen, Ende nicht sichtbar (${z.letzteUnten} > ${z.hoehe})`);
+// 294: die Statistik hat keine eigene Vokabel-Auswahl mehr – die Bremse dort entfällt
 
-// 1) Schwungvoll weit über das Ende hinaus
-await wisch(6000);
-await sleep(1200);   // Scroll-Ruhe + Zurückgleiten
-z = await liste();
-console.log("     nach Schwung:", JSON.stringify(z));
-ok(z.offen, "Schwung über das Ende: Bereich bleibt offen");
-ok(z.letzteUnten !== null && z.letzteUnten <= z.hoehe && z.letzteUnten > z.hoehe - 200, "Zurückgeglitten: Listenende unten sichtbar");
-ok(z.hinweis, "Hinweis „Weiter ziehen oder hier tippen“ sichtbar");
-
-// 2) Zweites Ziehen → klappt zu
-await wisch(1500);
-await sleep(500);
-z = await liste();
-ok(!z.offen, "Zweites Weiterziehen: Bereich klappt zu");
-ok(!z.hinweis, "Hinweis verschwindet");
-
-// 3) Tippen auf den Hinweis
-await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);
-await clickText(".toggle-opt", "Bereich", true);   // Bereich ist schon aktiv → Klick öffnet die Liste wieder
-await sleep(600);
-if (!(await liste()).offen) { await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.includes("V.)"))?.click()); await sleep(600); }
-z = await liste();
-if (z.offen) {
-  await wisch(6000); await sleep(1200);
-  await clickText("button", "Weiter ziehen oder hier tippen");
-  await sleep(300);
-  z = await liste();
-  ok(!z.offen, "Tippen auf den Hinweis klappt zu");
-} else {
-  console.log("     (Liste ließ sich im Test nicht erneut öffnen – Schritt 3 übersprungen)");
-}
-
-// 4) Quiz: Abfrage-Modus öffnen – Weiterscrollen klappt nicht mehr zu, nur die Überschrift
-await clickText(".tab", "Quiz"); await sleep(500);
+// 4) Quiz: Abfrage-Modus öffnen – Weiterscrollen klappt nicht mehr zu, nur die Überschrift (294: wir sind schon im Quiz-Tab)
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);
 await page.click("[data-abfragemodus]"); await sleep(300);
 await sleep(600);

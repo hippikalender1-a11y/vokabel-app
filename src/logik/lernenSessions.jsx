@@ -582,9 +582,9 @@ export function toggleEinzelauswahl(app) {
   }
 
 export function toggleSlotSektion(app) {
-  const { kommtAusListen, aktiverSlot, dropdownImmuneRef, headerH, leuchte, schliesseQuizBereiche, setAuswahlListen, setMultiAuswahl, setSlotAuswahl, setSlotSektionAufgeklappt, setSlotSortModus, slotContainerRef, slotH, slotSektionAufgeklappt, slotZuTimerRef, tab } = app;
+  const { statistikAktiverSlot, kommtAusListen, aktiverSlot, dropdownImmuneRef, headerH, leuchte, schliesseQuizBereiche, setAuswahlListen, setMultiAuswahl, setSlotAuswahl, setSlotSektionAufgeklappt, setSlotSortModus, slotContainerRef, slotH, slotSektionAufgeklappt, slotZuTimerRef, tab } = app;
     const opening = !slotSektionAufgeklappt;
-    if (opening) setAuswahlListen(tab === "quiz" && kommtAusListen);   // 217/250: aus den Listen gekommen → Listen-Auswahl
+    if (opening) setAuswahlListen((tab === "quiz" && kommtAusListen) || (tab === "statistik" && statistikAktiverSlot?.typ === "listen"));   // 294: Statistik einer Liste → Listen   // 217/250: aus den Listen gekommen → Listen-Auswahl
     clearTimeout(slotZuTimerRef.current);
     if (opening && tab === "quiz") schliesseQuizBereiche("slots");
     if (!opening) leuchte("slotkopf");

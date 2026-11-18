@@ -123,16 +123,16 @@ export function renderListeInfo(app, l, mehrere = null) {
   }
 
 export function renderSlotKopf(app, statistik) {
-  const { brecheErstellenAb, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenAendern, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizErstellen, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setListenAendern, setListenAuswahlAufgeklappt, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, starteQuizErstellen, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
+  const { zeigeListenStatistik, brecheErstellenAb, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenAendern, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizErstellen, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setListenAendern, setListenAuswahlAufgeklappt, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, starteQuizErstellen, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
     const zu = !slotSektionAufgeklappt;
     const slot = statistik ? statistikAktiverSlot : aktiverSlot;
     const gespeichert = slot?.typ === "gespeichert";
-    const alsListe = !statistik && slot?.typ === "listen";   // 217: Kopf zeigt eine Liste
+    const alsListe = slot?.typ === "listen";   // 217: Kopf zeigt eine Liste (294: auch in der Statistik)
     const listeE = alsListe ? listenIndex.find(l => l.id === slot.id) : null;
     const geaendert = !statistik && vokabelgruppeGeaendert;
     const gruen = (gespeichert || alsListe) && !geaendert;
     const multi = multiVonSlot(slot);
-    const name = gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : alsListe ? (listeE?.name || "Liste") : multi ? "Multiquiz" : statistik && statistikSlotGeleert ? "Leer" : statistik ? "Neue Auswahl" : (einListenName() || (quizTabListen.length >= 2 ? `📋 ${mitKuerzel(sprachKuerzelFuer(quizTabListen), `${quizTabListen.length} Listen`)}` : "Neues Quiz"));   // 216/217; 249
+    const name = gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : alsListe ? (listeE?.name || "Liste") : multi ? "Multiquiz" : statistik && statistikSlotGeleert ? "Leer" : statistik ? (statistikListenIds?.size >= 2 ? `📋 ${statistikListenIds.size} Listen` : "Neue Auswahl") : (einListenName() || (quizTabListen.length >= 2 ? `📋 ${mitKuerzel(sprachKuerzelFuer(quizTabListen), `${quizTabListen.length} Listen`)}` : "Neues Quiz"));   // 216/217; 249
     const ungespeichert = !statistik && !gespeichert && !multi && !alsListe && !quizErstellen;
     // Vokabeln der Auswahl (für die Kreise) und Info-Zeile
     let voks = [], listenIds = [];
@@ -174,7 +174,7 @@ export function renderSlotKopf(app, statistik) {
     const erstellen = !statistik && !!quizErstellen && !gespeichert && !alsListe;   // 217: grüner Kopf „＋ Quiz erstellen“
     // Mehrfach-Auswahl: der Name zeigt die Auswahl als grünen Bestätigen-Knopf (mehrere → Multiquiz, eine → laden, keine → beenden)
     const wahl = multiAuswahl && !zu;
-    const lwahl = !statistik && !zu && auswahlListen && listenWahl;   // 226: Listen-Mehrfach-Auswahl im Quiz-Tab
+    const lwahl = !zu && auswahlListen && listenWahl;   // 294: auch in der Statistik   // 226: Listen-Mehrfach-Auswahl im Quiz-Tab
     // Angetippte Quiz: der Name wird zum grünen „✓ ‹Name› laden“
     const vorschauE = !zu && !wahl && slotVorschau ? getSlotEintrag(slotVorschau.typ, slotVorschau.id) : null;
     const vorschauName = vorschauE ? (vorschauE.multi ? `🧩 ${vorschauE.name}` : vorschauE.istListe ? `📋 ${vorschauE.name}` : vorschauE.name || "Abfrage") : "";
@@ -195,7 +195,8 @@ export function renderSlotKopf(app, statistik) {
       : vorschauE ? kopfVoks(vorschauE) : voks;
     const balkenPct = balkenVoks.length ? Math.round(lernstandJeArt(balkenVoks)[statistik ? statistikArt : quizArt]?.pct || 0) : null;
     // 288: Listen-Auswahl wie die Quiz-Auswahl – die Schalter der Tafel gelten fürs geladene Quiz, Zeile eingeklappt
-    const kopfKlick = lwahl ? () => { const st = schalterStand(); uebernimmListenWahl(listenWahl);
+    const kopfKlick = lwahl && statistik ? () => zeigeListenStatistik(listenWahl)
+      : lwahl ? () => { const st = schalterStand(); uebernimmListenWahl(listenWahl);
           const zu = () => { setzeSchalter(st); setSchalterZeileZu(true); }; zu(); setTimeout(zu, 0); }
       : wahl ? () => { const st = schalterStand(); beendeMultiAuswahl(multiAuswahl, statistik ? ladeSlotStatistik : ladeSlot); leuchte("slotkopf");
           if (!statistik) { const zu = () => { setzeSchalter(st); setSchalterZeileZu(true); }; zu(); setTimeout(zu, 0); } }   // 278: Zeile eingeklappt   // 274: die Schalter der Auswahl gelten fürs geladene Quiz
@@ -221,7 +222,8 @@ export function renderSlotKopf(app, statistik) {
               : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern, umbenennen, duplizieren, Vokabeln ändern, löschen" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, (lwahl ? (listenWahl.length ? (auswahlTafelDaten.current.liste?.()?.aktionen || listenWahlMenue(listenWahl)) : null) : wahl ? (auswahlTafelDaten.current.slot?.()?.aktionen || null) : aktionen), { langText: name })}>
             {balkenPct !== null && <span className="kopf-balken" data-kopf-balken={balkenPct}><span style={{width:`${balkenPct}%`}}/></span>}
             {lwahl ? <span data-wahl-anzahl={listenWahl.length} data-listen-wahl-kopf>{listenWahl.length === 1 ? `${lEinzelName(listenWahl[0])} laden` : listenWahl.length
-                ? mitSymbolen((() => { const z = schalterZaehlung(wahlListenIds(listenWahl), "liste"); return `${listenWahl.length} ausgewählt · ${z.regulaer} Vokabeln${quizFaellig.an && z.faellig ? ` + 🔁 ${z.faellig}` : ""}`; })())   // 288
+                ? statistik ? `${listenWahl.length} ausgewählt · ${wahlListenIds(listenWahl).reduce((s, id) => s + (lsLesen(SK.liste(id))?.vokabeln?.length || 0), 0)} Vokabeln`
+                : mitSymbolen((() => { const z = schalterZaehlung(wahlListenIds(listenWahl), "liste"); return `${listenWahl.length} ausgewählt · ${z.regulaer} Vokabeln${quizFaellig.an && z.faellig ? ` + 🔁 ${z.faellig}` : ""}`; })())   // 288
                 : "Nichts ausgewählt"}</span>
               : wahl ? <span data-wahl-anzahl={multiAuswahl.length}>{mitSymbolen(wahlText)}</span> : vorschauE ? <span data-bestaetigen>{vorschauName} laden</span> : aendern ? <span data-bestaetigen>Bestätigen</span>
               : erstellen && zu ? <span data-bestaetigen>＋ Quiz erstellen</span>
