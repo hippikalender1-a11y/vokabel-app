@@ -113,6 +113,10 @@ const ausw = await page.evaluate(() => ({ balken: [...document.querySelectorAll(
   zusatz: document.querySelector("[data-zusatzdaten]")?.innerText.replace(/\s+/g, " ") }));
 ok(ausw.balken === "negativ:1→0,arbeit:0→9,gelernt:0→0" && ausw.lang === "5" && ausw.weiter === "5",
   `268: Quiz-Auswertung – Balken vorher→nachher, „🔁 Langzeit trainiert · 5“, 5 ◆ weiter (${JSON.stringify(ausw)})`);
+// 293: Langzeit-Balken in der Auswertung (die 5 Fälligen gehören dazu, Stand vorher als Linie)
+const lzB = await page.evaluate(() => [...document.querySelectorAll("[data-ausw-langzeit-balken] [data-ausw-stufe]")].map(b => `${b.dataset.auswStufe}:${b.dataset.vorher}→${b.dataset.nachher}`).join(","));
+console.log("      Langzeit:", lzB);
+ok(/^3:\d+→\d+,4:\d+→\d+,5:\d+→\d+,6:\d+→\d+$/.test(lzB) && lzB.split(",").reduce((s, x) => s + Number(x.split("→")[1]), 0) >= 5, `293: Auswertung zeigt Langzeit-Balken ◇◇◇ … ◆◆◆ (${lzB})`);
 ok(/Ø Score/.test(ausw.zusatz) && /Verbessert/.test(ausw.zusatz) && /Auf Anhieb gewusst/.test(ausw.zusatz) && /Dauer/.test(ausw.zusatz) && /Paket/.test(ausw.zusatz), "268: Zusatzdaten bleiben (Ø Score, verbessert …, auf Anhieb, Dauer, Pakete)");
 
 // ── Diktat: kein Fällige-Knopf ──

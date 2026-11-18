@@ -3812,3 +3812,10 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
 - 289 OFFENE FRAGE: Mit 289 entfällt der Zustand „Neues Quiz“ (Listen angekreuzt, Zeile „Vokabel-Auswahl Alle | Bereich“).
   Liste antippen lädt sie als Listen-Quiz (ohne „Alle | Bereich“; Bereich über „🎯 Quiz mit Auswahl…“). ~25 Tests bauen auf
   dem alten Zustand auf. Die Tests haben einen Zusatz (Kopf „Liste oder Quiz wählen“ → auf „Quiz“ umschalten), harmlos ohne 289.
+- 293 UMGESETZT: Quiz-Auswertung mit Langzeit-Balken ◇◇◇ ◆◇◇ ◆◆◇ ◆◆◆ (wie Statistik): gefüllt = nachher, Strichlinie =
+  vorher, Anzahl + Veränderung; zusätzliche Fällige (d.faellig) zählen mit. Test punkte267 erweitert.
+- 294 (gesammelt, Antwort offen): Statistik ohne die Zeilen „Listen-Auswahl“/„Vokabel-Auswahl“; dafür Umschalter
+  „Quiz | 📋 Listen“ auch in der Statistik-Auswahl (Listen einzeln bzw. mehrere per Halten).
+- 295 UMGESETZT: „Quiz erstellen“ (aus einer Liste) abbrechen: im Fenster „Abbrechen“ (das bisherige heißt „Zurück“) und
+  lang drücken auf den Kopf „✕ Erstellen abbrechen“ – nichts angelegt, zurück zur Auswahl mit den Listen (brecheErstellenAb).
+- 289 ENTSCHIEDEN: „Neues Quiz“ mit „Alle | Bereich“ darf wegfallen – Bereich über „🎯 Quiz mit Auswahl…“ ausprobieren.

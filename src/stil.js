@@ -224,7 +224,7 @@ export const CSS_BASIS = `
   .st-reihe{display:flex;justify-content:space-around;align-items:flex-start;gap:6px;}
   .st-spalte{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;}
   .st-balken{position:relative;width:min(64px, 100%);height:140px;border:1.5px solid var(--rahmen);border-radius:6px;background:var(--karte);overflow:hidden;padding:0;cursor:pointer;}
-  [data-st-langzeit] .st-balken{height:90px;}
+  [data-st-langzeit] .st-balken,[data-ausw-langzeit-balken] .st-balken{height:90px;}   /* 293 */
   .st-teil{position:absolute;left:0;right:0;}
   .st-hohl{box-sizing:border-box;border:3px solid var(--gelernt);min-height:6px;}   /* 285: fällige hohl – Rand in Balkenfarbe */
   .st-abgefragt{flex:3;min-width:0;display:flex;flex-direction:column;}   /* 286: die drei abgefragten Balken mit Klammer */

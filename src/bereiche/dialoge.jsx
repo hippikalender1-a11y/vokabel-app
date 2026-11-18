@@ -335,7 +335,7 @@ export function DialogInGruppe(app) {
 
 // aus App.jsx: {erstellenFenster && …}
 export function DialogErstellenFenster(app) {
-  const { erstelleQuiz, erstellenFenster, legeOrdnerAn, quizErstellen, setErstellenFenster, setQuizErstellen, slots, starteAufteilen, tt, ttFeld } = app;
+  const { brecheErstellenAb, erstelleQuiz, erstellenFenster, legeOrdnerAn, quizErstellen, setErstellenFenster, setQuizErstellen, slots, starteAufteilen, tt, ttFeld } = app;
   return (
 (() => {
         // 217: „Quiz erstellen“ – Name (vorbelegt) und Ordner (Baum der Quiz-Ordner, zuletzt geöffneter vorbelegt)
@@ -365,7 +365,8 @@ export function DialogErstellenFenster(app) {
                 )}
               </div>
               <div className="modal-actions" style={{flexWrap:"wrap"}}>
-                <button className="btn btn-ghost" onClick={() => setErstellenFenster(null)} {...tt("Zurück zu den Einstellungen")}>Abbrechen</button>
+                <button className="btn btn-ghost" onClick={() => setErstellenFenster(null)} {...tt("Zurück zu den Einstellungen – das Erstellen geht weiter")}>Zurück</button>
+                <button className="btn btn-ghost" data-erstellen-abbrechen style={{color:"var(--falsch)"}} onClick={brecheErstellenAb} {...tt("Nichts anlegen – zurück zur Auswahl der Listen")}>Abbrechen</button>
                 <button className="btn btn-ghost" data-erstellen-aufteilen onClick={() => { const id = quizErstellen?.listeId; setErstellenFenster(null); setQuizErstellen(null); if (id) starteAufteilen(id); }}
                   {...tt("Stattdessen die Liste in mehrere Quiz aufteilen")}>In mehrere aufteilen</button>
                 <button className="btn btn-primary" data-erstellen-ok disabled={!f.name.trim()} onClick={erstelleQuiz} {...tt("Quiz anlegen und laden")}>Erstellen</button>

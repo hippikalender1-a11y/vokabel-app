@@ -149,6 +149,32 @@ export function renderSessionAuswertung(app, d) {
         })}
       </div>
     );
+    // 293: Langzeitgedächtnis wie in der Statistik – je Stufe ein Balken (100 % = gelernte vorher bzw. nachher, je nachdem mehr),
+    // gestrichelte Linie = Stand vorher, darunter Anzahl und Veränderung
+    const stufe = sc => schwelle > 0 && sc != null && sc >= schwelle ? Math.min(6, sc) : null;
+    const idsDa = new Set(d.ids), extraF = (d.faellig || []).filter(x => !idsDa.has(x.id));   // zusätzliche Fällige gehören dazu
+    const lzV = [...vorher, ...extraF.map(x => x.vorher)], lzN = [...nachher, ...extraF.map(x => x.jetzt)];
+    const gelV = lzV.filter(sc => stufe(sc) != null).length, gelN = lzN.filter(sc => stufe(sc) != null).length, basis = Math.max(gelV, gelN);
+    const langzeitBalken = basis > 0 && (
+      <>
+        <div className="st-titel" style={{marginTop:14}}>Langzeitgedächtnis <span style={{fontWeight:500, color:"var(--text3)"}}>· {gelV} → {gelN} gelernte</span></div>
+        <div className="st-reihe" data-ausw-langzeit-balken>
+          {[[3, "◇◇◇"], [4, "◆◇◇"], [5, "◆◆◇"], [6, "◆◆◆"]].map(([s, sym]) => {
+            const vN = lzV.filter(sc => stufe(sc) === s).length, nN = lzN.filter(sc => stufe(sc) === s).length, dd = nN - vN;
+            return (
+              <div key={s} className="st-spalte">
+                <div className="st-balken" data-ausw-stufe={s} data-vorher={vN} data-nachher={nN} {...ttFeld(`${sym}: vorher ${vN}, jetzt ${nN} (100 % = ${basis} gelernte)`)}>
+                  {nN > 0 && <span className="st-teil" style={{bottom:0, height:`${nN / basis * 100}%`, background:"var(--gelernt)"}}/>}
+                  {vN > 0 && <span className="st-vorher" style={{bottom:`${vN / basis * 100}%`}}/>}
+                </div>
+                <div className="st-name" style={{color:"var(--haupt)"}}>{sym}</div>
+                <div className="st-zahl">{nN} <span data-ausw-diff={dd} style={{fontWeight:700, color: dd === 0 ? "var(--text3)" : "var(--text2)"}}>{dd > 0 ? `+${dd}` : dd < 0 ? `−${-dd}` : "±0"}</span></div>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
     // 268: Fällige – fürs Langzeitgedächtnis trainiert: weiter (Score gestiegen), gehalten, zurückgefallen
     const fae = d.faellig || [];
     const fWeiter = fae.filter(x => (x.jetzt ?? 0) > (x.vorher ?? 0)).length, fZurueck = fae.filter(x => (x.jetzt ?? 0) < (x.vorher ?? 0)).length;
@@ -165,6 +191,7 @@ export function renderSessionAuswertung(app, d) {
           </div>
           {lernBalken}
           {zv.nie + zn.nie > 0 && <div style={{fontSize:"0.72rem", color:"var(--text3)", textAlign:"center", marginTop:6}} data-ausw-nie>nie abgefragt: {zv.nie} → {zn.nie}</div>}
+          {langzeitBalken}
         </div>
         {fae.length > 0 && (
           <div className="karte" data-ausw-langzeit={fae.length} style={{padding:"12px 14px", margin:"0 0 14px"}}>

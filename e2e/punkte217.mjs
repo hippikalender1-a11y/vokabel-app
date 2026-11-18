@@ -87,5 +87,26 @@ ok(neu && neu.ordner === "o1" && neu.konfiguration?.vokabelAuswahl?.length === 2
 k = await kopf();
 ok(k.art === "quiz" && /^Unit 1/.test(k.text), `danach geladen (${k.text})`);
 
+// ── 295: „Quiz erstellen“ abbrechen – im Fenster bzw. lang drücken auf den Kopf; nichts angelegt, zurück zur Auswahl (Listen) ──
+const anzahlVorher = (await slots()).gespeichert.length;
+await oeffneListe("l_b");
+await page.evaluate(() => document.querySelector("[data-liste-quiz-erstellen]").click()); await sleep(700);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
+await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(400);
+ok(!!(await page.$("[data-erstellen-abbrechen]")), "295: Fenster „Quiz erstellen“ hat „Abbrechen“");
+await page.evaluate(() => document.querySelector("[data-erstellen-abbrechen]").click()); await sleep(600);
+k = await kopf();
+ok(k.art !== "erstellen" && !(await page.$("[data-erstellen-dialog]")) && (await slots()).gespeichert.length === anzahlVorher && k.zustand === "offen"
+  && await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]")?.dataset.auswahlUmschalter) === "listen",
+  `295: abgebrochen – nichts angelegt, Auswahl mit den Listen offen (${JSON.stringify(k)})`);
+// lang drücken auf den Kopf: „✕ Erstellen abbrechen“
+await oeffneListe("l_b");
+await page.evaluate(() => document.querySelector("[data-liste-quiz-erstellen]").click()); await sleep(700);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
+await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"), r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 5 })); }); await sleep(400);
+const ab = await page.evaluate(() => { const b = [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "✕ Erstellen abbrechen"); b?.click(); return !!b; }); await sleep(600);
+k = await kopf();
+ok(ab && k.art !== "erstellen" && (await slots()).gespeichert.length === anzahlVorher, `295: lang drücken auf den Kopf – „✕ Erstellen abbrechen“ (${JSON.stringify(k)})`);
+
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();
