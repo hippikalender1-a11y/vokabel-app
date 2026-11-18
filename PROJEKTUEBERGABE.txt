@@ -3801,3 +3801,8 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   „Lückenlos anzeigen“); „🙈 Gelernte ausblenden“ unter „🖼 Ansicht ›“; „🔁 Fällige wiederholen“ und „✗ Negative abfragen“
   entfallen in ALLEN Menüs (Ebene, Quiz/Ordner/Auswahl, Listen, Listen-Auswahl) – das machen die Vokabel-Schalter.
   faelligAktion entfernt (ladeFaellige/faelligAlle bleiben vorerst). Tests 168/180/244/255/260/267/stufen angepasst.
+- 291 UMGESETZT: „▤ Automatische Anordnung“ nutzt genau die gewählte Spaltenzahl (▥ Spalten) – gespeicherte Plätze weiter
+  rechts erzeugen keine zusätzlichen Spalten mehr (Quiz- und Listen-Raster; kurze Beschriftungen „Q.“/„L.“/„V.“ danach).
+  Test punkte255 erweitert (1 Spalte: untereinander; 2 Spalten: A, C | B).
+- 289-Tests: 33 Tests wählen Listen über listeWaehlen() (hilfen.mjs) – funktioniert mit alter und neuer Ansicht.
+  289 selbst weiter beiseite (scratchpad/p289/289.patch); offen: 56 Tests, die beim Start eine geschlossene/Quiz-Auswahl erwarten.

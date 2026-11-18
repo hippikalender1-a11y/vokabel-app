@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu, einstUnter, artenMehrfach } from "./hilfen.mjs";
+import { neueEineSession, listenZu, einstUnter, artenMehrfach, listeWaehlen } from "./hilfen.mjs";
 
 // 85–87: Antwort-Arten und Rolle „Antwort“: antippen wechselt sofort (leuchtet kurz); lang drücken › „☑ Mehrere wählen“ →
 // antippen schaltet dazu/weg, der Zeilen-Knopf zeigt „n Arten / ✓ Bestätigen“ und beendet die Mehrfach-Auswahl.
@@ -33,7 +33,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(700);
 await neueEineSession(page);
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unit 1"))?.click()); await sleep(300);
+await listeWaehlen(page, "Unit 1"); await sleep(300);
 await listenZu(page);
 await klick("[data-abfragemodus]"); await sleep(200);
 

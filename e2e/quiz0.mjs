@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen } from "./hilfen.mjs";
+import { listeOeffnen, listeWaehlen } from "./hilfen.mjs";
 import { zuListen, listenZu, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -79,7 +79,7 @@ await page.evaluate(() => window.scrollTo(0, 0));
 // 217: Liste als Quiz – Kopf antippen öffnet die Listen-Auswahl, dort „Vocabulaire“ antippen
 if (await page.$("[data-listen-kopf]")) {
   await page.click("[data-listen-kopf]"); await sleep(300);
-  await clickText(".quiz-setup-check", "Irregular Verbs"); await clickText(".quiz-setup-check", "Vocabulaire"); await listenZu(page);
+  await listeWaehlen(page, "Irregular Verbs"); await listeWaehlen(page, "Vocabulaire"); await listenZu(page);
 } else {
   await page.click("[data-slot-kopf-name]"); await sleep(400);
   await page.evaluate(() => { const b = document.querySelector('[data-auswahl-umschalter]'); if (b && b.dataset.auswahlUmschalter !== "listen") b.click(); }); await sleep(300);

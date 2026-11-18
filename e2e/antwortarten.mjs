@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu, bereichZu, fremdAlsFrage } from "./hilfen.mjs";
+import { neueEineSession, listenZu, bereichZu, fremdAlsFrage, listeWaehlen } from "./hilfen.mjs";
 import { auswahlZu } from "./hilfen.mjs";
 
 // Neue Antwortarten: „Hören“ (Frage verdeckt + vorgelesen, Antwort per MC), „Puzzle“ (Buchstaben-Kacheln),
@@ -32,7 +32,7 @@ const starte = async (art, woerter = WOERTER) => {
   }, woerter);
   await page.reload(); await sleep(700);
   await neueEineSession(page);
-  await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(300);
+  await listeWaehlen(page, "Unité 1"); await sleep(300);
   await listenZu(page);
   await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
   if (art === "hoeren") await fremdAlsFrage(page);   // Hören gibt es nur mit deutscher Antwort

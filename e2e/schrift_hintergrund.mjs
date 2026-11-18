@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 
 // Eine Schrift gilt nur auf ihrem Hintergrund: „Schrift auf Hauptfarbe“ ändern lässt Schrift auf Falsch, Hervorhebung,
 // Liste & Start usw. unverändert (sie werden beim Ändern mit ihrem bisherigen Wert festgeschrieben)
-import { quizEinstellungen, listenZu, bereichZu, farbZeige } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, farbZeige, listeWaehlen } from "./hilfen.mjs";
 
 
 
@@ -57,7 +57,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await page.click("[data-slot-kopf-name]"); await sleep(300);
-await clickText(".quiz-setup-check", "Unité 1");
+await listeWaehlen(page, "Unité 1");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 const schriften = ["auf-haupt", "auf-start", "auf-falsch", "auf-gelb", "auf-haupt-hell", "auf-gelernt"];
 const werte = async () => Object.fromEntries(await Promise.all(schriften.map(async n => [n, await variable(n)])));

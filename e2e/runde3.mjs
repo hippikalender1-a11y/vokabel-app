@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen, menueShim, auswahlEnde } from "./hilfen.mjs";
+import { listeOeffnen, menueShim, auswahlEnde, listeWaehlen } from "./hilfen.mjs";
 import { zuListen, neueEineSession, listenZu, quizEinstellungen } from "./hilfen.mjs";
 
 // Runde 3: Speichern-Fenster (Knöpfe oben, Eingabetaste), Vokabelbereich einer gespeicherten Quiz ändern (rot,
@@ -37,7 +37,7 @@ await page.reload(); await sleep(800);
 
 // ── 18: Speichern-Fenster – Namensfeld, direkt darunter die Knöpfe; Eingabetaste speichert ──
 await neueEineSession(page);
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(300);
+await listeWaehlen(page, "Unité 1"); await sleep(300);
 await listenZu(page);
 const speichereAls = async name => {
   await lang("[data-slot-kopf-name]"); await aktion("💾 Speichern");

@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, listeWaehlen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -46,7 +46,7 @@ const seed = async () => {
   });
   await page.reload(); await sleep(500);
   await clickText(".tab", "Quiz"); await quizEinstellungen(page);
-  await clickText(".quiz-setup-check", "Vocabulaire");
+  await listeWaehlen(page, "Vocabulaire");
   await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 };
 // Auswahlbereich ist nach dem Laden zugeklappt → zum Prüfen der Chips öffnen

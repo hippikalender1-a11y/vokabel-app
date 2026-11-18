@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, listeWaehlen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -65,7 +65,7 @@ ok(/67 %/.test(t) && /2 \/ 4 gelernt/.test(t), "269: Lernfortschritt bleibt bei 
 
 // ── Quiz-Runde: gelernte sind ausgeblendet → partir + sortir, beide gewusst ──
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
-await clickText(".quiz-setup-check", "Verbes");
+await listeWaehlen(page, "Verbes");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 await page.evaluate(async () => { const u = document.querySelector("[data-umfang]"); if (!u) return; u.click(); await new Promise(r => setTimeout(r, 200)); document.querySelector('[data-umfang-wahl="alle"]')?.click(); }); await sleep(300);
 await clickText("[data-start-knopf]", "2 Vokabeln");

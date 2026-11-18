@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, bereichZu, stufeFenster } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, stufeFenster, listeWaehlen } from "./hilfen.mjs";
 
 // Akzente mit Wörtern ohne Akzent: höchstens Faktor × so viele wie mit Akzent (je Stufe einstellbar),
 // bevorzugt schwächster / kein Akzent-Score, gleichmäßig verteilt
@@ -58,7 +58,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
-await clickText(".quiz-setup-check", "Akzente");
+await listeWaehlen(page, "Akzente");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 await artWaehlen("akzente");
 

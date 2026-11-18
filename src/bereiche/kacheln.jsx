@@ -161,7 +161,8 @@ export function renderListenRaster(app) {
     const gefiltert = sprachFilter !== "alle";
     const sortModus = listenSortModus && !gefiltert;
     const minS = minSpalten("liste", offen);   // 203
-    const anzSpalten = gefiltert ? 1 : ebenenSpalten(ebene, sortModus && zugRand !== false, minS);   // 196; 231: beim Finger-Zug erst am Rand
+    // 291: automatische Anordnung – genau die gewählte Spaltenzahl (gespeicherte Plätze weiter rechts zählen nicht)
+    const anzSpalten = gefiltert ? 1 : einstellungen.lueckenlos && !sortModus ? Math.max(1, minS || 1) : ebenenSpalten(ebene, sortModus && zugRand !== false, minS);   // 196; 231: beim Finger-Zug erst am Rand
     // Kachel-Aufbau nur nach den belegten Spalten: die freie Spalte beim Verschieben darf ihn nicht ändern
     // (sonst baut React den Inhalt unter dem Finger neu auf und das Ziehen verliert den Finger)
     const eng = (gefiltert ? 1 : ebenenSpalten(ebene, false, minS)) > 1;
@@ -271,7 +272,7 @@ export function renderListenRaster(app) {
     const ziehIds = slotDragId ? (listenAuswahl.includes(slotDragId) ? listenAuswahl : [slotDragId]) : [];
     const ring = key => (<span className={`gruppen-ring${gruppenZiel === key ? " fertig" : ""}`} data-gruppen-ring={gruppenZiel === key ? "fertig" : "laeuft"}>
       <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15"/></svg><span data-ring-symbol={gruppenZiel === key ? "ordner" : "einfuegen"}>{gruppenZiel === key ? "📁" : "↓"}</span></span>);
-    const kurzL = (gefiltert ? 1 : ebenenSpalten(ebene, false, minS)) > 1;   // 210: ab 2 Spalten „L.“ / „V.“
+    const kurzL = (gefiltert ? 1 : einstellungen.lueckenlos && !sortModus ? Math.max(1, minS || 1) : ebenenSpalten(ebene, false, minS)) > 1;   // 291   // 210: ab 2 Spalten „L.“ / „V.“
     const ordnerZelle = (o, key) => {
       const drin = ordnerListen(o.id);
       const vokDrin = drin.reduce((m, l) => m + vokabelAnzahl(l.id), 0);
@@ -541,8 +542,9 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     slotSichtbarRef.current = sichtbar.map(x => x.id);
     plaetzeRef.current.slot = sichtbar.map(x => ({ id: x.id, z: x.platz.z, s: x.platz.s }));
     const ebeneLeer = raster.gespeichert.length === 0;   // 194: leerer Ordner – eine Zeile freier Plätze zeigen
-    const anzSpalten = ebenenSpalten(raster.gespeichert, slotSortModus && zugRand !== false, minSpalten("slot", ordnerOffen?.id || null));   // 231: beim Finger-Zug erst am Rand   // 196/203: belegt bzw. gewählt (+1 beim Verschieben)
-    const kurzText = ebenenSpalten(raster.gespeichert, false, minSpalten("slot", ordnerOffen?.id || null)) > 1;   // 210: ab 2 Spalten abgekürzt
+    const minSS = minSpalten("slot", ordnerOffen?.id || null), autoAnordnung = !!einstellungen.lueckenlos && !slotSortModus;   // 291: automatisch – gewählte Spaltenzahl
+    const anzSpalten = autoAnordnung ? Math.max(1, minSS || 1) : ebenenSpalten(raster.gespeichert, slotSortModus && zugRand !== false, minSS);   // 231: beim Finger-Zug erst am Rand   // 196/203: belegt bzw. gewählt (+1 beim Verschieben)
+    const kurzText = (autoAnordnung ? Math.max(1, minSS || 1) : ebenenSpalten(raster.gespeichert, false, minSS)) > 1;   // 210: ab 2 Spalten abgekürzt
     const ordnerHierGeht = ordnerPfad(slots.ordner, ordnerOffen?.id || null).length < ORDNER_TIEFE_MAX;
     const zeilenSichtbar = Math.max(ebeneLeer && ordnerOffen ? 1 : 0, raster.gespeichert.filter(sichtbarE).reduce((m, x) => Math.max(m, x.platz.z + 1), 0));
     // 214: sind alle angezeigten Plätze belegt, eine Zeile mehr – damit es immer einen freien Platz (Lang-Druck) gibt

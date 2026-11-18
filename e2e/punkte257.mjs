@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu, bereichZu } from "./hilfen.mjs";
+import { neueEineSession, listenZu, bereichZu, listeWaehlen } from "./hilfen.mjs";
 
 // 257: „Artikel“ nur, wo Wörter mit Artikel sind; nur „Artikel“ gewählt → nur diese Wörter
 // 258: Score-Symbole bei allen Antwortarten (hier Puzzle), Puls beim Ändern; Zuordnung: Symbole in den Ergebnis-Zeilen
@@ -27,7 +27,7 @@ const lade = async (sprache, woerter) => {
   }, sprache, woerter);
   await page.reload(); await sleep(700);
   await neueEineSession(page);
-  await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unit 1"))?.click()); await sleep(300);
+  await listeWaehlen(page, "Unit 1"); await sleep(300);
   await listenZu(page);
   await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
 };

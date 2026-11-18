@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu, stufeWaehlen } from "./hilfen.mjs";
+import { neueEineSession, listenZu, stufeWaehlen, listeWaehlen } from "./hilfen.mjs";
 import { auswahlZu } from "./hilfen.mjs";
 
 // Vorlesen: Einstellungen › Stimmen (Variante, Stimmen an/aus, Tempo je Sprache, Gesamt-Tempo),
@@ -85,7 +85,7 @@ ok(Math.abs(l.rate - 1.2) < 0.001, `Französisch: nur Gesamt-Tempo (${l.rate})`)
 // ── Abfrage: Karte spielt ab, 🔁 Stimme, Tempo per langem Druck ──
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
 await neueEineSession(page);
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(300);
+await listeWaehlen(page, "Unité 1"); await sleep(300);
 await listenZu(page);
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(700);
 const frage = await page.evaluate(() => document.querySelector("[data-karte-frage] .quiz-frage-text")?.textContent.trim());

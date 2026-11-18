@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu } from "./hilfen.mjs";
+import { neueEineSession, listenZu, listeWaehlen } from "./hilfen.mjs";
 
 // Zeilen-Knöpfe im Quiz-Tab: aufgeklappt „✓ Bestätigen“ in eigener Farbe, gleiche Größe und Position, übrige Knöpfe der Zeile bleiben;
 // Stufe aufklappbar; lang drücken auf „Start“: Speichern-Menü wie beim Quiz-Namen
@@ -26,7 +26,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(700);
 await neueEineSession(page);
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(300);
+await listeWaehlen(page, "Unité 1"); await sleep(300);
 await listenZu(page);
 
 const zu = await farbe("[data-reihenfolge]");

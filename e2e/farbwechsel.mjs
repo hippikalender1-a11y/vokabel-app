@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu, farbZeige, stufeWaehlen } from "./hilfen.mjs";
+import { neueEineSession, listenZu, farbZeige, stufeWaehlen, listeWaehlen } from "./hilfen.mjs";
 
 // Zufallsfarben je Abschnitt (schließt „Farben je Sprache“ aus); Stufe „Lernen“: Knöpfe normal (nicht abgeschwächt)
 
@@ -41,7 +41,7 @@ ok(f0 !== "#2d6a4f", `Zufalls-Schema aktiv (${f0})`);
 // Quiz starten → neue Farbe; Quiz zu Ende / zurück → wieder neue Farbe
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
 await neueEineSession(page);
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unit 1"))?.click()); await sleep(300);
+await listeWaehlen(page, "Unit 1"); await sleep(300);
 await listenZu(page);
 const f1 = await haupt();
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);

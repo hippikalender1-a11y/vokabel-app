@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu, farbZeige } from "./hilfen.mjs";
+import { neueEineSession, listenZu, farbZeige, listeWaehlen } from "./hilfen.mjs";
 
 // Farben je Sprache: Tab „Sprachen“ unter Einstellungen › Farben – aus: immer Standard-Schema; an: Sprachfilter bzw.
 // Sprache der abgefragten Liste bestimmt das Schema (Standard: Länder-Vorlage, wählbar, „wie Standard“)
@@ -57,7 +57,7 @@ ok(await haupt() === "#2d6a4f", "„wie Standard“: Standard-Schema");
 // Abfrage einer englischen Liste (Filter „Alle“): englisches Schema, danach wieder Standard
 await einst({ sprache: "alle" }); await page.reload(); await sleep(600);
 await neueEineSession(page);
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unit 1"))?.click()); await sleep(300);
+await listeWaehlen(page, "Unit 1"); await sleep(300);
 await listenZu(page);
 ok(await haupt() === "#1d3c78", `168: englische Liste gewählt (Filter „Alle“): schon englisches Schema (${await haupt()})`);
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);

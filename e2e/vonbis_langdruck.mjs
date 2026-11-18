@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, neueEineSession } from "./hilfen.mjs";
+import { zuListen, neueEineSession, listeWaehlen } from "./hilfen.mjs";
 
 // Vokabel-Suche: Einzelauswahl (Quiz + Statistik), Aufteilen (🔍 bei Von/Bis), Listenansicht.
 // Nur Fremdsprache + Deutsch, „enthält“, Groß/klein + Akzente egal, Wortanfang zuerst; springen ‹ › oder „nur Treffer“
@@ -53,7 +53,7 @@ let re = await rechts();
 ok(re.hinweis === "Bitte Liste auswählen" && re.knopf === null && await page.$(".quiz-setup-check"), `ohne Liste: rechts nur Hinweis, kein Knopf, Listen offen (${JSON.stringify(re)})`);
 await page.evaluate(() => document.querySelector("[data-listen-hinweis]").click()); await sleep(300);
 ok(await page.$(".quiz-setup-check") && (await rechts()).hinweis === "Bitte Liste auswählen", "Hinweis antippen schließt nichts");
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(400);
+await listeWaehlen(page, "Unité 1"); await sleep(400);
 re = await rechts();
 ok(re.knopf === "Bestätigen" && re.hinweis === null, `Liste gewählt, Auswahl offen: Knopf „Bestätigen“ (${JSON.stringify(re)})`);
 await page.evaluate(() => document.querySelector(".liste-detail-header .zeile-rechts").click()); await sleep(400);

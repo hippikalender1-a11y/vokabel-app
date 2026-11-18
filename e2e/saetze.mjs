@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen } from "./hilfen.mjs";
+import { listeOeffnen, listeWaehlen } from "./hilfen.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -90,7 +90,7 @@ const starte = async art => {
   }
   await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(400);
   await neueEineSession(page);
-  await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(300);
+  await listeWaehlen(page, "Unité 1"); await sleep(300);
   await listenZu(page);
   await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
   await page.evaluate(a => document.querySelector(`[data-modus-knopf="E1:${a}"]`)?.click(), art); await sleep(200);

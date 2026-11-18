@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu, bereichZu, artenMehrfach } from "./hilfen.mjs";
+import { neueEineSession, listenZu, bereichZu, artenMehrfach, listeWaehlen } from "./hilfen.mjs";
 
 // Antwortart „Zuordnung“: Kacheln der Frage- und Antwort-Spalte zuordnen. Sofort-Prüfung (Fehlgriff zählt für die Vokabel
 // der ersten Karte, −1 nach Regel), Runden aus der Warteschlange, „am Ende“ mit farbigen Gruppen + „Prüfen“,
@@ -28,7 +28,7 @@ const vorbereiten = async stufe => {
   }, stufe);
   await page.reload(); await sleep(700);
   await neueEineSession(page);
-  await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(300);
+  await listeWaehlen(page, "Unité 1"); await sleep(300);
   await listenZu(page);
   await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
   const da = await page.evaluate(() => { const b = document.querySelector('[data-modus-knopf$=":zuordnung"]'); b?.click(); return !!b; }); await sleep(250);
@@ -49,7 +49,7 @@ const vorbereitenMix = async () => {
   });
   await page.reload(); await sleep(700);
   await neueEineSession(page);
-  await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(300);
+  await listeWaehlen(page, "Unité 1"); await sleep(300);
   await listenZu(page);
   await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
   await artenMehrfach(page, "E1:zuordnung");   // Karte bleibt, Zuordnung dazu

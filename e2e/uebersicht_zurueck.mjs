@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, bereichZu, auswahlZu } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, auswahlZu, listeWaehlen } from "./hilfen.mjs";
 
 // Paket-Ende: Knopf nennt die echte Restzahl („Letzte 2 Vokabeln“), Größen über dem Rest fehlen;
 // „Zur Übersicht“/„Beenden“/„Schließen“ kehren eingeklappt zurück (Quiz-Auswahl offen, 190), „Pause“ nicht;
@@ -46,7 +46,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
-await clickText(".quiz-setup-check", "Vocabulaire");
+await listeWaehlen(page, "Vocabulaire");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await sleep(300);
 await page.click('[data-umfang-wahl="5"]'); await sleep(500);

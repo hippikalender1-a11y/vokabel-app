@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { slotLaden } from "./hilfen.mjs";
+import { slotLaden, listeWaehlen } from "./hilfen.mjs";
 import { quizEinstellungen, neueEineSession, listenZu, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -48,7 +48,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500);
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
-await clickText(".quiz-setup-check", "Verbes");
+await listeWaehlen(page, "Verbes");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 // Bereich: 2 Vokabeln, Reihenfolge Zufällig (Standard: Schlechteste), speichern
 await clickText("button", "Bereich", true);
@@ -77,7 +77,7 @@ ok(z.kopfChip === "Neues Quiznicht gespeichert", "Neu: kein Preset aktiv („Neu
 const sa = await page.evaluate(() => localStorage.getItem("vokabel_session_aktiv"));
 ok(sa === null, "Neu: keine aktive Quiz");
 
-await clickText(".quiz-setup-check", "Verbes");
+await listeWaehlen(page, "Verbes");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 z = await zustand();
 ok(z.start === "3", `Liste neu gewählt: alle 3 Vokabeln (${z.start})`);

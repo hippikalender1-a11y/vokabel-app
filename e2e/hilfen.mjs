@@ -223,3 +223,16 @@ export async function auswahlEnde(page) {
   const s = ms => new Promise(r => setTimeout(r, ms));
   for (let i = 0; i < 2; i++) { await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]")?.click()); await s(250); }
 }
+
+// 289: Liste fürs Quiz wählen – früher Häkchen in der Listen-Auswahl des Quiz-Tabs (.quiz-setup-check); ist nichts geladen,
+// steht jetzt die Auswahl mit den Listen offen: Liste antippen lädt sie. Die alte Häkchen-Liste gibt es noch beim „Listen ändern“.
+export async function listeWaehlen(page, name) {
+  const s = ms => new Promise(r => setTimeout(r, ms));
+  const alt = await page.evaluate(n => { const e = [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes(n)); if (e) e.click(); return !!e; }, name);
+  if (alt) return;
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]")?.click(); }); await s(400);
+  await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "listen") b.click(); }); await s(300);
+  const da = await page.evaluate(n => { const e = [...document.querySelectorAll('[data-kachel-geste="liste"][data-liste-id]')].find(e => e.textContent.includes(n)); e?.click(); return !!e; }, name);
+  if (!da) throw new Error("Liste nicht gefunden: " + name);
+  await s(900);
+}

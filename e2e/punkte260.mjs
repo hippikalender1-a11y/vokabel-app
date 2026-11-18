@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, menueShim, neueEineSession, listenZu, bereichZu, listeOeffnen, listeBereich } from "./hilfen.mjs";
+import { zuListen, menueShim, neueEineSession, listenZu, bereichZu, listeOeffnen, listeBereich, listeWaehlen } from "./hilfen.mjs";
 
 // 260: Satz finden – mehrteilige Lösung: alle Teile antippen (Reihenfolge egal)
 // 261: Menü der Ebene – Spalten, Anordnen, Lückenlos unter „🖼 Ansicht ›“
@@ -117,7 +117,7 @@ await page.click("[data-satz-uebernehmen]"); await sleep(500);
 await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b => b.textContent.trim() === "Schließen")?.click()); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(400);
 await neueEineSession(page);
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unit 1"))?.click()); await sleep(300);
+await listeWaehlen(page, "Unit 1"); await sleep(300);
 await listenZu(page);
 await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
 await page.evaluate(() => document.querySelector('[data-modus-knopf="E1:satzfinden"]')?.click()); await sleep(200);

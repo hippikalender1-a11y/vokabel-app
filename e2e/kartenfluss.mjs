@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu, artenMehrfach, antwortDazu } from "./hilfen.mjs";
+import { neueEineSession, listenZu, artenMehrfach, antwortDazu, listeWaehlen } from "./hilfen.mjs";
 
 // 104/106/108/119/120/121: Karten-Fluss bei mehreren Spalten (Weiter ohne Pause, Tipp ins Freie, Bewertung am Ende),
 // Lautsprecher je Spalte, frühere Spalten antippen liest vor, alle Teile vorlesen, „;“ = Alternativen
@@ -42,7 +42,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(700);
 await neueEineSession(page);
-await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Irregular Verbs"))?.click()); await sleep(300);
+await listeWaehlen(page, "Irregular Verbs"); await sleep(300);
 await listenZu(page);
 await klick("[data-abfragemodus]"); await sleep(200);
 // Frage Deutsch, Antworten E1, E2, E3 (Reihenfolge der Liste: Frage = D1)

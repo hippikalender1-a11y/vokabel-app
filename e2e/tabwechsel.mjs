@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { slotLaden } from "./hilfen.mjs";
+import { slotLaden, listeWaehlen } from "./hilfen.mjs";
 import { bereichZu } from "./hilfen.mjs";
 
 // Gewählte Konfiguration / Listenauswahl bleibt beim Wechsel Quiz ↔ Statistik erhalten (beide Richtungen)
@@ -100,7 +100,7 @@ ok(!(await page.$('[data-anzahl="fortschritt"]')), "Quiz: kein Fortschritt einer
 // Quiz: nur Tiere → Statistik zeigt Tiere
 await page.evaluate(() => document.querySelector("button.zeile-rechts[title^='Gewählte Listen']").click());
 await sleep(300);
-await clickText(".quiz-setup-check", "Farben");
+await listeWaehlen(page, "Farben");
 await clickText(".tab", "Statistik");
 await sleep(300);
 st = await stand();
@@ -108,7 +108,7 @@ ok(st.listen === "Tiere", "Quiz-Listenauswahl → Statistik: Tiere");
 // Statistik: Liste Farben dazu → Quiz zeigt beide
 await page.evaluate(() => document.querySelector("button.zeile-rechts[title^='Listen für']").click());
 await sleep(300);
-await clickText(".quiz-setup-check", "Farben");
+await listeWaehlen(page, "Farben");
 await clickText(".tab", "Quiz");
 await sleep(300);
 st = await stand();

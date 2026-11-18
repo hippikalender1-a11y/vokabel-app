@@ -51,10 +51,18 @@ let m = await menue();
 ok(m.includes("▤ Automatische Anordnung"), `256: Schalter im Menü der Ebene (${m.join(" | ")})`);
 await aktion("▤ Automatische Anordnung");
 await page.mouse.click(5, 300); await sleep(300);
-const nachher = await lage();
-// Lesereihenfolge: A (0|0), C (1|1), B (3|0) → A, C in Zeile 1, B in Zeile 2 links
+let nachher = await lage();
+// 291: gewählte Spaltenzahl (hier 1) gilt – Lesereihenfolge A (0|0), C (1|1), B (3|0) untereinander
+ok(nachher.sA[1] === nachher.sC[1] && nachher.sC[1] === nachher.sB[1] && nachher.sA[0] < nachher.sC[0] && nachher.sC[0] < nachher.sB[0] && nachher.sB[0] < vorher.sB[0],
+  `256/291: automatisch, 1 Spalte gewählt: A, C, B untereinander (${JSON.stringify(nachher)})`);
+// 291: 2 Spalten gewählt → A, C | B
+await page.evaluate(() => { const e = JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}"); e.ebenenSpalten = { ...(e.ebenenSpalten || {}), slot: 2 }; localStorage.setItem("vokabel_einstellungen", JSON.stringify(e)); });
+await page.reload(); await sleep(800);
+await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+nachher = await lage();
 ok(nachher.sA[0] === nachher.sC[0] && nachher.sC[1] > nachher.sA[1] && nachher.sB[0] > nachher.sA[0] && nachher.sB[1] === nachher.sA[1] && nachher.sB[0] < vorher.sB[0],
-  `256: lückenlos in Lesereihenfolge A, C | B (${JSON.stringify(nachher)})`);
+  `256/291: automatisch, 2 Spalten gewählt: A, C | B (${JSON.stringify(nachher)})`);
 const plaetze = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")).gespeichert.map(g => `${g.id}:${g.platz.z}|${g.platz.s}`).join(","));
 ok(plaetze === "sA:0|0,sB:3|0,sC:1|1", `256: gespeicherte Plätze unverändert (${plaetze})`);
 await kontext("[data-freier-platz]");

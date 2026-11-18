@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { neueEineSession, listenZu, bereichZu, fremdAlsFrage, artenMehrfach } from "./hilfen.mjs";
+import { neueEineSession, listenZu, bereichZu, fremdAlsFrage, artenMehrfach, listeWaehlen } from "./hilfen.mjs";
 
 // Antwortarten je Antwortsprache: nur passende werden angeboten (kein automatischer Richtungswechsel), in Gruppen
 // Grund · Wort · Satz · Runde; nicht mehr passende werden beim Rollenwechsel abgewählt; Hören liest die Frage nur einmal vor;
@@ -36,7 +36,7 @@ const vorbereiten = async (einst = {}) => {
   }, WOERTER, einst);
   await page.reload(); await sleep(700);
   await neueEineSession(page);
-  await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes("Unité 1"))?.click()); await sleep(300);
+  await listeWaehlen(page, "Unité 1"); await sleep(300);
   const knopf = await page.evaluate(() => { const b = document.querySelector("[data-listen-bestaetigen]"); return b ? { kl: b.classList.contains("bestaetigen-knopf"), text: b.innerText.trim() } : null; });
   await listenZu(page);
   await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
