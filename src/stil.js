@@ -125,7 +125,7 @@ export const CSS_BASIS = `
   .nach-oben{position:fixed;right:max(16px, calc(50vw - 284px));bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:30;width:46px;height:46px;border-radius:50%;border:none;background:var(--haupt);color:var(--auf-haupt);font-size:1.3rem;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.25);opacity:0.92;}
   .schalter-zeile .quiz-zeile-label{text-align:center;}
   .schalter-zeile .quiz-zeile-zelle .quiz-zeile-knopf{padding-left:2px;padding-right:2px;}
-  .quiz-zeile-knopf[data-schalter]:disabled{cursor:default;}   /* 279: nicht verfügbar – nicht ausgegraut, nur gesperrt */
+  .quiz-zeile-knopf[data-schalter][data-gesperrt]{cursor:default;}   /* 279/283: nicht verfügbar – nicht ausgegraut, nur gesperrt (Antippen: kurzes Aufleuchten) */
   .start-titel-zeile{position:relative;}
   .start-titel-zeile .start-titel{padding:0 34px;}
   .schalter-klapp{position:absolute;right:0;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:1.5px solid var(--rahmen);background:var(--karte);color:var(--text2);font-size:0.85rem;cursor:pointer;padding:0;line-height:1;}   /* 278 */
@@ -226,6 +226,12 @@ export const CSS_BASIS = `
   .st-balken{position:relative;width:min(64px, 100%);height:140px;border:1.5px solid var(--rahmen);border-radius:6px;background:var(--karte);overflow:hidden;padding:0;cursor:pointer;}
   [data-st-langzeit] .st-balken{height:90px;}
   .st-teil{position:absolute;left:0;right:0;}
+  .st-hohl{box-sizing:border-box;border:3px solid var(--gelernt);min-height:6px;}   /* 285: fällige hohl – Rand in Balkenfarbe */
+  .st-abgefragt{flex:3;min-width:0;display:flex;flex-direction:column;}   /* 286: die drei abgefragten Balken mit Klammer */
+  [data-st-lernstand] > .st-spalte{flex:1;margin-right:14px;padding-right:8px;border-right:1px dashed var(--rahmen);}   /* Nie abgesetzt */
+  .st-klammer{margin:4px 6px 18px;height:8px;border:1.5px solid var(--text4);border-top:none;border-radius:0 0 6px 6px;text-align:center;}
+  .st-klammer span{display:block;position:relative;top:9px;font-size:0.72rem;color:var(--text2);}
+  .st-titel-knopf{background:none;border:none;padding:0;font:inherit;color:inherit;cursor:pointer;}
   .st-vorher{position:absolute;left:-2px;right:-2px;height:0;border-top:2px dashed var(--text);z-index:1;}   /* 268: Stand vor der Runde */
   .ergebnis-zahlen{display:flex;justify-content:center;gap:22px;font-size:1.5rem;font-weight:800;}
   .ergebnis-zahlen small{font-size:0.78rem;font-weight:600;}

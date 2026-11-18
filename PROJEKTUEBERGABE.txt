@@ -3737,3 +3737,42 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
 - 282: breiter Schalter heißt immer „Vokabeln (n)“.
 - Tests: punkte274 (278/279), Aufschriften in auswahl, gruppen_gesten, gruppen_sessions, multiquiz, punkte235, slots, punkte267.
 - Offen (Idee, nicht umgesetzt): Negative nur abschaltbar, wenn auch die Vokabeln aus sind.
+
+── GESAMMELT (nach 282) ──
+- 283: Gesperrte Schalter (0 Vokabeln, nicht antippbar) blinken beim Antippen trotzdem kurz auf – Rückmeldung „angekommen“,
+  ohne etwas umzuschalten. Quiz-Tab-Zeile und Auswahl-Tafel. (Umsetzung: statt disabled ein „gesperrt“-Zustand, der bei
+  Klick nur das kurze Aufleuchten wie bei anderen Knöpfen auslöst, z. B. leuchte()/blitzt-Klasse.)
+- 284: Lernstand-Balken (Statistik, auch Quiz-Auswertung 268): Farbabstufungen als Überblendung zur nächsten Gruppe –
+  „Auf einem guten Weg“: unten gelb (var(--arbeit)), nach oben immer mehr Türkis (var(--gelernt)), z. B. color-mix
+  0 % / 33 % / 66 %; „Negativ“: unten tief rot (falsch-dunkel), oben ins Gelb überblendet. Offen: Reihenfolge im Balken
+  „Auf einem guten Weg“ – bisher unten Score 2, darüber 1, oben 0; für „unten gelb → oben türkis“ würde sie umgedreht
+  (unten 0, oben 2 = am nächsten an „gelernt“), passend zu Negativ (unten −2 tief rot, oben −1 Richtung gelb).
+  284 Entscheidung: Reihenfolge umdrehen (unten Score 0 gelb, darüber 1, oben 2 Richtung türkis; Negativ unten −2 tief
+  rot, oben −1 Richtung gelb). Überblendung nur ANGEDEUTET, nicht bis 100 % – z. B. höchstens ca. 30–35 % Beimischung der
+  Nachbarfarbe (arbeit: 0 % / ~15 % / ~30 % türkis; negativ: −2 falsch-dunkel, −1 falsch mit ~25 % gelb). Statistik und
+  Quiz-Auswertung (gleiche Balken).
+- 285: Statistik, Langzeit-Balken (◇◇◇ …): die fälligen nicht mehr schraffiert, sondern wie beim Kachel-Balken (276) „hohl“ –
+  unten am Anfang der Füllung, Höhe = Anteil der Fälligen; Rand in der Balkenfarbe (var(--gelernt)), innen die Hintergrund-
+  farbe des Balkens. Randstärke passend zu den dickeren Balken, ca. 3–4 px (seitlich und oben/unten gleich), beim Umsetzen
+  am Bildschirm abstimmen. data-st-faellig bleibt.
+- 286: Statistik – Gesamtübersicht-Kacheln (Vokabeln, nie abgefragt, gelernt, 🔁 fällig) in die Balken überführen:
+  · Lernstand bekommt einen eigenen Balken „Nie abgefragt“ (links, etwas abgesetzt von Negativ · Auf einem guten Weg ·
+    Gelernt), Anzahl darunter wie bei den anderen.
+  · Gesamtzahl der Vokabeln bezieht sich auf die Balken (Vorschlag: Überschrift „Lernstand · n Vokabeln“, unter den drei
+    abgefragten Balken eine Klammer „x abgefragt“).
+  · Gelernt = Summe aller Langzeit-Balken (steht schon: „73 gelernte = 100 %“); Fällige ergeben sich aus den hohlen Teilen
+    (285) → Anzeige für alle Langzeit-Balken gemeinsam, z. B. in der Überschrift „Langzeitgedächtnis · 73 gelernte · 🔁 11 fällig“.
+  · Kacheln „Gesamtübersicht“ entfallen dann.
+  · Entschieden: Schalter „Nie abgefragte ausblenden“ entfällt – stattdessen den Nie-Balken antippen (wie die anderen Balken).
+  · Entschieden: Antippen von „n Vokabeln“ in der Überschrift blendet alles wieder ein (ersetzt die bisherige Kachel „Vokabeln“).
+
+- 283–286 UMGESETZT:
+  · 283: Schalter mit 0 Vokabeln sind „gesperrt“ (aria-disabled, data-gesperrt) statt disabled – Antippen lässt sie kurz in der
+    Bestätigen-Farbe aufleuchten (blinke() in speicher.js), nichts wird umgeschaltet. Quiz-Tab-Zeile und Auswahl-Tafel.
+  · 284: LERNSTAND_TEILE (quiz.jsx) gemeinsam für Statistik und Quiz-Auswertung: Negativ unten −2 tief rot, oben −1 mit 25 % gelb;
+    Auf einem guten Weg unten 0 gelb, darüber 1 mit 15 %, oben 2 mit 30 % gelernt-Farbe.
+  · 285: Langzeit-Balken: fällige hohl (.st-hohl, Rand 3 px in var(--gelernt), innen var(--karte)), unten an der Füllung.
+  · 286: Gesamtübersicht-Kacheln und Schalter „Nie abgefragte ausblenden“ entfallen. Lernstand: eigener Balken „Nie abgefragt“
+    links (gestrichelt abgesetzt, antippen blendet aus, lange drücken: Quiz), Überschrift „Lernstand · n Vokabeln“ (antippen:
+    alles einblenden, data-st-kachel="gesamt"), Klammer „x abgefragt“ (= 100 %, wenn Nie ausgeblendet) unter den drei Balken;
+    „Langzeitgedächtnis · n gelernte · 🔁 f fällig“ (data-st-kachel gelernt/faellig).

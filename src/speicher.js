@@ -54,6 +54,12 @@ export function defaultSessionSlots() {
   return [{ slot: 6, name: "Zuletzt verwendet", konfiguration: null, fortschritt: null }];
 }
 export const BLITZ_MS = 700;
+// 283: gesperrter Knopf – kurzes Aufleuchten als Rückmeldung „angekommen“, ohne etwas umzuschalten
+export function blinke(el, ms = BLITZ_MS / 2) {
+  if (!el) return;
+  clearTimeout(el._blinkT); el.classList.add("leuchten");
+  el._blinkT = setTimeout(() => el.classList.remove("leuchten"), ms);
+}
 export const WAHL_ZU_MS = 300;   // Auswahl in einem aufgeklappten Bereich: so lange sieht man die neue Wahl (grün), dann klappt er zu   // ms: Aufleuchten nach Auswahl / Zuklappen
 export const SLOT_ZU_VERZOEGERUNG = 400;   // ms: gewählte Kachel kurz sichtbar, dann klappt die Auswahl zu
 export function defaultSlots() { return { verlauf: [], gespeichert: [] }; }

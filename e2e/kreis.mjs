@@ -52,9 +52,19 @@ ok(b.negativ.teile["-2"] === 10 && b.negativ.teile["-1"] === 10 && b.negativ.unt
 ok(b.arbeit.teile["2"] === 20 && b.arbeit.teile["1"] === 10 && b.arbeit.teile["0"] === 10 && b.arbeit.zahl === "4 · 40 %", "Kurzzeit: ●●○ 2, ●○○ 1, ○○○ 1 (Score 0 zählt hierher) – 4 · 40 %");
 ok(b.gelernt.teile["3"] === 30 && b.gelernt.zahl === "3 · 30 %", "Gelernt: 3 · 30 % (Rahmen = alle 10)");
 ok(b.r3.teile.f === 33 && b.r3.zahl === "1 · 🔁 1" && b.r4.teile.r === 33 && b.r6.teile.r === 33 && !b.r5.unten,
-  "Langzeit (100 % = 3 gelernte): ◇◇◇ fällig schraffiert, ◆◇◇ und ◆◆◆ je ein Drittel, ◆◆◇ leer");
+  "Langzeit (100 % = 3 gelernte): ◇◇◇ fällig, ◆◇◇ und ◆◆◆ je ein Drittel, ◆◆◇ leer");
+// 285: fällige hohl – Rand in Balkenfarbe, innen Hintergrund, unten
+const hohl = await page.evaluate(() => { const t = document.querySelector('[data-st-raute="3"] [data-st-teil="f"]'), cs = getComputedStyle(t), r = getComputedStyle(document.querySelector('[data-st-raute="4"] [data-st-teil="r"]'));
+  return { rand: parseFloat(cs.borderTopWidth), randFarbe: cs.borderTopColor, voll: r.backgroundColor, innen: cs.backgroundColor, bar: getComputedStyle(t.parentElement).backgroundColor, bild: cs.backgroundImage, unten: t.style.bottom }; });
+ok(hohl.rand >= 3 && hohl.randFarbe === hohl.voll && hohl.innen === hohl.bar && hohl.bild === "none" && hohl.unten === "0%", `285: fällige hohl statt schraffiert (${JSON.stringify(hohl)})`);
+// 284: Farben überblendet – Auf einem guten Weg unten 0 (gelb) → oben 2 (Richtung türkis), Negativ unten −2 → oben −1 (Richtung gelb)
+const farben = await page.evaluate(() => Object.fromEntries(["-2", "-1", "0", "1", "2"].map(k => [k, getComputedStyle(document.querySelector(`[data-st-lernstand] [data-st-teil="${k}"]`)).backgroundColor])));
+ok(b.arbeit.unten === "0,1,2" && b.negativ.unten === "-2,-1" && new Set(Object.values(farben)).size === 5, `284: Reihenfolge 0,1,2 von unten, fünf verschiedene Farben (${JSON.stringify(farben)})`);
+// 286: Gesamtübersicht in den Balken – Nie-Balken, Gesamtzahl in der Überschrift, gelernt/fällig über den Langzeit-Balken
 const g = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("[data-st-kachel]")].map(k => [k.dataset.stKachel, k.querySelector("b").textContent])));
-ok(g.gesamt === "10" && g.nie === "1" && g.gelernt === "3" && g.faellig === "1", `Gesamtübersicht: 10 Vokabeln, 1 nie, 3 gelernt, 1 fällig (${JSON.stringify(g)})`);
+ok(g.gesamt === "10" && b.nie.zahl === "1 · 10 %" && b.nie.teile.nie === 10 && g.gelernt === "3" && g.faellig === "1" && !(await page.$(".st-kacheln")) && !(await page.$('input[type="checkbox"][data-nie-aus]')),
+  `286: Lernstand · 10 Vokabeln, Nie-Balken 1, Langzeit 3 gelernte · 🔁 1 fällig, keine Kacheln/Schalter mehr (${JSON.stringify(g)}, ${b.nie.zahl})`);
+ok(await page.evaluate(() => document.querySelector("[data-st-abgefragt]")?.dataset.stAbgefragt === "9" && __txt(document.querySelector(".st-klammer")).trim() === "9 abgefragt"), "286: Klammer „9 abgefragt“ unter den drei Balken");
 await page.screenshot({ path: "balken.png" });
 
 // Nie abgefragte ausblenden → 100 % = 9 abgefragte; Kopf zählt weiter alle 10
@@ -63,7 +73,7 @@ await page.click("[data-nie-aus]"); await sleep(300);
 b = await balken();
 ok(b.gelernt.zahl === "3 · 33 %" && b.negativ.zahl === "2 · 22 %", `ohne nie abgefragte: Balken auf 9 bezogen (${b.gelernt.zahl}, ${b.negativ.zahl})`);
 ok(await kopf() === kopfVorher && /3 \/ 10 gelernt/.test(await kopf()), `Kopf zählt weiter alle (${await kopf()})`);
-ok(/9 von 10 betrachtet/.test(await page.evaluate(() => document.querySelector("[data-legende=nie]").textContent)) && await zeilen() === 9, "Schalter: „9 von 10 betrachtet“, Liste ohne die nie abgefragte");
+ok(b.nie.aus && /9 abgefragt = 100 %/.test(await page.evaluate(() => document.querySelector(".st-klammer").textContent)) && await zeilen() === 9, "Nie-Balken angetippt: blass, Klammer „9 abgefragt = 100 %“, Liste ohne die nie abgefragte");
 await page.click("[data-nie-aus]"); await sleep(300);
 
 // Balken antippen: Gruppe in der Liste ausblenden (blass); „Vokabeln“ blendet alles wieder ein

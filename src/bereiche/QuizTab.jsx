@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { ANTWORT_MODUS_NAMEN, MODI_REIHENFOLGE, PAKET_ALLE, QUIZ_ARTEN, START_TEXT, antwortSpaltenFuer, gelerntScore, hatAkzente, heuteAbgefragt, istFaellig, modiVon, ordneVokabeln, stufenRegeln, tagesSperre, nurArtikel, schalterGruppe } from "../quiz.jsx";
 import { IcoDown, IcoUp, IcoX } from "../komponenten.jsx";
 import { SymWdh } from "../symbole.jsx";
-import { SK, TYPEN, WAHL_ZU_MS, lsGet } from "../speicher.js";
+import { SK, TYPEN, WAHL_ZU_MS, blinke, lsGet } from "../speicher.js";
 import { SPRACH_KUERZEL, sprachInfo } from "../sprache.js";
 
 // Phase 2 (Aufteilung): Bereich aus dem Haupt-return von App.jsx (tab === "quiz")
@@ -131,10 +131,12 @@ export function QuizTab(app) {
           const startbar = verfuegbar + (isPakete ? fRest : 0) > 0;
           const sprachKurz = [...new Set(quizTabListen.map(spracheVonListe))].map(c => SPRACH_KUERZEL[c] || sprachInfo(c).name).join(" + ");
           const fAnzeige = anzeigeGesamt > 0 ? fZielWenn : faelligeAlle.length;   // 274: ohne andere Vokabeln: alle Fälligen
+          // 283: gesperrt statt disabled – Antippen lässt den Knopf nur kurz aufleuchten
+          const gesperrtAttr = g => g ? { "aria-disabled": true, "data-gesperrt": "" } : {};
           const faelligKnopf = (
             <div className="quiz-zeile-zelle"><span className="quiz-zeile-label">Fällige</span>
-            <button className={`quiz-zeile-knopf${quizFaellig.an ? " an" : ""}`} data-schalter="faellig" disabled={!faelligMoeglich || !faelligeAlle.length} data-faellig={quizFaellig.an ? "an" : "aus"} data-faellig-modus={quizFaellig.modus} data-faellig-anteil-quiz={quizFaellig.anteil}
-              onClick={() => { schliesseQuizBereiche(null); setQuizFaellig(f => ({ ...f, an: !f.an })); setStartLeerHinweis(false); }}
+            <button className={`quiz-zeile-knopf${quizFaellig.an ? " an" : ""}`} data-schalter="faellig" {...gesperrtAttr(!faelligMoeglich || !faelligeAlle.length)} data-faellig={quizFaellig.an ? "an" : "aus"} data-faellig-modus={quizFaellig.modus} data-faellig-anteil-quiz={quizFaellig.anteil}
+              onClick={e => { if (!faelligMoeglich || !faelligeAlle.length) { blinke(e.currentTarget); return; } schliesseQuizBereiche(null); setQuizFaellig(f => ({ ...f, an: !f.an })); setStartLeerHinweis(false); }}
               {...tt(`Fällige (Langzeit-Wiederholung): ${quizFaellig.an ? `${quizFaellig.anteil} % zusätzlich zu den neuen, aus ${quizFaellig.modus === "sprache" ? `allen Listen (${sprachKurz})` : "diesem Quiz"} – jetzt ${faelligeAlle.length} fällig; antippen schaltet aus` : `aus – ${faelligeAlle.length} wären fällig; antippen schaltet ein`}`,
                 [{ label: `${quizFaellig.modus === "sprache" ? "◉" : "○"} Alle ${sprachKurz || "der Sprache"}`, fn: () => setQuizFaellig(f => ({ ...f, an: true, modus: "sprache" })) },
                  { label: `${quizFaellig.modus === "quiz" ? "◉" : "○"} Nur dieses Quiz`, fn: () => setQuizFaellig(f => ({ ...f, an: true, modus: "quiz" })) }],
@@ -754,9 +756,9 @@ export function QuizTab(app) {
                         text: "Heute schon abgefragte Vokabeln – sonst kommen sie erst morgen wieder" },
                     ].map(x => (
                       <div key={x.k} className="quiz-zeile-zelle"><span className="quiz-zeile-label">{x.label}</span>
-                      <button className={`quiz-zeile-knopf${x.an ? " an" : ""}`} data-schalter={x.k} data-an={x.an ? "an" : "aus"} disabled={!x.frei || x.n === 0}
+                      <button className={`quiz-zeile-knopf${x.an ? " an" : ""}`} data-schalter={x.k} data-an={x.an ? "an" : "aus"} {...gesperrtAttr(!x.frei || x.n === 0)}
                         {...(x.k === "gelernt" ? { "data-gelernte": x.an ? "an" : "aus" } : x.k === "heute" ? { "data-heute": x.an ? "an" : "aus" } : {})}
-                        onClick={() => { schliesseQuizBereiche(null); x.set(v => !v); setStartLeerHinweis(false); }}
+                        onClick={e => { if (!x.frei || x.n === 0) { blinke(e.currentTarget); return; } schliesseQuizBereiche(null); x.set(v => !v); setStartLeerHinweis(false); }}
                         {...tt(`${x.text}: ${x.n} – ${x.an ? "werden abgefragt; antippen schaltet aus" : "ausgeschaltet; antippen schaltet ein"}`)}>
                         {x.plus && x.an && x.n > 0 && "+ "}{x.zeichen && <>{x.zeichen} </>}{x.n}
                       </button></div>

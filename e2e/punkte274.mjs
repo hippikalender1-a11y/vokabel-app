@@ -45,7 +45,7 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "quiz") b.click(); }); await sleep(300);
 const menue = async (sel, dx = 10) => { await page.evaluate((sel, dx) => { const el = document.querySelector(sel); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + dx, clientY: r.y + 10 })); }, sel, dx); await sleep(400); };
-const tafel = () => page.evaluate(() => ({ raster: [...document.querySelectorAll("[data-schalter-raster] button")].map(b => `${b.dataset.schalter}:${__txt(b)}:${b.dataset.an}${b.disabled ? ":x" : ""}`),
+const tafel = () => page.evaluate(() => ({ raster: [...document.querySelectorAll("[data-schalter-raster] button")].map(b => `${b.dataset.schalter}:${__txt(b)}:${b.dataset.an}${b.hasAttribute("data-gesperrt") ? ":x" : ""}`),
   rest: [...document.querySelectorAll("[data-info-menue] > div:not([data-schalter-raster]) button")].map(b => b.dataset.infoAktion || "🎨"),
   breit: document.querySelector('[data-schalter-raster] [data-schalter="grund"]')?.style.gridColumn, kopf: __txt(document.querySelector("[data-wahl-anzahl]")) }));
 // ── Auswahl A + B ──
@@ -56,6 +56,11 @@ ok(t.raster.join("|") === "grund:Vokabeln (8):an|negativ:✗ Negative (2):an|gel
   "Raster: Multiquiz breit, Negative · Gelernt / Heute · Fällige – mit Anzahlen, nicht verfügbare ausgegraut");
 ok(t.rest.join("|") === "🎨|🗂 Ablage ›|↔ Von–Bis", `darunter Farbe · Ablage · Von–Bis; Multiquiz starten / Fällige wiederholen / Negative abfragen entfallen (${t.rest.join("|")})`);
 ok(t.kopf === "2 ausgewählt · 10 Vokabeln + 🔁 3", `Kopf: 8 + 2 = 10 Vokabeln + 🔁 3 (25 % von 10), nichts doppelt (${t.kopf})`);
+// 283: gesperrter Schalter in der Tafel leuchtet kurz, Tafel bleibt offen, nichts umgeschaltet
+{ const r = await page.evaluate(async () => { const b = document.querySelector('[data-schalter-raster] [data-schalter="heute"]'); b.click();
+    const sofort = b.classList.contains("leuchten"); await new Promise(r => setTimeout(r, 600));
+    return { sofort, danach: b.classList.contains("leuchten"), an: document.querySelector('[data-schalter-raster] [data-schalter="heute"]')?.dataset.an }; });
+  ok(r.sofort && !r.danach && r.an === "aus", `283: Tafel – gesperrter Schalter leuchtet kurz, Tafel offen (${JSON.stringify(r)})`); }
 // Multiquiz aus → Tafel bleibt offen, Kopf zählt neu
 await page.evaluate(() => document.querySelector('[data-schalter-raster] [data-schalter="grund"]').click()); await sleep(400);
 t = await tafel();
@@ -70,14 +75,18 @@ ok(t.raster.length === 5, "nach der Wahl wieder die Auswahl-Tafel");
 // Kopf antippen → Multiquiz geladen, Schalter bleiben (Vokabeln aus, Fällige nur dieses Quiz)
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]").click()); await sleep(900);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
-const q = () => page.evaluate(() => ({ s: [...document.querySelectorAll("[data-schalter-zeile] [data-schalter]")].map(b => `${b.dataset.schalter}:${__txt(b).trim()}:${b.dataset.an || b.dataset.faellig}${b.disabled ? ":x" : ""}`).join("|"),
+const q = () => page.evaluate(() => ({ s: [...document.querySelectorAll("[data-schalter-zeile] [data-schalter]")].map(b => `${b.dataset.schalter}:${__txt(b).trim()}:${b.dataset.an || b.dataset.faellig}${b.hasAttribute("data-gesperrt") ? ":x" : ""}`).join("|"),
   modus: document.querySelector("[data-faellig]")?.dataset.faelligModus, titel: __txt(document.querySelector("[data-start-titel]")), nurF: document.querySelector("[data-nur-faellige]")?.dataset.nurFaellige || null }));
 // 278: Auswahl schon in der Tafel getroffen → Schalter-Zeile eingeklappt, Pfeil an der Überschrift klappt sie auf
 ok(!(await page.$("[data-schalter-zeile]")) && await page.evaluate(() => document.querySelector("[data-schalter-klapp]")?.dataset.schalterKlapp) === "zu", "278: Schalter-Zeile eingeklappt, Pfeil an der Überschrift");
 await page.evaluate(() => document.querySelector("[data-schalter-klapp]").click()); await sleep(300);
 let z = await q();
 // 279: nicht verfügbare Schalter gesperrt, aber nicht ausgegraut
-ok(await page.evaluate(() => { const b = document.querySelector('[data-schalter-zeile] [data-schalter="gelernt"]'); return b.disabled && getComputedStyle(b).opacity === "1"; }), "279: gesperrt, nicht ausgegraut");
+ok(await page.evaluate(() => { const b = document.querySelector('[data-schalter-zeile] [data-schalter="gelernt"]'); return b.hasAttribute("data-gesperrt") && getComputedStyle(b).opacity === "1"; }), "279: gesperrt, nicht ausgegraut");
+// 283: gesperrten Schalter antippen → leuchtet kurz auf, schaltet nichts um
+{ const r = await page.evaluate(async () => { const b = document.querySelector('[data-schalter-zeile] [data-schalter="gelernt"]'); b.click();
+    const sofort = b.classList.contains("leuchten"); await new Promise(r => setTimeout(r, 600)); return { sofort, danach: b.classList.contains("leuchten"), an: b.dataset.an }; });
+  ok(r.sofort && !r.danach && r.an === "aus", `283: gesperrter Schalter leuchtet kurz, bleibt aus (${JSON.stringify(r)})`); }
 console.log("     ", JSON.stringify(z));
 ok(/^grund:8:aus\|negativ:✗ 2:an\|gelernt:✓ 0:aus:x\|heute:0:aus:x\|faellig:\+ 🔁 1:an$/.test(z.s) && z.modus === "quiz",
   `Quiz-Tab: Schalter-Zeile übernimmt die Auswahl (Vokabeln aus, Fällige nur dieses Quiz) (${z.s})`);

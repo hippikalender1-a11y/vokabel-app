@@ -56,7 +56,7 @@ let t = await text();
 // (100 + 100 + 67 + 0 + 0) / 5 = 53 %
 ok(/53 %/.test(t) && /2 \/ 5 gelernt/.test(t), "Lernfortschritt 53 %, 2 / 5 gelernt");
 const boxen = await page.evaluate(() => [...[["negativ", "Negativ"], ["arbeit", "In Arbeit"], ["gelernt", "✓ Gelernt"]].map(([k, n]) => n + "=" + document.querySelector(`[data-st-balken="${k}"]`).closest(".st-spalte").querySelector(".st-zahl").textContent.split(" ·")[0]),
-  "Nie abgefragt=" + document.querySelector('[data-st-kachel="nie"] b').textContent]);
+  "Nie abgefragt=" + document.querySelector('[data-st-balken="nie"]').closest(".st-spalte").querySelector(".st-zahl").textContent.split(" ·")[0]]);
 console.log("     Kreis:", boxen.join(" | "));
 ok(["Negativ=1", "Nie abgefragt=1", "In Arbeit=1", "✓ Gelernt=2"].every(b => boxen.includes(b)), "Kreis: Negativ 1, Nie 1, In Arbeit 1, Gelernt 2");
 

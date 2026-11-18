@@ -1,6 +1,6 @@
 import { BLITZ_MS, TYPEN } from "../speicher.js";
 import { fv } from "../farben.js";
-import { ABFRAGE_ART_NAMEN, AKZENTE_FUER_LISTE, ARTIKEL_KAT, ART_KURZ, artikelInfo, vokSprache, GRUPPE_BALKEN, MODI_REIHENFOLGE, QUIZ_ARTEN, STANDARD_ANTWORT_MODUS, hatAkzentWort, istRunde, lernProzent, mitHinweis, modiVon, modusErlaubt, scoreSymbole, umbruch } from "../quiz.jsx";
+import { ABFRAGE_ART_NAMEN, AKZENTE_FUER_LISTE, ARTIKEL_KAT, ART_KURZ, artikelInfo, vokSprache, GRUPPE_BALKEN, MODI_REIHENFOLGE, QUIZ_ARTEN, STANDARD_ANTWORT_MODUS, hatAkzentWort, istRunde, LERNSTAND_TEILE, lernProzent, mitHinweis, modiVon, modusErlaubt, scoreSymbole, umbruch } from "../quiz.jsx";
 import { AUFTEILEN_GROESSEN, SUCH_SPALTEN, sucheVokabeln } from "../raster.js";
 import { MiniKreis } from "../komponenten.jsx";
 import { CSS } from "../stil.js";
@@ -125,11 +125,10 @@ export function renderSessionAuswertung(app, d) {
     const dauerText = dauer == null ? null : dauer < 60000 ? "unter 1 Minute" : dauer < 3600000 ? `${Math.round(dauer / 60000)} Minuten`
       : dauer < 86400000 ? `${Math.floor(dauer / 3600000)} Std. ${Math.round((dauer % 3600000) / 60000)} Min.` : `${Math.round(dauer / 86400000)} Tage`;
     // 268: Lernstand-Balken wie in der Statistik (ganzes Quiz), gestrichelte Linie = Stand vorher, daneben die Veränderung
-    const mix = (farbe, p) => `color-mix(in srgb, ${farbe} ${p}%, var(--karte))`;
     const anz = (werte, f) => werte.filter(sc => sc != null && f(sc)).length;
     const BALKEN = [
-      { k: "negativ", name: "Negativ", farbe: "var(--falsch)", teile: [["-2", sc => sc <= -4, "var(--falsch-dunkel)"], ["-1", sc => sc < 0 && sc > -4, "var(--falsch)"]] },
-      { k: "arbeit", name: "Auf einem guten Weg", farbe: "var(--gelb-dunkel)", teile: [["2", sc => sc === 2, "var(--arbeit)"], ["1", sc => sc === 1, mix("var(--arbeit)", 70)], ["0", sc => sc === 0, mix("var(--arbeit)", 42)]] },
+      { k: "negativ", name: "Negativ", farbe: "var(--falsch)", teile: LERNSTAND_TEILE.negativ },   // 284
+      { k: "arbeit", name: "Auf einem guten Weg", farbe: "var(--gelb-dunkel)", teile: LERNSTAND_TEILE.arbeit },
       { k: "gelernt", name: "✓ Gelernt", farbe: "var(--haupt)", teile: [["3", sc => schwelle > 0 && sc >= schwelle, "var(--gelernt)"]] },
     ];
     const lernBalken = (

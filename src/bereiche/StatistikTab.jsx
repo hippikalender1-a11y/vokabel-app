@@ -1,4 +1,4 @@
-import { AKZENTE_FUER_LISTE, FORTSCHRITT_BALKEN, STATISTIK_ARTEN, istFaellig, statistikSicht } from "../quiz.jsx";
+import { AKZENTE_FUER_LISTE, FORTSCHRITT_BALKEN, LERNSTAND_TEILE, STATISTIK_ARTEN, istFaellig, statistikSicht } from "../quiz.jsx";
 import { IcoDown, IcoExpand, IcoUp } from "../komponenten.jsx";
 import { SK, TYPEN, formatDatum, lsSet } from "../speicher.js";
 import { fv } from "../farben.js";
@@ -135,25 +135,28 @@ export function StatistikTab(app) {
                     name: NAME[g], art: statistikArt, ids: gv.map(v => v.id), listenIds: [...new Set(gv.map(v => v._listeId))] }) }];
                 };
                 const pct = (x, von = n) => von > 0 ? Math.round(x / von * 100) : 0;
-                const mix = (farbe, p) => `color-mix(in srgb, ${farbe} ${p}%, var(--karte))`;
                 // Balken: Rahmen = 100 %, Teile füllen von unten (erster Teil ganz unten)
                 const balken = ({ key, teile, von, attrs = {}, aus = false, titel, unter, tipp, menue, onClick }) => (
                   <div key={key} className="st-spalte" style={{opacity: aus ? 0.45 : 1}}>
                     <button className="st-balken" {...attrs} onClick={onClick} {...tt(tipp, menue)}>
                       {(() => { let unten = 0; return teile.filter(t => t.n > 0).map(t => { const h = von > 0 ? t.n / von * 100 : 0; const el = (
-                        <span key={t.k} className="st-teil" data-st-teil={t.k} style={{bottom:`${unten}%`, height:`${h}%`, background:t.farbe}} title={`${t.name}: ${t.n}`}/>); unten += h; return el; }); })()}
+                        <span key={t.k} className={`st-teil${t.hohl ? " st-hohl" : ""}`} data-st-teil={t.k} style={{bottom:`${unten}%`, height:`${h}%`, background:t.farbe}} title={`${t.name}: ${t.n}`}/>); unten += h; return el; }); })()}
                     </button>
                     <div className="st-name" {...(attrs["data-kreis-gruppe"] ? { "data-legende": attrs["data-kreis-gruppe"] } : {})} onClick={onClick}
                       style={{color: titel.farbe, textDecoration: aus ? "line-through" : "none"}} {...tt(tipp, menue)}>{titel.text}</div>
                     <div className="st-zahl">{unter}</div>
                   </div>
                 );
-                const neg2 = zaehle(v => v.fortschritt && sc(v) <= -4), neg1 = zaehle(v => v.fortschritt && sc(v) < 0 && sc(v) > -4);
-                const k = [0, 1, 2].map(i => zaehle(v => v.fortschritt && sc(v) === i));
+                // 284: Teile und Farben wie in der Quiz-Auswertung (unten → oben)
+                const teileVon = g => LERNSTAND_TEILE[g].map(([k, f, farbe]) => ({ k, n: zaehle(v => v.fortschritt && f(sc(v))), farbe }));
+                const tNeg = teileVon("negativ"), tArb = teileVon("arbeit");
+                const neg2 = tNeg[0].n, neg1 = tNeg[1].n;
+                const k = tArb.map(t => t.n);
                 const gel = zaehle(v => v.fortschritt && sc(v) >= 3);
                 const langzeit = statistikArt === "uebersetzung" && schwelleS > 0;
                 const gelernte = alleVoks.filter(v => v.fortschritt && sc(v) >= 3);
-                const faelligAnz = alleVoks.filter(v => istFaellig(v.fortschritt)).length;
+                const faelligAnz = gelernte.filter(v => istFaellig(v.fortschritt)).length;   // = Summe der hohlen Teile
+                const nieAnz = alleVoks.filter(v => !v.fortschritt).length, abgefragt = alleVoks.length - nieAnz;
                 return (
                   <div data-statistik-balken style={{marginBottom:16, borderRadius:12, border:"1px solid var(--rahmen)", background:"var(--flaeche-hell)", padding:"8px 10px 12px", position:"relative"}}>
                     <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:8}}>
@@ -164,46 +167,47 @@ export function StatistikTab(app) {
                         {...tt("Statistik im Vollbild anzeigen")}><IcoExpand s={18}/></button>}
                     </div>
                     {keineAkzente ? <div data-keine-akzente style={{textAlign:"center", color:"var(--text)", fontWeight:600, padding:"30px 0"}}>Für dieses Quiz sind keine Akzente vorhanden.</div> : (<>
-                    <div className="st-titel">Lernstand{nieAus ? <span style={{fontWeight:500, color:"var(--text3)"}}> · ohne nie abgefragte</span> : null}</div>
+                    {/* 286: Gesamtzahl in der Überschrift (antippen: alles wieder einblenden) */}
+                    <div className="st-titel">Lernstand · <button className="st-titel-knopf" data-st-kachel="gesamt" onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
+                      {...tt("Vokabeln der Auswahl – antippen blendet alles wieder ein")}><b>{alleVoks.length}</b> Vokabeln</button></div>
                     <div className="st-reihe" data-st-lernstand>
+                      {balken({ key:"nie", von: alleVoks.length, aus: nieAus, attrs: { "data-kreis-gruppe": "nie", "data-st-balken": "nie", "data-nie-aus": nieAus ? "an" : "aus" }, onClick: () => umschalten("nie"), menue: quizMenue("nie"),
+                        tipp: `Nie abgefragt: ${nieAnz} – antippen blendet sie aus (Balken und Liste nur mit schon abgefragten Vokabeln, z. B. erst ein Teil des Buches behandelt; der Kopf zählt weiter alle), lange drücken: Quiz mit diesen Vokabeln`,
+                        teile: [{ k:"nie", n:nieAnz, farbe:"var(--nie)", name:NAME.nie }],
+                        titel: { text: NAME.nie, farbe: TEXTFARBE.nie }, unter: `${nieAnz} · ${pct(nieAnz, alleVoks.length)} %` })}
+                      <div className="st-abgefragt" data-st-abgefragt={abgefragt}>
+                      <div className="st-reihe">
                       {balken({ key:"negativ", von:n, aus: !statistikFilter.has("negativ"), attrs: { "data-kreis-gruppe": "negativ", "data-st-balken": "negativ" }, onClick: () => umschalten("negativ"), menue: quizMenue("negativ"),
                         tipp: `Negativ: dunkel „Kann ich mir überhaupt nicht merken“ (${neg2}), hell „Muss ich mir noch mal ansehen“ (${neg1}) – antippen blendet sie in der Liste aus, lange drücken: Quiz mit diesen Vokabeln`,
-                        teile: [{ k:"-2", n:neg2, farbe:"var(--falsch-dunkel)", name:"Kann ich mir überhaupt nicht merken" }, { k:"-1", n:neg1, farbe:"var(--falsch)", name:"Muss ich mir noch mal ansehen" }],
+                        teile: [{ ...tNeg[0], name:"Kann ich mir überhaupt nicht merken" }, { ...tNeg[1], name:"Muss ich mir noch mal ansehen" }],
                         titel: { text: NAME.negativ, farbe: TEXTFARBE.negativ }, unter: `${neg1 + neg2} · ${pct(neg1 + neg2)} %` })}
                       {balken({ key:"arbeit", von:n, aus: !statistikFilter.has("arbeit"), attrs: { "data-kreis-gruppe": "arbeit", "data-st-balken": "arbeit" }, onClick: () => umschalten("arbeit"), menue: quizMenue("arbeit"),
-                        tipp: `Auf einem guten Weg (Kurzzeit): ●●○ ${k[2]}, ●○○ ${k[1]}, ○○○ ${k[0]} – antippen blendet sie in der Liste aus, lange drücken: Quiz mit diesen Vokabeln`,
-                        teile: [{ k:"2", n:k[2], farbe:"var(--arbeit)", name:"●●○" }, { k:"1", n:k[1], farbe:mix("var(--arbeit)", 70), name:"●○○" }, { k:"0", n:k[0], farbe:mix("var(--arbeit)", 42), name:"○○○" }],
+                        tipp: `Auf einem guten Weg (Kurzzeit): ●●○ ${k[2]} (oben), ●○○ ${k[1]}, ○○○ ${k[0]} (unten) – antippen blendet sie in der Liste aus, lange drücken: Quiz mit diesen Vokabeln`,
+                        teile: [{ ...tArb[0], name:"○○○" }, { ...tArb[1], name:"●○○" }, { ...tArb[2], name:"●●○" }],
                         titel: { text: NAME.arbeit, farbe: TEXTFARBE.arbeit }, unter: `${k[0] + k[1] + k[2]} · ${pct(k[0] + k[1] + k[2])} %` })}
                       {balken({ key:"gelernt", von:n, aus: !statistikFilter.has("gelernt"), attrs: { "data-kreis-gruppe": "gelernt", "data-st-balken": "gelernt" }, onClick: () => umschalten("gelernt"), menue: quizMenue("gelernt"),
                         tipp: `Gelernt (ab Score 3): ${gel} – das Ziel: alle Vokabeln hier. Antippen blendet sie in der Liste aus, lange drücken: Quiz mit diesen Vokabeln`,
                         teile: [{ k:"3", n:gel, farbe:"var(--gelernt)", name:"Gelernt" }],
                         titel: { text: "✓ " + NAME.gelernt, farbe: TEXTFARBE.gelernt }, unter: `${gel} · ${pct(gel)} %` })}
+                      </div>
+                      <div className="st-klammer" {...tt(`Schon abgefragt: ${abgefragt} von ${alleVoks.length}${nieAus ? " – nie abgefragte ausgeblendet, die drei Balken beziehen sich nur auf diese" : ""}`)}>
+                        <span>{abgefragt} abgefragt{nieAus ? " = 100 %" : ""}</span></div>
+                      </div>
                     </div>
                     {langzeit && (<>
-                      <div className="st-titel" style={{marginTop:14}}>Langzeitgedächtnis <span style={{fontWeight:500, color:"var(--text3)"}}>· {gelernte.length} gelernte = 100 %</span></div>
+                      {/* 286: gelernt = alle Langzeit-Balken, fällig = die hohlen Teile */}
+                      <div className="st-titel" style={{marginTop:14}}>Langzeitgedächtnis <span style={{fontWeight:500, color:"var(--text3)"}}>· <span data-st-kachel="gelernt"><b>{gelernte.length}</b> gelernte</span> · <span data-st-kachel="faellig"><SymWdh/> <b>{faelligAnz}</b> fällig</span></span></div>
                       <div className="st-reihe" data-st-langzeit>
                         {[[3, "◇◇◇"], [4, "◆◇◇"], [5, "◆◆◇"], [6, "◆◆◆"]].map(([s, sym]) => {
                           const hier = gelernte.filter(v => (s === 6 ? sc(v) >= 6 : sc(v) === s));
                           const f = hier.filter(v => istFaellig(v.fortschritt)).length;
                           return balken({ key:`l${s}`, von: gelernte.length, attrs: { "data-st-raute": s },
-                            tipp: `${sym}: ${hier.length} gelernte${f ? `, davon ${f} jetzt zur Prüfung fällig (schraffiert)` : ""}`,
-                            teile: [{ k:"f", n:f, farbe:"repeating-linear-gradient(135deg, var(--gelernt) 0 4px, var(--karte) 4px 7px)", name:"fällig" }, { k:"r", n:hier.length - f, farbe:"var(--gelernt)", name:sym }],
+                            tipp: `${sym}: ${hier.length} gelernte${f ? `, davon ${f} jetzt zur Prüfung fällig (hohl)` : ""} – 100 % = alle gelernten`,
+                            teile: [{ k:"f", n:f, farbe:"var(--karte)", hohl:true, name:"fällig" }, { k:"r", n:hier.length - f, farbe:"var(--gelernt)", name:sym }],   // 285: fällige hohl
                             titel: { text: sym, farbe: "var(--haupt)" }, unter: <>{hier.length}{f ? <span data-st-faellig={f}> · <SymWdh/> {f}</span> : null}</> });
                         })}
                       </div>
                     </>)}
-                    <div className="st-titel" style={{marginTop:14}}>Gesamtübersicht</div>
-                    <div className="st-kacheln" data-st-gesamt>
-                      <button className="st-kachel" data-st-kachel="gesamt" onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
-                        {...tt("Vokabeln der Auswahl – antippen blendet alles wieder ein")}><b>{alleVoks.length}</b><span>Vokabeln</span></button>
-                      <div className="st-kachel" data-st-kachel="nie"><b>{alleVoks.filter(v => !v.fortschritt).length}</b><span>nie abgefragt</span></div>
-                      <div className="st-kachel" data-st-kachel="gelernt"><b>{gelernte.length}</b><span>gelernt</span></div>
-                      {statistikArt === "uebersetzung" && <div className="st-kachel" data-st-kachel="faellig"><b>{faelligAnz}</b><span><SymWdh/> fällig</span></div>}
-                    </div>
-                    <label className="st-schalter" data-legende="nie" style={{textDecoration: nieAus ? "line-through" : "none"}} {...tt("Ein: Balken und Liste nur mit schon abgefragten Vokabeln (z. B. erst ein Teil des Buches behandelt) – der Kopf zählt weiter alle")}>
-                      <input type="checkbox" data-nie-aus checked={nieAus} onChange={() => umschalten("nie")} style={{width:18, height:18}}/>
-                      Nie abgefragte ausblenden{nieAus ? ` (${n} von ${alleVoks.length} betrachtet)` : ""}
-                    </label>
                     </>)}
                   </div>
                 );

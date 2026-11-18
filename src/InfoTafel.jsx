@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { schalteInfoModus, farbeImMenueAn, farbeHier } from "./infoEreignisse.js";
 import { mitSymbolen } from "./symbole.jsx";
+import { blinke } from "./speicher.js";
 
 // Erklär-Tafel: zeigt Erklärtexte (data-info) als Sprechblase an der Stelle des Fingers,
 // bis man irgendwo hintippt. Info-Modus: Antippen eines Elements erklärt es, statt es auszuführen.
@@ -145,14 +146,14 @@ export default function InfoTafel() {
                 <button key={a.label} className={a.schalter ? `quiz-zeile-knopf${a.an ? " an" : ""}` : undefined} data-info-aktion={a.farbe ? undefined : a.label} data-info-farbe={a.farbe ? "" : undefined}
                   data-info-gruppe={a.gruppe ? a.gruppe.map(u => u.label).join("|") : undefined} data-info-zurueck={a.zurueck ? "" : undefined}
                   data-schalter={a.schalter} data-an={a.schalter ? (a.an ? "an" : "aus") : undefined}
-                  disabled={a.aus} data-info-aus={a.aus ? "" : undefined}
+                  disabled={a.aus && !a.schalter} data-info-aus={a.aus ? "" : undefined} {...(a.aus && a.schalter ? { "aria-disabled": true, "data-gesperrt": "" } : {})}
                   onContextMenu={a.lang ? e => { e.preventDefault(); e.stopPropagation(); if (!a.aus) a.lang(e.clientX, e.clientY); } : undefined}
                   onTouchStart={a.lang ? e => { const t = e.touches[0]; clearTimeout(langRef.current?.t); langRef.current = { t: setTimeout(() => { langRef.current = { fertig: true }; if (!a.aus) a.lang(t.clientX, t.clientY); }, 500) }; } : undefined}
                   onTouchMove={a.lang ? () => { clearTimeout(langRef.current?.t); } : undefined}
                   onTouchEnd={a.lang ? e => { if (langRef.current?.fertig) e.preventDefault(); clearTimeout(langRef.current?.t); } : undefined}
-                  onClick={() => {
+                  onClick={e => {
                     if (langRef.current?.fertig) { langRef.current = null; return; }
-                    if (a.aus) return;
+                    if (a.aus) { if (a.schalter) blinke(e.currentTarget); return; }   // 283: gesperrter Schalter leuchtet kurz
                     if (a.schalter) { a.fn(); return; }   // 274: Schalter – Tafel bleibt offen
                     if (a.gruppe) { setGruppeOffen({ text: info.text, label: a.label }); return; }   // 235: Gruppe öffnen, Tafel bleibt
                     if (a.zurueck) { setGruppeOffen(null); return; }
