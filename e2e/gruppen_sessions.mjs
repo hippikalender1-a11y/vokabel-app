@@ -95,12 +95,16 @@ await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(
 await langDruck(`[data-ordner-id="${ordner.id}"]`);
 const m = await menue();
 console.log("     Gruppen-Menü:", m.join(" | "));
-ok(m.includes("📂 Öffnen") && m.some(x => x.startsWith("🧩 Multiquiz des Ordners (")) && m.includes("✎ Umbenennen") && m.includes("📤 Ordner auflösen"), "Gruppen-Menü: Öffnen, Multiquiz, Umbenennen, Auflösen");
+ok(m.includes("📂 Öffnen") && m.some(x => x.startsWith("🧩 Multiquiz (")) && m.includes("✎ Umbenennen") && m.includes("📤 Ordner auflösen"), "Gruppen-Menü: Öffnen, Schalter „🧩 Multiquiz (n)“ (274), Umbenennen, Auflösen");
 await aktion("✎ Umbenennen");
 await page.evaluate(() => { const i = document.querySelector("[data-ordner-name-feld]"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, "Kapitel B"); i.dispatchEvent(new Event("input", { bubbles: true })); });
 await page.click("[data-ordner-umbenennen-ok]"); await sleep(300);
 ok((await slots()).ordner[0].name === "Kapitel B", "umbenannt: „Kapitel B“");
-await langDruck(`[data-ordner-id="${ordner.id}"]`); await aktion("🧩 Multiquiz des Ordners");
+await langDruck(`[data-ordner-id="${ordner.id}"]`);
+// 274: der grüne Kopf lädt den Ordner als Multiquiz, gestartet wird im Quiz-Tab
+await page.click("[data-wahl-fertig]"); await sleep(900);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);
 ok(await page.$(".quiz-frage-text"), "Multiquiz der Gruppe gestartet");
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Pausieren")?.click()); await sleep(400);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(400);

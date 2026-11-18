@@ -69,7 +69,7 @@ ok(/2 ausgewählt · 5 Vokabeln/.test(await hinweis() || ""), `Lang-Druck auf Te
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId + ":" + b.dataset.multiNr).join(",")) === "g_a:1,g_b:2", "Kacheln nummeriert (1, 2)");
 const wahlMenue = await aktionen();
 console.log("     Auswahl-Menü:", wahlMenue.join(" | "));
-ok(wahlMenue.join("|") === "🧩 Multiquiz starten (2)|🔁 Keine fälligen Vokabeln|🗂 Ablage ›|↔ Von–Bis|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)|☑ Alle auswählen", "Menü der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
+ok(wahlMenue.join("|") === "🧩 Multiquiz (5)|✗ Negative (0)|✓ Gelernt (0)|Heute (0)|🔁 Fällige (0)|🗂 Ablage ›|↔ Von–Bis|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)|☑ Alle auswählen", "Menü der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
 await langDruck('[data-slot-id="g_b"]');
 ok(/Teil A laden/.test(await hinweis() || ""), "nochmal lang drücken nimmt die Kachel heraus");
 await langDruck('[data-slot-id="g_b"]');
@@ -82,9 +82,12 @@ await oeffneKopf(); await sleep(300);
 
 // nochmal: A + B per Lang-Druck → Multiquiz starten
 await langDruck('[data-slot-id="g_a"]'); await langDruck('[data-slot-id="g_b"]');
-await aktion("🧩 Multiquiz starten");
+// 274: kein „Multiquiz starten“ mehr – der grüne Kopf lädt, gestartet wird im Quiz-Tab
+await page.click("[data-wahl-fertig]"); await sleep(900);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click());
 await sleep(600);
-ok(await page.$(".quiz-frage-text"), "„🧩 Multiquiz starten“ startet das Quiz sofort");
+ok(await page.$(".quiz-frage-text"), "Kopf lädt das Multiquiz, der Start-Knopf startet es");
 const fragen = [];
 for (let k = 0; k < 6; k++) {
   const f = await page.evaluate(() => document.querySelector(".quiz-frage-text")?.textContent.trim());

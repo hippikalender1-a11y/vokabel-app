@@ -2,8 +2,9 @@ import { ORDNER_KNOPF, ORDNER_TIEFE_MAX, RASTER_FREI_ZEILEN, ebeneVon, ebenenSpa
 import { Fragment } from "react";
 import { BLITZ_MS, SK, TYPEN, lsGet, lsLesen } from "../speicher.js";
 import { listenInhalt } from "../saetze.js";
-import { GRUPPE, gruppe, inGruppe, schliesseInfo } from "../infoEreignisse.js";
-import { heuteAnteil, istFaellig, slotKonfigArt, slotSFAlle } from "../quiz.jsx";
+import { GRUPPE, gruppe, inGruppe, schliesseInfo, zeigeInfo } from "../infoEreignisse.js";
+import { heuteAnteil, istFaellig, slotKonfigArt, slotSFAlle, tagesSperre } from "../quiz.jsx";
+import { sprachKuerzelFuer } from "../sprache.js";
 
 // 276: Fortschrittsbalken der Kacheln – die fälligen (Übersetzung) liegen am Anfang der Füllung „hohl“: eine dünne Linie
 // in der Farbe der Kachel (Maske schneidet sie aus Balken und Füllung heraus). n = Anzahl fällige, ges = alle Vokabeln.
@@ -455,7 +456,7 @@ export function wahlLeiste(app, art, stil) {
 // neu berechnet nur, wenn sich die Konfiguration oder eine ihrer Listen (lsLesen: dasselbe Objekt, solange unverändert) ändert
 const kachelPuffer = new Map();
 export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) {
-  const { slotEbenenMenue, listenEbenenMenue, vonBis, merkeVerschieben, zugRand, FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligAktion, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setListenAendern, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef } = app;
+  const { schalterZaehlung, schalterStand, setzeSchalter, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slotEbenenMenue, listenEbenenMenue, vonBis, merkeVerschieben, zugRand, FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligAktion, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setListenAendern, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef } = app;
     // Lernfortschritt je Art für die Mini-Kreise (jede Liste nur einmal lesen)
     const listenCache = new Map();
     const listeVon = id => { if (!listenCache.has(id)) listenCache.set(id, lsLesen(SK.liste(id))); return listenCache.get(id); };
@@ -567,7 +568,35 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
       if (x) return { text: x.name, aktionen: [...inGruppe(einzelMenue(x).filter(a => a.label !== "☑ Auswählen"), GRUPPE.ablage, alleWahl), { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "slot", id: x.id }) }] };
       return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: inGruppe(wahlMenue(ids), GRUPPE.ablage, alleWahl) } : { text: "Nichts ausgewählt – Quiz antippen", aktionen: [] };
     };
-    auswahlTafelDaten.current.slot = () => multiAuswahl && tafelInhalt(multiAuswahl);
+    // 274: Quiz-Tab – oben das Schalter-Raster (wie die Schalter im Quiz-Tab: Vokabeln breit, darunter Negative · Gelernt /
+    // Heute · Fällige); Multiquiz, Fällige wiederholen und Negative abfragen entfallen dort (der Kopf lädt die Auswahl)
+    const schalterRaster = quizIds => {
+      if (tab !== "quiz" || !quizIds.length) return [];
+      const z = schalterZaehlung(quizIds);
+      const sk = sprachKuerzelFuer([...new Set(quizIds.flatMap(id => slots.gespeichert.find(g => g.id === id)?.konfiguration?.listenIds || []))]);
+      const s = (k, label, n, an, set, frei, extra = {}) => ({ label: `${label} (${n})`, raster: true, schalter: k, an, aus: !frei || (n === 0 && k !== "faellig"), fn: () => set(v => !v), ...extra });
+      const zurueck = () => setTimeout(() => zeigeAuswahlTafel("slot"), 0);
+      return [
+        s("grund", quizIds.length >= 2 ? "🧩 Multiquiz" : "Vokabeln", z.grund, quizGrund, setQuizGrund, true, { breit: true }),
+        s("negativ", "✗ Negative", z.negativ, quizNegativ, setQuizNegativ, true),
+        s("gelernt", "✓ Gelernt", z.gelernt, quizGelerntEinschliessen, setQuizGelerntEinschliessen, z.faelligMoeglich),
+        s("heute", "Heute", z.heute, quizHeuteEinschliessen, setQuizHeuteEinschliessen, tagesSperre()),
+        s("faellig", "🔁 Fällige", z.faellig, quizFaellig.an, null, z.faelligMoeglich && z.pool > 0, {
+          fn: () => setQuizFaellig(f => ({ ...f, an: !f.an })),
+          // lang drücken: dieselben Einstellungen wie im Quiz-Tab (Herkunft, Anteil); danach zurück zur Tafel
+          lang: (x, y) => zeigeInfo(`🔁 Fällige: ${quizFaellig.anteil} % zusätzlich zu den anderen, aus ${quizFaellig.modus === "sprache" ? `allen Listen (${sk})` : "diesen Quiz"} – jetzt ${z.pool} fällig`, x, y, [
+            { label: `${quizFaellig.modus === "sprache" ? "◉" : "○"} Alle ${sk || "der Sprache"}`, fn: () => { setQuizFaellig(f => ({ ...f, modus: "sprache" })); zurueck(); } },
+            { label: `${quizFaellig.modus === "quiz" ? "◉" : "○"} Nur ${quizIds.length >= 2 ? "diese Quiz" : "dieses Quiz"}`, fn: () => { setQuizFaellig(f => ({ ...f, modus: "quiz" })); zurueck(); } },
+            { label: "‹ zurück", zurueckTafel: true, fn: zurueck }],
+            { regler: { label: "Anteil (zusätzlich zu den anderen)", min: 5, max: 100, step: 5, wert: quizFaellig.anteil, format: v => `${v} %`, aendern: v => setQuizFaellig(f => ({ ...f, anteil: v })) } }),
+        }),
+      ];
+    };
+    const LERNEN_ALT = /^(🧩 Multiquiz|🔁 |✗ Negative abfragen)/;
+    const ohneLernen = akt => akt.map(a => a?.gruppe ? { ...a, gruppe: a.gruppe.filter(u => !LERNEN_ALT.test(u.label)) } : a)
+      .filter(a => a && !LERNEN_ALT.test(a.label) && !(a.gruppe && !a.gruppe.length));
+    const mitRaster = (d, quizIds) => { const r = schalterRaster(quizIds); return d && r.length ? { ...d, aktionen: [...r, ...ohneLernen(d.aktionen)] } : d; };
+    auswahlTafelDaten.current.slot = () => multiAuswahl && mitRaster(tafelInhalt(multiAuswahl), wahlQuiz(multiAuswahl));
     // Ziehen: diese Kacheln wandern mit; über einer anderen verweilen bildet eine Gruppe (nur oberste Ebene, keine Gruppen in Gruppen)
     const ziehIds = slotDragId ? (slotAuswahl.includes(slotDragId) ? slotAuswahl : [slotDragId]) : [];
     const rueckS = slotDragId && gruppenZiel !== slotDragZiel ? rueckendeIds(raster.gespeichert, ziehIds, slotDragZiel) : new Set();   // 246: Vorschau

@@ -495,6 +495,15 @@ export function heuteAnteil(voks, feld, schwelle) {
   const ansteh = voks.filter(v => heuteAbgefragt(v[feld]) || !gelerntRuht(v));
   return ansteh.length ? Math.round(ansteh.filter(v => heuteAbgefragt(v[feld])).length / ansteh.length * 100) : 0;
 }
+// 274: Schalter-Gruppen ohne Doppelungen – fällig > heute > gelernt > negativ > grund (nie abgefragt bzw. Score 0…2)
+export function schalterGruppe(f, schwelle, faellig = false, heuteSperre = false) {
+  if (faellig) return "faellig";
+  if (heuteSperre && heuteAbgefragt(f)) return "heute";
+  const sc = f?.score;
+  if (schwelle > 0 && (sc ?? -Infinity) >= schwelle) return "gelernt";
+  if ((sc ?? 0) < 0) return "negativ";
+  return "grund";
+}
 export function tagesSperre() { try { return !localStorage.getItem("vokabel_test_ohne_tagessperre"); } catch { return true; } }
 // 172: fällige Vokabeln zwischen die übrigen einstreuen – je Karte mit faelligAnteil() % eine fällige (Reihenfolge je Teil bleibt)
 export const STANDARD_FAELLIG_ANTEIL = 25;   // 267

@@ -52,7 +52,8 @@ const amFinger = (t, p) => t && !(p.y >= t.top && p.y <= t.bottom) && (p.y > t.h
 ok(t && /Einzelne Vokabeln|Bereich/.test(t.text) && amFinger(t, bereich), "Lang drücken: Sprechblase weg vom Finger (andere Bildschirmhälfte), bleibt nach dem Loslassen");
 const bereichAktiv = await page.evaluate(() => [...document.querySelectorAll(".aktiv")].some(b => b.textContent.trim() === "Bereich"));
 ok(!bereichAktiv, "Lang drücken führt die Aktion nicht aus");
-await page.mouse.click(400, 600); await sleep(300);
+{ const p = await page.evaluate(() => { const r = document.querySelector(".topbar-title").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  await page.mouse.click(p.x, p.y); await sleep(300); }   // 274: freie Stelle (bei 400/600 liegt jetzt die Schalter-Zeile)
 ok(!(await tafel()), "Antippen irgendwo schließt die Tafel");
 
 // 2) Info-Modus

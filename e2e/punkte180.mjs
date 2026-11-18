@@ -79,7 +79,7 @@ await page.evaluate(() => document.querySelector("[data-slot-info]").click()); a
 // ── 180: heute abgefragte nicht noch einmal ──
 await laden("g_a");
 ok(await anzahl() === "1", `„Halb heute“: nur die gestern abgefragte zählt (${await anzahl()})`);
-ok(await page.evaluate(() => document.querySelector("[data-heute]:not([data-slot-id])")?.textContent.trim()) === "1 heute", "Knopf „1 heute“ neben „Gelernte“");
+ok(await page.evaluate(() => document.querySelector("[data-heute]:not([data-slot-id])")?.textContent.trim()) === "1", "274: Schalter „Heute“ zeigt 1 (eigene Schalter-Zeile)");
 await klick("[data-heute]:not([data-slot-id])");
 ok(await anzahl() === "2" && await page.evaluate(() => document.querySelector("[data-heute]:not([data-slot-id])")?.dataset.heute) === "an", `„+ 1 heute“: beide zählen (${await anzahl()})`);
 await laden("g_c");

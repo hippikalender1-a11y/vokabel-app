@@ -123,8 +123,11 @@ export const CSS_BASIS = `
   [data-modus-gruppen].mehrfach .spalten-modus-btn,.spalten-rolle-btn.mehrfach{border-style:dashed;}
   .wahl-hinweis{display:inline-block;padding:2px 6px;margin-left:-6px;border-radius:6px;}
   .nach-oben{position:fixed;right:max(16px, calc(50vw - 284px));bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:30;width:46px;height:46px;border-radius:50%;border:none;background:var(--haupt);color:var(--auf-haupt);font-size:1.3rem;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.25);opacity:0.92;}
-  .quiz-zeile-knopf[data-gelernte],.quiz-zeile-knopf[data-heute],.quiz-zeile-knopf[data-faellig]{background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);flex:0 0 auto;padding-left:12px;padding-right:12px;}
-  .quiz-zeile-knopf[data-gelernte].an,.quiz-zeile-knopf[data-heute].an,.quiz-zeile-knopf[data-faellig].an{background:var(--haupt);color:var(--auf-haupt);}
+  .schalter-zeile .quiz-zeile-label{text-align:center;}
+  .schalter-zeile .quiz-zeile-zelle .quiz-zeile-knopf{padding-left:2px;padding-right:2px;}
+  .quiz-zeile-knopf[data-schalter]:disabled{opacity:0.4;cursor:default;}   /* 274: nicht verfügbar */
+  .quiz-zeile-knopf[data-schalter],.quiz-zeile-knopf[data-gelernte],.quiz-zeile-knopf[data-heute],.quiz-zeile-knopf[data-faellig]{background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);flex:0 0 auto;padding-left:12px;padding-right:12px;}
+  .quiz-zeile-knopf[data-schalter].an,.quiz-zeile-knopf[data-gelernte].an,.quiz-zeile-knopf[data-heute].an,.quiz-zeile-knopf[data-faellig].an{background:var(--haupt);color:var(--auf-haupt);}
   .quiz-zeile-hinweis{font-size:0.75rem;color:var(--text3);text-align:center;padding:6px 0 0;}
   .umfang-raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px;}
   .umfang-raster .typ-btn{min-height:48px;font-size:1.1rem;font-weight:800;}

@@ -3686,3 +3686,24 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   Balkens (Breite fällige/gesamt, höchstens pct) → Kachelfarbe scheint durch; data-kachel-faellig; tt „davon n fällig“.
 - Tests: neu punkte270 (270/275/276); punkte267 (271–273), punkte168, kreis, slots angepasst.
 - 274 (Auswahl-Tafel mit Schalter-Raster + neue Schalter Grund/Negative im Quiz-Tab) folgt.
+
+── 274 umgesetzt (18.11.2026) ──
+- Schalter-Gruppen ohne Doppelungen: quiz.jsx schalterGruppe(f, schwelle, faellig, heuteSperre) → fällig > heute > gelernt >
+  negativ > grund (nie abgefragt / Score 0…2). Fällige AUS → sie zählen zu den Gelernten (so bleibt „Fällige wiederholen“,
+  das mit Gelernte an und ohne Fällige lädt, richtig).
+- App.jsx: neue Zustände quizGrund / quizNegativ (Standard an; applyKonfiguration setzt sie zurück). starteQuiz und
+  starteDiktat filtern: Gruppe eingeschaltet ODER (Heute an und heute abgefragt). schalterStand/setzeSchalter (der grüne
+  Kopf der Auswahl lädt und behält die Schalter), schalterZaehlung(quizIds) für Tafel und Kopf (Fällige = so viele, wie
+  dazukämen: round(eingeschaltete × Anteil), ohne andere alle; Herkunft „sprache“ zählt alle Listen der Sprache(n)).
+  Effekt der Auswahl-Tafel hängt auch an den Schaltern (Tafel bleibt beim Umschalten aktuell).
+- Quiz-Tab: Zeile 2 nur „Anzahl je Runde“ + „Wie oft“; neue Zeile 3 data-schalter-zeile mit Vokabeln · Negative (✗) ·
+  Gelernte (✓) · Heute · Fällige (Zeichen + Zahl, data-schalter=grund|negativ|gelernt|heute|faellig, data-an; ausgegraut
+  wenn nicht verfügbar; Fällige lang drücken wie bisher). Ohne andere Vokabeln zeigt Fällige alle (Start „Nur Fällige“).
+- Auswahl-Tafel (kacheln.jsx schalterRaster/mitRaster, nur Quiz-Tab): oben Raster (raster:true, schalter, breit) –
+  „🧩 Multiquiz (n)“ bzw. „Vokabeln (n)“ breit, dann ✗ Negative · ✓ Gelernt / Heute · 🔁 Fällige (lang drücken: ◉ Alle <Spr> /
+  ○ Nur diese Quiz / ‹ zurück + Regler Anteil, danach wieder die Tafel). Entfallen: Multiquiz starten / des Ordners,
+  Fällige wiederholen, Negative abfragen (bleiben im Menü der Ebene „Alle Quiz“). InfoTafel: Raster als 2-Spalten-Gitter,
+  in der Tafel unten danach „🎨 Farbe ändern“ vor den übrigen; a.schalter lässt die Tafel offen; a.lang = langer Druck auf
+  einen Menü-Knopf; gedrückte Kachel bleibt frei, auch wenn die Tafel wächst (zielRef).
+- Kopf der Auswahl (koepfe.jsx): „n ausgewählt · x Vokabeln + 🔁 f“ (Summe der eingeschalteten, nichts doppelt).
+- Tests: neu punkte274; angepasst slots, auswahl, multiquiz, gruppen_gesten, gruppen_sessions, info, punkte168/180/235/267.

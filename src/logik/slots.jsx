@@ -248,10 +248,11 @@ export function ladeFaellige(app, keys, ausListe = null, art = "faellig") {
   }
 
 export function applyKonfiguration(app, k, art = null) {
-  const { faelligStandard, setQuizFaellig, getKombinierteListe, listenIndex, setQuizArt, setQuizArtStash, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizHeuteEinschliessen, setQuizTabListen, setStartLeerHinweis, wendeArtEinstellungenAn } = app;
+  const { setQuizGrund, setQuizNegativ, faelligStandard, setQuizFaellig, getKombinierteListe, listenIndex, setQuizArt, setQuizArtStash, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizHeuteEinschliessen, setQuizTabListen, setStartLeerHinweis, wendeArtEinstellungenAn } = app;
     if (!k) return;
     setQuizHeuteEinschliessen(false);   // 180
     setQuizFaellig(k.faellig || faelligStandard());   // 267
+    setQuizGrund(true); setQuizNegativ(true);   // 274
     setStartLeerHinweis(false);
     if (k.listenIds && k.listenIds.length > 0) {
       const alleVorhanden = k.listenIds.every(id => listenIndex.some(l => l.id === id));

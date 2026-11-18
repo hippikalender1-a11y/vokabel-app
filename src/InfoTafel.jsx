@@ -8,7 +8,8 @@ import { mitSymbolen } from "./symbole.jsx";
 export default function InfoTafel() {
   const [info, setInfo] = useState(null);
   const [modus, setModus] = useState(false);
-  const [gruppeOffen, setGruppeOffen] = useState(null);   // 235: { text, label } – geöffnete Menü-Gruppe (gilt nur für diese Tafel)
+  const [gruppeOffen, setGruppeOffen] = useState(null);
+  const langRef = useRef(null);   // 274: langer Druck auf einen Menü-Knopf (a.lang)
   // Lang-Druck (iPad): Der Finger liegt noch auf, wenn die Tafel aufgeht. Beim Loslassen schickt iOS
   // oft noch einen Klick hinterher – der darf die Tafel nicht gleich wieder schließen.
   const fingerAufRef = useRef(0);          // aktuell aufliegende Finger
@@ -91,18 +92,18 @@ export default function InfoTafel() {
   // und die gedrückte Kachel freilegen, falls die Tafel sie verdeckt
   const tafelRef = useRef(null);
   const warUntenRef = useRef(false);
+  const zielRef = useRef(null);   // 274: Stelle des Lang-Drucks im Dokument – bleibt frei, auch wenn die Tafel danach wächst
   useEffect(() => {
-    if (!unten) { warUntenRef.current = false; document.body.style.paddingBottom = ""; document.documentElement.style.removeProperty("--tafel-platz"); return; }
+    if (!unten) { warUntenRef.current = false; zielRef.current = null; document.body.style.paddingBottom = ""; document.documentElement.style.removeProperty("--tafel-platz"); return; }
     const el = tafelRef.current;
     if (!el) return;
-    // Platz unten: Seite (body) und eigene Scroll-Bereiche (var(--tafel-platz), z. B. die maximierte Vokabelliste)
-    const anpassen = () => { document.body.style.paddingBottom = `${el.offsetHeight + 24}px`; document.documentElement.style.setProperty("--tafel-platz", `${el.offsetHeight + 24}px`); };
+    // Platz unten: Seite (body) und eigene Scroll-Bereiche (var(--tafel-platz), z. B. die maximierte Vokabelliste);
+    // die gedrückte Kachel (≈ 60 px hoch) ganz über die Tafel, falls die Tafel sie verdeckt
+    const freilegen = () => { if (zielRef.current == null) return; const frei = window.innerHeight - el.offsetHeight - 24, y = zielRef.current - window.scrollY;
+      if (y > frei - 70) window.scrollBy({ top: y - frei + 90, behavior: "smooth" }); };
+    const anpassen = () => { document.body.style.paddingBottom = `${el.offsetHeight + 24}px`; document.documentElement.style.setProperty("--tafel-platz", `${el.offsetHeight + 24}px`); freilegen(); };
+    if (!warUntenRef.current) { warUntenRef.current = true; zielRef.current = info.y != null ? info.y + window.scrollY : null; }
     anpassen();
-    if (!warUntenRef.current) {
-      warUntenRef.current = true;
-      const frei = window.innerHeight - el.offsetHeight - 24;   // Unterkante des sichtbaren Bereichs über der Tafel
-      if (info.y != null && info.y > frei - 70) window.scrollBy({ top: info.y - frei + 90, behavior: "smooth" });   // die gedrückte Kachel (≈ 60 px hoch) ganz über die Tafel
-    }
     const obs = new ResizeObserver(anpassen);
     obs.observe(el);
     return () => obs.disconnect();
@@ -133,27 +134,44 @@ export default function InfoTafel() {
             {info.zusatz && <div data-info-zusatz style={{ marginTop: 8, fontSize: "0.88rem", lineHeight: 1.5 }}>{info.zusatz}</div>}
           </div>}
           {info.regler && <TafelRegler key={info.text} regler={info.regler}/>}
-          {mitMenue && (
-            <div data-info-menue data-info-gruppe-offen={grp ? grp.label : undefined} style={{ display: "flex", flexDirection: unten ? "row" : "column", flexWrap: unten ? "wrap" : undefined, gap: unten ? 6 : 8 }}>
-              {menue.map(a => (
+          {mitMenue && (() => {
+            // 274: Schalter-Raster (raster: true) oben als Gitter 2 Spalten (breit = ganze Zeile); in der Tafel unten danach
+            // „🎨 Farbe ändern“, dann die übrigen Knöpfe
+            const raster = menue.filter(a => a.raster);
+            let rest = menue.filter(a => !a.raster);
+            if (unten && raster.length) rest = [...rest.filter(a => a.farbe), ...rest.filter(a => !a.farbe)];
+            const knopf = a => (
                 <button key={a.label} data-info-aktion={a.farbe ? undefined : a.label} data-info-farbe={a.farbe ? "" : undefined}
                   data-info-gruppe={a.gruppe ? a.gruppe.map(u => u.label).join("|") : undefined} data-info-zurueck={a.zurueck ? "" : undefined}
+                  data-schalter={a.schalter} data-an={a.schalter ? (a.an ? "an" : "aus") : undefined}
                   disabled={a.aus} data-info-aus={a.aus ? "" : undefined}
+                  onContextMenu={a.lang ? e => { e.preventDefault(); e.stopPropagation(); if (!a.aus) a.lang(e.clientX, e.clientY); } : undefined}
+                  onTouchStart={a.lang ? e => { const t = e.touches[0]; clearTimeout(langRef.current?.t); langRef.current = { t: setTimeout(() => { langRef.current = { fertig: true }; if (!a.aus) a.lang(t.clientX, t.clientY); }, 500) }; } : undefined}
+                  onTouchMove={a.lang ? () => { clearTimeout(langRef.current?.t); } : undefined}
+                  onTouchEnd={a.lang ? e => { if (langRef.current?.fertig) e.preventDefault(); clearTimeout(langRef.current?.t); } : undefined}
                   onClick={() => {
+                    if (langRef.current?.fertig) { langRef.current = null; return; }
                     if (a.aus) return;
+                    if (a.schalter) { a.fn(); return; }   // 274: Schalter – Tafel bleibt offen
                     if (a.gruppe) { setGruppeOffen({ text: info.text, label: a.label }); return; }   // 235: Gruppe öffnen, Tafel bleibt
                     if (a.zurueck) { setGruppeOffen(null); return; }
                     setGruppeOffen(null); setInfo(null); info.auswahl?.zu?.(!!a.behalten); a.fn();
                   }} style={{
                   opacity: a.aus ? 0.45 : 1,
-                  background: "var(--karte)", color: a.gefahr ? "var(--falsch)" : a.farbe || a.zurueck ? "var(--text2)" : "var(--haupt)", textAlign: "left", whiteSpace: "nowrap",
-                  border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: unten ? "8px 12px" : "11px 18px",
+                  background: a.schalter && a.an ? "var(--haupt)" : "var(--karte)", color: a.schalter && a.an ? "var(--auf-haupt)" : a.gefahr ? "var(--falsch)" : a.farbe || a.zurueck ? "var(--text2)" : "var(--haupt)",
+                  textAlign: a.schalter ? "center" : "left", whiteSpace: "nowrap", gridColumn: a.breit ? "1 / -1" : undefined,
+                  border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : a.schalter ? "var(--haupt)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: unten ? "8px 12px" : "11px 18px",
                   fontSize: unten ? "0.85rem" : "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: a.aus ? "default" : "pointer",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.22)",
                 }}>{mitSymbolen(a.label)}</button>
-              ))}
-            </div>
-          )}
+            );
+            return (
+              <div data-info-menue data-info-gruppe-offen={grp ? grp.label : undefined} style={{ display: "flex", flexDirection: "column", gap: unten ? 6 : 8 }}>
+                {raster.length > 0 && <div data-schalter-raster style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>{raster.map(knopf)}</div>}
+                {rest.length > 0 && <div style={{ display: "flex", flexDirection: unten ? "row" : "column", flexWrap: unten ? "wrap" : undefined, gap: unten ? 6 : 8 }}>{rest.map(knopf)}</div>}
+              </div>
+            );
+          })()}
         </div>
       )}
       {modus && (

@@ -104,8 +104,8 @@ await page.mouse.click(5, 830); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-info-blase]")?.click()); await sleep(200);
 await kontext('[data-slot-id="g_fr"]');
 const fr = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => /fällig/i.test(b.dataset.infoAktion)));
-ok(await page.evaluate(() => { const b = [...document.querySelectorAll("[data-info-aktion]")].find(b => /fällig/i.test(b.dataset.infoAktion)); return b && b.disabled && b.dataset.infoAktion === "🔁 Keine fälligen Vokabeln"; }),
-  "170: Kachel ohne fällige: inaktiver Knopf „🔁 Keine fälligen Vokabeln“");
+ok(await page.evaluate(() => { const b = [...document.querySelectorAll("[data-info-aktion]")].find(b => /fällig/i.test(b.dataset.infoAktion)); return b && b.disabled && b.dataset.infoAktion === "🔁 Fällige (0)"; }),
+  "170/274: Kachel ohne fällige: Schalter „🔁 Fällige (0)“ ausgegraut");
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => /fällig/i.test(b.dataset.infoAktion))?.click()); await sleep(300);
 ok(await page.$("[data-auswahl-tafel]"), "inaktiver Knopf: antippen bewirkt nichts (Tafel bleibt)");
 await auswahlEnde(page); await sleep(300);
