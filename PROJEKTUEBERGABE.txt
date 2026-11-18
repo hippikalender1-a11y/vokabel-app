@@ -3781,3 +3781,23 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   nicht auf, dort wählt der Klick nur neu). Jetzt wird nach dem Halten (Stufe ≥ 1) der nächste Klick auf eine Kachel 600 ms lang
   verschluckt (klickWeg = "kachel" im Kachel-Gesten-Effekt). Test punkte287.
   Hinweis: Ordner mit Inhalt haben in der Ablage „📤 Ordner auflösen“ (Inhalt bleibt), „🗑 Ordner löschen“ nur bei leeren Ordnern.
+- 288 (gesammelt): Listen-Auswahl im Quiz-Tab (Umschalter „Listen“, listenWahl) soll sich wie die Quiz-Auswahl verhalten (274/277–282):
+  · Tafel oben das Schalter-Raster: „Vokabeln (n)“ breit, ✗ Negative · ✓ Gelernt / Heute · 🔁 Fällige (lang drücken: Herkunft/Anteil),
+    gesperrte leuchten kurz (283); darunter die kleine Zeile 🎨 · 🗂 Ablage › · ↔ Von–Bis (Multiquiz/Fällige/Negative abfragen entfallen).
+  · Kopf: „n ausgewählt · x Vokabeln + 🔁 f“ (ohne Doppelungen), Antippen lädt und behält die Schalter, Schalter-Zeile eingeklappt (278).
+  · Technisch: schalterZaehlung auch für Listen-IDs (Ordner samt Inhalt über wahlListenIds), mitRaster auch für auswahlTafelDaten.liste.
+- 288 UMGESETZT: Listen-Auswahl im Quiz-Tab wie die Quiz-Auswahl. mitSchalterRaster(app, d, art, ids) in kacheln.jsx (für "slot"
+  und "liste"); schalterZaehlung(ids, "liste") zählt ganze Listen (Ordner über wahlListenIds). Tafel: Schalter-Raster oben,
+  „🔁 Fällige wiederholen“/„✗ Negative abfragen“ entfallen; einzelne Aktionen wandern in die Ablage (bei Listen alle außer
+  „📂 … öffnen“ und Von–Bis). Kopf: „n ausgewählt · x Vokabeln + 🔁 f“, Antippen lädt und behält die Schalter, Schalter-Zeile
+  eingeklappt. Test punkte288; export/listenraster/auswahl/punkte202 (204-Schritt entfällt)/225/234/235 angepasst.
+  Offen: bei einer einzelnen Liste bleiben unten „📂 Liste öffnen · 📊 Lernen › · 🗂 Ablage › · 📚 Inhalt › · ↔ Von–Bis“ →
+  zwei Reihen (Gruppen haben viele Einträge).
+- 289 (gebaut, ZURÜCKGESTELLT als Patch scratchpad/p289/289.patch): nichts geladen („Neues Quiz“ ohne Listen) → Auswahl geht
+  mit „📋 Listen“ auf und bleibt offen, bis etwas gewählt ist (Kopf „Liste oder Quiz wählen“, ohne Haken/„nicht gespeichert“;
+  Antippen leuchtet nur); ersetzt die alte Listen-Auswahl mit Häkchen. Grund fürs Zurückstellen: 41 Tests wählen ihre Listen
+  über die alte Häkchen-Liste (.quiz-setup-check) – müssen auf die neue Auswahl umgestellt werden (Hilfsfunktion in hilfen.mjs).
+- 290 UMGESETZT: Menü der Ebene (Pfad/freier Platz): „▦ Eigene Anordnung“ / „▤ Automatische Anordnung“ (statt „… zeigen“ /
+  „Lückenlos anzeigen“); „🙈 Gelernte ausblenden“ unter „🖼 Ansicht ›“; „🔁 Fällige wiederholen“ und „✗ Negative abfragen“
+  entfallen in ALLEN Menüs (Ebene, Quiz/Ordner/Auswahl, Listen, Listen-Auswahl) – das machen die Vokabel-Schalter.
+  faelligAktion entfernt (ladeFaellige/faelligAlle bleiben vorerst). Tests 168/180/244/255/260/267/stufen angepasst.

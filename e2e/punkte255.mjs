@@ -48,8 +48,8 @@ const vorher = await lage();
 ok(vorher.sB[0] > vorher.sC[0] && vorher.sC[0] > vorher.sA[0], `eigene Anordnung mit Lücken (${JSON.stringify(vorher)})`);
 await kontext("[data-freier-platz]");
 let m = await menue();
-ok(m.includes("▤ Lückenlos anzeigen"), `256: Schalter im Menü der Ebene (${m.join(" | ")})`);
-await aktion("▤ Lückenlos anzeigen");
+ok(m.includes("▤ Automatische Anordnung"), `256: Schalter im Menü der Ebene (${m.join(" | ")})`);
+await aktion("▤ Automatische Anordnung");
 await page.mouse.click(5, 300); await sleep(300);
 const nachher = await lage();
 // Lesereihenfolge: A (0|0), C (1|1), B (3|0) → A, C in Zeile 1, B in Zeile 2 links
@@ -59,8 +59,8 @@ const plaetze = await page.evaluate(() => JSON.parse(localStorage.getItem("vokab
 ok(plaetze === "sA:0|0,sB:3|0,sC:1|1", `256: gespeicherte Plätze unverändert (${plaetze})`);
 await kontext("[data-freier-platz]");
 m = await menue();
-ok(m.includes("▦ Eigene Anordnung zeigen"), "256: Schalter zurück heißt „Eigene Anordnung zeigen“");
-await aktion("▦ Eigene Anordnung zeigen");
+ok(m.includes("▦ Eigene Anordnung"), "256: Schalter zurück heißt „Eigene Anordnung zeigen“");
+await aktion("▦ Eigene Anordnung");
 await page.mouse.click(5, 300); await sleep(300);
 ok(JSON.stringify(await lage()) === JSON.stringify(vorher), "256: eigene Anordnung wieder da");
 

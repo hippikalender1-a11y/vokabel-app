@@ -136,16 +136,13 @@ ok(/^C-Fällig/.test(nf || ""), `Nur Fällige: Abfrage startet mit einer Fällig
 for (let i = 0; i < 3 && await page.$(".topbar-back"); i++) { await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(300);
   await page.evaluate(() => [...document.querySelectorAll("button")].find(x => /Zur Übersicht|Weiter/.test(x.textContent))?.click()); await sleep(300); }
 
-// ── Menü: „✗ Negative abfragen“ (Menü der Ebene „Alle Quiz“ – über alle sichtbaren Listen) ──
+// ── 290: Menü der Ebene „Alle Quiz“ ohne „✗ Negative abfragen“ (früher 267) ──
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
 await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "quiz") b.click(); }); await sleep(300);
 await page.evaluate(() => { const el = document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 5 })); }); await sleep(400);
 const lm = await page.evaluate(() => [...__aktionen()].map(x => x.dataset.infoAktion));
-ok(lm.includes("✗ Negative abfragen (1)"), `Menü „Alle Quiz“: „✗ Negative abfragen (1)“ (${lm.filter(x => /Fällig|Negativ/.test(x)).join(" | ")})`);
-await page.evaluate(() => __aktion("✗ Negative abfragen (1)").click()); await sleep(900);
-s = await stand();
-ok(/Quiz mit 1 Vokabel$/.test(s.titel || "") && s.an === "aus", `Negative: Quiz mit der einen negativen, ohne zusätzliche Fällige (${JSON.stringify(s)})`);
+ok(!lm.some(x => /Negative abfragen|Fällige wiederholen/.test(x)), `290: Menü „Alle Quiz“ ohne „✗ Negative abfragen“ / „🔁 Fällige wiederholen“ – das machen die Schalter (${lm.join(" | ")})`);
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

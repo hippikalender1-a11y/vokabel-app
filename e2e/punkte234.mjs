@@ -118,7 +118,7 @@ const lwahl = () => page.evaluate(() => [...document.querySelectorAll(".listen-r
 await halte('[data-liste-id="l_a"]', 450);
 ok(await lwahl() === "l_a" && /📋 Unit 1 laden/.test(await kopfText()), `Liste kurz halten: Auswahl, Kopf „📋 Unit 1 laden“ (${await lwahl()} | ${await kopfText()})`);
 await halte('[data-lordner-id="lo1"]', 450);
-ok(await lwahl() === "l_a,lo1" && /☑ 2 ausgewählt/.test(await kopfText()), `Listen-Ordner kommt in die Auswahl (${await lwahl()} | ${await kopfText()})`);
+ok(await lwahl() === "l_a,lo1" && /^2 ausgewählt · 20 Vokabeln/.test(await kopfText()), `Listen-Ordner kommt in die Auswahl (${await lwahl()} | ${await kopfText()})`);
 await halte('[data-liste-id="l_b"]', 60);
 ok(await lwahl() === "l_b", `antippen in der Auswahl: neu mit „Unit 2“ (${await lwahl()})`);
 await halte('[data-lordner-id="lo1"]', 450);

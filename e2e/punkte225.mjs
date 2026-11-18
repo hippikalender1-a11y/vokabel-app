@@ -45,7 +45,7 @@ await halte('[data-liste-id="l_a"]', 450);
 ok(await wahl() === "l_a" && /📋 Unit A laden/.test((await kopf()).text || ""), `kurz halten: Auswahl mit „Unit A“, Kopf „📋 Unit A laden“ (${await wahl()} | ${(await kopf()).text})`);
 await halte('[data-liste-id="l_b"]', 450);
 ok(await wahl() === "l_a,l_b", `kurz halten nimmt „Unit B“ dazu (${await wahl()})`);
-ok(/☑ 2 ausgewählt/.test((await kopf()).text || ""), `226: grüner Kopf „☑ 2 ausgewählt“ (${(await kopf()).text})`);
+ok(/^2 ausgewählt · \d+ Vokabeln/.test((await kopf()).text || ""), `226/288: grüner Kopf „2 ausgewählt · n Vokabeln“ (${(await kopf()).text})`);
 await halte('[data-liste-id="l_c"]', 450);
 ok(await wahl() === "l_a,l_b,l_c", `226: darin kurz halten nimmt „Unit C“ dazu (${await wahl()})`);
 await halte('[data-liste-id="l_b"]', 450);

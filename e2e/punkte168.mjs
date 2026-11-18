@@ -99,7 +99,7 @@ await klick("[data-faellig]");
 await auswahlAuf();
 await kontext("[data-alle-sessions]");
 const aktiv = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => `${b.dataset.infoAktion}${b.disabled ? "(aus)" : ""}`).join(" | "));
-ok(/🔁 Fällige wiederholen \(1\)/.test(aktiv), `„Alle Quiz“: eine fällige (${aktiv})`);
+ok(!/Fällige wiederholen|Negative abfragen/.test(aktiv), `290: „Alle Quiz“ ohne „Fällige wiederholen“ / „Negative abfragen“ (${aktiv})`);
 await page.mouse.click(5, 830); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-info-blase]")?.click()); await sleep(200);
 await kontext('[data-slot-id="g_fr"]');

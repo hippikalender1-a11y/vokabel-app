@@ -55,12 +55,12 @@ ok(!c.dunkel && c.heute === "100" && /100%/.test(c.bild), `183: alle heute abgef
 ok(!a.dunkel && a.heute === "50" && /linear-gradient/.test(a.bild) && /50%/.test(a.bild), `zur Hälfte heute: abgeschwächt bis 50 % gefüllt (${JSON.stringify(a)})`);
 ok(!b.dunkel && b.haken && b.heute === "0", `komplett gelernt, heute nicht geübt: hell mit Haken (${JSON.stringify(b)})`);
 await kontext("[data-alle-sessions]");
-ok(await page.$('[data-info-aktion="🙈 Gelernte ausblenden"]'), "„Alle Quiz“ lang drücken: „🙈 Gelernte ausblenden“");
-await aktion("🙈 Gelernte ausblenden");
+ok(await page.evaluate(() => (document.querySelector('[data-info-aktion="🖼 Ansicht ›"]')?.dataset.infoGruppe || "").split("|").includes("🙈 Gelernte ausblenden")), "„Alle Quiz“ lang drücken: „🙈 Gelernte ausblenden“ unter „🖼 Ansicht ›“ (290)");
+await aktion("🖼 Ansicht ›"); await aktion("🙈 Gelernte ausblenden");
 ok(!(await kachel("g_b")) && await kachel("g_a") && await kachel("g_c"), "gelernte Kachel ausgeblendet, die übrigen bleiben");
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen")).gelernteAusblenden) === true, "Einstellung gespeichert");
 await kontext("[data-alle-sessions]");
-await aktion("👁 Gelernte einblenden");
+await aktion("🖼 Ansicht ›"); await aktion("👁 Gelernte einblenden");
 ok(await kachel("g_b"), "„👁 Gelernte einblenden“: wieder da");
 
 // ── 182: gewählte Kachel zeigt den Tagesstand in Grün ──

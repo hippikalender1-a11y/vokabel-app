@@ -98,13 +98,13 @@ ok(/2 Listen ausgewählt/.test(await seite()) && await page.evaluate(() => [...d
 await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]").click()); await sleep(500);   // zu den Quiz
 await kontext('[data-freier-platz]');
 let m = await menue();
-ok(m.includes("＋ Neues Quiz aus Listen") && m.includes("📁 Neuer Ordner") && m.some(x => x.startsWith("▥ Spalten")) && m.includes("⇅ Anordnen…") && m.some(x => /Gelernte/.test(x)) && m.some(x => /[Ff]ällig/.test(x)),
+ok(m.includes("＋ Neues Quiz aus Listen") && m.includes("📁 Neuer Ordner") && m.some(x => x.startsWith("▥ Spalten")) && m.includes("⇅ Anordnen…") && m.some(x => /Gelernte/.test(x)) && !m.some(x => /[Ff]ällig/.test(x)),   // 290: ohne Fällige
   `247: freier Platz – Menü der Ebene (${m.join(" | ")})`);
 await page.keyboard.press("Escape"); await page.mouse.click(5, 300); await sleep(300);
 await page.evaluate(() => document.querySelector('[data-slot-id="o1"]').click()); await sleep(500);   // in die Mappe
 await kontext("[data-alle-sessions]");
 m = await menue();
-ok(m.length === 2 && m.some(x => /[Ff]ällig/.test(x)) && m.some(x => /Gelernte/.test(x)), `248: „← Alle Quiz“ im Ordner – nur Fällige + Gelernte (${m.join(" | ")})`);
+ok(m.length === 1 && m.some(x => /Gelernte/.test(x)), `248/290: „← Alle Quiz“ im Ordner – nur Gelernte (${m.join(" | ")})`);
 await page.mouse.click(5, 300); await sleep(300);
 await kontext("[data-pfad-hier]");
 m = await menue();

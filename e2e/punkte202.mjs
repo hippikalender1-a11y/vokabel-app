@@ -100,15 +100,7 @@ let imQuiz = await quizUndZurueck();
 let zurueck = await page.evaluate(() => ({ zeile: !!document.querySelector("[data-listen-zeile]"), name: document.body.innerText.includes("Unit 10") }));
 ok(imQuiz && zurueck.zeile && zurueck.name, `204: „Quiz starten“ → nach „Zur Übersicht“ wieder in „Unit 10“ (${JSON.stringify(zurueck)})`);
 
-// ── 204: „🔁 Fällige wiederholen“ an der Kachel → zurück ins Listen-Raster, Liste gewählt ──
-await zuListen(page);
-await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(300);
-await zuListen(page);
-await kontext('[data-liste-id="liste_1700000000001"]');
-await aktion("Fällige wiederholen");
-imQuiz = await quizUndZurueck();
-zurueck = await page.evaluate(() => ({ raster: !!document.querySelector('[data-liste-id="liste_1700000000001"]'), gewaehlt: [...document.querySelectorAll(".listen-raster [data-liste-id].kachel-gewaehlt")].map(e => e.dataset.listeId).join(",") }));
-ok(imQuiz && zurueck.raster && zurueck.gewaehlt === "liste_1700000000001", `204: Fällige an der Kachel → Listen-Raster, „Unit 2“ gewählt (${JSON.stringify(zurueck)})`);
+// 204 (Fällige an der Kachel → Listen-Raster) entfällt: 288 – die Listen-Auswahl im Quiz-Tab hat statt „🔁 Fällige wiederholen“ das Schalter-Raster
 
 // ── 203/208: Quiz – „▥ Spalten“ und „⇅ Anordnen…“ im Menü von „Alle Quiz“ ──
 await tab("Quiz");

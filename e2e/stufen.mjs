@@ -40,13 +40,17 @@ await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.tex
 await quizEinstellungen(page);
 if (await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf !== "offen")) await klick("[data-slot-kopf-name]");
 await page.evaluate(() => { const el = document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(250);
-ok(await page.$('[data-info-aktion="🔁 Fällige wiederholen (1)"]'), "lang drücken auf „Alle Quiz“: „🔁 Fällige wiederholen (1)“");
-ok(/1 fällig/.test(await page.evaluate(() => document.querySelector("[data-vorschau-gruppen]")?.innerText || "")) || true, "Info nennt fällige (falls ein Quiz gewählt)");
-await klick('[data-info-aktion="🔁 Fällige wiederholen (1)"]'); await sleep(400);
-ok(await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl) === "1", "geladen: nur die fällige Vokabel (1)");
+// 290: „🔁 Fällige wiederholen“ gibt es nicht mehr – Quiz laden, Vokabeln und Negative aus, Fällige an (Schalter)
+await page.mouse.click(5, 830); await sleep(300);
+await page.evaluate(() => document.querySelector("[data-info-blase]")?.click()); await sleep(200);
+await klick('[data-slot-id="g_1"]'); await sleep(900);
+const schalter = async (k, soll) => { const ist = await page.evaluate(k => { const b = document.querySelector(`[data-schalter-zeile] [data-schalter="${k}"]`); return b ? (b.dataset.an || b.dataset.faellig) : null; }, k);
+  if (ist && ist !== soll) { await page.evaluate(k => document.querySelector(`[data-schalter-zeile] [data-schalter="${k}"]`).click(), k); await sleep(300); } };
+await schalter("grund", "aus"); await schalter("negativ", "aus"); await schalter("faellig", "an");
+ok(await page.evaluate(() => document.querySelector("[data-nur-faellige]")?.dataset.nurFaellige) === "1", "geladen: nur die fällige Vokabel (1)");
 
 // Abfrage: „two“ (fällig) gewusst → Stufe 2 (Score 4)
-await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);
+await page.evaluate(() => (document.querySelector("[data-nur-faellige]") || document.querySelector("[data-start-knopf]"))?.click()); await sleep(600);
 ok(await page.evaluate(() => document.querySelector(".quiz-frage-text")?.textContent.trim()) === "zwei", "Abfrage: die fällige Vokabel „zwei“");
 await page.evaluate(() => document.querySelector("[data-frei-klick]")?.click()); await sleep(200);
 await page.evaluate(() => [...document.querySelectorAll(".karte-btn")].find(b => /Gewusst/.test(b.textContent) && !/Nicht/.test(b.textContent))?.click()); await sleep(1300);

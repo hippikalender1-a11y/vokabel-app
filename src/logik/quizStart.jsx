@@ -58,7 +58,7 @@ export function oeffneListeDetail(app, id) {
   }
 
 export function listenMenue(app, l, imKopf = false) {
-  const { faelligAktion, faelligVonListen, listenKopieName, listenOrdner, oeffneExport, oeffneListeDetail, oeffneSatzFenster, oeffneSynFenster, resetImport, setAnsicht, setImportBestehendId, setImportZielTyp, setInGruppe, setKlammerZiel, setListeMenueId, setListeNurAus, setListenAuswahl, setListenBereich, setListenSortModus, setListenWahl, setMergeQuelleId, setModal, setModalFehler, setModalInput, setTab, setZuruecksetzenArten, sichtbareListen, sprachFilter, starteAufteilen, starteQuizMitAuswahl, verschiebeListenInOrdner } = app;
+  const { faelligVonListen, listenKopieName, listenOrdner, oeffneExport, oeffneListeDetail, oeffneSatzFenster, oeffneSynFenster, resetImport, setAnsicht, setImportBestehendId, setImportZielTyp, setInGruppe, setKlammerZiel, setListeMenueId, setListeNurAus, setListenAuswahl, setListenBereich, setListenSortModus, setListenWahl, setMergeQuelleId, setModal, setModalFehler, setModalInput, setTab, setZuruecksetzenArten, sichtbareListen, sprachFilter, starteAufteilen, starteQuizMitAuswahl, verschiebeListenInOrdner } = app;
     const gefiltert = sprachFilter !== "alle";
     const herausN = (lsLesen(SK.liste(l.id))?.vokabeln || []).filter(v => v.herausgenommen).length;   // 176
     // 235: gruppiert – direkt Öffnen, dann Lernen / Ablage / Inhalt
@@ -66,7 +66,6 @@ export function listenMenue(app, l, imKopf = false) {
       ...(imKopf ? [] : [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(l.id) }]),   // 225: antippen fragt ab, öffnen über das Menü
       ...gruppe(GRUPPE.lernen, [
         { label: "🎯 Quiz mit Auswahl…", fn: () => starteQuizMitAuswahl(l.id) },   // 262
-        ...(() => { const f = faelligVonListen([l.id]); return faelligAktion(f, imKopf ? { listeId: l.id, ziel: "liste" } : { listeId: l.id, ziel: "raster" }); })(),   // 204
         herausN && { label: `🚫 Herausgenommene (${herausN})`, fn: () => { oeffneListeDetail(l.id); setListenBereich("vokabeln"); setListeNurAus(true); } },
         { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },
       ]),
@@ -100,13 +99,12 @@ export function listenMenue(app, l, imKopf = false) {
 // Mit Sprachfilter rücken die sichtbaren Listen zusammen (Verschieben dann nur unter „Alle“).
 // Aktionen für eine Listen-Auswahl (Lang-Druck auf eine Kachel der Auswahl oder auf den Auswahl-Kopf)
 export function listenWahlMenue(app, ids) {
-  const { faelligAktion, faelligVonListen, listenOrdner, listenOrdnerOffen, loeseListenOrdnerAuf, oeffneExport, setAuswahlLoeschen, setInGruppe, setListenAuswahl, setListenSortModus, setListenWahl, setVonBis, sprachFilter, verschiebeListenInOrdner, wahlListenIds } = app;
+  const { faelligVonListen, listenOrdner, listenOrdnerOffen, loeseListenOrdnerAuf, oeffneExport, setAuswahlLoeschen, setInGruppe, setListenAuswahl, setListenSortModus, setListenWahl, setVonBis, sprachFilter, verschiebeListenInOrdner, wahlListenIds } = app;
     // 234: Ordner in der Auswahl zählen mit ihrem ganzen Inhalt; Löschen löst sie nur auf
     const istOrdner = id => listenOrdner.some(o => o.id === id);
     const listen = wahlListenIds(ids), ordner = ids.filter(istOrdner), eintraege = ids.filter(id => !istOrdner(id));
     return [   // 235: direkt Export, Fällige; Ablage gruppiert
       ...(listen.length ? [{ label: `📤 Exportieren (${listen.length})`, behalten: true, fn: () => oeffneExport(listen) }] : []),
-      ...(() => { const f = faelligVonListen(listen); return faelligAktion(f); })(),
       ...gruppe(GRUPPE.ablage, [
         sprachFilter === "alle" && { label: "⇄ Verschieben", fn: () => { setListenWahl(null); setListenSortModus(true); setListenAuswahl(ids); } },
         { label: `📁 In Ordner… (${ids.length})`, fn: () => setInGruppe({ art: "liste", ids, name: "" }) },   // 193

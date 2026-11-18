@@ -59,11 +59,11 @@ ok(await ecke('[data-liste-id="l_a"]') === "0px", `263: Listen-Kachel ganz eckig
 await page.evaluate(() => { const el = document.querySelector("[data-freier-platz]"); el.scrollIntoView({ block: "center" }); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(350);
 let m = await menue();
-ok(m.includes("🖼 Ansicht ›") && !m.includes("⇅ Anordnen…") && !m.some(x => x.startsWith("▥ Spalten")) && !m.includes("▤ Lückenlos anzeigen"), `261: Hauptebene mit „🖼 Ansicht ›“ statt der drei Punkte (${m.join(" | ")})`);
+ok(m.includes("🖼 Ansicht ›") && !m.includes("⇅ Anordnen…") && !m.some(x => x.startsWith("▥ Spalten")) && !m.includes("▤ Automatische Anordnung"), `261: Hauptebene mit „🖼 Ansicht ›“ statt der drei Punkte (${m.join(" | ")})`);
 await page.evaluate(() => document.querySelector('[data-info-aktion="🖼 Ansicht ›"]')?.click()); await sleep(250);
 m = await menue();
-ok(m.join("|") === "‹ zurück|▥ Spalten (1)|⇅ Anordnen…|▤ Lückenlos anzeigen", `261: Ansicht – ${m.join(" | ")}`);
-await page.evaluate(() => document.querySelector('[data-info-aktion="▤ Lückenlos anzeigen"]')?.click()); await sleep(300);
+ok(m.join("|") === "‹ zurück|▥ Spalten (1)|⇅ Anordnen…|▤ Automatische Anordnung", `261: Ansicht – ${m.join(" | ")}`);
+await page.evaluate(() => document.querySelector('[data-info-aktion="▤ Automatische Anordnung"]')?.click()); await sleep(300);
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}").lueckenlos) === true, "261: „Lückenlos anzeigen“ aus dem Untermenü schaltet um");
 await page.mouse.click(5, 300); await sleep(300);
 
