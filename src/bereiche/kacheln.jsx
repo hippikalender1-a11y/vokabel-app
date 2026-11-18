@@ -3,7 +3,19 @@ import { Fragment } from "react";
 import { BLITZ_MS, SK, TYPEN, lsGet, lsLesen } from "../speicher.js";
 import { listenInhalt } from "../saetze.js";
 import { GRUPPE, gruppe, inGruppe, schliesseInfo } from "../infoEreignisse.js";
-import { heuteAnteil, slotKonfigArt, slotSFAlle } from "../quiz.jsx";
+import { heuteAnteil, istFaellig, slotKonfigArt, slotSFAlle } from "../quiz.jsx";
+
+// 276: Fortschrittsbalken der Kacheln – die fälligen (Übersetzung) liegen am Anfang der Füllung „hohl“: eine dünne Linie
+// in der Farbe der Kachel (Maske schneidet sie aus Balken und Füllung heraus). n = Anzahl fällige, ges = alle Vokabeln.
+function faelligZahl(voks) { const jetzt = Date.now(); return voks.filter(v => !v.herausgenommen && istFaellig(v.fortschritt, jetzt)).length; }
+function kachelBalken(pct, n, ges) {
+  const f = ges > 0 && n > 0 ? Math.min(pct, n / ges * 100) : 0;
+  const maske = f > 0 ? `linear-gradient(to right, #000 1.5px, transparent 1.5px, transparent ${f}%, #000 ${f}%), linear-gradient(to bottom, #000 2px, transparent 2px, transparent calc(100% - 2px), #000 calc(100% - 2px))` : undefined;
+  return (
+    <span className={`kachel-balken${pct >= 100 ? " voll" : ""}`} data-kachel-faellig={n || undefined}
+      style={maske ? { WebkitMaskImage: maske, maskImage: maske } : undefined}><span style={{width:`${pct}%`}}/></span>
+  );
+}
 
 // Phase 2 (Aufteilung): Zeichen-Funktionen aus App.jsx. app = die Namen der Komponente, die sie brauchen.
 
@@ -357,6 +369,7 @@ export function renderQuizListenRaster(app) {
       const liste = lsLesen(SK.liste(l.id));
       const voks = (liste?.vokabeln || []).filter(v => !v.herausgenommen);
       const pct = Math.round(lernstandJeArt(voks, l.id).uebersetzung.pct || 0);
+      const fN = faelligZahl(voks);   // 276
       const heuteP = heuteAnteil(voks, heuteFeld, schwelle);
       const gewaehlt = slotVorschau ? slotVorschau.typ === "listen" && slotVorschau.id === l.id : aktiverSlot?.typ === "listen" && aktiverSlot.id === l.id;
       return (
@@ -370,7 +383,7 @@ export function renderQuizListenRaster(app) {
             <span className="raster-anz" data-vok-anzahl={voks.length}>{zahlDe(voks.length)} {kurz ? "V." : "Vokabeln"}</span>
           </span>
           <span className="raster-fuss" data-kachel-balken={pct}>
-            <span className={`kachel-balken${pct >= 100 ? " voll" : ""}`}><span style={{width:`${pct}%`}}/></span>
+            {kachelBalken(pct, fN, voks.filter(v => !v.herausgenommen).length)}
             {pct >= 100 && <span className="kachel-voll" title="100 % gelernt">✓</span>}
           </span>
         </button>
@@ -585,13 +598,16 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
         const verweilen = ziel && gruppierbar && verweilGeht(false, x.id, ziehIds);
         // 210: Vokabelzahl rechtsbündig in der Namenszeile (Ordner: jede Vokabel einmal); eng (ab 2 Spalten): „Q.“ / „V.“
         const vokAnz = x.istOrdner ? new Set(kinder.flatMap(kachelVoks).map(y => y._key)).size : kachelVoks(x).length;
+        // 276: fällige – Ordner: jede Vokabel einmal
+        const fVoks = (x.istOrdner ? [...new Map(kinder.flatMap(kachelVoks).map(y => [y._key, y])).values()] : kachelVoks(x)).filter(y => !y.herausgenommen);
+        const fN = faelligZahl(fVoks);
         const inhalt = (<>
           <span className="raster-kopf">
             <span className="raster-name">{x.istOrdner && <span aria-hidden="true">📁 </span>}{x.multi && <span aria-hidden="true">🧩 </span>}{x.name}{x.istOrdner && <span className="ordner-anzahl" data-ordner-anzahl={kinder.length}> · {kinder.length} {kurzText ? "Q." : "Quiz"}</span>}</span>
             <span className="raster-anz" data-vok-anzahl={vokAnz}>{zahlDe(vokAnz)} {kurzText ? "V." : "Vokabeln"}</span>
           </span>
-          <span className="raster-fuss" data-kachel-balken={pct} {...ttFeld(`Lernfortschritt Übersetzung: ${pct} %`)}>
-            <span className={`kachel-balken${pct >= 100 ? " voll" : ""}`}><span style={{width:`${pct}%`}}/></span>
+          <span className="raster-fuss" data-kachel-balken={pct} {...ttFeld(`Lernfortschritt Übersetzung: ${pct} %${fN ? ` · davon ${fN} fällig (hohler Anfang des Balkens)` : ""}`)}>
+            {kachelBalken(pct, fN, fVoks.length)}
             {pct >= 100 && <span className="kachel-voll" title="100 % gelernt">✓</span>}
           </span>
         </>);

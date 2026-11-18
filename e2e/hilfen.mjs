@@ -213,6 +213,9 @@ export function menueShim() {
     return [...direkt, ...mehr];
   };
   window.__aktion = l => window.__aktionen().find(b => b.dataset.infoAktion === l) || null;
+  // 270: Text eines Elements, eigene Zeichen (svg[data-sym]) als Emoji gelesen – z. B. „+ 🔁 2“
+  const SYM = { wiederholung: "🔁" };
+  window.__txt = el => { if (!el) return el; const c = el.cloneNode(true); c.querySelectorAll("svg[data-sym]").forEach(s => s.replaceWith(SYM[s.dataset.sym] || "")); return c.textContent; };
 }
 
 // 241: „✕ Auswahl beenden“ gibt es nicht mehr – die Auswahl endet beim Wechsel Quiz/Listen; für Tests: hin und zurück

@@ -1,5 +1,6 @@
 import { BLITZ_SEKUNDEN, FESTES_ZEICHEN, SATZ_ARTEN, STANDARD_ANTWORT_MODUS, ZUORDNUNG_FARBEN, akzentVarianten, alternativen, antwortStatus, artikelInfo, clampScore, ersteAlt, getQuizFeedback, istMC, istRichtigeAntwort, istRichtigeEinzeln, jubelText, lueckenPositionen, mitHinweis, ohneHinweis, puzzleKacheln, satzFindenWoerter, satzFuer, scoreSymbole, ScoreSymbolePuls, umbruch, vokSprache, zufallMitSeed } from "../quiz.jsx";
 import { CSS } from "../stil.js";
+import { SymWdh } from "../symbole.jsx";
 import { Fragment } from "react";
 import { GelerntSterne, IcoSpk, IcoSpkOn } from "../komponenten.jsx";
 import { SK, lsGet, splitInSeiten } from "../speicher.js";
@@ -29,7 +30,7 @@ export function AbfrageAnsicht(app) {
         const heuteFertig = heuteGesperrt > 0 && schonAbgefragt.size + heuteGesperrt >= (quiz.sessionGesamt || 0);
         if (istLetzteBatch && !quiz.abgebrochen && quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, (<>
           <button data-nochmal {...tt("Quiz gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}}
-            onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteQuiz(true); }}>🔁 Nochmal!</button>
+            onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteQuiz(true); }}><SymWdh/> Nochmal!</button>
           <button {...tt("Durchlauf beenden und zur Quiz-Übersicht")} className="btn btn-ghost-filled" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
           <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button>
         </>), () => doBeende(true));
@@ -169,7 +170,7 @@ export function AbfrageAnsicht(app) {
             <div className="sektion">
               <div className="quiz-frage-box wiederholung-karte" onClick={starteWiederholung} style={{cursor:"pointer", padding:"34px 16px"}}
                 {...tt("Antippen: weiter zu den Vokabeln, die wiederholt werden")}>
-                <div style={{fontSize:"2.2rem", lineHeight:1}}>🔁</div>
+                <div style={{fontSize:"2.2rem", lineHeight:1, color:"var(--haupt)"}}><SymWdh/></div>
                 <div className="quiz-frage-text" style={{textAlign:"center", marginTop:10}}>
                   Wiederholung{quiz.wiederholungDurchgang > 1 ? ` ${quiz.wiederholungDurchgang}` : ""}
                 </div>
@@ -454,7 +455,7 @@ export function AbfrageAnsicht(app) {
               );
             })()}
             <span className="topbar-title">
-              {quiz.wiederholungDurchgang ? <span className="wiederholung-marke" {...tt("Diese Vokabeln werden wiederholt, weil sie noch nicht sicher sitzen")}>🔁 Wiederholung </span> : null}
+              {quiz.wiederholungDurchgang ? <span className="wiederholung-marke" {...tt("Diese Vokabeln werden wiederholt, weil sie noch nicht sicher sitzen")}><SymWdh/> Wiederholung </span> : null}
               {quiz.spielZaehler != null ? <span data-spiel-zaehler>{quiz.abfrageZiel?.modus === "blitz" ? "⚡" : "🔥"} {quiz.spielZaehler}</span>
                 : <span>{quiz.index + 1} / {quiz.vokabeln.length}</span>}
               {quiz.spielZaehler == null && renderKopfFortschritt(quiz)}

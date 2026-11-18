@@ -114,7 +114,7 @@ const menue = async key => { await page.evaluate(k => { const el = document.quer
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }, key); await sleep(200); };
 const aktion = async label => { await page.evaluate(l => __aktion(`${l}`).click(), label); await sleep(250); };
 await menue("2|0");
-const knoepfe = await page.evaluate(() => [...__aktionen()].map(b => b.textContent.trim()));
+const knoepfe = await page.evaluate(() => [...__aktionen()].map(b => (b.dataset.infoAktion || b.textContent).trim()));
 const blase = await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText || "");
 console.log("     Menü:", knoepfe.join(" | "));
 ok(blase.startsWith(n3) && knoepfe.join("|") === "🔁 Keine fälligen Vokabeln|📝 Listen/Vokabeln ändern|🗂 Ablage ›|↔ Von–Bis|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Lang-Druck: voller Name (Info oben) + Menü (${knoepfe.join("|")})`);

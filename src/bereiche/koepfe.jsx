@@ -2,6 +2,7 @@ import { FORTSCHRITT_BALKEN, GRUPPE_BALKEN, clampScore, heuteAbgefragt, heuteAnt
 import { SK, TYPEN, formatDatum, lsGet, lsLesen } from "../speicher.js";
 import { listeSprache, mitKuerzel, sprachInfo, sprachKuerzelFuer } from "../sprache.js";
 import { listenInhalt } from "../saetze.js";
+import { SymWdh } from "../symbole.jsx";
 
 // Phase 2 (Aufteilung): Zeichen-Funktionen aus App.jsx. app = die Namen der Komponente, die sie brauchen.
 
@@ -230,11 +231,11 @@ export function renderSlotKopf(app, statistik) {
 
 // feststehend unter dem Kopf (Quiz und Vokabel-Liste scrollen darunter hindurch), mit dem Pfeil auf eine Zeile einklappbar (gespeichert);
 // „📋 Vokabeln ansehen“ hängt die enthaltenen Vokabeln mit Listen-Nr. darunter an (Lücken als Trennzeile)
-// Gruppen kurz und einzeilig: „● 112 ✓ · ● 98 in Arbeit · ● 2850 nie · ● 11 ✗“ – der Punkt in der Farbe des Balken-Abschnitts (185)
+// Gruppen kurz und einzeilig: „● 2850 nie · ● 11 ✗ · ● 98 in Arbeit · ● 112 ✓“ – der Punkt in der Farbe des Balken-Abschnitts (185, 275)
 export function gruppenKurz(app, anz, vorn = null, hinten = null) {
   const {  } = app;
     const farbe = Object.fromEntries(GRUPPE_BALKEN);
-    const teile = [["gelernt", "✓"], ["arbeit", "in Arbeit"], ["nie", "nie"], ["negativ", "✗"]].filter(([g]) => anz[g])
+    const teile = [["nie", "nie"], ["negativ", "✗"], ["arbeit", "in Arbeit"], ["gelernt", "✓"]].filter(([g]) => anz[g])
       .map(([g, l]) => <span key={g} data-gruppe-text={g}><span className="gruppen-punkt" style={{background:farbe[g]}}/>{anz[g]} {l}</span>);
     return [vorn, ...teile, hinten].filter(Boolean).flatMap((x, i) => i ? [" · ", x] : [x]);
   }
@@ -266,7 +267,7 @@ export function renderSlotInfo(app, statistik) {
     const pct = Math.round(lernProzent(alle.map(v => v.fortschritt?.score), schwelle));
     const sf = eintrag.konfiguration ? slotSFAlle(eintrag)[slotKonfigArt(eintrag)] : null;
     const faelligN = alle.filter(v => istFaellig(v[FORTSCHRITT_FELD[quizArt] || "fortschritt"])).length;
-    const gruppenText = gruppenKurz(anz, faelligN ? `🔁 ${faelligN} fällig` : null);
+    const gruppenText = gruppenKurz(anz, faelligN ? <span key="f" data-faellig-text={faelligN}><SymWdh/> {faelligN} fällig</span> : null);
     // 184: Anteil der heute (in der gewählten Abfrageart) abgefragten – wie die Füllung der Kachel
     const heuteFeld = FORTSCHRITT_FELD[statistik ? statistikArt : quizArt] || "fortschritt";
     const heuteP = heuteAnteil(alle, heuteFeld, schwelle);

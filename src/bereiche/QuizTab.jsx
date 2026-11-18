@@ -1,12 +1,14 @@
+import { Fragment } from "react";
 import { ANTWORT_MODUS_NAMEN, MODI_REIHENFOLGE, PAKET_ALLE, QUIZ_ARTEN, START_TEXT, antwortSpaltenFuer, gelerntScore, hatAkzente, heuteAbgefragt, istFaellig, modiVon, ordneVokabeln, stufenRegeln, tagesSperre, nurArtikel } from "../quiz.jsx";
 import { IcoDown, IcoUp, IcoX } from "../komponenten.jsx";
+import { SymWdh } from "../symbole.jsx";
 import { SK, TYPEN, WAHL_ZU_MS, lsGet } from "../speicher.js";
 import { SPRACH_KUERZEL, sprachInfo } from "../sprache.js";
 
 // Phase 2 (Aufteilung): Bereich aus dem Haupt-return von App.jsx (tab === "quiz")
 // app = Zustände, Setter und Funktionen der Komponente (siehe „const app“ in App.jsx)
 export function QuizTab(app) {
-  const { faelligePool, quizFaellig, setQuizFaellig, starteNurFaellige, istPaketQuiz, abfrageModusContainerRef, abfrageModusRef, abfrageZielAnzahl, abfrageZielModus, abfrageZielScore, abfrageZielScoreTyp, abfrageZielWiederholung, aktiverSlot, alleBereichH, alleBereichRef, antwortMehrfach, artenMehrfach, aufteilen, aufteilenStand, auswahlListen, auswahlOrdnerZelle, begrenzeOhneAkzent, blitzt, einstellungen, einzelauswahlRef, fokusZeigt, headerH, ladeSlot, legeAufteilenAn, lernEinstellungen, lernResetFrage, lernStandVon, lernstandJeArt, leuchte, leuchtet, listenAendern, listenAuswahlAufgeklappt, listenAuswahlPfad, listenContainerRef, listenFlagge, listenIndex, listenNavi, listenOffen, listenOrdner, listenRasterPlaetze, listenSortModus, listenWahl, listenauswahlHeaderH, listenauswahlHeaderRef, loescheSessionSlot, maxFenster, maxSpalte, offenText, ordnerNavi, quizAbfrageArt, quizAbfrageModusAufgeklappt, quizAntwortTypenGeordnet, quizArt, quizAusgewaehlt, quizBasisVoks, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizErstellen, quizFokus, quizFrageTyp, quizGefilterteVoks, quizGelerntEinschliessen, quizHeuteEinschliessen, quizInfoTypenSession, quizKombiListe, quizListeAufgeklappt, quizListenNavi, quizListenSichtbar, quizModus, quizModusInfoAufgeklappt, quizPaketGroesse, quizReihenfolge, quizReihenfolgeAufgeklappt, quizSchlechtesteMaxScore, quizSessionAufgeklappt, quizSessionModus, quizSpalteModus, quizStufeAufgeklappt, quizTabListen, quizUnbeantwortetZuerst, quizVokMax, quizVonBisErster, quizVonBisModus, quizZeigeInfo, reihenfolgeContainerRef, renderAufteilenKasten, renderListeInfo, renderListenRaster, renderModusKnoepfe, renderQuizListenRaster, renderSlotBereiche, renderSlotInfo, renderSlotKopf, renderSuchleiste, resetImport, schliesseQuizBereiche, sessionContainerRef, sessionRef, sessionResetFrage, sessionSlotAktiv, sessionSlotKonflikt, sessionSpeicherAktionen, setAbfrageZielAnzahl, setAbfrageZielModus, setAbfrageZielScore, setAbfrageZielScoreTyp, setAbfrageZielWiederholung, setAnsicht, setAufteilen, setLernResetFrage, setModal, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizDiktatSpalte, setQuizDiktatUebersetzung, setQuizGelerntEinschliessen, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizModus, setQuizModusInfoAufgeklappt, setQuizPaketGroesse, setQuizReihenfolge, setQuizReihenfolgeAufgeklappt, setQuizSchlechtesteMaxScore, setQuizSessionAufgeklappt, setQuizSessionModus, setQuizStufeAufgeklappt, setQuizTabListen, setQuizUnbeantwortetZuerst, setQuizVonBisErster, setQuizVonBisModus, setSessionResetFrage, setStartLeerHinweis, setSucheQuiz, setTab, setzeLernStand, sicherungErinnerungUI, sichtbareListen, slotContainerRef, slotH, slotSektionAufgeklappt, slotVorschau, speichereEinst, spracheVonListe, sprungKnopf, startLeerHinweis, starteLernen, starteQuiz, suchInfo, suchMarke, sucheQuiz, toggleAbfrageModus, toggleEinzelauswahl, toggleInfoSpalte, toggleListenAuswahl, toggleQuizSpalte, toggleQuizTabListe, toggleReihenfolge, toggleSessionBereich, toggleSpalteRolle, toggleVokCheckbox, tt, ttFeld, vonBisLangDruck, wahlLeiste, wechsleQuizArt, zeileImBlick } = app;
+  const { faelligJeSprache, faelligePool, quizFaellig, setQuizFaellig, starteNurFaellige, istPaketQuiz, abfrageModusContainerRef, abfrageModusRef, abfrageZielAnzahl, abfrageZielModus, abfrageZielScore, abfrageZielScoreTyp, abfrageZielWiederholung, aktiverSlot, alleBereichH, alleBereichRef, antwortMehrfach, artenMehrfach, aufteilen, aufteilenStand, auswahlListen, auswahlOrdnerZelle, begrenzeOhneAkzent, blitzt, einstellungen, einzelauswahlRef, fokusZeigt, headerH, ladeSlot, legeAufteilenAn, lernEinstellungen, lernResetFrage, lernStandVon, lernstandJeArt, leuchte, leuchtet, listenAendern, listenAuswahlAufgeklappt, listenAuswahlPfad, listenContainerRef, listenFlagge, listenIndex, listenNavi, listenOffen, listenOrdner, listenRasterPlaetze, listenSortModus, listenWahl, listenauswahlHeaderH, listenauswahlHeaderRef, loescheSessionSlot, maxFenster, maxSpalte, offenText, ordnerNavi, quizAbfrageArt, quizAbfrageModusAufgeklappt, quizAntwortTypenGeordnet, quizArt, quizAusgewaehlt, quizBasisVoks, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizErstellen, quizFokus, quizFrageTyp, quizGefilterteVoks, quizGelerntEinschliessen, quizHeuteEinschliessen, quizInfoTypenSession, quizKombiListe, quizListeAufgeklappt, quizListenNavi, quizListenSichtbar, quizModus, quizModusInfoAufgeklappt, quizPaketGroesse, quizReihenfolge, quizReihenfolgeAufgeklappt, quizSchlechtesteMaxScore, quizSessionAufgeklappt, quizSessionModus, quizSpalteModus, quizStufeAufgeklappt, quizTabListen, quizUnbeantwortetZuerst, quizVokMax, quizVonBisErster, quizVonBisModus, quizZeigeInfo, reihenfolgeContainerRef, renderAufteilenKasten, renderListeInfo, renderListenRaster, renderModusKnoepfe, renderQuizListenRaster, renderSlotBereiche, renderSlotInfo, renderSlotKopf, renderSuchleiste, resetImport, schliesseQuizBereiche, sessionContainerRef, sessionRef, sessionResetFrage, sessionSlotAktiv, sessionSlotKonflikt, sessionSpeicherAktionen, setAbfrageZielAnzahl, setAbfrageZielModus, setAbfrageZielScore, setAbfrageZielScoreTyp, setAbfrageZielWiederholung, setAnsicht, setAufteilen, setLernResetFrage, setModal, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizDiktatSpalte, setQuizDiktatUebersetzung, setQuizGelerntEinschliessen, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizModus, setQuizModusInfoAufgeklappt, setQuizPaketGroesse, setQuizReihenfolge, setQuizReihenfolgeAufgeklappt, setQuizSchlechtesteMaxScore, setQuizSessionAufgeklappt, setQuizSessionModus, setQuizStufeAufgeklappt, setQuizTabListen, setQuizUnbeantwortetZuerst, setQuizVonBisErster, setQuizVonBisModus, setSessionResetFrage, setStartLeerHinweis, setSucheQuiz, setTab, setzeLernStand, sicherungErinnerungUI, sichtbareListen, slotContainerRef, slotH, slotSektionAufgeklappt, slotVorschau, speichereEinst, spracheVonListe, sprungKnopf, startLeerHinweis, starteLernen, starteQuiz, suchInfo, suchMarke, sucheQuiz, toggleAbfrageModus, toggleEinzelauswahl, toggleInfoSpalte, toggleListenAuswahl, toggleQuizSpalte, toggleQuizTabListe, toggleReihenfolge, toggleSessionBereich, toggleSpalteRolle, toggleVokCheckbox, tt, ttFeld, vonBisLangDruck, wahlLeiste, wechsleQuizArt, zeileImBlick } = app;
   return (
 (() => {
           const kombiListe = quizKombiListe;
@@ -116,8 +118,10 @@ export function QuizTab(app) {
           const startRest = isPakete ? Math.max(0, anzeigeGesamt - sessionAbgefragtAnzahl) : verfuegbar;
           const sessionPct = anzeigeGesamt > 0 ? Math.round(sessionAbgefragtAnzahl / anzeigeGesamt * 100) : 0;
           // 267: Fällige kommen hinzu – Ziel bezogen auf die neuen (im laufenden Quiz fest), davon schon abgefragt, noch offen
-          const fZiel = !faelligMoeglich || !quizFaellig.an ? 0 : sessionHatFortschritt && sessionSlotAktiv.faelligZiel != null ? sessionSlotAktiv.faelligZiel
+          // 273: auch ausgeschaltet zeigt der Knopf, wie viele dazukämen
+          const fZielWenn = !faelligMoeglich ? 0 : sessionHatFortschritt && sessionSlotAktiv.faelligZiel != null ? sessionSlotAktiv.faelligZiel
             : Math.min(faelligeAlle.length, Math.round(anzeigeGesamt * quizFaellig.anteil / 100));
+          const fZiel = quizFaellig.an ? fZielWenn : 0;
           const fGemacht = sessionHatFortschritt ? (sessionSlotAktiv.faelligIds || []).length : 0;
           const fRest = Math.max(0, Math.min(faelligeAlle.length, fZiel - fGemacht));
           const startbar = verfuegbar + (isPakete ? fRest : 0) > 0;
@@ -129,9 +133,14 @@ export function QuizTab(app) {
               {...tt(`Fällige (Langzeit-Wiederholung): ${quizFaellig.an ? `${quizFaellig.anteil} % zusätzlich zu den neuen, aus ${quizFaellig.modus === "sprache" ? `allen Listen (${sprachKurz})` : "diesem Quiz"} – jetzt ${faelligeAlle.length} fällig; antippen schaltet aus` : `aus – ${faelligeAlle.length} wären fällig; antippen schaltet ein`}`,
                 [{ label: `${quizFaellig.modus === "sprache" ? "◉" : "○"} Alle ${sprachKurz || "der Sprache"}`, fn: () => setQuizFaellig(f => ({ ...f, an: true, modus: "sprache" })) },
                  { label: `${quizFaellig.modus === "quiz" ? "◉" : "○"} Nur dieses Quiz`, fn: () => setQuizFaellig(f => ({ ...f, an: true, modus: "quiz" })) }],
-                { langText: "🔁 Fällige", regler: () => ({ label: "Anteil (zusätzlich zu den neuen)", min: 5, max: 100, step: 5, wert: quizFaellig.anteil, format: v => `${v} %`,
+                { langText: "🔁 Fällige",
+                  // 272: Übersicht je Sprache (nur Info; je Sprache ein eigenes Element – später ggf. antippbar)
+                  zusatz: () => { const akt = new Set(quizTabListen.map(spracheVonListe)), z = faelligJeSprache();
+                    return z.length ? <div data-faellig-sprachen>Jetzt fällig: {z.map((x, i) => <Fragment key={x.code}>{i ? " · " : ""}<span data-faellig-sprache={x.code} data-n={x.n}
+                      style={akt.has(x.code) ? { fontWeight: 800, textDecoration: "underline" } : { opacity: 0.85 }}>{x.kurz} {x.n}</span></Fragment>)}</div> : null; },
+                  regler: () => ({ label: "Anteil (zusätzlich zu den neuen)", min: 5, max: 100, step: 5, wert: quizFaellig.anteil, format: v => `${v} %`,
                   aendern: v => setQuizFaellig(f => ({ ...f, anteil: v, an: true })) }) })}>
-              {quizFaellig.an ? `+ 🔁 ${fZiel}` : "🔁 aus"}
+              {quizFaellig.an ? <>+ <SymWdh/> {fZiel}</> : <><SymWdh/> {fZielWenn}</>}
             </button></div>
           );
 
@@ -757,7 +766,7 @@ export function QuizTab(app) {
                         </div>
                       );
                     })()}
-                    <div className="start-titel" data-start-titel>{lernAktiv ? "Lernen" : "Quiz"} mit {lernAktiv ? sessionAnzahl : titelAnzahl} Vokabel{(lernAktiv ? sessionAnzahl : titelAnzahl) !== 1 ? "n" : ""}{!lernAktiv && fZiel > 0 ? <span data-start-titel-faellig={fZiel}> + 🔁 {fZiel}</span> : null}</div>
+                    <div className="start-titel" data-start-titel>{lernAktiv ? "Lernen" : "Quiz"} mit {lernAktiv ? sessionAnzahl : titelAnzahl} Vokabel{(lernAktiv ? sessionAnzahl : titelAnzahl) !== 1 ? "n" : ""}{!lernAktiv && fZiel > 0 ? <span data-start-titel-faellig={fZiel}> + <SymWdh/> {fZiel}</span> : null}</div>
                     {isPakete && (
                       <div style={{height:6, background:"var(--rahmen)", borderRadius:3, marginBottom:10}} data-start-balken={sessionPct}>
                         <div style={{width:`${sessionPct}%`, height:"100%", background:"var(--haupt)", borderRadius:3, transition:"width 0.3s"}}/>
@@ -775,7 +784,7 @@ export function QuizTab(app) {
                           onClick={() => setSessionResetFrage(true)}
                           {...tt(sessionHatFortschritt ? "So viele Vokabeln dieses Quiz wurden schon abgefragt – antippen, um den Abgefragt-Stand zurückzusetzen (Scores und Lernfortschritt bleiben)" : "Fortschritt des Quiz – noch nichts abgefragt")}>
                           {sessionHatFortschritt ? <span data-anzahl="fortschritt">{sessionAbgefragtAnzahl}/{anzeigeGesamt}</span> : <span>0/{anzeigeGesamt}</span>}
-                          {fZiel > 0 && <span data-anzahl="faellig" className="start-fortschritt-faellig">🔁 {fGemacht}/{fZiel}</span>}
+                          {fZiel > 0 && <span data-anzahl="faellig" className="start-fortschritt-faellig"><SymWdh/> {fGemacht}/{fZiel}</span>}
                         </button>
                       )}
                       {lernAktiv && !aufteilen ? (
@@ -804,20 +813,20 @@ export function QuizTab(app) {
                         {faelligeAlle.length > 0 && (
                           <button className="btn btn-primary start-knopf" data-nur-faellige={faelligeAlle.length} onClick={starteNurFaellige}
                             {...tt(`Nur die ${faelligeAlle.length} fälligen Vokabeln abfragen (eine Runde${quizPaketGroesse && quizPaketGroesse < PAKET_ALLE ? ` mit höchstens ${quizPaketGroesse}` : ""}) – der Quiz-Fortschritt bleibt`)}>
-                            <b>🔁 Nur Fällige</b><span>{faelligeAlle.length} fällig</span>
+                            <b><SymWdh/> Nur Fällige</b><span>{faelligeAlle.length} fällig</span>
                           </button>
                         )}
                         </>
                       ) : !startbar && faelligeAlle.length > 0 && !lernAktiv ? (
                         <button className="btn btn-primary start-knopf" data-nur-faellige={faelligeAlle.length} onClick={starteNurFaellige}
                           {...tt(`Keine neuen Vokabeln offen – nur die ${faelligeAlle.length} fälligen abfragen (eine Runde) – der Quiz-Fortschritt bleibt`)}>
-                          <b>🔁 Nur Fällige</b><span>{faelligeAlle.length} fällig</span>
+                          <b><SymWdh/> Nur Fällige</b><span>{faelligeAlle.length} fällig</span>
                         </button>
                       ) : (
                         <button className={`btn btn-primary start-knopf${!startbar ? " leer" : ""}`} data-start-knopf data-start-anzahl={verfuegbar} data-start-rest={startRest} data-start-faellig={fRest}
                           onClick={() => !startbar ? setStartLeerHinweis(h => !h) : starteQuiz()} disabled={!kannStarten}
                           {...tt(isPakete ? `${START_TEXT[quizArt] || "Quiz starten"} – in dieses Quiz sind noch ${startRest} Vokabeln übrig; abgefragt wird ${quizPaketGroesse >= PAKET_ALLE ? "alles in einem Paket" : `in Paketen zu ${quizPaketGroesse}`}; lang drücken: speichern` : `${START_TEXT[quizArt] || "Quiz starten"} – die Zahl nennt die Vokabeln dieser Fragerunde; lang drücken: speichern`, sessionSpeicherAktionen())}>
-                          <b>{START_TEXT[quizArt] || "Quiz starten"}</b><span>{startRest} Vokabel{startRest !== 1 ? "n" : ""}{isPakete && fRest > 0 ? ` + 🔁 ${fRest}` : ""}</span>
+                          <b>{START_TEXT[quizArt] || "Quiz starten"}</b><span>{startRest} Vokabel{startRest !== 1 ? "n" : ""}{isPakete && fRest > 0 ? <> + <SymWdh/> {fRest}</> : ""}</span>
                         </button>
                       )}
                     </div>

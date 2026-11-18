@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer-core";
+import { menueShim } from "./hilfen.mjs";
 
 // 269: Statistik als Balken (ersetzt das Kreisdiagramm) – Lernstand Negativ · Kurzzeit · Gelernt (Rahmen = 100 %, von unten
 // gefüllt, abgestuft), Langzeit je Raute (100 % = gelernte, fällige schraffiert), Gesamtübersicht, „Nie abgefragte
@@ -6,6 +7,7 @@ import puppeteer from "puppeteer-core";
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 820, height: 1300 });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -35,7 +37,7 @@ async function lade(scores, faellig = []) {
 // Höhe je Balken-Teil in % des Rahmens
 const balken = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("[data-st-balken], [data-st-raute]")].map(b => [b.dataset.stBalken || "r" + b.dataset.stRaute,
   { teile: Object.fromEntries([...b.querySelectorAll("[data-st-teil]")].map(t => [t.dataset.stTeil, Math.round(parseFloat(t.style.height))])),
-    unten: [...b.querySelectorAll("[data-st-teil]")].map(t => t.dataset.stTeil).join(","), zahl: b.closest(".st-spalte").querySelector(".st-zahl").textContent.trim(),
+    unten: [...b.querySelectorAll("[data-st-teil]")].map(t => t.dataset.stTeil).join(","), zahl: __txt(b.closest(".st-spalte").querySelector(".st-zahl")).trim(),
     aus: b.closest(".st-spalte").style.opacity < 1 }])));
 const kopf = () => page.evaluate(() => document.querySelector("[data-statistik-kopf-zahl]")?.textContent);
 const zeilen = () => page.evaluate(() => document.querySelectorAll("[data-statistik-vok]").length);

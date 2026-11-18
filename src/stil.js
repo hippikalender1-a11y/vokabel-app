@@ -123,8 +123,8 @@ export const CSS_BASIS = `
   [data-modus-gruppen].mehrfach .spalten-modus-btn,.spalten-rolle-btn.mehrfach{border-style:dashed;}
   .wahl-hinweis{display:inline-block;padding:2px 6px;margin-left:-6px;border-radius:6px;}
   .nach-oben{position:fixed;right:max(16px, calc(50vw - 284px));bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:30;width:46px;height:46px;border-radius:50%;border:none;background:var(--haupt);color:var(--auf-haupt);font-size:1.3rem;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.25);opacity:0.92;}
-  .quiz-zeile-knopf[data-gelernte],.quiz-zeile-knopf[data-heute]{background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);flex:0 0 auto;padding-left:12px;padding-right:12px;}
-  .quiz-zeile-knopf[data-gelernte].an,.quiz-zeile-knopf[data-heute].an{background:var(--haupt);color:var(--auf-haupt);}
+  .quiz-zeile-knopf[data-gelernte],.quiz-zeile-knopf[data-heute],.quiz-zeile-knopf[data-faellig]{background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);flex:0 0 auto;padding-left:12px;padding-right:12px;}
+  .quiz-zeile-knopf[data-gelernte].an,.quiz-zeile-knopf[data-heute].an,.quiz-zeile-knopf[data-faellig].an{background:var(--haupt);color:var(--auf-haupt);}
   .quiz-zeile-hinweis{font-size:0.75rem;color:var(--text3);text-align:center;padding:6px 0 0;}
   .umfang-raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px;}
   .umfang-raster .typ-btn{min-height:48px;font-size:1.1rem;font-weight:800;}
@@ -137,6 +137,9 @@ export const CSS_BASIS = `
   .start-bereich{background:var(--karte);padding:14px 16px;margin:0 -16px 8px;border-bottom:1px solid var(--rahmen);}
   .start-fortschritt{flex:0 0 auto;min-width:86px;border-radius:12px;border:1.5px solid var(--haupt-zart);background:var(--haupt-flaeche);color:var(--haupt);font-family:inherit;font-weight:800;font-size:1rem;cursor:pointer;}
   .start-fortschritt:disabled{cursor:default;opacity:0.7;}
+  .start-fortschritt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.15;}   /* 271: Fällige in eigener Zeile */
+  .sym{display:inline-block;vertical-align:-0.14em;flex-shrink:0;overflow:visible;}   /* 270: eigene Zeichen in Schriftfarbe */
+  .start-fortschritt-faellig{font-size:0.85rem;font-weight:700;white-space:nowrap;}
   .btn-primary.start-knopf.leer{background:var(--haupt-flaeche);color:var(--haupt);border:1.5px solid var(--haupt-zart);box-shadow:none;}   /* 188: nichts abzufragen */
   .start-hinweis{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:31px;font-size:0.82rem;margin-top:10px;color:var(--text);}
   .start-knopf{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 12px;min-height:58px;}

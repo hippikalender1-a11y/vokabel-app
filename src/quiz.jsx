@@ -387,10 +387,10 @@ export function artBereinigt(art, k, spalten) {
 // Listen-Nummern zu zusammenhängenden Stücken: [1,2,3,7] → [[1,3],[7,7]]; Text „1–3, 7“
 export function nrStuecke(nrs) { const r = []; nrs.forEach(n => { const l = r[r.length - 1]; if (l && n === l[1] + 1) l[1] = n; else r.push([n, n]); }); return r; }
 export function nrText(nrs) { return nrStuecke(nrs).map(([a, b]) => a === b ? `${a}` : `${a}–${b}`).join(", "); }
-// Statistik-Gruppen in Anzeige-Reihenfolge mit Farbe (Kreis, Gruppen-Balken)
-export const GRUPPE_BALKEN = [["gelernt", "var(--gelernt)"], ["arbeit", "var(--arbeit)"], ["nie", "var(--nie)"], ["negativ", "var(--negativ)"]];
+// Statistik-Gruppen in Anzeige-Reihenfolge mit Farbe (Gruppen-Balken) – 275: links nie/schlecht → rechts gelernt
+export const GRUPPE_BALKEN = [["nie", "var(--nie)"], ["negativ", "var(--negativ)"], ["arbeit", "var(--arbeit)"], ["gelernt", "var(--gelernt)"]];
 // Fortschrittsbalken im Statistik-Kopf: eigene Rollen, unabhängig vom Kreisdiagramm
-export const FORTSCHRITT_BALKEN = [["gelernt", "var(--fortschritt-gelernt)"], ["arbeit", "var(--fortschritt-arbeit)"], ["nie", "var(--fortschritt-nie)"], ["negativ", "var(--fortschritt-negativ)"]];
+export const FORTSCHRITT_BALKEN = [["nie", "var(--fortschritt-nie)"], ["negativ", "var(--fortschritt-negativ)"], ["arbeit", "var(--fortschritt-arbeit)"], ["gelernt", "var(--fortschritt-gelernt)"]];
 // Quiz-Standard: in Paketen abfragen
 export const STANDARD_SESSION_MODUS = "pakete";
 // Standard-Reihenfolge: schlechteste zuerst, nur Score ≤ 3, unbeantwortete zuerst

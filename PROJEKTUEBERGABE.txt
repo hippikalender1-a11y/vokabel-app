@@ -3608,3 +3608,81 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   Slot-SF); auswertung.jsx sessionAuswertungDaten liefert faellig [{ id, vorher, jetzt }] (jetzt ggf. aus der eigenen Liste).
 - Tests: punkte267 erweitert; angepasst bilanz, jubel, sessionauswertung, akzentbegrenzung.
 - Offen: Hilfetexte (Einstellungen › Info) beschreiben noch Kreisdiagramm/Start-Ende-Balken – beim Handbuch nachziehen.
+
+── GESAMMELT (noch nicht umsetzen) ──
+- 270: Wiederholungs-Symbol 🔁 an die Schrift anpassen (v. a. Farbe) – das Emoji ist ein buntes Bild (orange Kasten) und
+  nimmt keine Textfarbe an. Vorschlag: überall (Quiz-Knopf „Fällige“, Titel, Start-Knopf, Fortschritt, Menüs, Statistik,
+  Auswertung, Abfrage) durch ein Zeichen/Icon in Schriftfarbe ersetzen, z. B. Textzeichen ↻ oder kleines SVG mit
+  currentColor (sieht auf allen Geräten gleich aus); eine gemeinsame Komponente/Konstante statt 🔁 im Text.
+- 271: Fortschritts-Kachel links neben „… starten“ zweizeilig: oben die normalen Vokabeln (0/25), darunter die Fälligen
+  (🔁 0/5) – statt beides in einer Zeile („0/25🔁 0/5“).
+  270 Entscheidung: eigene SVG-Zeichen statt fremder Icon-Sätze (einheitlicher Stil, falls später weitere eigene Grafiken
+  kommen). Gemeinsame Datei (z. B. src/symbole.jsx) mit festen Stilregeln: Raster 24×24, Strichstärke 2, runde Enden,
+  Farbe currentColor, Größe 1em (wie Schrift). Vor dem Umsetzen 2–3 Varianten des Wiederholungszeichens zur Auswahl zeigen.
+  270 Stand: Entwürfe in symbole-entwuerfe/ (A Schleife wie 🔁 – empfohlen, B Kreis aus zwei Pfeilen, C ein Pfeil im Kreis;
+  vorschau.png). Nutzer wählt später am Rechner (ggf. in Inkscape 1.4.2 nachbessern). Ordner symbole-entwuerfe/ NICHT committen.
+- 272: Lang drücken auf den Knopf „Fällige“ (QuizTab, data-faellig): im Menü zusätzlich eine Übersicht, wie viele fällige
+  Vokabeln es aktuell je Sprache gibt (z. B. „Engl 12 · Franz 4 · Span 0“; über alle Listen, Übersetzung, gelernt + istFaellig),
+  die Sprache des aktuellen Quiz hervorgehoben. Offen: nur Info oder antippbar (Quiz „Nur Fällige“ dieser Sprache)?
+  272 Entscheidung: vorerst NUR Info (nicht antippbar) – erst feste Struktur testen. Antippen/Querverweise ggf. später;
+  beim Umsetzen so bauen, dass die Zeilen später leicht antippbar werden (je Sprache eigenes Element mit Sprach-Schlüssel).
+- 273: Knopf „Fällige“ (data-faellig) farblich wie „Gelernte“/„Heute“: an = gefüllt (var(--haupt)) mit „+ 🔁 n“, aus =
+  invertiert (var(--haupt-flaeche), Schrift/Rand var(--haupt)). Umsetzung: stil.js Zeile ~126/127 die Regeln für
+  [data-gelernte]/[data-heute] um [data-faellig] erweitern. Vorschlag Beschriftung aus: „🔁 n“ (ohne +) statt „🔁 aus“ –
+  wie „23 gelernte“ ohne + (Nutzer fragen beim Umsetzen).
+- 274: Auswahl-Tafel unten (Quiz-Auswahl mehrerer Listen, kacheln.jsx wahlMenue/tafelInhalt) neu ordnen:
+  oben Raster 2×2 gleich große TOGGLES (wie Multiple-Choice-Raster): „Multiquiz (n)“ (normale/neue Vokabeln) · „Gelernt (n)“ ·
+  „Heute (n)“ · „Fällige (n)“ – n = Anzahl Vokabeln; sie stellen die Voreinstellungen fürs Quiz (gleicher Zustand wie die
+  Schalter im Quiz-Tab: quizGelerntEinschliessen, quizHeuteEinschliessen, quizFaellig.an + neu „normale an/aus“).
+  Darunter eine Reihe mit „🎨 Farbe ändern“ · „Ablage ›“ · „↔ Von–Bis“ (Breite nach Text). Kopf zeigt, wie viele Vokabeln
+  die Auswahl samt Schaltern ergibt. Texte kürzen.
+  Vorschläge/Bedenken (mit Nutzer klären):
+  a) Start: wenn „Multiquiz“ ein Schalter ist, braucht es einen eigenen Start (Vorschlag: breiter Knopf „▶ Starten · n“
+     über/unter dem Raster) – oder Kopf antippbar?
+  b) Kategorien überschneidungsfrei zählen (fällig ⊂ gelernt; heute abgefragt kann gelernt sein) → feste Reihenfolge:
+     Fällige > Heute > Gelernt > normal; Kopf-Summe = Summe der eingeschalteten.
+  c) „✗ Negative abfragen“ fehlt im Entwurf – wohin? (z. B. lang drücken auf „Multiquiz“ → „nur Negative“, oder 5. Feld).
+  d) Fällige-Zahl: aus der Auswahl oder wie im Quiz-Tab „Alle <Sprache>“ und mit Anteil (nur die, die tatsächlich dazukommen)?
+  e) Felder mit 0 bleiben sichtbar (grau/deaktiviert) → feste Struktur. Gleiches Raster auch bei EINEM ausgewählten Quiz?
+  274 Antworten: a) KEIN eigener Start-Knopf – die Schalter bestimmen, was ins (Multi-)Quiz geladen wird; gestartet wird
+  im Quiz-Tab mit dem Start-Knopf. b) Kopf zeigt die tatsächliche Vokabelzahl, nichts doppelt gezählt.
+  c) Negative kommen dazu. Aufbau: Zeile 1 „Multiquiz (n)“ (Grund-Vokabeln) über die volle Breite; darunter 2×2 gleich
+  groß: Negative · Gelernt / Heute · Fällige; unten Farbe · Ablage · Von–Bis (Breite nach Text).
+  Zählung überschneidungsfrei: Fällige > Heute > Gelernt > Negative > Grund (Grund = Score 0…2 und nie abgefragt).
+  Folge: Quiz-Tab braucht neue Zustände für „Grund-Vokabeln an/aus“ und „Negative an/aus“ (bisher nur Gelernte/Heute/Fällige).
+  Noch offen: d) Fällige-Zahl (Auswahl vs. alle der Sprache, mit Anteil?), e) Nullfelder grau, gleiches Raster bei einem Quiz?,
+  Beschriftung des Grund-Knopfs bei EINER Liste („Quiz (n)“ / „Vokabeln (n)“?), sollen Negative/Grund auch im Quiz-Tab
+  als Schalter erscheinen?
+  274 d) Fällige-Feld: lang drücken öffnet dieselben Einstellungen wie im Quiz-Tab (◉ Alle <Sprache> / ○ Nur dieses Quiz,
+  Regler Anteil). e) Raster immer gleich, nicht verfügbare Felder ausgegraut; bei EINEM Quiz steht oben nur die Anzahl der
+  regulär abgefragten Vokabeln (statt „Multiquiz“). Offen: ob „Grund-Vokabeln an/aus“ und „Negative an/aus“ auch im
+  Quiz-Tab als Schalter sichtbar sein sollen (Nutzer gefragt).
+  274 Quiz-Tab: Grund-Vokabeln UND Negative bekommen dort auch einen Knopf. Neuer Aufbau Quiz-Tab: Zeile Lern-Modus/Richtung/
+  Reihenfolge (wie bisher) · Zeile „Anzahl je Runde“ + „Wie oft“ allein · eigene Zeile mit den zuschaltbaren Vokabel-
+  Schaltern: Vokabeln (Grund) · Negative · Gelernte · Heute · Fällige (feste Plätze, nicht verfügbare ausgegraut; Farben
+  wie 273: an gefüllt, aus invertiert). Bei 5 Knöpfen in einer Zeile: kurze Aufschrift (nur Zahl, Überschrift darüber).
+- 275: In ALLEN Fortschrittsbalken (Kopf/Lernfortschritt, Vollbild-Kopf, Kacheln, Auswertung …) Reihenfolge wie in der
+  Statistik: links schlecht → rechts Langzeit. Bisher gelernt · arbeit · nie · negativ (quiz.jsx GRUPPE_BALKEN Z. ~391,
+  FORTSCHRITT_BALKEN Z. ~393; koepfe.jsx Z. ~237 Legende „● 1 ✓ · ● 23 in Arbeit · ● 1 ✗“). Neu: negativ · nie · arbeit ·
+  gelernt, Legende in derselben Reihenfolge. Alle Stellen prüfen, die eigene Reihenfolgen haben (nicht nur die Konstanten).
+  Offen: Platz von „nie abgefragt“ (Vorschlag zwischen Negativ und In Arbeit).
+  275 Entscheidung: „nie abgefragt“ ganz links. Reihenfolge überall: nie · negativ · arbeit · gelernt (Legende ebenso).
+- 276: Kachel-Fortschrittsbalken (kacheln.jsx .kachel-balken, data-kachel-balken; Quiz- und Listen-Kacheln, Ordner = alle
+  Kinder) zeigt die FÄLLIGEN: der Anteil fällige/gesamt am Beginn (links) der Füllung „hohl“ – eine dünne Linie in der Farbe
+  der Kachel mittig durch diesen Teil der Füllung, Rand bleibt in Balkenfarbe. Liegt immer innerhalb der Füllung (fällig ⊂
+  gelernt). Fällig wie beim Quiz (Übersetzung, gelernt + istFaellig). Langes Drücken/tt: „… % gelernt · davon n fällig“.
+
+── 270–273, 275, 276 umgesetzt (18.11.2026) ──
+- 270: src/symbole.jsx – eigene Zeichen (Sym, SymWdh, mitSymbolen); Stilregeln 24×24, Linien, Strich 2.2, runde Enden,
+  currentColor, 1em; Wiederholung = Entwurf A (Schleife). JSX-Stellen nutzen <SymWdh/>; Zeichenketten (Menüs, Info-Texte,
+  langText) behalten „🔁“ und InfoTafel ersetzt es beim Anzeigen (mitSymbolen für info.text und a.label). CSS .sym.
+  Tests: hilfen.mjs menueShim hat __txt(el) (liest svg[data-sym] als Emoji).
+- 271: .start-fortschritt zweizeilig (flex column), Fällige in eigener Zeile (.start-fortschritt-faellig).
+- 272: Fällige-Knopf lang drücken: Zeile „Jetzt fällig: Engl 5 · Frz 2“ (App faelligJeSprache; tt-Option zusatz →
+  InfoTafel data-info-zusatz; je Sprache data-faellig-sprache + data-n; aktuelle Sprache fett/unterstrichen; nur Info).
+- 273: Fällige-Knopf wie Gelernte/Heute (an gefüllt, aus invertiert); aus zeigt dieselbe Zahl „🔁 n“ (fZielWenn).
+- 275: GRUPPE_BALKEN/FORTSCHRITT_BALKEN und gruppenKurz-Legende: nie · negativ · arbeit · gelernt; Statistik-Kopf-tt ebenso.
+- 276: kacheln.jsx kachelBalken(pct, n, ges) – Maske (zwei linear-gradients) schneidet eine 2-px-Linie in den Anfang des
+  Balkens (Breite fällige/gesamt, höchstens pct) → Kachelfarbe scheint durch; data-kachel-faellig; tt „davon n fällig“.
+- Tests: neu punkte270 (270/275/276); punkte267 (271–273), punkte168, kreis, slots angepasst.
+- 274 (Auswahl-Tafel mit Schalter-Raster + neue Schalter Grund/Negative im Quiz-Tab) folgt.

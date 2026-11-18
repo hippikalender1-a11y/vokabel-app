@@ -4,6 +4,7 @@ import { ABFRAGE_ART_NAMEN, AKZENTE_FUER_LISTE, ARTIKEL_KAT, ART_KURZ, artikelIn
 import { AUFTEILEN_GROESSEN, SUCH_SPALTEN, sucheVokabeln } from "../raster.js";
 import { MiniKreis } from "../komponenten.jsx";
 import { CSS } from "../stil.js";
+import { SymWdh } from "../symbole.jsx";
 
 // Phase 2 (Aufteilung): Zeichen-Funktionen aus App.jsx. app = die Namen der Komponente, die sie brauchen.
 
@@ -87,7 +88,7 @@ export function renderRundenErgebnis(app, q, r, f, titel) {
           <span className="ergebnis-falsch">✗ {f} <small>nicht gewusst</small></span>
         </div>
         <div style={{textAlign:"center", fontSize:"0.78rem", color:"var(--text3)", marginTop:2}}>{r} von {ges} richtig</div>
-        {nF > 0 && <div data-ergebnis-faellig={nF} style={{textAlign:"center", fontSize:"0.8rem", color:"var(--text2)", marginTop:6}}>davon 🔁 {nF} Fällige (Langzeit-Wiederholung)</div>}
+        {nF > 0 && <div data-ergebnis-faellig={nF} style={{textAlign:"center", fontSize:"0.8rem", color:"var(--text2)", marginTop:6}}>davon <SymWdh/> {nF} Fällige (Langzeit-Wiederholung)</div>}
         {renderLernBilanz(q)}
       </div>
     );
@@ -168,7 +169,7 @@ export function renderSessionAuswertung(app, d) {
         </div>
         {fae.length > 0 && (
           <div className="karte" data-ausw-langzeit={fae.length} style={{padding:"12px 14px", margin:"0 0 14px"}}>
-            <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--text2)", marginBottom:8}}>🔁 Langzeit trainiert · {fae.length} Fällige</div>
+            <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--text2)", marginBottom:8}}><SymWdh/> Langzeit trainiert · {fae.length} Fällige</div>
             <div className="st-kacheln">
               <div className="st-kachel" data-ausw-faellig="weiter"><b style={{color:"var(--haupt)"}}>{fWeiter}</b><span>◆ weiter</span></div>
               <div className="st-kachel" data-ausw-faellig="gehalten"><b>{fae.length - fWeiter - fZurueck}</b><span>gehalten</span></div>

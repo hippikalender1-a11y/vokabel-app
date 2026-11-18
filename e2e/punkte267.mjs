@@ -43,9 +43,9 @@ const ladeQuiz = async () => {
   await page.evaluate(() => document.querySelector('[data-slot-id="sA"]').click()); await sleep(900);
 };
 await ladeQuiz();
-const stand = () => page.evaluate(() => ({ knopf: document.querySelector("[data-faellig]")?.textContent, an: document.querySelector("[data-faellig]")?.dataset.faellig,
-  modus: document.querySelector("[data-faellig]")?.dataset.faelligModus, titel: document.querySelector("[data-start-titel]")?.textContent,
-  start: document.querySelector("[data-start-knopf] span")?.textContent, nurF: document.querySelector("[data-nur-faellige]")?.dataset.nurFaellige || null }));
+const stand = () => page.evaluate(() => ({ knopf: __txt(document.querySelector("[data-faellig]")), an: document.querySelector("[data-faellig]")?.dataset.faellig,
+  modus: document.querySelector("[data-faellig]")?.dataset.faelligModus, titel: __txt(document.querySelector("[data-start-titel]")),
+  start: __txt(document.querySelector("[data-start-knopf] span")), nurF: document.querySelector("[data-nur-faellige]")?.dataset.nurFaellige || null }));
 
 // ── Standard: an, alle Listen der Sprache (A 2 + B 3 = 5 fällig; fr nicht), 25 % von 9 neuen (8 + die negative) = 2 ──
 let s = await stand();
@@ -68,7 +68,19 @@ ok(s.modus === "quiz" && s.knopf === "+ 🔁 2", `Nur dieses Quiz: 2 Fällige ($
 await lang();
 await page.evaluate(() => __aktion("○ Alle Engl").click()); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-faellig]").click()); await sleep(200);
-ok((await stand()).knopf === "🔁 aus" && /^9 Vokabeln$/.test((await stand()).start), "antippen: Fällige aus – nur die 9 neuen");
+s = await stand();
+ok(s.knopf === "🔁 5" && /^9 Vokabeln$/.test(s.start), `antippen: Fällige aus – nur die 9 neuen; Knopf zeigt weiter „🔁 5“ (273) (${JSON.stringify(s)})`);
+ok(await page.evaluate(() => { const b = document.querySelector("[data-faellig]"), c = getComputedStyle(b); return c.backgroundColor !== c.color && !b.classList.contains("an"); }), "273: ausgeschaltet invertiert (Klasse ohne „an“)");
+// 272: lang drücken zeigt die Fälligen je Sprache (Engl 5 hervorgehoben, Frz 0)
+await lang();
+const jeSprache = await page.evaluate(() => [...document.querySelectorAll("[data-faellig-sprache]")].map(x => `${x.dataset.faelligSprache}:${x.dataset.n}:${x.style.fontWeight || ""}`).join(","));
+ok(/en:5:800/.test(jeSprache) && /fr:2:$/.test(jeSprache), `272: Info „Jetzt fällig“ je Sprache – Engl hervorgehoben (${jeSprache})`);
+await page.mouse.click(5, 400); await sleep(300);
+// 271: Fortschritt zweizeilig – Fällige in eigener Zeile
+await page.evaluate(() => document.querySelector("[data-faellig]").click()); await sleep(200);
+const zw = await page.evaluate(() => { const b = document.querySelector("[data-anzahl='faellig']"); const f = b?.closest(".start-fortschritt"); return f ? getComputedStyle(f).flexDirection : null; });
+ok(zw === "column" || zw === null, `271: Fortschritt-Kachel zweizeilig (${zw})`);
+await page.evaluate(() => document.querySelector("[data-faellig]").click()); await sleep(200);
 await page.evaluate(() => document.querySelector("[data-faellig]").click()); await sleep(200);
 
 // ── Runde: alle Abfragen (9 neue + 5 fällige, Fällige anderer Listen werden in ihrer Liste gespeichert) ──

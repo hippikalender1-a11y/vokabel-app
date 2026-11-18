@@ -2,6 +2,7 @@ import { AKZENTE_FUER_LISTE, FORTSCHRITT_BALKEN, STATISTIK_ARTEN, istFaellig, st
 import { IcoDown, IcoExpand, IcoUp } from "../komponenten.jsx";
 import { SK, TYPEN, formatDatum, lsSet } from "../speicher.js";
 import { fv } from "../farben.js";
+import { SymWdh } from "../symbole.jsx";
 
 // Phase 2 (Aufteilung): Bereich aus dem Haupt-return von App.jsx (tab === "statistik")
 // app = Zustände, Setter und Funktionen der Komponente (siehe „const app“ in App.jsx)
@@ -92,7 +93,7 @@ export function StatistikTab(app) {
                     <span data-statistik-kopf-prozent style={{fontWeight:800, fontSize:"1.25rem", color: keineAkzente ? "var(--kopf-schrift-leise)" : "var(--kopf-schrift)"}}>{keineAkzente ? "–" : `${Math.round(lernFortschritt)} %`}</span>
                   </div>
                   <div data-statistik-kopf-balken style={{display:"flex", width:"min(260px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"var(--fortschritt-balken)", margin:"3px 0 2px"}}
-                    {...tt(`Gelernt ${kopfAnzahl.gelernt} · In Arbeit ${kopfAnzahl.arbeit} · Nie abgefragt ${kopfAnzahl.nie} · Negativ ${kopfAnzahl.negativ}`)}>
+                    {...tt(`Nie abgefragt ${kopfAnzahl.nie} · Negativ ${kopfAnzahl.negativ} · In Arbeit ${kopfAnzahl.arbeit} · Gelernt ${kopfAnzahl.gelernt}`)}>
                     {kopfVoks.length > 0 && FORTSCHRITT_BALKEN.map(([g, farbe]) => kopfAnzahl[g] > 0 && (
                       <div key={g} style={{width:`${kopfAnzahl[g] / kopfVoks.length * 100}%`, background:farbe}}/>
                     ))}
@@ -187,7 +188,7 @@ export function StatistikTab(app) {
                           return balken({ key:`l${s}`, von: gelernte.length, attrs: { "data-st-raute": s },
                             tipp: `${sym}: ${hier.length} gelernte${f ? `, davon ${f} jetzt zur Prüfung fällig (schraffiert)` : ""}`,
                             teile: [{ k:"f", n:f, farbe:"repeating-linear-gradient(135deg, var(--gelernt) 0 4px, var(--karte) 4px 7px)", name:"fällig" }, { k:"r", n:hier.length - f, farbe:"var(--gelernt)", name:sym }],
-                            titel: { text: sym, farbe: "var(--haupt)" }, unter: <>{hier.length}{f ? <span data-st-faellig={f}> · 🔁 {f}</span> : null}</> });
+                            titel: { text: sym, farbe: "var(--haupt)" }, unter: <>{hier.length}{f ? <span data-st-faellig={f}> · <SymWdh/> {f}</span> : null}</> });
                         })}
                       </div>
                     </>)}
@@ -197,7 +198,7 @@ export function StatistikTab(app) {
                         {...tt("Vokabeln der Auswahl – antippen blendet alles wieder ein")}><b>{alleVoks.length}</b><span>Vokabeln</span></button>
                       <div className="st-kachel" data-st-kachel="nie"><b>{alleVoks.filter(v => !v.fortschritt).length}</b><span>nie abgefragt</span></div>
                       <div className="st-kachel" data-st-kachel="gelernt"><b>{gelernte.length}</b><span>gelernt</span></div>
-                      {statistikArt === "uebersetzung" && <div className="st-kachel" data-st-kachel="faellig"><b>{faelligAnz}</b><span>🔁 fällig</span></div>}
+                      {statistikArt === "uebersetzung" && <div className="st-kachel" data-st-kachel="faellig"><b>{faelligAnz}</b><span><SymWdh/> fällig</span></div>}
                     </div>
                     <label className="st-schalter" data-legende="nie" style={{textDecoration: nieAus ? "line-through" : "none"}} {...tt("Ein: Balken und Liste nur mit schon abgefragten Vokabeln (z. B. erst ein Teil des Buches behandelt) – der Kopf zählt weiter alle")}>
                       <input type="checkbox" data-nie-aus checked={nieAus} onChange={() => umschalten("nie")} style={{width:18, height:18}}/>

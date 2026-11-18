@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { schalteInfoModus, farbeImMenueAn, farbeHier } from "./infoEreignisse.js";
+import { mitSymbolen } from "./symbole.jsx";
 
 // Erklär-Tafel: zeigt Erklärtexte (data-info) als Sprechblase an der Stelle des Fingers,
 // bis man irgendwo hintippt. Info-Modus: Antippen eines Elements erklärt es, statt es auszuführen.
@@ -128,7 +129,8 @@ export default function InfoTafel() {
             background: "rgba(28,24,20,0.95)", color: "var(--auf-haupt)", borderRadius: 14, cursor: unten ? "pointer" : undefined,
             padding: "12px 14px", boxShadow: "0 6px 24px rgba(0,0,0,0.3)", boxSizing: "border-box",
           }}>
-            <div style={{ fontSize: mitMenue ? "1.05rem" : "0.95rem", fontWeight: mitMenue ? 700 : 400, lineHeight: 1.5, overflowWrap: "anywhere" }}>{info.text}</div>
+            <div style={{ fontSize: mitMenue ? "1.05rem" : "0.95rem", fontWeight: mitMenue ? 700 : 400, lineHeight: 1.5, overflowWrap: "anywhere" }}>{mitSymbolen(info.text)}</div>
+            {info.zusatz && <div data-info-zusatz style={{ marginTop: 8, fontSize: "0.88rem", lineHeight: 1.5 }}>{info.zusatz}</div>}
           </div>}
           {info.regler && <TafelRegler key={info.text} regler={info.regler}/>}
           {mitMenue && (
@@ -148,7 +150,7 @@ export default function InfoTafel() {
                   border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: unten ? "8px 12px" : "11px 18px",
                   fontSize: unten ? "0.85rem" : "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: a.aus ? "default" : "pointer",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.22)",
-                }}>{a.label}</button>
+                }}>{mitSymbolen(a.label)}</button>
               ))}
             </div>
           )}

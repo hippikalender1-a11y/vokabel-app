@@ -1,4 +1,5 @@
 import { CSS } from "../stil.js";
+import { SymWdh } from "../symbole.jsx";
 import { GelerntSterne, IcoDown, IcoSpkOn, IcoUp } from "../komponenten.jsx";
 import { SK, lsGet } from "../speicher.js";
 import { ScoreSymbolePuls, diktatHint, jubelText, mitHinweis, ohneHinweis } from "../quiz.jsx";
@@ -19,7 +20,7 @@ export function DiktatAnsicht(app) {
         const doWeiter = (n) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], false); setQuizPaketGroesse(n); starteDiktat(); };
         if (istLetzteBatch && quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, (<>
           <button data-nochmal {...tt("Quiz gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}}
-            onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteDiktat(true); }}>🔁 Nochmal!</button>
+            onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteDiktat(true); }}><SymWdh/> Nochmal!</button>
           <button {...tt("Durchlauf beenden und zur Übersicht")} className="btn btn-ghost-filled" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
           <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button>
         </>), () => doBeende(true));

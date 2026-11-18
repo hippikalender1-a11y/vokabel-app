@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { einstUnter, zuListen, listeOeffnen, kurzHalten, auswahlZu, auswahlEnde } from "./hilfen.mjs";
+import { einstUnter, zuListen, listeOeffnen, kurzHalten, auswahlZu, auswahlEnde, menueShim } from "./hilfen.mjs";
 
 // 168–174: Farbe je Sprache schon bei des Quiz-Wahl (Einstellung „erst im Quiz“), Kopf-Balken auch bei offener Auswahl,
 // inaktiver „Keine fälligen“-Knopf, Kachel-Lang-Druck mit zusätzlichem Kontextmenü (Android), fällige einstreuen,
@@ -7,6 +7,7 @@ import { einstUnter, zuListen, listeOeffnen, kurzHalten, auswahlZu, auswahlEnde 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
+await page.evaluateOnNewDocument(menueShim);
 await page.setViewport({ width: 390, height: 844, hasTouch: true, isMobile: true });
 page.on("pageerror", e => console.log("PAGEERROR", e.message));
 let fehler = 0;
@@ -87,11 +88,11 @@ ok(!(await page.$('[data-einst-kopf][data-offen="ja"]')) && !(await page.$("[dat
 await einstUnter(page, "lernen", "wiederholen");
 ok(await page.$('[data-faellig-anteil="25"].aktiv'), "267: Vorgabe für Fällige: 25 %");
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
-const startText = () => page.evaluate(() => document.querySelector("[data-start-knopf] span")?.textContent);
+const startText = () => page.evaluate(() => __txt(document.querySelector("[data-start-knopf] span")));
 ok(/2 Vokabeln \+ 🔁 1$/.test(await startText()) && await page.evaluate(() => document.querySelector("[data-faellig]")?.dataset.faellig) === "an",
   `267: 2 neue + 1 fällige (25 % von 2, aufgerundet) – Schalter an (${await startText()})`);
 await klick("[data-faellig]");
-ok(await startText() === "2 Vokabeln" && await page.evaluate(() => document.querySelector("[data-faellig]").textContent) === "🔁 aus", `267: Fällige aus – nur die neuen (${await startText()})`);
+ok(await startText() === "2 Vokabeln" && await page.evaluate(() => __txt(document.querySelector("[data-faellig]"))) === "🔁 1", `267/273: Fällige aus – nur die neuen, Knopf zeigt trotzdem „🔁 1“ (${await startText()})`);
 await klick("[data-faellig]");
 
 // ── 170: nichts fällig → inaktiver Knopf ──
