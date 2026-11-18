@@ -74,29 +74,20 @@ export function renderVokabelEditor(app) {
     );
   }
 
-// Rundenergebnis im Kasten: Kreisdiagramm richtig/falsch, Zahlen daneben, Lern-Bilanz darunter
+// Rundenergebnis im Kasten (nach jedem Paket knapp, 268): richtig/falsch als Zahlen, Fällige, Lern-Bilanz darunter
 export function renderRundenErgebnis(app, q, r, f, titel) {
   const { renderLernBilanz, tt } = app;
     const ges = r + f;
-    const pct = ges > 0 ? Math.round(r / ges * 100) : 0;
-    const farbe = pct >= 70 ? "var(--haupt)" : pct >= 40 ? "var(--orange)" : "var(--falsch)";
-    const R = 40, U = 2 * Math.PI * R;
+    const nF = (q?.faelligIds || []).filter(id => (q.vokabeln || []).some(v => v.id === id)).length;
     return (
       <div className="karte" style={{padding:"14px 16px", margin:"0 0 14px"}}>
         <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--text2)", marginBottom:10}}>{titel}</div>
-        <div style={{display:"flex", alignItems:"center", gap:18, justifyContent:"center"}}>
-          <svg width="112" height="112" viewBox="0 0 112 112" data-ergebniskreis {...tt(`${r} richtig, ${f} falsch`)}>
-            <circle cx="56" cy="56" r={R} fill="none" stroke={fv(f > 0 ? "var(--falsch-zart)" : "var(--flaeche)")} strokeWidth="16"/>
-            {r > 0 && <circle cx="56" cy="56" r={R} fill="none" stroke={fv("var(--haupt)")} strokeWidth="16"
-              strokeDasharray={`${U * r / ges} ${U}`} transform="rotate(-90 56 56)"/>}
-            <text x="56" y="62" textAnchor="middle" fontSize="20" fontWeight="800" fill={fv(farbe)}>{pct}%</text>
-          </svg>
-          <div style={{lineHeight:1.6}}>
-            <div style={{fontWeight:700, fontSize:"1rem", color:"var(--text)"}}>{r} von {ges} richtig</div>
-            <div style={{fontSize:"0.85rem", color:"var(--haupt)"}}>✓ {r} gewusst</div>
-            <div style={{fontSize:"0.85rem", color:"var(--falsch)"}}>✗ {f} nicht gewusst</div>
-          </div>
+        <div className="ergebnis-zahlen" data-ergebnis-zahlen={`${r}|${f}`} {...tt(`${r} von ${ges} richtig`)}>
+          <span className="ergebnis-richtig">✓ {r} <small>gewusst</small></span>
+          <span className="ergebnis-falsch">✗ {f} <small>nicht gewusst</small></span>
         </div>
+        <div style={{textAlign:"center", fontSize:"0.78rem", color:"var(--text3)", marginTop:2}}>{r} von {ges} richtig</div>
+        {nF > 0 && <div data-ergebnis-faellig={nF} style={{textAlign:"center", fontSize:"0.8rem", color:"var(--text2)", marginTop:6}}>davon 🔁 {nF} Fällige (Langzeit-Wiederholung)</div>}
         {renderLernBilanz(q)}
       </div>
     );
@@ -132,19 +123,35 @@ export function renderSessionAuswertung(app, d) {
     const dauer = d.startZeit ? Date.now() - d.startZeit : null;
     const dauerText = dauer == null ? null : dauer < 60000 ? "unter 1 Minute" : dauer < 3600000 ? `${Math.round(dauer / 60000)} Minuten`
       : dauer < 86400000 ? `${Math.floor(dauer / 3600000)} Std. ${Math.round((dauer % 3600000) / 60000)} Min.` : `${Math.round(dauer / 86400000)} Tage`;
-    const NAMEN = { gelernt: "Gelernt", arbeit: "In Arbeit", nie: "Nie abgefragt", negativ: "Negativ" };
-    const balken = (titel, z) => (
-      <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8}} data-balken={titel}>
-        <span style={{width:40, fontSize:"0.78rem", fontWeight:700, color:"var(--text2)"}}>{titel}</span>
-        <div style={{flex:1, display:"flex", height:26, borderRadius:8, overflow:"hidden", background:"var(--flaeche)"}}>
-          {GRUPPE_BALKEN.map(([g, farbe]) => z[g] > 0 && (
-            <div key={g} data-segment={g} style={{width:`${z[g] / Math.max(1, n) * 100}%`, background:farbe, display:"flex", alignItems:"center", justifyContent:"center",
-              color: g === "gelernt" || g === "negativ" ? "var(--auf-haupt)" : "var(--text)", fontSize:"0.75rem", fontWeight:700, overflow:"hidden"}}
-              {...ttFeld(`${titel}: ${NAMEN[g]} ${z[g]}`)}>{z[g] / Math.max(1, n) >= 0.08 ? z[g] : ""}</div>
-          ))}
-        </div>
+    // 268: Lernstand-Balken wie in der Statistik (ganzes Quiz), gestrichelte Linie = Stand vorher, daneben die Veränderung
+    const mix = (farbe, p) => `color-mix(in srgb, ${farbe} ${p}%, var(--karte))`;
+    const anz = (werte, f) => werte.filter(sc => sc != null && f(sc)).length;
+    const BALKEN = [
+      { k: "negativ", name: "Negativ", farbe: "var(--falsch)", teile: [["-2", sc => sc <= -4, "var(--falsch-dunkel)"], ["-1", sc => sc < 0 && sc > -4, "var(--falsch)"]] },
+      { k: "arbeit", name: "Auf einem guten Weg", farbe: "var(--gelb-dunkel)", teile: [["2", sc => sc === 2, "var(--arbeit)"], ["1", sc => sc === 1, mix("var(--arbeit)", 70)], ["0", sc => sc === 0, mix("var(--arbeit)", 42)]] },
+      { k: "gelernt", name: "✓ Gelernt", farbe: "var(--haupt)", teile: [["3", sc => schwelle > 0 && sc >= schwelle, "var(--gelernt)"]] },
+    ];
+    const lernBalken = (
+      <div className="st-reihe" data-auswertung-balken>
+        {BALKEN.map(b => {
+          const vorN = b.teile.reduce((x, [, f]) => x + anz(vorher, f), 0), nachN = b.teile.reduce((x, [, f]) => x + anz(nachher, f), 0), d = nachN - vorN;
+          let unten = 0;
+          return (
+            <div key={b.k} className="st-spalte">
+              <div className="st-balken" data-ausw-balken={b.k} data-vorher={vorN} data-nachher={nachN} {...ttFeld(`${b.name}: vorher ${vorN}, jetzt ${nachN}`)}>
+                {b.teile.map(([k, f, farbe]) => { const h = n ? anz(nachher, f) / n * 100 : 0; const el = h > 0 && <span key={k} className="st-teil" style={{bottom:`${unten}%`, height:`${h}%`, background:farbe}}/>; unten += h; return el; })}
+                {n > 0 && vorN > 0 && <span className="st-vorher" data-ausw-vorher={vorN} style={{bottom:`${vorN / n * 100}%`}}/>}
+              </div>
+              <div className="st-name" style={{color:b.farbe}}>{b.name}</div>
+              <div className="st-zahl">{nachN} <span data-ausw-diff={d} style={{fontWeight:700, color: d === 0 ? "var(--text3)" : (d > 0) === (b.k === "gelernt") ? "var(--haupt)" : b.k === "arbeit" ? "var(--text2)" : "var(--falsch)"}}>{d > 0 ? `+${d}` : d < 0 ? `−${-d}` : "±0"}</span></div>
+            </div>
+          );
+        })}
       </div>
     );
+    // 268: Fällige – fürs Langzeitgedächtnis trainiert: weiter (Score gestiegen), gehalten, zurückgefallen
+    const fae = d.faellig || [];
+    const fWeiter = fae.filter(x => (x.jetzt ?? 0) > (x.vorher ?? 0)).length, fZurueck = fae.filter(x => (x.jetzt ?? 0) < (x.vorher ?? 0)).length;
     const zeile = (k, v) => (
       <div style={{display:"flex", justifyContent:"space-between", gap:10, padding:"5px 0", borderBottom:"1px solid var(--flaeche)"}}>
         <span>{k}</span><span style={{fontWeight:600, color:"var(--text)"}}>{v}</span>
@@ -156,16 +163,19 @@ export function renderSessionAuswertung(app, d) {
           <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--text2)", marginBottom:12}}>
             {d.mitSession ? "Ganzes Quiz" : "Diese Runde"} · {d.ohneAkzent != null ? `${n} ${n === 1 ? "Wort" : "Wörter"} mit Akzent` : `${n} Vokabel${n !== 1 ? "n" : ""}`}
           </div>
-          {balken("Start", zv)}
-          {balken("Ende", zn)}
-          <div style={{display:"flex", flexWrap:"wrap", gap:"4px 12px", marginTop:6, fontSize:"0.72rem", color:"var(--text2)"}}>
-            {GRUPPE_BALKEN.map(([g, farbe]) => (
-              <span key={g} style={{display:"inline-flex", alignItems:"center", gap:4}}>
-                <span style={{width:10, height:10, borderRadius:3, background:farbe, display:"inline-block"}}/>{NAMEN[g]} {zv[g]} → {zn[g]}
-              </span>
-            ))}
-          </div>
+          {lernBalken}
+          {zv.nie + zn.nie > 0 && <div style={{fontSize:"0.72rem", color:"var(--text3)", textAlign:"center", marginTop:6}} data-ausw-nie>nie abgefragt: {zv.nie} → {zn.nie}</div>}
         </div>
+        {fae.length > 0 && (
+          <div className="karte" data-ausw-langzeit={fae.length} style={{padding:"12px 14px", margin:"0 0 14px"}}>
+            <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--text2)", marginBottom:8}}>🔁 Langzeit trainiert · {fae.length} Fällige</div>
+            <div className="st-kacheln">
+              <div className="st-kachel" data-ausw-faellig="weiter"><b style={{color:"var(--haupt)"}}>{fWeiter}</b><span>◆ weiter</span></div>
+              <div className="st-kachel" data-ausw-faellig="gehalten"><b>{fae.length - fWeiter - fZurueck}</b><span>gehalten</span></div>
+              <div className="st-kachel" data-ausw-faellig="zurueck"><b style={{color: fZurueck ? "var(--falsch)" : undefined}}>{fZurueck}</b><span>zurückgefallen</span></div>
+            </div>
+          </div>
+        )}
         <div style={{display:"flex", gap:10, marginBottom:14}}>
           <div className="karte" style={{flex:1, padding:"12px 14px", margin:0, textAlign:"center"}} data-kennzahl="lernfortschritt">
             <div style={{fontSize:"0.72rem", color:"var(--text2)", fontWeight:600}}>Lernfortschritt</div>

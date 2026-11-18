@@ -92,7 +92,7 @@ await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Verbes"))?.click()); await slotLaden(page);   // 216: Preset heißt wie die Liste
 await sleep(600)   // Auswahl klappt kurz verzögert zu;
 let t = await page.evaluate(() => document.body.innerText);
-ok(/GESAMT\s*\n?\s*2/i.test(t), "Statistik: Preset zeigt 2 Vokabeln");
+ok(await page.evaluate(() => document.querySelector('[data-st-kachel="gesamt"] b')?.textContent) === "2", "Statistik: Preset zeigt 2 Vokabeln");   // 269: Gesamtübersicht
 // nach dem Laden ist der Bereich zu → wieder öffnen
 await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
@@ -100,7 +100,7 @@ await page.evaluate(() => { const el = document.querySelector("[data-alle-sessio
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion.startsWith("▦ Alle Listen"))?.click()); await sleep(300);   // Statistik: „▦ Alle Listen“ (früher „Neu“-Chip)
 await sleep(300);
 t = await page.evaluate(() => document.body.innerText);
-ok(/GESAMT\s*\n?\s*3/i.test(t), "Statistik Neu: wieder alle 3 Vokabeln");
+ok(await page.evaluate(() => document.querySelector('[data-st-kachel="gesamt"] b')?.textContent) === "3", "Statistik Neu: wieder alle 3 Vokabeln");   // 269: Gesamtübersicht
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

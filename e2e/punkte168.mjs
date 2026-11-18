@@ -83,23 +83,16 @@ await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.tex
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Einstellungen"))?.click()); await sleep(300);
 ok(!(await page.$('[data-einst-kopf][data-offen="ja"]')) && !(await page.$("[data-wiederholen-einst]")), "174: nach Tabwechsel alle Bereiche zugeklappt");
 
-// ── 172: Fällige einstreuen ──
+// ── 172 → 267: Fällige kommen hinzu (Anteil bezogen auf die neuen), Schalter „🔁 Fällige“ im Quiz ──
 await einstUnter(page, "lernen", "wiederholen");
-ok(await page.$('[data-faellig-anteil="30"].aktiv'), "Fällige einstreuen: Standard 30 %");
-await klick('[data-faellig-anteil="100"]');
-ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen")).faelligAnteil) === 100, "100 % gespeichert");
+ok(await page.$('[data-faellig-anteil="25"].aktiv'), "267: Vorgabe für Fällige: 25 %");
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
-await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);
-ok(await page.evaluate(() => document.querySelector(".quiz-frage-text")?.textContent.trim()) === "Wort4", `100 %: die fällige Vokabel „Wort4“ kommt zuerst (${await page.evaluate(() => document.querySelector(".quiz-frage-text")?.textContent.trim())})`);
-await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(400);
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(300);
-await einstUnter(page, "lernen", "wiederholen");
-await klick('[data-faellig-anteil="0"]');
-await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
-await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);
-ok(await page.evaluate(() => document.querySelector(".quiz-frage-text")?.textContent.trim()) === "Wort1", "0 %: die fällige kommt zuletzt (zuerst „Wort1“)");
-await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(400);
-await page.evaluate(() => [...document.querySelectorAll("button")].find(b => /Zur Übersicht/.test(b.textContent))?.click()); await sleep(300);
+const startText = () => page.evaluate(() => document.querySelector("[data-start-knopf] span")?.textContent);
+ok(/2 Vokabeln \+ 🔁 1$/.test(await startText()) && await page.evaluate(() => document.querySelector("[data-faellig]")?.dataset.faellig) === "an",
+  `267: 2 neue + 1 fällige (25 % von 2, aufgerundet) – Schalter an (${await startText()})`);
+await klick("[data-faellig]");
+ok(await startText() === "2 Vokabeln" && await page.evaluate(() => document.querySelector("[data-faellig]").textContent) === "🔁 aus", `267: Fällige aus – nur die neuen (${await startText()})`);
+await klick("[data-faellig]");
 
 // ── 170: nichts fällig → inaktiver Knopf ──
 await auswahlAuf();

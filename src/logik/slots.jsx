@@ -174,7 +174,7 @@ export function aendereListenEintrag(app, id, f) {
   }
 
 export function aktuelleKonfiguration(app, mitVokabeln = true) {
-  const { artEinstellungenJetzt, quizAntwortTypenGeordnet, quizArt, quizArtStash, quizAusgewaehlt, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizFrageTyp, quizInfoTypenSession, quizModus, quizReihenfolge, quizSchlechtesteMaxScore, quizSpalteModus, quizTabListen, quizUnbeantwortetZuerst, quizZeigeInfo } = app;
+  const { faelligStandard, quizFaellig, artEinstellungenJetzt, quizAntwortTypenGeordnet, quizArt, quizArtStash, quizAusgewaehlt, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizFrageTyp, quizInfoTypenSession, quizModus, quizReihenfolge, quizSchlechtesteMaxScore, quizSpalteModus, quizTabListen, quizUnbeantwortetZuerst, quizZeigeInfo } = app;
     return {
       ...(mitVokabeln ? {
         listenIds: [...quizTabListen],
@@ -187,6 +187,7 @@ export function aktuelleKonfiguration(app, mitVokabeln = true) {
       quizReihenfolge, quizSchlechtesteMaxScore, quizUnbeantwortetZuerst,
       quizDiktatSpalte, quizDiktatUebersetzung,
       art: quizArt, arten: { ...quizArtStash, [quizArt]: artEinstellungenJetzt() },
+      ...(quizFaellig && JSON.stringify(quizFaellig) !== JSON.stringify(faelligStandard()) ? { faellig: quizFaellig } : {}),   // 267
     };
   }
 
@@ -218,33 +219,39 @@ export function wendeArtEinstellungenAn(app, k) {
 export function zurUebersetzung(app) {
   const { quizArt, wechsleQuizArt } = app; if (quizArt !== "uebersetzung") wechsleQuizArt("uebersetzung"); }
 
+// 267: Fällige nur in der Übersetzung (Diktat/Akzente ohne Wiederholung); dazu die Negativen als .negativ
 export function faelligeSchluessel(app, konfigs) {
-  const { FORTSCHRITT_FELD, quizArt } = app;
-    const feld = FORTSCHRITT_FELD[quizArt] || "fortschritt", jetzt = Date.now(), erg = new Set();
+    const feld = "fortschritt", jetzt = Date.now(), erg = new Set(), neg = new Set();
     konfigs.forEach(k => (k.listenIds || []).forEach(id => {
       const l = lsLesen(SK.liste(id));
       const auswahl = k.bereichTyp === "bereich" && (k.vokabelAuswahl || []).length ? new Set(k.vokabelAuswahl) : null;
-      l?.vokabeln.forEach(v => { const key = `${id}__${v.id}`; if (!v.herausgenommen && (!auswahl || auswahl.has(key)) && istFaellig(v[feld], jetzt)) erg.add(key); });
+      l?.vokabeln.forEach(v => { const key = `${id}__${v.id}`; if (v.herausgenommen || (auswahl && !auswahl.has(key))) return;
+        if (istFaellig(v[feld], jetzt)) erg.add(key);
+        if ((v[feld]?.score ?? 0) < 0) neg.add(key); });
     }));
-    return [...erg];
+    const keys = [...erg]; keys.negativ = [...neg];
+    return keys;
   }
 
 // eslint-disable-line react-hooks/exhaustive-deps
-export function ladeFaellige(app, keys, ausListe = null) {
-  const { aktuelleKonfiguration, applyKonfiguration, ausListeRef, auswahlTafelRef, leuchte, setAktiverSlot, setAnsicht, setGespeicherteVokabelgruppe, setListenWahl, setMultiAuswahl, setSlotSektionAufgeklappt, setSlotVorschau, setTab } = app;
+export function ladeFaellige(app, keys, ausListe = null, art = "faellig") {
+  const { setQuizGelerntEinschliessen, aktuelleKonfiguration, applyKonfiguration, ausListeRef, auswahlTafelRef, leuchte, setAktiverSlot, setAnsicht, setGespeicherteVokabelgruppe, setListenWahl, setMultiAuswahl, setSlotSektionAufgeklappt, setSlotVorschau, setTab } = app;
     if (!keys.length) return;
     ausListeRef.current = ausListe;   // 204
     const listenIds = [...new Set(keys.map(x => x.split("__")[0]))];
-    applyKonfiguration({ ...aktuelleKonfiguration(false), listenIds, vokabelAuswahl: keys, bereichTyp: "bereich", quizBereichTyp: "bereich" });
+    // 267: gezielte Abfrage – ohne zusätzliche Fällige; Fällige sind gelernt → „Gelernte“ an
+    applyKonfiguration({ ...aktuelleKonfiguration(false), listenIds, vokabelAuswahl: keys, bereichTyp: "bereich", quizBereichTyp: "bereich", faellig: { an: false, modus: "quiz", anteil: 0 } });
+    if (art === "faellig") setQuizGelerntEinschliessen(true);
     setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotVorschau(null); setMultiAuswahl(null); setListenWahl(null);
     auswahlTafelRef.current = null; schliesseInfo();
     setTab("quiz"); setAnsicht("uebersicht"); setSlotSektionAufgeklappt(false); leuchte("slotkopf");
   }
 
 export function applyKonfiguration(app, k, art = null) {
-  const { getKombinierteListe, listenIndex, setQuizArt, setQuizArtStash, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizHeuteEinschliessen, setQuizTabListen, setStartLeerHinweis, wendeArtEinstellungenAn } = app;
+  const { faelligStandard, setQuizFaellig, getKombinierteListe, listenIndex, setQuizArt, setQuizArtStash, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizHeuteEinschliessen, setQuizTabListen, setStartLeerHinweis, wendeArtEinstellungenAn } = app;
     if (!k) return;
     setQuizHeuteEinschliessen(false);   // 180
+    setQuizFaellig(k.faellig || faelligStandard());   // 267
     setStartLeerHinweis(false);
     if (k.listenIds && k.listenIds.length > 0) {
       const alleVorhanden = k.listenIds.every(id => listenIndex.some(l => l.id === id));
@@ -364,7 +371,7 @@ export function aktiviereSlotFortschritt(app, eintrag, typ, id, art) {
     if (sf) {
       const k = eintrag.konfiguration || {};
       const sessionObj = { slotTyp: typ, slotId: id, art, listenIds: k.listenIds || [], vokabelAuswahl: k.vokabelAuswahl || [], bereichTyp: k.bereichTyp || "alle", abgefragt: sf.abgefragt || [], gesamt: sf.gesamt || 0, paketGroesse: sf.paketGroesse || STANDARD_PAKET_GROESSE, startScores: sf.startScores || {},
-        startZeit: sf.startZeit, erst: sf.erst, pakete: sf.pakete };
+        startZeit: sf.startZeit, erst: sf.erst, pakete: sf.pakete, ...(sf.faelligZiel != null ? { faelligZiel: sf.faelligZiel, faelligIds: sf.faelligIds || [], faelligStart: sf.faelligStart || {} } : {}) };   // 267/268
       lsSet(SK.sessionAktiv, sessionObj);
       setSessionSlotAktiv(sessionObj);
       setQuizSessionModus("pakete");

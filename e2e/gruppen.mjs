@@ -14,10 +14,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const text = () => page.evaluate(() => document.body.innerText);
 const box = async (label) => {
   const done = await page.evaluate(l => {
-    // Filter jetzt über das Kreisdiagramm (Segment) bzw. den Knopf "Gesamt N"
-    if (l === "Gesamt") { const b = [...document.querySelectorAll("button")].find(x => /^Gesamt \d+$/.test(x.textContent.trim())); b?.click(); return !!b; }
-    const g = [...document.querySelectorAll("svg g")].find(x => x.querySelector("text")?.textContent === l);
-    g?.dispatchEvent(new MouseEvent("click", { bubbles: true })); return !!g;
+    // 269: Filter über die Balken, „Nie abgefragte ausblenden“ bzw. die Kachel „Vokabeln“ (alles einblenden)
+    const sel = { "Gesamt": '[data-st-kachel="gesamt"]', "Negativ": '[data-st-balken="negativ"]', "In Arbeit": '[data-st-balken="arbeit"]', "✓ Gelernt": '[data-st-balken="gelernt"]', "Nie abgefragt": "[data-nie-aus]" }[l];
+    const g = sel && document.querySelector(sel); g?.click(); return !!g;
   }, label);
   if (!done) throw new Error("Box fehlt: " + label);
   await sleep(300);
@@ -56,7 +55,8 @@ await sleep(500);
 let t = await text();
 // (100 + 100 + 67 + 0 + 0) / 5 = 53 %
 ok(/53 %/.test(t) && /2 \/ 5 gelernt/.test(t), "Lernfortschritt 53 %, 2 / 5 gelernt");
-const boxen = await page.evaluate(() => [...document.querySelectorAll("svg g")].map(g => g.querySelectorAll("text")[0].textContent + "=" + g.querySelectorAll("text")[1].textContent.split(" ·")[0]));
+const boxen = await page.evaluate(() => [...[["negativ", "Negativ"], ["arbeit", "In Arbeit"], ["gelernt", "✓ Gelernt"]].map(([k, n]) => n + "=" + document.querySelector(`[data-st-balken="${k}"]`).closest(".st-spalte").querySelector(".st-zahl").textContent.split(" ·")[0]),
+  "Nie abgefragt=" + document.querySelector('[data-st-kachel="nie"] b').textContent]);
 console.log("     Kreis:", boxen.join(" | "));
 ok(["Negativ=1", "Nie abgefragt=1", "In Arbeit=1", "✓ Gelernt=2"].every(b => boxen.includes(b)), "Kreis: Negativ 1, Nie 1, In Arbeit 1, Gelernt 2");
 
@@ -79,7 +79,7 @@ await page.screenshot({ path: "gruppen.png", fullPage: true });
 await box("✓ Gelernt");
 z = await zeilen(); t = await text();
 // ohne Gelernte: partir 67 %, sortir 0 %, voir 0 % → 22 %
-ok(z.length === 3 && !z.some(r => r.rechts.startsWith("✓")) && /22 %/.test(t) && /0 \/ 3 gelernt/.test(t), "Gelernt ausgeblendet: 3 Zeilen, Lernfortschritt 22 %, 0 / 3");
+ok(z.length === 3 && !z.some(r => r.rechts.startsWith("✓")) && /53 %/.test(t) && /2 \/ 5 gelernt/.test(t), "Gelernt ausgeblendet: 3 Zeilen; 269: Kopf bleibt bei der ganzen Auswahl (53 %, 2 / 5)");
 await box("Gesamt");
 z = await zeilen();
 ok(z.length === 5, "Gesamt: wieder alle 5");

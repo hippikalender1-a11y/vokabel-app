@@ -37,11 +37,12 @@ const paket = async (nicht = []) => {
       await clickText("button", "Wiederholung abbrechen");
   }
 };
-const auswertung = () => page.evaluate(() => ({
-  text: document.querySelector("[data-session-auswertung]")?.innerText.replace(/\s+/g, " ") || "",
-  start: Object.fromEntries([...document.querySelectorAll('[data-balken="Start"] [data-segment]')].map(s => [s.dataset.segment, s.textContent.trim()])),
-  ende: Object.fromEntries([...document.querySelectorAll('[data-balken="Ende"] [data-segment]')].map(s => [s.dataset.segment, s.textContent.trim()])),
-}));
+const auswertung = () => page.evaluate(() => {
+  const b = [...document.querySelectorAll("[data-ausw-balken]")];
+  const nie = (document.querySelector("[data-ausw-nie]")?.textContent.match(/(\d+) → (\d+)/) || []);
+  const map = feld => Object.fromEntries([...b.filter(x => +x.dataset[feld] > 0).map(x => [x.dataset.auswBalken, x.dataset[feld]]), ...(nie.length && +nie[feld === "vorher" ? 1 : 2] > 0 ? [["nie", nie[feld === "vorher" ? 1 : 2]]] : [])]);
+  return { text: document.querySelector("[data-session-auswertung]")?.innerText.replace(/\s+/g, " ") || "", start: map("vorher"), ende: map("nachher") };
+});
 
 await page.goto(URL);
 await page.evaluate(() => {

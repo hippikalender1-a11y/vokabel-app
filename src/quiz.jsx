@@ -497,8 +497,8 @@ export function heuteAnteil(voks, feld, schwelle) {
 }
 export function tagesSperre() { try { return !localStorage.getItem("vokabel_test_ohne_tagessperre"); } catch { return true; } }
 // 172: fällige Vokabeln zwischen die übrigen einstreuen – je Karte mit faelligAnteil() % eine fällige (Reihenfolge je Teil bleibt)
-export const STANDARD_FAELLIG_ANTEIL = 30;
-export const FAELLIG_ANTEIL_WAHL = [0, 10, 20, 30, 50, 70, 100];
+export const STANDARD_FAELLIG_ANTEIL = 25;   // 267
+export const FAELLIG_ANTEIL_WAHL = [10, 20, 25, 30, 50, 70, 100];   // 267: aus = Schalter im Quiz
 export function faelligAnteil() { const a = lsGet(SK.einstellungen, {})?.faelligAnteil; return typeof a === "number" ? a : STANDARD_FAELLIG_ANTEIL; }
 export function mischeFaellige(voks, feld) {
   const f = voks.filter(v => istFaellig(v[feld])), n = voks.filter(v => !istFaellig(v[feld]));

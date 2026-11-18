@@ -22,8 +22,14 @@ export function sessionAuswertungDaten(app, q) {
     const erstRunde = erstAusQuiz(q);
     const erst = mitSession ? (slot.erst ? { ...slot.erst, ...erstRunde } : null) : erstRunde;
     const ohneAkzent = feld === "akzentFortschritt" ? Object.keys(start).length - ids.length : null;
+    // 268: Fällige (Langzeit) – Ausgangs-Score beim Abfragen, jetzt aus ihrer Liste (auch aus anderen Listen)
+    const fStart = mitSession ? { ...(slot.faelligStart || {}) } : {};
+    (q.faelligIds || []).forEach(id => { if (!(id in fStart) && q.rundeStartScores && id in q.rundeStartScores) fStart[id] = q.rundeStartScores[id]; });
+    const scoreJetzt = id => { if (jetztMap.has(id)) return jetztMap.get(id); const [lid, vid] = id.split("__");
+      return (lsGet(SK.liste(lid))?.vokabeln || []).find(v => String(v.id) === vid)?.fortschritt?.score ?? null; };
+    const faellig = Object.keys(fStart).map(id => ({ id, vorher: fStart[id], jetzt: scoreJetzt(id) }));
     return { ids, start, jetzt, erst, ohneAkzent, startZeit: mitSession ? slot.startZeit : q.rundeStartZeit,
-      pakete: mitSession ? (slot.pakete != null ? slot.pakete + 1 : null) : 1, mitSession };
+      pakete: mitSession ? (slot.pakete != null ? slot.pakete + 1 : null) : 1, mitSession, faellig };
   }
 
 // ganze Seite des Quiz-Auswertung mit den gewohnten Knöpfen darunter

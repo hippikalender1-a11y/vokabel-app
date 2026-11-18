@@ -43,14 +43,14 @@ const lageVorher = await lage();
 await mitte(); await mitte();
 const t = await page.evaluate(() => document.body.innerText);
 ok(await art() === "Akzente", `Mitte zeigt „Akzente“ (${await art()})`);
-ok(/Für dieses Quiz sind keine Akzente vorhanden\./.test(t) && await page.$("svg [data-keine-akzente]"), "Hinweis im Kreis-Feld: keine Akzente in dieses Quiz");
-ok(!(await page.$("svg path")) && !/Zur Übersetzungs-Statistik/.test(t), "keine Segmente, kein Wechsel-Knopf");
+ok(/Für dieses Quiz sind keine Akzente vorhanden\./.test(t) && await page.$("[data-statistik-balken] [data-keine-akzente]"), "Hinweis im Statistik-Feld: keine Akzente in dieses Quiz");
+ok(!(await page.$("[data-st-balken]")) && !/Zur Übersetzungs-Statistik/.test(t), "keine Balken, kein Wechsel-Knopf");
 ok(/Lernfortschritt/.test(t) && /keine Akzente/.test(t), "Kopfzeile Lernfortschritt bleibt („keine Akzente“)");
 console.log("     Mitte vorher/nachher:", lageVorher, await lage());
 ok(await lage() === lageVorher, "Kreis-Mitte an derselben Stelle wie bei Übersetzung");
 await page.screenshot({ path: "keineakzente.png" });
 await mitte();
-ok(await art() === "Übersetzung" && await page.$("svg circle"), "Mitte antippen: weiter zu Übersetzung mit Kreis");
+ok(await art() === "Übersetzung" && await page.$("[data-st-balken]"), "Mitte antippen: weiter zu Übersetzung mit Balken");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

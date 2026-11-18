@@ -1,4 +1,4 @@
-import { AKZENTE_FUER_LISTE, FORTSCHRITT_BALKEN, GRUPPE_BALKEN, STATISTIK_ARTEN, statistikSicht } from "../quiz.jsx";
+import { AKZENTE_FUER_LISTE, FORTSCHRITT_BALKEN, STATISTIK_ARTEN, istFaellig, statistikSicht } from "../quiz.jsx";
 import { IcoDown, IcoExpand, IcoUp } from "../komponenten.jsx";
 import { SK, TYPEN, formatDatum, lsSet } from "../speicher.js";
 import { fv } from "../farben.js";
@@ -44,7 +44,7 @@ export function StatistikTab(app) {
           );
 
           // Kopfzeile (Lernfortschritt, Gruppen-Balken, Ø) zählt nur die eingeblendeten Gruppen
-          const kopfVoks = alleVoks.filter(v => statistikFilter.has(gruppeVon(v)));
+          const kopfVoks = alleVoks;   // 269: der Kopf zählt immer die ganze Auswahl
           const kopfAnzahl = { negativ: 0, nie: 0, arbeit: 0, gelernt: 0 };
           kopfVoks.forEach(v => { kopfAnzahl[gruppeVon(v)]++; });
           const abgefragt = kopfVoks.filter(v => v.fortschritt);
@@ -118,114 +118,93 @@ export function StatistikTab(app) {
             </div>
             )}
             <div className="sektion" style={{paddingTop:12, paddingBottom:(statistikListenAufgeklappt||statistikEinzelauswahlAufgeklappt)?'100dvh':0}}>
-              {/* Kreisdiagramm */}
+              {/* 269: Balken statt Kreisdiagramm – Lernstand (Negativ · Kurzzeit · Gelernt), Langzeit (je Raute), Gesamtübersicht */}
               {(() => {
-                // Kreisdiagramm der Gruppen: leere Gruppen fehlen, Segment antippen = Gruppe ein-/ausblenden
-                const renderKreis = () => {
-                  const NAME = { gelernt:"✓ Gelernt", arbeit:"In Arbeit", nie:"Nie abgefragt", negativ:"Negativ" };
-                  const TEXTFARBE = { gelernt:"var(--haupt)", arbeit:"var(--gelb-dunkel)", nie:"var(--text2)", negativ:"var(--falsch)" };
-                  // Nur eingeblendete Gruppen teilen sich den Kreis; ausgeblendete stehen in der Legende
-                  const vorhanden = GRUPPE_BALKEN.filter(([g]) => gruppenAnzahl[g] > 0);
-                  const sichtbar = vorhanden.filter(([g]) => statistikFilter.has(g));
-                  const gesamt = sichtbar.reduce((sum, [g]) => sum + gruppenAnzahl[g], 0);
-                  const W = 400, H = 230, cx = 200, cy = 115, r = 80;
-                  const punkt = (a, rr) => [cx + rr * Math.cos(a), cy + rr * Math.sin(a)];
-                  let winkel = -Math.PI / 2;
-                  const teile = sichtbar.map(([g, farbe]) => {
-                    const a0 = winkel, a1 = winkel + gruppenAnzahl[g] / gesamt * 2 * Math.PI;
-                    winkel = a1;
-                    const mitte = (a0 + a1) / 2;
-                    return { g, farbe, n: gruppenAnzahl[g], a0, a1, mitte, rechts: Math.cos(mitte) >= 0, y: punkt(mitte, r + 24)[1] };
-                  });
-                  // Beschriftungen je Seite von oben nach unten entzerren
-                  for (const seite of [true, false]) {
-                    const l = teile.filter(t => t.rechts === seite).sort((a, b) => a.y - b.y);
-                    for (let i = 1; i < l.length; i++) if (l[i].y - l[i - 1].y < 32) l[i].y = l[i - 1].y + 32;
-                    if (l.length && l[l.length - 1].y > H - 20) { const d = l[l.length - 1].y - (H - 20); l.forEach(t => { t.y -= d; }); }
-                    l.forEach(t => { if (t.y < 16) t.y = 16; });
-                  }
-                  const pfad = t => {
-                    const [x0, y0] = punkt(t.a0, r), [x1, y1] = punkt(t.a1, r);
-                    return `M${cx},${cy} L${x0},${y0} A${r},${r} 0 ${t.a1 - t.a0 > Math.PI ? 1 : 0} 1 ${x1},${y1} Z`;
-                  };
-                  const umschalten = g => setStatistikFilter(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
-                  // Lang-Druck: Menü "Quiz mit dieser Gruppe" (mit Rückfrage)
-                  const quizMenue = g => {
-                    const gv = alleVoks.filter(v => gruppeVon(v) === g);
-                    return [{ label: `▶ Quiz mit ${gv.length} Vokabel${gv.length !== 1 ? "n" : ""}`, fn: () => setGruppenQuiz({
-                      name: NAME[g], art: statistikArt, ids: gv.map(v => v.id), listenIds: [...new Set(gv.map(v => v._listeId))] }) }];
-                  };
-                  return (
-                    <div style={{background:"var(--flaeche-hell)", padding:"8px 6px 10px"}}>
-                      {teile.length === 0 && !keineAkzente ? (
-                        <div style={{textAlign:"center", color:"var(--text3)", fontSize:"0.85rem", padding:"40px 0"}}>Alle Gruppen ausgeblendet
-                          <div><button className="btn btn-ghost btn-sm" style={{marginTop:8}} onClick={naechsteArt} {...tt("Zwischen Übersetzung, Diktat und Akzenten wechseln")}>{artName} ⇄</button></div></div>
-                      ) : (
-                      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%", maxHeight:260, display:"block", userSelect:"none"}}>
-                        {keineAkzente && (
-                          <text data-keine-akzente x={cx} y={cy - 58} textAnchor="middle" fontSize="15" fontWeight="600" fill={fv("var(--text)")}>Für dieses Quiz sind keine Akzente vorhanden.</text>
-                        )}
-                        {teile.map(t => {
-                          const [ax, ay] = punkt(t.mitte, r + 2), [bx, by] = punkt(t.mitte, r + 14);
-                          const tx = t.rechts ? cx + r + 34 : cx - r - 34;
-                          return (
-                            <g {...tt(`${NAME[t.g]}: antippen blendet die Gruppe aus – lange drücken: Quiz mit diesen Vokabeln`, quizMenue(t.g))} key={t.g} data-kreis-gruppe={t.g} style={{cursor:"pointer"}} onClick={() => umschalten(t.g)}>
-                              {teile.length === 1
-                                ? <circle cx={cx} cy={cy} r={r} fill={fv(t.farbe)}/>
-                                : <path d={pfad(t)} fill={fv(t.farbe)} stroke={fv("var(--flaeche-hell)")} strokeWidth="2"/>}
-                              <polyline points={`${ax},${ay} ${bx},${by} ${t.rechts ? tx - 4 : tx + 4},${t.y}`}
-                                fill="none" stroke={fv("var(--text3)")} strokeWidth="1"/>
-                              <text x={tx} y={t.y - 2} textAnchor={t.rechts ? "start" : "end"} fontSize="13" fontWeight="700"
-                                fill={fv(TEXTFARBE[t.g])}>{NAME[t.g]}</text>
-                              <text x={tx} y={t.y + 13} textAnchor={t.rechts ? "start" : "end"} fontSize="12"
-                                fill={fv("var(--text2)")}>{t.n} · {Math.round(t.n / gesamt * 100)} %</text>
-                            </g>
-                          );
-                        })}
-                        {/* Kreismitte: Tap wechselt Übersetzung → Diktat → Akzente */}
-                        <g {...tt("Antippen: zwischen Übersetzung, Diktat und Akzenten wechseln")} style={{cursor:"pointer"}} onClick={naechsteArt} data-kreismitte="1">
-                          <circle cx={cx} cy={cy} r={36} fill={fv("var(--karte)")} stroke={fv("var(--rahmen)")} strokeWidth="1.5"/>
-                          <text x={cx} y={cy + 1} textAnchor="middle" fontSize={artName.length > 8 ? 11 : 13} fontWeight="800" fill={fv("var(--text)")}>{artName}</text>
-                          <text x={cx} y={cy + 16} textAnchor="middle" fontSize="13" fill={fv("var(--text3)")}>⇄</text>
-                        </g>
-                      </svg>
-                      )}
-                      {/* Legende: alle vorhandenen Gruppen; ausgeblendete blass – antippen blendet ein/aus */}
-                      <div style={{display:"flex", justifyContent:"center", flexWrap:"wrap", gap:6, marginTop:4}}>
-                        {vorhanden.map(([g, farbe]) => {
-                          const an = statistikFilter.has(g);
-                          return (
-                            <button key={g} onClick={() => umschalten(g)} data-legende={g}
-                              {...tt(`${an ? `${NAME[g]} ausblenden` : `${NAME[g]} wieder einblenden`} – lange drücken: Quiz mit diesen Vokabeln`, quizMenue(g))}
-                              style={{display:"inline-flex", alignItems:"center", gap:5, padding:"3px 9px", borderRadius:12, cursor:"pointer",
-                                fontFamily:"inherit", fontSize:"0.72rem", fontWeight:600, background:"var(--karte)",
-                                border:`1.5px solid ${an ? farbe : "var(--rahmen)"}`, color: an ? TEXTFARBE[g] : "var(--text3)",
-                                textDecoration: an ? "none" : "line-through", opacity: an ? 1 : 0.8}}>
-                              <span style={{width:8, height:8, borderRadius:"50%", background: an ? farbe : "var(--rahmen)"}}/>
-                              {NAME[g]} {gruppenAnzahl[g]}
-                            </button>
-                          );
+                const NAME = { gelernt:"Gelernt", arbeit:"Auf einem guten Weg", nie:"Nie abgefragt", negativ:"Negativ" };
+                const TEXTFARBE = { gelernt:"var(--haupt)", arbeit:"var(--gelb-dunkel)", nie:"var(--text2)", negativ:"var(--falsch)" };
+                const nieAus = !statistikFilter.has("nie");
+                const basis = nieAus ? alleVoks.filter(v => v.fortschritt) : alleVoks;   // 100 % der Balken
+                const n = basis.length;
+                const sc = v => v.fortschritt?.score ?? 0;
+                const zaehle = f => basis.filter(f).length;
+                const umschalten = g => setStatistikFilter(prev => { const s = new Set(prev); s.has(g) ? s.delete(g) : s.add(g); return s; });
+                const quizMenue = g => {
+                  const gv = alleVoks.filter(v => gruppeVon(v) === g);
+                  return [{ label: `▶ Quiz mit ${gv.length} Vokabel${gv.length !== 1 ? "n" : ""}`, fn: () => setGruppenQuiz({
+                    name: NAME[g], art: statistikArt, ids: gv.map(v => v.id), listenIds: [...new Set(gv.map(v => v._listeId))] }) }];
+                };
+                const pct = (x, von = n) => von > 0 ? Math.round(x / von * 100) : 0;
+                const mix = (farbe, p) => `color-mix(in srgb, ${farbe} ${p}%, var(--karte))`;
+                // Balken: Rahmen = 100 %, Teile füllen von unten (erster Teil ganz unten)
+                const balken = ({ key, teile, von, attrs = {}, aus = false, titel, unter, tipp, menue, onClick }) => (
+                  <div key={key} className="st-spalte" style={{opacity: aus ? 0.45 : 1}}>
+                    <button className="st-balken" {...attrs} onClick={onClick} {...tt(tipp, menue)}>
+                      {(() => { let unten = 0; return teile.filter(t => t.n > 0).map(t => { const h = von > 0 ? t.n / von * 100 : 0; const el = (
+                        <span key={t.k} className="st-teil" data-st-teil={t.k} style={{bottom:`${unten}%`, height:`${h}%`, background:t.farbe}} title={`${t.name}: ${t.n}`}/>); unten += h; return el; }); })()}
+                    </button>
+                    <div className="st-name" {...(attrs["data-kreis-gruppe"] ? { "data-legende": attrs["data-kreis-gruppe"] } : {})} onClick={onClick}
+                      style={{color: titel.farbe, textDecoration: aus ? "line-through" : "none"}} {...tt(tipp, menue)}>{titel.text}</div>
+                    <div className="st-zahl">{unter}</div>
+                  </div>
+                );
+                const neg2 = zaehle(v => v.fortschritt && sc(v) <= -4), neg1 = zaehle(v => v.fortschritt && sc(v) < 0 && sc(v) > -4);
+                const k = [0, 1, 2].map(i => zaehle(v => v.fortschritt && sc(v) === i));
+                const gel = zaehle(v => v.fortschritt && sc(v) >= 3);
+                const langzeit = statistikArt === "uebersetzung" && schwelleS > 0;
+                const gelernte = alleVoks.filter(v => v.fortschritt && sc(v) >= 3);
+                const faelligAnz = alleVoks.filter(v => istFaellig(v.fortschritt)).length;
+                return (
+                  <div data-statistik-balken style={{marginBottom:16, borderRadius:12, border:"1px solid var(--rahmen)", background:"var(--flaeche-hell)", padding:"8px 10px 12px", position:"relative"}}>
+                    <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:8}}>
+                      <button className="typ-btn aktiv" data-kreismitte="1" onClick={naechsteArt} style={{fontSize:"0.75rem", padding:"3px 10px"}}
+                        {...tt("Antippen: zwischen Übersetzung, Diktat und Akzenten wechseln")}>{artName} ⇄</button>
+                      <span style={{flex:1}}/>
+                      {!statistikVollbild && <button onClick={() => setStatistikVollbild(true)} style={{background:"none", border:"none", padding:"4px 6px", cursor:"pointer", color:"var(--text2)", display:"flex"}}
+                        {...tt("Statistik im Vollbild anzeigen")}><IcoExpand s={18}/></button>}
+                    </div>
+                    {keineAkzente ? <div data-keine-akzente style={{textAlign:"center", color:"var(--text)", fontWeight:600, padding:"30px 0"}}>Für dieses Quiz sind keine Akzente vorhanden.</div> : (<>
+                    <div className="st-titel">Lernstand{nieAus ? <span style={{fontWeight:500, color:"var(--text3)"}}> · ohne nie abgefragte</span> : null}</div>
+                    <div className="st-reihe" data-st-lernstand>
+                      {balken({ key:"negativ", von:n, aus: !statistikFilter.has("negativ"), attrs: { "data-kreis-gruppe": "negativ", "data-st-balken": "negativ" }, onClick: () => umschalten("negativ"), menue: quizMenue("negativ"),
+                        tipp: `Negativ: dunkel „Kann ich mir überhaupt nicht merken“ (${neg2}), hell „Muss ich mir noch mal ansehen“ (${neg1}) – antippen blendet sie in der Liste aus, lange drücken: Quiz mit diesen Vokabeln`,
+                        teile: [{ k:"-2", n:neg2, farbe:"var(--falsch-dunkel)", name:"Kann ich mir überhaupt nicht merken" }, { k:"-1", n:neg1, farbe:"var(--falsch)", name:"Muss ich mir noch mal ansehen" }],
+                        titel: { text: NAME.negativ, farbe: TEXTFARBE.negativ }, unter: `${neg1 + neg2} · ${pct(neg1 + neg2)} %` })}
+                      {balken({ key:"arbeit", von:n, aus: !statistikFilter.has("arbeit"), attrs: { "data-kreis-gruppe": "arbeit", "data-st-balken": "arbeit" }, onClick: () => umschalten("arbeit"), menue: quizMenue("arbeit"),
+                        tipp: `Auf einem guten Weg (Kurzzeit): ●●○ ${k[2]}, ●○○ ${k[1]}, ○○○ ${k[0]} – antippen blendet sie in der Liste aus, lange drücken: Quiz mit diesen Vokabeln`,
+                        teile: [{ k:"2", n:k[2], farbe:"var(--arbeit)", name:"●●○" }, { k:"1", n:k[1], farbe:mix("var(--arbeit)", 70), name:"●○○" }, { k:"0", n:k[0], farbe:mix("var(--arbeit)", 42), name:"○○○" }],
+                        titel: { text: NAME.arbeit, farbe: TEXTFARBE.arbeit }, unter: `${k[0] + k[1] + k[2]} · ${pct(k[0] + k[1] + k[2])} %` })}
+                      {balken({ key:"gelernt", von:n, aus: !statistikFilter.has("gelernt"), attrs: { "data-kreis-gruppe": "gelernt", "data-st-balken": "gelernt" }, onClick: () => umschalten("gelernt"), menue: quizMenue("gelernt"),
+                        tipp: `Gelernt (ab Score 3): ${gel} – das Ziel: alle Vokabeln hier. Antippen blendet sie in der Liste aus, lange drücken: Quiz mit diesen Vokabeln`,
+                        teile: [{ k:"3", n:gel, farbe:"var(--gelernt)", name:"Gelernt" }],
+                        titel: { text: "✓ " + NAME.gelernt, farbe: TEXTFARBE.gelernt }, unter: `${gel} · ${pct(gel)} %` })}
+                    </div>
+                    {langzeit && (<>
+                      <div className="st-titel" style={{marginTop:14}}>Langzeitgedächtnis <span style={{fontWeight:500, color:"var(--text3)"}}>· {gelernte.length} gelernte = 100 %</span></div>
+                      <div className="st-reihe" data-st-langzeit>
+                        {[[3, "◇◇◇"], [4, "◆◇◇"], [5, "◆◆◇"], [6, "◆◆◆"]].map(([s, sym]) => {
+                          const hier = gelernte.filter(v => (s === 6 ? sc(v) >= 6 : sc(v) === s));
+                          const f = hier.filter(v => istFaellig(v.fortschritt)).length;
+                          return balken({ key:`l${s}`, von: gelernte.length, attrs: { "data-st-raute": s },
+                            tipp: `${sym}: ${hier.length} gelernte${f ? `, davon ${f} jetzt zur Prüfung fällig (schraffiert)` : ""}`,
+                            teile: [{ k:"f", n:f, farbe:"repeating-linear-gradient(135deg, var(--gelernt) 0 4px, var(--karte) 4px 7px)", name:"fällig" }, { k:"r", n:hier.length - f, farbe:"var(--gelernt)", name:sym }],
+                            titel: { text: sym, farbe: "var(--haupt)" }, unter: <>{hier.length}{f ? <span data-st-faellig={f}> · 🔁 {f}</span> : null}</> });
                         })}
                       </div>
-                      {!keineAkzente && <div style={{display:"flex", justifyContent:"center", alignItems:"center", gap:10, marginTop:6}}>
-                        <button className={`typ-btn${alleFilterAktiv ? " aktiv" : ""}`} style={{fontSize:"0.72rem", padding:"3px 12px"}}
-                          onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
-                          {...tt("Alle Gruppen einblenden")}>Gesamt {alleVoks.length}</button>
-                      </div>}
+                    </>)}
+                    <div className="st-titel" style={{marginTop:14}}>Gesamtübersicht</div>
+                    <div className="st-kacheln" data-st-gesamt>
+                      <button className="st-kachel" data-st-kachel="gesamt" onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
+                        {...tt("Vokabeln der Auswahl – antippen blendet alles wieder ein")}><b>{alleVoks.length}</b><span>Vokabeln</span></button>
+                      <div className="st-kachel" data-st-kachel="nie"><b>{alleVoks.filter(v => !v.fortschritt).length}</b><span>nie abgefragt</span></div>
+                      <div className="st-kachel" data-st-kachel="gelernt"><b>{gelernte.length}</b><span>gelernt</span></div>
+                      {statistikArt === "uebersetzung" && <div className="st-kachel" data-st-kachel="faellig"><b>{faelligAnz}</b><span>🔁 fällig</span></div>}
                     </div>
-                  );
-                };
-                return (
-                <div style={{marginBottom:16, borderRadius:12, overflow:"hidden", border:"1px solid var(--rahmen)", position:"relative"}}>
-                  {!statistikVollbild && (
-                    <button onClick={() => setStatistikVollbild(true)}
-                      style={{position:"absolute", top:6, right:8, zIndex:1, background:"none", border:"none", padding:"4px 6px", cursor:"pointer", color:"var(--text2)", display:"flex", alignItems:"center"}}
-                      {...tt("Statistik im Vollbild anzeigen")}>
-                      <IcoExpand s={18}/>
-                    </button>
-                  )}
-                  {renderKreis()}
-                </div>
+                    <label className="st-schalter" data-legende="nie" style={{textDecoration: nieAus ? "line-through" : "none"}} {...tt("Ein: Balken und Liste nur mit schon abgefragten Vokabeln (z. B. erst ein Teil des Buches behandelt) – der Kopf zählt weiter alle")}>
+                      <input type="checkbox" data-nie-aus checked={nieAus} onChange={() => umschalten("nie")} style={{width:18, height:18}}/>
+                      Nie abgefragte ausblenden{nieAus ? ` (${n} von ${alleVoks.length} betrachtet)` : ""}
+                    </label>
+                    </>)}
+                  </div>
                 );
               })()}
 

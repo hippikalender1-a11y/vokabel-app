@@ -287,8 +287,10 @@ export function renderListenRaster(app) {
 // 193: Pfad „← Alle … › 📁 A › 📁 B“ (Quiz und Listen): antippen geht in die Ebene, lang drücken zeigt ihr Menü;
 // Kacheln auf einen Pfad-Teil ziehen legt sie dorthin (zielUnter: data-ordner-zurueck = oben, data-ordner-ziel = Ordner)
 export function pfadTeile(app, { alleText, alleAttr, pfad, geheZu, alleTt, alleAktionen, ordnerAktionen, einheit }) {
-  const { slotDragId, slotDragZiel, tt } = app;
+  const { listenWahl, multiAuswahl, setListenWahl, setMultiAuswahl, slotDragId, slotDragZiel, tt } = app;
     const offen = pfad.length > 0;
+    // 266: während einer Mehrfach-Auswahl: Antippen beendet die Auswahl (und öffnet ggf. den Ordner); lang drücken: Menü wie sonst
+    const wahlEnde = () => { if (multiAuswahl) setMultiAuswahl(null); if (listenWahl) setListenWahl(null); };
     const zielStil = an => an && slotDragId ? {outline:"3px dashed var(--bestaetigen)", outlineOffset:-3} : {};
     // 197: nur das letzte Element (die Ebene, in der man ist) schlicht; alles darüber gelbe Knöpfe
     const schlicht = {fontSize:"0.72rem", color:"var(--text2)", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em",
@@ -299,7 +301,7 @@ export function pfadTeile(app, { alleText, alleAttr, pfad, geheZu, alleTt, alleA
       <span data-ordner-pfad style={{display:"flex", alignItems:"center", gap:6, minWidth:0, flex:1, flexWrap:"wrap", rowGap:4}}>
         <button className={offen ? "typ-btn" : undefined} {...{ [alleAttr]: true }} {...(offen ? { "data-ordner-zurueck": true } : { "data-pfad-hier": true })} data-raus-ziel={slotDragZiel === "raus" ? "" : undefined}
           style={{flexShrink:0, ...(offen ? knopf : schlicht), ...zielStil(slotDragZiel === "raus")}}
-          onClick={() => { if (offen) geheZu(null); }}
+          data-auswahl-durchlass onClick={() => { wahlEnde(); if (offen) geheZu(null); }}
           {...tt(alleTt, alleAktionen)}>{offen ? `← ${alleText}` : alleText}</button>
         {pfad.map((o, i) => {
           const letzter = i === pfad.length - 1;
@@ -308,7 +310,7 @@ export function pfadTeile(app, { alleText, alleAttr, pfad, geheZu, alleTt, alleA
             <button className={letzter ? undefined : "typ-btn"} {...(letzter ? { "data-ordner-name": true, "data-pfad-hier": true } : { "data-ordner-ziel": o.id, "data-ordner-pfad-teil": o.id })}
               data-raus-ziel={slotDragZiel === `raus:${o.id}` ? "" : undefined}
               style={{...(letzter ? schlicht : knopf), maxWidth: letzter ? "100%" : "45%", ...zielStil(slotDragZiel === `raus:${o.id}`)}}
-              onClick={() => { if (!letzter) geheZu(o.id); }}
+              data-auswahl-durchlass onClick={() => { wahlEnde(); if (!letzter) geheZu(o.id); }}
               {...tt(`Ordner „${o.name}“ – ${letzter ? "" : `antippen öffnet ihn, ${einheit} hierher ziehen legt sie hinein; `}lang drücken: Menü des Ordners`, ordnerAktionen(o))}>📁 {o.name}</button>
           </Fragment>);
         })}

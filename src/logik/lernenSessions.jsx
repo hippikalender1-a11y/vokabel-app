@@ -339,8 +339,10 @@ export function updateSessionSlotFortschritt(app, neueIds, isDurchlaufEnde) {
     const neuAbgefragt = isDurchlaufEnde ? [] : [...new Set([...(slot.abgefragt || []), ...neueIds])];
     // Durchlauf-Ende: Auswertungsdaten zurücksetzen (der nächste Durchlauf beginnt mit neuen Start-Scores)
     const updated = isDurchlaufEnde
-      ? { ...slot, abgefragt: [], startScores: {}, startZeit: null, erst: {}, pakete: 0 }
+      ? { ...slot, abgefragt: [], startScores: {}, startZeit: null, erst: {}, pakete: 0, ...(slot.faelligZiel != null ? { faelligZiel: null, faelligIds: [] } : {}) }
       : { ...slot, abgefragt: neuAbgefragt,
+          ...(quiz?.faelligIds?.length ? { faelligIds: [...new Set([...(slot.faelligIds || []), ...neueIds.filter(id => quiz.faelligIds.includes(id))])],   // 267
+            faelligStart: { ...(slot.faelligStart || {}), ...Object.fromEntries(neueIds.filter(id => quiz.faelligIds.includes(id) && !(id in (slot.faelligStart || {}))).map(id => [id, quiz.rundeStartScores?.[id] ?? null])) } } : {}),   // 268
           ...(slot.erst ? { erst: { ...slot.erst, ...erstAusQuiz(quiz) } } : {}),
           ...(slot.pakete != null ? { pakete: slot.pakete + 1 } : {}) };
     lsSet(SK.sessionAktiv, updated);

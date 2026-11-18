@@ -3515,3 +3515,96 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   (data-pruefung="uebernehmen", „Trotzdem übernehmen“). Vorlagen: höchstens „nicht gespeichert“ auf dem Orange-Knopf (3,0).
 - Werkzeug-Fenster (Farbrad, Farbfeld, Leiste) haben feste Schriftfarben (nicht von der bearbeiteten Fläche).
 - Tests: punkte265 erweitert; farbfeld_namen/schrift_hintergrund bestätigen die Rückfragen.
+
+── 266/267 Stand (18.11.2026) ──
+266 Entscheidung: Lang-Druck auf den Pfad während der Auswahl → Menü bleibt. Sonst auf den Nutzer vertrauen (kein
+    „↶ Auswahl zurück“); nach dem Testen evtl. nachrüsten. → umsetzbar, wenn der Nutzer „umsetzen“ sagt.
+267 Konzept in Arbeit (mit dem Nutzer weiterentwickeln, bis es schlüssig ist):
+    - Fällige (Langzeit-Wiederholung) per Schalter „🔁 Fällige“ vor dem Quiz ein/aus, neben Gelernte/heute. Zwei Modi:
+      Fällige dieses Quiz bzw. Fällige aller Vokabeln der abgefragten Sprache(n).
+    - Ohne Schalter heute: Fällige laufen immer mit, auch wenn „Gelernte“ aus ist – künftig steuert das der Schalter.
+      „Gelernte“ nimmt (wie bisher) alle gelernten Vokabeln des Quiz dazu, um es komplett abzufragen.
+    - Eingabe als Prozent; die App rechnet anhand der Abfrage-/Paketgröße in regelmäßige Abstände um (vorhersehbar).
+    - Auswertung: Fällige gesondert aufführen (= für das Langzeitgedächtnis trainiert); eigenes Diagramm für den Kurzzeit-
+      Fortschritt (Kreise bis zur ersten positiven Stufe). Details später – Nutzer entwickelt eine Systematik für das
+      Kreisdiagramm der Statistik, die evtl. in die Auswertung übernommen wird (268).
+    Nutzer-Antworten (18.11.2026):
+    1 Fällige kommen HINZU (z. B. 20 neue + 5 Fällige = 25 Abfragen) und werden auf dem (Start-)Knopf angezeigt.
+    2 Pakete behalten ihre Größe: 5er-Paket = 4 neue + 1 Fällige (gleichmäßig verteilt; insgesamt mehr Pakete).
+    3 Gesucht (Ort noch offen): gezielt nur Fällige abfragen und nur Negative abfragen – auch über alle Vokabeln hinweg.
+      (Fällige gibt es schon: „🔁 n fällige“ in den Menüs von Liste/Ordner/Quiz und „Alle Quiz/Listen“; Negative fehlen.)
+    4 Bei Quiz mit mehreren Sprachen ist der Abfragemodus der Spalten schon festgelegt – Fällige aus anderen Listen werden
+      mit denselben Spalten abgefragt (Listen ohne diese Spalten entfallen).
+    5 Prozent-Einstellung direkt am Fällige-Knopf (je Quiz).
+    6 ok: bei „Gelernte“ an zählen Fällige trotzdem gesondert.
+    Nutzer-Antworten 2 (18.11.2026):
+    - Verteilung: NICHT gleichmäßig – zufällig anmutend dazwischen streuen (ein Paket darf mal mehr, mal weniger Fällige
+      haben); nur die Gesamtzahl im Quiz muss stimmen.
+    - Neue aufgebraucht, Fällige übrig: Start-Knopf bietet „🔁 Nur Fällige (n)“ an – zusätzlich bleibt das Menü.
+    - „heute“ gilt nur für die neuen Vokabeln; nicht (mehr) fällige gelernte kommen nie dazu. Normalzustand: nur ungelernte
+      + Fällige (Fällige standardmäßig AN, abschaltbar z. B. bei Zeitmangel); Gelernte/heute nur für besondere Lagen
+      (z. B. Schulaufgabe).
+    - Diktat und Akzente: keine Fälligen/Wiederholung (Fleißarbeit, jederzeit übbar) – Fällige-Knopf nur bei Übersetzung;
+      das heutige Mischen der Diktat-Fälligen (App.jsx ~2570 mischeFaellige diktatFortschritt) entfällt.
+    Nutzer-Antworten 3 (18.11.2026) – Konzept 267 vollständig, wartet auf „umsetzen“:
+    - Vorgabe für neue Quiz: Fällige „alle der Sprache“, 25 %.
+    - „✗ n negative abfragen“ in denselben Lang-Druck-Menüs wie „🔁 n fällige“ (Liste, Ordner, Quiz, „Alle Listen/Quiz“).
+
+── Statistik-Tab: Überlegungen des Nutzers (ab 18.11.2026, Konzept in Arbeit) ──
+269 - Kopf und Lernfortschritt bleiben wie sie sind.
+    - Stufen-Namen: −2 „Kann ich mir überhaupt nicht merken“ (Score −4…−6), −1 „Muss ich mir noch mal ansehen“ (−1…−3),
+      +1 „Auf einem guten Weg“ (0…2, Kreise = Kurzzeit), +2 „Für immer“ (3…6, Rauten = Langzeit).
+    - Kreisdiagramm ersetzen durch Balken, die sich von unten füllen, dezenter Rahmen = 100 % der betrachteten Vokabeln:
+      Balken Negativ (−2 dunkelrot, −1 hellrot), Balken Kurzzeit (abgestuft je Kreis), Balken Gelernt (Score ≥ 3).
+      Ziel: Gelernt voll, die anderen leer.
+    - Gesondert: Langzeit – je Raute ein Balken (◆◇◇, ◆◆◇, ◆◆◆).
+    - Gesondert: Gesamtübersicht (vorhanden, gelernt, fällig/Wiederholung …, später mehr).
+    - Option „Nie abgefragte ausblenden“ (Beispiel: ganzes Buch importiert, erst ein Drittel behandelt).
+    Vorschläge 18.11.: Stufenname + Anzahl + % unter jedem Balken; Langzeit-Bezug = gelernte (fällige Anteile schraffiert);
+    Gesamtübersicht als Zahlenkacheln; Diktat/Akzente ohne Langzeit-Balken; Auswertung (268) übernimmt die Balken mit
+    Vorher-Linie. Offen: Score 0 → Kurzzeit „0 Kreise“?; Langzeit 100 % = gelernte? eigener Balken ◇◇◇?; Kopf-Lernfortschritt
+    folgt dem Ausblenden?; Ort des Schalters (Gesamtübersicht?).
+    Nutzer-Antworten (18.11.2026): Score 0 → Kurzzeit-Balken „0 Kreise“ (hellste Stufe); Langzeit 100 % = gelernte, mit
+    eigenem Balken für frisch gelernte ◇◇◇ (also 4 Langzeit-Balken: ◇◇◇, ◆◇◇, ◆◆◇, ◆◆◆); Kopf-Lernfortschritt zeigt
+    immer die gesamte Auswahl (nicht reduzieren); Schalter „Nie abgefragte ausblenden“ in der Gesamtübersicht;
+    Rest wie vorgeschlagen.
+
+── 266/267/269 umgesetzt (18.11.2026) ──
+- 266: kacheln.jsx pfadTeile – Pfad-Knöpfe mit data-auswahl-durchlass; Antippen beendet eine Mehrfach-Auswahl (multiAuswahl
+  bzw. listenWahl) und öffnet ggf. den Ordner; aktueller Ordner beendet nur die Auswahl; lang drücken: Menü der Ebene wie sonst.
+  Test e2e/punkte266.mjs.
+- 269: StatistikTab – Kreisdiagramm ersetzt durch Balken (data-statistik-balken): Lernstand Negativ (−2 falsch-dunkel unten,
+  −1 falsch) · „Auf einem guten Weg“ (●●○/●○○/○○○ abgestuft) · Gelernt; Rahmen = 100 % (bei „Nie abgefragte ausblenden“ nur
+  abgefragte). Langzeit (nur Übersetzung): ◇◇◇ ◆◇◇ ◆◆◇ ◆◆◆, 100 % = gelernte, fällige schraffiert. Gesamtübersicht-Kacheln
+  (Vokabeln – antippen blendet alles ein –, nie abgefragt, gelernt, 🔁 fällig) + Schalter „Nie abgefragte ausblenden“
+  (= Filter „nie“). Balken antippen blendet die Gruppe in der Liste aus, lang drücken: Quiz mit diesen Vokabeln; Art-Wechsel
+  über Knopf „Übersetzung ⇄“ (data-kreismitte). Kopf und Vollbild-Kopf zählen immer die ganze Auswahl.
+  Tests: kreis.mjs neu (Balken); angepasst akzente, keineakzente, vollbild, fortschritt, gruppen, neu, multiquiz.
+- 267: Fällige getrennt von den neuen Vokabeln. App.jsx: quizFaellig { an, modus "sprache"|"quiz", anteil } (Standard an,
+  sprache, Anteil = Vorgabe Einstellungen 25 %); in der Konfiguration nur, wenn abweichend (faellig). faelligePool(): fällige
+  gelernte (Übersetzung) aus dem Quiz bzw. allen Listen der Sprache(n), nur mit den abgefragten Spalten, am längsten wartende
+  zuerst. starteQuiz: neue ohne Fällige; Ziel = round(neue × Anteil) (Session: faelligZiel/faelligIds im sessionAktiv und
+  Slot-SF); Verteilung je Platz mit P = offen-fällig/(offen-fällig + offen-neu) → zufällig gestreut, Summe exakt, Paket-
+  größe bleibt; Fällige anderer Listen kommen in quiz.liste (Score über _listeId). „🔁 Nur Fällige“ (nurFaelligRef) – eine
+  Runde ohne Quiz-Fortschritt; Knopf, wenn alle neuen abgefragt bzw. keine neuen da sind. Diktat/Akzente ohne Fällige
+  (mischeFaellige entfällt). QuizTab: Knopf „Fällige“ (data-faellig; antippen an/aus; lang drücken: ◉ Alle <Sprache> /
+  ○ Nur dieses Quiz + Regler Anteil 5–100 %), Titel/Start/Fortschritt „+ 🔁 n“, „🔁 a/z“. Menüs: „✗ Negative abfragen (n)“
+  neben „🔁 Fällige wiederholen“ (faelligeSchluessel liefert .negativ; Fällige immer aus „fortschritt“); gezielte Abfragen
+  laden ohne zusätzliche Fällige, Fällige-Abfrage mit „Gelernte“ an. Einstellungen: Anteil-Wahl 10/20/25/30/50/70/100.
+  Tests: punkte267.mjs; punkte168 (Abschnitt Fällige neu), export (Menü).
+- 268 (Auswertung umgestalten) noch offen – Nutzer fragen.
+- 268 Antworten (18.11.2026): nach jedem Paket knapp (richtig/falsch als schlichte Zahlen + neu gelernt), Balken mit
+  Vorher-Linie + Langzeit-Block erst in der Quiz-Auswertung am Ende; Balken beziehen sich aufs ganze Quiz; Kreisdiagramm
+  richtig/falsch → schlichte Zahlen; Zusatzdaten bleiben alle (auf Anhieb, verbessert/gleich/schlechter, Dauer, Ø Score + Pakete).
+
+── 268 umgesetzt (18.11.2026) ──
+- Paket-Ergebnis (teile.jsx renderRundenErgebnis): Kreisdiagramm ersetzt durch schlichte Zahlen „✓ n gewusst · ✗ n nicht
+  gewusst“ (data-ergebnis-zahlen) + Zeile „r von g richtig“; „davon 🔁 n Fällige“ (data-ergebnis-faellig); Lern-Bilanz bleibt.
+- Quiz-Auswertung (renderSessionAuswertung): statt Start/Ende-Streifen die drei Lernstand-Balken wie in der Statistik (ganzes
+  Quiz; data-ausw-balken mit data-vorher/data-nachher), gestrichelte Linie = Stand vorher (nur wenn > 0), daneben ±Änderung;
+  Zeile „nie abgefragt: a → b“; Block „🔁 Langzeit trainiert · n Fällige“ (◆ weiter / gehalten / zurückgefallen). Lernfortschritt,
+  Neu gelernt und alle Zusatzdaten bleiben.
+- Daten: Session merkt faelligStart (Score der Fälligen beim Abfragen, lernenSessions/updateSessionSlotFortschritt, auch im
+  Slot-SF); auswertung.jsx sessionAuswertungDaten liefert faellig [{ id, vorher, jetzt }] (jetzt ggf. aus der eigenen Liste).
+- Tests: punkte267 erweitert; angepasst bilanz, jubel, sessionauswertung, akzentbegrenzung.
+- Offen: Hilfetexte (Einstellungen › Info) beschreiben noch Kreisdiagramm/Start-Ende-Balken – beim Handbuch nachziehen.

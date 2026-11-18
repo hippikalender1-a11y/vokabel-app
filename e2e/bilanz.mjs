@@ -70,7 +70,7 @@ let t = await runde([3, 3, 2, 2], { abfahren: true, ausgehen: false });
 console.log("     Runde 1:", (t.match(/✓ \+\d+ neu gelernt|Lernfortschritt[^\n]*/g) || []).join(" | "));
 ok(/✓ \+1 neu gelernt/.test(t), "Runde 1: „+1 neu gelernt“");
 ok(!/Lernfortschritt/.test(t) && /\(Score \+3 erreicht\)/.test(t), "Runde 1: keine unklare Lernfortschritt-Zahl, „neu gelernt“ mit Erklärung (Score +3 erreicht)");
-ok(await page.evaluate(() => !!document.querySelector("svg[data-ergebniskreis]")), "Ergebnis als Kreisdiagramm");
+ok(await page.evaluate(() => !!document.querySelector("[data-ergebnis-zahlen]") && !document.querySelector("svg[data-ergebniskreis]")), "268: Ergebnis als schlichte Zahlen (kein Kreisdiagramm)");
 ok(!/Geschafft/.test(t), "Runde 1: keine Gratulation");
 
 // Runde 2: partir 2 ✓, sortir 2 ✓ → alle gelernt → 100 %

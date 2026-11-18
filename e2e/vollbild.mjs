@@ -33,7 +33,7 @@ ok(/Vokabel-Trainer/.test(await kopf()), "Normal: Kopfzeile „Vokabel-Trainer�
 
 // Vollbild
 await page.evaluate(() => {
-  const box = document.querySelector('svg[viewBox="0 0 400 230"]').closest('div[style*="border-radius: 12px"]');
+  const box = document.querySelector("[data-statistik-balken]");
   [...box.querySelectorAll("button")].find(b => b.querySelector("svg") && !b.textContent.trim())?.click();
 });
 await sleep(400);
@@ -44,14 +44,13 @@ ok(!/Vokabel-Trainer/.test(k) && /53 %/.test(k) && /2 \/ 5 gelernt/.test(k), "Vo
 await legende("nie"); await sleep(300);
 k = await kopf();
 console.log("     ohne Nie:", k);
-// (100 + 100 + 67 + 0) / 4 = 67 %
-ok(/67 %/.test(k) && /2 \/ 4 gelernt/.test(k), "„Nie abgefragt“ aus: 67 %, 2 / 4 gelernt");
+// 269: der Kopf zählt immer die ganze Auswahl
+ok(/53 %/.test(k) && /2 \/ 5 gelernt/.test(k), "269: „Nie abgefragt“ aus – Kopf bleibt bei der ganzen Auswahl (53 %, 2 / 5)");
 
 await legende("gelernt"); await sleep(300);
 k = await kopf();
 console.log("     ohne Nie + Gelernt:", k);
-// partir 67 %, voir 0 % → 33 %
-ok(/33 %/.test(k) && /0 \/ 2 gelernt/.test(k), "Zusätzlich „Gelernt“ aus: 33 %, 0 / 2 gelernt");
+ok(/53 %/.test(k) && /2 \/ 5 gelernt/.test(k), "269: zusätzlich „Gelernt“ aus – Kopf unverändert");
 await page.screenshot({ path: "vollbild_kopf.png" });
 
 // Vollbild verlassen

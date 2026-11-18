@@ -177,8 +177,8 @@ await clickText(".tab", "Statistik");
 await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check, div")].find(e => e.textContent.trim() === "Akzente")?.click());
 await sleep(300);
-const mitte = () => page.evaluate(() => document.querySelector("[data-kreismitte] text")?.textContent);
-const gesamt = async () => (await text()).match(/Gesamt (\d+)/)?.[1];
+const mitte = () => page.evaluate(() => document.querySelector("[data-kreismitte]")?.textContent.replace("⇄", "").trim());
+const gesamt = () => page.evaluate(() => document.querySelector('[data-st-kachel="gesamt"] b')?.textContent);   // 269: Gesamtübersicht
 const legende = () => page.evaluate(() => [...document.querySelectorAll("[data-legende]")].map(b => b.textContent.trim()).join(" | "));
 ok(await mitte() === "Übersetzung" && await gesamt() === "4", `Start: Übersetzung, Gesamt ${await gesamt()} (${await legende()})`);
 await page.evaluate(() => document.querySelector("[data-kreismitte]").dispatchEvent(new MouseEvent("click", { bubbles: true })));
@@ -187,7 +187,8 @@ ok(await mitte() === "Diktat", "1. Tap: Diktat");
 await page.evaluate(() => document.querySelector("[data-kreismitte]").dispatchEvent(new MouseEvent("click", { bubbles: true })));
 await sleep(250);
 const leg = await legende();
-ok(await mitte() === "Akzente" && await gesamt() === "3" && /Negativ 2/.test(leg) && /In Arbeit 1/.test(leg),
+const balken = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("[data-st-balken]")].map(b => [b.dataset.stBalken, b.closest(".st-spalte").querySelector(".st-zahl").textContent])));
+ok(await mitte() === "Akzente" && await gesamt() === "3" && /^2 ·/.test((await balken()).negativ) && /^1 ·/.test((await balken()).arbeit),
   `2. Tap: Akzente – nur Wörter mit Akzent, Gruppen nach Akzent-Score (Gesamt ${await gesamt()}: ${leg})`);
 ok((await text()).includes("Akzente") && /Lernfortschritt|Ø Score/.test(await text()), "Kopfzeile nennt die ausgewertete Art");
 await page.evaluate(() => document.querySelector("[data-kreismitte]").dispatchEvent(new MouseEvent("click", { bubbles: true })));

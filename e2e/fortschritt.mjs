@@ -52,16 +52,16 @@ let t = await text();
 console.log("     Kopf:", (t.match(/Lernfortschritt[\s\S]{0,80}/) || [""])[0].replace(/\n/g, " | "));
 ok(/67 %/.test(t), "Lernfortschritt 67 % (100+100+67+0)/4");
 ok(/2 \/ 4 gelernt/.test(t), "„2 / 4 gelernt“");
-ok(await page.evaluate(() => [...document.querySelectorAll("svg g")].some(g => g.querySelectorAll("text")[0]?.textContent === "✓ Gelernt" && g.querySelectorAll("text")[1]?.textContent.startsWith("2 ·"))), "Kreis „✓ Gelernt 2“");
+ok(await page.evaluate(() => document.querySelector('[data-st-balken="gelernt"]')?.closest(".st-spalte").querySelector(".st-zahl").textContent.startsWith("2 ·")), "Balken „✓ Gelernt 2“");
 ok(await listenZeilen() === 4, "Liste zeigt alle 4 Vokabeln");
 await page.screenshot({ path: "fortschritt_alle.png" });
 
-await page.evaluate(() => [...document.querySelectorAll("svg g")].find(g => g.querySelector("text")?.textContent === "✓ Gelernt")?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+await page.evaluate(() => document.querySelector('[data-st-balken="gelernt"]')?.click());
 await sleep(300);
 t = await text();
 ok(await listenZeilen() === 2, `Gelernt ausgeblendet: Liste zeigt 2 Vokabeln (${await listenZeilen()})`);
-// ohne Gelernte: partir 67 %, sortir 0 % → 33 %
-ok(/33 %/.test(t) && /0 \/ 2 gelernt/.test(t), "Lernfortschritt folgt dem Filter: 33 %, 0 / 2 gelernt");
+// 269: der Kopf zählt immer die ganze Auswahl
+ok(/67 %/.test(t) && /2 \/ 4 gelernt/.test(t), "269: Lernfortschritt bleibt bei der ganzen Auswahl: 67 %, 2 / 4 gelernt");
 
 // ── Quiz-Runde: gelernte sind ausgeblendet → partir + sortir, beide gewusst ──
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);

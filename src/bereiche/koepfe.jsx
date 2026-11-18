@@ -11,14 +11,14 @@ export function renderVollbildKopf(app) {
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
     const gruppe = v => !v.fortschritt ? "nie" : v.fortschritt.score < 0 ? "negativ"
       : (schwelle > 0 && v.fortschritt.score >= schwelle) ? "gelernt" : "arbeit";
-    const voks = statistikSicht(statistikGefilterteVoks, statistikArt).filter(v => statistikFilter.has(gruppe(v)));
+    const voks = statistikSicht(statistikGefilterteVoks, statistikArt);   // 269: immer die ganze Auswahl
     const anzahl = { gelernt: 0, arbeit: 0, nie: 0, negativ: 0 };
     voks.forEach(v => { anzahl[gruppe(v)]++; });
     const abgefragt = voks.filter(v => v.fortschritt);
     const avg = abgefragt.length ? abgefragt.reduce((sum, v) => sum + v.fortschritt.score, 0) / abgefragt.length : null;
     return (
       <div className="topbar-title" style={{display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"0 44px"}}
-        {...tt("Lernfortschritt der eingeblendeten Gruppen")}>
+        {...tt("Lernfortschritt der ganzen Auswahl")}>
         {schwelle > 0
           ? <span style={{fontWeight:800, fontSize:"1.1rem", color:"var(--haupt)", lineHeight:1}}>{Math.round(lernProzent(voks.map(v => v.fortschritt?.score), schwelle))} %</span>
           : <span style={{fontWeight:800, fontSize:"1.1rem", color:"var(--haupt)", lineHeight:1}}>Ø {avg === null ? "–" : `${avg > 0 ? "+" : ""}${avg.toFixed(1)}`}</span>}

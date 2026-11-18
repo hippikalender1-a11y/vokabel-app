@@ -211,6 +211,22 @@ export const CSS_BASIS = `
   .fv-probe{background:none;border:none;padding:1px 4px;margin-left:-4px;font-family:inherit;text-align:left;cursor:pointer;border-radius:4px;color:inherit;}
   .fv-probe.aktiv{outline:2px dashed currentColor;outline-offset:1px;}
   .fv-kraeftig{font-weight:800;font-size:0.95rem;} .fv-normal{font-size:0.88rem;} .fv-leise{font-size:0.8rem;} .fv-sehrleise{font-size:0.74rem;}
+  .st-titel{font-size:0.78rem;font-weight:800;color:var(--text);margin:2px 2px 6px;}
+  .st-reihe{display:flex;justify-content:space-around;align-items:flex-start;gap:6px;}
+  .st-spalte{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .st-balken{position:relative;width:min(64px, 100%);height:140px;border:1.5px solid var(--rahmen);border-radius:6px;background:var(--karte);overflow:hidden;padding:0;cursor:pointer;}
+  [data-st-langzeit] .st-balken{height:90px;}
+  .st-teil{position:absolute;left:0;right:0;}
+  .st-vorher{position:absolute;left:-2px;right:-2px;height:0;border-top:2px dashed var(--text);z-index:1;}   /* 268: Stand vor der Runde */
+  .ergebnis-zahlen{display:flex;justify-content:center;gap:22px;font-size:1.5rem;font-weight:800;}
+  .ergebnis-zahlen small{font-size:0.78rem;font-weight:600;}
+  .ergebnis-richtig{color:var(--haupt);} .ergebnis-falsch{color:var(--falsch);}
+  .st-name{font-size:0.74rem;font-weight:800;text-align:center;line-height:1.15;cursor:pointer;}
+  .st-zahl{font-size:0.72rem;color:var(--text2);text-align:center;}
+  .st-kacheln{display:grid;grid-template-columns:repeat(auto-fit, minmax(70px, 1fr));gap:6px;}
+  .st-kachel{display:flex;flex-direction:column;align-items:center;padding:6px 4px;border:1px solid var(--rahmen);border-radius:8px;background:var(--karte);font-family:inherit;color:var(--text);}
+  .st-kachel b{font-size:1.05rem;} .st-kachel span{font-size:0.68rem;color:var(--text2);}
+  .st-schalter{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:0.82rem;font-weight:600;color:var(--text);cursor:pointer;}
   .fv-zeile{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;}
   .fv-ampel{flex-shrink:0;font-size:0.68rem;font-weight:700;padding:1px 6px;border-radius:8px;background:#fff;color:#1a1a1a;border:1px solid #d8d4cc;white-space:nowrap;}
   .fv-ampel.warn{background:#fff3cd;color:#7a4b00;border-color:#e0a800;}
