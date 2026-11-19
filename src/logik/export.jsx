@@ -71,7 +71,7 @@ export function bestaetigeDateiExport(app) {
 
 // eslint-disable-line react-hooks/exhaustive-deps
 export function handleTabWechsel(app, neuerTab) {
-  const { aktiverSlot, ansicht, auswahlTafelRef, beendeMultiAuswahl, getSlotEintrag, ladeSlot, ladeSlotStatistik, multiAuswahl, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, setAktiverSlot, setEinstBereich, setEinstUnter, setFarbTab, setGespeicherteVokabelgruppe, setListenWahl, setMultiAuswahl, setMultiStart, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizTabListen, setSessionSlotAktiv, setSlotSektionAufgeklappt, setSlotVorschau, setStatistikVollbild, setTab, sichtbareListen, slotSektionAufgeklappt, slotVorschau, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, tab, toggleSlotSektion, zurUebersetzung } = app;
+  const { listenWahl, ladeTafelListen, aktiverSlot, ansicht, auswahlTafelRef, beendeMultiAuswahl, getSlotEintrag, ladeSlot, ladeSlotStatistik, multiAuswahl, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, setAktiverSlot, setEinstBereich, setEinstUnter, setFarbTab, setGespeicherteVokabelgruppe, setListenWahl, setMultiAuswahl, setMultiStart, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizTabListen, setSessionSlotAktiv, setSlotSektionAufgeklappt, setSlotVorschau, setStatistikVollbild, setTab, sichtbareListen, slotSektionAufgeklappt, slotVorschau, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, tab, toggleSlotSektion, zurUebersetzung } = app;
     // 215: schon im Quiz-Tab (Übersicht) – Tab öffnet die Quiz-Auswahl; offen und nichts geändert → wieder zu;
     // geändert (grüner Kopf) → nichts (übernehmen nur über den Kopf)
     if (neuerTab === "quiz" && tab === "quiz" && ansicht === "uebersicht") {
@@ -83,6 +83,7 @@ export function handleTabWechsel(app, neuerTab) {
       const laden = tab === "statistik" ? ladeSlotStatistik : ladeSlot;
       if (multiAuswahl?.length) beendeMultiAuswahl(multiAuswahl, laden);
       else if (slotVorschau) laden(slotVorschau.typ, slotVorschau.id);
+      else if (listenWahl?.length) ladeTafelListen(listenWahl);   // 299: offene Listen-Tafel – beim Tabwechsel übernehmen (wie bei den Quiz)
       setMultiAuswahl(null); setSlotVorschau(null); schliesseInfo(); auswahlTafelRef.current = null;
       setSlotSektionAufgeklappt(false);
     }

@@ -61,7 +61,8 @@ ok(hohl.rand >= 3 && hohl.randFarbe === hohl.voll && hohl.innen === hohl.bar && 
 const farben = await page.evaluate(() => Object.fromEntries(["-2", "-1", "0", "1", "2"].map(k => [k, getComputedStyle(document.querySelector(`[data-st-lernstand] [data-st-teil="${k}"]`)).backgroundColor])));
 ok(b.arbeit.unten === "0,1,2" && b.negativ.unten === "-2,-1" && new Set(Object.values(farben)).size === 5, `284: Reihenfolge 0,1,2 von unten, fünf verschiedene Farben (${JSON.stringify(farben)})`);
 // 286: Gesamtübersicht in den Balken – Nie-Balken, Gesamtzahl in der Überschrift, gelernt/fällig über den Langzeit-Balken
-const g = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("[data-st-kachel]")].map(k => [k.dataset.stKachel, k.querySelector("b").textContent])));
+const g = await page.evaluate(() => ({ ...Object.fromEntries([...document.querySelectorAll("[data-st-kachel]")].map(k => [k.dataset.stKachel, k.querySelector("b")?.textContent])),
+  gesamt: document.querySelector("[data-st-anzahl]")?.textContent }));   // 299: Gesamtzahl steht im Art-Knopf
 ok(g.gesamt === "10" && b.nie.zahl === "1 · 10 %" && b.nie.teile.nie === 10 && g.gelernt === "3" && g.faellig === "1" && !(await page.$(".st-kacheln")) && !(await page.$('input[type="checkbox"][data-nie-aus]')),
   `286: Lernstand · 10 Vokabeln, Nie-Balken 1, Langzeit 3 gelernte · 🔁 1 fällig, keine Kacheln/Schalter mehr (${JSON.stringify(g)}, ${b.nie.zahl})`);
 ok(await page.evaluate(() => document.querySelector("[data-st-abgefragt]")?.dataset.stAbgefragt === "9" && __txt(document.querySelector(".st-klammer")).trim() === "9 abgefragt"), "286: Klammer „9 abgefragt“ unter den drei Balken");

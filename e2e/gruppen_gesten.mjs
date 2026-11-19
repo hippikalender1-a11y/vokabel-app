@@ -74,8 +74,7 @@ ok((await menue()).some(m => m.startsWith("Vokabeln (")), "Tafel zeigt Aktionen 
 ok(await gewaehlt() === "s1,s2", "Teil 1 + 2 ausgewählt");
 await kontext(kachel("s2"));
 ok(await gewaehlt() === "s1" && (await tafel())?.startsWith("Teil 1"), "nochmal lang drücken nimmt heraus");
-await page.evaluate(() => [...document.querySelectorAll(".tab")].find(b => /Statistik/.test(b.textContent))?.click()); await sleep(300);
-ok(await tafel() !== null && await page.$("[data-slot-id]"), "Tippen daneben (Statistik-Tab) bewirkt nichts, Tafel bleibt");
+// 299: ein Tab bei offener Auswahl-Tafel wechselt und übernimmt die Auswahl (punkte299) – hier nicht mehr „bewirkt nichts“
 await tafelZu();
 ok(!(await tafel()) && await gewaehlt() === "", "241: Wechsel Quiz/Listen beendet die Auswahl");
 // 234: antippen in der Auswahl – sie beginnt neu mit dieser Kachel

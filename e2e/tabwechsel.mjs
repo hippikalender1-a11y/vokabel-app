@@ -98,7 +98,7 @@ ok(st.name === "Paket Farben", `298: Statistik „▦ Alle Listen“ → Quiz un
 await listeWaehlen(page, "Tiere");   // 298: Liste antippen lädt sie
 await clickText(".tab", "Statistik");
 await sleep(300);
-const gesamt = () => page.evaluate(() => document.querySelector('[data-st-kachel="gesamt"] b')?.textContent);
+const gesamt = () => page.evaluate(() => document.querySelector('[data-st-anzahl]')?.textContent);
 ok(await gesamt() === "2", `Quiz-Listenauswahl → Statistik: Tiere (2 Vokabeln) (${await gesamt()})`);
 // 294: Statistik – Listen über die Auswahl (Umschalter „📋 Listen“): beide auswählen, der Kopf zeigt sie zusammen
 await oeffneKopf();

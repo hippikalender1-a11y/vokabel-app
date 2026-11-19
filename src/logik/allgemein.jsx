@@ -65,6 +65,7 @@ export function tt(app, text, aktionen, opts = {}) {
       onContextMenu(e) { e.preventDefault(); if (e.nativeEvent._ttMenue) return; if (aktionen) e.nativeEvent._ttMenue = true;
         // 171: Android meldet den Lang-Druck zusätzlich als Kontextmenü – bei Kacheln läuft schon die eigene Geste (sonst rein + wieder heraus)
         if (opts.eigeneGeste && (kachelGesteRef.current || lassoRef.current?.aktiv || e.nativeEvent.sourceCapabilities?.firesTouchEvents || e.nativeEvent.pointerType === "touch")) return;
+        if (opts.lang) { opts.lang(); return; }   // 299: langer Druck = Aktion (z. B. Bereich wählen)
         opts.beimLang?.();
         if (aktionen) opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen, { ...(opts.auswahl ? { auswahl: opts.auswahl } : {}), ...(opts.regler ? { regler: opts.regler() } : {}), ...(opts.zusatz ? { zusatz: opts.zusatz() } : {}) }); },
       title: text,
@@ -80,6 +81,7 @@ export function tt(app, text, aktionen, opts = {}) {
         tooltipTimer.current = setTimeout(() => {
           if (slotZiehenRef.current?.aktiv) return;   // beim Verschieben im Raster keine Erklärung einblenden
           if (farbModusRef.current) return;            // Farbmodus: langer Druck öffnet das Farbfeld
+          if (opts.lang) { tooltipShown.current = true; opts.lang(); return; }   // 299
           tooltipShown.current = true; opts.beimLang?.(); zeigeInfo(langText, t.clientX, t.clientY, aktionen, { ...(opts.auswahl ? { auswahl: opts.auswahl } : {}), ...(opts.regler ? { regler: opts.regler() } : {}), ...(opts.zusatz ? { zusatz: opts.zusatz() } : {}) });
           if (aktionen) opts.beimMenue?.();
           opts.beimZeigen?.(t.clientX, t.clientY);

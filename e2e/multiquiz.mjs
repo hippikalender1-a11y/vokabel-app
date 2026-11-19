@@ -136,7 +136,7 @@ ok(await page.evaluate(id => document.querySelector(`[data-slot-id="${id}"] .ras
 // Statistik: gemeinsame Statistik
 await clickText(".tab", "Statistik"); await sleep(400);
 const t = await page.evaluate(() => document.body.innerText);
-ok(await page.evaluate(() => document.querySelector('[data-st-kachel="gesamt"] b')?.textContent) === "5", "Statistik: Multiquiz zusammen (5 Vokabeln)");   // 269: Gesamtübersicht
+ok(await page.evaluate(() => document.querySelector('[data-st-anzahl]')?.textContent) === "5", "Statistik: Multiquiz zusammen (5 Vokabeln)");   // 269: Gesamtübersicht
 ok(!(await page.evaluate(() => [...__aktionen()].length)), "kein Menü offen");
 
 await browser.close();

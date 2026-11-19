@@ -59,7 +59,7 @@ const statistikInfo = async () => {
 const statistikInfoRoh = () => page.evaluate(() => ({
   tabAktiv: document.querySelector(".tab.aktiv")?.textContent,
   // 294: keine „Listen-Auswahl“-Zeile mehr – die Anzahl steht in „Lernstand · n Vokabeln“
-  anzahl: [document.querySelector('[data-st-kachel="gesamt"] b')?.textContent].filter(Boolean).map(n => `(${n} V.)`),
+  anzahl: [document.querySelector('[data-st-anzahl]')?.textContent].filter(Boolean).map(n => `(${n} V.)`),
   // 149: die geladene Quiz wird nicht mehr am Chip markiert – sie steht oben (Kopf + Info-Fläche); Verlauf-Einträge mit 🕘
   chipAktiv: [document.querySelector("[data-slot-info-name]")?.innerText.trim()].filter(x => x && x.startsWith("🕘")),
 }));

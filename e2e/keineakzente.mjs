@@ -13,7 +13,7 @@ let fehler = 0;
 const ok = (cond, msg) => { if (!cond) fehler++; console.log(cond ? "OK  " : "FAIL", msg); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const mitte = async () => { await page.evaluate(() => document.querySelector("[data-kreismitte]").dispatchEvent(new MouseEvent("click", { bubbles: true }))); await sleep(300); };
-const art = () => page.evaluate(() => document.querySelector("[data-kreismitte]")?.textContent.replace("⇄", "").trim());
+const art = () => page.evaluate(() => document.querySelector("[data-kreismitte] [data-st-art-name]")?.textContent.replace("⇄", "").trim());
 
 await page.goto(URL);
 await page.evaluate(() => {

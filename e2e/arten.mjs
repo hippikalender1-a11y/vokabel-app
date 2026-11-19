@@ -135,8 +135,8 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 await clickText(".slot-chip", "Alt gemischt"); await sleep(500); await slotLaden(page);
 await sleep(400);
 ok(!(await page.$("[data-slot-kopf] [data-statistik-art]")), "Statistik: zugeklappte Kopfzeile ohne Kreise");
-for (let i = 0; i < 3 && (await page.evaluate(() => document.querySelector("[data-kreismitte]")?.textContent.replace("⇄", "").trim())) !== "Akzente"; i++) { await page.click("[data-kreismitte]"); await sleep(300); }
-ok(await page.evaluate(() => document.querySelector("[data-kreismitte]")?.textContent.replace("⇄", "").trim()) === "Akzente", "Statistik: Wechsel über die Mitte des Kreisdiagramms zu Akzente");
+for (let i = 0; i < 3 && (await page.evaluate(() => document.querySelector("[data-kreismitte] [data-st-art-name]")?.textContent.replace("⇄", "").trim())) !== "Akzente"; i++) { await page.click("[data-kreismitte]"); await sleep(300); }
+ok(await page.evaluate(() => document.querySelector("[data-kreismitte] [data-st-art-name]")?.textContent.replace("⇄", "").trim()) === "Akzente", "Statistik: Wechsel über die Mitte des Kreisdiagramms zu Akzente");
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
 await clickText(".slot-chip", "Drei Arten"); await sleep(500); await slotLaden(page);

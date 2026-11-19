@@ -1,6 +1,6 @@
 import puppeteer from "puppeteer-core";
 import { listeOeffnen, listeWaehlen } from "./hilfen.mjs";
-import { zuListen, quizEinstellungen, listenZu, bereichZu } from "./hilfen.mjs";
+import { zuListen, quizEinstellungen, listenZu, bereichZu, bereichOeffnen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -60,20 +60,20 @@ if (start === "detail") {
 }
 if (start === "preset") {
   // Bereich: 8 Vokabeln per Checkbox
-  await clickText("button", "Bereich", true);
-  await sleep(300);
+  await bereichOeffnen(page);   // 298: statt „Alle | Bereich“
   await page.evaluate(() => {
     const zeilen = [...document.querySelectorAll(".vok-nr")].slice(0, 8);
     zeilen.forEach(z => z.parentElement.click());
   });
   await sleep(300);
-  await page.click("[data-vok-bestaetigen]"); await sleep(300);   // Liste zu → Quiz-Optionen wieder sichtbar
+  await page.click("[data-vok-bestaetigen]"); await sleep(500);   // Liste zu → Quiz-Optionen wieder sichtbar (299: Bereich gilt sofort)
 }
 await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await sleep(300);
 await page.click('[data-umfang-wahl="5"]'); await sleep(300);
 await sleep(300);
 if (start === "preset") {
-  await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Speichern"]').click()); await new Promise(r => setTimeout(r, 300));
+  await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => (document.querySelector('[data-info-aktion="💾 Als Quiz speichern"]') || document.querySelector('[data-info-aktion="💾 Speichern"]')).click()); await new Promise(r => setTimeout(r, 300));
+  await page.evaluate(() => { const i = document.querySelector(".modal input.inp"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, ""); i.dispatchEvent(new Event("input", { bubbles: true })); });   // 298: Name ist vorbelegt
   await page.type(".modal input.inp", "Mein Preset");
   await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].pop()?.click());
   await sleep(400);

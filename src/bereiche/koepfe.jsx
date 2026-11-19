@@ -123,7 +123,7 @@ export function renderListeInfo(app, l, mehrere = null) {
   }
 
 export function renderSlotKopf(app, statistik) {
-  const { waehleListenBereich, aendereQuizVokabeln, bereichWahl, tafelBereich, nichtsGeladen, zeigeListenStatistik, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
+  const { waehleBereichGeladen, waehleListenBereich, aendereQuizVokabeln, bereichWahl, tafelBereich, nichtsGeladen, zeigeListenStatistik, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
     const zu = !slotSektionAufgeklappt;
     const slot = statistik ? statistikAktiverSlot : aktiverSlot;
     const bw = !statistik && bereichWahl;   // 298: laufende Bereichswahl – der Kopf zeigt ihre Listen
@@ -153,7 +153,7 @@ export function renderSlotKopf(app, statistik) {
       const alle = lsLesen(SK.liste(listenIds[0]))?.vokabeln || [];
       const auswahl = statistik ? statistikCheckboxAuswahl : quizCheckboxAuswahl;
       const nr = alle.map((v, i) => auswahl.has(`${listenIds[0]}__${v.id}`) ? i + 1 : null).filter(Boolean);
-      bereichText = nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}–${nr[nr.length - 1]}` : "Auswahl";
+      bereichText = nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}${nr.length > 1 ? `–${nr[nr.length - 1]}` : ""}` : "Auswahl";
     } else if (bereichAktiv) bereichText = "Auswahl";
     const info = [multi ? `🧩 ${multi.map(t => t.name).join(" + ")}` : listenText, multi ? "" : bereichText, `${voks.length} Vokabel${voks.length !== 1 ? "n" : ""}`].filter(Boolean).join(" · ");
     // Lang-Druck (Quiz): Speichern und – bei einer gespeicherten Quiz – dieselbe Verwaltung wie auf ihrer Kachel
@@ -165,7 +165,7 @@ export function renderSlotKopf(app, statistik) {
       { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: "gespeichert", id: eintrag.id }) },
     ] : [];
     // 217: Liste – öffnen bzw. daraus ein Quiz erstellen (kein Speichern)
-    const listenAktionen = alsListe ? [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(slot.id) }, { label: "🎯 Bereich wählen…", fn: () => waehleListenBereich([slot.id]) }, { label: "💾 Als Quiz speichern", fn: () => setErstellenFenster({ name: einListenName() || listeE?.name || "Quiz", ordner: slotOrdner || null }) }] : [];
+    const listenAktionen = alsListe ? [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(slot.id) }, { label: "🎯 Bereich wählen…", fn: () => waehleBereichGeladen(statistik ? "statistik" : "quiz") }, { label: "💾 Als Quiz speichern", fn: () => setErstellenFenster({ name: einListenName() || listeE?.name || "Quiz", ordner: slotOrdner || null }) }] : [];
     const alleAktionen = alsListe ? listenAktionen
       : [...(!statistik ? sessionSpeicherAktionen() || [] : []), ...verwaltung];
     const aktionen = alleAktionen.length ? alleAktionen : null;
@@ -183,11 +183,15 @@ export function renderSlotKopf(app, statistik) {
       : multiAuswahl.length ? (statistik ? `${multiAuswahl.length} ausgewählt · ${multiZusammenstellung(multiAuswahl)?.anzahl || 0} Vokabeln`
         : (() => { const z = schalterZaehlung(wahlQuizIds(multiAuswahl)); return `${multiAuswahl.length} ausgewählt · ${z.regulaer} Vokabeln${quizFaellig.an && z.faellig ? ` + 🔁 ${z.faellig}` : ""}`; })())   // 274
       : "Nichts ausgewählt") : "";
+    // 299: die Tafel zeigt, was schon geladen ist (z. B. nach dem Bereich) → ohne „laden“
+    const tafelGeladen = lwahl && listenWahl.length === 1 && !statistik && aktiverSlot?.typ === "listen" && aktiverSlot.id === listenWahl[0] && (tafelBereich
+      ? quizBereichTyp === "bereich" && quizCheckboxAuswahl.size === tafelBereich.auswahl.size && [...tafelBereich.auswahl].every(k => quizCheckboxAuswahl.has(k))
+      : !(quizBereichTyp === "bereich" && quizCheckboxAuswahl.size));
     const lEinzelName = id => { const o = (listenOrdner || []).find(x => x.id === id); if (o) return `📁 ${o.name}`;
       const n = `📋 ${listenIndex.find(l => l.id === id)?.name || "Liste"}`;
       if (!(tafelBereich?.ids.length === 1 && tafelBereich.ids[0] === id)) return n;   // 297: gewählter Bereich – „· Nr. 9–33“
       const nr = (lsLesen(SK.liste(id))?.vokabeln || []).map((v, i) => tafelBereich.auswahl.has(`${id}__${v.id}`) ? i + 1 : null).filter(Boolean);
-      return `${n} · ${nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}–${nr[nr.length - 1]}` : `${nr.length} Vokabeln`}`; };
+      return `${n} · ${nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}${nr.length > 1 ? `–${nr[nr.length - 1]}` : ""}` : `${nr.length} Vokabeln`}`; };
     // 169: Fortschrittsbalken immer – bei offener Auswahl für das, was der Kopf zeigt (Vorschau bzw. Mehrfachauswahl)
     const kopfVoks = e => { const k = e?.konfiguration || {};
       let v = (k.listenIds || []).flatMap(id => (lsLesen(SK.liste(id))?.vokabeln || []).map(x => ({ ...x, _key: `${id}__${x.id}`, _listeId: id })));
@@ -223,7 +227,7 @@ export function renderSlotKopf(app, statistik) {
               : geaendert ? `${name} – Vokabelauswahl geändert, noch nicht gespeichert; lang drücken: überspeichern, als neues Quiz speichern, verwerfen, umbenennen, duplizieren, Vokabeln ändern oder löschen`
               : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern, umbenennen, duplizieren, Vokabeln ändern, löschen" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, (lwahl ? (listenWahl.length ? (auswahlTafelDaten.current.liste?.()?.aktionen || listenWahlMenue(listenWahl)) : null) : wahl ? (auswahlTafelDaten.current.slot?.()?.aktionen || null) : aktionen), { langText: name })}>
             {balkenPct !== null && <span className="kopf-balken" data-kopf-balken={balkenPct}><span style={{width:`${balkenPct}%`}}/></span>}
-            {lwahl ? <span data-wahl-anzahl={listenWahl.length} data-listen-wahl-kopf>{listenWahl.length === 1 ? `${lEinzelName(listenWahl[0])} laden` : listenWahl.length
+            {lwahl ? <span data-wahl-anzahl={listenWahl.length} data-listen-wahl-kopf>{listenWahl.length === 1 ? `${lEinzelName(listenWahl[0])}${tafelGeladen ? "" : " laden"}` : listenWahl.length
                 ? statistik ? `${listenWahl.length} ausgewählt · ${wahlListenIds(listenWahl).reduce((s, id) => s + (lsLesen(SK.liste(id))?.vokabeln?.length || 0), 0)} Vokabeln`
                 : mitSymbolen((() => { const z = schalterZaehlung(wahlListenIds(listenWahl), "liste"); return `${listenWahl.length} ausgewählt · ${z.regulaer} Vokabeln${quizFaellig.an && z.faellig ? ` + 🔁 ${z.faellig}` : ""}`; })())   // 288
                 : "Nichts ausgewählt"}</span>

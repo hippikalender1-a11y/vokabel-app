@@ -177,8 +177,8 @@ await clickText(".tab", "Statistik");
 await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".quiz-setup-check, div")].find(e => e.textContent.trim() === "Akzente")?.click());
 await sleep(300);
-const mitte = () => page.evaluate(() => document.querySelector("[data-kreismitte]")?.textContent.replace("⇄", "").trim());
-const gesamt = () => page.evaluate(() => document.querySelector('[data-st-kachel="gesamt"] b')?.textContent);   // 269: Gesamtübersicht
+const mitte = () => page.evaluate(() => document.querySelector("[data-kreismitte] [data-st-art-name]")?.textContent.replace("⇄", "").trim());
+const gesamt = () => page.evaluate(() => document.querySelector('[data-st-anzahl]')?.textContent);   // 269: Gesamtübersicht
 const legende = () => page.evaluate(() => [...document.querySelectorAll("[data-legende]")].map(b => b.textContent.trim()).join(" | "));
 ok(await mitte() === "Übersetzung" && await gesamt() === "4", `Start: Übersetzung, Gesamt ${await gesamt()} (${await legende()})`);
 await page.evaluate(() => document.querySelector("[data-kreismitte]").dispatchEvent(new MouseEvent("click", { bubbles: true })));

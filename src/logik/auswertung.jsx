@@ -68,7 +68,7 @@ export function einListenName(app, z = null) {   // 298: z = { listen, bereich, 
     if (quizBereichTyp === "bereich" && quizCheckboxAuswahl.size > 0) {
       const alle = lsGet(SK.liste(id))?.vokabeln || [];
       const nr = alle.map((v, i) => quizCheckboxAuswahl.has(`${id}__${v.id}`) ? i + 1 : null).filter(Boolean);
-      if (nr.length && nr.length < alle.length) return `${l.name} · ${nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}–${nr[nr.length - 1]}` : "Auswahl"}`;
+      if (nr.length && nr.length < alle.length) return `${l.name} · ${nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}${nr.length > 1 ? `–${nr[nr.length - 1]}` : ""}` : "Auswahl"}`;
     }
     return l.name;
   }

@@ -7,7 +7,7 @@ import { SymWdh } from "../symbole.jsx";
 // Phase 2 (Aufteilung): Bereich aus dem Haupt-return von App.jsx (tab === "statistik")
 // app = Zustände, Setter und Funktionen der Komponente (siehe „const app“ in App.jsx)
 export function StatistikTab(app) {
-  const { einstellungen, headerH, oeffneVokabelBearbeiten, setGruppenQuiz, setStatistikArt, setStatistikFilter, setStatistikListeZu, setStatistikSort, setStatistikVollbild, slotH, statistikArt, statistikBereichTyp, statistikCheckboxAuswahl, statistikFilter, statistikGefilterteVoks, statistikGewaehlteListenObjekte, statistikListeZu, statistikListenIds, statistikSort, statistikVollbild, tt } = app;
+  const { waehleBereichGeladen, einstellungen, headerH, oeffneVokabelBearbeiten, setGruppenQuiz, setStatistikArt, setStatistikFilter, setStatistikListeZu, setStatistikSort, setStatistikVollbild, slotH, statistikArt, statistikBereichTyp, statistikCheckboxAuswahl, statistikFilter, statistikGefilterteVoks, statistikGewaehlteListenObjekte, statistikListeZu, statistikListenIds, statistikSort, statistikVollbild, tt } = app;
   return (
 (() => {
           const schwelleS = einstellungen.gelerntSchwelle ?? 0;
@@ -160,16 +160,20 @@ export function StatistikTab(app) {
                 return (
                   <div data-statistik-balken style={{marginBottom:16, borderRadius:12, border:"1px solid var(--rahmen)", background:"var(--flaeche-hell)", padding:"8px 10px 12px", position:"relative"}}>
                     <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:8}}>
-                      <button className="typ-btn aktiv" data-kreismitte="1" onClick={naechsteArt} style={{fontSize:"0.75rem", padding:"3px 10px"}}
-                        {...tt("Antippen: zwischen Übersetzung, Diktat und Akzenten wechseln")}>{artName} ⇄</button>
+                      <button className="typ-btn aktiv" data-kreismitte="1" data-st-art-knopf onClick={naechsteArt} style={{fontSize:"0.75rem", padding:"3px 10px", lineHeight:1.25, textAlign:"center"}}
+                        {...tt("Antippen: zwischen Übersetzung, Diktat und Akzenten wechseln" + (statistikListenIds ? "; lang drücken: Bereich wählen" : ""), null,
+                          statistikListenIds ? { lang: () => waehleBereichGeladen("statistik") } : {})}>
+                        <span data-st-art-name style={{display:"block"}}>{artName} ⇄</span>
+                        <span style={{display:"block", fontWeight:500, opacity:0.9}}><b data-st-anzahl>{alleVoks.length}</b> Vokabeln</span>
+                      </button>
                       <span style={{flex:1}}/>
                       {!statistikVollbild && <button onClick={() => setStatistikVollbild(true)} style={{background:"none", border:"none", padding:"4px 6px", cursor:"pointer", color:"var(--text2)", display:"flex"}}
                         {...tt("Statistik im Vollbild anzeigen")}><IcoExpand s={18}/></button>}
                     </div>
                     {keineAkzente ? <div data-keine-akzente style={{textAlign:"center", color:"var(--text)", fontWeight:600, padding:"30px 0"}}>Für dieses Quiz sind keine Akzente vorhanden.</div> : (<>
                     {/* 286: Gesamtzahl in der Überschrift (antippen: alles wieder einblenden) */}
-                    <div className="st-titel">Lernstand · <button className="st-titel-knopf" data-st-kachel="gesamt" onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
-                      {...tt("Vokabeln der Auswahl – antippen blendet alles wieder ein")}><b>{alleVoks.length}</b> Vokabeln</button></div>
+                    <div className="st-titel"><button className="st-titel-knopf" data-st-kachel="gesamt" onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
+                      {...tt("Lernstand der Auswahl – antippen blendet alles wieder ein")}>Lernstand</button></div>
                     <div className="st-reihe" data-st-lernstand>
                       {balken({ key:"nie", von: alleVoks.length, aus: nieAus, attrs: { "data-kreis-gruppe": "nie", "data-st-balken": "nie", "data-nie-aus": nieAus ? "an" : "aus" }, onClick: () => umschalten("nie"), menue: quizMenue("nie"),
                         tipp: `Nie abgefragt: ${nieAnz} – antippen blendet sie aus (Balken und Liste nur mit schon abgefragten Vokabeln, z. B. erst ein Teil des Buches behandelt; der Kopf zählt weiter alle), lange drücken: Quiz mit diesen Vokabeln`,

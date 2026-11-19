@@ -147,8 +147,8 @@ export default function InfoTafel() {
                   data-info-gruppe={a.gruppe ? a.gruppe.map(u => u.label).join("|") : undefined} data-info-zurueck={a.zurueck ? "" : undefined}
                   data-schalter={a.schalter} data-an={a.schalter ? (a.an ? "an" : "aus") : undefined}
                   disabled={a.aus && !a.schalter} data-info-aus={a.aus ? "" : undefined} {...(a.aus && a.schalter ? { "aria-disabled": true, "data-gesperrt": "" } : {})}
-                  onContextMenu={a.lang ? e => { e.preventDefault(); e.stopPropagation(); if (!a.aus) a.lang(e.clientX, e.clientY); } : undefined}
-                  onTouchStart={a.lang ? e => { const t = e.touches[0]; clearTimeout(langRef.current?.t); langRef.current = { t: setTimeout(() => { langRef.current = { fertig: true }; if (!a.aus) a.lang(t.clientX, t.clientY); }, 500) }; } : undefined}
+                  onContextMenu={a.lang ? e => { e.preventDefault(); e.stopPropagation(); if (!a.aus || a.langImmer) a.lang(e.clientX, e.clientY); } : undefined}
+                  onTouchStart={a.lang ? e => { const t = e.touches[0]; clearTimeout(langRef.current?.t); langRef.current = { t: setTimeout(() => { langRef.current = { fertig: true }; if (!a.aus || a.langImmer) a.lang(t.clientX, t.clientY); }, 500) }; } : undefined}
                   onTouchMove={a.lang ? () => { clearTimeout(langRef.current?.t); } : undefined}
                   onTouchEnd={a.lang ? e => { if (langRef.current?.fertig) e.preventDefault(); clearTimeout(langRef.current?.t); } : undefined}
                   onClick={e => {

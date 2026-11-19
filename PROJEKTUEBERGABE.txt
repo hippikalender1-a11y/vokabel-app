@@ -3855,3 +3855,14 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
     wie bisher überspeichern / als neues speichern / verwerfen).
   · „nicht gespeichert“ erscheint bei Listen-Paketen nicht mehr.
   Tests: punkte298 (neu), punkte288 angepasst; e2e/hilfen.mjs listeWaehlen() tippt die Liste in der Auswahl an.
+- 299 UMGESETZT: Bereich des Geladenen und Statistik:
+  · Quiz-Tab: lang auf „Vokabeln“ (Schalter-Zeile) → Bereichswahl über das Geladene, „Bestätigen“ → zurück in den Quiz-Tab
+    (gespeichertes Quiz: dann „geändert“). Kopf-Menü „🎯 Bereich wählen…“ einer Liste macht dasselbe (Quiz- bzw. Statistik-Tab).
+  · Tafel: Bereich „Bestätigen“ lädt sofort (ladeTafelListen, Schalter bleiben), die Tafel geht wieder auf; zeigt sie das
+    Geladene, steht im Kopf kein „laden“. Lang auf „Vokabeln“ der Tafel geht auch bei 0 (langImmer).
+  · Tabwechsel mit offener Listen-Tafel übernimmt die Auswahl (wie bei den Quiz); die Tabs gehen bei offener Auswahl-Tafel
+    durch (data-auswahl-durchlass) – vorher verschluckt.
+  · Statistik: Art-Knopf zweizeilig „Übersetzung ⇄ / n Vokabeln“ (data-st-anzahl); antippen = Art, lang = Bereichswahl,
+    „Bestätigen“ → zurück in die Statistik. „Lernstand“ (antippen: alles einblenden) ohne Zahl.
+  · tt(opts.lang): langer Druck führt direkt eine Aktion aus. „Nr. 4–4“ → „Nr. 4“.
+  Test: punkte299.
