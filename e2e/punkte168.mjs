@@ -104,7 +104,8 @@ await page.mouse.click(5, 830); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-info-blase]")?.click()); await sleep(200);
 await kontext('[data-slot-id="g_fr"]');
 const fr = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => /fällig/i.test(b.dataset.infoAktion)));
-ok(await page.evaluate(() => { const b = [...document.querySelectorAll("[data-info-aktion]")].find(b => /fällig/i.test(b.dataset.infoAktion)); return b && b.hasAttribute("data-gesperrt") && b.dataset.infoAktion === "🔁 Fällige (0)"; }),
+if (await page.$('[data-kopf-anzahl][data-schalter-klapp="zu"]')) { await page.click("[data-kopf-anzahl]"); await sleep(300); }   // 305: Filter unter dem Kopf
+ok(await page.evaluate(() => { const b = document.querySelector('[data-kopf-filter] [data-schalter="faellig"]'); return b && b.hasAttribute("data-gesperrt") && b.dataset.rasterText === "🔁 Fällige (0)"; }),
   "170/274: Kachel ohne fällige: Schalter „🔁 Fällige (0)“ gesperrt (283)");
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => /fällig/i.test(b.dataset.infoAktion))?.click()); await sleep(300);
 ok(await page.$("[data-auswahl-tafel]"), "inaktiver Knopf: antippen bewirkt nichts (Tafel bleibt)");

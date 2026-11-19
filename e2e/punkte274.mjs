@@ -45,14 +45,16 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "quiz") b.click(); }); await sleep(300);
 const menue = async (sel, dx = 10) => { await page.evaluate((sel, dx) => { const el = document.querySelector(sel); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + dx, clientY: r.y + 10 })); }, sel, dx); await sleep(400); };
-const tafel = () => page.evaluate(() => ({ raster: [...document.querySelectorAll("[data-schalter-raster] button")].map(b => `${b.dataset.schalter}:${__txt(b)}:${b.dataset.an}${b.hasAttribute("data-gesperrt") ? ":x" : ""}`),
+const filterAuf = async () => { if (await page.$('[data-kopf-anzahl][data-schalter-klapp="zu"]')) { await page.click("[data-kopf-anzahl]"); await new Promise(r => setTimeout(r, 300)); } };   // 305
+const tafel = async () => { await filterAuf(); return tafelRoh(); };
+const tafelRoh = () => page.evaluate(() => ({ raster: [...document.querySelectorAll("[data-schalter-raster] button")].map(b => `${b.dataset.schalter}:${b.dataset.rasterText || __txt(b)}:${b.dataset.an}${b.hasAttribute("data-gesperrt") ? ":x" : ""}`),
   rest: [...document.querySelectorAll("[data-info-menue] > div:not([data-schalter-raster]) button")].map(b => b.dataset.infoAktion || "🎨"),
   breit: document.querySelector('[data-schalter-raster] [data-schalter="grund"]')?.style.gridColumn, kopf: __txt(document.querySelector("[data-wahl-anzahl]")) }));
 // ── Auswahl A + B ──
 await menue('[data-slot-id="sA"]'); await menue('[data-slot-id="sB"]');
 let t = await tafel();
 console.log("     ", JSON.stringify(t));
-ok(t.raster.join("|") === "grund:Neue (8):an|negativ:✗ Negative (2):an|gelernt:✓ Gelernt (0):aus:x|heute:Heute (0):aus:x|faellig:+ 🔁 Fällige (3):an" && t.breit === "1 / -1",
+ok(t.raster.join("|") === "grund:Neue (8):an|negativ:✗ Negative (2):an|gelernt:✓ Gelernt (0):aus:x|heute:Heute (0):aus:x|faellig:+ 🔁 Fällige (3):an",   // 305: Filter-Zeile unter dem Kopf (nicht mehr breit in der Tafel)
   "Raster: Multiquiz breit, Negative · Gelernt / Heute · Fällige – mit Anzahlen, nicht verfügbare ausgegraut");
 ok(t.rest.join("|") === "🎨|🗂 Ablage ›|↔ Von–Bis", `darunter Farbe · Ablage · Von–Bis; Multiquiz starten / Fällige wiederholen / Negative abfragen entfallen (${t.rest.join("|")})`);
 ok(t.kopf === "2 ausgewählt · 10 Vokabeln + 🔁 3", `Kopf: 8 + 2 = 10 Vokabeln + 🔁 3 (25 % von 10), nichts doppelt (${t.kopf})`);

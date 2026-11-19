@@ -105,14 +105,15 @@ export function listenNavi(app) {
 // 274/277–283, 288: Auswahl-Tafel im Quiz-Tab – oben das Schalter-Raster (wie die Schalter im Quiz-Tab: Vokabeln breit,
 // darunter Negative · Gelernt / Heute · Fällige); Multiquiz, Fällige wiederholen und Negative abfragen entfallen dort
 // (der Kopf lädt die Auswahl); unten nur eine kleine Zeile (🎨 · Ablage › · Von–Bis). art: "slot" (ids = Quiz) | "liste" (ids = Listen)
-export function mitSchalterRaster(app, d, art, ids) {
-  const { waehleListenBereich, alsQuizSpeichern, setListenWahl, schalterZaehlung, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots, tab } = app;
-  if (!d || tab !== "quiz" || !ids.length) return d;
+// 305: die Filter der Auswahl (Neue · Negative · Gelernte · Heute · Fällige) stehen unter dem Kopf (koepfe.jsx) – hier nur die Teile
+export function schalterRaster(app, art, ids) {
+  const { schalterZaehlung, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots } = app;
+  if (!ids.length) return null;
   const z = schalterZaehlung(ids, art);
   const sk = sprachKuerzelFuer(art === "liste" ? ids : [...new Set(ids.flatMap(id => slots.gespeichert.find(g => g.id === id)?.konfiguration?.listenIds || []))]);
   const nur = art === "liste" ? (ids.length >= 2 ? "diese Listen" : "diese Liste") : ids.length >= 2 ? "diese Quiz" : "dieses Quiz";
   // 277: zusätzliche (Gelernt, Heute, Fällige) eingeschaltet mit „+“
-  const s = (k, label, n, an, set, frei, extra = {}) => ({ label: `${an && n > 0 && ["gelernt", "heute", "faellig"].includes(k) ? "+ " : ""}${label} (${n})`, raster: true, schalter: k, an,
+  const s = (k, label, n, an, set, frei, extra = {}) => ({ label: `${an && n > 0 && ["gelernt", "heute", "faellig"].includes(k) ? "+ " : ""}${label} (${n})`, raster: true, schalter: k, an, n,
     aus: !frei || (n === 0 && k !== "faellig"), fn: () => set(v => !v), ...extra });
   const zurueck = () => setTimeout(() => zeigeAuswahlTafel(art), 0);
   const raster = [
@@ -130,6 +131,12 @@ export function mitSchalterRaster(app, d, art, ids) {
         { regler: { label: "Anteil (zusätzlich zu den anderen)", min: 5, max: 100, step: 5, wert: quizFaellig.anteil, format: v => `${v} %`, aendern: v => setQuizFaellig(f => ({ ...f, anteil: v })) } }),
     }),
   ];
+  return raster;
+}
+
+export function mitSchalterRaster(app, d, art, ids) {
+  const { alsQuizSpeichern, tab } = app;
+  if (!d || tab !== "quiz" || !ids.length) return d;
   const LERNEN_ALT = /^(🧩 Multiquiz|🔁 |✗ Negative abfragen)/;
   const ohneLernen = akt => akt.map(a => a?.gruppe ? { ...a, gruppe: a.gruppe.filter(u => !LERNEN_ALT.test(u.label)) } : a)
     .filter(a => a && !LERNEN_ALT.test(a.label) && !(a.gruppe && !a.gruppe.length));
@@ -145,7 +152,7 @@ export function mitSchalterRaster(app, d, art, ids) {
     return ohne.map(a => a.gruppe && a.label === AB ? { ...a, gruppe: [...weg, ...a.gruppe] } : a);
   };
   const speichern = art === "liste" ? [{ label: "💾 Als Quiz speichern", fn: () => alsQuizSpeichern() }] : [];   // 298
-  return { ...d, aktionen: [...raster, ...inAblage(ohneLernen([...d.aktionen, ...speichern]))] };
+  return { ...d, aktionen: inAblage(ohneLernen([...d.aktionen, ...speichern])) };   // 305: Filter unter dem Kopf
 }
 
 export function renderListenRaster(app) {

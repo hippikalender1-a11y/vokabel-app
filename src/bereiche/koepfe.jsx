@@ -1,5 +1,5 @@
 import { FORTSCHRITT_BALKEN, GRUPPE_BALKEN, clampScore, heuteAbgefragt, heuteAnteil, istFaellig, lernProzent, nrText, ohneHinweis, scoreSymbole, slotKonfigArt, slotSFAlle, statistikSicht } from "../quiz.jsx";
-import { SK, TYPEN, formatDatum, lsGet, lsLesen } from "../speicher.js";
+import { SK, TYPEN, blinke, formatDatum, lsGet, lsLesen } from "../speicher.js";
 import { listeSprache, mitKuerzel, sprachInfo, sprachKuerzelFuer } from "../sprache.js";
 import { listenInhalt } from "../saetze.js";
 import { SymWdh, mitSymbolen } from "../symbole.jsx";
@@ -123,7 +123,7 @@ export function renderListeInfo(app, l, mehrere = null) {
   }
 
 export function renderSlotKopf(app, statistik) {
-  const { schalterZeileZu, setStatistikFilter, waehleBereichGeladen, waehleListenBereich, aendereQuizVokabeln, bereichWahl, tafelBereich, nichtsGeladen, zeigeListenStatistik, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
+  const { schalterRaster, tab, schalterZeileZu, setStatistikFilter, waehleBereichGeladen, waehleListenBereich, aendereQuizVokabeln, bereichWahl, tafelBereich, nichtsGeladen, zeigeListenStatistik, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
     const zu = !slotSektionAufgeklappt;
     const slot = statistik ? statistikAktiverSlot : aktiverSlot;
     const bw = !statistik && bereichWahl;   // 298: laufende Bereichswahl – der Kopf zeigt ihre Listen
@@ -213,15 +213,23 @@ export function renderSlotKopf(app, statistik) {
     const nrKurz = (ids, a) => { if (ids.length !== 1) return "Auswahl";
       const nr = (lsLesen(SK.liste(ids[0]))?.vokabeln || []).map((v, i) => a.has(`${ids[0]}__${v.id}`) ? i + 1 : null).filter(Boolean);
       return nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}${nr.length > 1 ? `–${nr[nr.length - 1]}` : ""}` : "Auswahl"; };
+    // 305: Filter der Auswahl (gleich wie im Quiz-Tab) – Teile aus kacheln.jsx (schalterRaster)
+    const filterTeile = !statistik && tab === "quiz" && !zu && (lwahl && listenWahl.length ? schalterRaster("liste", wahlListenIds(listenWahl))
+      : wahl && multiAuswahl.length ? schalterRaster("slot", wahlQuizIds(multiAuswahl)) : null);
     const eckigKopf = lwahl || ((alsListe || (!statistik && kommtAusListen && !geaendert)) && !wahl && !vorschauE) || vorschauE?.istListe || vorschauE?.paket;   // 263: Listen eckig, Quiz abgerundet
     const anzahlSeg = (() => {
-      if (bw || wahl || vorschauE || aendern) return null;
+      if (bw || vorschauE || aendern) return null;
+      const klapp = !statistik ? () => setSchalterZeileZu(z => !z) : null;   // 305: auch in der Auswahl – Filter unter dem Kopf auf/zu
+      if (wahl) {
+        if (!multiAuswahl.length) return null;
+        return { n: balkenVoks.length, text: "Alle", lang: null, tipp: klapp, erklaerung: `Vokabeln der gewählten Quiz: ${balkenVoks.length}${klapp ? " – antippen: Filter ein-/ausblenden" : ""}` };
+      }
       if (lwahl) {
         if (!listenWahl.length) return null;
         const ids = wahlListenIds(listenWahl), tb = tafelBereich && [...tafelBereich.ids].sort().join() === [...ids].sort().join() ? tafelBereich.auswahl : null;
         const n = tb ? tb.size : ids.reduce((s, id) => s + (lsLesen(SK.liste(id))?.vokabeln?.length || 0), 0);
-        return { n, text: tb ? nrKurz(ids, tb) : "Alle", lang: () => waehleListenBereich(), tipp: null,
-          erklaerung: `${tb ? "Bereich" : "Alle Vokabeln"} der gewählten Liste${ids.length > 1 ? "n" : ""}: ${n} – lang drücken: Bereich wählen` };
+        return { n, text: tb ? nrKurz(ids, tb) : "Alle", lang: () => waehleListenBereich(), tipp: klapp,
+          erklaerung: `${tb ? "Bereich" : "Alle Vokabeln"} der gewählten Liste${ids.length > 1 ? "n" : ""}: ${n} – ${klapp ? "antippen: Filter ein-/ausblenden; " : ""}lang drücken: Bereich wählen` };
       }
       if (!statistik && !quizTabListen.length) return null;
       const text = bereichAktiv && !multi ? bereichText : "Alle";   // Multiquiz: kein eigener Bereich
@@ -256,8 +264,8 @@ export function renderSlotKopf(app, statistik) {
               : <>{alsListe && <span aria-hidden="true" data-kopf-liste>📋 {listeE ? listenFlagge(listeE) : ""}</span>}{name}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}</>}
           </button>
           {anzahlSeg && (
-            <button className={`toggle-opt aktiv slot-kopf-anzahl${eckigKopf ? " eckig" : ""}`} data-kopf-anzahl={anzahlSeg.n} data-kopf-bereich={anzahlSeg.text} onClick={anzahlSeg.tipp || undefined}
-              {...(!statistik && !lwahl ? { "data-schalter-klapp": schalterZeileZu ? "zu" : "auf" } : {})}
+            <button className={`toggle-opt aktiv slot-kopf-anzahl${eckigKopf ? " eckig" : ""}`} data-auswahl-durchlass data-kopf-anzahl={anzahlSeg.n} data-kopf-bereich={anzahlSeg.text} onClick={anzahlSeg.tipp || undefined}
+              {...(!statistik ? { "data-schalter-klapp": schalterZeileZu ? "zu" : "auf" } : {})}
               {...tt(anzahlSeg.erklaerung, null, anzahlSeg.lang ? { lang: anzahlSeg.lang } : {})}>
               <span>{anzahlSeg.text}</span><b>{anzahlSeg.n}</b>
             </button>
@@ -269,6 +277,20 @@ export function renderSlotKopf(app, statistik) {
             </span>
           )}
         </div>
+        {filterTeile && !schalterZeileZu && (
+          <div className="quiz-zeile schalter-zeile kopf-filter" data-schalter-raster data-kopf-filter>
+            {filterTeile.map(x => { const KOPF = { grund: "Neue", negativ: "Negative", gelernt: "Gelernte", heute: "Heute", faellig: "Fällige" };
+              const ZEICHEN = { negativ: "✗ ", gelernt: "✓ ", faellig: "🔁 " };
+              const plus = x.an && x.n > 0 && ["gelernt", "heute", "faellig"].includes(x.schalter) ? "+ " : "";
+              return (
+              <div key={x.schalter} className="quiz-zeile-zelle"><span className="quiz-zeile-label">{KOPF[x.schalter]}</span>
+                <button className={`quiz-zeile-knopf${x.an ? " an" : ""}`} data-schalter={x.schalter} data-an={x.an ? "an" : "aus"} data-raster-text={x.label} data-auswahl-durchlass {...(x.aus ? { "data-gesperrt": "", "aria-disabled": true } : {})}
+                  onClick={e => { if (x.aus) { blinke(e.currentTarget); return; } x.fn(); }}
+                  {...tt(`${KOPF[x.schalter]}: ${x.n} – ${x.an ? "werden abgefragt; antippen schaltet aus" : "ausgeschaltet; antippen schaltet ein"}${x.lang ? "; lang drücken: Einstellungen" : ""}`, null, x.lang ? { lang: x.lang } : {})}>
+                  {mitSymbolen(`${plus}${ZEICHEN[x.schalter] || ""}${x.n}`)}
+                </button></div>); })}
+          </div>
+        )}
       </div>
     );
   }

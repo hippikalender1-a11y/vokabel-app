@@ -3918,3 +3918,8 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   Varianten: A) Quiz-Filter „Neue“ teilen in „Neue“ (nie abgefragt) + „Guter Weg“ (6 Filter) und in der Statistik
   „Nie abgefragt“ → „Neue“; B) 5 Filter lassen, Quiz „Neue“ umbenennen (z. B. „Zu lernen“), Statistik bleibt.
 - 303 UMGESETZT: Kopf-Zeile align-items: stretch – Name und Anzahl gleich hoch; Anzahl etwas kompakter (padding 2px).
+- 305 UMGESETZT: Auswahl (Listen und Quiz) – die Filter (Neue · Negative · Gelernte · Heute · Fällige) stehen wie im Quiz-Tab
+  unter dem Kopf (data-kopf-filter, Teile aus schalterRaster() in kacheln.jsx); Anzahl im Kopf antippen klappt sie auf/zu
+  (gemeinsamer Zustand schalterZeileZu); bei mehreren Quiz zeigt die Anzahl die Vokabeln der Auswahl. Die Tafel unten hat
+  nur noch die kleine Aktionszeile. Filter und Anzahl lassen Tipps bei offener Tafel durch (data-auswahl-durchlass).
+  InfoTafel: Auswahl-Tafel immer klein; unten mehr Platz (Tafel + 104 px) und die gedrückte Kachel großzügiger freilegen.

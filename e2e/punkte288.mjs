@@ -45,7 +45,9 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "quiz") b.click(); }); await sleep(300);
 const menue = async (sel, dx = 10) => { await page.evaluate((sel, dx) => { const el = document.querySelector(sel); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + dx, clientY: r.y + 10 })); }, sel, dx); await sleep(400); };
-const tafel = () => page.evaluate(() => ({ raster: [...document.querySelectorAll("[data-schalter-raster] button")].map(b => `${b.dataset.schalter}:${__txt(b)}:${b.dataset.an}${b.hasAttribute("data-gesperrt") ? ":x" : ""}`),
+const filterAuf = async () => { if (await page.$('[data-kopf-anzahl][data-schalter-klapp="zu"]')) { await page.click("[data-kopf-anzahl]"); await new Promise(r => setTimeout(r, 300)); } };   // 305
+const tafel = async () => { await filterAuf(); return tafelRoh(); };
+const tafelRoh = () => page.evaluate(() => ({ raster: [...document.querySelectorAll("[data-schalter-raster] button")].map(b => `${b.dataset.schalter}:${b.dataset.rasterText || __txt(b)}:${b.dataset.an}${b.hasAttribute("data-gesperrt") ? ":x" : ""}`),
   rest: [...document.querySelectorAll("[data-info-menue] > div:not([data-schalter-raster]) button")].map(b => b.dataset.infoAktion || "🎨"),
   klein: !!document.querySelector('[data-tafel-unten="klein"]'), kopf: __txt(document.querySelector("[data-wahl-anzahl]")) }));
 // zur Listen-Auswahl

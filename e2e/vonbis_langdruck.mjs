@@ -98,7 +98,7 @@ let r = await page.evaluate(s => { const b = document.querySelector(s).getBoundi
 await finger("touchStart", r.x, r.y); await sleep(800); await finger("touchEnd"); await sleep(500);
 ok(await gelb("quiz", 5), "Lang-Druck auf Nr. 5: ist Anfang (→)");
 const t = await tafel();
-ok(t === "✕ Von–Bis abbrechen | 🎨 Farbe ändern" && !(await page.$("[data-info-blase]")), `Tafel unten nur mit Knöpfen, ohne Erklärtext (${t})`);
+ok(t === "🎨 Farbe ändern | ✕ Von–Bis abbrechen" && !(await page.$("[data-info-blase]")), `Tafel unten nur mit Knöpfen, ohne Erklärtext (${t})`);
 ok(await feld("quiz") === "", "Anfang gesetzt: Suchfeld geleert (für die Suche nach dem Ende)");
 ok(await page.evaluate(() => document.querySelectorAll('[data-such-ziel="quiz"] .checkbox.checked').length) === 1, "Loslassen wählt nichts aus (nur der Anfang ist markiert)");
 // Suche bleibt bedienbar, Ende über die Suche finden

@@ -101,8 +101,9 @@ export default function InfoTafel() {
     // Platz unten: Seite (body) und eigene Scroll-Bereiche (var(--tafel-platz), z. B. die maximierte Vokabelliste);
     // die gedrückte Kachel (≈ 60 px hoch) ganz über die Tafel, falls die Tafel sie verdeckt
     const freilegen = () => { if (zielRef.current == null) return; const frei = window.innerHeight - el.offsetHeight - 24, y = zielRef.current - window.scrollY;
-      if (y > frei - 70) window.scrollBy({ top: y - frei + 90, behavior: "smooth" }); };
-    const anpassen = () => { document.body.style.paddingBottom = `${el.offsetHeight + 24}px`; document.documentElement.style.setProperty("--tafel-platz", `${el.offsetHeight + 24}px`); freilegen(); };
+      if (y > frei - 120) window.scrollBy({ top: y - frei + 130, behavior: "smooth" }); };   // 305: Kacheln sind bis ~110 px hoch
+    // 305: unten genug Platz, um die unterste Kachel über die (kleine) Tafel zu holen
+    const anpassen = () => { document.body.style.paddingBottom = `${el.offsetHeight + 104}px`; document.documentElement.style.setProperty("--tafel-platz", `${el.offsetHeight + 24}px`); freilegen(); };
     if (!warUntenRef.current) { warUntenRef.current = true; zielRef.current = info.y != null ? info.y + window.scrollY : null; }
     anpassen();
     const obs = new ResizeObserver(anpassen);
@@ -140,8 +141,8 @@ export default function InfoTafel() {
             // „🎨 Farbe ändern“, dann die übrigen Knöpfe
             const raster = menue.filter(a => a.raster);
             let rest = menue.filter(a => !a.raster);
-            if (unten && raster.length) rest = [...rest.filter(a => a.farbe), ...rest.filter(a => !a.farbe)];
-            const klein = unten && raster.length > 0 && !grp;   // 281: unter dem Raster nur eine kleine Zeile
+            if (unten && (raster.length || info.auswahl)) rest = [...rest.filter(a => a.farbe), ...rest.filter(a => !a.farbe)];
+            const klein = unten && (raster.length > 0 || !!info.auswahl) && !grp;   // 281/305: Auswahl-Tafel nur eine kleine Zeile
             const knopf = a => (
                 <button key={a.label} className={a.schalter ? `quiz-zeile-knopf${a.an ? " an" : ""}` : undefined} data-info-aktion={a.farbe ? undefined : a.label} data-info-farbe={a.farbe ? "" : undefined}
                   data-info-gruppe={a.gruppe ? a.gruppe.map(u => u.label).join("|") : undefined} data-info-zurueck={a.zurueck ? "" : undefined}

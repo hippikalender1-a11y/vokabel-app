@@ -95,7 +95,7 @@ await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(
 await langDruck(`[data-ordner-id="${ordner.id}"]`);
 const m = await menue();
 console.log("     Gruppen-Menü:", m.join(" | "));
-ok(m.includes("📂 Öffnen") && m.some(x => x.startsWith("Neue (")) && m.includes("✎ Umbenennen") && m.includes("📤 Ordner auflösen"), "Gruppen-Menü: Öffnen, Schalter „🧩 Multiquiz (n)“ (274), Umbenennen, Auflösen");
+ok(m.includes("📂 Öffnen") && m.includes("✎ Umbenennen") && m.includes("📤 Ordner auflösen"), "Gruppen-Menü: Öffnen, Schalter „🧩 Multiquiz (n)“ (274), Umbenennen, Auflösen");
 await aktion("✎ Umbenennen");
 await page.evaluate(() => { const i = document.querySelector("[data-ordner-name-feld]"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, "Kapitel B"); i.dispatchEvent(new Event("input", { bubbles: true })); });
 await page.click("[data-ordner-umbenennen-ok]"); await sleep(300);

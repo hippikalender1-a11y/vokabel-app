@@ -69,7 +69,7 @@ ok(/2 ausgewählt · 5 Vokabeln/.test(await hinweis() || ""), `Lang-Druck auf Te
 ok(await page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId + ":" + b.dataset.multiNr).join(",")) === "g_a:1,g_b:2", "Kacheln nummeriert (1, 2)");
 const wahlMenue = await aktionen();
 console.log("     Auswahl-Menü:", wahlMenue.join(" | "));
-ok(wahlMenue.join("|") === "Neue (5)|✗ Negative (0)|✓ Gelernt (0)|Heute (0)|🔁 Fällige (0)|🗂 Ablage ›|↔ Von–Bis|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)|☑ Alle auswählen", "Menü der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
+ok(wahlMenue.join("|") === "🗂 Ablage ›|↔ Von–Bis|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)|☑ Alle auswählen", "Menü der Auswahl: Multiquiz starten (2), Verschieben, Löschen (2), Auswahl beenden");
 await langDruck('[data-slot-id="g_b"]');
 ok(/Teil A laden/.test(await hinweis() || ""), "nochmal lang drücken nimmt die Kachel heraus");
 await langDruck('[data-slot-id="g_b"]');
