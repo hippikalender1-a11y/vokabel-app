@@ -3830,3 +3830,7 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   ein Zusatz auf „Quiz“, wenn der Kopf „Liste oder Quiz wählen“ zeigt; neue_session/vonbis_langdruck/neu/punkte210 prüfen 289.
 - 296 UMGESETZT: Auswahl-Tafel einer einzelnen Liste – lang drücken auf „Vokabeln (n)“ öffnet die Bereichswahl (wie
   „🎯 Quiz mit Auswahl…“: Neues Quiz mit der Liste, „Bereich“, Vokabelliste offen). Test punkte288 erweitert.
+- 297 UMGESETZT: Bereichswahl aus der Tafel einer Liste (296) – „Bestätigen“ führt zurück in die Auswahl mit der Tafel dieser
+  Liste (statt in den Stand mit Listen-/Vokabel-Auswahl-Zeilen); „Vokabeln (n)“ zählt den Bereich, der Kopf heißt
+  „📋 Liste · Nr. a–b laden“; nochmals lang drücken → Bereich vorgewählt, änderbar; Laden übernimmt den Bereich.
+  Der Bereich gilt nur, solange die Tafel dieser Liste offen ist (Zustand tafelBereich in App.jsx). Test: punkte288.

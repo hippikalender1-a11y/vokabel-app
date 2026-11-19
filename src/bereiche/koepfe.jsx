@@ -123,7 +123,7 @@ export function renderListeInfo(app, l, mehrere = null) {
   }
 
 export function renderSlotKopf(app, statistik) {
-  const { nichtsGeladen, zeigeListenStatistik, brecheErstellenAb, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenAendern, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizErstellen, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setListenAendern, setListenAuswahlAufgeklappt, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, starteQuizErstellen, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
+  const { tafelBereich, nichtsGeladen, zeigeListenStatistik, brecheErstellenAb, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenAendern, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizErstellen, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setListenAendern, setListenAuswahlAufgeklappt, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, starteQuizErstellen, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
     const zu = !slotSektionAufgeklappt;
     const slot = statistik ? statistikAktiverSlot : aktiverSlot;
     const gespeichert = slot?.typ === "gespeichert";
@@ -185,7 +185,11 @@ export function renderSlotKopf(app, statistik) {
       : multiAuswahl.length ? (statistik ? `${multiAuswahl.length} ausgewählt · ${multiZusammenstellung(multiAuswahl)?.anzahl || 0} Vokabeln`
         : (() => { const z = schalterZaehlung(wahlQuizIds(multiAuswahl)); return `${multiAuswahl.length} ausgewählt · ${z.regulaer} Vokabeln${quizFaellig.an && z.faellig ? ` + 🔁 ${z.faellig}` : ""}`; })())   // 274
       : "Nichts ausgewählt") : "";
-    const lEinzelName = id => { const o = (listenOrdner || []).find(x => x.id === id); return o ? `📁 ${o.name}` : `📋 ${listenIndex.find(l => l.id === id)?.name || "Liste"}`; };
+    const lEinzelName = id => { const o = (listenOrdner || []).find(x => x.id === id); if (o) return `📁 ${o.name}`;
+      const n = `📋 ${listenIndex.find(l => l.id === id)?.name || "Liste"}`;
+      if (tafelBereich?.listeId !== id) return n;   // 297: gewählter Bereich – „· Nr. 9–33“
+      const nr = (lsLesen(SK.liste(id))?.vokabeln || []).map((v, i) => tafelBereich.auswahl.has(`${id}__${v.id}`) ? i + 1 : null).filter(Boolean);
+      return `${n} · ${nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}–${nr[nr.length - 1]}` : `${nr.length} Vokabeln`}`; };
     // 169: Fortschrittsbalken immer – bei offener Auswahl für das, was der Kopf zeigt (Vorschau bzw. Mehrfachauswahl)
     const kopfVoks = e => { const k = e?.konfiguration || {};
       let v = (k.listenIds || []).flatMap(id => (lsLesen(SK.liste(id))?.vokabeln || []).map(x => ({ ...x, _key: `${id}__${x.id}`, _listeId: id })));
