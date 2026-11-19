@@ -3911,3 +3911,10 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   · Quiz: Überschrift ohne „Quiz mit“ – „0/150 Vokabeln + 🔁 0/12“ (Pakete), sonst „150 Vokabeln + 🔁 12“; Lernen
     „12/40 Vokabeln“ bzw. „40 Vokabeln“. Balken ohne Text (6 px).
   Test: punkte300 erweitert; Tests auf die neue Überschrift / Filter-Kopf umgestellt.
+- 303 GESAMMELT: Kopf – die Anzahl rechts („Alle“/„1215“, zweizeilig) ist höher als der Namens-Knopf links; beide sollen
+  gleich hoch sein (Vorschlag: Name streckt sich auf die Höhe der Anzahl, align-items: stretch, Name senkrecht zentriert).
+- 304 GESTRICHEN (2026-11-19): „Neue“ (Quiz-Filter) ≠ „Nie abgefragt“ (Statistik). „Neue“ = schalterGruppe „grund“ = nie
+  abgefragt + Score 0 bis unter die Gelernt-Schwelle („Auf einem guten Weg“). Wunsch: gleiche Begriffe in Quiz und Statistik.
+  Varianten: A) Quiz-Filter „Neue“ teilen in „Neue“ (nie abgefragt) + „Guter Weg“ (6 Filter) und in der Statistik
+  „Nie abgefragt“ → „Neue“; B) 5 Filter lassen, Quiz „Neue“ umbenennen (z. B. „Zu lernen“), Statistik bleibt.
+- 303 UMGESETZT: Kopf-Zeile align-items: stretch – Name und Anzahl gleich hoch; Anzahl etwas kompakter (padding 2px).

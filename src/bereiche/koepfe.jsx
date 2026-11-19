@@ -233,7 +233,7 @@ export function renderSlotKopf(app, statistik) {
     return (
       <div ref={slotSektionRef} data-slot-kopf={zu ? (gruen ? "gruen" : "zu") : "offen"} className={`slot-kopf${gruen ? " gruen" : ""}`}
         style={{top:headerH, ...(statistik ? {} : {marginLeft:"-16px", marginRight:"-16px"}), ...(!statistik && quizVokMax ? {display:"none"} : {})}}>
-        <div style={{display:"flex", alignItems:"center", gap:8}}>
+        <div style={{display:"flex", alignItems:"stretch", gap:8}}>
           <button onClick={kopfKlick} className={`toggle-opt aktiv slot-kopf-name${wahl || lwahl || aendern || vorschauE || !zu || (erstellen && zu) ? " bestaetigen-knopf" : ""}${nichtsGeladen && !zu && !wahl && !lwahl && !vorschauE ? " ohne-haken" : ""}${eckigKopf ? " eckig" : ""}${blitzt("slotkopf")}${lwahl ? blitzt("wahl") : ""}`} data-slot-kopf-name data-geaendert={geaendert ? "" : undefined}
             data-kopf-art={alsListe ? "liste" : erstellen ? "erstellen" : gespeichert ? "quiz" : undefined}
             {...(wahl || lwahl ? { "data-wahl-fertig": true, "data-wahl-hinweis": true, "data-auswahl-durchlass": true } : {})} {...(aendern ? { "data-aendern-bestaetigen": true } : {})}

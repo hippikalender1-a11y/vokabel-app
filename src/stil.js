@@ -145,7 +145,7 @@ export const CSS_BASIS = `
   .start-balken{position:relative;height:6px;background:var(--rahmen);border-radius:3px;margin-bottom:10px;overflow:hidden;}   /* 300/302 */
   .start-balken-fuellung{height:100%;background:var(--haupt);border-radius:8px;transition:width 0.3s;}
   .start-balken-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;color:var(--text-stark);white-space:nowrap;}
-  .slot-kopf-anzahl{flex:0 0 auto;min-width:22%;max-width:34%;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;padding:4px 8px;border-radius:12px;font-size:0.72rem;cursor:pointer;overflow:hidden;white-space:nowrap;}   /* 301 */
+  .slot-kopf-anzahl{flex:0 0 auto;min-width:22%;max-width:34%;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;padding:2px 8px;border-radius:12px;font-size:0.7rem;cursor:pointer;overflow:hidden;white-space:nowrap;}   /* 301/303 */
   .slot-kopf-anzahl b{font-size:0.95rem;}
   .slot-kopf-anzahl.toggle-opt.aktiv{background:var(--start);color:var(--auf-start);}
   .slot-kopf.gruen .slot-kopf-anzahl{border:1.5px solid rgba(255,255,255,0.45);}
