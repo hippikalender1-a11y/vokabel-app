@@ -7,7 +7,7 @@ import { istSynonymSpalte } from "../saetze.js";
 // Phase 2 (Aufteilung): Bereich aus dem Haupt-return von App.jsx (tab === "listen" && ansicht === "liste-detail" && aktiveListe)
 // app = Zustände, Setter und Funktionen der Komponente (siehe „const app“ in App.jsx)
 export function ListeDetail(app) {
-  const { aktiveListe, aktiveListeId, ansichtSpaltenAn, ausListeRef, blitzt, einstellungen, handleTabWechsel, headerH, ladeSlot, listeDetailKopfH, listeNurAus, listenBereich, listenGelerntAusblenden, listenSaetze, listenZeileH, listenZeileRef, oeffneModal, oeffneSatzFenster, oeffneSynFenster, oeffneVokabelBearbeiten, renderSprachAuswahl, renderSuchleiste, resetImport, setAnsicht, setAnsichtSpaltenAn, setBearbeiteVokabel, setImportBestehendId, setImportZielTyp, setListeNurAus, setListenBereich, setListenGelerntAusblenden, setModal, setQuiz, setQuizSessionAufgeklappt, setSlotSektionAufgeklappt, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikEinzelauswahlAufgeklappt, setStatistikListenAufgeklappt, setStatistikListenIds, setSucheListe, setTab, setzeHerausgenommen, setzeListenSprache, setzeSpaltenArt, starteQuizErstellen, suchInfo, suchMarke, sucheListe, tt, vokabelAufgeklappt } = app;
+  const { aktiveListe, aktiveListeId, ansichtSpaltenAn, ausListeRef, blitzt, einstellungen, handleTabWechsel, headerH, ladeSlot, listeDetailKopfH, listeNurAus, listenBereich, listenGelerntAusblenden, listenSaetze, listenZeileH, listenZeileRef, oeffneModal, oeffneSatzFenster, oeffneSynFenster, oeffneVokabelBearbeiten, renderSprachAuswahl, renderSuchleiste, resetImport, setAnsicht, setAnsichtSpaltenAn, setBearbeiteVokabel, setImportBestehendId, setImportZielTyp, setListeNurAus, setListenBereich, setListenGelerntAusblenden, setModal, setQuiz, setQuizSessionAufgeklappt, setSlotSektionAufgeklappt, setSucheListe, setTab, setzeHerausgenommen, setzeListenSprache, setzeSpaltenArt, oeffneListenTafel, suchInfo, suchMarke, sucheListe, tt, vokabelAufgeklappt } = app;
   return (
 (() => {
           const aktiveSpalten = TYPEN.filter(t => aktiveListe.spalten[t].aktiv);
@@ -71,8 +71,8 @@ export function ListeDetail(app) {
                   Quiz starten
                 </button>
                 <button className="btn btn-ghost" data-liste-quiz-erstellen style={{flex:1}}
-                  onClick={() => starteQuizErstellen(aktiveListeId)}
-                  {...tt("Aus dieser Liste ein Quiz erstellen: Bereich und Einstellungen wählen, dann mit Namen in einem Ordner ablegen")}>
+                  onClick={() => oeffneListenTafel([aktiveListeId])}
+                  {...tt("Öffnet die Auswahl mit dieser Liste: lang auf „Vokabeln“ wählt einen Bereich, „💾 Als Quiz speichern“ legt das Quiz an")}>
                   Quiz erstellen
                 </button>
                 </div>
@@ -80,11 +80,7 @@ export function ListeDetail(app) {
               {!lb && aktiveListe.vokabeln.length > 0 && (
                 <button className="btn btn-ghost" style={{width:"100%", marginBottom:8}}
                   onClick={() => {
-                    setStatistikListenIds(new Set([aktiveListeId]));
-                    setStatistikBereichTyp("alle");
-                    setStatistikCheckboxAuswahl(new Set());
-                    setStatistikListenAufgeklappt(false);
-                    setStatistikEinzelauswahlAufgeklappt(false);
+                    ladeSlot("listen", aktiveListeId);   // die Statistik zeigt das Geladene
                     setTab("statistik");
                   }}
                   {...tt("Statistik für diese Liste öffnen")}>

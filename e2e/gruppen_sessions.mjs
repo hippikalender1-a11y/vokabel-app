@@ -130,6 +130,7 @@ ok(await page.$("[data-ordner-zurueck]"), "danach ist die neue Gruppe geöffnet"
 // Statistik-Tab zeigt die Gruppen ebenfalls
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Statistik")).click()); await sleep(400);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv, [data-slot-kopf-name]")?.click(); }); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="listen"]')?.click()); await sleep(300);   // 298: Liste geladen → Auswahl zeigt Listen
 if (await page.$("[data-ordner-zurueck]")) { await page.click("[data-ordner-zurueck]"); await sleep(300); }
 ok(await page.$(`[data-ordner-id="${g2.id}"]`), "Statistik-Tab: Gruppen-Kachel vorhanden");
 

@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { zuListen, neueEineSession, listeWaehlen } from "./hilfen.mjs";
+import { zuListen, neueEineSession, listeWaehlen, bereichOeffnen } from "./hilfen.mjs";
 
 // Vokabel-Suche: Einzelauswahl (Quiz + Statistik), Aufteilen (🔍 bei Von/Bis), Listenansicht.
 // Nur Fremdsprache + Deutsch, „enthält“, Groß/klein + Akzente egal, Wortanfang zuerst; springen ‹ › oder „nur Treffer“
@@ -51,15 +51,9 @@ const kopf = await page.evaluate(() => { const k = document.querySelector("[data
 ok(kopf.text === "Liste oder Quiz wählen" && !kopf.ng && kopf.umsch === "listen" && !kopf.haken, `289: Kopf „Liste oder Quiz wählen“, Auswahl mit Listen, keine Häkchen-Liste (${JSON.stringify(kopf)})`);
 await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(300);
 ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf) === "offen", "289: Kopf antippen schließt nichts – erst etwas wählen");
-const rechts = () => page.evaluate(() => { const h = document.querySelector(".liste-detail-header"); return { hinweis: h?.querySelector("[data-listen-hinweis]")?.textContent ?? null, knopf: h?.querySelector(".zeile-rechts")?.textContent.trim() ?? null }; });
+// 298: Liste antippen lädt sie; Bereich über das Kopf-Menü („🎯 Bereich wählen…“)
 await listeWaehlen(page, "Unité 1"); await sleep(400);
-let re = await rechts();
-ok(re.knopf === "Unité 1" && re.hinweis === null && !(await page.$(".quiz-setup-check")), `Liste gewählt (Quiz mit Auswahl): Listen-Auswahl zu, rechts der Name (${JSON.stringify(re)})`);
-await page.evaluate(() => document.querySelector(".liste-detail-header .zeile-rechts").click()); await sleep(400);
-re = await rechts();
-ok(await page.$(".quiz-setup-check") && re.knopf === "Bestätigen", `Name antippen öffnet die Auswahl wieder – „Bestätigen“ (${JSON.stringify(re)})`);
-await page.evaluate(() => document.querySelector(".liste-detail-header .zeile-rechts").click()); await sleep(400);
-await klickText(".toggle-opt", "Bereich"); await sleep(400);
+await bereichOeffnen(page);
 ok(await page.$("[data-vok-bestaetigen]") && !(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => /^(Alle|Bereich)$/.test(b.textContent.trim())))), "Vokabelliste offen: „Bestätigen“ statt „Alle | Bereich“");
 // ── Lang-Druck auf eine Vokabel startet Von–Bis ──
 const cdp = await page.createCDPSession();
@@ -138,13 +132,13 @@ await page.evaluate(s => { const el = document.querySelector(s); const b = el.ge
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: b.x + 20, clientY: b.y + 10 })); }, zeile("quiz", 3)); await sleep(400);
 await klickText(".btn", "…Bis");
 ok(!(await gelb("quiz", 3)) && !(await tafel()), "„…Bis“-Knopf oben beendet Von–Bis, Tafel zu");
-// „Bestätigen“ schließt die Liste, die Quiz-Optionen sind wieder da – mit „Alle | Bereich“
-await page.click("[data-vok-bestaetigen]"); await sleep(400);
-ok(!(await page.$('[data-suchleiste="quiz"]')) && await page.$("[data-start-knopf]") && await sichtbar("[data-slot-kopf]") && await sichtbar(".liste-detail-header"),
-  "„Bestätigen“: Liste zu, Quiz-Leiste, Listen-Auswahl und Start wieder sichtbar");
-ok(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv")].some(b => b.textContent.trim() === "Bereich")), "Vokabeln angehakt: nach „Bestätigen“ bleibt „Bereich“ gewählt");
-await klickText(".toggle-opt", "Bereich"); await sleep(400);
-ok(await page.$('[data-suchleiste="quiz"]') && await page.$("[data-vok-bestaetigen]"), "„Bereich“ öffnet die Liste wieder");
+// 298: „Bestätigen“ führt in die Tafel zurück; laden → Liste mit Bereich (Kopf „· Nr. …“), Start sichtbar
+await page.click("[data-vok-bestaetigen]"); await sleep(1000);
+await page.evaluate(() => document.querySelector("[data-listen-wahl-kopf]")?.click()); await sleep(1000);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+ok(!(await page.$('[data-suchleiste="quiz"]')) && await page.$("[data-start-knopf]") && await page.$("[data-kopf-bereich]"), "„Bestätigen“ → Tafel → laden: Liste mit Bereich, Start sichtbar");
+await bereichOeffnen(page);
+ok(await page.$('[data-suchleiste="quiz"]') && await page.$("[data-vok-bestaetigen]"), "„🎯 Bereich wählen…“ öffnet die Liste wieder");
 await page.click("[data-vok-bestaetigen]"); await sleep(400);
 
 // 294: Statistik ohne eigene Vokabel-Auswahl – Von–Bis dort entfällt

@@ -43,14 +43,14 @@ await listeWaehlen(page, "Verbes"); await sleep(300);
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 
 // 1) Langes Drücken (oben) → Tafel unten, bleibt nach dem Loslassen
-const bereich = await knopfMitte("Bereich");
+const bereich = await page.evaluate(() => { const b = document.querySelector("[data-reihenfolge]"); const r = b?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; });   // 298: statt „Bereich“ (Zeile gibt es nicht mehr) die Reihenfolge
 await langDruecken(bereich);
 let t = await tafel();
 console.log("     Tafel:", JSON.stringify(t));
 // 114: Tafel weg vom Finger – Finger unten → Tafel oben am Rand, sonst unten am Rand; der Finger liegt nicht unter der Tafel
 const amFinger = (t, p) => t && !(p.y >= t.top && p.y <= t.bottom) && (p.y > t.h / 2 ? Math.abs(t.top - 12) < 3 : Math.abs(t.bottom - (t.h - 12)) < 3);
-ok(t && /Einzelne Vokabeln|Bereich/.test(t.text) && amFinger(t, bereich), "Lang drücken: Sprechblase weg vom Finger (andere Bildschirmhälfte), bleibt nach dem Loslassen");
-const bereichAktiv = await page.evaluate(() => [...document.querySelectorAll(".aktiv")].some(b => b.textContent.trim() === "Bereich"));
+ok(t && /Reihenfolge|Schlechteste|Zufällig/.test(t.text) && amFinger(t, bereich), "Lang drücken: Sprechblase weg vom Finger (andere Bildschirmhälfte), bleibt nach dem Loslassen");
+const bereichAktiv = await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Zufällig" && b.offsetParent));
 ok(!bereichAktiv, "Lang drücken führt die Aktion nicht aus");
 { const p = await page.evaluate(() => { const r = document.querySelector(".topbar-title").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
   await page.mouse.click(p.x, p.y); await sleep(300); }   // 274: freie Stelle (bei 400/600 liegt jetzt die Schalter-Zeile)
@@ -61,20 +61,20 @@ await page.evaluate(() => document.querySelector(".info-schalter").click()); awa
 ok(await page.evaluate(() => document.body.classList.contains("info-modus")), "ⓘ schaltet den Info-Modus ein");
 const markiert = await page.evaluate(() => getComputedStyle(document.querySelector("[data-info]")).outlineStyle);
 ok(markiert === "dashed", "Erklärbare Elemente sind gestrichelt markiert");
-await page.evaluate(() => [...document.querySelectorAll("button")].find(x => x.textContent.trim() === "Bereich").click()); await sleep(300);
+await page.evaluate(() => document.querySelector("[data-reihenfolge]").click()); await sleep(300);
 t = await tafel();
-ok(t && !(await page.evaluate(() => [...document.querySelectorAll(".aktiv")].some(b => b.textContent.trim() === "Bereich"))), "Info-Modus: Antippen erklärt statt auszuführen");
-await page.evaluate(() => [...document.querySelectorAll("button")].find(x => x.textContent.trim() === "Alle" && x.getAttribute("data-info"))?.click()); await sleep(300);
+ok(t && !(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Zufällig" && b.offsetParent))), "Info-Modus: Antippen erklärt statt auszuführen");
+await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
 const t2 = await tafel();
 ok(t2 && t2.text !== t.text, "Info-Modus: anderes Element antippen zeigt dessen Erklärung");
 await page.screenshot({ path: "info_modus.png" });
 await page.evaluate(() => [...document.querySelectorAll("button")].find(x => /Info-Modus beenden/.test(x.textContent)).click()); await sleep(300);
 ok(!(await page.evaluate(() => document.body.classList.contains("info-modus"))) && !(await tafel()), "„Info-Modus beenden“: Modus aus, Tafel weg");
-await page.evaluate(() => [...document.querySelectorAll("button")].find(x => x.textContent.trim() === "Bereich").click()); await sleep(300);
-ok(await page.evaluate(() => !!document.querySelector("[data-vok-bestaetigen]")), "Danach funktionieren Knöpfe wieder normal (Bereich öffnet die Vokabelliste)");
+await page.evaluate(() => document.querySelector("[data-reihenfolge]").click()); await sleep(300);
+ok(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Zufällig" && b.offsetParent)), "Danach funktionieren Knöpfe wieder normal (Reihenfolge öffnet sich)");
 
 // 3) Im Quiz (bisher keine Erklärung möglich): Lang drücken unten → Tafel OBEN
-await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]")?.click()); await sleep(300);   // nichts angehakt → wieder „Alle“
+await page.evaluate(() => document.querySelector("[data-reihenfolge]")?.click()); await sleep(300);   // Reihenfolge wieder zu
 await page.evaluate(() => document.querySelector("[data-start-knopf]").click()); await sleep(500);
 await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click()); await sleep(300);
 const gewusst = await page.evaluate(() => { const b = [...document.querySelectorAll(".karte-btn")].find(x => /Gewusst/.test(x.textContent) && !/Nicht/.test(x.textContent)); const r = b.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });

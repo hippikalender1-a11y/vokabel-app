@@ -58,14 +58,14 @@ export function oeffneListeDetail(app, id) {
   }
 
 export function listenMenue(app, l, imKopf = false) {
-  const { faelligVonListen, listenKopieName, listenOrdner, oeffneExport, oeffneListeDetail, oeffneSatzFenster, oeffneSynFenster, resetImport, setAnsicht, setImportBestehendId, setImportZielTyp, setInGruppe, setKlammerZiel, setListeMenueId, setListeNurAus, setListenAuswahl, setListenBereich, setListenSortModus, setListenWahl, setMergeQuelleId, setModal, setModalFehler, setModalInput, setTab, setZuruecksetzenArten, sichtbareListen, sprachFilter, starteAufteilen, starteQuizMitAuswahl, verschiebeListenInOrdner } = app;
+  const { waehleListenBereich, faelligVonListen, listenKopieName, listenOrdner, oeffneExport, oeffneListeDetail, oeffneSatzFenster, oeffneSynFenster, resetImport, setAnsicht, setImportBestehendId, setImportZielTyp, setInGruppe, setKlammerZiel, setListeMenueId, setListeNurAus, setListenAuswahl, setListenBereich, setListenSortModus, setListenWahl, setMergeQuelleId, setModal, setModalFehler, setModalInput, setTab, setZuruecksetzenArten, sichtbareListen, sprachFilter, starteAufteilen, verschiebeListenInOrdner } = app;
     const gefiltert = sprachFilter !== "alle";
     const herausN = (lsLesen(SK.liste(l.id))?.vokabeln || []).filter(v => v.herausgenommen).length;   // 176
     // 235: gruppiert – direkt Öffnen, dann Lernen / Ablage / Inhalt
     return [
       ...(imKopf ? [] : [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(l.id) }]),   // 225: antippen fragt ab, öffnen über das Menü
       ...gruppe(GRUPPE.lernen, [
-        { label: "🎯 Quiz mit Auswahl…", fn: () => starteQuizMitAuswahl(l.id) },   // 262
+        { label: "🎯 Bereich wählen…", fn: () => waehleListenBereich([l.id]) },   // 262/298
         herausN && { label: `🚫 Herausgenommene (${herausN})`, fn: () => { oeffneListeDetail(l.id); setListenBereich("vokabeln"); setListeNurAus(true); } },
         { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },
       ]),
@@ -154,14 +154,15 @@ export function lernstandJeArt(app, voks, listeId = null) {
 
 // 217: Listen als Quiz-Kacheln – antippen fragt die Liste ab, kurz halten wählt nur (Blätter-Modus), Ordner antippen öffnet
 export function uebernimmListe(app, id) {
-  const { ladeSlot, leuchte, setBlaettern, setSlotVorschau, setSlotVorschauListe } = app;
+  const { ladeSlot, leuchte, setBlaettern, setQuizBereichTyp, setQuizCheckboxAuswahl, setSlotVorschau, setSlotVorschauListe } = app;
     setBlaettern(false); setSlotVorschau(null); setSlotVorschauListe(false);
     ladeSlot("listen", id); leuchte("slotkopf");
+    setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set());   // 298: antippen lädt die ganze Liste
   }
 
 // Info-Fläche unter dem Quiz-Kopf: immer das Quiz, die oben steht (angetippt, sonst die geladene bzw. die aktuelle Auswahl)
 export function infoEintrag(app, statistik) {
-  const { getSlotsData, wahlQuizIds, aktiverSlot, getSlotEintrag, multiAuswahl, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, sichtbareListen, slotVorschau, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert } = app;
+  const { getSlotsData, wahlQuizIds, aktiverSlot, getSlotEintrag, multiAuswahl, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, sichtbareListen, slotVorschau, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds } = app;
     // 234: Ordner in der Auswahl zählen mit ihrem Inhalt
     const ordnerVon = id => (getSlotsData().ordner || []).find(o => o.id === id);
     if (multiAuswahl?.length === 1 && !ordnerVon(multiAuswahl[0])) return getSlotEintrag("gespeichert", multiAuswahl[0]);   // eine gewählt: ihre Info (voller Name)
@@ -172,7 +173,7 @@ export function infoEintrag(app, statistik) {
     const slot = statistik ? statistikAktiverSlot : aktiverSlot;
     const e = slot ? mitKonfig(getSlotEintrag(slot.typ, slot.id)) : null;
     if (e) return e;
-    if (statistik) return { id: "_auswahl", name: statistikSlotGeleert ? "Leer" : "Neue Auswahl",
+    if (statistik) return { id: "_auswahl", name: statistikListenIds ? "Auswahl" : "▦ Alle Listen",
       konfiguration: { listenIds: statistikListenIds ? [...statistikListenIds] : sichtbareListen.map(l => l.id), bereichTyp: statistikBereichTyp, vokabelAuswahl: [...statistikCheckboxAuswahl] } };
     return { id: "_auswahl", name: "Neues Quiz", konfiguration: { listenIds: quizTabListen, bereichTyp: quizBereichTyp, vokabelAuswahl: [...quizCheckboxAuswahl] } };
   }
@@ -200,25 +201,16 @@ export function zurueckZumLernen(app) {
   }
 
 export function zurRundenStatistik(app, abschluss) {
-  const { aktiveListeId, aktiverSlot, getSlotEintrag, ladeSlotStatistik, quiz, setStatistikAktiverSlot, setStatistikArt, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikEinzelauswahlAufgeklappt, setStatistikFilter, setStatistikListenAufgeklappt, setStatistikListenIds, setStatistikSlotGeleert, setStatistikVollbild, setTab, zurueckZurStatistik } = app;
+  const { aktiveListeId, aktiverSlot, getSlotEintrag, ladeSlotStatistik, quiz, setStatistikArt, setStatistikFilter, setStatistikVollbild, setTab, zurueckZurStatistik } = app;
     const q = quiz;
     if (q?.ausStatistik) { zurueckZurStatistik(); return; }
     abschluss();
-    setStatistikListenAufgeklappt(false);
-    setStatistikEinzelauswahlAufgeklappt(false);
+    
+    
     setStatistikVollbild(false);
-    setStatistikSlotGeleert(false);
+    
     setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']));
     setStatistikArt(q?.modus === "diktat" ? "diktat" : q?.scoreFeld === "akzentFortschritt" ? "akzente" : "uebersetzung");
-    if (q?.istSessionModus && aktiverSlot && getSlotEintrag(aktiverSlot.typ, aktiverSlot.id)) {
-      ladeSlotStatistik(aktiverSlot.typ, aktiverSlot.id);
-    } else {
-      const ids = [...new Set((q?.vokabeln || []).map(v => String(v.id).includes("__") ? String(v.id) : `${aktiveListeId}__${v.id}`))];
-      setStatistikAktiverSlot(null);
-      setStatistikListenIds(new Set(ids.map(id => id.split("__")[0])));
-      setStatistikBereichTyp("bereich");
-      setStatistikCheckboxAuswahl(new Set(ids));
-    }
     setTab("statistik");
   }
 

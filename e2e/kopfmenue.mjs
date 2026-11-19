@@ -29,7 +29,7 @@ await page.reload(); await sleep(600); await page.evaluate(() => { const u = doc
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(300);
 await page.click('[data-slot-id="g"]'); await sleep(900);   // 192: antippen lädt sofort
 
-const ERWARTET = "💾 Speichern | ✎ Umbenennen | ⧉ Duplizieren | 📝 Listen/Vokabeln ändern | 🗑 Löschen";
+const ERWARTET = "💾 Speichern | ✎ Umbenennen | ⧉ Duplizieren | 📝 Vokabeln ändern | 🗑 Löschen";
 // zugeklappt
 ok(await page.evaluate(() => document.querySelector("[data-slot-kopf]").dataset.slotKopf) !== "offen", "Kopf zugeklappt");
 await langDruck("[data-slot-kopf-name]"); await sleep(300);

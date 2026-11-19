@@ -227,26 +227,34 @@ export async function auswahlEnde(page) {
 // 289: Liste fürs Quiz wählen – früher Häkchen in der Listen-Auswahl des Quiz-Tabs (.quiz-setup-check). Ist nichts geladen,
 // steht jetzt die Auswahl mit den Listen offen; der alte Zustand „Neues Quiz“ (eine Liste, „Alle | Bereich“) entsteht über
 // lang drücken › „📊 Lernen ›“ › „🎯 Quiz mit Auswahl…“ und „Bestätigen“ (nichts angehakt → „Alle“). Weitere Listen: Häkchen.
-export async function listeWaehlen(page, name) {
+export async function listeWaehlen(page, name) {   // 298: Liste in der Auswahl (Listen) antippen – lädt sie (ganze Liste)
   const s = ms => new Promise(r => setTimeout(r, ms));
-  const haken = () => page.evaluate(n => { const e = [...document.querySelectorAll(".quiz-setup-check")].find(e => e.textContent.includes(n)); if (e) e.click(); return !!e; }, name);
-  if (await haken()) return;
-  if (await page.evaluate(() => { const k = document.querySelector("[data-listen-kopf]"); k?.click(); return !!k; })) { await s(400); if (await haken()) return; }
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]")?.click(); }); await s(400);
   await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "listen") b.click(); }); await s(300);
-  const da = await page.evaluate(n => { const el = [...document.querySelectorAll('[data-kachel-geste="liste"][data-liste-id]')].find(e => e.textContent.includes(n)); if (!el) return false;
-    const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); return true; }, name);
-  if (!da) throw new Error("Liste nicht gefunden: " + name);
-  await s(400);
-  const klick = l => page.evaluate(l => { const b = [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === l); b?.click(); return !!b; }, l);
-  if (!(await klick("📊 Lernen ›"))) {   // z. B. Farbmodus: lang drücken zeigt kein Menü → Liste antippen (lädt sie)
-    await page.keyboard.press("Escape"); await s(200);
-    await page.evaluate(n => [...document.querySelectorAll('[data-kachel-geste="liste"][data-liste-id]')].find(e => e.textContent.includes(n))?.click(), name); await s(900);
-    await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Schließen" && b.closest("[data-farbfeld], [data-farben-hier], .farbfeld, div"))?.click()); await s(300);   // Farbfeld zu
-    return;
+  const finde = n => page.evaluate(n => { const el = [...document.querySelectorAll('[data-kachel-geste="liste"][data-liste-id]')].find(e => e.textContent.includes(n)); el?.scrollIntoView({ block: "center" }); return !!el; }, n);
+  if (!(await finde(name))) {   // in einem Ordner? → zurück zu „Alle Listen“
+    await page.evaluate(() => document.querySelector("[data-alle-listen]")?.click()); await s(300);
+    if (!(await finde(name))) throw new Error("Liste nicht gefunden: " + name);
   }
-  await s(300);
-  if (!(await klick("🎯 Quiz mit Auswahl…"))) throw new Error("„🎯 Quiz mit Auswahl…“ fehlt: " + name);
-  await s(600);
-  await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]")?.click()); await s(400);   // nichts angehakt → „Alle“
+  await page.evaluate(n => [...document.querySelectorAll('[data-kachel-geste="liste"][data-liste-id]')].find(e => e.textContent.includes(n))?.click(), name); await s(900);
+  await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Schließen" && b.closest("[data-farbfeld], [data-farben-hier], .farbfeld"))?.click()); await s(200);   // Farbmodus: Farbfeld zu
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen" && !document.querySelector("[data-wahl-fertig]")) document.querySelector("[data-slot-kopf-name]")?.click(); }); await s(400);
+}
+
+// 298: Bereich der geladenen Liste (bzw. Vokabeln der geladenen Quiz) wählen – lang auf den Kopf → „🎯 Bereich wählen…“ / „📝 Vokabeln ändern“
+export async function bereichOeffnen(page) {
+  const s = ms => new Promise(r => setTimeout(r, ms));
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await s(600);
+  await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"), r = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await s(400);
+  const da = await page.evaluate(() => { const b = [...document.querySelectorAll("[data-info-aktion]")].find(b => /🎯 Bereich wählen|📝 Vokabeln ändern/.test(b.dataset.infoAktion)); b?.click(); return !!b; });
+  if (!da) throw new Error("„🎯 Bereich wählen…“ fehlt im Kopf-Menü");
+  await s(800);
+}
+// 298: „Bestätigen“ der Bereichswahl; kam sie aus der Tafel, wird dort geladen
+export async function bereichBestaetigen(page) {
+  const s = ms => new Promise(r => setTimeout(r, ms));
+  await page.click("[data-vok-bestaetigen]"); await s(900);
+  if (await page.evaluate(() => { const k = document.querySelector("[data-listen-wahl-kopf]"); k?.click(); return !!k; })) await s(1000);
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await s(400);
 }

@@ -67,18 +67,19 @@ await page.evaluate(() => document.querySelector("[data-slot-laden]").click()); 
 k = await kopf();
 ok(k.zustand !== "offen" && k.art === "liste" && /Unit 2/.test(k.text), `grüner Kopf lädt „Unit 2“ als Liste (${JSON.stringify(k)})`);
 
-// ── „Quiz erstellen“: Bereich wählen, Name und Ordner ──
+// ── 298: „Quiz erstellen“ (Liste) öffnet die Tafel der Liste: Bereich (lang auf „Vokabeln“), dann „💾 Als Quiz speichern“ ──
 await oeffneListe("l_a");
-await page.evaluate(() => document.querySelector("[data-liste-quiz-erstellen]").click()); await sleep(700);
+await page.evaluate(() => document.querySelector("[data-liste-quiz-erstellen]").click()); await sleep(900);
 k = await kopf();
-ok(k.art === "erstellen" && /Quiz erstellen/.test(k.text) && !(await page.$("[data-listen-kopf]")), `Kopf „＋ Quiz erstellen“, keine Listenauswahl (${JSON.stringify(k)})`);
+ok(k.zustand === "offen" && /Unit 1 laden/.test(k.text), `298: Auswahl mit der Tafel von „Unit 1“ (${JSON.stringify(k)})`);
+await page.evaluate(() => { const b = document.querySelector('[data-schalter-raster] [data-schalter="grund"]'), r = b.getBoundingClientRect();
+  b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(900);
 await page.evaluate(() => [...document.querySelectorAll(".vok-zeile")].slice(0, 2).forEach(e => e.click())); await sleep(400);   // Nr. 1–2
-await page.evaluate(() => { const b = document.querySelector("[data-vok-bestaetigen]"); b?.click(); }); await sleep(400);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(400);
+await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]").click()); await sleep(1000);
+await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Als Quiz speichern"]').click()); await sleep(700);
 const fenster = await page.evaluate(() => ({ da: !!document.querySelector("[data-erstellen-dialog]"), name: document.querySelector("[data-erstellen-name]")?.value,
   ordner: [...document.querySelectorAll("[data-erstellen-ordner-wahl]")].map(b => b.textContent.trim()) }));
-ok(fenster.da && fenster.name === "Unit 1 · Nr. 1–2" && fenster.ordner.includes("📁 Englisch"), `Fenster „Quiz erstellen“: Name vorbelegt, Ordner wählbar (${JSON.stringify(fenster)})`);
+ok(fenster.da && fenster.name === "Unit 1 · Nr. 1–2" && fenster.ordner.includes("📁 Englisch"), `Fenster „Als Quiz speichern“: Name vorbelegt, Ordner wählbar (${JSON.stringify(fenster)})`);
 await page.evaluate(() => document.querySelector('[data-erstellen-ordner-wahl="o1"]').click()); await sleep(200);
 await page.evaluate(() => document.querySelector("[data-erstellen-ok]").click()); await sleep(600);
 d = await slots();
@@ -87,26 +88,14 @@ ok(neu && neu.ordner === "o1" && neu.konfiguration?.vokabelAuswahl?.length === 2
 k = await kopf();
 ok(k.art === "quiz" && /^Unit 1/.test(k.text), `danach geladen (${k.text})`);
 
-// ── 295: „Quiz erstellen“ abbrechen – im Fenster bzw. lang drücken auf den Kopf; nichts angelegt, zurück zur Auswahl (Listen) ──
+// ── Abbrechen im Fenster: nichts angelegt ──
 const anzahlVorher = (await slots()).gespeichert.length;
 await oeffneListe("l_b");
-await page.evaluate(() => document.querySelector("[data-liste-quiz-erstellen]").click()); await sleep(700);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").click()); await sleep(400);
-ok(!!(await page.$("[data-erstellen-abbrechen]")), "295: Fenster „Quiz erstellen“ hat „Abbrechen“");
+await page.evaluate(() => document.querySelector("[data-liste-quiz-erstellen]").click()); await sleep(900);
+await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Als Quiz speichern"]').click()); await sleep(700);
+ok(!!(await page.$("[data-erstellen-abbrechen]")), "Fenster „Als Quiz speichern“ hat „Abbrechen“");
 await page.evaluate(() => document.querySelector("[data-erstellen-abbrechen]").click()); await sleep(600);
-k = await kopf();
-ok(k.art !== "erstellen" && !(await page.$("[data-erstellen-dialog]")) && (await slots()).gespeichert.length === anzahlVorher && k.zustand === "offen"
-  && await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]")?.dataset.auswahlUmschalter) === "listen",
-  `295: abgebrochen – nichts angelegt, Auswahl mit den Listen offen (${JSON.stringify(k)})`);
-// lang drücken auf den Kopf: „✕ Erstellen abbrechen“
-await oeffneListe("l_b");
-await page.evaluate(() => document.querySelector("[data-liste-quiz-erstellen]").click()); await sleep(700);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
-await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"), r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 5 })); }); await sleep(400);
-const ab = await page.evaluate(() => { const b = [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "✕ Erstellen abbrechen"); b?.click(); return !!b; }); await sleep(600);
-k = await kopf();
-ok(ab && k.art !== "erstellen" && (await slots()).gespeichert.length === anzahlVorher, `295: lang drücken auf den Kopf – „✕ Erstellen abbrechen“ (${JSON.stringify(k)})`);
+ok(!(await page.$("[data-erstellen-dialog]")) && (await slots()).gespeichert.length === anzahlVorher, "Abbrechen: nichts angelegt");
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();

@@ -7,7 +7,7 @@ import { SymWdh } from "../symbole.jsx";
 // Phase 2 (Aufteilung): Bereich aus dem Haupt-return von App.jsx (tab === "statistik")
 // app = Zustände, Setter und Funktionen der Komponente (siehe „const app“ in App.jsx)
 export function StatistikTab(app) {
-  const { einstellungen, headerH, oeffneVokabelBearbeiten, setGruppenQuiz, setStatistikArt, setStatistikFilter, setStatistikListeZu, setStatistikSort, setStatistikVollbild, slotH, statistikArt, statistikBereichTyp, statistikCheckboxAuswahl, statistikEinzelauswahlAufgeklappt, statistikFilter, statistikGefilterteVoks, statistikGewaehlteListenObjekte, statistikListeZu, statistikListenAufgeklappt, statistikListenHeaderH, statistikListenIds, statistikSort, statistikVokauswahlH, statistikVollbild, tt } = app;
+  const { einstellungen, headerH, oeffneVokabelBearbeiten, setGruppenQuiz, setStatistikArt, setStatistikFilter, setStatistikListeZu, setStatistikSort, setStatistikVollbild, slotH, statistikArt, statistikBereichTyp, statistikCheckboxAuswahl, statistikFilter, statistikGefilterteVoks, statistikGewaehlteListenObjekte, statistikListeZu, statistikListenIds, statistikSort, statistikVollbild, tt } = app;
   return (
 (() => {
           const schwelleS = einstellungen.gelerntSchwelle ?? 0;
@@ -82,7 +82,7 @@ export function StatistikTab(app) {
           return (<>
             {/* Ø-Score sticky Header */}
             {!statistikVollbild && (
-            <div style={{position:"sticky", top:headerH+slotH+statistikListenHeaderH+statistikVokauswahlH, zIndex:6, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
+            <div style={{position:"sticky", top:headerH+slotH, zIndex:6, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"8px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8}}>
               <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2, flexShrink:0}}>
                 <span data-statistik-kopf-titel style={{fontWeight:600, fontSize:"0.85rem", color:"var(--kopf-schrift)"}}>{schwelleS > 0 ? "Lernfortschritt" : "Ø Score"}</span>
                 <span style={{fontSize:"0.72rem", fontWeight:700, color:"var(--kopf-schrift-leise)"}} {...tt("Ausgewertet wird dieser Score – Tap in die Kreismitte wechselt")}>{artName}</span>
@@ -118,7 +118,7 @@ export function StatistikTab(app) {
               )}
             </div>
             )}
-            <div className="sektion" style={{paddingTop:12, paddingBottom:(statistikListenAufgeklappt||statistikEinzelauswahlAufgeklappt)?'100dvh':0}}>
+            <div className="sektion" style={{paddingTop:12, paddingBottom:0}}>
               {/* 269: Balken statt Kreisdiagramm – Lernstand (Negativ · Kurzzeit · Gelernt), Langzeit (je Raute), Gesamtübersicht */}
               {(() => {
                 const NAME = { gelernt:"Gelernt", arbeit:"Auf einem guten Weg", nie:"Nie abgefragt", negativ:"Negativ" };

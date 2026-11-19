@@ -65,7 +65,7 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); let ziel = await mitte("0|0");
 await finger("touchStart", p.x, p.y); await sleep(450); await finger("touchEnd"); await sleep(400);   // 234: kurz halten = auswählen (Menü)
-ok((await aktionen()).filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "📂 Liste öffnen|📊 Lernen ›|🗂 Ablage ›|📚 Inhalt ›|↔ Von–Bis|🎯 Quiz mit Auswahl…|↺ Lernstand zurücksetzen|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen|＋ Vokabeln importieren|📤 Exportieren|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|( ) → Info|▦ In mehrere Quiz aufteilen", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
+ok((await aktionen()).filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "📂 Liste öffnen|📊 Lernen ›|🗂 Ablage ›|📚 Inhalt ›|↔ Von–Bis|💾 Als Quiz speichern|🎯 Bereich wählen…|↺ Lernstand zurücksetzen|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen|＋ Vokabeln importieren|📤 Exportieren|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|( ) → Info|▦ In mehrere Quiz aufteilen", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
 await auswahlEnde(page); await sleep(300);
 p = await mitte("2|0"); ziel = await mitte("0|0");   // die Auswahl-Tafel kann die Seite verschoben haben
 // 234: lang halten (angehoben) und ziehen: verschieben
@@ -175,15 +175,7 @@ const auswahlRaster = () => page.evaluate(() => {
 });
 const erwartet = "2:" + Object.entries(pl).sort((a, b) => a[1].localeCompare(b[1])).map(([n, p]) => `${p}=${n}`).join(",");
 await clickText(".tab", "Quiz"); await sleep(300);
-await neueEineSession(page); await sleep(300);   // 225: freies Quiz – nur dort gibt es die Listen-Auswahl mit Häkchen
-await quizEinstellungen(page);
-// 289: die Häkchen-Liste gibt es nur mit gewählter Liste – erst eine wählen, dann die Listen-Auswahl aufklappen
-await listeWaehlen(page, "Gamma");
-await page.evaluate(() => document.querySelector("[data-listen-kopf]")?.click()); await sleep(400);
-let qr = await auswahlRaster();
-if (!qr) { await clickText("span, div", "Listen-Auswahl", true); qr = await auswahlRaster(); }
-console.log("     Quiz-Raster:", qr, "| erwartet:", erwartet);
-ok(qr === erwartet, "Quiz-Tab: Listenauswahl im gleichen Raster");
+// 298: die Häkchen-Liste der Listen gibt es nicht mehr – Quiz- und Statistik-Tab zeigen dasselbe Listen-Raster der Auswahl
 await clickText(".tab", "Statistik"); await sleep(300);
 // 294: die Statistik wählt Listen über ihre Auswahl (Umschalter „📋 Listen“) – dasselbe Listen-Raster mit denselben Plätzen
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);

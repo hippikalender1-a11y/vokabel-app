@@ -163,7 +163,7 @@ await neueEineSession(page);
 await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await sleep(300);
-ok(await kopf() !== "gruen" && await fortschritt() === null, "Nach „Neu“ und Neuladen: kein Quiz automatisch geladen");
+// 298: „Ein Quiz“ öffnet nur die Auswahl mit den Listen – das Geladene bleibt (kein „Neues Quiz“ mehr)
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);

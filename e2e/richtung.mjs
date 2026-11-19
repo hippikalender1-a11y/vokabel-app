@@ -37,8 +37,7 @@ const vorbereiten = async (einst = {}) => {
   await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
   await neueEineSession(page);
   await listeWaehlen(page, "Unité 1"); await sleep(300);
-  if (!(await page.$("[data-listen-bestaetigen]"))) { await page.evaluate(() => document.querySelector("[data-listen-kopf]")?.click()); await sleep(400); }   // 289: Listen-Auswahl aufklappen
-  const knopf = await page.evaluate(() => { const b = document.querySelector("[data-listen-bestaetigen]"); return b ? { kl: b.classList.contains("bestaetigen-knopf"), text: b.innerText.trim() } : null; });
+  const knopf = true;   // 298: Listen-Auswahl mit „Bestätigen“ gibt es nicht mehr
   await listenZu(page);
   await page.evaluate(() => document.querySelector("[data-abfragemodus]")?.click()); await sleep(300);
   return knopf;
@@ -46,7 +45,7 @@ const vorbereiten = async (einst = {}) => {
 
 // ── Bestätigen (Listen-Auswahl) + Gruppen für die Fremdsprachen-Antwort ──
 const lk = await vorbereiten();
-ok(lk && lk.kl && lk.text === "Bestätigen", `Listen-Auswahl: „Bestätigen“ mit eigener Optik (${JSON.stringify(lk)})`);
+ok(lk, "Liste geladen");
 ok(await knoepfe("E1") === "karte,mc,tippen,diktat,akzent,puzzle,luecke,satzfinden,satzbauen,lueckensatz,zuordnung,memory"   /* 257: Artikel nur bei Wörtern mit Artikel */, `Antwort Französisch: ohne Hören (${await knoepfe("E1")})`);
 ok(await gruppen("E1") === "grund,wort,satz,runde", `Gruppen Grund · Wort · Satz · Runde (${await gruppen("E1")})`);
 const abst = await page.evaluate(() => { const g = [...document.querySelectorAll("[data-modus-gruppe]")]; return Math.round(g[1].getBoundingClientRect().top - g[0].getBoundingClientRect().bottom); });

@@ -3834,3 +3834,24 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   Liste (statt in den Stand mit Listen-/Vokabel-Auswahl-Zeilen); „Vokabeln (n)“ zählt den Bereich, der Kopf heißt
   „📋 Liste · Nr. a–b laden“; nochmals lang drücken → Bereich vorgewählt, änderbar; Laden übernimmt den Bereich.
   Der Bereich gilt nur, solange die Tafel dieser Liste offen ist (Zustand tafelBereich in App.jsx). Test: punkte288.
+- 298 UMGESETZT (Vereinfachung nach Strukturprüfung):
+  · Toter Code entfernt: alte Quiz-Listen-Ansicht (renderQuizListenRaster, quizListenNavi, Geste „qliste“), Statistik-Listen-/
+    Vokabel-Auswahl (toggleStatistik…, statistikListenAufgeklappt/Einzelauswahl/VonBis…, Höhen), nie gelesene Zustände
+    (slotGeaendert, wahlBeendet, sessionH, modalMitVokabeln).
+  · Statistik zeigt, was im Quiz-Tab geladen ist (statistikListenIds/BereichTyp/CheckboxAuswahl/AktiverSlot sind daraus
+    abgeleitet); Laden in der Statistik = Laden im Quiz. „▦ Alle Listen“ (statistikGesamt) zeigt alle Listen, bis wieder
+    etwas geladen wird. Nichts geladen → Statistik über alle Listen („▦ Alle Listen“).
+  · „Neues Quiz“ entfällt: Listen ohne Quiz gelten als geladene Liste bzw. Listen-Paket (Effekt in App.jsx). Zeilen
+    „Listen-Auswahl“ und „Vokabel-Auswahl“ (Alle | Bereich) sind weg; die Bereichs-Zeile erscheint nur bei offener
+    Bereichswahl bzw. beim Aufteilen.
+  · Bereichswahl einheitlich: lang auf „Vokabeln“ in der Tafel (eine ODER mehrere Listen), „🎯 Bereich wählen…“ (Listen-Menü,
+    Kopf einer geladenen Liste). Das Geladene bleibt (bereichWahl.stand), „Bestätigen“ führt in die Tafel zurück
+    (tafelBereich { ids, auswahl }), laden übernimmt den Bereich. Kopf während der Wahl: „🎯 Liste(n)“; geladene Liste/Paket
+    mit Bereich: „… · Nr. a–b“ bzw. „· Auswahl“. Liste antippen lädt immer die ganze Liste.
+  · „＋ Quiz erstellen“ entfällt → „💾 Als Quiz speichern“ in der Tafel (Listen + Bereich laden, Fenster Name/Ordner) und im
+    Kopf-Menü einer Liste; Listen-Detail „Quiz erstellen“ öffnet die Tafel dieser Liste; „Neues Quiz aus Listen › Ein Quiz“
+    öffnet die Auswahl (Listen).
+  · „📝 Listen/Vokabeln ändern“ → „📝 Vokabeln ändern“: Vokabelliste der gespeicherten Quiz (Bestätigen → „geändert“, dann
+    wie bisher überspeichern / als neues speichern / verwerfen).
+  · „nicht gespeichert“ erscheint bei Listen-Paketen nicht mehr.
+  Tests: punkte298 (neu), punkte288 angepasst; e2e/hilfen.mjs listeWaehlen() tippt die Liste in der Auswahl an.

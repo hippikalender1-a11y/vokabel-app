@@ -79,11 +79,11 @@ ok(await offen() === "", "nochmal antippen schließt den eigenen Bereich");
 await page.setViewport({ width: 375, height: 500 }); await sleep(300);
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 const lage = () => page.evaluate(() => ({ kopf: Math.round(document.querySelector("[data-slot-kopf]").getBoundingClientRect().top),
-  listen: Math.round(document.querySelector(".liste-detail-header").getBoundingClientRect().top), zeile1: Math.round(document.querySelector("[data-reihenfolge]").getBoundingClientRect().top) }));
+  zeile1: Math.round(document.querySelector("[data-reihenfolge]").getBoundingClientRect().top) }));
 const v = await lage();
 await page.evaluate(() => window.scrollTo(0, 100)); await sleep(300);
 const n = await lage();
-ok(n.kopf === v.kopf && n.listen === v.listen - 100 && n.zeile1 === v.zeile1 - 100, `Quiz-Leiste bleibt, Listen-Zeile und Zeile 1 scrollen mit (${JSON.stringify(v)} → ${JSON.stringify(n)})`);
+ok(n.kopf === v.kopf && n.zeile1 === v.zeile1 - 100, `Quiz-Leiste bleibt, Zeile 1 scrollt mit (298: ohne Listen-Zeile) (${JSON.stringify(v)} → ${JSON.stringify(n)})`);
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 await tippe("[data-reihenfolge]");
 await page.setViewport({ width: 375, height: 420 }); await sleep(300);   // 240: Bereich ohne Score-Filter kürzer – Seite muss scrollen können

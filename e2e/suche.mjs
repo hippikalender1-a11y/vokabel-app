@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen, menueShim, listeWaehlen } from "./hilfen.mjs";
+import { listeOeffnen, menueShim, listeWaehlen, bereichOeffnen, bereichBestaetigen } from "./hilfen.mjs";
 import { zuListen, neueEineSession, listenZu, listeBereich } from "./hilfen.mjs";
 
 // Vokabel-Suche: Einzelauswahl (Quiz + Statistik), Aufteilen (🔍 bei Von/Bis), Listenansicht.
@@ -50,7 +50,7 @@ await page.reload(); await sleep(800); await page.evaluate(() => { const u = doc
 await neueEineSession(page);
 await listeWaehlen(page, "Unité 1"); await sleep(400);
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
-await klickText(".toggle-opt", "Bereich"); await sleep(400);
+await bereichOeffnen(page);   // 298: statt „Alle | Bereich“
 ok(await page.$('[data-suchleiste="quiz"]'), "Quiz-Einzelauswahl: Suchleiste vorhanden");
 await tippe('[data-suchleiste="quiz"] [data-such-feld]', "MAISON");
 ok(await anzahl("quiz") === "2", `„MAISON“: 2 Treffer (nicht in der Info-Spalte) (${await anzahl("quiz")})`);

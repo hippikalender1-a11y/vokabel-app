@@ -85,10 +85,10 @@ await page.evaluate(() => {
 await sleep(200);
 await page.evaluate(() => document.querySelector("[data-stufen-regeln]")?.closest(".overlay")?.click()); await sleep(200);
 ok(await startAnzahl() === "3", "Regel aus: nur 3 Wörter mit Akzent (chat fehlt)");
-const kette = await page.evaluate(() => ["auswahl", "akzent"].map(k => document.querySelector(`[data-anzahl="${k}"]`)?.textContent.trim()));
+const kette = await page.evaluate(() => ["akzent"].map(k => document.querySelector(`[data-anzahl="${k}"]`)?.textContent.trim()));
 kette.push(await startAnzahl());
 console.log("     Anzahl-Kette:", kette.join(" → "));
-ok(kette.join(" → ") === "(4 V.) → (3 mit Akzent) → 3", "Zeilen: Auswahl 4 → mit Akzent 3 → Start 3");
+ok(kette.join(" → ") === "(3 mit Akzent) → 3", "Zeilen: mit Akzent 3 → Start 3 (298: ohne Zeile „Vokabel-Auswahl“)");
 
 await clickText("[data-start-knopf]", "");
 await sleep(400);

@@ -282,28 +282,28 @@ export function schliesseSlotsVerzoegert(app) {
   }
 
 export function ladeSlot(app, typ, id, art = null) {
-  const { aktiviereSlotFortschritt, applyKonfiguration, ausListeRef, getSlotEintrag, listeAlsQuizVorbereiten, neuImOrdnerRef, schliesseSlotsVerzoegert, setAktiverSlot, setGespeicherteVokabelgruppe, setListenAendern, setListenAuswahlAufgeklappt, setQuizAbfrageModusAufgeklappt, setQuizEinstellungenAufgeklappt, setQuizErstellen, setQuizListeAufgeklappt, setQuizReihenfolgeAufgeklappt, setQuizSessionAufgeklappt, setSlotGeaendert } = app;
+  const { aktiviereSlotFortschritt, applyKonfiguration, ausListeRef, getSlotEintrag, listeAlsQuizVorbereiten, neuImOrdnerRef, schliesseSlotsVerzoegert, setAktiverSlot, setGespeicherteVokabelgruppe, setQuizAbfrageModusAufgeklappt, setQuizEinstellungenAufgeklappt, setQuizListeAufgeklappt, setQuizReihenfolgeAufgeklappt, setQuizSessionAufgeklappt } = app;
     const eintrag = getSlotEintrag(typ, id);
     neuImOrdnerRef.current = null;
     if (!(typ === "listen" && ausListeRef.current?.listeId === id)) ausListeRef.current = null;   // 204: andere Quiz gewählt
-    setQuizErstellen(null);   // 217
+      // 217
     if (eintrag && typ === "listen" && !eintrag.konfiguration) { listeAlsQuizVorbereiten(id); return; }   // 217: erstes Mal – Standard
     if (!eintrag || !eintrag.konfiguration) return;
-    setListenAendern(false);
+    
     applyKonfiguration(eintrag.konfiguration, art);
     if (typ === 'gespeichert') {
       setGespeicherteVokabelgruppe({ listenIds: eintrag.konfiguration.listenIds || [], vokabelAuswahl: eintrag.konfiguration.vokabelAuswahl || [], bereichTyp: eintrag.konfiguration.bereichTyp || "alle" });
     } else {
       setGespeicherteVokabelgruppe(null);
     }
-    setListenAuswahlAufgeklappt(false);
+    
     setQuizListeAufgeklappt(false);
     setQuizAbfrageModusAufgeklappt(false);
     setQuizReihenfolgeAufgeklappt(false);
     setQuizEinstellungenAufgeklappt(false);
     setQuizSessionAufgeklappt(false);
     setAktiverSlot({ typ, id });
-    setSlotGeaendert(false);
+    
     if (typ === 'gespeichert') lsSet(SK.letzterSlot, id); else if (typ === "listen") lsSet(SK.letzterSlot, `listen:${id}`);
     else if (eintrag.multi || eintrag.paket) lsSet(SK.letzterSlot, `verlauf:${id}`);   // 254: Paket nach dem Neustart wieder laden
     else lsDel(SK.letzterSlot);
@@ -313,51 +313,31 @@ export function ladeSlot(app, typ, id, art = null) {
 
 // 217: Liste zum ersten Mal als Quiz – Standard-Einstellungen (wie früher „Quiz starten“), Kopf zeigt die Liste
 export function listeAlsQuizVorbereiten(app, id) {
-  const { aktiviereSlotFortschritt, getSlotEintrag, initQuizDefaults, schliesseSlotsVerzoegert, setAktiverSlot, setGespeicherteVokabelgruppe, setGruppenAenderungsDialog, setListenAendern, setListenAuswahlAufgeklappt, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizPaketGroesse, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSessionUeberschreibenModal, setSlotGeaendert, setStartLeerHinweis } = app;
+  const { aktiviereSlotFortschritt, getSlotEintrag, initQuizDefaults, schliesseSlotsVerzoegert, setAktiverSlot, setGespeicherteVokabelgruppe, setGruppenAenderungsDialog, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizPaketGroesse, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSessionUeberschreibenModal, setStartLeerHinweis } = app;
     const liste = lsGet(SK.liste(id));
     if (!liste) return;
     setSessionUeberschreibenModal(false); setGruppenAenderungsDialog(false);
-    setGespeicherteVokabelgruppe(null); setListenAendern(false);
+    setGespeicherteVokabelgruppe(null); 
     lsDel(SK.sessionAktiv); setSessionSlotAktiv(null);
     setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
     setQuizHeuteEinschliessen(false); setStartLeerHinweis(false);
     setQuizTabListen([id]); setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set());
-    setListenAuswahlAufgeklappt(false); setQuizListeAufgeklappt(false);
+    setQuizListeAufgeklappt(false);
     initQuizDefaults(liste);
-    setAktiverSlot({ typ: "listen", id }); setSlotGeaendert(false);
+    setAktiverSlot({ typ: "listen", id }); 
     lsSet(SK.letzterSlot, `listen:${id}`);
     schliesseSlotsVerzoegert();
     const e = getSlotEintrag("listen", id);
     if (e) aktiviereSlotFortschritt(e, "listen", id, "uebersetzung");
   }
 
-// 217: „Quiz erstellen“ – Quiz-Tab mit dieser Liste (Listenauswahl ausgeblendet), Bereich + Einstellungen wählen;
-// der grüne Kopf „＋ Quiz erstellen“ öffnet das Fenster (Name, Ordner)
-export function starteQuizErstellen(app, id) {
-  const { ausListeRef, handleTabWechsel, initQuizDefaults, setAktiverSlot, setAnsicht, setGespeicherteVokabelgruppe, setListenAendern, setListenAuswahlAufgeklappt, setQuiz, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizErstellen, setQuizListeAufgeklappt, setQuizPaketGroesse, setQuizSessionAufgeklappt, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSlotGeaendert, setSlotSektionAufgeklappt } = app;
-    const liste = lsGet(SK.liste(id));
-    if (!liste) return;
-    setSlotSektionAufgeklappt(false); setQuizSessionAufgeklappt(false);
-    handleTabWechsel("quiz"); setQuiz(null); setAnsicht("uebersicht");
-    setAktiverSlot(null); setSlotGeaendert(false); setGespeicherteVokabelgruppe(null); setListenAendern(false);
-    lsDel(SK.sessionAktiv); setSessionSlotAktiv(null);
-    setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
-    setQuizTabListen([id]); setQuizCheckboxAuswahl(new Set());
-    setListenAuswahlAufgeklappt(false);
-    initQuizDefaults(liste);
-    setQuizBereichTyp("bereich"); setQuizListeAufgeklappt(true);   // nach den Standards: gleich den Bereich wählen
-    ausListeRef.current = null;
-    setQuizErstellen({ listeId: id });
-    window.scrollTo(0, 0);
-  }
-
 export function erstelleQuiz(app) {
-  const { erstellenFenster, neuImOrdnerRef, setErstellenFenster, setQuizErstellen, setSlotOrdner, speichereAlsGespeichert } = app;
+  const { erstellenFenster, neuImOrdnerRef, setErstellenFenster, setSlotOrdner, speichereAlsGespeichert } = app;
     const f = erstellenFenster;
     if (!f || !f.name.trim()) return;
     neuImOrdnerRef.current = f.ordner || null;
     speichereAlsGespeichert(null, f.name.trim());
-    setErstellenFenster(null); setQuizErstellen(null);
+    setErstellenFenster(null); 
     setSlotOrdner(f.ordner || null);
   }
 
@@ -384,20 +364,10 @@ export function aktiviereSlotFortschritt(app, eintrag, typ, id, art) {
   }
 
 export function ladeSlotStatistik(app, typ, id, art = null) {
-  const { getSlotEintrag, schliesseSlotsVerzoegert, setListenAendern, setStatistikAktiverSlot, setStatistikArt, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikEinzelauswahlAufgeklappt, setStatistikListenAufgeklappt, setStatistikListenIds, setStatistikSlotGeleert } = app;
-    const eintrag = getSlotEintrag(typ, id);
-    if (!eintrag || (!eintrag.konfiguration && typ !== "listen")) return;
-    setListenAendern(false);
-    const k = eintrag.konfiguration || { listenIds: [id], bereichTyp: "alle", vokabelAuswahl: [] };   // 294: Liste ohne eigenes Quiz
+  const { ladeSlot, setStatistikArt, setStatistikGesamt } = app;
+    setStatistikGesamt(false);
     if (art) setStatistikArt(art);
-    setStatistikListenIds(k.listenIds?.length > 0 ? new Set(k.listenIds) : null);
-    setStatistikBereichTyp(k.bereichTyp || "alle");
-    setStatistikCheckboxAuswahl(new Set(k.vokabelAuswahl || []));
-    setStatistikListenAufgeklappt(false);
-    setStatistikEinzelauswahlAufgeklappt(false);
-    setStatistikAktiverSlot({ typ, id });
-    setStatistikSlotGeleert(false);
-    schliesseSlotsVerzoegert();   // nach der Auswahl nur noch die Kopfzeile zeigen (wie im Quiz)
+    ladeSlot(typ, id);
   }
 
 // Abfrage ohne Pakete im Verlauf festhalten (mit Start-Scores für die Statistik).
@@ -420,7 +390,7 @@ export function merkeRundeImVerlauf(app, effSlot, startScores) {
   }
 
 export function erstelleVerlaufEintrag(app, extra = {}) {
-  const { aktuelleKonfiguration, getSlotsData, setAktiverSlot, setSlotGeaendert, setSlotsData } = app;
+  const { aktuelleKonfiguration, getSlotsData, setAktiverSlot, setSlotsData } = app;
     const id = neuerSlotId('v');
     const konf = aktuelleKonfiguration();
     const neuerEintrag = { id, name: mitKuerzel(sprachKuerzelFuer(konf.listenIds), formatSlotDatum()), timestamp: Date.now(), konfiguration: konf, sessionFortschritt: null, ...extra };   // 264: „Engl · 17.11.26, 22:40“
@@ -429,6 +399,6 @@ export function erstelleVerlaufEintrag(app, extra = {}) {
     const updated = { ...data, verlauf: neuerVerlauf };
     setSlotsData(updated);
     setAktiverSlot({ typ: 'verlauf', id });
-    setSlotGeaendert(false);
+    
     return id;
   }

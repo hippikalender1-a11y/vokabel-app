@@ -123,17 +123,18 @@ export function renderListeInfo(app, l, mehrere = null) {
   }
 
 export function renderSlotKopf(app, statistik) {
-  const { tafelBereich, nichtsGeladen, zeigeListenStatistik, brecheErstellenAb, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenAendern, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizErstellen, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setListenAendern, setListenAuswahlAufgeklappt, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, starteQuizErstellen, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikSlotGeleert, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
+  const { waehleListenBereich, aendereQuizVokabeln, bereichWahl, tafelBereich, nichtsGeladen, zeigeListenStatistik, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
     const zu = !slotSektionAufgeklappt;
     const slot = statistik ? statistikAktiverSlot : aktiverSlot;
-    const gespeichert = slot?.typ === "gespeichert";
-    const alsListe = slot?.typ === "listen";   // 217: Kopf zeigt eine Liste (294: auch in der Statistik)
+    const bw = !statistik && bereichWahl;   // 298: laufende Bereichswahl – der Kopf zeigt ihre Listen
+    const gespeichert = !bw && slot?.typ === "gespeichert";
+    const alsListe = !bw && slot?.typ === "listen";   // 217: Kopf zeigt eine Liste (294: auch in der Statistik)
     const listeE = alsListe ? listenIndex.find(l => l.id === slot.id) : null;
     const geaendert = !statistik && vokabelgruppeGeaendert;
     const gruen = (gespeichert || alsListe) && !geaendert;
     const multi = multiVonSlot(slot);
-    const name = gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : alsListe ? (listeE?.name || "Liste") : multi ? "Multiquiz" : statistik && statistikSlotGeleert ? "Leer" : statistik ? (statistikListenIds?.size >= 2 ? `📋 ${statistikListenIds.size} Listen` : "Neue Auswahl") : nichtsGeladen && slotSektionAufgeklappt ? "Liste oder Quiz wählen" : (einListenName() || (quizTabListen.length >= 2 ? `📋 ${mitKuerzel(sprachKuerzelFuer(quizTabListen), `${quizTabListen.length} Listen`)}` : "Neues Quiz"));   // 216/217; 249
-    const ungespeichert = !statistik && !gespeichert && !multi && !alsListe && !quizErstellen && !(nichtsGeladen && slotSektionAufgeklappt);   // 289
+    const name = bw ? `🎯 ${bw.ids.map(id => listenIndex.find(l => l.id === id)?.name).filter(Boolean).join(" + ")}` : gespeichert ? (getSlotEintrag("gespeichert", slot.id)?.name || slot.id) : alsListe ? (listeE?.name || "Liste") : multi ? "Multiquiz" : statistik && !statistikListenIds ? "▦ Alle Listen" : nichtsGeladen && slotSektionAufgeklappt ? "Liste oder Quiz wählen" : (einListenName() || (quizTabListen.length >= 2 ? `📋 ${mitKuerzel(sprachKuerzelFuer(quizTabListen), `${quizTabListen.length} Listen`)}` : "Neues Quiz"));   // 216/217; 249
+    const ungespeichert = !statistik && !bw && !kommtAusListen && !gespeichert && !multi && !alsListe && !(nichtsGeladen && slotSektionAufgeklappt);   // 289
     // Vokabeln der Auswahl (für die Kreise) und Info-Zeile
     let voks = [], listenIds = [];
     if (statistik) {
@@ -160,18 +161,15 @@ export function renderSlotKopf(app, statistik) {
     const verwaltung = eintrag ? [
       { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: eintrag.id, name: eintrag.name }) },
       { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: eintrag.id, name: kopieName(eintrag.name), kopie: true }) },
-      { label: "📝 Listen/Vokabeln ändern", fn: () => { setListenAendern(true); setSlotSektionAufgeklappt(false); } },
+      { label: "📝 Vokabeln ändern", fn: () => aendereQuizVokabeln(eintrag.id) },   // 298
       { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: "gespeichert", id: eintrag.id }) },
     ] : [];
     // 217: Liste – öffnen bzw. daraus ein Quiz erstellen (kein Speichern)
-    const listenAktionen = alsListe ? [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(slot.id) }, { label: "＋ Quiz erstellen", fn: () => starteQuizErstellen(slot.id) }] : [];
+    const listenAktionen = alsListe ? [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(slot.id) }, { label: "🎯 Bereich wählen…", fn: () => waehleListenBereich([slot.id]) }, { label: "💾 Als Quiz speichern", fn: () => setErstellenFenster({ name: einListenName() || listeE?.name || "Quiz", ordner: slotOrdner || null }) }] : [];
     const alleAktionen = alsListe ? listenAktionen
-      : !statistik && quizErstellen && !gespeichert ? [{ label: "✕ Erstellen abbrechen", gefahr: true, fn: brecheErstellenAb }]   // 295
       : [...(!statistik ? sessionSpeicherAktionen() || [] : []), ...verwaltung];
     const aktionen = alleAktionen.length ? alleAktionen : null;
-    // „Listen/Vokabeln ändern“: der Name wird zum grünen „Bestätigen“ (beendet das Ändern)
-    const aendern = !statistik && gespeichert && listenAendern;
-    const erstellen = !statistik && !!quizErstellen && !gespeichert && !alsListe;   // 217: grüner Kopf „＋ Quiz erstellen“
+    const aendern = false, erstellen = false;   // 298: „Listen/Vokabeln ändern“ und „Quiz erstellen“ gibt es nicht mehr
     // Mehrfach-Auswahl: der Name zeigt die Auswahl als grünen Bestätigen-Knopf (mehrere → Multiquiz, eine → laden, keine → beenden)
     const wahl = multiAuswahl && !zu;
     const lwahl = !zu && auswahlListen && listenWahl;   // 294: auch in der Statistik   // 226: Listen-Mehrfach-Auswahl im Quiz-Tab
@@ -187,7 +185,7 @@ export function renderSlotKopf(app, statistik) {
       : "Nichts ausgewählt") : "";
     const lEinzelName = id => { const o = (listenOrdner || []).find(x => x.id === id); if (o) return `📁 ${o.name}`;
       const n = `📋 ${listenIndex.find(l => l.id === id)?.name || "Liste"}`;
-      if (tafelBereich?.listeId !== id) return n;   // 297: gewählter Bereich – „· Nr. 9–33“
+      if (!(tafelBereich?.ids.length === 1 && tafelBereich.ids[0] === id)) return n;   // 297: gewählter Bereich – „· Nr. 9–33“
       const nr = (lsLesen(SK.liste(id))?.vokabeln || []).map((v, i) => tafelBereich.auswahl.has(`${id}__${v.id}`) ? i + 1 : null).filter(Boolean);
       return `${n} · ${nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}–${nr[nr.length - 1]}` : `${nr.length} Vokabeln`}`; };
     // 169: Fortschrittsbalken immer – bei offener Auswahl für das, was der Kopf zeigt (Vorschau bzw. Mehrfachauswahl)
@@ -205,7 +203,7 @@ export function renderSlotKopf(app, statistik) {
       : wahl ? () => { const st = schalterStand(); beendeMultiAuswahl(multiAuswahl, statistik ? ladeSlotStatistik : ladeSlot); leuchte("slotkopf");
           if (!statistik) { const zu = () => { setzeSchalter(st); setSchalterZeileZu(true); }; zu(); setTimeout(zu, 0); } }   // 278: Zeile eingeklappt   // 274: die Schalter der Auswahl gelten fürs geladene Quiz
       : vorschauE ? () => { const s = slotVorschau; setSlotVorschau(null); setSlotVorschauListe(false); (statistik ? ladeSlotStatistik : ladeSlot)(s.typ, s.id); leuchte("slotkopf"); }
-      : aendern ? () => { setListenAendern(false); setListenAuswahlAufgeklappt(false); setQuizListeAufgeklappt(false); leuchte("slotkopf"); }
+      : aendern ? () => { setQuizListeAufgeklappt(false); leuchte("slotkopf"); }
       : erstellen && zu ? () => setErstellenFenster({ name: einListenName() || "Quiz", ordner: slotOrdner || null })
       : toggleSlotSektion;
     return (
@@ -231,7 +229,7 @@ export function renderSlotKopf(app, statistik) {
                 : "Nichts ausgewählt"}</span>
               : wahl ? <span data-wahl-anzahl={multiAuswahl.length}>{mitSymbolen(wahlText)}</span> : vorschauE ? <span data-bestaetigen>{vorschauName} laden</span> : aendern ? <span data-bestaetigen>Bestätigen</span>
               : erstellen && zu ? <span data-bestaetigen>＋ Quiz erstellen</span>
-              : <>{alsListe && <span aria-hidden="true" data-kopf-liste>📋 {listeE ? listenFlagge(listeE) : ""}</span>}{name}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}</>}
+              : <>{alsListe && <span aria-hidden="true" data-kopf-liste>📋 {listeE ? listenFlagge(listeE) : ""}</span>}{name}{!statistik && !bw && !gespeichert && !multi && bereichAktiv && bereichText ? <span data-kopf-bereich> · {bereichText}</span> : null}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}</>}
           </button>
           {voks.length > 0 && !zu && statistik && (
             <span className="mini-kreise" {...(statistik ? { "data-statistik-arten": true } : { "data-quiz-arten": true })} style={{gap:4, flexShrink:0}}>

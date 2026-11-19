@@ -71,12 +71,12 @@ export function bestaetigeDateiExport(app) {
 
 // eslint-disable-line react-hooks/exhaustive-deps
 export function handleTabWechsel(app, neuerTab) {
-  const { aktiverSlot, ansicht, auswahlTafelRef, beendeMultiAuswahl, getSlotEintrag, ladeSlot, ladeSlotStatistik, listenAendern, multiAuswahl, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, setAktiverSlot, setEinstBereich, setEinstUnter, setFarbTab, setGespeicherteVokabelgruppe, setListenWahl, setMultiAuswahl, setMultiStart, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizTabListen, setSessionSlotAktiv, setSlotSektionAufgeklappt, setSlotVorschau, setStatistikAktiverSlot, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikEinzelauswahlAufgeklappt, setStatistikListenAufgeklappt, setStatistikListenIds, setStatistikSlotGeleert, setStatistikVollbild, setTab, sichtbareListen, slotSektionAufgeklappt, slotVorschau, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, statistikStandKey, statistikStartRef, tab, toggleSlotSektion, zurUebersetzung } = app;
+  const { aktiverSlot, ansicht, auswahlTafelRef, beendeMultiAuswahl, getSlotEintrag, ladeSlot, ladeSlotStatistik, multiAuswahl, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, setAktiverSlot, setEinstBereich, setEinstUnter, setFarbTab, setGespeicherteVokabelgruppe, setListenWahl, setMultiAuswahl, setMultiStart, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizTabListen, setSessionSlotAktiv, setSlotSektionAufgeklappt, setSlotVorschau, setStatistikVollbild, setTab, sichtbareListen, slotSektionAufgeklappt, slotVorschau, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, tab, toggleSlotSektion, zurUebersetzung } = app;
     // 215: schon im Quiz-Tab (Übersicht) – Tab öffnet die Quiz-Auswahl; offen und nichts geändert → wieder zu;
     // geändert (grüner Kopf) → nichts (übernehmen nur über den Kopf)
     if (neuerTab === "quiz" && tab === "quiz" && ansicht === "uebersicht") {
       if (!slotSektionAufgeklappt) { toggleSlotSektion(); return; }
-      if (!slotVorschau && !multiAuswahl && !listenAendern) toggleSlotSektion();
+      if (!slotVorschau && !multiAuswahl) toggleSlotSektion();
       return;
     }
     if (slotSektionAufgeklappt && neuerTab !== tab && (tab === "quiz" || tab === "statistik")) {
@@ -85,34 +85,6 @@ export function handleTabWechsel(app, neuerTab) {
       else if (slotVorschau) laden(slotVorschau.typ, slotVorschau.id);
       setMultiAuswahl(null); setSlotVorschau(null); schliesseInfo(); auswahlTafelRef.current = null;
       setSlotSektionAufgeklappt(false);
-    }
-    if (neuerTab === "statistik" && tab !== "statistik") {
-      const listenIds = quizTabListen.length > 0 ? new Set(quizTabListen) : null;
-      statistikStartRef.current = statistikStandKey(listenIds, quizBereichTyp, quizCheckboxAuswahl, aktiverSlot);
-    }
-    if (neuerTab === "statistik") {
-      setStatistikListenIds(quizTabListen.length > 0 ? new Set(quizTabListen) : null);
-      setStatistikBereichTyp(quizBereichTyp);
-      setStatistikCheckboxAuswahl(new Set(quizCheckboxAuswahl));
-      setStatistikListenAufgeklappt(false);
-      setStatistikEinzelauswahlAufgeklappt(false);
-      setStatistikAktiverSlot(aktiverSlot);
-      setStatistikSlotGeleert(false);
-    }
-    // Statistik → Quiz: nur was in der Statistik geändert wurde, ins Quiz übernehmen
-    if (neuerTab === "quiz" && tab === "statistik"
-        && statistikStandKey(statistikListenIds, statistikBereichTyp, statistikCheckboxAuswahl, statistikAktiverSlot) !== statistikStartRef.current) {
-      const s = statistikAktiverSlot;
-      if (s && getSlotEintrag(s.typ, s.id)) {
-        if (!(aktiverSlot?.typ === s.typ && aktiverSlot?.id === s.id)) { ladeSlot(s.typ, s.id); if (getSlotEintrag(s.typ, s.id)?.multi) setMultiStart({ id: s.id, starten: false }); }
-      } else {
-        // keine Konfiguration mehr ("Neu" oder Liste geändert) → im Quiz lösen, Quiz ebenfalls
-        // (ihr Fortschritt bleibt im gespeicherten Eintrag); Listen-/Vokabelauswahl übernehmen
-        if (aktiverSlot) { setAktiverSlot(null); setGespeicherteVokabelgruppe(null); lsDel(SK.letzterSlot); lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); zurUebersetzung(); }
-        setQuizTabListen(statistikListenIds === null ? sichtbareListen.map(l => l.id) : [...statistikListenIds]);
-        setQuizBereichTyp(statistikBereichTyp);
-        setQuizCheckboxAuswahl(new Set(statistikBereichTyp === "bereich" ? statistikCheckboxAuswahl : []));
-      }
     }
     if (neuerTab === "einstellungen" && tab !== "einstellungen") { setEinstBereich(null); setEinstUnter(null); setFarbTab(null); }   // 174
     setTab(neuerTab);
@@ -132,7 +104,7 @@ export function gruppenQuizPasst(app, g) {
   }
 
 export function starteGruppenQuiz(app, g) {
-  const { getKombinierteListe, gruppenQuizPasst, gruppenQuizStartRef, setAktiverSlot, setGespeicherteVokabelgruppe, setGruppenAenderungsDialog, setGruppenQuiz, setGruppenQuizTick, setQuiz, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizGelerntEinschliessen, setQuizReihenfolge, setQuizSchlechtesteMaxScore, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSessionUeberschreibenModal, setSlotGeaendert, setSlotSektionAufgeklappt, setStatistikVollbild, setTab, starteQuiz, wechsleQuizArt } = app;
+  const { getKombinierteListe, gruppenQuizPasst, gruppenQuizStartRef, setAktiverSlot, setGespeicherteVokabelgruppe, setGruppenAenderungsDialog, setGruppenQuiz, setGruppenQuizTick, setQuiz, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizGelerntEinschliessen, setQuizReihenfolge, setQuizSchlechtesteMaxScore, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSessionUeberschreibenModal, setSlotSektionAufgeklappt, setStatistikVollbild, setTab, starteQuiz, wechsleQuizArt } = app;
     setGruppenQuiz(null);
     if (gruppenQuizPasst(g)) {
       setStatistikVollbild(false);
@@ -143,7 +115,7 @@ export function starteGruppenQuiz(app, g) {
     setSessionUeberschreibenModal(false);
     setGruppenAenderungsDialog(false);
     setAktiverSlot(null);
-    setSlotGeaendert(false);
+    
     setGespeicherteVokabelgruppe(null);
     lsDel(SK.letzterSlot);
     lsDel(SK.sessionAktiv);
@@ -162,34 +134,4 @@ export function starteGruppenQuiz(app, g) {
     setTab("quiz");
     gruppenQuizStartRef.current = 2;   // erst nach dem Angleichen der Spalten an die Listen starten
     setGruppenQuizTick(t => t + 1);
-  }
-
-export function toggleStatistikListe(app, id) {
-  const { setStatistikAktiverSlot, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikListenIds, setStatistikSlotGeleert, sichtbareListen, statistikAktiverSlot, statistikBereichTyp, statistikCheckboxAuswahl } = app;
-    if (statistikAktiverSlot) { setStatistikAktiverSlot(null); setStatistikSlotGeleert(true); }
-    setStatistikListenIds(prev => {
-      const currentSet = prev === null
-        ? new Set(sichtbareListen.map(l => l.id))
-        : new Set(prev);
-      if (currentSet.has(id)) {
-        currentSet.delete(id);
-        // Bereinige Vokabelauswahl wenn Liste abgewählt
-        if (statistikBereichTyp === "bereich" && statistikCheckboxAuswahl.size > 0) {
-          const neueListen = [...currentSet];
-          const bereinigte = new Set([...statistikCheckboxAuswahl].filter(vokId =>
-            neueListen.some(lId => vokId.startsWith(`${lId}__`))
-          ));
-          if (bereinigte.size === 0) {
-            setStatistikBereichTyp("alle");
-            setStatistikCheckboxAuswahl(new Set());
-          } else {
-            setStatistikCheckboxAuswahl(bereinigte);
-          }
-        }
-      } else {
-        currentSet.add(id);
-        if (currentSet.size === sichtbareListen.length) return null;
-      }
-      return currentSet;
-    });
   }

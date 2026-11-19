@@ -64,14 +64,14 @@ const quizRunde = async () => {
 };
 await quizRunde();
 let sl = await slots();
-ok(sl.verlauf?.length === 1 && sl.verlauf[0].konfiguration, "Quiz („Alle“ = ein Paket): ein Verlauf-Eintrag mit der Konfiguration");
+ok(!(sl.verlauf?.length), "298: eine geladene Liste bekommt keinen Verlauf-Eintrag");
 await quizRunde();
 sl = await slots();
-ok(sl.verlauf.length === 1, `Gleiche Konfiguration nochmal: kein doppelter Eintrag (${sl.verlauf.length})`);
+ok(!(sl.verlauf?.length), `… auch nicht beim zweiten Mal (${sl.verlauf?.length})`);
 
 // ── 2) Namensvorschlag ──
 const speichern = async () => {
-  await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => __aktion('💾 Speichern').click()); await new Promise(r => setTimeout(r, 300));
+  await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => (__aktion('💾 Als Quiz speichern') || __aktion('💾 Speichern')).click()); await new Promise(r => setTimeout(r, 300));
   const vorschlag = await page.$eval(".modal input.inp", e => e.value);
   await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].pop()?.click());
   await sleep(300);
@@ -85,7 +85,11 @@ const v3 = await speichern();
 sl = await slots();
 console.log("     Gespeichert:", sl.gespeichert.map(x => x.name).join(" | "));
 
-// ── 3) Trennung sichtbar ──
+// ── 3) Trennung sichtbar ── (298: Verlauf-Eintrag – entsteht nur noch bei Listen-Paketen – hier direkt anlegen)
+await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("vokabel_slots")); const g = d.gespeichert[0];
+  d.verlauf = [{ id: "v_test", name: "Verlauf-Test", timestamp: Date.now(), konfiguration: g.konfiguration, sessionFortschritt: null }]; localStorage.setItem("vokabel_slots", JSON.stringify(d)); });
+await page.reload(); await sleep(600);
+await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 await page.evaluate(() => window.scrollTo(0, 0));
 const sektionAuf = await page.evaluate(() => !!document.querySelector("[data-slot-info]"));
 if (!sektionAuf) await clickText("button", v3);
@@ -117,7 +121,7 @@ await menue("2|0");
 const knoepfe = await page.evaluate(() => [...__aktionen()].map(b => (b.dataset.infoAktion || b.textContent).trim()));
 const blase = await page.evaluate(() => document.querySelector("[data-slot-info-name]")?.innerText || "");
 console.log("     Menü:", knoepfe.join(" | "));
-ok(blase.startsWith(n3) && knoepfe.join("|") === "Vokabeln (3)|✗ Negative (0)|✓ Gelernt (0)|Heute (0)|🔁 Fällige (0)|🗂 Ablage ›|↔ Von–Bis|📝 Listen/Vokabeln ändern|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Lang-Druck: voller Name (Info oben) + Menü (${knoepfe.join("|")})`);
+ok(blase.startsWith(n3) && knoepfe.join("|") === "Vokabeln (3)|✗ Negative (0)|✓ Gelernt (0)|Heute (0)|🔁 Fällige (0)|🗂 Ablage ›|↔ Von–Bis|📝 Vokabeln ändern|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Lang-Druck: voller Name (Info oben) + Menü (${knoepfe.join("|")})`);
 await aktion("⇄ Verschieben");
 const tippZelle = key => page.evaluate(k => document.querySelector(`[data-raster-zelle="${k}"]`).click(), key);
 ok(!(await page.$('[role="status"]')) && /Fertig · 1/.test(await page.evaluate(() => document.querySelector("[data-slot-fertig]")?.innerText || "")),

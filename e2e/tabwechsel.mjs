@@ -82,7 +82,6 @@ ok(st.kopf === "gruen" && st.name === "Paket Farben" && st.listen === "(ausgeble
 // Statistik: „Neu“ (alle Listen, keine Konfiguration) → Quiz ohne Konfiguration, beide Listen
 // vorher im Quiz auf Diktat wechseln – ein neues Quiz beginnt trotzdem in Übersetzung
 await page.evaluate(() => document.querySelector('[data-start-arten] [data-quiz-art="diktat"]')?.click()); await sleep(300);
-const artVorher = await page.evaluate(() => document.querySelector("[data-start-arten] [data-quiz-art].aktiv")?.dataset.quizArt);
 await clickText(".tab", "Statistik");
 await oeffneKopf();
 await page.evaluate(() => { const el = document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(250);
@@ -92,15 +91,11 @@ await clickText(".tab", "Quiz");
 await sleep(300);
 st = await stand();
 console.log("     Quiz nach Statistik-Neu:", JSON.stringify(st));
-ok(st.kopf !== "gruen" && st.listen === "2 Listen", "Statistik „Neu“ (alle Listen) → Quiz: keine Konfiguration, beide Listen");
-const artNachher = await page.evaluate(() => document.querySelector("[data-start-arten] [data-quiz-art].aktiv")?.dataset.quizArt);
-ok(artVorher === "diktat" && artNachher === "uebersetzung", `neues Quiz beginnt in Übersetzung (vorher ${artVorher}, jetzt ${artNachher})`);
-ok(!(await page.$('[data-anzahl="fortschritt"]')), "Quiz: kein Fortschritt einer alten Quiz sichtbar");
+// 298: „▦ Alle Listen“ ist nur eine Ansicht der Statistik – das Quiz bleibt geladen
+ok(st.name === "Paket Farben", `298: Statistik „▦ Alle Listen“ → Quiz unverändert (${JSON.stringify(st)})`);
 
 // Quiz: nur Tiere → Statistik zeigt Tiere
-await page.evaluate(() => document.querySelector("button.zeile-rechts[title^='Gewählte Listen']").click());
-await sleep(300);
-await listeWaehlen(page, "Farben");
+await listeWaehlen(page, "Tiere");   // 298: Liste antippen lädt sie
 await clickText(".tab", "Statistik");
 await sleep(300);
 const gesamt = () => page.evaluate(() => document.querySelector('[data-st-kachel="gesamt"] b')?.textContent);

@@ -38,42 +38,16 @@ await page.evaluate(() => {
 await page.reload(); await sleep(700); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 const B = await best();
 
-// ── Listen-Auswahl: gewählte Kachel leuchtet sofort, danach normal ──
-// 289: ohne Liste steht die Auswahl offen – erst eine Liste wählen („Neues Quiz“), dann die Häkchen-Liste aufklappen
+// 298: Häkchen-Liste der Listen und „Alle | Bereich“ gibt es nicht mehr – eine Liste laden
 await neueEineSession(page);
 await listeWaehlen(page, "Unité 2");
-await page.evaluate(() => document.querySelector("[data-listen-kopf]")?.click()); await sleep(400);
-await page.click('[data-quiz-liste="l_a"]'); await sleep(80);
-let z = await zustand('[data-quiz-liste="l_a"]');
-ok(z?.an && z.farbe === B && z.uebergang === "0s", `Listen-Kachel gewählt: sofort Bestätigen-Farbe (${JSON.stringify(z)})`);
-await sleep(800);
-z = await zustand('[data-quiz-liste="l_a"]');
-ok(z && !z.an && z.farbe !== B, `danach wieder normal (${z?.farbe})`);
-await page.click('[data-quiz-liste="l_a"]'); await sleep(80);
-ok(!(await zustand('[data-quiz-liste="l_a"]')).an, "Abwählen: kein Aufleuchten");
-await page.click('[data-quiz-liste="l_a"]'); await sleep(800);
-
-// ── Listen-Auswahl bestätigen: Name im Kopf leuchtet ──
-await page.click("[data-listen-bestaetigen]"); await sleep(80);
-z = await zustand("[data-listen-kopf]");
-ok(z?.an && z.farbe === B, `Listen-Auswahl zu: Listen-Name leuchtet (${JSON.stringify(z)})`);
-await sleep(800);
-ok(!(await zustand("[data-listen-kopf]")).an, "… und hört wieder auf");
-
-// ── Alle | Bereich: nach „Bestätigen“ leuchtet die aktive Hälfte ──
-await page.click('[data-vokwahl="bereich"]'); await sleep(300);
-await page.click("[data-vok-bestaetigen]"); await sleep(80);
-z = await zustand('[data-vokwahl="alle"]');
-ok(z?.an && z.farbe === B, `Bereich zu (nichts angehakt): „Alle“ leuchtet (${JSON.stringify(z)})`);
-ok(!(await zustand('[data-vokwahl="bereich"]')).an, "„Bereich“ leuchtet nicht");
-await sleep(800);
-ok(!(await zustand('[data-vokwahl="alle"]')).an, "… und hört wieder auf");
 
 // ── Quiz: geladene Kachel leuchtet, danach des Quiz-Name im Kopf ──
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); } }); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="listen"]')?.click()); await sleep(300);   // 298: Liste geladen → Auswahl zeigt Listen; zu den Quiz
 { const r = await page.evaluate(() => { const b = document.querySelector('[data-slot-id="g"]').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
   await page.mouse.move(r.x, r.y); await page.mouse.down(); await sleep(400); await page.mouse.up(); await sleep(80); }   // 192: kurz halten wählt (antippen lädt sofort)
-z = await zustand('[data-slot-id="g"]');
+let z = await zustand('[data-slot-id="g"]');
 ok(z?.an && z.farbe === B, `Quiz-Kachel kurz gehalten: leuchtet kurz (${JSON.stringify(z)})`);
 await sleep(300); await page.click("[data-slot-laden]"); await sleep(80);
 z = await zustand("[data-slot-kopf-name]");

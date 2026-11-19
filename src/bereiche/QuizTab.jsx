@@ -8,7 +8,7 @@ import { SPRACH_KUERZEL, sprachInfo } from "../sprache.js";
 // Phase 2 (Aufteilung): Bereich aus dem Haupt-return von App.jsx (tab === "quiz")
 // app = Zustände, Setter und Funktionen der Komponente (siehe „const app“ in App.jsx)
 export function QuizTab(app) {
-  const { vokAuswahlZurTafel, schalterZeileZu, setSchalterZeileZu, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, faelligJeSprache, faelligePool, quizFaellig, setQuizFaellig, starteNurFaellige, istPaketQuiz, abfrageModusContainerRef, abfrageModusRef, abfrageZielAnzahl, abfrageZielModus, abfrageZielScore, abfrageZielScoreTyp, abfrageZielWiederholung, aktiverSlot, alleBereichH, alleBereichRef, antwortMehrfach, artenMehrfach, aufteilen, aufteilenStand, auswahlListen, auswahlOrdnerZelle, begrenzeOhneAkzent, blitzt, einstellungen, einzelauswahlRef, fokusZeigt, headerH, ladeSlot, legeAufteilenAn, lernEinstellungen, lernResetFrage, lernStandVon, lernstandJeArt, leuchte, leuchtet, listenAendern, listenAuswahlAufgeklappt, listenAuswahlPfad, listenContainerRef, listenFlagge, listenIndex, listenNavi, listenOffen, listenOrdner, listenRasterPlaetze, listenSortModus, listenWahl, listenauswahlHeaderH, listenauswahlHeaderRef, loescheSessionSlot, maxFenster, maxSpalte, offenText, ordnerNavi, quizAbfrageArt, quizAbfrageModusAufgeklappt, quizAntwortTypenGeordnet, quizArt, quizAusgewaehlt, quizBasisVoks, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizErstellen, quizFokus, quizFrageTyp, quizGefilterteVoks, quizGelerntEinschliessen, quizHeuteEinschliessen, quizInfoTypenSession, quizKombiListe, quizListeAufgeklappt, quizListenNavi, quizListenSichtbar, quizModus, quizModusInfoAufgeklappt, quizPaketGroesse, quizReihenfolge, quizReihenfolgeAufgeklappt, quizSchlechtesteMaxScore, quizSessionAufgeklappt, quizSessionModus, quizSpalteModus, quizStufeAufgeklappt, quizTabListen, quizUnbeantwortetZuerst, quizVokMax, quizVonBisErster, quizVonBisModus, quizZeigeInfo, reihenfolgeContainerRef, renderAufteilenKasten, renderListeInfo, renderListenRaster, renderModusKnoepfe, renderQuizListenRaster, renderSlotBereiche, renderSlotInfo, renderSlotKopf, renderSuchleiste, resetImport, schliesseQuizBereiche, sessionContainerRef, sessionRef, sessionResetFrage, sessionSlotAktiv, sessionSlotKonflikt, sessionSpeicherAktionen, setAbfrageZielAnzahl, setAbfrageZielModus, setAbfrageZielScore, setAbfrageZielScoreTyp, setAbfrageZielWiederholung, setAnsicht, setAufteilen, setLernResetFrage, setModal, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizDiktatSpalte, setQuizDiktatUebersetzung, setQuizGelerntEinschliessen, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizModus, setQuizModusInfoAufgeklappt, setQuizPaketGroesse, setQuizReihenfolge, setQuizReihenfolgeAufgeklappt, setQuizSchlechtesteMaxScore, setQuizSessionAufgeklappt, setQuizSessionModus, setQuizStufeAufgeklappt, setQuizTabListen, setQuizUnbeantwortetZuerst, setQuizVonBisErster, setQuizVonBisModus, setSessionResetFrage, setStartLeerHinweis, setSucheQuiz, setTab, setzeLernStand, sicherungErinnerungUI, sichtbareListen, slotContainerRef, slotH, slotSektionAufgeklappt, slotVorschau, speichereEinst, spracheVonListe, sprungKnopf, startLeerHinweis, starteLernen, starteQuiz, suchInfo, suchMarke, sucheQuiz, toggleAbfrageModus, toggleEinzelauswahl, toggleInfoSpalte, toggleListenAuswahl, toggleQuizSpalte, toggleQuizTabListe, toggleReihenfolge, toggleSessionBereich, toggleSpalteRolle, toggleVokCheckbox, tt, ttFeld, vonBisLangDruck, wahlLeiste, wechsleQuizArt, zeileImBlick } = app;
+  const { vokAuswahlZurTafel, schalterZeileZu, setSchalterZeileZu, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, faelligJeSprache, faelligePool, quizFaellig, setQuizFaellig, starteNurFaellige, istPaketQuiz, abfrageModusContainerRef, abfrageModusRef, abfrageZielAnzahl, abfrageZielModus, abfrageZielScore, abfrageZielScoreTyp, abfrageZielWiederholung, aktiverSlot, alleBereichH, alleBereichRef, antwortMehrfach, artenMehrfach, aufteilen, aufteilenStand, auswahlListen, auswahlOrdnerZelle, begrenzeOhneAkzent, blitzt, einstellungen, einzelauswahlRef, fokusZeigt, headerH, ladeSlot, legeAufteilenAn, lernEinstellungen, lernResetFrage, lernStandVon, lernstandJeArt, leuchte, leuchtet, listenAuswahlPfad, listenContainerRef, listenFlagge, listenIndex, listenNavi, listenOrdner, listenRasterPlaetze, listenSortModus, listenWahl, listenauswahlHeaderH, listenauswahlHeaderRef, loescheSessionSlot, maxFenster, maxSpalte, offenText, ordnerNavi, quizAbfrageArt, quizAbfrageModusAufgeklappt, quizAntwortTypenGeordnet, quizArt, quizAusgewaehlt, quizBasisVoks, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizFokus, quizFrageTyp, quizGefilterteVoks, quizGelerntEinschliessen, quizHeuteEinschliessen, quizInfoTypenSession, quizKombiListe, quizListeAufgeklappt, quizModus, quizModusInfoAufgeklappt, quizPaketGroesse, quizReihenfolge, quizReihenfolgeAufgeklappt, quizSchlechtesteMaxScore, quizSessionAufgeklappt, quizSessionModus, quizSpalteModus, quizStufeAufgeklappt, quizTabListen, quizUnbeantwortetZuerst, quizVokMax, quizVonBisErster, quizVonBisModus, quizZeigeInfo, reihenfolgeContainerRef, renderAufteilenKasten, renderListeInfo, renderListenRaster, renderModusKnoepfe, renderSlotBereiche, renderSlotInfo, renderSlotKopf, renderSuchleiste, resetImport, schliesseQuizBereiche, sessionContainerRef, sessionRef, sessionResetFrage, sessionSlotAktiv, sessionSlotKonflikt, sessionSpeicherAktionen, setAbfrageZielAnzahl, setAbfrageZielModus, setAbfrageZielScore, setAbfrageZielScoreTyp, setAbfrageZielWiederholung, setAnsicht, setAufteilen, setLernResetFrage, setModal, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizDiktatSpalte, setQuizDiktatUebersetzung, setQuizGelerntEinschliessen, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizModus, setQuizModusInfoAufgeklappt, setQuizPaketGroesse, setQuizReihenfolge, setQuizReihenfolgeAufgeklappt, setQuizSchlechtesteMaxScore, setQuizSessionAufgeklappt, setQuizSessionModus, setQuizStufeAufgeklappt, setQuizTabListen, setQuizUnbeantwortetZuerst, setQuizVonBisErster, setQuizVonBisModus, setSessionResetFrage, setStartLeerHinweis, setSucheQuiz, setTab, setzeLernStand, sicherungErinnerungUI, sichtbareListen, slotContainerRef, slotH, slotSektionAufgeklappt, slotVorschau, speichereEinst, spracheVonListe, sprungKnopf, startLeerHinweis, starteLernen, starteQuiz, suchInfo, suchMarke, sucheQuiz, toggleAbfrageModus, toggleEinzelauswahl, toggleInfoSpalte, toggleQuizSpalte, toggleQuizTabListe, toggleReihenfolge, toggleSessionBereich, toggleSpalteRolle, toggleVokCheckbox, tt, ttFeld, vonBisLangDruck, wahlLeiste, wechsleQuizArt, zeileImBlick } = app;
   return (
 (() => {
           const kombiListe = quizKombiListe;
@@ -187,113 +187,8 @@ export function QuizTab(app) {
                 })()}
 
                 {!slotSektionAufgeklappt && (<>
-                {/* LISTEN-AUSWAHL – sticky Header (ausgeblendet bei geladener gespeicherter Konfiguration) */}
-                {!((aktiverSlot?.typ === "gespeichert" || aktiverSlot?.typ === "listen" || quizErstellen || (istPaketQuiz && quizTabListen.length > 0)) && !listenAendern) && (<>   {/* 254: leeres Paket nie ohne Inhalt */}
-                {(() => {
-                  const n = quizTabListen.length;
-                  const chipText = n === 0
-                    ? "auswählen"
-                    : n === 1
-                    ? (listenIndex.find(l => l.id === quizTabListen[0])?.name || "Liste")
-                    : `${n} Listen`;
-                  return (
-                    <div ref={listenauswahlHeaderRef} className="liste-detail-header" style={{position: quizFokus === "listen" ? "sticky" : "relative", top: quizFokus === "listen" ? headerH + slotH : 0, zIndex:8, marginLeft:"-16px", marginRight:"-16px", ...(fokusZeigt("listen") ? {} : {display:"none"})}}>
-                      {/* LINKS */}
-                      <span style={{flex:1, display:"flex", alignItems:"center", gap:6}}>
-                        {listenOffen ? (
-                          <>
-                            {n < sichtbareListen.length && (
-                              <button className="btn btn-ghost btn-sm"
-                                onClick={() => setQuizTabListen(sichtbareListen.map(l => l.id))}
-                                {...tt("Alle Listen auswählen")}>
-                                Alle
-                              </button>
-                            )}
-                            {n > 0 && (
-                              <button className="btn btn-ghost btn-sm" style={{padding:"6px 8px"}}
-                                onClick={() => { setQuizTabListen([]); if (quizBereichTyp === "bereich") { setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); } }}
-                                {...tt("Listenauswahl leeren")}>
-                                <IcoX s={12}/>
-                              </button>
-                            )}
-                          </>
-                        ) : (
-                          <span style={{fontWeight:600, fontSize:"0.85rem", color:"var(--text)"}}>Listen-Auswahl</span>
-                        )}
-                      </span>
-                      {/* MITTE */}
-                      {n > 0 && (
-                        <span style={{position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:"0.8rem", color:"var(--text3)", cursor:"help"}}
-                          {...tt("Anzahl aller Vokabeln in den gewählten Listen")}>
-                          ({quizBasisVoks.length} V.)
-                        </span>
-                      )}
-                      {/* RECHTS */}
-                      <span style={{flex:1, display:"flex", justifyContent:"flex-end"}}>
-                        {n === 0 ? (
-                          <span data-listen-hinweis style={{fontSize:"0.85rem", fontWeight:600, color:"var(--text3)", padding:"6px 4px"}}
-                            {...tt("Liste(n) unten antippen – danach steht hier „Bestätigen“")}>Bitte Liste auswählen</span>
-                        ) : listenAuswahlAufgeklappt ? (
-                          <button data-listen-bestaetigen
-                            className="toggle-opt aktiv zeile-rechts bestaetigen-knopf"
-                            onClick={toggleListenAuswahl}
-                            {...tt("Auswahl bestätigen – klappt die Listen-Auswahl zu; danach steht hier der Name der Auswahl")}>
-                            Bestätigen
-                          </button>
-                        ) : (
-                          <button data-listen-kopf
-                            className={`toggle-opt aktiv zeile-rechts${blitzt("listenkopf")}`}
-                            onClick={toggleListenAuswahl}
-                            {...tt("Gewählte Listen – antippen öffnet die Listen-Auswahl")}>
-                            {chipText}
-                          </button>
-                        )}
-                      </span>
-                    </div>
-                  );
-                })()}
-                {/* LISTEN-AUSWAHL Inhalt */}
-                <div ref={listenContainerRef} style={{overflow:'hidden', paddingTop: listenOffen ? 16 : 0}}>
-                  {listenOffen && (<>
-                    {sichtbareListen.length === 0
-                      ? <div className="leer"><div className="leer-text">Noch keine Listen vorhanden.</div></div>
-                      : (() => { const { spalten, plaetze } = listenRasterPlaetze(); const eng = spalten > 1; return (<>
-                      {listenAuswahlPfad()}
-                      <div className={`listen-raster auswahl${eng ? " eng" : ""}`} style={{gridTemplateColumns:`repeat(${spalten}, minmax(0, 1fr))`}}>
-                        {plaetze.map(({ key: pk, l }) => {
-                          if (!l) return <div key={pk} className="raster-leer" style={{border:"none"}}/>;
-                          if (l.istOrdner) return auswahlOrdnerZelle(l, pk, id => quizTabListen.includes(id), eng);
-                          const ll = lsGet(SK.liste(l.id));
-                          const lAbfragbar = ll ? TYPEN.filter(t => !t.startsWith('i') && ll.spalten[t].aktiv) : [];
-                          const lInfo = ll ? TYPEN.filter(t => t.startsWith('i') && ll.spalten[t].aktiv) : [];
-                          const anzahl = ll ? ll.vokabeln.length : 0;
-                          const gewaehlt = quizTabListen.includes(l.id);
-                          return (
-                            <div {...tt("Liste für das Quiz aus- oder abwählen")} key={l.id} className={`quiz-setup-check${blitzt(`liste:${l.id}`)}`} style={{padding:"10px 16px"}}
-                              data-quiz-liste={l.id} onClick={() => toggleQuizTabListe(l.id)}>
-                              <div className={`checkbox${gewaehlt?" checked":""}`}>{gewaehlt?"✓":""}</div>
-                              <div style={{flex:1}}>
-                                <div style={{fontWeight:600, fontSize:"0.9rem"}}>{listenFlagge(l)}{l.name}</div>
-                                <div style={{fontSize:"0.78rem", color:"var(--text2)", marginTop:2}}>
-                                  {anzahl} Vokabel{anzahl!==1?"n":""}
-                                  {ll && !eng && lAbfragbar.map(t => <span key={t} className="spalten-badge aktiv" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
-                                  {ll && !eng && lInfo.map(t => <span key={t} className="spalten-badge" style={{marginLeft:4}}>{ll.spalten[t].name||t}</span>)}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      </>); })()
-                    }
-                  </>)}
-                </div>
-
-
-                </>)}
-
                 {/* Alle/Bereich – sticky direkt unter Haupt-Header */}
-                {kombiListe && quizListenSichtbar && fokusZeigt("einzel") && (
+                {kombiListe && fokusZeigt("einzel") && (aufteilen || (quizBereichTyp === "bereich" && quizListeAufgeklappt)) && (   /* 298: nur Bereichswahl / Aufteilen */
                   <div ref={alleBereichRef} style={{position:"relative", top:0, zIndex:8, background:"var(--kopfzeile)", borderBottom:"1px solid var(--rahmen)", padding:"10px 16px", display:"flex", alignItems:"center", gap:8, marginLeft:"-16px", marginRight:"-16px",
                     ...(maxFenster ? { position:"fixed", top:maxFenster.top, ...maxSpalte } : {})}}>
                     {aufteilen ? (<>

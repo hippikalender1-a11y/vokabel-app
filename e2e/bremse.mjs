@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, bereichZu, listeWaehlen } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, listeWaehlen, bereichOeffnen, bereichBestaetigen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -48,7 +48,7 @@ await page.reload(); await sleep(500); await page.evaluate(() => { const u = doc
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await listeWaehlen(page, "Vocabulaire");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
-await clickText("button", "Bereich", true);
+await bereichOeffnen(page);   // 298: statt „Alle | Bereich“
 await sleep(600);
 let z = await liste();
 ok(z.offen && z.letzteUnten > z.hoehe, `Lange Vokabel-Auswahl offen, Ende nicht sichtbar (${z.letzteUnten} > ${z.hoehe})`);
@@ -59,8 +59,8 @@ z = await liste();
 ok(z.offen && !z.hinweis, "Quiz-Liste (maximiert): Schwung über das Ende – bleibt offen, kein Hinweis");
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);
 ok(!(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Bereich"))), "Quiz: bei offener Liste statt „Alle | Bereich“ nur „Bestätigen“");
-await page.click("[data-vok-bestaetigen]"); await sleep(400);
-ok(!(await liste()).offen && await page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv")].some(b => b.textContent.trim() === "Alle")), "Quiz: „Bestätigen“ schließt die Liste – nichts angehakt → wieder „Alle“");
+await bereichBestaetigen(page);
+ok(!(await liste()).offen, "Quiz: „Bestätigen“ schließt die Liste – nichts angehakt → wieder „Alle“");
 
 // 294: die Statistik hat keine eigene Vokabel-Auswahl mehr – die Bremse dort entfällt
 

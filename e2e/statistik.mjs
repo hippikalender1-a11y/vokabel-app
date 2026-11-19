@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, bereichZu, listeWaehlen } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, listeWaehlen, bereichOeffnen, bereichBestaetigen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({
@@ -67,10 +67,10 @@ const statistikInfoRoh = () => page.evaluate(() => ({
 // ── A: normale Runde, Bereich mit 3 Vokabeln ──
 await seed();
 await page.evaluate(async () => { const u = document.querySelector("[data-umfang]"); if (!u) return; u.click(); await new Promise(r => setTimeout(r, 200)); document.querySelector('[data-umfang-wahl="alle"]')?.click(); }); await sleep(300);
-await clickText("button", "Bereich", true);
+await bereichOeffnen(page);   // 298: statt „Alle | Bereich“
 await page.evaluate(() => [...document.querySelectorAll(".vok-nr")].slice(0, 3).forEach(z => z.parentElement.click()));
 await sleep(300);
-await page.click("[data-vok-bestaetigen]"); await sleep(300);   // Liste zu → Quiz-Optionen wieder sichtbar
+await bereichBestaetigen(page);   // Liste zu → Quiz-Optionen wieder sichtbar
 await clickText("[data-start-knopf]", "");
 await sleep(400);
 await karteGewusst(3);
@@ -109,7 +109,7 @@ await sleep(500);
 si = await statistikInfo();
 console.log("     Statistik B:", JSON.stringify(si));
 ok(si.tabAktiv === "Statistik", "B: Statistik-Tab geöffnet");
-ok(si.chipAktiv.length === 1, `B: Verlauf-Eintrag des Quiz aktiv (${si.chipAktiv})`);
+// 298: kein Verlauf-Eintrag mehr – die Liste ist geladen, die Statistik zeigt sie
 ok(si.anzahl.includes("(12 V.)"), "B: alle 12 Vokabeln des Quiz");
 await page.screenshot({ path: "statistik_session.png" });
 

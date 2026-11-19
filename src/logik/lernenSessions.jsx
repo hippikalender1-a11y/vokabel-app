@@ -140,7 +140,7 @@ export function multiZusammenstellung(app, ids) {
   }
 
 export function speichereAlsGespeichert(app, id, name) {
-  const { aktiverSlot, aktuelleKonfiguration, getSlotsData, multiVonSlot, neuImOrdnerRef, neuPlatzRef, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, rasterEinordnen, setAktiverSlot, setGespeicherteVokabelgruppe, setListenAendern, setSlotGeaendert, setSlotsData } = app;
+  const { aktiverSlot, aktuelleKonfiguration, getSlotsData, multiVonSlot, neuImOrdnerRef, neuPlatzRef, quizBereichTyp, quizCheckboxAuswahl, quizTabListen, rasterEinordnen, setAktiverSlot, setGespeicherteVokabelgruppe, setSlotsData } = app;
     const data = getSlotsData();
     const konfiguration = aktuelleKonfiguration();
     const multi = multiVonSlot(aktiverSlot);
@@ -160,9 +160,9 @@ export function speichereAlsGespeichert(app, id, name) {
     }
     setSlotsData(updated);
     setAktiverSlot({ typ: 'gespeichert', id });
-    setListenAendern(false);
+    
     lsSet(SK.letzterSlot, id);
-    setSlotGeaendert(false);
+    
     setGespeicherteVokabelgruppe({ listenIds: [...quizTabListen], vokabelAuswahl: Array.from(quizCheckboxAuswahl), bereichTyp: quizBereichTyp });
   }
 
@@ -194,27 +194,17 @@ export function ueberspeichereSession(app) {
 // ── Liste in mehrere Quiz aufteilen: Quiz-Tab mit dieser Liste, alle Einstellungen wie gewohnt,
 // dann je Gruppe eine gespeicherte Konfiguration „Name (21 - 40)“ ──
 export function starteAufteilen(app, listeId) {
-  const { setAktiverSlot, setAufteilen, setGespeicherteVokabelgruppe, setListenAuswahlAufgeklappt, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizListeAufgeklappt, setQuizTabListen, setQuizVonBisErster, setQuizVonBisModus, setSlotGeaendert, setSlotSektionAufgeklappt, setTab, zurUebersetzung } = app;
+  const { setAktiverSlot, setAufteilen, setGespeicherteVokabelgruppe, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizListeAufgeklappt, setQuizTabListen, setQuizVonBisErster, setQuizVonBisModus, setSlotSektionAufgeklappt, setTab, zurUebersetzung } = app;
     const liste = lsGet(SK.liste(listeId));
     if (!liste) return;
-    setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); lsDel(SK.letzterSlot); zurUebersetzung();
+    setAktiverSlot(null); setGespeicherteVokabelgruppe(null); lsDel(SK.letzterSlot); zurUebersetzung();
     setQuizTabListen([listeId]);
     setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set()); setQuizListeAufgeklappt(false);
     setQuizVonBisModus(false); setQuizVonBisErster(null);
-    setSlotSektionAufgeklappt(false); setListenAuswahlAufgeklappt(false);
+    setSlotSektionAufgeklappt(false); 
     setAufteilen({ listeId, name: liste.name, groesse: 20, von: 1, bis: liste.vokabeln.length, restAnhaengen: false, gruppe: true });
     setTab("quiz");
     window.scrollTo(0, 0);
-  }
-
-// 262: Quiz mit einer Vokabel-Auswahl dieser Liste – Quiz-Tab mit nur dieser Liste, „Bereich“ an, Vokabelliste offen zum Ankreuzen / Von–Bis
-export function starteQuizMitAuswahl(app, listeId) {
-  const { schliesseQuizBereiche, setAufteilen, setQuizBereichTyp, setQuizListeAufgeklappt, starteAufteilen } = app;
-    starteAufteilen(listeId);
-    setAufteilen(null);
-    setQuizBereichTyp("bereich");
-    schliesseQuizBereiche("einzel");
-    setQuizListeAufgeklappt(true);
   }
 
 export function legeAufteilenAn(app) {
@@ -293,14 +283,14 @@ export function loescheAuswahl(app) {
   }
 
 export function loescheSlotEintrag(app, typ, id) {
-  const { aktiverSlot, getSlotsData, setAktiverSlot, setLoescheSlotNr, setSessionSlotAktiv, setSlotGeaendert, setSlotsData, zurUebersetzung } = app;
+  const { aktiverSlot, getSlotsData, setAktiverSlot, setLoescheSlotNr, setSessionSlotAktiv, setSlotsData, zurUebersetzung } = app;
     const data = getSlotsData();
     const updated = { ...data, [typ]: data[typ].filter(s => s.id !== id) };   // die Gruppe bleibt, auch leer
     setSlotsData(updated);
     if (lsGet(SK.letzterSlot) === id) lsDel(SK.letzterSlot);
     if (aktiverSlot?.typ === typ && aktiverSlot?.id === id) {
       setAktiverSlot(null); zurUebersetzung();
-      setSlotGeaendert(false);
+      
       lsDel(SK.sessionAktiv);
       setSessionSlotAktiv(null);
     }
@@ -359,23 +349,6 @@ export function loescheSessionSlot(app) {
     lsDel(SK.sessionAktiv);
     setSessionSlotAktiv(null);
     if (slotTyp && slotId) updateSlotSF(slotTyp, slotId, null, sSlot.art || "uebersetzung");
-  }
-
-// "Neu": komplett neu beginnen – Quiz, Listen-/Vokabelauswahl und alle Abfrage-Einstellungen
-export function neueQuizKonfiguration(app) {
-  const { setAktiverSlot, setGespeicherteVokabelgruppe, setListenAendern, setListenAuswahlAufgeklappt, setQuizAntwortTypenGeordnet, setQuizAusgewaehlt, setQuizDiktatSpalte, setQuizFrageTyp, setQuizInfoTypenSession, setQuizPaketGroesse, setQuizSessionModus, setQuizSpalteModus, setQuizTabListen, setQuizZeigeInfo, setSessionSlotAktiv, setSlotGeaendert, setSlotSektionAufgeklappt, setzeQuizEinstellungenZurueck } = app;
-    setListenAendern(false);
-    setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false);
-    lsDel(SK.letzterSlot);
-    lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
-    setQuizTabListen([]);
-    // Spalten wie beim App-Start; passen sich bei der Listenauswahl automatisch an
-    setQuizAusgewaehlt(["D1", "E1"]); setQuizFrageTyp("D1"); setQuizAntwortTypenGeordnet(["E1"]);
-    setQuizInfoTypenSession([]); setQuizSpalteModus({ E1: "karte" }); setQuizZeigeInfo({ i1: true, i2: true });
-    setQuizDiktatSpalte("E1");
-    setzeQuizEinstellungenZurueck();
-    setSlotSektionAufgeklappt(false);
-    setListenAuswahlAufgeklappt(true);
   }
 
 export function initQuizDefaults(app, kombiListe) {
@@ -464,9 +437,9 @@ export function toggleQuizTabListe(app, id) {
   }
 
 export function schliesseQuizBereiche(app, ausser) {
-  const { setListenAuswahlAufgeklappt, setMultiAuswahl, setQuizAbfrageModusAufgeklappt, setQuizEinstellungenAufgeklappt, setQuizListeAufgeklappt, setQuizReihenfolgeAufgeklappt, setQuizSessionAufgeklappt, setQuizStufeAufgeklappt, setSlotSektionAufgeklappt } = app;
+  const { setMultiAuswahl, setQuizAbfrageModusAufgeklappt, setQuizEinstellungenAufgeklappt, setQuizListeAufgeklappt, setQuizReihenfolgeAufgeklappt, setQuizSessionAufgeklappt, setQuizStufeAufgeklappt, setSlotSektionAufgeklappt } = app;
     if (ausser !== "slots") { setSlotSektionAufgeklappt(false); setMultiAuswahl(null); }
-    if (ausser !== "listen") setListenAuswahlAufgeklappt(false);
+    if (ausser !== "listen") 
     if (ausser !== "einzel") setQuizListeAufgeklappt(false);
     if (ausser !== "modus") setQuizAbfrageModusAufgeklappt(false);
     if (ausser !== "reihenfolge") setQuizReihenfolgeAufgeklappt(false);
@@ -479,26 +452,6 @@ export function toggleSessionBereich(app, art) {
   const { quizSessionAufgeklappt, schliesseQuizBereiche, setQuizSessionAufgeklappt } = app;
     if (quizSessionAufgeklappt !== art) schliesseQuizBereiche("session");
     setQuizSessionAufgeklappt(v => v === art ? false : art);
-  }
-
-export function toggleListenAuswahl(app) {
-  const { dropdownImmuneRef, headerH, leuchte, listenAuswahlAufgeklappt, listenContainerRef, listenauswahlHeaderH, schliesseQuizBereiche, setListenAuswahlAufgeklappt, slotH } = app;
-    const opening = !listenAuswahlAufgeklappt;
-    if (opening) schliesseQuizBereiche("listen");
-    else leuchte("listenkopf");
-    setListenAuswahlAufgeklappt(v => !v);
-    if (opening) {
-      dropdownImmuneRef.current = true;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        const el = listenContainerRef.current;
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        if (rect.top < headerH + slotH + listenauswahlHeaderH) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH - slotH - listenauswahlHeaderH), behavior: 'instant' });
-        }
-        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
-      }));
-    }
   }
 
 export function toggleReihenfolge(app) {
@@ -599,43 +552,6 @@ export function toggleSlotSektion(app) {
         const rect = el.getBoundingClientRect();
         if (rect.top < headerH + slotH) {
           window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH - slotH), behavior: 'instant' });
-        }
-        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
-      }));
-    }
-  }
-
-export function toggleStatistikListenAuswahl(app) {
-  const { dropdownImmuneRef, headerH, setStatistikListenAufgeklappt, slotH, statistikListenAufgeklappt, statistikListenContainerRef } = app;
-    const opening = !statistikListenAufgeklappt;
-    setStatistikListenAufgeklappt(v => !v);
-    if (opening) {
-      dropdownImmuneRef.current = true;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        const el = statistikListenContainerRef.current;
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        if (rect.top < headerH + slotH) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - headerH - slotH), behavior: 'instant' });
-        }
-        setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
-      }));
-    }
-  }
-
-export function toggleStatistikEinzelauswahl(app) {
-  const { dropdownImmuneRef, headerH, setStatistikEinzelauswahlAufgeklappt, slotH, statistikEinzelauswahlAufgeklappt, statistikEinzelauswahlRef, statistikListenHeaderH, statistikVokauswahlH } = app;
-    const opening = !statistikEinzelauswahlAufgeklappt;
-    setStatistikEinzelauswahlAufgeklappt(v => !v);
-    if (opening) {
-      dropdownImmuneRef.current = true;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        const el = statistikEinzelauswahlRef.current;
-        if (!el) return;
-        const target = headerH + slotH + statistikListenHeaderH + statistikVokauswahlH;
-        const rect = el.getBoundingClientRect();
-        if (rect.top < target) {
-          window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - target), behavior: 'instant' });
         }
         setTimeout(() => { dropdownImmuneRef.current = false; }, 150);
       }));

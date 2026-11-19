@@ -3,7 +3,7 @@ import { zuListen, menueShim, neueEineSession, listenZu, bereichZu, listeOeffnen
 
 // 260: Satz finden – mehrteilige Lösung: alle Teile antippen (Reihenfolge egal)
 // 261: Menü der Ebene – Spalten, Anordnen, Lückenlos unter „🖼 Ansicht ›“
-// 262: Lang drücken auf eine Liste – „🎯 Quiz mit Auswahl…“ (Quiz-Tab, Bereich, Vokabelliste offen)
+// 262: Lang drücken auf eine Liste – „🎯 Bereich wählen…“ (Quiz-Tab, Bereich, Vokabelliste offen)
 // 263: Listen ganz eckig (auch Auswahlrahmen, Kopf beim Listen-Paket), Quiz abgerundet
 // 264: Sprach-Kürzel im Verlauf-Namen („Engl · …“)
 const URL = "http://localhost:4199/vokabel-app/";
@@ -73,22 +73,23 @@ const gew = await page.evaluate(() => { const el = document.querySelector('[data
   nr: getComputedStyle(el.querySelector(".auswahl-nr")).borderTopLeftRadius, kopf: document.querySelector("[data-slot-kopf-name]").classList.contains("eckig") }; });
 ok(gew.gew && gew.ecke === "0px" && gew.nr === "0px" && gew.kopf, `263: ausgewählte Liste – Rahmen und Nummer eckig, Kopf eckig (${JSON.stringify(gew)})`);
 m = await page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
-ok(m.includes("🎯 Quiz mit Auswahl…"), "262: „🎯 Quiz mit Auswahl…“ im Menü der Liste (unter Lernen)");
-await page.evaluate(() => __aktion("🎯 Quiz mit Auswahl…").click()); await sleep(900);
+ok(m.includes("🎯 Bereich wählen…"), "262: „🎯 Bereich wählen…“ im Menü der Liste (unter Lernen)");
+await page.evaluate(() => __aktion("🎯 Bereich wählen…").click()); await sleep(900);
 const qa = await page.evaluate(() => ({ tab: document.querySelector(".tab.aktiv")?.textContent.trim(), bestaetigen: !!document.querySelector("[data-vok-bestaetigen]"),
   zeilen: document.querySelectorAll('.vok-zeile[data-such-ziel="quiz"]').length, wahl: !!document.querySelector("[data-wahl-fertig]") }));
 ok(/Quiz/.test(qa.tab) && qa.bestaetigen && qa.zeilen === 3 && !qa.wahl, `262: Quiz-Tab, Vokabelliste von „Unit 2“ offen zum Auswählen (${JSON.stringify(qa)})`);
 await page.click('.vok-zeile[data-such-id="l_b__2"]'); await sleep(200);
-await page.click("[data-vok-bestaetigen]"); await sleep(400);
-const anz = await page.evaluate(() => document.querySelector('[data-anzahl="auswahl"]')?.textContent);
-ok(anz === "(1 V.)", `262: eine Vokabel ausgewählt – Quiz mit 1 Vokabel (${anz})`);
+await page.click("[data-vok-bestaetigen]"); await sleep(1000);   // 298: zurück in die Tafel – dort laden
+await page.evaluate(() => document.querySelector("[data-listen-wahl-kopf]")?.click()); await sleep(1000);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+const anz = await page.evaluate(() => document.querySelector("[data-start-knopf]")?.dataset.startAnzahl);
+ok(anz === "1", `262: eine Vokabel ausgewählt – Quiz mit 1 Vokabel (${anz})`);
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(800);
 const fr = await page.evaluate(() => document.querySelector("[data-karte-frage] .quiz-frage-text")?.textContent.trim());
 ok(fr === "Katze", `262: abgefragt wird nur die gewählte Vokabel (${fr})`);
 
 // ── 264: Verlauf-Eintrag mit Sprach-Kürzel ──
-const v0 = (await slots()).verlauf?.[0]?.name || "";
-ok(/^Engl · \d\d\.\d\d\.\d\d, \d\d:\d\d$/.test(v0), `264: Verlauf-Name mit Sprach-Kürzel („${v0}“)`);
+// 298: eine Liste ist geladen (kein „Neues Quiz“) – sie bekommt keinen Verlauf-Eintrag
 await page.evaluate(() => document.querySelector("[data-quiz-pause]")?.click()); await sleep(600);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Zur Übersicht")?.click()); await sleep(700);
 

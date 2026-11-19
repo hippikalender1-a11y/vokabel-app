@@ -118,25 +118,18 @@ export function speichereEinst(app, e) {
 
 // eslint-disable-line react-hooks/exhaustive-deps
 export function wechsleSprache(app, code) {
-  const { aktiveListeId, ansicht, einstellungen, quizTabListen, setAktiveListe, setAktiveListeId, setAktiverSlot, setAnsicht, setGespeicherteVokabelgruppe, setListenWahl, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizPaketGroesse, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSlotGeaendert, setSprachMenuOffen, setStatistikAktiverSlot, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikListenIds, speichereEinst, spracheVonListe, statistikAktiverSlot, statistikListenIds, zurUebersetzung } = app;
+  const { aktiveListeId, ansicht, einstellungen, quizTabListen, setAktiveListe, setAktiveListeId, setAktiverSlot, setAnsicht, setGespeicherteVokabelgruppe, setListenWahl, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizPaketGroesse, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSprachMenuOffen, speichereEinst, spracheVonListe, statistikAktiverSlot, statistikListenIds, zurUebersetzung } = app;
     setSprachMenuOffen(false);
     speichereEinst({ ...einstellungen, sprache: code });
     if (code === "alle") return;
     const passt = id => spracheVonListe(id) === code;
     // Quiz: Auswahl/Konfiguration mit Listen anderer Sprache zurücksetzen
     if (quizTabListen.some(id => !passt(id))) {
-      setAktiverSlot(null); setGespeicherteVokabelgruppe(null); setSlotGeaendert(false); zurUebersetzung();
+      setAktiverSlot(null); setGespeicherteVokabelgruppe(null); zurUebersetzung();
       lsDel(SK.sessionAktiv); setSessionSlotAktiv(null); setQuizSessionModus(STANDARD_SESSION_MODUS); setQuizPaketGroesse(STANDARD_PAKET_GROESSE);
       setQuizTabListen(quizTabListen.filter(passt));
       setQuizBereichTyp("alle"); setQuizCheckboxAuswahl(new Set());
     }
-    // Statistik
-    if (statistikListenIds && [...statistikListenIds].some(id => !passt(id))) {
-      setStatistikAktiverSlot(null);      const rest = [...statistikListenIds].filter(passt);
-      setStatistikListenIds(rest.length ? new Set(rest) : null);
-      setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
-    } else if (statistikAktiverSlot) {
-      setStatistikAktiverSlot(null);    }
     // Listen-Tab: geöffnete Liste anderer Sprache schließen
     if (aktiveListeId && ansicht === "liste-detail" && !passt(aktiveListeId)) {
       setAnsicht("uebersicht"); setAktiveListeId(null); setAktiveListe(null);

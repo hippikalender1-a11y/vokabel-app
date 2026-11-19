@@ -39,16 +39,13 @@ await page.reload(); await sleep(800); await page.evaluate(() => { const u = doc
 await neueEineSession(page);
 await listeWaehlen(page, "Unité 1"); await sleep(300);
 await listenZu(page);
-const speichereAls = async name => {
-  await lang("[data-slot-kopf-name]"); await aktion("💾 Speichern");
-  await page.evaluate(n => { const f = document.querySelector("[data-slot-name-feld]"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(f, n); f.dispatchEvent(new Event("input", { bubbles: true })); }, name);
+const speichereAls = async (name, ausListe = false) => {   // 298: eine Liste speichert über „💾 Als Quiz speichern“ (Fenster mit Ordner)
+  await lang("[data-slot-kopf-name]"); await aktion(ausListe ? "💾 Als Quiz speichern" : "💾 Speichern");
+  await page.evaluate(n => { const f = document.querySelector("[data-slot-name-feld], [data-erstellen-name]"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(f, n); f.dispatchEvent(new Event("input", { bubbles: true })); }, name);
   await sleep(150);
 };
-await speichereAls("S1");
-const lage = await page.evaluate(() => { const f = document.querySelector("[data-slot-name-feld]"), k = document.querySelector("[data-slot-speichern-neu]");
-  return { feld: f.getBoundingClientRect().bottom, knopf: k.getBoundingClientRect().top }; });
-ok(lage.knopf > lage.feld && lage.knopf - lage.feld < 60, `Speichern-Knopf direkt unter dem Namensfeld (${Math.round(lage.knopf - lage.feld)} px)`);
-await page.focus("[data-slot-name-feld]"); await page.keyboard.press("Enter"); await sleep(400);
+await speichereAls("S1", true);
+await page.focus("[data-erstellen-name]"); await page.keyboard.press("Enter"); await sleep(400);
 let sl = await slots();
 ok(!(await page.$(".modal")) && sl.gespeichert?.some(x => x.name === "S1"), "Eingabetaste speichert das Quiz „S1“");
 await speichereAls("S2");
@@ -63,15 +60,12 @@ await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b
 
 // ── 17: gespeichertes Quiz – „Alle | Bereich“ sichtbar, Änderung → rot, lang drücken: Überspeichern / Verwerfen ──
 ok(!(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Bereich"))), "geladene gespeichertes Quiz: keine Zeile „Vokabel-Auswahl“");
-await lang("[data-slot-kopf-name]"); await aktion("📝 Listen/Vokabeln ändern");
-ok(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Bereich")) && await page.$("[data-aendern-bestaetigen]") && !(await page.$("[data-start-knopf]")),
-  "„Listen/Vokabeln ändern“: Listen- und Vokabel-Zeile, Name wird „Bestätigen“, darunter ausgeblendet");
-await klickText(".toggle-opt", "Bereich");
+await lang("[data-slot-kopf-name]"); await aktion("📝 Vokabeln ändern");
+ok(!!(await page.$("[data-vok-bestaetigen]")) && !(await page.$("[data-start-knopf]")), "298: „📝 Vokabeln ändern“ öffnet die Vokabelliste der Quiz");
 await page.evaluate(() => { const z = [...document.querySelectorAll("[data-such-ziel='quiz']")]; z[0]?.click(); }); await sleep(250);
 await page.evaluate(() => { const z = [...document.querySelectorAll("[data-such-ziel='quiz']")]; z[1]?.click(); }); await sleep(250);
 await page.click("[data-vok-bestaetigen]"); await sleep(400);
-await page.click("[data-aendern-bestaetigen]"); await sleep(400);
-ok(await page.$("[data-start-knopf]") && !(await page.evaluate(() => [...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Bereich"))), "„Bestätigen“: Ändern beendet, Start wieder da");
+ok(!!(await page.$("[data-start-knopf]")), "„Bestätigen“: Liste zu, Start wieder sichtbar");
 let rot = await page.evaluate(() => { const b = document.querySelector("[data-slot-kopf-name]"); return { geaendert: b.hasAttribute("data-geaendert"), bg: b.getAttribute("style") || "" }; });
 ok(rot.geaendert && /--falsch/.test(rot.bg), `Vokabelauswahl geändert: Name-Knopf rot (${rot.bg})`);
 ok(!(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Zurücksetzen"))), "kein eigener „Zurücksetzen“-Knopf mehr");
@@ -81,11 +75,9 @@ ok(ak.includes("💾 Überspeichern „S2“") && ak.includes("💾 Als neues Qu
 await aktion("💾 Überspeichern „S2“");
 sl = await slots();
 ok(!(await page.$("[data-slot-kopf-name][data-geaendert]")) && sl.gespeichert.find(x => x.id === id2).konfiguration.vokabelAuswahl.length === 2, "Überspeichern: S2 hat 2 Vokabeln, Kopf nicht mehr rot");
-await lang("[data-slot-kopf-name]"); await aktion("📝 Listen/Vokabeln ändern");
-await klickText(".toggle-opt", "Bereich");
+await lang("[data-slot-kopf-name]"); await aktion("📝 Vokabeln ändern");
 await page.evaluate(() => { const z = [...document.querySelectorAll("[data-such-ziel='quiz']")]; z[5]?.click(); }); await sleep(250);
 await page.click("[data-vok-bestaetigen]"); await sleep(400);
-await page.click("[data-aendern-bestaetigen]"); await sleep(400);
 await lang("[data-slot-kopf-name]"); await aktion("↺ Verwerfen");
 sl = await slots();
 ok(!(await page.$("[data-slot-kopf-name][data-geaendert]")) && sl.gespeichert.find(x => x.id === id2).konfiguration.vokabelAuswahl.length === 2, "Verwerfen: zurück auf die gespeicherte Auswahl");

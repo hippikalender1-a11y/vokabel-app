@@ -138,7 +138,7 @@ export function DialogInGruppe(app) {
 
 // aus App.jsx: {erstellenFenster && …}
 export function DialogErstellenFenster(app) {
-  const { brecheErstellenAb, erstelleQuiz, erstellenFenster, legeOrdnerAn, quizErstellen, setErstellenFenster, setQuizErstellen, slots, starteAufteilen, tt, ttFeld } = app;
+  const { erstelleQuiz, erstellenFenster, legeOrdnerAn, setErstellenFenster, slots, tt, ttFeld } = app;
   return (
 (() => {
         // 217: „Quiz erstellen“ – Name (vorbelegt) und Ordner (Baum der Quiz-Ordner, zuletzt geöffneter vorbelegt)
@@ -150,7 +150,7 @@ export function DialogErstellenFenster(app) {
         return (
           <div className="overlay" onClick={() => setErstellenFenster(null)}>
             <div className="modal" data-erstellen-dialog onClick={e => e.stopPropagation()}>
-              <div className="modal-titel">Quiz erstellen</div>
+              <div className="modal-titel">Als Quiz speichern</div>
               <label className="inp-label">Name</label>
               <input className="inp" data-erstellen-name value={f.name} autoFocus onChange={e => setErstellenFenster(x => ({ ...x, name: e.target.value }))}
                 onKeyDown={e => { if (e.key === "Enter") erstelleQuiz(); }} {...ttFeld("Name des neuen Quiz")}/>
@@ -168,11 +168,8 @@ export function DialogErstellenFenster(app) {
                 )}
               </div>
               <div className="modal-actions" style={{flexWrap:"wrap"}}>
-                <button className="btn btn-ghost" onClick={() => setErstellenFenster(null)} {...tt("Zurück zu den Einstellungen – das Erstellen geht weiter")}>Zurück</button>
-                <button className="btn btn-ghost" data-erstellen-abbrechen style={{color:"var(--falsch)"}} onClick={brecheErstellenAb} {...tt("Nichts anlegen – zurück zur Auswahl der Listen")}>Abbrechen</button>
-                <button className="btn btn-ghost" data-erstellen-aufteilen onClick={() => { const id = quizErstellen?.listeId; setErstellenFenster(null); setQuizErstellen(null); if (id) starteAufteilen(id); }}
-                  {...tt("Stattdessen die Liste in mehrere Quiz aufteilen")}>In mehrere aufteilen</button>
-                <button className="btn btn-primary" data-erstellen-ok disabled={!f.name.trim()} onClick={erstelleQuiz} {...tt("Quiz anlegen und laden")}>Erstellen</button>
+                <button className="btn btn-ghost" data-erstellen-abbrechen onClick={() => setErstellenFenster(null)} {...tt("Nichts speichern – die Listen bleiben geladen")}>Abbrechen</button>
+                <button className="btn btn-primary" data-erstellen-ok disabled={!f.name.trim()} onClick={erstelleQuiz} {...tt("Als Quiz speichern und laden")}>Speichern</button>
               </div>
             </div>
           </div>
@@ -183,14 +180,14 @@ export function DialogErstellenFenster(app) {
 
 // aus App.jsx: {modal === "neue-session" && …}
 export function DialogNeueSession(app) {
-  const { neueQuizKonfiguration, neueSessionSchritt, setModal, setNeueSessionSchritt, sichtbareListen, starteAufteilen, tt } = app;
+  const { oeffneListenTafel, neueSessionSchritt, setModal, setNeueSessionSchritt, sichtbareListen, starteAufteilen, tt } = app;
   return (
 <div className="overlay" onClick={() => setModal(null)}>
           <div className="modal" data-neue-session-dialog={neueSessionSchritt} onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Neues Quiz aus Listen</div>
             {neueSessionSchritt === "art" ? (<>
-              <button className="neue-session-wahl" data-neue-session-art="eine" onClick={() => { setModal(null); neueQuizKonfiguration(); window.scrollTo(0, 0); }}
-                {...tt("Listen und Vokabeln wählen, dann wie gewohnt einstellen; lang auf den Namen drücken speichert die Quiz")}>
+              <button className="neue-session-wahl" data-neue-session-art="eine" onClick={() => { setModal(null); oeffneListenTafel([]); }}
+                {...tt("Listen wählen (lang auf „Vokabeln“: Bereich), dann in der Tafel „💾 Als Quiz speichern“")}>
                 <b>Ein Quiz</b>
               </button>
               <button className="neue-session-wahl" data-neue-session-art="mehrere" onClick={() => setNeueSessionSchritt("liste")}

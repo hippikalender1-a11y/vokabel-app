@@ -58,7 +58,7 @@ await langDruck('[data-liste-id="l_a"]');
 ok(await anzahl() === "1" && !(await page.$('[data-liste-id="l_a"] [data-wahl-nr]')), "nochmal lang drücken nimmt Unité A heraus");
 await aktion("☑ Alle auswählen");
 ok(await anzahl() === "3", "„Alle“: drei ausgewählt");
-ok((await menue()).split("|").filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "🗂 Ablage ›|↔ Von–Bis|📤 Exportieren (3)|⇄ Verschieben|📁 In Ordner… (3)|🗑 Löschen (3)|☑ Alle auswählen", `Aktionen für die Auswahl (${await menue()})`);
+ok((await menue()).split("|").filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "🗂 Ablage ›|↔ Von–Bis|💾 Als Quiz speichern|📤 Exportieren (3)|⇄ Verschieben|📁 In Ordner… (3)|🗑 Löschen (3)|☑ Alle auswählen", `Aktionen für die Auswahl (${await menue()})`);
 await klick('[data-liste-id="l_c"]');
 ok(await anzahl() === "1" && await page.evaluate(() => document.querySelector('[data-liste-id="l_c"]').classList.contains("kachel-gewaehlt")), "234: antippen in der Auswahl – sie beginnt neu mit Unité C");
 await langDruck('[data-liste-id="l_a"]');

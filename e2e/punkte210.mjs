@@ -87,7 +87,7 @@ await tab("Quiz");
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(300);
 const listenMenue = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion));
-ok(listenMenue.includes("📂 Liste öffnen") && listenMenue.includes("＋ Quiz erstellen") && !listenMenue.some(m => /Speichern/.test(m)), `217: Listen-Kopf ohne Speichern, mit „Liste öffnen“ / „Quiz erstellen“ (${listenMenue.join(" | ")})`);
+ok(listenMenue.includes("📂 Liste öffnen") && listenMenue.includes("🎯 Bereich wählen…") && listenMenue.includes("💾 Als Quiz speichern"), `217/298: Listen-Kopf mit „Liste öffnen“ / „Bereich wählen…“ / „Als Quiz speichern“ (${listenMenue.join(" | ")})`);
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();

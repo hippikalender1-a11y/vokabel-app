@@ -106,7 +106,7 @@ export function listenNavi(app) {
 // darunter Negative · Gelernt / Heute · Fällige); Multiquiz, Fällige wiederholen und Negative abfragen entfallen dort
 // (der Kopf lädt die Auswahl); unten nur eine kleine Zeile (🎨 · Ablage › · Von–Bis). art: "slot" (ids = Quiz) | "liste" (ids = Listen)
 export function mitSchalterRaster(app, d, art, ids) {
-  const { waehleListenBereich, starteQuizMitAuswahl, setListenWahl, schalterZaehlung, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots, tab } = app;
+  const { waehleListenBereich, alsQuizSpeichern, setListenWahl, schalterZaehlung, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots, tab } = app;
   if (!d || tab !== "quiz" || !ids.length) return d;
   const z = schalterZaehlung(ids, art);
   const sk = sprachKuerzelFuer(art === "liste" ? ids : [...new Set(ids.flatMap(id => slots.gespeichert.find(g => g.id === id)?.konfiguration?.listenIds || []))]);
@@ -117,8 +117,8 @@ export function mitSchalterRaster(app, d, art, ids) {
   const zurueck = () => setTimeout(() => zeigeAuswahlTafel(art), 0);
   const raster = [
     s("grund", "Vokabeln", z.grund, quizGrund, setQuizGrund, true, { breit: true,   // 282: immer „Vokabeln“
-      // 296: eine Liste – lang drücken wählt einen Bereich (wie „🎯 Quiz mit Auswahl…“)
-      ...(art === "liste" && ids.length === 1 ? { lang: () => waehleListenBereich(ids[0]) } : {}) }),
+      // 296/298: Listen – lang drücken wählt einen Bereich (eine oder mehrere Listen)
+      ...(art === "liste" ? { lang: () => waehleListenBereich() } : {}) }),
     s("negativ", "✗ Negative", z.negativ, quizNegativ, setQuizNegativ, true),
     s("gelernt", "✓ Gelernt", z.gelernt, quizGelerntEinschliessen, setQuizGelerntEinschliessen, z.faelligMoeglich),
     s("heute", "Heute", z.heute, quizHeuteEinschliessen, setQuizHeuteEinschliessen, tagesSperre()),
@@ -136,8 +136,8 @@ export function mitSchalterRaster(app, d, art, ids) {
   const ohneLernen = akt => akt.map(a => a?.gruppe ? { ...a, gruppe: a.gruppe.filter(u => !LERNEN_ALT.test(u.label)) } : a)
     .filter(a => a && !LERNEN_ALT.test(a.label) && !(a.gruppe && !a.gruppe.length));
   // 281: einzelne Aktionen in die Ablage (vorne) – unten bleibt eine kleine Zeile; 288: bei Listen alle außer Von–Bis
-  const AB = `${GRUPPE.ablage} ›`, istL = a => a.label === "📝 Listen/Vokabeln ändern";
-  const nachAblage = a => !a.gruppe && !a.farbe && (art === "liste" ? a.label !== "↔ Von–Bis" && !a.label.startsWith("📂") : istL(a));   // Öffnen bleibt (wie beim Quiz-Ordner)
+  const AB = `${GRUPPE.ablage} ›`, istL = a => a.label === "📝 Vokabeln ändern";
+  const nachAblage = a => !a.gruppe && !a.farbe && (art === "liste" ? a.label !== "↔ Von–Bis" && !a.label.startsWith("📂") && !a.label.startsWith("💾") : istL(a));   // Öffnen bleibt (wie beim Quiz-Ordner)
   const inAblage = akt => {
     const ausGruppen = art === "slot" ? akt.flatMap(a => a.gruppe && a.label !== AB ? a.gruppe.filter(istL) : []) : [];   // z. B. aus „Inhalt ›“
     const weg = [...akt.filter(nachAblage), ...ausGruppen];
@@ -146,7 +146,8 @@ export function mitSchalterRaster(app, d, art, ids) {
     if (!ohne.some(a => a.gruppe && a.label === AB)) return [{ label: AB, gruppe: weg }, ...ohne];
     return ohne.map(a => a.gruppe && a.label === AB ? { ...a, gruppe: [...weg, ...a.gruppe] } : a);
   };
-  return { ...d, aktionen: [...raster, ...inAblage(ohneLernen(d.aktionen))] };
+  const speichern = art === "liste" ? [{ label: "💾 Als Quiz speichern", fn: () => alsQuizSpeichern() }] : [];   // 298
+  return { ...d, aktionen: [...raster, ...inAblage(ohneLernen([...d.aktionen, ...speichern]))] };
 }
 
 export function renderListenRaster(app) {
@@ -397,69 +398,14 @@ export function quizListenUmschalter(app) {
     );
   }
 
-// 217: Pfad über den Listen in der Quiz-Auswahl
-export function quizListenNavi(app) {
-  const { headerH, listenOrdner, listenOrdnerOffen, pfadTeile, quizListenUmschalter, setBlaettern, setListenOrdnerOffen, setSlotVorschau, slotH, slotInfoH } = app;
-    const geheZu = id => { setListenOrdnerOffen(id); setSlotVorschau(null); setBlaettern(false); };
-    return (
-      <div data-ordner-navi="quiz-listen" style={{display:"flex", alignItems:"center", gap:8, marginBottom:8, minHeight:30, position:"sticky", top: headerH + slotH + slotInfoH, zIndex: 7, background:"var(--hintergrund)", padding:"6px 0", }}>
-        {pfadTeile({ alleText: "Alle Listen", alleAttr: "data-alle-listen-quiz", pfad: ordnerPfad(listenOrdner, listenOrdnerOffen), geheZu,
-          alleTt: listenOrdnerOffen ? "Zurück zu allen Listen" : "Alle Listen", alleAktionen: null, ordnerAktionen: () => null, einheit: "Listen" })}
-        {quizListenUmschalter()}
-      </div>
-    );
-  }
-
-export function renderQuizListenRaster(app) {
-  const { FORTSCHRITT_FELD, aktiverSlot, auswahlOrdnerZelle, blaettern, blitzt, einstellungen, lernstandJeArt, leuchte, listenFlagge, listenRasterPlaetze, quizArt, setSlotVorschau, setSlotVorschauListe, slotVorschau, tt, uebernimmListe } = app;
-    const { spalten, plaetze } = listenRasterPlaetze();
-    const schwelle = einstellungen.gelerntSchwelle ?? 0;
-    const heuteFeld = FORTSCHRITT_FELD[quizArt] || "fortschritt";
-    const kurz = spalten > 1;
-    const zellen = plaetze.map(({ key, l }) => {
-      if (!l) return <div key={key} className="raster-leer" style={{border:"none"}}/>;
-      if (l.istOrdner) return auswahlOrdnerZelle(l, key, id => aktiverSlot?.typ === "listen" && aktiverSlot.id === id, kurz);
-      const liste = lsLesen(SK.liste(l.id));
-      const voks = (liste?.vokabeln || []).filter(v => !v.herausgenommen);
-      const pct = Math.round(lernstandJeArt(voks, l.id).uebersetzung.pct || 0);
-      const fN = faelligZahl(voks);   // 276
-      const heuteP = heuteAnteil(voks, heuteFeld, schwelle);
-      const gewaehlt = slotVorschau ? slotVorschau.typ === "listen" && slotVorschau.id === l.id : aktiverSlot?.typ === "listen" && aktiverSlot.id === l.id;
-      return (
-        <button key={key} className={`slot-chip belegt raster-chip eckig${gewaehlt ? " kachel-gewaehlt" : ""}${blitzt(`ql:${l.id}`)}`} data-qliste-id={l.id}
-          data-kachel-geste="qliste" data-heute={heuteP} data-vorschau={slotVorschau?.typ === "listen" && slotVorschau.id === l.id ? "" : undefined}
-          style={{position:"relative", ...(heuteP > 0 ? { backgroundImage: `linear-gradient(to right, var(--heute-farbe) ${heuteP}%, transparent ${heuteP}%)` } : {})}}
-          onClick={() => blaettern ? (leuchte(`ql:${l.id}`, BLITZ_MS / 2), setSlotVorschauListe(false), setSlotVorschau({ typ: "listen", id: l.id })) : uebernimmListe(l.id)}
-          {...tt(`${l.name} – antippen: abfragen (nach kurzem Halten: nur auswählen, laden mit dem grünen Knopf)`, null, { eigeneGeste: true })}>
-          <span className="raster-kopf">
-            <span className="raster-name">{listenFlagge(l)}{l.name}</span>
-            <span className="raster-anz" data-vok-anzahl={voks.length}>{zahlDe(voks.length)} {kurz ? "V." : "Vokabeln"}</span>
-          </span>
-          <span className="raster-fuss" data-kachel-balken={pct}>
-            {kachelBalken(pct, fN, voks.filter(v => !v.herausgenommen).length)}
-            {pct >= 100 && <span className="kachel-voll" title="100 % gelernt">✓</span>}
-          </span>
-        </button>
-      );
-    });
-    return (
-      <div style={{margin:"0 0 12px"}}>
-        <div className={`slot-raster${spalten >= 4 ? " schmal" : ""}`} data-quiz-listen-raster data-raster-spalten-anz={spalten} style={{gridTemplateColumns:`repeat(${spalten}, minmax(0, 1fr))`}}>
-          {zellen}
-        </div>
-      </div>
-    );
-  }
-
 export function ordnerNavi(app, stil, statistik = false) {
-  const { slotEbenenMenue, listenEbenenMenue, einstellungen, faelligAlle, faelligVonSlots, headerH, minSpalten, multiAuswahl, neuImOrdnerRef, pfadTeile, quizListenUmschalter, setAnordnen, setInGruppe, setModal, setMultiAuswahl, setNeueSessionSchritt, setSlotAuswahl, setSlotDragId, setSlotDragZiel, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSpaltenWahl, setStatistikAktiverSlot, setStatistikBereichTyp, setStatistikCheckboxAuswahl, setStatistikFilter, setStatistikListenIds, setStatistikSlotGeleert, slotAuswahl, slotH, slotInfoH, slotOrdner, slotSichtbarRef, slotSortModus, slots, speichereEinst, tt } = app;
+  const { slotEbenenMenue, listenEbenenMenue, einstellungen, faelligAlle, faelligVonSlots, headerH, minSpalten, multiAuswahl, neuImOrdnerRef, pfadTeile, quizListenUmschalter, setAnordnen, setInGruppe, setModal, setMultiAuswahl, setNeueSessionSchritt, setSlotAuswahl, setSlotDragId, setSlotDragZiel, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSpaltenWahl, setStatistikGesamt, setStatistikFilter, slotAuswahl, slotH, slotInfoH, slotOrdner, slotSichtbarRef, slotSortModus, slots, speichereEinst, tt } = app;
     const ordnerOffen = (slots.ordner || []).find(o => o.id === slotOrdner) || null;
     const neueSession = imOrdner => ({ label: "＋ Neues Quiz aus Listen", fn: () => { neuImOrdnerRef.current = imOrdner; setNeueSessionSchritt("art"); setModal("neue-session"); } });
     const gelerntUmschalter = { label: einstellungen.gelernteAusblenden ? "👁 Gelernte einblenden" : "🙈 Gelernte ausblenden",
       fn: () => speichereEinst({ ...einstellungen, gelernteAusblenden: !einstellungen.gelernteAusblenden }) };   // 181
     const alleListen = { label: "▦ Alle Listen", fn: () => {
-      setStatistikAktiverSlot(null); setStatistikSlotGeleert(false); setSlotSektionAufgeklappt(false);
-      setStatistikListenIds(null); setStatistikBereichTyp("alle"); setStatistikCheckboxAuswahl(new Set());
+      setStatistikGesamt(true); setSlotSektionAufgeklappt(false);   // Statistik über alle Listen (bis wieder etwas geladen wird)
       setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt'])); } };
     // 194: leeren Ordner anlegen (in der Ebene des Pfad-Teils), solange dort noch einer hineinpasst
     const neuerOrdner = eltern => ordnerPfad(slots.ordner, eltern).length < ORDNER_TIEFE_MAX
@@ -507,7 +453,7 @@ export function wahlLeiste(app, art, stil) {
 // neu berechnet nur, wenn sich die Konfiguration oder eine ihrer Listen (lsLesen: dasselbe Objekt, solange unverändert) ändert
 const kachelPuffer = new Map();
 export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) {
-  const { schalterZaehlung, schalterStand, setzeSchalter, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slotEbenenMenue, listenEbenenMenue, vonBis, merkeVerschieben, zugRand, FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setListenAendern, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef } = app;
+  const { schalterZaehlung, schalterStand, setzeSchalter, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slotEbenenMenue, listenEbenenMenue, vonBis, merkeVerschieben, zugRand, FORTSCHRITT_FELD, aktiverSlot, angehoben, auswahlTafel, auswahlTafelDaten, auswahlTafelRef, blaettern, blitzt, chipStil, einstellungen, faelligVonSlots, gruppenZiel, kopieName, lasso, lernstandJeArt, leuchte, loeseOrdnerAuf, minSpalten, multiAuswahl, multiVonSlot, neuImOrdnerRef, neuPlatzRef, plaetzeRef, quizAbfrageArt, quizArt, renderSlotChip, setAuswahlLoeschen, setBlaettern, setInGruppe, setLoescheSlotNr, setModal, setMultiAuswahl, setNeueSessionSchritt, setOrdnerUmbenennen, setSlotAuswahl, setSlotOrdner, setSlotSektionAufgeklappt, setSlotSortModus, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setVerlaufOffen, setVonBis, setzeSlotPlaetze, slotAuswahl, slotChipLabel, slotDragId, slotDragZiel, slotGezogenRef, slotOrdner, slotSichtbar, slotSichtbarRef, slotSortModus, slotVorschau, slotZiehenRef, slots, sprachFilter, starteMultiquiz, statistikArt, stelleMultiquizEin, tab, tt, ttFeld, uebernimmSlots, verlaufOffen, verschiebeInOrdner, verweilGeht, wahlUmschaltenRef } = app;
     // Lernfortschritt je Art für die Mini-Kreise (jede Liste nur einmal lesen)
     const listenCache = new Map();
     const listeVon = id => { if (!listenCache.has(id)) listenCache.set(id, lsLesen(SK.liste(id))); return listenCache.get(id); };
@@ -597,7 +543,7 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     ]; };
     const wahlNamen = ids => ids.map(id => { const o = (slots.ordner || []).find(y => y.id === id); return o ? `📁 ${o.name}` : slots.gespeichert.find(g => g.id === id)?.name; }).filter(Boolean).join(", ");
     const einzelMenue = x => [   // 235: Lernen (Fällige) und Inhalt (Listen/Vokabeln ändern) haben je einen Punkt → direkt; Ablage gruppiert
-      ...gruppe(GRUPPE.inhalt, [{ label: "📝 Listen/Vokabeln ändern", fn: () => { if (slotRef?.id !== x.id) onLaden('gespeichert', x.id); setListenAendern(true); setSlotSektionAufgeklappt(false); } }]),
+      ...gruppe(GRUPPE.inhalt, [{ label: "📝 Vokabeln ändern", fn: () => aendereQuizVokabeln(x.id) }]),
       ...gruppe(GRUPPE.ablage, [
         { label: "✎ Umbenennen", fn: () => setSlotUmbenennen({ id: x.id, name: x.name }) },
         { label: "⧉ Duplizieren", fn: () => setSlotUmbenennen({ id: x.id, name: kopieName(x.name), kopie: true }) },

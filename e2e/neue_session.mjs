@@ -53,9 +53,8 @@ await neueSessionMenue(page); await sleep(300);
 ok(await page.$('[data-neue-session-dialog="art"]') && await page.$('[data-neue-session-art="eine"]') && await page.$('[data-neue-session-art="mehrere"]'), "Dialog: Ein Quiz / Mehrere Quiz");
 await page.click('[data-neue-session-art="eine"]'); await sleep(400);
 // 289: „Ein Quiz“ → die Auswahl mit den Listen (eine Liste antippen bzw. mehrere halten)
-ok(await page.$('[data-auswahl-umschalter="listen"]') && await page.$("[data-liste-id]") && !(await sichtbar(".quiz-setup-check"))
-  && await page.evaluate(() => document.querySelector("[data-slot-kopf-name]").textContent.trim()) === "Liste oder Quiz wählen",
-  "Ein Quiz (289): Auswahl mit den Listen, Kopf „Liste oder Quiz wählen“");
+ok(await page.$('[data-auswahl-umschalter="listen"]') && await page.$("[data-liste-id]") && !(await sichtbar(".quiz-setup-check")),
+  "Ein Quiz (289/298): Auswahl mit den Listen");
 
 // Neues Quiz: Mehrere → Liste wählen → Aufteilen
 await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="listen"]')?.click()); await sleep(300);

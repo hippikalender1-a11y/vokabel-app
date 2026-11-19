@@ -89,7 +89,7 @@ for (const id of ["l_fr", "l_es"]) await langDruckListe(id);   // 147: lang drü
 ok(await page.evaluate(() => document.querySelector("[data-wahl-anzahl]")?.dataset.wahlAnzahl) === "3", "drei Listen ausgewählt");
 let vorher = fs.readdirSync(DL);
 await kopfMenue();   // Menü der Auswahl: lang drücken auf den grünen Kopf
-ok((await menueLabels()).split("|").filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "🗂 Ablage ›|↔ Von–Bis|📤 Exportieren (3)|⇄ Verschieben|📁 In Ordner… (3)|🗑 Löschen (3)|☑ Alle auswählen", `Lang-Druck in der Auswahl: Exportieren, Verschieben, Löschen (${await menueLabels()})`);
+ok((await menueLabels()).split("|").filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "🗂 Ablage ›|↔ Von–Bis|💾 Als Quiz speichern|📤 Exportieren (3)|⇄ Verschieben|📁 In Ordner… (3)|🗑 Löschen (3)|☑ Alle auswählen", `Lang-Druck in der Auswahl: Exportieren, Verschieben, Löschen (${await menueLabels()})`);
 await menueAktion("📤 Exportieren"); await page.click('[data-export-art="txt"]'); await sleep(300);
 ok(await page.evaluate(() => document.querySelector("[data-datei-export] [data-export-name]")?.value) === "Engl + Frz + Span 3 Listen - TXT", "TXT: Fenster mit Dateiname, Vorschlag „Engl + Frz + Span 3 Listen - TXT“ (264)");
 await page.click("[data-datei-export-ok]"); await sleep(300);

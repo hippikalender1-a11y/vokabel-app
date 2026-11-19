@@ -55,7 +55,7 @@ await menue('[data-liste-id="l_a"]'); await menue('[data-liste-id="l_b"]');
 let t = await tafel();
 console.log("     ", JSON.stringify(t));
 ok(/^grund:Vokabeln \(8\):an\|negativ:✗ Negative \(2\):an\|gelernt:✓ Gelernt \(0\):aus:x\|heute:Heute \(0\):aus:x\|faellig:.*Fällige \(\d+\):/.test(t.raster.join("|")), `288: Raster wie in der Quiz-Auswahl (${t.raster.join("|")})`);
-ok(t.klein && t.rest[0] === "🎨" && t.rest.includes("🗂 Ablage ›") && t.rest.includes("↔ Von–Bis") && t.rest.length === 3, `288: unten kleine Zeile 🎨 · Ablage · Von–Bis (${t.rest.join("|")})`);
+ok(t.klein && t.rest[0] === "🎨" && t.rest.includes("🗂 Ablage ›") && t.rest.includes("↔ Von–Bis") && t.rest.includes("💾 Als Quiz speichern") && t.rest.length === 4, `288: unten kleine Zeile 🎨 · Ablage · Von–Bis (${t.rest.join("|")})`);
 ok(/^2 ausgewählt · \d+ Vokabeln/.test(t.kopf), `288: Kopf „2 ausgewählt · n Vokabeln …“ (${t.kopf})`);
 const ablage = await page.evaluate(() => document.querySelector('[data-info-aktion="🗂 Ablage ›"]')?.dataset.infoGruppe);
 ok(/📤 Exportieren/.test(ablage || "") && /🗑 Löschen/.test(ablage || ""), `288: Exportieren und Löschen in der Ablage (${ablage})`);
@@ -84,8 +84,8 @@ ok(/^2 ausgewählt/.test((await tafel()).kopf), "Auswahl der geladenen Listen wi
 await menue('[data-liste-id="l_b"]');
 t = await tafel();
 console.log("     ", JSON.stringify(t));
-ok(t.raster.length === 5 && t.klein && t.rest.includes("🗂 Ablage ›") && t.rest.at(-1) === "↔ Von–Bis" && /Unit 1 laden/.test(t.kopf), `288: eine Liste – Raster, kleine Zeile, „Unit 1 laden“ (${t.rest.join("|")}, ${t.kopf})`);
-// 296: eine Liste – lang drücken auf „Vokabeln (n)“ öffnet die Bereichswahl (wie „🎯 Quiz mit Auswahl…“)
+ok(t.raster.length === 5 && t.klein && t.rest.includes("🗂 Ablage ›") && t.rest.at(-1) === "💾 Als Quiz speichern" && /Unit 1 laden/.test(t.kopf), `288: eine Liste – Raster, kleine Zeile, „Unit 1 laden“ (${t.rest.join("|")}, ${t.kopf})`);
+// 296: eine Liste – lang drücken auf „Vokabeln (n)“ öffnet die Bereichswahl (wie „🎯 Bereich wählen…“)
 await page.evaluate(() => { const b = document.querySelector('[data-schalter-raster] [data-schalter="grund"]'), r = b.getBoundingClientRect();
   b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(900);
 const b296 = await page.evaluate(() => ({ tafel: !!document.querySelector("[data-schalter-raster]"), liste: !!document.querySelector("[data-vok-bestaetigen]"), zeilen: document.querySelectorAll(".vok-zeile").length }));

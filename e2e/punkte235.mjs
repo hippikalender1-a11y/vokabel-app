@@ -64,7 +64,7 @@ let m = await menue();
 ok(m.join("|") === "Vokabeln (2)|✗ Negative (0)|✓ Gelernt (0)|Heute (0)|🔁 Fällige (0)|🗂 Ablage ›|↔ Von–Bis", `Quiz: Hauptebene (274: Schalter-Raster oben) (${m.join(" | ")})`);
 await aktion("🗂 Ablage ›");
 m = await menue();
-ok(await gruppeOffen() === "🗂 Ablage ›" && m.join("|") === "‹ zurück|📝 Listen/Vokabeln ändern|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Ablage ersetzt das Menü, oben „‹ zurück“ (${m.join(" | ")})`);
+ok(await gruppeOffen() === "🗂 Ablage ›" && m.join("|") === "‹ zurück|📝 Vokabeln ändern|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Ablage ersetzt das Menü, oben „‹ zurück“ (${m.join(" | ")})`);
 ok((await kopf()).multi === "s1", "Gruppe öffnen lässt die Auswahl stehen");
 await aktion("‹ zurück");
 ok(!(await gruppeOffen()) && (await menue())[5] === "🗂 Ablage ›", "‹ zurück: wieder die Hauptebene");
@@ -100,9 +100,9 @@ await aktion("‹ zurück"); await tafelZu();
 await zuListen(page);
 await halte('[data-liste-id="l_a"]', 450);
 m = await menue();
-ok(m.filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "📂 Liste öffnen|📊 Lernen ›|🗂 Ablage ›|📚 Inhalt ›|↔ Von–Bis", `Liste: Hauptebene (${m.join(" | ")})`);
+ok(m.filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "📂 Liste öffnen|📊 Lernen ›|🗂 Ablage ›|📚 Inhalt ›|↔ Von–Bis|💾 Als Quiz speichern", `Liste: Hauptebene (${m.join(" | ")})`);
 await aktion("📊 Lernen ›");
-ok((await menue()).join("|") === "‹ zurück|🎯 Quiz mit Auswahl…|↺ Lernstand zurücksetzen", `Liste: Lernen (${(await menue()).join(" | ")})`);
+ok((await menue()).join("|") === "‹ zurück|🎯 Bereich wählen…|↺ Lernstand zurücksetzen", `Liste: Lernen (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück"); await aktion("🗂 Ablage ›");
 ok((await menue()).join("|") === "‹ zurück|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Liste: Ablage (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück"); await aktion("📚 Inhalt ›");
@@ -112,7 +112,7 @@ await aktion("‹ zurück");
 // ── mehrere Listen: Export, Fällige direkt, Ablage-Gruppe ──
 await halte('[data-liste-id="l_b"]', 450);
 m = await menue();
-ok(m.filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "🗂 Ablage ›|↔ Von–Bis", `mehrere Listen: Hauptebene (${m.join(" | ")})`);
+ok(m.filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "🗂 Ablage ›|↔ Von–Bis|💾 Als Quiz speichern", `mehrere Listen: Hauptebene (${m.join(" | ")})`);
 await aktion("🗂 Ablage ›");
 ok((await menue()).join("|") === "‹ zurück|📤 Exportieren (2)|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)|☑ Alle auswählen", `mehrere Listen: Ablage (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück"); await tafelZu();
@@ -120,7 +120,7 @@ await aktion("‹ zurück"); await tafelZu();
 // ── Listen-Ordner ──
 await halte('[data-lordner-id="lo1"]', 450);
 m = await menue();
-ok(m.filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "📂 Öffnen|🗂 Ablage ›", `Listen-Ordner: Hauptebene (${m.join(" | ")})`);
+ok(m.filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "📂 Öffnen|🗂 Ablage ›|💾 Als Quiz speichern", `Listen-Ordner: Hauptebene (${m.join(" | ")})`);
 await tafelZu();
 
 await browser.close();

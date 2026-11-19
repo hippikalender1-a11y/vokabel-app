@@ -59,8 +59,9 @@ export function zuEinstListen(app) {
 
 // Namensvorschlag für gespeicherte Konfigurationen: Sprache(n) + Datum, eindeutig
 // 216: ungespeichertes Quiz aus genau einer Liste – deren Name (Teil der Liste: „· Nr. 1–10“ bzw. „· Auswahl“)
-export function einListenName(app) {
-  const { listenIndex, quizBereichTyp, quizCheckboxAuswahl, quizTabListen } = app;
+export function einListenName(app, z = null) {   // 298: z = { listen, bereich, auswahl } statt des Geladenen (Tafel)
+  const { listenIndex } = app;
+  const quizTabListen = z ? z.listen : app.quizTabListen, quizBereichTyp = z ? z.bereich : app.quizBereichTyp, quizCheckboxAuswahl = z ? z.auswahl : app.quizCheckboxAuswahl;
     if (quizTabListen.length !== 1) return null;
     const id = quizTabListen[0], l = listenIndex.find(x => x.id === id);
     if (!l) return null;
@@ -157,8 +158,8 @@ export function zeileImBlick(app, art, id) {
 
 // Lang-Druck auf eine Vokabelzeile: Von–Bis mit dieser Vokabel als Anfang
 export function vonBisLangDruck(app, art, vok, nr, w1, w2) {
-  const { setQuizVonBisErster, setQuizVonBisModus, setStatistikVonBisErster, setStatistikVonBisModus, tt, vonBisTafelRef, zeileImBlick } = app;
-    const [setModus, setErster] = art === "quiz" ? [setQuizVonBisModus, setQuizVonBisErster] : [setStatistikVonBisModus, setStatistikVonBisErster];
+  const { setQuizVonBisErster, setQuizVonBisModus, tt, vonBisTafelRef, zeileImBlick } = app;
+    const [setModus, setErster] = [setQuizVonBisModus, setQuizVonBisErster];   // nur noch die Vokabel-Auswahl des Quiz
     const abbrechen = () => { vonBisTafelRef.current = null; setModus(false); setErster(null); };
     return tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs) – lang drücken: Von–Bis ab hier",
       [{ label: "✕ Von–Bis abbrechen", fn: abbrechen }],

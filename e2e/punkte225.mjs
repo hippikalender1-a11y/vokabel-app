@@ -60,7 +60,7 @@ ok(await wahl() === "l_a,l_b" && (await kopf()).zustand === "offen", `lang halte
 // ── 226: grüner Kopf übernimmt → neues, ungespeichertes Quiz aus den Listen ──
 await tippe("[data-wahl-fertig]");
 const k = await kopf();
-ok(k.zustand !== "offen" && /nicht gespeichert/.test(k.text) && !(await page.$("[data-listen-wahl-kopf]")), `226: übernommen als ungespeichertes Quiz (${JSON.stringify(k)})`);
+ok(k.zustand !== "offen" && /2 Listen/.test(k.text) && !/nicht gespeichert/.test(k.text) && !(await page.$("[data-listen-wahl-kopf]")), `226/298: übernommen als Listen-Paket (ohne „nicht gespeichert“) (${JSON.stringify(k)})`);
 ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")).gespeichert.length) === 0, "226: nichts gespeichert");
 const info = await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.parentElement?.innerText.replace(/\s+/g, " ") || "");
 console.log("     Info:", info.slice(0, 200));

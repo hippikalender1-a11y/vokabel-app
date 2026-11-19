@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { slotLaden, listeWaehlen } from "./hilfen.mjs";
+import { slotLaden, listeWaehlen, bereichOeffnen, bereichBestaetigen } from "./hilfen.mjs";
 import { quizEinstellungen, neueEineSession, listenZu, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -51,14 +51,14 @@ await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await listeWaehlen(page, "Verbes");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 // Bereich: 2 Vokabeln, Reihenfolge Zufällig (Standard: Schlechteste), speichern
-await clickText("button", "Bereich", true);
+await bereichOeffnen(page);   // 298: statt „Alle | Bereich“
 await page.evaluate(() => [...document.querySelectorAll(".vok-nr")].slice(0, 2).forEach(z => z.parentElement.click()));
 await sleep(300);
-await page.click("[data-vok-bestaetigen]"); await sleep(300);   // Liste zu → Quiz-Optionen wieder sichtbar
+await bereichBestaetigen(page);   // Liste zu → Quiz-Optionen wieder sichtbar
 await page.click("[data-reihenfolge]"); await sleep(300);
 await clickText(".toggle-opt", "Zufällig", true);
 await bereichZu(page);   // Reihenfolge zu → Start wieder sichtbar
-await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Speichern"]').click()); await new Promise(r => setTimeout(r, 300));
+await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Als Quiz speichern"]').click()); await new Promise(r => setTimeout(r, 300));
 await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].pop()?.click());
 await sleep(400);
 let z = await zustand();
@@ -72,10 +72,8 @@ await neueEineSession(page);
 await sleep(400);
 z = await zustand();
 console.log("     Nach Neu:", JSON.stringify(z));
-ok(z.gewaehlt === 0 && !/^[1-9]/.test(z.start), "Neu: keine Liste mehr ausgewählt");
-ok(z.kopfChip === "Liste oder Quiz wählen", `289: Neu – kein Preset aktiv, die Auswahl wartet („Liste oder Quiz wählen“) (${z.kopfChip})`);
-const sa = await page.evaluate(() => localStorage.getItem("vokabel_session_aktiv"));
-ok(sa === null, "Neu: keine aktive Quiz");
+// 298: „Neues Quiz aus Listen › Ein Quiz“ öffnet die Auswahl mit den Listen (das Geladene bleibt, bis eine Liste gewählt wird)
+ok(await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]")?.dataset.auswahlUmschalter === "listen" && !!document.querySelector('[data-liste-id="l_fr"]')), "298: Neu – die Auswahl zeigt die Listen");
 
 await listeWaehlen(page, "Verbes");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
@@ -89,6 +87,7 @@ await sleep(300);
 const offen = await page.evaluate(() => /📌 Gespeichert/i.test(document.body.innerText));
 if (!offen) await page.evaluate(() => document.querySelector(".toggle-opt.aktiv")?.click());
 await sleep(300);
+await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="listen"]')?.click()); await sleep(300);   // 298: Liste geladen → Auswahl zeigt Listen; zu den Quiz
 await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].find(c => c.textContent.includes("Verbes"))?.click()); await slotLaden(page);   // 216: Preset heißt wie die Liste
 await sleep(600)   // Auswahl klappt kurz verzögert zu;
 let t = await page.evaluate(() => document.body.innerText);
@@ -96,6 +95,7 @@ ok(await page.evaluate(() => document.querySelector('[data-st-kachel="gesamt"] b
 // nach dem Laden ist der Bereich zu → wieder öffnen
 await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
 await sleep(300);
+await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="listen"]')?.click()); await sleep(300);   // 298: Liste geladen → Auswahl zeigt Listen; zu den Quiz
 await page.evaluate(() => { const el = document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(250);
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion.startsWith("▦ Alle Listen"))?.click()); await sleep(300);   // Statistik: „▦ Alle Listen“ (früher „Neu“-Chip)
 await sleep(300);
