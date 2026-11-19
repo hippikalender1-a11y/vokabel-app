@@ -49,7 +49,7 @@ const stand = () => page.evaluate(() => ({ knopf: __txt(document.querySelector("
 
 // ── Standard: an, alle Listen der Sprache (A 2 + B 3 = 5 fällig; fr nicht), 25 % von 9 neuen (8 + die negative) = 2 ──
 let s = await stand();
-ok(s.an === "an" && s.modus === "sprache" && s.knopf === "+ 🔁 2" && /Quiz mit 9 Vokabeln \+ 🔁 2/.test(s.titel), `Standard: Fällige an, alle der Sprache, 9 neue + 🔁 2 (${JSON.stringify(s)})`);
+ok(s.an === "an" && s.modus === "sprache" && s.knopf === "+ 🔁 2" && /^0\/9 Vokabeln \+ 🔁 0\/2$/.test(s.titel), `Standard: Fällige an, alle der Sprache, 9 neue + 🔁 2 (${JSON.stringify(s)})`);
 
 // ── lang drücken: Herkunft und Anteil ──
 const lang = async () => { await page.evaluate(() => { const el = document.querySelector("[data-faellig]"); const r = el.getBoundingClientRect();

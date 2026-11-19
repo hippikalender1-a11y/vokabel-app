@@ -213,6 +213,7 @@ export function renderSlotKopf(app, statistik) {
     const nrKurz = (ids, a) => { if (ids.length !== 1) return "Auswahl";
       const nr = (lsLesen(SK.liste(ids[0]))?.vokabeln || []).map((v, i) => a.has(`${ids[0]}__${v.id}`) ? i + 1 : null).filter(Boolean);
       return nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}${nr.length > 1 ? `–${nr[nr.length - 1]}` : ""}` : "Auswahl"; };
+    const eckigKopf = lwahl || ((alsListe || (!statistik && kommtAusListen && !geaendert)) && !wahl && !vorschauE) || vorschauE?.istListe || vorschauE?.paket;   // 263: Listen eckig, Quiz abgerundet
     const anzahlSeg = (() => {
       if (bw || wahl || vorschauE || aendern) return null;
       if (lwahl) {
@@ -233,7 +234,7 @@ export function renderSlotKopf(app, statistik) {
       <div ref={slotSektionRef} data-slot-kopf={zu ? (gruen ? "gruen" : "zu") : "offen"} className={`slot-kopf${gruen ? " gruen" : ""}`}
         style={{top:headerH, ...(statistik ? {} : {marginLeft:"-16px", marginRight:"-16px"}), ...(!statistik && quizVokMax ? {display:"none"} : {})}}>
         <div style={{display:"flex", alignItems:"center", gap:8}}>
-          <button onClick={kopfKlick} className={`toggle-opt aktiv slot-kopf-name${wahl || lwahl || aendern || vorschauE || !zu || (erstellen && zu) ? " bestaetigen-knopf" : ""}${nichtsGeladen && !zu && !wahl && !lwahl && !vorschauE ? " ohne-haken" : ""}${lwahl ? " eckig" : ""}${((alsListe || (!statistik && kommtAusListen && !geaendert)) && !wahl && !vorschauE) || vorschauE?.istListe || vorschauE?.paket ? " eckig" : ""}${blitzt("slotkopf")}${lwahl ? blitzt("wahl") : ""}`} data-slot-kopf-name data-geaendert={geaendert ? "" : undefined}
+          <button onClick={kopfKlick} className={`toggle-opt aktiv slot-kopf-name${wahl || lwahl || aendern || vorschauE || !zu || (erstellen && zu) ? " bestaetigen-knopf" : ""}${nichtsGeladen && !zu && !wahl && !lwahl && !vorschauE ? " ohne-haken" : ""}${eckigKopf ? " eckig" : ""}${blitzt("slotkopf")}${lwahl ? blitzt("wahl") : ""}`} data-slot-kopf-name data-geaendert={geaendert ? "" : undefined}
             data-kopf-art={alsListe ? "liste" : erstellen ? "erstellen" : gespeichert ? "quiz" : undefined}
             {...(wahl || lwahl ? { "data-wahl-fertig": true, "data-wahl-hinweis": true, "data-auswahl-durchlass": true } : {})} {...(aendern ? { "data-aendern-bestaetigen": true } : {})}
             {...(vorschauE ? { "data-slot-laden": `${slotVorschau.typ}:${slotVorschau.id}` }
@@ -255,7 +256,7 @@ export function renderSlotKopf(app, statistik) {
               : <>{alsListe && <span aria-hidden="true" data-kopf-liste>📋 {listeE ? listenFlagge(listeE) : ""}</span>}{name}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}</>}
           </button>
           {anzahlSeg && (
-            <button className="toggle-opt aktiv slot-kopf-anzahl" data-kopf-anzahl={anzahlSeg.n} data-kopf-bereich={anzahlSeg.text} onClick={anzahlSeg.tipp || undefined}
+            <button className={`toggle-opt aktiv slot-kopf-anzahl${eckigKopf ? " eckig" : ""}`} data-kopf-anzahl={anzahlSeg.n} data-kopf-bereich={anzahlSeg.text} onClick={anzahlSeg.tipp || undefined}
               {...(!statistik && !lwahl ? { "data-schalter-klapp": schalterZeileZu ? "zu" : "auf" } : {})}
               {...tt(anzahlSeg.erklaerung, null, anzahlSeg.lang ? { lang: anzahlSeg.lang } : {})}>
               <span>{anzahlSeg.text}</span><b>{anzahlSeg.n}</b>

@@ -682,18 +682,16 @@ export function QuizTab(app) {
                       {...(lernStand && !aufteilen ? { "data-lernstand": true } : isPakete && sessionHatFortschritt ? { "data-session-zuruecksetzen": "" } : {})}
                       {...tt(lernStand && !aufteilen ? `Lernstand: ${lernAngesehen} von ${lernGesamt} angesehen – lang drücken: Lernen von vorn beginnen (Scores bleiben)`
                         : isPakete && sessionHatFortschritt ? `${sessionAbgefragtAnzahl} von ${anzeigeGesamt} abgefragt – lang drücken: Abgefragt-Stand zurücksetzen (Scores und Lernfortschritt bleiben)` : null, null,
-                        lernStand && !aufteilen ? { lang: () => setLernResetFrage(true) } : isPakete && sessionHatFortschritt ? { lang: () => setSessionResetFrage(true) } : {})}>{lernAktiv ? "Lernen" : "Quiz"} mit {lernAktiv ? sessionAnzahl : titelAnzahl} Vokabel{(lernAktiv ? sessionAnzahl : titelAnzahl) !== 1 ? "n" : ""}{!lernAktiv && fZiel > 0 ? <span data-start-titel-faellig={fZiel}> + <SymWdh/> {fZiel}</span> : null}</div>
+                        lernStand && !aufteilen ? { lang: () => setLernResetFrage(true) } : isPakete && sessionHatFortschritt ? { lang: () => setSessionResetFrage(true) } : {})}>{lernAktiv ? (lernStand && !aufteilen ? <><span data-anzahl="lernstand">{lernAngesehen}/{lernGesamt}</span> Vokabeln</> : <>{sessionAnzahl} Vokabel{sessionAnzahl !== 1 ? "n" : ""}</>)
+                        : isPakete ? <>{sessionHatFortschritt ? <span data-anzahl="fortschritt">{sessionAbgefragtAnzahl}/{anzeigeGesamt}</span> : <>0/{anzeigeGesamt}</>} Vokabeln
+                            {fZiel > 0 && <span data-start-titel-faellig={fZiel}> + <SymWdh/> <span data-anzahl="faellig">{fGemacht}/{fZiel}</span></span>}</>
+                        : <>{titelAnzahl} Vokabel{titelAnzahl !== 1 ? "n" : ""}{fZiel > 0 ? <span data-start-titel-faellig={fZiel}> + <SymWdh/> {fZiel}</span> : null}</>}</div>
                     </div>
-                    {(isPakete || (lernStand && !aufteilen)) && (() => {   // 300: Fortschritt bzw. Lernstand klein im Balken
+                    {(isPakete || (lernStand && !aufteilen)) && (() => {   // 300/302: Fortschritt bzw. Lernstand als Balken (Zahlen in der Überschrift)
                       const lern = lernStand && !aufteilen, pct = lern ? (lernGesamt ? Math.round(100 * lernAngesehen / lernGesamt) : 0) : sessionPct;
                       return (
                       <div className="start-balken" data-start-balken={pct}>
                         <div className="start-balken-fuellung" style={{width:`${pct}%`}}/>
-                        <span className="start-balken-text">
-                          {lern ? <span data-anzahl="lernstand">{lernAngesehen}/{lernGesamt}</span>
-                            : <>{sessionHatFortschritt ? <span data-anzahl="fortschritt">{sessionAbgefragtAnzahl}/{anzeigeGesamt}</span> : <span>0/{anzeigeGesamt}</span>}
-                              {fZiel > 0 && <span data-anzahl="faellig">{" · "}<SymWdh/> {fGemacht}/{fZiel}</span>}</>}
-                        </span>
                       </div>
                       ); })()}
                     <div style={{display:"flex", gap:10, alignItems:"stretch"}}>

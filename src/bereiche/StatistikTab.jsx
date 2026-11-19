@@ -44,8 +44,13 @@ export function StatistikTab(app) {
             </div>
           );
 
-          // Kopfzeile (Lernfortschritt, Gruppen-Balken, Ø) zählt nur die eingeblendeten Gruppen
-          const kopfVoks = alleVoks;   // 269: der Kopf zählt immer die ganze Auswahl
+          // 302: Filter – Gruppen (negativ/nie/arbeit/gelernt) und Langzeit-Stufen der gelernten („ohne3“…„ohne6“ = ausgeblendet)
+          const langzeitS = statistikArt === "uebersetzung" && schwelleS > 0;
+          const stufeVon = v => Math.min(6, Math.max(3, v.fortschritt?.score ?? 0));
+          const filterVok = v => { const g = gruppeVon(v); return statistikFilter.has(g) && !(g === "gelernt" && langzeitS && statistikFilter.has(`ohne${stufeVon(v)}`)); };
+          const alleFilterAktiv = ['negativ', 'nie', 'arbeit', 'gelernt'].every(g => statistikFilter.has(g)) && ![3, 4, 5, 6].some(x => statistikFilter.has(`ohne${x}`));
+          // Kopfzeile (Lernfortschritt, Ø) und „Lernstand · n Vokabeln“ zählen die eingeblendeten Vokabeln (302)
+          const kopfVoks = alleFilterAktiv ? alleVoks : alleVoks.filter(filterVok);
           const kopfAnzahl = { negativ: 0, nie: 0, arbeit: 0, gelernt: 0 };
           kopfVoks.forEach(v => { kopfAnzahl[gruppeVon(v)]++; });
           const abgefragt = kopfVoks.filter(v => v.fortschritt);
@@ -61,9 +66,7 @@ export function StatistikTab(app) {
           const gelerntAnzahl = kopfVoks.filter(istGelerntS).length;
 
 
-          // Filter-Logik (wird für Graph + Vokabelliste verwendet)
-          const alleFilterAktiv = ['negativ', 'nie', 'arbeit', 'gelernt'].every(g => statistikFilter.has(g));
-          const filterVok = v => statistikFilter.has(gruppeVon(v));
+          // Filter-Logik (Graph + Vokabelliste): siehe oben (302)
           const anzeigeVoks = alleVoks;
 
           // Vokabelliste (gefiltert + sortiert)
@@ -153,7 +156,7 @@ export function StatistikTab(app) {
                 const neg2 = tNeg[0].n, neg1 = tNeg[1].n;
                 const k = tArb.map(t => t.n);
                 const gel = zaehle(v => v.fortschritt && sc(v) >= 3);
-                const langzeit = statistikArt === "uebersetzung" && schwelleS > 0;
+                const langzeit = langzeitS;
                 const gelernte = alleVoks.filter(v => v.fortschritt && sc(v) >= 3);
                 const faelligAnz = gelernte.filter(v => istFaellig(v.fortschritt)).length;   // = Summe der hohlen Teile
                 const nieAnz = alleVoks.filter(v => !v.fortschritt).length, abgefragt = alleVoks.length - nieAnz;
@@ -168,8 +171,9 @@ export function StatistikTab(app) {
                     </div>
                     {keineAkzente ? <div data-keine-akzente style={{textAlign:"center", color:"var(--text)", fontWeight:600, padding:"30px 0"}}>Für dieses Quiz sind keine Akzente vorhanden.</div> : (<>
                     {/* 286: Gesamtzahl in der Überschrift (antippen: alles wieder einblenden) */}
-                    <div className="st-titel">Lernstand · <button className="st-titel-knopf" data-st-kachel="gesamt" onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
-                      {...tt("Vokabeln der Auswahl – antippen blendet alles wieder ein")}><b data-st-anzahl>{alleVoks.length}</b> Vokabeln</button></div>
+                    <div className="st-titel">Lernstand <span style={{fontWeight:500, color:"var(--text3)"}}>· <button className="st-titel-knopf" data-st-kachel="gesamt" onClick={() => setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']))}
+                      style={{color:"inherit", fontWeight:"inherit"}}
+                      {...tt(`Eingeblendete Vokabeln: ${kopfVoks.length} von ${alleVoks.length} – antippen blendet alles wieder ein`)}><b data-st-anzahl>{kopfVoks.length}</b> Vokabeln</button></span></div>
                     <div className="st-reihe" data-st-lernstand>
                       {balken({ key:"nie", von: alleVoks.length, aus: nieAus, attrs: { "data-kreis-gruppe": "nie", "data-st-balken": "nie", "data-nie-aus": nieAus ? "an" : "aus" }, onClick: () => umschalten("nie"), menue: quizMenue("nie"),
                         tipp: `Nie abgefragt: ${nieAnz} – antippen blendet sie aus (Balken und Liste nur mit schon abgefragten Vokabeln, z. B. erst ein Teil des Buches behandelt; der Kopf zählt weiter alle), lange drücken: Quiz mit diesen Vokabeln`,
@@ -185,7 +189,7 @@ export function StatistikTab(app) {
                         tipp: `Auf einem guten Weg (Kurzzeit): ●●○ ${k[2]} (oben), ●○○ ${k[1]}, ○○○ ${k[0]} (unten) – antippen blendet sie in der Liste aus, lange drücken: Quiz mit diesen Vokabeln`,
                         teile: [{ ...tArb[0], name:"○○○" }, { ...tArb[1], name:"●○○" }, { ...tArb[2], name:"●●○" }],
                         titel: { text: NAME.arbeit, farbe: TEXTFARBE.arbeit }, unter: `${k[0] + k[1] + k[2]} · ${pct(k[0] + k[1] + k[2])} %` })}
-                      {balken({ key:"gelernt", von:n, aus: !statistikFilter.has("gelernt"), attrs: { "data-kreis-gruppe": "gelernt", "data-st-balken": "gelernt" }, onClick: () => umschalten("gelernt"), menue: quizMenue("gelernt"),
+                      {balken({ key:"gelernt", von:n, aus: !statistikFilter.has("gelernt"), attrs: { "data-kreis-gruppe": "gelernt", "data-st-balken": "gelernt" }, onClick: () => setStatistikFilter(prev => { const x = new Set(prev); if (x.has("gelernt")) x.delete("gelernt"); else { x.add("gelernt"); [3, 4, 5, 6].forEach(t => x.delete(`ohne${t}`)); } return x; }), menue: quizMenue("gelernt"),
                         tipp: `Gelernt (ab Score 3): ${gel} – das Ziel: alle Vokabeln hier. Antippen blendet sie in der Liste aus, lange drücken: Quiz mit diesen Vokabeln`,
                         teile: [{ k:"3", n:gel, farbe:"var(--gelernt)", name:"Gelernt" }],
                         titel: { text: "✓ " + NAME.gelernt, farbe: TEXTFARBE.gelernt }, unter: `${gel} · ${pct(gel)} %` })}
@@ -201,8 +205,13 @@ export function StatistikTab(app) {
                         {[[3, "◇◇◇"], [4, "◆◇◇"], [5, "◆◆◇"], [6, "◆◆◆"]].map(([s, sym]) => {
                           const hier = gelernte.filter(v => (s === 6 ? sc(v) >= 6 : sc(v) === s));
                           const f = hier.filter(v => istFaellig(v.fortschritt)).length;
-                          return balken({ key:`l${s}`, von: gelernte.length, attrs: { "data-st-raute": s },
-                            tipp: `${sym}: ${hier.length} gelernte${f ? `, davon ${f} jetzt zur Prüfung fällig (hohl)` : ""} – 100 % = alle gelernten`,
+                          const lzAus = !statistikFilter.has("gelernt") || statistikFilter.has(`ohne${s}`);   // 302: Filter wie die Lernstand-Balken
+                          const lzUmschalten = () => setStatistikFilter(prev => { const x = new Set(prev);
+                            if (!x.has("gelernt")) { x.add("gelernt"); [3, 4, 5, 6].forEach(t => { if (t !== s) x.add(`ohne${t}`); }); x.delete(`ohne${s}`); }
+                            else x.has(`ohne${s}`) ? x.delete(`ohne${s}`) : x.add(`ohne${s}`);
+                            return x; });
+                          return balken({ key:`l${s}`, von: gelernte.length, aus: lzAus, attrs: { "data-st-raute": s, "data-st-raute-aus": lzAus ? "an" : "aus" }, onClick: lzUmschalten,
+                            tipp: `${sym}: ${hier.length} gelernte${f ? `, davon ${f} jetzt zur Prüfung fällig (hohl)` : ""} – 100 % = alle gelernten; antippen blendet sie in der Liste aus bzw. ein`,
                             teile: [{ k:"f", n:f, farbe:"var(--karte)", hohl:true, name:"fällig" }, { k:"r", n:hier.length - f, farbe:"var(--gelernt)", name:sym }],   // 285: fällige hohl
                             titel: { text: sym, farbe: "var(--haupt)" }, unter: <>{hier.length}{f ? <span data-st-faellig={f}> · <SymWdh/> {f}</span> : null}</> });
                         })}

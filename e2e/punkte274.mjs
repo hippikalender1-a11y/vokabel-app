@@ -90,7 +90,7 @@ ok(await page.evaluate(() => { const b = document.querySelector('[data-schalter-
 console.log("     ", JSON.stringify(z));
 ok(/^grund:8:aus\|negativ:✗ 2:an\|gelernt:✓ 0:aus:x\|heute:0:aus:x\|faellig:\+ 🔁 1:an$/.test(z.s) && z.modus === "quiz",
   `Quiz-Tab: Schalter-Zeile übernimmt die Auswahl (Vokabeln aus, Fällige nur dieses Quiz) (${z.s})`);
-ok(z.titel === "Quiz mit 2 Vokabeln + 🔁 1", `Titel: nur die 2 Negativen + 🔁 1 (${z.titel})`);
+ok(z.titel === "0/2 Vokabeln + 🔁 0/1", `Titel: nur die 2 Negativen + 🔁 1 (${z.titel})`);
 // Negative auch aus → keine anderen: „Nur Fällige“
 await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="negativ"]').click()); await sleep(300);
 z = await q();

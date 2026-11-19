@@ -89,7 +89,7 @@ const leer = await page.evaluate(() => { const k = document.querySelector("[data
   return { leer: k.classList.contains("leer"), gleich: !f || getComputedStyle(k).backgroundColor === getComputedStyle(f).backgroundColor, frei: !k.disabled,
     titel: document.querySelector("[data-start-titel]")?.textContent.trim(), heuteKnopf: getComputedStyle(document.querySelector(".quiz-zeile-knopf[data-heute]")).backgroundColor,
     gelKnopf: getComputedStyle(document.querySelector(".quiz-zeile-knopf[data-gelernte]") || document.body).backgroundColor }; });
-ok(leer.leer && leer.gleich && leer.frei && leer.titel === "Quiz mit 0 Vokabeln", `188: Titel „Quiz mit 0 Vokabeln“, Start-Knopf in der Farbe des Fortschritt-Feldes (${JSON.stringify(leer)})`);
+ok(leer.leer && leer.gleich && leer.frei && /^0(\/0)? Vokabeln$/.test(leer.titel), `188/302: Titel „0 Vokabeln“, Start-Knopf in der Farbe des Fortschritt-Feldes (${JSON.stringify(leer)})`);
 ok(!(await page.$("[data-start-hinweis]")), "188: Hinweis erst beim Antippen");
 await klick("[data-start-knopf]");
 ok(await page.evaluate(() => document.querySelector("[data-start-hinweis]")?.textContent.trim()) === "1 heute schon abgefragt – oben bei „Heute“ dazunehmen" && await page.evaluate(() => !document.querySelector(".quiz-frage-text")),

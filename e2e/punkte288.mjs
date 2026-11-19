@@ -75,7 +75,7 @@ ok(!(await page.$("[data-schalter-zeile]")) && await page.evaluate(() => documen
 await page.evaluate(() => document.querySelector("[data-schalter-klapp]").click()); await sleep(300);
 const neg = await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="negativ"]')?.dataset.an);
 const titel = await page.evaluate(() => __txt(document.querySelector("[data-start-titel]")));
-ok(neg === "aus" && /Quiz mit 8 Vokabeln/.test(titel), `288: Negative bleiben aus, Quiz mit den 8 neuen (${neg}, ${titel})`);
+ok(neg === "aus" && /^0\/8 Vokabeln/.test(titel), `288: Negative bleiben aus, Quiz mit den 8 neuen (${neg}, ${titel})`);
 // eine Liste: Tafel ebenfalls mit Raster, „Unit 1 laden“
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
 await page.evaluate(() => { const b = document.querySelector('[data-auswahl-umschalter="quiz"]'); if (b) b.click(); }); await sleep(400);

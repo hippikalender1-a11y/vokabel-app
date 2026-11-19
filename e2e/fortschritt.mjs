@@ -61,7 +61,7 @@ await sleep(300);
 t = await text();
 ok(await listenZeilen() === 2, `Gelernt ausgeblendet: Liste zeigt 2 Vokabeln (${await listenZeilen()})`);
 // 269: der Kopf zählt immer die ganze Auswahl
-ok(/67 %/.test(t) && /2 \/ 4 gelernt/.test(t), "269: Lernfortschritt bleibt bei der ganzen Auswahl: 67 %, 2 / 4 gelernt");
+ok(/0 \/ 2 gelernt/.test(t), "302: Lernfortschritt folgt den Filtern: 0 / 2 gelernt (Gelernt ausgeblendet)");
 
 // ── Quiz-Runde: gelernte sind ausgeblendet → partir + sortir, beide gewusst ──
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);

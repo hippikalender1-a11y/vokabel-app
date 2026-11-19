@@ -124,7 +124,7 @@ ok(await lwahl() === "l_b", `antippen in der Auswahl: neu mit „Unit 2“ (${aw
 await halte('[data-lordner-id="lo1"]', 450);
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]")?.click()); await sleep(700);
 const info = await page.evaluate(() => document.body.innerText.replace(/\s+/g, " "));
-ok(/Quiz mit 20 Vokabeln/.test(info), `übernehmen: Unit 2 + Ordner-Inhalt (Unit 3) = 20 Vokabeln (${(info.match(/Quiz mit \d+ Vokabeln/) || [""])[0]})`);
+ok(/(^|\D)(\d+\/)?20 Vokabeln/.test(info), `übernehmen: Unit 2 + Ordner-Inhalt (Unit 3) = 20 Vokabeln (${(info.match(/[\d\/]+ Vokabeln/) || [""])[0]})`);
 
 // ── 231: beim Verschieben keine leere Spalte, solange der Finger nicht am rechten Rand ist ──
 await zuListen(page);

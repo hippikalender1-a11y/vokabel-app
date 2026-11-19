@@ -73,7 +73,7 @@ const kopfVorher = await kopf();
 await page.click("[data-nie-aus]"); await sleep(300);
 b = await balken();
 ok(b.gelernt.zahl === "3 · 33 %" && b.negativ.zahl === "2 · 22 %", `ohne nie abgefragte: Balken auf 9 bezogen (${b.gelernt.zahl}, ${b.negativ.zahl})`);
-ok(await kopf() === kopfVorher && /3 \/ 10 gelernt/.test(await kopf()), `Kopf zählt weiter alle (${await kopf()})`);
+ok(/3 \/ 9 gelernt/.test(await kopf()), `302: Kopf folgt dem Filter – ohne nie abgefragte (${await kopf()})`);
 ok(b.nie.aus && /9 abgefragt = 100 %/.test(await page.evaluate(() => document.querySelector(".st-klammer").textContent)) && await zeilen() === 9, "Nie-Balken angetippt: blass, Klammer „9 abgefragt = 100 %“, Liste ohne die nie abgefragte");
 await page.click("[data-nie-aus]"); await sleep(300);
 

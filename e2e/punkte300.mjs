@@ -61,6 +61,7 @@ await zuAuswahl(); await sleep(400);
 const seg = () => page.evaluate(() => { const s = document.querySelector("[data-kopf-anzahl]"); return s ? { n: s.dataset.kopfAnzahl, b: s.dataset.kopfBereich, klapp: s.dataset.schalterKlapp } : null; });
 let s = await seg();
 ok(s && s.n === "11" && s.b === "Alle", `301: rechts im Kopf „Alle“ / 11 (${JSON.stringify(s)})`);
+ok(await page.evaluate(() => document.querySelector("[data-kopf-anzahl]").classList.contains("eckig")), "302: Liste geladen – Anzahl im Kopf eckig");
 // antippen: Filter-Zeile auf/zu
 const zeileDa = () => page.evaluate(() => !!document.querySelector("[data-schalter-zeile]"));
 const vorher = await zeileDa();
@@ -77,7 +78,7 @@ ok(st.breit && !st.kasten && !st.pfeil, `300: Start-Knopf über die ganze Breite
 // Fortschritt klein im Balken: eine Runde mit 2 Vokabeln, dann „x/y“ im Balken; lang auf die Überschrift → zurücksetzen
 await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await sleep(300);
 await page.evaluate(() => document.querySelector('[data-umfang-wahl="5"]')?.click()); await sleep(300);
-const balken = () => page.evaluate(() => __txt(document.querySelector(".start-balken-text")));
+const balken = () => page.evaluate(() => __txt(document.querySelector("[data-start-titel]")));   // 302: Zahlen in der Überschrift
 ok(/^0\/9/.test(await balken()), `300: Balken zeigt „0/9 …“ (${await balken()})`);
 await page.click("[data-start-knopf]"); await sleep(700);
 for (let i = 0; i < 15 && await page.evaluate(() => /\d+ \/ 5/.test(document.body.innerText) && !/Weiter →/.test(document.body.innerText)); i++) {
@@ -92,6 +93,20 @@ ok(!!(await page.$("[data-reset-frage]")), "300: lang auf die Überschrift – R
 // lang auf die Anzahl → Bereichswahl
 await lang("[data-kopf-anzahl]"); await sleep(800);
 ok(await page.evaluate(() => !!document.querySelector("[data-vok-bestaetigen]")), "301: lang auf die Anzahl öffnet die Bereichswahl");
+// 302: Statistik – Langzeit-Balken filtern mit, Anzahl und Lernfortschritt folgen den Filtern
+await page.click("[data-vok-bestaetigen]"); await sleep(600);
+await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Statistik"))?.click()); await sleep(700);
+const stat = () => page.evaluate(() => ({ n: document.querySelector("[data-st-anzahl]")?.textContent, rauten: [...document.querySelectorAll("[data-st-raute]")].map(b => b.dataset.stRauteAus).join(","),
+  kopf: __txt(document.querySelector("[data-statistik-kopf-titel]")?.parentElement?.parentElement) }));
+let st0 = await stat();
+await page.click('[data-st-balken="gelernt"]'); await sleep(400);
+let st1 = await stat();
+ok(st0.n === "11" && st1.n === "9" && st1.rauten === "an,an,an,an", `302: Gelernt aus – alle Langzeit-Balken aus, Anzahl 11 → 9 (${JSON.stringify([st0, st1])})`);
+await page.click('[data-st-raute="3"]'); await sleep(400);
+let st2 = await stat();
+ok(st2.n === "11" && st2.rauten === "aus,an,an,an", `302: Langzeit-Balken ◇◇◇ antippen – Gelernt wieder an, nur diese Stufe (${JSON.stringify(st2)})`);
+await page.click('[data-st-raute="3"]'); await sleep(400);
+ok((await stat()).n === "9", "302: ◇◇◇ wieder aus – Anzahl 9");
 await browser.close();
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 process.exit(fehler ? 1 : 0);

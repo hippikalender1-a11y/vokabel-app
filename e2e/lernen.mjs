@@ -74,7 +74,7 @@ ok(await stufe() === "schwer|Schwer", "gewählt: Schwer");
 await stufeWaehlen(page, "lernen");
 const start = await page.evaluate(() => document.querySelector("[data-start-knopf]")?.textContent.trim());
 ok(start === "Lernen starten7 Vokabeln", `Start-Knopf: „Lernen starten / 7 Vokabeln“ – ganze Quiz (${start})`);
-ok(await page.evaluate(() => document.querySelector("[data-start-titel]")?.textContent.trim()) === "Lernen mit 7 Vokabeln", "Überschrift: „Lernen mit 7 Vokabeln“");
+ok(await page.evaluate(() => document.querySelector("[data-start-titel]")?.textContent.trim()) === "7 Vokabeln", "302: Überschrift „7 Vokabeln“");
 
 // Stufe aufgeklappt: „Lernen einstellen“, Regeln, Vorlesen als Knöpfe
 await stufeAuf(page);

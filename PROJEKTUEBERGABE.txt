@@ -3903,3 +3903,11 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
     data-lernstand dort).
   · Statistik: Art-Knopf wieder nur „Übersetzung ⇄“ (data-st-art-name), Zahl bei „Lernstand · n Vokabeln“ (data-st-anzahl).
   Test: punkte300 (neu); viele Tests auf „Neue“, Kopf-Anzahl und langen Druck auf die Überschrift umgestellt.
+- 302 UMGESETZT:
+  · Anzahl rechts im Kopf: Liste eckig, Quiz abgerundet (wie der Name; eckigKopf in koepfe.jsx).
+  · Statistik: Langzeit-Balken filtern mit (statistikFilter „ohne3“…„ohne6“); „Gelernt“ aus → alle Langzeit-Balken aus,
+    ein Langzeit-Balken antippen → Gelernt wieder an, nur diese Stufe. „Lernstand · n Vokabeln“ grau wie beim
+    Langzeitgedächtnis und zählt die eingeblendeten; der Lernfortschritt oben folgt den Filtern (früher 269: ganze Auswahl).
+  · Quiz: Überschrift ohne „Quiz mit“ – „0/150 Vokabeln + 🔁 0/12“ (Pakete), sonst „150 Vokabeln + 🔁 12“; Lernen
+    „12/40 Vokabeln“ bzw. „40 Vokabeln“. Balken ohne Text (6 px).
+  Test: punkte300 erweitert; Tests auf die neue Überschrift / Filter-Kopf umgestellt.

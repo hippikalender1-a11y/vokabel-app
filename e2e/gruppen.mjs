@@ -79,7 +79,7 @@ await page.screenshot({ path: "gruppen.png", fullPage: true });
 await box("✓ Gelernt");
 z = await zeilen(); t = await text();
 // ohne Gelernte: partir 67 %, sortir 0 %, voir 0 % → 22 %
-ok(z.length === 3 && !z.some(r => r.rechts.startsWith("✓")) && /53 %/.test(t) && /2 \/ 5 gelernt/.test(t), "Gelernt ausgeblendet: 3 Zeilen; 269: Kopf bleibt bei der ganzen Auswahl (53 %, 2 / 5)");
+ok(z.length === 3 && !z.some(r => r.rechts.startsWith("✓")) && /0 \/ 3 gelernt/.test(t), "Gelernt ausgeblendet: 3 Zeilen; 302: Kopf folgt den Filtern (0 / 3 gelernt)");
 await box("Gesamt");
 z = await zeilen();
 ok(z.length === 5, "Gesamt: wieder alle 5");

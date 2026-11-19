@@ -89,10 +89,10 @@ ok(JSON.stringify(await lage()) === JSON.stringify(vorher), "256: eigene Anordnu
 await page.evaluate(() => document.querySelector('[data-slot-id="sA"]').click()); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-slot-laden]")?.click()); await sleep(900);
 await page.evaluate(() => { if (document.querySelector('[data-quiz-ansicht="auswahl"]')) document.querySelector("[data-slot-kopf-name]")?.click(); }); await sleep(500);
-const stand = () => page.evaluate(() => ({ fort: document.querySelector(".start-balken-text")?.textContent.trim(), titel: document.querySelector("[data-start-titel]")?.textContent,
+const stand = () => page.evaluate(() => ({ fort: (document.querySelector("[data-start-titel]")?.textContent.trim() || "").split(" ")[0], titel: document.querySelector("[data-start-titel]")?.textContent,
   knopf: document.querySelector("[data-start-knopf]")?.dataset.startRest ?? document.querySelector("[data-start-knopf]")?.dataset.startAnzahl }));
 let s = await stand();
-ok(s.fort === "0/5" && s.knopf === "5" && /mit 5 Vokabeln/.test(s.titel), `255: ohne Gelernte und ohne heute: 0/5, Knopf 5 (${JSON.stringify(s)})`);
+ok(s.fort === "0/5" && s.knopf === "5" && /5 Vokabeln/.test(s.titel), `255: ohne Gelernte und ohne heute: 0/5, Knopf 5 (${JSON.stringify(s)})`);
 await page.evaluate(() => document.querySelector("[data-heute]")?.click()); await sleep(300);
 s = await stand();
 ok(s.fort === "0/8" && s.knopf === "8", `255: + heute: 0/8, Knopf 8 (${JSON.stringify(s)})`);
