@@ -102,7 +102,7 @@ await page.click("[data-start-knopf]"); await sleep(400);
 await vor(1);
 await schliessen();
 ok((await knopf()).stand === "1/7", "Lernstand 1/7");
-await page.click("[data-lernstand]"); await sleep(200);
+await page.evaluate(sel => { const el = document.querySelector(sel), r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 5 })); }, "[data-lernstand]");   // 300: lang auf die Überschrift await sleep(200);
 ok(await page.$("[data-lern-reset-frage]"), "antippen: Rückfrage „Lernstand löschen?“");
 await page.click("[data-lern-reset-ja]"); await sleep(300);
 ok((await knopf()).art === "neu" && !(await slotDaten("g_a")).lernStaende?.uebersetzung, "„Ja, von vorn“: Lernstand gelöscht");

@@ -70,7 +70,7 @@ ok((await menue()).includes("✎ Umbenennen") && !(await menue()).includes("☑ 
 ok(await gewaehlt() === "s1", "Teil 1 ist ausgewählt");
 await kontext(kachel("s2"));
 ok(/^2 Quiz ausgewählt/.test(await tafel() || ""), `Lang-Druck auf Teil 2: „2 Quiz ausgewählt“ (${await tafel()})`);
-ok((await menue()).some(m => m.startsWith("Vokabeln (")), "Tafel zeigt Aktionen für die Auswahl (274: Schalter „Vokabeln (n)“ (282))");
+ok((await menue()).some(m => m.startsWith("Neue (")), "Tafel zeigt Aktionen für die Auswahl (274: Schalter „Vokabeln (n)“ (282))");
 ok(await gewaehlt() === "s1,s2", "Teil 1 + 2 ausgewählt");
 await kontext(kachel("s2"));
 ok(await gewaehlt() === "s1" && (await tafel())?.startsWith("Teil 1"), "nochmal lang drücken nimmt heraus");

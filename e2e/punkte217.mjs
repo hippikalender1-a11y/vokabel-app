@@ -72,7 +72,7 @@ await oeffneListe("l_a");
 await page.evaluate(() => document.querySelector("[data-liste-quiz-erstellen]").click()); await sleep(900);
 k = await kopf();
 ok(k.zustand === "offen" && /Unit 1 laden/.test(k.text), `298: Auswahl mit der Tafel von „Unit 1“ (${JSON.stringify(k)})`);
-await page.evaluate(() => { const b = document.querySelector('[data-schalter-raster] [data-schalter="grund"]'), r = b.getBoundingClientRect();
+await page.evaluate(() => { const b = document.querySelector('[data-kopf-anzahl]'), r = b.getBoundingClientRect();
   b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(900);
 await page.evaluate(() => [...document.querySelectorAll(".vok-zeile")].slice(0, 2).forEach(e => e.click())); await sleep(400);   // Nr. 1–2
 await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]").click()); await sleep(1000);

@@ -71,7 +71,7 @@ await new Promise(r => setTimeout(r, 400));
 ok(!(await page.$("[data-reihenfolge-wahl]")) && await text("[data-reihenfolge]") === "Listenplatz", `… dann zu, Knopf „Listenplatz“ (${await text("[data-reihenfolge]")})`);
 // Beschriftungen über den Knöpfen, gleich hohe Knöpfe
 const labels = await page.evaluate(() => [...document.querySelectorAll(".quiz-zeile-label")].map(l => l.textContent).join("|"));
-ok(/^Lern-Modus\|\w+ – \w+\|Reihenfolge\|Anzahl je Runde\|Wie oft/.test(labels), `Beschriftungen, über „Art der Antwort“ die Sprachen Frage – Antwort (${labels})`);
+ok(/^(Neue\|Negative\|Gelernte\|Heute\|Fällige\|)?Lern-Modus\|\w+ – \w+\|Reihenfolge\|Anzahl je Runde\|Wie oft/.test(labels), `Beschriftungen, über „Art der Antwort“ die Sprachen Frage – Antwort (${labels})`);
 const hoehe = s => page.evaluate(s => Math.round(document.querySelector(s).getBoundingClientRect().height), s);
 const zu1 = [await hoehe("[data-stufe]"), await hoehe("[data-abfragemodus]"), await hoehe("[data-reihenfolge]"), await hoehe("[data-umfang]")];
 await page.click("[data-reihenfolge]"); await sleep(300);

@@ -47,7 +47,7 @@ const tafel = () => page.evaluate(() => ({ raster: [...document.querySelectorAll
   kopf: __txt(document.querySelector("[data-wahl-anzahl]")) }));
 const kopf = () => page.evaluate(() => ({ text: __txt(document.querySelector("[data-slot-kopf-name]")), art: document.querySelector("[data-slot-kopf-name]")?.dataset.kopfArt || "",
   start: document.querySelector("[data-start-knopf]")?.dataset.startAnzahl }));
-const langVokabeln = () => page.evaluate(() => { const b = document.querySelector('[data-schalter-raster] [data-schalter="grund"]'), r = b.getBoundingClientRect();
+const langVokabeln = () => page.evaluate(() => { const b = document.querySelector('[data-kopf-anzahl]'), r = b.getBoundingClientRect();
   b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); });
 const zeilen = async nr => { for (const i of nr) { await page.evaluate(i => document.querySelectorAll(".vok-zeile")[i - 1].click(), i); await sleep(150); } };
 const offeneAuswahl = () => page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); });
@@ -61,12 +61,12 @@ await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umsc
 await page.evaluate(() => document.querySelector('[data-liste-id="l_a"]').click()); await sleep(1200);   // Unit 1 laden
 await zuAuswahl(); await sleep(400);
 if (await page.$('[data-schalter-klapp="zu"]')) { await page.click("[data-schalter-klapp]"); await sleep(300); }
-await lang('[data-schalter-zeile] [data-schalter="grund"]'); await sleep(800);
+await lang('[data-kopf-anzahl]'); await sleep(800);
 ok(await page.evaluate(() => !!document.querySelector("[data-vok-bestaetigen]") && document.querySelectorAll(".vok-zeile").length === 11), "299: lang auf „Vokabeln“ – Bereichswahl der geladenen Liste");
 await zeilen([2, 3, 4]);
 await page.click("[data-vok-bestaetigen]"); await sleep(800);
 let k = await kopf();
-ok(!(await page.$("[data-vok-bestaetigen]")) && k.art === "liste" && /Unit 1 · Nr\. 2–4/.test(k.text) && k.start === "3" && !(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf === "offen")),
+ok(!(await page.$("[data-vok-bestaetigen]")) && k.art === "liste" && /Unit 1/.test(k.text) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Nr. 2–4" && k.start === "3" && !(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf === "offen")),
   `299: „Bestätigen“ – zurück im Quiz-Tab, Bereich gilt (${JSON.stringify(k)})`);
 // ── B: Tafel – Bereich bestätigen lädt sofort ──
 await offeneAuswahl(); await sleep(400);
@@ -76,7 +76,7 @@ await langVokabeln(); await sleep(900);
 await zeilen([4]);   // die negative von Unit 2
 await page.click("[data-vok-bestaetigen]"); await sleep(1200);
 let t = await tafel();
-ok(t.raster[0] === "grund:Vokabeln (0)" && /Unit 2 · Nr\. 4$/.test(t.kopf) && !/laden/.test(t.kopf), `299: zurück in der Tafel, schon geladen – Kopf ohne „laden“ (${t.kopf})`);
+ok(t.raster[0] === "grund:Neue (0)" && /Unit 2$/.test(t.kopf) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Nr. 4" && !/laden/.test(t.kopf), `299: zurück in der Tafel, schon geladen – Kopf ohne „laden“ (${t.kopf})`);
 await zuAuswahl(); await sleep(500);
 k = await kopf();
 ok(k.art === "liste" && /Unit 2/.test(k.text) && k.start === "1", `299: Bereich aus der Tafel ist geladen (${JSON.stringify(k)})`);
@@ -89,10 +89,10 @@ ok(/^2 ausgewählt/.test(t.kopf), `Tafel mit zwei Listen (${t.kopf})`);
 await tab("Statistik"); await sleep(900);
 const st = await page.evaluate(() => ({ n: document.querySelector("[data-st-anzahl]")?.textContent, kopf: __txt(document.querySelector("[data-slot-kopf-name]")) }));
 ok(st.n === "15" && /2 Listen/.test(st.kopf), `299: Tabwechsel übernimmt die Tafel – Statistik zeigt beide Listen (${JSON.stringify(st)})`);
-// ── D: Statistik – Anzahl im Art-Knopf, lang drücken = Bereich, zurück in die Statistik ──
-const knopf = await page.evaluate(() => __txt(document.querySelector("[data-st-art-knopf]")));
-ok(/Übersetzung ⇄/.test(knopf) && /15 Vokabeln/.test(knopf), `299: Art-Knopf mit Anzahl (${knopf})`);
-await lang("[data-st-art-knopf]"); await sleep(900);
+// ── D (301): Statistik – Anzahl rechts im Kopf, lang drücken = Bereich, zurück in die Statistik ──
+const knopf = await page.evaluate(() => ({ seg: document.querySelector("[data-kopf-anzahl]")?.dataset.kopfAnzahl, art: __txt(document.querySelector("[data-kreismitte]")) }));
+ok(knopf.seg === "15" && /^Übersetzung ⇄$/.test(knopf.art.trim()), `301: Anzahl im Kopf, Art-Knopf ohne Zahl (${JSON.stringify(knopf)})`);
+await lang("[data-kopf-anzahl]"); await sleep(900);
 ok(await page.evaluate(() => document.querySelector(".tab.aktiv")?.textContent.includes("Quiz") && !!document.querySelector("[data-vok-bestaetigen]") && document.querySelectorAll(".vok-zeile").length === 15),
   "299: lang auf die Anzahl → Bereichswahl über das Geladene");
 await zeilen([1, 2, 3, 4, 5]);

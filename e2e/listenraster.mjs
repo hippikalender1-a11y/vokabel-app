@@ -65,7 +65,7 @@ ok(pl.Alpha === "0|0" && pl.Beta === "1|0" && pl.Gamma === "2|0", "alte Listen b
 // Lang-Druck + Ziehen: Gamma auf Platz von Alpha → tauschen
 let p = await mitte("2|0"); let ziel = await mitte("0|0");
 await finger("touchStart", p.x, p.y); await sleep(450); await finger("touchEnd"); await sleep(400);   // 234: kurz halten = auswählen (Menü)
-ok((await aktionen()).filter(x => !/^(Vokabeln \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "📂 Liste öffnen|📊 Lernen ›|🗂 Ablage ›|📚 Inhalt ›|↔ Von–Bis|💾 Als Quiz speichern|🎯 Bereich wählen…|↺ Lernstand zurücksetzen|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen|＋ Vokabeln importieren|📤 Exportieren|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|( ) → Info|▦ In mehrere Quiz aufteilen", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
+ok((await aktionen()).filter(x => !/^(Neue \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "📂 Liste öffnen|📊 Lernen ›|🗂 Ablage ›|📚 Inhalt ›|↔ Von–Bis|💾 Als Quiz speichern|🎯 Bereich wählen…|↺ Lernstand zurücksetzen|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen|＋ Vokabeln importieren|📤 Exportieren|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|( ) → Info|▦ In mehrere Quiz aufteilen", `Lang-Druck: Menü (${(await aktionen()).join("|")})`);
 await auswahlEnde(page); await sleep(300);
 p = await mitte("2|0"); ziel = await mitte("0|0");   // die Auswahl-Tafel kann die Seite verschoben haben
 // 234: lang halten (angehoben) und ziehen: verschieben

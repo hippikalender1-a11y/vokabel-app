@@ -8,7 +8,7 @@ import { SPRACH_KUERZEL, sprachInfo } from "../sprache.js";
 // Phase 2 (Aufteilung): Bereich aus dem Haupt-return von App.jsx (tab === "quiz")
 // app = Zustände, Setter und Funktionen der Komponente (siehe „const app“ in App.jsx)
 export function QuizTab(app) {
-  const { waehleBereichGeladen, vokAuswahlZurTafel, schalterZeileZu, setSchalterZeileZu, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, faelligJeSprache, faelligePool, quizFaellig, setQuizFaellig, starteNurFaellige, istPaketQuiz, abfrageModusContainerRef, abfrageModusRef, abfrageZielAnzahl, abfrageZielModus, abfrageZielScore, abfrageZielScoreTyp, abfrageZielWiederholung, aktiverSlot, alleBereichH, alleBereichRef, antwortMehrfach, artenMehrfach, aufteilen, aufteilenStand, auswahlListen, auswahlOrdnerZelle, begrenzeOhneAkzent, blitzt, einstellungen, einzelauswahlRef, fokusZeigt, headerH, ladeSlot, legeAufteilenAn, lernEinstellungen, lernResetFrage, lernStandVon, lernstandJeArt, leuchte, leuchtet, listenAuswahlPfad, listenContainerRef, listenFlagge, listenIndex, listenNavi, listenOrdner, listenRasterPlaetze, listenSortModus, listenWahl, listenauswahlHeaderH, listenauswahlHeaderRef, loescheSessionSlot, maxFenster, maxSpalte, offenText, ordnerNavi, quizAbfrageArt, quizAbfrageModusAufgeklappt, quizAntwortTypenGeordnet, quizArt, quizAusgewaehlt, quizBasisVoks, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizFokus, quizFrageTyp, quizGefilterteVoks, quizGelerntEinschliessen, quizHeuteEinschliessen, quizInfoTypenSession, quizKombiListe, quizListeAufgeklappt, quizModus, quizModusInfoAufgeklappt, quizPaketGroesse, quizReihenfolge, quizReihenfolgeAufgeklappt, quizSchlechtesteMaxScore, quizSessionAufgeklappt, quizSessionModus, quizSpalteModus, quizStufeAufgeklappt, quizTabListen, quizUnbeantwortetZuerst, quizVokMax, quizVonBisErster, quizVonBisModus, quizZeigeInfo, reihenfolgeContainerRef, renderAufteilenKasten, renderListeInfo, renderListenRaster, renderModusKnoepfe, renderSlotBereiche, renderSlotInfo, renderSlotKopf, renderSuchleiste, resetImport, schliesseQuizBereiche, sessionContainerRef, sessionRef, sessionResetFrage, sessionSlotAktiv, sessionSlotKonflikt, sessionSpeicherAktionen, setAbfrageZielAnzahl, setAbfrageZielModus, setAbfrageZielScore, setAbfrageZielScoreTyp, setAbfrageZielWiederholung, setAnsicht, setAufteilen, setLernResetFrage, setModal, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizDiktatSpalte, setQuizDiktatUebersetzung, setQuizGelerntEinschliessen, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizModus, setQuizModusInfoAufgeklappt, setQuizPaketGroesse, setQuizReihenfolge, setQuizReihenfolgeAufgeklappt, setQuizSchlechtesteMaxScore, setQuizSessionAufgeklappt, setQuizSessionModus, setQuizStufeAufgeklappt, setQuizTabListen, setQuizUnbeantwortetZuerst, setQuizVonBisErster, setQuizVonBisModus, setSessionResetFrage, setStartLeerHinweis, setSucheQuiz, setTab, setzeLernStand, sicherungErinnerungUI, sichtbareListen, slotContainerRef, slotH, slotSektionAufgeklappt, slotVorschau, speichereEinst, spracheVonListe, sprungKnopf, startLeerHinweis, starteLernen, starteQuiz, suchInfo, suchMarke, sucheQuiz, toggleAbfrageModus, toggleEinzelauswahl, toggleInfoSpalte, toggleQuizSpalte, toggleQuizTabListe, toggleReihenfolge, toggleSessionBereich, toggleSpalteRolle, toggleVokCheckbox, tt, ttFeld, vonBisLangDruck, wahlLeiste, wechsleQuizArt, zeileImBlick } = app;
+  const { vokAuswahlZurTafel, schalterZeileZu, setSchalterZeileZu, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, faelligJeSprache, faelligePool, quizFaellig, setQuizFaellig, starteNurFaellige, istPaketQuiz, abfrageModusContainerRef, abfrageModusRef, abfrageZielAnzahl, abfrageZielModus, abfrageZielScore, abfrageZielScoreTyp, abfrageZielWiederholung, aktiverSlot, alleBereichH, alleBereichRef, antwortMehrfach, artenMehrfach, aufteilen, aufteilenStand, auswahlListen, auswahlOrdnerZelle, begrenzeOhneAkzent, blitzt, einstellungen, einzelauswahlRef, fokusZeigt, headerH, ladeSlot, legeAufteilenAn, lernEinstellungen, lernResetFrage, lernStandVon, lernstandJeArt, leuchte, leuchtet, listenAuswahlPfad, listenContainerRef, listenFlagge, listenIndex, listenNavi, listenOrdner, listenRasterPlaetze, listenSortModus, listenWahl, listenauswahlHeaderH, listenauswahlHeaderRef, loescheSessionSlot, maxFenster, maxSpalte, offenText, ordnerNavi, quizAbfrageArt, quizAbfrageModusAufgeklappt, quizAntwortTypenGeordnet, quizArt, quizAusgewaehlt, quizBasisVoks, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizFokus, quizFrageTyp, quizGefilterteVoks, quizGelerntEinschliessen, quizHeuteEinschliessen, quizInfoTypenSession, quizKombiListe, quizListeAufgeklappt, quizModus, quizModusInfoAufgeklappt, quizPaketGroesse, quizReihenfolge, quizReihenfolgeAufgeklappt, quizSchlechtesteMaxScore, quizSessionAufgeklappt, quizSessionModus, quizSpalteModus, quizStufeAufgeklappt, quizTabListen, quizUnbeantwortetZuerst, quizVokMax, quizVonBisErster, quizVonBisModus, quizZeigeInfo, reihenfolgeContainerRef, renderAufteilenKasten, renderListeInfo, renderListenRaster, renderModusKnoepfe, renderSlotBereiche, renderSlotInfo, renderSlotKopf, renderSuchleiste, resetImport, schliesseQuizBereiche, sessionContainerRef, sessionRef, sessionResetFrage, sessionSlotAktiv, sessionSlotKonflikt, sessionSpeicherAktionen, setAbfrageZielAnzahl, setAbfrageZielModus, setAbfrageZielScore, setAbfrageZielScoreTyp, setAbfrageZielWiederholung, setAnsicht, setAufteilen, setLernResetFrage, setModal, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizDiktatSpalte, setQuizDiktatUebersetzung, setQuizGelerntEinschliessen, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizModus, setQuizModusInfoAufgeklappt, setQuizPaketGroesse, setQuizReihenfolge, setQuizReihenfolgeAufgeklappt, setQuizSchlechtesteMaxScore, setQuizSessionAufgeklappt, setQuizSessionModus, setQuizStufeAufgeklappt, setQuizTabListen, setQuizUnbeantwortetZuerst, setQuizVonBisErster, setQuizVonBisModus, setSessionResetFrage, setStartLeerHinweis, setSucheQuiz, setTab, setzeLernStand, sicherungErinnerungUI, sichtbareListen, slotContainerRef, slotH, slotSektionAufgeklappt, slotVorschau, speichereEinst, spracheVonListe, sprungKnopf, startLeerHinweis, starteLernen, starteQuiz, suchInfo, suchMarke, sucheQuiz, toggleAbfrageModus, toggleEinzelauswahl, toggleInfoSpalte, toggleQuizSpalte, toggleQuizTabListe, toggleReihenfolge, toggleSessionBereich, toggleSpalteRolle, toggleVokCheckbox, tt, ttFeld, vonBisLangDruck, wahlLeiste, wechsleQuizArt, zeileImBlick } = app;
   return (
 (() => {
           const kombiListe = quizKombiListe;
@@ -308,6 +308,31 @@ export function QuizTab(app) {
                   ); })()}
 
                 {!quizVokMax && (<>
+                {/* 301: Filter-Zeile direkt unter dem Kopf (274: feste Plätze, an gefüllt, aus invertiert, nicht verfügbar ausgegraut); auf/zu über die Anzahl im Kopf */}
+                {kombiListe && fokusZeigt("zeile1") && !schalterZeileZu && (
+                  <div className="quiz-zeile schalter-zeile" data-schalter-zeile style={{position:"relative", top:0, zIndex:5}}>
+                    {[
+                      { k: "grund", label: "Neue", n: gruppenAnz.grund, an: quizGrund, set: setQuizGrund, zeichen: null, frei: true,
+                        text: "Neue Vokabeln: noch nie abgefragt oder Score 0 bis 2" },
+                      { k: "negativ", label: "Negative", n: gruppenAnz.negativ, an: quizNegativ, set: setQuizNegativ, zeichen: "✗", frei: true,
+                        text: "Vokabeln mit negativem Score" },
+                      { k: "gelernt", label: "Gelernte", n: gruppenAnz.gelernt, an: quizGelerntEinschliessen, set: setQuizGelerntEinschliessen, zeichen: "✓", frei: schwelle > 0, plus: true,
+                        text: "Gelernte Vokabeln (nicht fällig)" },
+                      { k: "heute", label: "Heute", n: gruppenAnz.heute, an: quizHeuteEinschliessen, set: setQuizHeuteEinschliessen, zeichen: null, frei: heuteSperre, plus: true,
+                        text: "Heute schon abgefragte Vokabeln – sonst kommen sie erst morgen wieder" },
+                    ].map(x => (
+                      <div key={x.k} className="quiz-zeile-zelle"><span className="quiz-zeile-label">{x.label}</span>
+                      <button className={`quiz-zeile-knopf${x.an ? " an" : ""}`} data-schalter={x.k} data-an={x.an ? "an" : "aus"} {...gesperrtAttr(!x.frei || x.n === 0)}
+                        {...(x.k === "gelernt" ? { "data-gelernte": x.an ? "an" : "aus" } : x.k === "heute" ? { "data-heute": x.an ? "an" : "aus" } : {})}
+                        onClick={e => { if (!x.frei || x.n === 0) { blinke(e.currentTarget); return; } schliesseQuizBereiche(null); x.set(v => !v); setStartLeerHinweis(false); }}
+                        {...tt(`${x.text}: ${x.n} – ${x.an ? "werden abgefragt; antippen schaltet aus" : "ausgeschaltet; antippen schaltet ein"}`)}>
+                        {x.plus && x.an && x.n > 0 && "+ "}{x.zeichen && <>{x.zeichen} </>}{x.n}
+                      </button></div>
+                    ))}
+                    {faelligKnopf}
+                  </div>
+                )}
+
                 {/* ZEILE 1: Stufe (Lernen/Leicht/Schwer) | Abfrage-Modus | Reihenfolge – je ein Bereich klappt darunter auf */}
                 {kombiListe && fokusZeigt("zeile1") && (
                   <div ref={abfrageModusRef} className={`quiz-zeile${quizStufeAufgeklappt || quizAbfrageModusAufgeklappt || quizReihenfolgeAufgeklappt ? " hat-offen" : ""}`} style={{position: quizFokus === "zeile1" ? "sticky" : "relative", top: quizFokus === "zeile1" ? headerH + slotH : 0}}>
@@ -638,32 +663,6 @@ export function QuizTab(app) {
                   </div>
                 )}
 
-                {/* ZEILE 3 (274): Vokabel-Schalter – feste Plätze, an gefüllt, aus invertiert, nicht verfügbar ausgegraut */}
-                {kombiListe && fokusZeigt("zeile2") && !schalterZeileZu && (
-                  <div className="quiz-zeile schalter-zeile" data-schalter-zeile style={{position:"relative", top:0, zIndex:5}}>
-                    {[
-                      { k: "grund", label: "Vokabeln", n: gruppenAnz.grund, an: quizGrund, set: setQuizGrund, zeichen: null, frei: true,
-                        text: "Vokabeln, die noch gelernt werden (nie abgefragt oder Score 0 bis 2)" },
-                      { k: "negativ", label: "Negative", n: gruppenAnz.negativ, an: quizNegativ, set: setQuizNegativ, zeichen: "✗", frei: true,
-                        text: "Vokabeln mit negativem Score" },
-                      { k: "gelernt", label: "Gelernte", n: gruppenAnz.gelernt, an: quizGelerntEinschliessen, set: setQuizGelerntEinschliessen, zeichen: "✓", frei: schwelle > 0, plus: true,
-                        text: "Gelernte Vokabeln (nicht fällig)" },
-                      { k: "heute", label: "Heute", n: gruppenAnz.heute, an: quizHeuteEinschliessen, set: setQuizHeuteEinschliessen, zeichen: null, frei: heuteSperre, plus: true,
-                        text: "Heute schon abgefragte Vokabeln – sonst kommen sie erst morgen wieder" },
-                    ].map(x => (
-                      <div key={x.k} className="quiz-zeile-zelle"><span className="quiz-zeile-label">{x.label}</span>
-                      <button className={`quiz-zeile-knopf${x.an ? " an" : ""}`} data-schalter={x.k} data-an={x.an ? "an" : "aus"} {...gesperrtAttr(!x.frei || x.n === 0)}
-                        {...(x.k === "gelernt" ? { "data-gelernte": x.an ? "an" : "aus" } : x.k === "heute" ? { "data-heute": x.an ? "an" : "aus" } : {})}
-                        onClick={e => { if (!x.frei || x.n === 0) { blinke(e.currentTarget); return; } schliesseQuizBereiche(null); x.set(v => !v); setStartLeerHinweis(false); }}
-                        {...tt(`${x.text}: ${x.n} – ${x.an ? "werden abgefragt; antippen schaltet aus" : "ausgeschaltet; antippen schaltet ein"}${x.k === "grund" ? "; lang drücken: Bereich wählen" : ""}`,
-                          null, x.k === "grund" ? { lang: () => waehleBereichGeladen("quiz") } : {})}>
-                        {x.plus && x.an && x.n > 0 && "+ "}{x.zeichen && <>{x.zeichen} </>}{x.n}
-                      </button></div>
-                    ))}
-                    {faelligKnopf}
-                  </div>
-                )}
-
                 {/* START-BEREICH: Quiz-Fortschritt + großer Start-Knopf */}
                 {kombiListe && !quizFokus && (
                   <div className="start-bereich">
@@ -678,30 +677,26 @@ export function QuizTab(app) {
                       );
                     })()}
                     <div className="start-titel-zeile">
-                    {fokusZeigt("zeile2") && <button className="schalter-klapp" data-schalter-klapp={schalterZeileZu ? "zu" : "auf"} onClick={() => setSchalterZeileZu(z => !z)}
-                      {...tt(schalterZeileZu ? "Vokabel-Schalter (Vokabeln, Negative, Gelernte, Heute, Fällige) einblenden" : "Vokabel-Schalter ausblenden")}>{schalterZeileZu ? "▾" : "▴"}</button>}
-                    <div className="start-titel" data-start-titel>{lernAktiv ? "Lernen" : "Quiz"} mit {lernAktiv ? sessionAnzahl : titelAnzahl} Vokabel{(lernAktiv ? sessionAnzahl : titelAnzahl) !== 1 ? "n" : ""}{!lernAktiv && fZiel > 0 ? <span data-start-titel-faellig={fZiel}> + <SymWdh/> {fZiel}</span> : null}</div>
+                    {/* 300: lang auf die Überschrift setzt den Lernstand bzw. den Abgefragt-Stand zurück */}
+                    <div className="start-titel" data-start-titel
+                      {...(lernStand && !aufteilen ? { "data-lernstand": true } : isPakete && sessionHatFortschritt ? { "data-session-zuruecksetzen": "" } : {})}
+                      {...tt(lernStand && !aufteilen ? `Lernstand: ${lernAngesehen} von ${lernGesamt} angesehen – lang drücken: Lernen von vorn beginnen (Scores bleiben)`
+                        : isPakete && sessionHatFortschritt ? `${sessionAbgefragtAnzahl} von ${anzeigeGesamt} abgefragt – lang drücken: Abgefragt-Stand zurücksetzen (Scores und Lernfortschritt bleiben)` : null, null,
+                        lernStand && !aufteilen ? { lang: () => setLernResetFrage(true) } : isPakete && sessionHatFortschritt ? { lang: () => setSessionResetFrage(true) } : {})}>{lernAktiv ? "Lernen" : "Quiz"} mit {lernAktiv ? sessionAnzahl : titelAnzahl} Vokabel{(lernAktiv ? sessionAnzahl : titelAnzahl) !== 1 ? "n" : ""}{!lernAktiv && fZiel > 0 ? <span data-start-titel-faellig={fZiel}> + <SymWdh/> {fZiel}</span> : null}</div>
                     </div>
-                    {isPakete && (
-                      <div style={{height:6, background:"var(--rahmen)", borderRadius:3, marginBottom:10}} data-start-balken={sessionPct}>
-                        <div style={{width:`${sessionPct}%`, height:"100%", background:"var(--haupt)", borderRadius:3, transition:"width 0.3s"}}/>
+                    {(isPakete || (lernStand && !aufteilen)) && (() => {   // 300: Fortschritt bzw. Lernstand klein im Balken
+                      const lern = lernStand && !aufteilen, pct = lern ? (lernGesamt ? Math.round(100 * lernAngesehen / lernGesamt) : 0) : sessionPct;
+                      return (
+                      <div className="start-balken" data-start-balken={pct}>
+                        <div className="start-balken-fuellung" style={{width:`${pct}%`}}/>
+                        <span className="start-balken-text">
+                          {lern ? <span data-anzahl="lernstand">{lernAngesehen}/{lernGesamt}</span>
+                            : <>{sessionHatFortschritt ? <span data-anzahl="fortschritt">{sessionAbgefragtAnzahl}/{anzeigeGesamt}</span> : <span>0/{anzeigeGesamt}</span>}
+                              {fZiel > 0 && <span data-anzahl="faellig">{" · "}<SymWdh/> {fGemacht}/{fZiel}</span>}</>}
+                        </span>
                       </div>
-                    )}
+                      ); })()}
                     <div style={{display:"flex", gap:10, alignItems:"stretch"}}>
-                      {lernStand && !aufteilen && (
-                        <button data-lernstand className="start-fortschritt" onClick={() => setLernResetFrage(f => !f)}
-                          {...tt("Lernstand: so viele Vokabeln schon angesehen – antippen, um das Lernen von vorn zu beginnen (Scores bleiben)")}>
-                          <span data-anzahl="lernstand">{lernAngesehen}/{lernGesamt}</span>
-                        </button>
-                      )}
-                      {isPakete && !(lernStand && !aufteilen) && (
-                        <button data-session-zuruecksetzen={sessionHatFortschritt ? "" : undefined} className="start-fortschritt" disabled={!sessionHatFortschritt}
-                          onClick={() => setSessionResetFrage(true)}
-                          {...tt(sessionHatFortschritt ? "So viele Vokabeln dieses Quiz wurden schon abgefragt – antippen, um den Abgefragt-Stand zurückzusetzen (Scores und Lernfortschritt bleiben)" : "Fortschritt des Quiz – noch nichts abgefragt")}>
-                          {sessionHatFortschritt ? <span data-anzahl="fortschritt">{sessionAbgefragtAnzahl}/{anzeigeGesamt}</span> : <span>0/{anzeigeGesamt}</span>}
-                          {fZiel > 0 && <span data-anzahl="faellig" className="start-fortschritt-faellig"><SymWdh/> {fGemacht}/{fZiel}</span>}
-                        </button>
-                      )}
                       {lernAktiv && !aufteilen ? (
                         <button className="btn btn-primary start-knopf" data-start-knopf data-lernen-start={lernStand ? "weiter" : "neu"} data-start-anzahl={lernAnzahl}
                           onClick={() => starteLernen(lernVokabeln(), isPakete ? quizPaketGroesse : null, lernSpalten, lernInfo, lernStand)} disabled={!kannStarten || (lernAnzahl === 0 && !lernStand)}

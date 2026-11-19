@@ -3866,3 +3866,40 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
     „Bestätigen“ → zurück in die Statistik. „Lernstand“ (antippen: alles einblenden) ohne Zahl.
   · tt(opts.lang): langer Druck führt direkt eine Aktion aus. „Nr. 4–4“ → „Nr. 4“.
   Test: punkte299.
+- 300 GESAMMELT (noch besprechen): Quiz-Tab, Start-Bereich umbauen
+  · Fortschritt-Kasten links neben „Übersetzung starten“ („0/1208 · 🔁 0/12“, antippen = Abgefragt-Stand zurücksetzen)
+    entfällt; das Zurücksetzen kommt als langer Druck auf die Überschrift „Quiz mit n Vokabeln + 🔁 f“.
+  · An seinen Platz rückt der Schalter „Vokabeln (n)“ aus der Schalter-Zeile (antippen an/aus, lang = Bereichswahl).
+  · Die Schalter-Zeile hat dann nur noch Negative · Gelernte · Heute · Fällige (über die ganze Breite verteilt).
+  · Entschieden: die Abgefragt-Zahl (z. B. 15/1208 · 🔁 3/12) steht klein im Fortschrittsbalken.
+  · Entschieden: Lernen-Modus genauso – lang auf die Überschrift „Lernen mit …“ setzt den Lernstand zurück (Neubeginn),
+    links neben dem Start-Knopf ebenfalls „Vokabeln (n)“; der Lernstand (x/y) klein im Balken.
+- 301 GESAMMELT (noch besprechen): Bereich im Kopf – überall gleich (Quiz, Statistik, Tafel)
+  · Kopf: links (~¾) der Listen-/Quiz-Name wie bisher, rechts eine kleine Fläche für den Bereich („Alle“ bzw. „Nr. 9–33“ /
+    Anzahl Vokabeln); dort den Bereich wählen.
+  · Wunsch-Optik: alle Vokabeln → Kopf über die ganze Breite; mit Bereich → Kopf geteilt (rechts der Bereich).
+    Problem: lang drücken auf den Kopf ist schon das Menü → Bereich wählen dann über „🎯 Bereich wählen…“ im Kopf-Menü,
+    danach antippen der rechten Fläche = Bereich ändern, lang drücken dort = „Alle“ (Bereich aufheben).
+  · Folgen: lang auf „Vokabeln“ (296/299) und die Anzahl im Statistik-Art-Knopf (299) wären doppelt – ggf. zurückbauen.
+  · 301 Entschieden (Stand 2026-11-19): Kopf IMMER geteilt – links Name, rechts die Vokabel-Anzahl (mit „Alle“ bzw. Bereich).
+    Lang auf die Anzahl → sofort Bereichswahl. Antippen der Anzahl → Filter-Zeile (Negative · Gelernte · Heute · Fällige)
+    auf/zu; diese Zeile steht direkt unter dem Kopf. Offen: wohin der Schalter „Vokabeln“ (Gruppe neu/Score 0–2) –
+    Vorschlag: als „Neue“ in die Filter-Zeile (dann entfällt 300 „Vokabeln neben Start“); Statistik: Antippen der Anzahl?
+  · 300/301 Entschieden (2026-11-19, zusammen umsetzen):
+    – Filter-Zeile unter dem Kopf: Neue · Negative · Gelernte · Heute · Fällige („Vokabeln“ heißt jetzt „Neue“).
+    – Start-Knopf über die ganze Breite; kein Kasten daneben (weder Fortschritt noch Vokabeln). Fortschritt bzw. Lernstand
+      klein im Balken; Zurücksetzen per langem Druck auf die Überschrift „Quiz/Lernen mit …“.
+    – Statistik und Tafel: lang auf die Anzahl = Bereichswahl; antippen: Statistik = alle Gruppen einblenden, Tafel = nichts.
+      Statistik-Art-Knopf wieder nur „Übersetzung ⇄“, Zahl wieder bei „Lernstand“ (Rückbau 299).
+- 300/301 UMGESETZT:
+  · Kopf: rechts die Anzahl (data-kopf-anzahl, „Alle“ bzw. „Nr. 9–33“/„Auswahl“ über der Zahl) – im Quiz-Tab, in der
+    Statistik (Gesamt: ohne Bereichswahl) und in der Listen-Tafel (Bereich der Tafel). Lang = Bereichswahl; antippen:
+    Quiz-Tab Filter-Zeile auf/zu (trägt data-schalter-klapp), Statistik alle Gruppen einblenden, Tafel nichts.
+    Multiquiz: Anzahl ohne Bereichswahl. Der Bereich steht nicht mehr hinter dem Namen.
+  · Filter-Zeile direkt unter dem Kopf: Neue · Negative · Gelernte · Heute · Fällige („Vokabeln“ heißt „Neue“, auch in
+    der Tafel); kein Klapp-Pfeil mehr an der Überschrift; kein langer Druck mehr auf „Vokabeln“ (Tafel/Quiz-Tab).
+  · Start-Knopf über die ganze Breite; Fortschritt bzw. Lernstand klein im Balken (.start-balken-text, data-anzahl…);
+    Zurücksetzen bzw. Neubeginn per langem Druck auf die Überschrift „Quiz/Lernen mit …“ (data-session-zuruecksetzen /
+    data-lernstand dort).
+  · Statistik: Art-Knopf wieder nur „Übersetzung ⇄“ (data-st-art-name), Zahl bei „Lernstand · n Vokabeln“ (data-st-anzahl).
+  Test: punkte300 (neu); viele Tests auf „Neue“, Kopf-Anzahl und langen Druck auf die Überschrift umgestellt.

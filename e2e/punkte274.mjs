@@ -52,7 +52,7 @@ const tafel = () => page.evaluate(() => ({ raster: [...document.querySelectorAll
 await menue('[data-slot-id="sA"]'); await menue('[data-slot-id="sB"]');
 let t = await tafel();
 console.log("     ", JSON.stringify(t));
-ok(t.raster.join("|") === "grund:Vokabeln (8):an|negativ:✗ Negative (2):an|gelernt:✓ Gelernt (0):aus:x|heute:Heute (0):aus:x|faellig:+ 🔁 Fällige (3):an" && t.breit === "1 / -1",
+ok(t.raster.join("|") === "grund:Neue (8):an|negativ:✗ Negative (2):an|gelernt:✓ Gelernt (0):aus:x|heute:Heute (0):aus:x|faellig:+ 🔁 Fällige (3):an" && t.breit === "1 / -1",
   "Raster: Multiquiz breit, Negative · Gelernt / Heute · Fällige – mit Anzahlen, nicht verfügbare ausgegraut");
 ok(t.rest.join("|") === "🎨|🗂 Ablage ›|↔ Von–Bis", `darunter Farbe · Ablage · Von–Bis; Multiquiz starten / Fällige wiederholen / Negative abfragen entfallen (${t.rest.join("|")})`);
 ok(t.kopf === "2 ausgewählt · 10 Vokabeln + 🔁 3", `Kopf: 8 + 2 = 10 Vokabeln + 🔁 3 (25 % von 10), nichts doppelt (${t.kopf})`);
@@ -64,7 +64,7 @@ ok(t.kopf === "2 ausgewählt · 10 Vokabeln + 🔁 3", `Kopf: 8 + 2 = 10 Vokabel
 // Multiquiz aus → Tafel bleibt offen, Kopf zählt neu
 await page.evaluate(() => document.querySelector('[data-schalter-raster] [data-schalter="grund"]').click()); await sleep(400);
 t = await tafel();
-ok(t.raster[0] === "grund:Vokabeln (8):aus" && t.kopf === "2 ausgewählt · 2 Vokabeln + 🔁 1", `Multiquiz aus: Tafel bleibt, Kopf „2 Vokabeln + 🔁 1“ (${t.kopf})`);
+ok(t.raster[0] === "grund:Neue (8):aus" && t.kopf === "2 ausgewählt · 2 Vokabeln + 🔁 1", `Multiquiz aus: Tafel bleibt, Kopf „2 Vokabeln + 🔁 1“ (${t.kopf})`);
 // Fällige lang drücken → Einstellungen; „Nur diese Quiz“ → zurück zur Tafel
 await menue('[data-schalter-raster] [data-schalter="faellig"]', 20);
 const fm = await page.evaluate(() => ({ akt: [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion), regler: !!document.querySelector("[data-info-regler]") }));

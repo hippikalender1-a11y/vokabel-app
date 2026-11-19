@@ -116,9 +116,7 @@ export function mitSchalterRaster(app, d, art, ids) {
     aus: !frei || (n === 0 && k !== "faellig"), fn: () => set(v => !v), ...extra });
   const zurueck = () => setTimeout(() => zeigeAuswahlTafel(art), 0);
   const raster = [
-    s("grund", "Vokabeln", z.grund, quizGrund, setQuizGrund, true, { breit: true,   // 282: immer „Vokabeln“
-      // 296/298: Listen – lang drücken wählt einen Bereich (eine oder mehrere Listen)
-      ...(art === "liste" ? { lang: () => waehleListenBereich(), langImmer: true } : {}) }),
+    s("grund", "Neue", z.grund, quizGrund, setQuizGrund, true, { breit: true }),   // 282; 301: „Neue“ – den Bereich wählt die Anzahl im Kopf
     s("negativ", "✗ Negative", z.negativ, quizNegativ, setQuizNegativ, true),
     s("gelernt", "✓ Gelernt", z.gelernt, quizGelerntEinschliessen, setQuizGelerntEinschliessen, z.faelligMoeglich),
     s("heute", "Heute", z.heute, quizHeuteEinschliessen, setQuizHeuteEinschliessen, tagesSperre()),

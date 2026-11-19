@@ -66,7 +66,8 @@ ok(await kopf() === "gruen" && !t0.includes("Verlauf & Gespeichert") && !t0.incl
   "Nach Auswahl: Liste zu, Überschrift weg, Kopfzeile grün");
 ok(await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); const b = k.querySelector("button.toggle-opt.aktiv");
   const r = k.getBoundingClientRect(), rb = b.getBoundingClientRect();
-  return !k.querySelector("[data-quiz-arten]") && rb.left - r.left <= 20 && r.right - rb.right <= 20; }),
+  const seg = k.querySelector("[data-kopf-anzahl]")?.getBoundingClientRect();   // 301: rechts die Anzahl
+  return !k.querySelector("[data-quiz-arten]") && rb.left - r.left <= 20 && seg && r.right - seg.right <= 20 && seg.left > rb.right; }),
   "zugeklappt: Knopf mit dem Namen über die ganze Breite, keine Kreise");
 
 // Paket mit 10 Vokabeln (Übersetzung, Karte), alles gewusst
@@ -123,12 +124,12 @@ await sleep(300);
 ok(await fortschritt() === akz, "Wieder Akzente: Stand 2 / … bleibt erhalten");
 
 // Zurücksetzen löscht nur den Akzente-Fortschritt
-await page.click("[data-session-zuruecksetzen]");
+await page.evaluate(sel => { const el = document.querySelector(sel), r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 5 })); }, "[data-session-zuruecksetzen]");   // 300: lang auf die Überschrift
 await sleep(200);
 ok(await page.$("[data-reset-frage]") && /Abgefragt-Stand löschen\?/.test(await text()), "Zurücksetzen: Rückfrage in der App statt Browser-Fenster");
 await clickText("button", "Nein", true);
 ok(/^2\/\d+$/.test(await fortschritt() || ""), "„Nein“: Stand bleibt");
-await page.click("[data-session-zuruecksetzen]");
+await page.evaluate(sel => { const el = document.querySelector(sel), r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 5 })); }, "[data-session-zuruecksetzen]");   // 300: lang auf die Überschrift
 await sleep(200);
 await page.click("[data-reset-ja]");
 await sleep(300);

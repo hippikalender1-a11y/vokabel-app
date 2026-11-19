@@ -47,7 +47,7 @@ const tafel = () => page.evaluate(() => ({ raster: [...document.querySelectorAll
   kopf: __txt(document.querySelector("[data-wahl-anzahl]")) }));
 const kopf = () => page.evaluate(() => ({ text: __txt(document.querySelector("[data-slot-kopf-name]")), art: document.querySelector("[data-slot-kopf-name]")?.dataset.kopfArt || "",
   start: document.querySelector("[data-start-knopf]")?.dataset.startAnzahl }));
-const langVokabeln = () => page.evaluate(() => { const b = document.querySelector('[data-schalter-raster] [data-schalter="grund"]'), r = b.getBoundingClientRect();
+const langVokabeln = () => page.evaluate(() => { const b = document.querySelector('[data-kopf-anzahl]'), r = b.getBoundingClientRect();
   b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); });
 const zeilen = async nr => { for (const i of nr) { await page.evaluate(i => document.querySelectorAll(".vok-zeile")[i - 1].click(), i); await sleep(150); } };
 await ladeQuiz();
@@ -67,12 +67,12 @@ ok(b1.liste && b1.zeilen === 15 && /🎯 Unit 1 \+ Unit 2/.test(b1.kopf), `298: 
 await zeilen([1, 2, 15]);   // zwei neue aus Unit 1, die negative aus Unit 2
 await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]").click()); await sleep(1000);
 t = await tafel();
-ok(t.raster[0] === "grund:Vokabeln (2)" && t.raster[1] === "negativ:✗ Negative (1)" && /^2 ausgewählt · 3 Vokabeln/.test(t.kopf), `298: zurück in der Tafel – „Vokabeln (2)“, „Negative (1)“ (${t.raster[0]}, ${t.kopf})`);
+ok(t.raster[0] === "grund:Neue (2)" && t.raster[1] === "negativ:✗ Negative (1)" && /^2 ausgewählt · 3 Vokabeln/.test(t.kopf), `298: zurück in der Tafel – „Vokabeln (2)“, „Negative (1)“ (${t.raster[0]}, ${t.kopf})`);
 // das Geladene ist unverändert (Teil A), solange nicht geladen wird
 await page.evaluate(() => document.querySelector("[data-listen-wahl-kopf]").click()); await sleep(1200);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
 k = await kopf();
-ok(k.start === "3" && /2 Listen · Auswahl$/.test(k.text), `298: laden – zwei Listen mit Bereich, 3 Vokabeln (${JSON.stringify(k)})`);
+ok(k.start === "3" && /2 Listen$/.test(k.text) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl", `298: laden – zwei Listen mit Bereich, 3 Vokabeln (${JSON.stringify(k)})`);
 // ── Statistik zeigt das Geladene ──
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Statistik"))?.click()); await sleep(600);
 const stat = await page.evaluate(() => __txt(document.querySelector("[data-slot-kopf-name]")));

@@ -142,6 +142,13 @@ export const CSS_BASIS = `
   .start-art-name{font-size:0.75rem;font-weight:600;color:var(--text2);white-space:nowrap;}
   .start-titel{font-size:1.25rem;font-weight:800;color:var(--text-stark);text-align:center;margin:0 0 10px;}
   .start-bereich{background:var(--karte);padding:14px 16px;margin:0 -16px 8px;border-bottom:1px solid var(--rahmen);}
+  .start-balken{position:relative;height:16px;background:var(--rahmen);border-radius:8px;margin-bottom:10px;overflow:hidden;}   /* 300 */
+  .start-balken-fuellung{height:100%;background:var(--haupt);border-radius:8px;transition:width 0.3s;}
+  .start-balken-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;color:var(--text-stark);white-space:nowrap;}
+  .slot-kopf-anzahl{flex:0 0 auto;min-width:22%;max-width:34%;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;padding:4px 8px;border-radius:12px;font-size:0.72rem;cursor:pointer;overflow:hidden;white-space:nowrap;}   /* 301 */
+  .slot-kopf-anzahl b{font-size:0.95rem;}
+  .slot-kopf-anzahl.toggle-opt.aktiv{background:var(--start);color:var(--auf-start);}
+  .slot-kopf.gruen .slot-kopf-anzahl{border:1.5px solid rgba(255,255,255,0.45);}
   .start-fortschritt{flex:0 0 auto;min-width:86px;border-radius:12px;border:1.5px solid var(--haupt-zart);background:var(--haupt-flaeche);color:var(--haupt);font-family:inherit;font-weight:800;font-size:1rem;cursor:pointer;}
   .start-fortschritt:disabled{cursor:default;opacity:0.7;}
   .start-fortschritt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.15;}   /* 271: Fällige in eigener Zeile */
