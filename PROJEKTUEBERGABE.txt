@@ -3923,3 +3923,7 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   (gemeinsamer Zustand schalterZeileZu); bei mehreren Quiz zeigt die Anzahl die Vokabeln der Auswahl. Die Tafel unten hat
   nur noch die kleine Aktionszeile. Filter und Anzahl lassen Tipps bei offener Tafel durch (data-auswahl-durchlass).
   InfoTafel: Auswahl-Tafel immer klein; unten mehr Platz (Tafel + 104 px) und die gedrückte Kachel großzügiger freilegen.
+- 306 UMGESETZT (Nachbesserung 305): In der offenen Auswahl ohne Wahl zeigt der Kopf die Filter des Geladenen
+  (schalterZaehlung art „konfig“); Anzahl antippen klappt sie auf/zu – wie im Quiz-Tab. Filter-Bereich im Kopf über die
+  ganze Breite (war „kaputt“: weißer Kasten). Aufgeklappte Filter (Quiz-Tab und Auswahl) mit abgestuftem Hintergrund
+  (--filter-flaeche = 16 % Hauptfarbe auf Kartenfarbe).

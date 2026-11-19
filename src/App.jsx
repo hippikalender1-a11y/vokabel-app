@@ -2728,7 +2728,7 @@ export default function VokabelApp() {
     const vonListe = id => lsLesen(SK.liste(id))?.vokabeln || [];
     const voks = new Map();
     const tb = art === "liste" && gleicheListen(tafelBereich?.ids, quizIds) ? [...tafelBereich.auswahl] : null;   // 297/298: Bereich aus der Tafel
-    quizIds.forEach(qid => { const k = art === "liste" ? (tb ? { listenIds: [qid], bereichTyp: "bereich", vokabelAuswahl: tb } : { listenIds: [qid] })
+    quizIds.forEach(qid => { const k = art === "konfig" ? qid : art === "liste" ? (tb ? { listenIds: [qid], bereichTyp: "bereich", vokabelAuswahl: tb } : { listenIds: [qid] })
       : getSlotEintrag("gespeichert", qid)?.konfiguration || {};
       const a = k.bereichTyp === "bereich" && k.vokabelAuswahl?.length ? new Set(k.vokabelAuswahl) : null;
       (k.listenIds || []).forEach(lid => vonListe(lid).forEach(v => { const key = `${lid}__${v.id}`; if (!v.herausgenommen && (!a || a.has(key))) voks.set(key, v); })); });

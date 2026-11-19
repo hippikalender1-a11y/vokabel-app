@@ -215,7 +215,9 @@ export function renderSlotKopf(app, statistik) {
       return nr.length && nr[nr.length - 1] - nr[0] + 1 === nr.length ? `Nr. ${nr[0]}${nr.length > 1 ? `–${nr[nr.length - 1]}` : ""}` : "Auswahl"; };
     // 305: Filter der Auswahl (gleich wie im Quiz-Tab) – Teile aus kacheln.jsx (schalterRaster)
     const filterTeile = !statistik && tab === "quiz" && !zu && (lwahl && listenWahl.length ? schalterRaster("liste", wahlListenIds(listenWahl))
-      : wahl && multiAuswahl.length ? schalterRaster("slot", wahlQuizIds(multiAuswahl)) : null);
+      : wahl && multiAuswahl.length ? schalterRaster("slot", wahlQuizIds(multiAuswahl))
+      : !lwahl && !wahl && !vorschauE && !bw && quizTabListen.length ? schalterRaster("konfig", [{ listenIds: quizTabListen, bereichTyp: quizBereichTyp, vokabelAuswahl: [...quizCheckboxAuswahl] }])   // 306: Auswahl offen, nichts gewählt – Filter des Geladenen
+      : null);
     const eckigKopf = lwahl || ((alsListe || (!statistik && kommtAusListen && !geaendert)) && !wahl && !vorschauE) || vorschauE?.istListe || vorschauE?.paket;   // 263: Listen eckig, Quiz abgerundet
     const anzahlSeg = (() => {
       if (bw || vorschauE || aendern) return null;

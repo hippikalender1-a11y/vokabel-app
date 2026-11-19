@@ -110,7 +110,8 @@ export function schalterRaster(app, art, ids) {
   const { schalterZaehlung, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots } = app;
   if (!ids.length) return null;
   const z = schalterZaehlung(ids, art);
-  const sk = sprachKuerzelFuer(art === "liste" ? ids : [...new Set(ids.flatMap(id => slots.gespeichert.find(g => g.id === id)?.konfiguration?.listenIds || []))]);
+  const sk = sprachKuerzelFuer(art === "liste" ? ids : art === "konfig" ? [...new Set(ids.flatMap(k => k.listenIds || []))]   // 306: das Geladene
+    : [...new Set(ids.flatMap(id => slots.gespeichert.find(g => g.id === id)?.konfiguration?.listenIds || []))]);
   const nur = art === "liste" ? (ids.length >= 2 ? "diese Listen" : "diese Liste") : ids.length >= 2 ? "diese Quiz" : "dieses Quiz";
   // 277: zusätzliche (Gelernt, Heute, Fällige) eingeschaltet mit „+“
   const s = (k, label, n, an, set, frei, extra = {}) => ({ label: `${an && n > 0 && ["gelernt", "heute", "faellig"].includes(k) ? "+ " : ""}${label} (${n})`, raster: true, schalter: k, an, n,
