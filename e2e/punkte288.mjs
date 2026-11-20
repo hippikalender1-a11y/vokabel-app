@@ -101,7 +101,7 @@ await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]").click
 t = await tafel();
 console.log("     ", JSON.stringify(t));
 const zeilen297 = await page.evaluate(() => ({ listenZeile: !!document.querySelector("[data-vok-bestaetigen]") || [...document.querySelectorAll("span")].some(s => s.textContent === "Vokabel-Auswahl") }));
-ok(t.raster[0] === "grund:3:an" && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl" && /Unit 1$/.test(t.kopf) && !zeilen297.listenZeile, `297: zurück in der Tafel – „Vokabeln (3)“, Kopf „Unit 1 · Nr. 2–4 laden“ (${t.raster[0]}, ${t.kopf})`);
+ok(t.raster[0] === "grund:3:an" && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl" && /Unit 1 \(Auswahl\)$/.test(t.kopf) && !zeilen297.listenZeile, `297: zurück in der Tafel – „Vokabeln (3)“, Kopf „Unit 1 · Nr. 2–4 laden“ (${t.raster[0]}, ${t.kopf})`);
 // nochmals lang drücken → Bereich vorgewählt, auf Nr. 2–5 erweitern
 await page.evaluate(() => { const b = document.querySelector('[data-kopf-anzahl]'), r = b.getBoundingClientRect();
   b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(900);

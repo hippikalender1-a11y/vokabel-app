@@ -117,13 +117,13 @@ export function schalterRaster(app, art, ids) {
       n: quizGrund === "abgefragt" ? z.auswahlAbgefragt : z.auswahlAlle, an: quizGrund !== false, aus: z.auswahlAlle === 0,
       fn: () => setQuizGrund(g => g === true ? "abgefragt" : g === "abgefragt" ? false : true),
       naechste: quizGrund === true ? "nur schon geübte" : quizGrund === "abgefragt" ? "aus" : "alle zu lernenden" },
-    { schalter: "faellig", titel: st === "gelernt" ? "Gelernte" : st === "aus" ? "Bereits gelernte" : "Fällige", stufe: st, zeichen: st === "faellig" ? "🔁 " : "✓ ", plus: true,   // 319
-      n: st === "faellig" ? z.eigeneF : z.gelernt + z.eigeneF, an: st !== "aus", aus: !z.faelligMoeglich || z.gelernt + z.eigeneF === 0,
+    { schalter: "faellig", titel: st === "gelernt" ? "Gelernte" : "Fällige", stufe: st, zeichen: st === "gelernt" ? "✓ " : "🔁 ", plus: true,   // 333: aus = die fälligen
+      n: st === "gelernt" ? z.gelernt + z.eigeneF : z.eigeneF, an: st !== "aus", aus: !z.faelligMoeglich || z.gelernt + z.eigeneF === 0,
       fn: () => { setQuizFaellig(f => ({ ...f, an: st === "aus" })); setQuizGelerntEinschliessen(st === "faellig"); },
       naechste: st === "faellig" ? "alle gelernten" : st === "gelernt" ? "aus" : "die fälligen" },
     { schalter: "heute", titel: "Heute", stufe: quizHeuteEinschliessen ? "an" : "aus", plus: true, n: z.heute, an: quizHeuteEinschliessen, aus: !tagesSperre() || z.heute === 0,
       fn: () => setQuizHeuteEinschliessen(v => !v), naechste: quizHeuteEinschliessen ? "aus" : "ein" },
-  ].map(x => ({ ...x, raster: true, label: `${x.plus && x.an && x.n > 0 ? "+ " : ""}${x.zeichen || ""}${x.n}` }));
+  ].map(x => ({ ...x, raster: true, label: `${x.plus && x.an ? "+ " : ""}${x.zeichen || ""}${x.n}` }));   // 334: „+“ auch bei 0
 }
 
 export function mitSchalterRaster(app, d, art, ids) {

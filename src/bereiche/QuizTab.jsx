@@ -330,12 +330,12 @@ export function QuizTab(app) {
                           weiter: () => setQuizGrund(g => g === true ? "abgefragt" : g === "abgefragt" ? false : true),
                           text: quizGrund === "abgefragt" ? "Schon geübt: zu lernende, die schon einmal abgefragt wurden" : "Zu lernen: alle noch nicht gelernten Vokabeln",
                           naechste: quizGrund === true ? "nur schon geübte" : quizGrund === "abgefragt" ? "aus" : "alle zu lernenden" },
-                        { k: "faellig", label: langStufe === "gelernt" ? "Gelernte" : langStufe === "aus" ? "Bereits gelernte" : "Fällige", stufe: langStufe, zeichen: langStufe === "faellig" ? <SymWdh/> : "✓", plus: true,   // 319
-                          n: langStufe === "faellig" ? eigeneFAnz : gruppenAnz.gelernt + eigeneFAnz, an: langStufe !== "aus", frei: schwelle > 0 && gruppenAnz.gelernt + eigeneFAnz > 0,
+                        { k: "faellig", label: langStufe === "gelernt" ? "Gelernte" : "Fällige", stufe: langStufe, zeichen: langStufe === "gelernt" ? "✓" : <SymWdh/>, plus: true,   // 333: aus = die fälligen
+                          n: langStufe === "gelernt" ? gruppenAnz.gelernt + eigeneFAnz : eigeneFAnz, an: langStufe !== "aus", frei: schwelle > 0 && gruppenAnz.gelernt + eigeneFAnz > 0,
                           weiter: () => { if (langStufe === "faellig") { setQuizFaellig(f => ({ ...f, an: false })); setQuizGelerntEinschliessen(true); }
                             else if (langStufe === "gelernt") { setQuizFaellig(f => ({ ...f, an: false })); setQuizGelerntEinschliessen(false); }
                             else { setQuizFaellig(f => ({ ...f, an: true })); setQuizGelerntEinschliessen(false); } },
-                          text: langStufe === "gelernt" ? "Alle gelernten der Auswahl" : langStufe === "aus" ? "Bereits gelernte – werden nicht abgefragt" : "Gelernte der Auswahl, die jetzt zur Prüfung fällig sind",
+                          text: langStufe === "gelernt" ? "Alle gelernten der Auswahl" : "Gelernte der Auswahl, die jetzt zur Prüfung fällig sind",
                           naechste: langStufe === "faellig" ? "alle gelernten" : langStufe === "gelernt" ? "aus" : "die fälligen" },
                         { k: "heute", label: "Heute", stufe: quizHeuteEinschliessen ? "an" : "aus", n: gruppenAnz.heute, an: quizHeuteEinschliessen, frei: heuteSperre && gruppenAnz.heute > 0, plus: true,
                           weiter: () => setQuizHeuteEinschliessen(v => !v), text: "Heute schon abgefragte Vokabeln – sonst kommen sie erst morgen wieder",
@@ -347,7 +347,7 @@ export function QuizTab(app) {
                           {...(x.k === "heute" ? { "data-heute": x.an ? "an" : "aus" } : x.k === "faellig" ? { "data-gelernte": x.stufe === "gelernt" ? "an" : "aus" } : {})}
                           onClick={e => { if (!x.frei) { blinke(e.currentTarget); return; } schliesseQuizBereiche(null); x.weiter(); setStartLeerHinweis(false); }}
                           {...tt(`${x.text}: ${x.n} – ${x.an ? "werden abgefragt" : "ausgeschaltet"}; antippen: ${x.naechste}`)}>
-                          {x.plus && x.an && x.n > 0 && "+ "}{x.zeichen && <>{x.zeichen} </>}{x.n}
+                          {x.plus && x.an && "+ "}{x.zeichen && <>{x.zeichen} </>}{x.n}
                         </button></div>
                       ));
                     })()}

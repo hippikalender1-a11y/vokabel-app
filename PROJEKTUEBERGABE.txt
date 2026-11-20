@@ -4035,3 +4035,10 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   koepfe balkenVoks für Listen-Wahl; Listen-Auswahl ohne renderListeInfo/renderSlotInfo; Statistik offen ohne StatistikTab,
   zurRundenStatistik klappt die Auswahl zu; Liste-Detail .liste-zeile kompakt, Werkzeuge (listeWerkzeuge) lang auf „Vokabeln“;
   ohne ＋. Tests: hilfen listenKopfMenue(), listeBereich("vokabeln") blendet die Werkzeuge ein.
+- 333 UMGESETZT: Fällige-Knopf ausgeschaltet zeigt die fälligen („🔁 n“, was beim nächsten Antippen dazukommt) statt „✓ alle
+  gelernten“ (ändert 319). Beschriftung ausgeschaltet: „Fällige“ (statt „Bereits gelernte“).
+- 334 UMGESETZT: Eingeschaltete Zusatz-Filter (Fällige/Gelernte, Heute) zeigen das „+“ immer, auch bei 0 („+ 🔁 0“);
+  heute nur bei n > 0. „Zu lernen“ bleibt ohne „+“ (Grundmenge).
+- 335 UMGESETZT: Kopf – bei einer Liste mit Bereich steht „(Auswahl)“ im Namen („E6 (Auswahl)“, auch „… laden“ in der Tafel);
+  rechts dann nur die Anzahl. Rechte Fläche: oben „Alle“ (Höhe Name), unten „n V“ auf Höhe des Balkens. Gespeicherte Quiz:
+  Name ohne „(Auswahl)“, rechts oben weiter „Alle“/„Auswahl“ (nur Listen = eckiger Kopf).
