@@ -2,7 +2,7 @@ import puppeteer from "puppeteer-core";
 import { neueEineSession, listenZu, listeWaehlen } from "./hilfen.mjs";
 
 // Zeilen-Knöpfe im Quiz-Tab: aufgeklappt „✓ Bestätigen“ in eigener Farbe, gleiche Größe und Position, übrige Knöpfe der Zeile bleiben;
-// Stufe aufklappbar; lang drücken auf „Start“: Speichern-Menü wie beim Quiz-Namen
+// Stufe aufklappbar; lang drücken auf „Start“: Anzahl je Runde (311)
 const URL = "http://localhost:4199/vokabel-app/";
 const browser = await puppeteer.launch({ executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe", headless: true, args: ["--no-first-run"] });
 const page = await browser.newPage();
@@ -35,15 +35,12 @@ const bestFarbe = await farbe("[data-reihenfolge]");
 ok(await text("[data-reihenfolge]") === "Bestätigen" && bestFarbe !== zu && /✓/.test(await haken("[data-reihenfolge]")),
   `Reihenfolge offen: nur „✓ Bestätigen“ in eigener Farbe (${await text("[data-reihenfolge]")}, ${zu} → ${bestFarbe})`);
 ok(await sichtbar("[data-stufe]") && await sichtbar("[data-abfragemodus]") && await sichtbar("[data-reihenfolge]"), "übrige Knöpfe der Zeile bleiben sichtbar");
-ok(!(await sichtbar("[data-umfang]")) && !(await sichtbar("[data-start-knopf]")), "Zeilen darunter ausgeblendet");
+ok(!(await sichtbar("[data-abfrageziel]")) && !(await sichtbar("[data-start-knopf]")), "Zeilen darunter ausgeblendet");
 await page.click("[data-reihenfolge]"); await sleep(1300);   // nach dem kurzen Aufleuchten
 ok(await text("[data-reihenfolge]") === "Schlechteste zuerst" && await farbe("[data-reihenfolge]") === zu && await sichtbar("[data-stufe]") && await sichtbar("[data-abfragemodus]"),
   "„Bestätigen“ klappt zu: wieder der volle Text, alte Farbe, alle Knöpfe da");
-await page.click("[data-umfang]"); await sleep(300);
-ok(await text("[data-umfang]") === "Bestätigen" && await farbe("[data-umfang]") === bestFarbe && await sichtbar("[data-abfrageziel]") && await sichtbar("[data-stufe]"), `Umfang offen: „Bestätigen“, Abfrage-Ziel und Zeile darüber bleiben (${await text("[data-umfang]")})`);
-await page.click("[data-umfang]"); await sleep(300);
 await page.click("[data-abfrageziel]"); await sleep(300);
-ok(await text("[data-abfrageziel]") === "Bestätigen" && await sichtbar("[data-umfang]"), `Abfrage-Ziel offen: „Bestätigen“ (${await text("[data-abfrageziel]")})`);
+ok(await text("[data-abfrageziel]") === "Bestätigen" && await farbe("[data-abfrageziel]") === bestFarbe && await sichtbar("[data-langzeit]") && await sichtbar("[data-stufe]"), `Abfrage-Ziel offen: „Bestätigen“, Langzeitgedächtnis und Zeile darüber bleiben (${await text("[data-abfrageziel]")})`);
 await page.click("[data-abfrageziel]"); await sleep(300);
 await page.click("[data-stufe]"); await sleep(300);
 ok(await text("[data-stufe]") === "Bestätigen" && await page.$("[data-stufe-auswahl]"), "Stufe offen: „Bestätigen“ mit Auswahl darunter");
@@ -71,20 +68,22 @@ await new Promise(r => setTimeout(r, 400));
 ok(!(await page.$("[data-reihenfolge-wahl]")) && await text("[data-reihenfolge]") === "Listenplatz", `… dann zu, Knopf „Listenplatz“ (${await text("[data-reihenfolge]")})`);
 // Beschriftungen über den Knöpfen, gleich hohe Knöpfe
 const labels = await page.evaluate(() => [...document.querySelectorAll(".quiz-zeile-label")].map(l => l.textContent).join("|"));
-ok(/^(Neue\|Negative\|Gelernte\|Heute\|Fällige\|)?Lern-Modus\|\w+ – \w+\|Reihenfolge\|Anzahl je Runde\|Wie oft/.test(labels), `Beschriftungen, über „Art der Antwort“ die Sprachen Frage – Antwort (${labels})`);
+ok(/^(Auswahl\|Fällige\|Heute\|)?Lern-Modus\|\w+ – \w+\|Reihenfolge\|Wie oft\|Langzeitgedächtnis/.test(labels), `Beschriftungen, über „Art der Antwort“ die Sprachen Frage – Antwort (${labels})`);
 const hoehe = s => page.evaluate(s => Math.round(document.querySelector(s).getBoundingClientRect().height), s);
-const zu1 = [await hoehe("[data-stufe]"), await hoehe("[data-abfragemodus]"), await hoehe("[data-reihenfolge]"), await hoehe("[data-umfang]")];
+const zu1 = [await hoehe("[data-stufe]"), await hoehe("[data-abfragemodus]"), await hoehe("[data-reihenfolge]"), await hoehe("[data-abfrageziel]"), await hoehe("[data-langzeit]")];
 await page.click("[data-reihenfolge]"); await sleep(300);
 const offen1 = await hoehe("[data-reihenfolge]");
 ok(zu1.every(h => h === zu1[0]) && offen1 === zu1[0], `alle Knöpfe gleich hoch, Bestätigen auch (${zu1} / ${offen1})`);
 await page.click("[data-reihenfolge]"); await sleep(300);
 ok(!(await page.$("[data-start-fortschritt]")), "163: keine großen Kreise mehr im Quiz-Tab");
 
-// Start: lang drücken → Speichern
+// 311: Start lang drücken → Anzahl je Runde (Alle · Je 5 … Je 50); der Knopf nennt sie („– Alle“ / „– Je 10“)
 await page.evaluate(() => { const el = document.querySelector("[data-start-knopf]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 10 })); }); await sleep(300);
-ok(await page.$('[data-info-aktion="💾 Speichern"]'), "lang drücken auf „Start“: „💾 Speichern“");
-await page.click('[data-info-aktion="💾 Speichern"]'); await sleep(300);
-ok(await page.$("[data-slot-name-feld]"), "öffnet das Speichern-Fenster");
+const wahl = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion).join("|"));
+ok(wahl === "✓ Alle|Je 5|Je 10|Je 15|Je 20|Je 25|Je 30|Je 40|Je 50", `311: lang drücken auf „Start“: Anzahl je Runde (${wahl})`);
+await page.click('[data-info-aktion="Je 10"]'); await sleep(300);
+const st = await page.evaluate(() => document.querySelector("[data-start-knopf] b")?.textContent);
+ok(/– Je 10$/.test(st || "") && !(await page.$("[data-info-aktion]")), `311: gewählt – Tafel zu, Start „… – Je 10“ (${st})`);
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();

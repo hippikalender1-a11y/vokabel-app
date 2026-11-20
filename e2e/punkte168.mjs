@@ -89,11 +89,11 @@ await einstUnter(page, "lernen", "wiederholen");
 ok(await page.$('[data-faellig-anteil="25"].aktiv'), "267: Vorgabe für Fällige: 25 %");
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await sleep(300);
 const startText = () => page.evaluate(() => __txt(document.querySelector("[data-start-knopf] span")));
-ok(/2 Vokabeln \+ 🔁 1$/.test(await startText()) && await page.evaluate(() => document.querySelector("[data-faellig]")?.dataset.faellig) === "an",
-  `267: 2 neue + 1 fällige (25 % von 2, aufgerundet) – Schalter an (${await startText()})`);
-await klick("[data-faellig]");
-ok(await startText() === "2 Vokabeln" && await page.evaluate(() => __txt(document.querySelector("[data-faellig]"))) === "🔁 1", `267/273: Fällige aus – nur die neuen, Knopf zeigt trotzdem „🔁 1“ (${await startText()})`);
-await klick("[data-faellig]");
+ok(/2 Vokabeln \+ 🔁 1$/.test(await startText()) && await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="faellig"]')?.dataset.filterStufe) === "faellig",
+  `267/310: 2 neue + die 1 fällige der Auswahl – Stufe „Fällige“ (${await startText()})`);
+await klick('[data-schalter-zeile] [data-schalter="faellig"]'); await klick('[data-schalter-zeile] [data-schalter="faellig"]');   // → Gelernte → aus
+ok(await startText() === "2 Vokabeln" && await page.evaluate(() => __txt(document.querySelector('[data-schalter-zeile] [data-schalter="faellig"]'))) === "🔁 1", `267/273/310: Fällige aus – nur die neuen, Knopf zeigt trotzdem „🔁 1“ (${await startText()})`);
+await klick('[data-schalter-zeile] [data-schalter="faellig"]');
 
 // ── 170: nichts fällig → inaktiver Knopf ──
 await auswahlAuf();
@@ -105,7 +105,7 @@ await page.evaluate(() => document.querySelector("[data-info-blase]")?.click());
 await kontext('[data-slot-id="g_fr"]');
 const fr = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => /fällig/i.test(b.dataset.infoAktion)));
 if (await page.$('[data-kopf-anzahl][data-schalter-klapp="zu"]')) { await page.click("[data-kopf-anzahl]"); await sleep(300); }   // 305: Filter unter dem Kopf
-ok(await page.evaluate(() => { const b = document.querySelector('[data-kopf-filter] [data-schalter="faellig"]'); return b && b.hasAttribute("data-gesperrt") && b.dataset.rasterText === "🔁 Fällige (0)"; }),
+ok(await page.evaluate(() => { const b = document.querySelector('[data-kopf-filter] [data-schalter="faellig"]'); return b && b.hasAttribute("data-gesperrt") && b.dataset.rasterText === "🔁 0"; }),
   "170/274: Kachel ohne fällige: Schalter „🔁 Fällige (0)“ gesperrt (283)");
 await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => /fällig/i.test(b.dataset.infoAktion))?.click()); await sleep(300);
 ok(await page.$("[data-auswahl-tafel]"), "inaktiver Knopf: antippen bewirkt nichts (Tafel bleibt)");

@@ -116,7 +116,7 @@ await zuListen(page);
 const lwahl = () => page.evaluate(() => [...document.querySelectorAll(".listen-raster [data-wahl-nr]")].sort((a, b) => a.dataset.wahlNr - b.dataset.wahlNr)
   .map(e => e.closest("[data-liste-id], [data-lordner-id]")).map(e => e.dataset.listeId || e.dataset.lordnerId).join(","));
 await halte('[data-liste-id="l_a"]', 450);
-ok(await lwahl() === "l_a" && /📋 Unit 1 laden/.test(await kopfText()), `Liste kurz halten: Auswahl, Kopf „📋 Unit 1 laden“ (${await lwahl()} | ${await kopfText()})`);
+ok(await lwahl() === "l_a" && /^Unit 1 laden/.test(await kopfText()), `Liste kurz halten: Auswahl, Kopf „📋 Unit 1 laden“ (${await lwahl()} | ${await kopfText()})`);
 await halte('[data-lordner-id="lo1"]', 450);
 ok(await lwahl() === "l_a,lo1" && /^2 ausgewählt · 20 Vokabeln/.test(await kopfText()), `Listen-Ordner kommt in die Auswahl (${await lwahl()} | ${await kopfText()})`);
 await halte('[data-liste-id="l_b"]', 60);

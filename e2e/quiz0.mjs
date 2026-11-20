@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen, listeWaehlen } from "./hilfen.mjs";
+import { listeOeffnen, listeWaehlen, paketGroesse } from "./hilfen.mjs";
 import { zuListen, listenZu, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -85,7 +85,7 @@ if (await page.$("[data-listen-kopf]")) {
   await page.evaluate(() => { const b = document.querySelector('[data-auswahl-umschalter]'); if (b && b.dataset.auswahlUmschalter !== "listen") b.click(); }); await sleep(300);
   await page.evaluate(() => [...document.querySelectorAll("[data-liste-id]")].find(e => e.textContent.includes("Vocabulaire"))?.click()); await sleep(700);
 }
-await page.evaluate(async () => { const u = document.querySelector("[data-umfang]"); if (!u) return; u.click(); await new Promise(r => setTimeout(r, 200)); document.querySelector('[data-umfang-wahl="alle"]')?.click(); }); await sleep(300);
+await paketGroesse(page, "alle"); await sleep(300);
 await sleep(400);
 const nachWechsel = await startText();
 console.log("     Französisch:", nachWechsel);

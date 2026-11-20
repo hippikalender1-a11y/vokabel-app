@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen, listeWaehlen } from "./hilfen.mjs";
+import { listeOeffnen, listeWaehlen, paketGroesse } from "./hilfen.mjs";
 import { zuListen, quizEinstellungen, neueEineSession, listenZu, bereichZu } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -27,7 +27,7 @@ const clickText = async (sel, text, exact = false) => {
 };
 // Umfang-Knopf („Je 10 Vokabeln“ / „Alle Vokabeln“) und Anzahl am Start-Knopf
 const info = () => page.evaluate(() => ({
-  session: document.querySelector("[data-umfang]")?.textContent.trim() || null,
+  session: document.querySelector("[data-start-umfang]")?.dataset.startUmfang || null,
   start: Number(document.querySelector("[data-start-knopf]")?.dataset.startAnzahl),
 }));
 
@@ -46,14 +46,13 @@ await listeWaehlen(page, "Vocabulaire");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 let i = await info();
 console.log("     Start:", JSON.stringify(i));
-ok(i.session === "Alle Vokabeln" && i.start === 25, "App-Start: alle Vokabeln in einem Paket");
+ok(i.session === "Alle" && i.start === 25, "App-Start: alle Vokabeln in einem Paket");
 
 // 10 wählen, dann "Neu" → wieder „Alle“
-await page.click("[data-umfang]"); await sleep(200);
-await page.click('[data-umfang-wahl="10"]');
+await paketGroesse(page, 10);
 await sleep(300);
 i = await info();
-ok(i.session === "Je 10 Vokabeln" && i.start === 10, "10 gewählt: Pakete mit 10");
+ok(i.session === "Je 10" && i.start === 10, "10 gewählt: Pakete mit 10");
 await page.evaluate(() => window.scrollTo(0, 0));
 if (!(await page.evaluate(() => [...document.querySelectorAll(".slot-chip")].some(c => c.textContent.trim() === "Neu"))))
   await page.evaluate(() => [...document.querySelectorAll(".toggle-opt.aktiv")].find(b => b.textContent.trim().startsWith("Neues Quiz"))?.click());
@@ -62,14 +61,14 @@ await neueEineSession(page);
 await listeWaehlen(page, "Vocabulaire");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 i = await info();
-ok(i.session === "Alle Vokabeln" && i.start === 25, "Nach „Neu“: wieder alle in einem Paket");
+ok(i.session === "Alle" && i.start === 25, "Nach „Neu“: wieder alle in einem Paket");
 
 // Start aus der Liste
 await zuListen(page);
 await clickText(".karte-zeile", "Vocabulaire"); await listeOeffnen(page);
 await clickText("button", "Quiz starten", true);
 i = await info();
-ok(i.session === "Alle Vokabeln" && i.start === 25, "Quiz aus der Liste: alle in einem Paket");
+ok(i.session === "Alle" && i.start === 25, "Quiz aus der Liste: alle in einem Paket");
 
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");

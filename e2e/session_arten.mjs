@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { slotLaden } from "./hilfen.mjs";
+import { slotLaden, paketGroesse } from "./hilfen.mjs";
 import { quizEinstellungen, neueEineSession, bereichZu, kurzHalten, auswahlZu } from "./hilfen.mjs";
 
 // Gespeicherte Quiz: eigener Paket-Fortschritt je Abfrageart (Übersetzung / Akzente), Zurücksetzen,
@@ -71,8 +71,8 @@ ok(await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf
   "zugeklappt: Knopf mit dem Namen über die ganze Breite, keine Kreise");
 
 // Paket mit 10 Vokabeln (Übersetzung, Karte), alles gewusst
-if ((await page.evaluate(() => document.querySelector("[data-umfang]")?.textContent.trim())) !== "Je 10 Vokabeln") {
-  await page.click("[data-umfang]"); await sleep(200); await page.click('[data-umfang-wahl="10"]');
+if ((await page.evaluate(() => document.querySelector("[data-start-umfang]")?.dataset.startUmfang)) !== "Je 10") {
+  await paketGroesse(page, 10);
 }
 await sleep(200);
 await clickText("[data-start-knopf]", "");

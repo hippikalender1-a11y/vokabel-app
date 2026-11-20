@@ -56,16 +56,16 @@ ok(!!(await page.$('[data-liste-id="l_a"]')), "Listen-Auswahl offen");
 await menue('[data-liste-id="l_a"]'); await menue('[data-liste-id="l_b"]');
 let t = await tafel();
 console.log("     ", JSON.stringify(t));
-ok(/^grund:Neue \(8\):an\|negativ:✗ Negative \(2\):an\|gelernt:✓ Gelernt \(0\):aus:x\|heute:Heute \(0\):aus:x\|faellig:.*Fällige \(\d+\):/.test(t.raster.join("|")), `288: Raster wie in der Quiz-Auswahl (${t.raster.join("|")})`);
+ok(/^grund:10:an\|faellig:[^|]*\|heute:0:aus:x$/.test(t.raster.join("|")), `288/310: Filter wie in der Quiz-Auswahl – Auswahl · Fällige · Heute (${t.raster.join("|")})`);
 ok(t.klein && t.rest[0] === "🎨" && t.rest.includes("🗂 Ablage ›") && t.rest.includes("↔ Von–Bis") && t.rest.includes("💾 Als Quiz speichern") && t.rest.length === 4, `288: unten kleine Zeile 🎨 · Ablage · Von–Bis (${t.rest.join("|")})`);
 ok(/^2 ausgewählt · \d+ Vokabeln/.test(t.kopf), `288: Kopf „2 ausgewählt · n Vokabeln …“ (${t.kopf})`);
 const ablage = await page.evaluate(() => document.querySelector('[data-info-aktion="🗂 Ablage ›"]')?.dataset.infoGruppe);
 ok(/📤 Exportieren/.test(ablage || "") && /🗑 Löschen/.test(ablage || ""), `288: Exportieren und Löschen in der Ablage (${ablage})`);
-// Negative aus → Kopf zählt neu, Tafel bleibt offen
+// 310: Auswahl → „Bereits abgefragte“ → Kopf zählt neu, Tafel bleibt offen
 const vorher = t.kopf;
-await page.evaluate(() => document.querySelector('[data-schalter-raster] [data-schalter="negativ"]').click()); await sleep(400);
+await page.evaluate(() => document.querySelector('[data-schalter-raster] [data-schalter="grund"]').click()); await sleep(400);
 t = await tafel();
-ok(t.raster[1] === "negativ:✗ Negative (2):aus" && t.kopf !== vorher, `288: Negative aus – Tafel offen, Kopf zählt neu (${t.kopf})`);
+ok(t.raster[0] === "grund:2:an" && t.kopf !== vorher, `288/310: bereits abgefragte – Tafel offen, Kopf zählt neu (${t.kopf})`);
 // gesperrter Schalter leuchtet kurz (283)
 { const r = await page.evaluate(async () => { const b = document.querySelector('[data-schalter-raster] [data-schalter="heute"]'); b.click();
     const sofort = b.classList.contains("leuchten"); await new Promise(r => setTimeout(r, 600)); return sofort && !b.classList.contains("leuchten"); });
@@ -75,18 +75,20 @@ await page.evaluate(() => document.querySelector("[data-wahl-fertig]").click());
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
 ok(!(await page.$("[data-schalter-zeile]")) && await page.evaluate(() => document.querySelector("[data-schalter-klapp]")?.dataset.schalterKlapp) === "zu", "288: geladen – Schalter-Zeile eingeklappt");
 await page.evaluate(() => document.querySelector("[data-schalter-klapp]").click()); await sleep(300);
-const neg = await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="negativ"]')?.dataset.an);
+const neg = await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="grund"]')?.dataset.filterStufe);
 const titel = await page.evaluate(() => __txt(document.querySelector("[data-start-titel]")));
-ok(neg === "aus" && /^0\/8 Vokabeln/.test(titel), `288: Negative bleiben aus, Quiz mit den 8 neuen (${neg}, ${titel})`);
+ok(neg === "abgefragt" && /^0\/2 Vokabeln/.test(titel), `288/310: „Bereits abgefragte“ bleibt, Quiz mit den 2 negativen (${neg}, ${titel})`);
 // eine Liste: Tafel ebenfalls mit Raster, „Unit 1 laden“
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
 await page.evaluate(() => { const b = document.querySelector('[data-auswahl-umschalter="quiz"]'); if (b) b.click(); }); await sleep(400);
 // 251: die Auswahl aus beiden Listen kommt zurück – Unit 2 herausnehmen, bleibt Unit 1
 ok(/^2 ausgewählt/.test((await tafel()).kopf), "Auswahl der geladenen Listen wiederhergestellt");
 await menue('[data-liste-id="l_b"]');
+// 310: Auswahl wieder auf „alle“ (Kreislauf: bereits abgefragte → aus → alle)
+for (let i = 0; i < 2; i++) { await filterAuf(); await page.evaluate(() => document.querySelector('[data-schalter-raster] [data-schalter="grund"]').click()); await sleep(300); }
 t = await tafel();
 console.log("     ", JSON.stringify(t));
-ok(t.raster.length === 5 && t.klein && t.rest.includes("🗂 Ablage ›") && t.rest.at(-1) === "💾 Als Quiz speichern" && /Unit 1 laden/.test(t.kopf), `288: eine Liste – Raster, kleine Zeile, „Unit 1 laden“ (${t.rest.join("|")}, ${t.kopf})`);
+ok(t.raster.length === 3 && t.klein && t.rest.includes("🗂 Ablage ›") && t.rest.at(-1) === "💾 Als Quiz speichern" && /Unit 1 laden/.test(t.kopf), `288: eine Liste – Raster, kleine Zeile, „Unit 1 laden“ (${t.rest.join("|")}, ${t.kopf})`);
 // 296: eine Liste – lang drücken auf „Vokabeln (n)“ öffnet die Bereichswahl (wie „🎯 Bereich wählen…“)
 await page.evaluate(() => { const b = document.querySelector('[data-kopf-anzahl]'), r = b.getBoundingClientRect();
   b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(900);
@@ -99,7 +101,7 @@ await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]").click
 t = await tafel();
 console.log("     ", JSON.stringify(t));
 const zeilen297 = await page.evaluate(() => ({ listenZeile: !!document.querySelector("[data-vok-bestaetigen]") || [...document.querySelectorAll("span")].some(s => s.textContent === "Vokabel-Auswahl") }));
-ok(t.raster[0] === "grund:Neue (3):an" && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Nr. 2–4" && /Unit 1$/.test(t.kopf) && !zeilen297.listenZeile, `297: zurück in der Tafel – „Vokabeln (3)“, Kopf „Unit 1 · Nr. 2–4 laden“ (${t.raster[0]}, ${t.kopf})`);
+ok(t.raster[0] === "grund:3:an" && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl" && /Unit 1$/.test(t.kopf) && !zeilen297.listenZeile, `297: zurück in der Tafel – „Vokabeln (3)“, Kopf „Unit 1 · Nr. 2–4 laden“ (${t.raster[0]}, ${t.kopf})`);
 // nochmals lang drücken → Bereich vorgewählt, auf Nr. 2–5 erweitern
 await page.evaluate(() => { const b = document.querySelector('[data-kopf-anzahl]'), r = b.getBoundingClientRect();
   b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(900);
@@ -107,7 +109,7 @@ ok(await page.evaluate(() => document.querySelectorAll("[data-anzahl=auswahl]")[
 await zeilen([5]);
 await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]").click()); await sleep(1000);
 t = await tafel();
-ok(t.raster[0] === "grund:Neue (4):an" && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Nr. 2–5", `297: geändert – „Vokabeln (4)“, „Nr. 2–5“ (${t.raster[0]}, ${t.kopf})`);
+ok(t.raster[0] === "grund:4:an" && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfAnzahl)) === "4", `297: geändert – „Vokabeln (4)“, „Nr. 2–5“ (${t.raster[0]}, ${t.kopf})`);
 // laden → Liste mit Bereich geladen
 await page.evaluate(() => document.querySelector("[data-listen-wahl-kopf]").click()); await sleep(1200);
 const g297 = await page.evaluate(() => ({ kopf: __txt(document.querySelector("[data-slot-kopf-name]")), start: document.querySelector("[data-start-knopf]")?.dataset.startAnzahl }));

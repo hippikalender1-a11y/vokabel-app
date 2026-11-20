@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { slotLaden } from "./hilfen.mjs";
+import { slotLaden, paketGroesse } from "./hilfen.mjs";
 import { artenMehrfach } from "./hilfen.mjs";
 
 // Gemischte Antwortarten: Karte, MC, Tastatur und Akzente angehakt → je Frage zufällig eine;
@@ -62,7 +62,7 @@ await page.click("[data-abfrageziel]"); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].find(b => b.textContent.trim() === "Anzahl").click()); await sleep(200);
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn")].find(b => b.textContent.trim() === "3×").click()); await sleep(200);
 await page.click("[data-abfrageziel]"); await sleep(300);   // „Bestätigen“ – erst dann ist „Umfang“ wieder da
-await page.click("[data-umfang]"); await sleep(200); await page.click('[data-umfang-wahl="alle"]'); await sleep(300);
+await paketGroesse(page, "alle"); await sleep(300);
 await page.click("[data-start-knopf]"); await sleep(500);
 
 const gesehen = { karte: 0, mc: 0, tippen: 0, akzent: 0 };

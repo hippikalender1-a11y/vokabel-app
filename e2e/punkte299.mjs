@@ -68,7 +68,7 @@ ok(await page.evaluate(() => !!document.querySelector("[data-vok-bestaetigen]") 
 await zeilen([2, 3, 4]);
 await page.click("[data-vok-bestaetigen]"); await sleep(800);
 let k = await kopf();
-ok(!(await page.$("[data-vok-bestaetigen]")) && k.art === "liste" && /Unit 1/.test(k.text) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Nr. 2–4" && k.start === "3" && !(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf === "offen")),
+ok(!(await page.$("[data-vok-bestaetigen]")) && k.art === "liste" && /Unit 1/.test(k.text) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl" && k.start === "3" && !(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf === "offen")),
   `299: „Bestätigen“ – zurück im Quiz-Tab, Bereich gilt (${JSON.stringify(k)})`);
 // ── B: Tafel – Bereich bestätigen lädt sofort ──
 await offeneAuswahl(); await sleep(400);
@@ -78,7 +78,7 @@ await langVokabeln(); await sleep(900);
 await zeilen([4]);   // die negative von Unit 2
 await page.click("[data-vok-bestaetigen]"); await sleep(1200);
 let t = await tafel();
-ok(t.raster[0] === "grund:Neue (0)" && /Unit 2$/.test(t.kopf) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Nr. 4" && !/laden/.test(t.kopf), `299: zurück in der Tafel, schon geladen – Kopf ohne „laden“ (${t.kopf})`);
+ok(t.raster[0] === "grund:1" && /Unit 2$/.test(t.kopf) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl" && !/laden/.test(t.kopf), `299: zurück in der Tafel, schon geladen – Kopf ohne „laden“ (${t.kopf})`);
 await zuAuswahl(); await sleep(500);
 k = await kopf();
 ok(k.art === "liste" && /Unit 2/.test(k.text) && k.start === "1", `299: Bereich aus der Tafel ist geladen (${JSON.stringify(k)})`);

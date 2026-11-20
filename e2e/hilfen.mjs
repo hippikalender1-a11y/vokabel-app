@@ -42,7 +42,7 @@ export async function bereichZu(page) {
   const zu = await page.evaluate(() => {
     const o = document.querySelector("[data-quiz-offen]")?.dataset.quizOffen;
     if (o === "einzel") { const b = document.querySelector("[data-vok-bestaetigen]"); b?.click(); return !!b; }
-    const sel = { modus: "[data-abfragemodus]", reihenfolge: "[data-reihenfolge]", umfang: "[data-umfang]", ziel: "[data-abfrageziel]", listen: ".liste-detail-header .zeile-rechts" }[o];
+    const sel = { modus: "[data-abfragemodus]", reihenfolge: "[data-reihenfolge]", ziel: "[data-abfrageziel]", listen: ".liste-detail-header .zeile-rechts" }[o];
     const k = sel && document.querySelector(sel); k?.click(); return !!k;
   });
   if (zu) await new Promise(r => setTimeout(r, 350));
@@ -63,10 +63,15 @@ export async function farbZeige(page, sel) {
   return false;
 }
 // Quiz-Tab: Paketgröße wählen (Standard ist „Alle“ = ein Paket); danach den Umfang-Bereich wieder zuklappen
+// 311: lang auf den Start-Knopf → Raster „Alle · Je 5 … Je 50“ in der Tafel
 export async function paketGroesse(page, n) {
   const warte = ms => new Promise(r => setTimeout(r, ms));
-  await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await warte(250);
-  await page.evaluate(n => document.querySelector(`[data-umfang-wahl="${n}"]`)?.click(), String(n)); await warte(300);
+  await page.evaluate(() => { const el = document.querySelector("[data-start-knopf]"); if (!el) return; const r = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 10 })); }); await warte(350);
+  const da = await page.evaluate(n => { const z = n === "alle" ? "Alle" : `Je ${n}`;
+    const b = [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion.replace(/^✓ /, "") === z); b?.click(); return !!b; }, String(n));
+  if (!da) throw new Error(`Paketgröße ${n}: Wahl fehlt (lang auf Start)`);
+  await warte(300);
 }
 // Stufe (Zeile 1): aufklappen, wählen, zuklappen („Bestätigen“ = Stufen-Knopf nochmal)
 export async function stufeAuf(page) {

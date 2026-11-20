@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { ANTWORT_MODUS_NAMEN, MODI_REIHENFOLGE, PAKET_ALLE, QUIZ_ARTEN, START_TEXT, antwortSpaltenFuer, gelerntScore, hatAkzente, heuteAbgefragt, istFaellig, modiVon, ordneVokabeln, stufenRegeln, tagesSperre, nurArtikel, schalterGruppe } from "../quiz.jsx";
+import { ANTWORT_MODUS_NAMEN, MODI_REIHENFOLGE, PAKET_ALLE, QUIZ_ARTEN, START_TEXT, antwortSpaltenFuer, gelerntScore, hatAkzente, heuteAbgefragt, istFaellig, modiVon, ordneVokabeln, stufenRegeln, tagesSperre, nurArtikel, schalterGruppe, imFilter, langStufeVon } from "../quiz.jsx";
 import { IcoDown, IcoUp, IcoX } from "../komponenten.jsx";
 import { SymWdh } from "../symbole.jsx";
 import { SK, TYPEN, WAHL_ZU_MS, blinke, lsGet } from "../speicher.js";
@@ -41,20 +41,27 @@ export function QuizTab(app) {
             && (nurAkzent ? (v.akzentFortschritt?.score ?? -Infinity) : gelerntScore(v, quizModus === "diktat")) >= einstellungen.gelerntSchwelle;
           // 267: Fällige getrennt von den neuen Vokabeln (Schalter „🔁 Fällige“); Pool auch bei „aus“ für die Anzeige
           const faelligMoeglich = quizModus !== "diktat" && !nurAkzent && (einstellungen.gelerntSchwelle ?? 0) > 0;
-          const faelligeAlle = faelligMoeglich ? faelligePool(akzentVoks) : [];
-          const faelligIdsQ = new Set(quizFaellig.an ? faelligeAlle.map(v => v.id) : []);   // 274: Fällige aus → sie zählen zu den Gelernten
+          // 310/313: eigene Fällige (der Auswahl) und fremde (außerhalb, Knopf „Langzeitgedächtnis“)
+          const fp = faelligMoeglich ? faelligePool(akzentVoks) : { eigene: [], fremde: [] };
+          const langStufe = langStufeVon(quizGelerntEinschliessen, quizFaellig.an);
+          const fremdeAn = quizFaellig.modus === "sprache";
+          const faelligeAlle = [...fp.eigene, ...(fremdeAn ? fp.fremde : [])];   // „Nur Fällige“
+          const eigeneIds = new Set(fp.eigene.map(v => v.id));
+          const faelligIdsQ = langStufe === "faellig" ? eigeneIds : new Set();   // Stufe „Fällige“: getrennt; sonst bei den Gelernten
           let reihenfolgeVoks = akzentVoks.filter(v => !faelligIdsQ.has(v.id));   // 240: keine Score-Grenze mehr bei „schlechteste zuerst“
           const schwelle = einstellungen.gelerntSchwelle ?? 0;
           const istDiktat = quizModus === "diktat";
           const startScore = v => nurAkzent ? (v.akzentFortschritt?.score ?? -Infinity) : gelerntScore(v, istDiktat);
           // 274: Schalter-Gruppen ohne Doppelungen (fällig > heute > gelernt > negativ > Vokabeln)
           const heuteSperre = tagesSperre();
-          const gruppenAnz = { grund: 0, negativ: 0, gelernt: 0, heute: 0 };
-          akzentVoks.forEach(v => { const g = schalterGruppe(feldVon(v), schwelle, faelligIdsQ.has(v.id), heuteSperre); if (g !== "faellig") gruppenAnz[g]++; });
-          const gelernteAnzahl = gruppenAnz.gelernt;
-          const schalterAn = { grund: quizGrund, negativ: quizNegativ, gelernt: quizGelerntEinschliessen };
-          // Quiz-Menge: eingeschaltete Gruppen; heute abgefragte bleiben in ihrer Gruppe (für später) bzw. kommen mit „Heute“ dazu
-          reihenfolgeVoks = reihenfolgeVoks.filter(v => schalterAn[schalterGruppe(feldVon(v), schwelle)] || (quizHeuteEinschliessen && heuteSperre && heuteAbgefragt(feldVon(v))));
+          // 310: fällig > heute > gelernt > negativ > nie bzw. schon abgefragt
+          const gruppenAnz = { nie: 0, abgefragt: 0, negativ: 0, gelernt: 0, heute: 0 };
+          akzentVoks.forEach(v => { if (eigeneIds.has(v.id)) return; const g = schalterGruppe(feldVon(v), schwelle, false, heuteSperre);
+            gruppenAnz[g === "grund" ? (feldVon(v) ? "abgefragt" : "nie") : g]++; });
+          const eigeneFAnz = fp.eigene.length;
+          const gelernteAnzahl = langStufe === "gelernt" ? 0 : gruppenAnz.gelernt + (langStufe === "faellig" ? 0 : eigeneFAnz);   // nicht dabei (Hinweis)
+          // Quiz-Menge: Auswahl-Stufe, Gelernte; heute abgefragte bleiben in ihrer Gruppe (für später) bzw. kommen mit „Heute“ dazu
+          reihenfolgeVoks = reihenfolgeVoks.filter(v => imFilter(feldVon(v), schwelle, quizGrund, quizGelerntEinschliessen) || (quizHeuteEinschliessen && heuteSperre && heuteAbgefragt(feldVon(v))));
           if (!istDiktat && abfrageZielModus === "score" && abfrageZielScoreTyp !== "session")
             reihenfolgeVoks = reihenfolgeVoks.filter(v => gelerntDabei(v) || ((nurAkzent ? v.akzentFortschritt : v.fortschritt)?.score ?? 0) < abfrageZielScore);
           if (nurAkzent) {
@@ -123,33 +130,37 @@ export function QuizTab(app) {
           const sessionPct = anzeigeGesamt > 0 ? Math.round(sessionAbgefragtAnzahl / anzeigeGesamt * 100) : 0;
           // 267: Fällige kommen hinzu – Ziel bezogen auf die neuen (im laufenden Quiz fest), davon schon abgefragt, noch offen
           // 273: auch ausgeschaltet zeigt der Knopf, wie viele dazukämen
-          const fZielWenn = !faelligMoeglich ? 0 : sessionHatFortschritt && sessionSlotAktiv.faelligZiel != null ? sessionSlotAktiv.faelligZiel
-            : Math.min(faelligeAlle.length, Math.round(anzeigeGesamt * quizFaellig.anteil / 100));
-          const fZiel = quizFaellig.an ? fZielWenn : 0;
+          const eigeneDazu = langStufe === "faellig" ? eigeneFAnz : 0;
+          const fremdeWenn = Math.min(fp.fremde.length, Math.round(anzeigeGesamt * quizFaellig.anteil / 100));   // 313: Anteil nur für die fremden
+          const fZiel = !faelligMoeglich ? 0 : langStufe === "faellig" && sessionHatFortschritt && sessionSlotAktiv.faelligZiel != null ? sessionSlotAktiv.faelligZiel   // im laufenden Quiz fest
+            : eigeneDazu + (fremdeAn ? fremdeWenn : 0);
           const fGemacht = sessionHatFortschritt ? (sessionSlotAktiv.faelligIds || []).length : 0;
           const fRest = Math.max(0, Math.min(faelligeAlle.length, fZiel - fGemacht));
           const startbar = verfuegbar + (isPakete ? fRest : 0) > 0;
           const sprachKurz = [...new Set(quizTabListen.map(spracheVonListe))].map(c => SPRACH_KUERZEL[c] || sprachInfo(c).name).join(" + ");
-          const fAnzeige = anzeigeGesamt > 0 ? fZielWenn : faelligeAlle.length;   // 274: ohne andere Vokabeln: alle Fälligen
           // 283: gesperrt statt disabled – Antippen lässt den Knopf nur kurz aufleuchten
           const gesperrtAttr = g => g ? { "aria-disabled": true, "data-gesperrt": "" } : {};
-          const faelligKnopf = (
-            <div className="quiz-zeile-zelle"><span className="quiz-zeile-label">Fällige</span>
-            <button className={`quiz-zeile-knopf${quizFaellig.an ? " an" : ""}`} data-schalter="faellig" {...gesperrtAttr(!faelligMoeglich || !faelligeAlle.length)} data-faellig={quizFaellig.an ? "an" : "aus"} data-faellig-modus={quizFaellig.modus} data-faellig-anteil-quiz={quizFaellig.anteil}
-              onClick={e => { if (!faelligMoeglich || !faelligeAlle.length) { blinke(e.currentTarget); return; } schliesseQuizBereiche(null); setQuizFaellig(f => ({ ...f, an: !f.an })); setStartLeerHinweis(false); }}
-              {...tt(`Fällige (Langzeit-Wiederholung): ${quizFaellig.an ? `${quizFaellig.anteil} % zusätzlich zu den neuen, aus ${quizFaellig.modus === "sprache" ? `allen Listen (${sprachKurz})` : "diesem Quiz"} – jetzt ${faelligeAlle.length} fällig; antippen schaltet aus` : `aus – ${faelligeAlle.length} wären fällig; antippen schaltet ein`}`,
-                [{ label: `${quizFaellig.modus === "sprache" ? "◉" : "○"} Alle ${sprachKurz || "der Sprache"}`, fn: () => setQuizFaellig(f => ({ ...f, an: true, modus: "sprache" })) },
-                 { label: `${quizFaellig.modus === "quiz" ? "◉" : "○"} Nur dieses Quiz`, fn: () => setQuizFaellig(f => ({ ...f, an: true, modus: "quiz" })) }],
-                { langText: "🔁 Fällige",
-                  // 272: Übersicht je Sprache (nur Info; je Sprache ein eigenes Element – später ggf. antippbar)
+          // 313: Langzeitgedächtnis – fällige außerhalb der Auswahl (andere Listen derselben Sprache, übrige der Liste) dazu; lang: Anteil
+          const langzeitKnopf = (
+            <div className="quiz-zeile-zelle"><span className="quiz-zeile-label">Langzeitgedächtnis</span>
+            <button className={`quiz-zeile-knopf${fremdeAn && faelligMoeglich ? " an" : ""}`} data-langzeit={fremdeAn ? "an" : "aus"} data-faellig-modus={quizFaellig.modus} data-faellig-anteil-quiz={quizFaellig.anteil}
+              data-langzeit-n={fp.fremde.length} {...gesperrtAttr(!faelligMoeglich)}
+              onClick={e => { if (!faelligMoeglich) { blinke(e.currentTarget); return; } schliesseQuizBereiche(null); setQuizFaellig(f => ({ ...f, modus: f.modus === "sprache" ? "quiz" : "sprache" })); setStartLeerHinweis(false); }}
+              {...tt(`Langzeitgedächtnis: fällige Vokabeln außerhalb der Auswahl (andere Listen ${sprachKurz || "der Sprache"}) – ${fremdeAn ? `${quizFaellig.anteil} % zusätzlich zu den übrigen, jetzt ${fp.fremde.length} fällig; antippen schaltet aus` : `aus – ${fp.fremde.length} wären fällig; antippen schaltet ein`}; lang drücken: Anteil`,
+                null, { langText: "🔁 Langzeitgedächtnis",
                   zusatz: () => { const akt = new Set(quizTabListen.map(spracheVonListe)), z = faelligJeSprache();
                     return z.length ? <div data-faellig-sprachen>Jetzt fällig: {z.map((x, i) => <Fragment key={x.code}>{i ? " · " : ""}<span data-faellig-sprache={x.code} data-n={x.n}
                       style={akt.has(x.code) ? { fontWeight: 800, textDecoration: "underline" } : { opacity: 0.85 }}>{x.kurz} {x.n}</span></Fragment>)}</div> : null; },
-                  regler: () => ({ label: "Anteil (zusätzlich zu den neuen)", min: 5, max: 100, step: 5, wert: quizFaellig.anteil, format: v => `${v} %`,
-                  aendern: v => setQuizFaellig(f => ({ ...f, anteil: v, an: true })) }) })}>
-              {quizFaellig.an && faelligMoeglich && fAnzeige > 0 && "+ "}<SymWdh/> {faelligMoeglich ? fAnzeige : 0}
+                  regler: () => ({ label: "Anteil (zusätzlich zu den übrigen)", min: 5, max: 100, step: 5, wert: quizFaellig.anteil, format: v => `${v} %`,
+                    aendern: v => setQuizFaellig(f => ({ ...f, anteil: v, modus: "sprache" })) }) })}>
+              {fremdeAn && faelligMoeglich ? <>+ <SymWdh/> {fremdeWenn}</> : <><SymWdh/> {faelligMoeglich ? fp.fremde.length : 0}</>}
             </button></div>
           );
+          // 311: Anzahl je Runde – lang auf den Start-Knopf (Raster in der Tafel)
+          const umfangText = isPakete && quizPaketGroesse != null && quizPaketGroesse < PAKET_ALLE ? `Je ${quizPaketGroesse}` : "Alle";
+          const umfangMenue = [{ label: `${umfangText === "Alle" ? "✓ " : ""}Alle`, raster: true, breit: true, fn: () => { setQuizSessionModus("pakete"); setQuizPaketGroesse(PAKET_ALLE); } },
+            ...[5, 10, 15, 20, 25, 30, 40, 50].map(n => ({ label: `${umfangText === `Je ${n}` ? "✓ " : ""}Je ${n}`, raster: true, fn: () => { setQuizSessionModus("pakete"); setQuizPaketGroesse(n); } }))];
+          const umfangTipp = "; lang drücken: Anzahl je Runde (alle oder in Paketen)";
 
           return (
             <>
@@ -311,25 +322,36 @@ export function QuizTab(app) {
                 {/* 301: Filter-Zeile direkt unter dem Kopf (274: feste Plätze, an gefüllt, aus invertiert, nicht verfügbar ausgegraut); auf/zu über die Anzahl im Kopf */}
                 {kombiListe && fokusZeigt("zeile1") && !schalterZeileZu && (
                   <div className="quiz-zeile schalter-zeile" data-schalter-zeile style={{position:"relative", top:0, zIndex:5}}>
-                    {[
-                      { k: "grund", label: "Neue", n: gruppenAnz.grund, an: quizGrund, set: setQuizGrund, zeichen: null, frei: true,
-                        text: "Neue Vokabeln: noch nie abgefragt oder Score 0 bis 2" },
-                      { k: "negativ", label: "Negative", n: gruppenAnz.negativ, an: quizNegativ, set: setQuizNegativ, zeichen: "✗", frei: true,
-                        text: "Vokabeln mit negativem Score" },
-                      { k: "gelernt", label: "Gelernte", n: gruppenAnz.gelernt, an: quizGelerntEinschliessen, set: setQuizGelerntEinschliessen, zeichen: "✓", frei: schwelle > 0, plus: true,
-                        text: "Gelernte Vokabeln (nicht fällig)" },
-                      { k: "heute", label: "Heute", n: gruppenAnz.heute, an: quizHeuteEinschliessen, set: setQuizHeuteEinschliessen, zeichen: null, frei: heuteSperre, plus: true,
-                        text: "Heute schon abgefragte Vokabeln – sonst kommen sie erst morgen wieder" },
-                    ].map(x => (
-                      <div key={x.k} className="quiz-zeile-zelle"><span className="quiz-zeile-label">{x.label}</span>
-                      <button className={`quiz-zeile-knopf${x.an ? " an" : ""}`} data-schalter={x.k} data-an={x.an ? "an" : "aus"} {...gesperrtAttr(!x.frei || x.n === 0)}
-                        {...(x.k === "gelernt" ? { "data-gelernte": x.an ? "an" : "aus" } : x.k === "heute" ? { "data-heute": x.an ? "an" : "aus" } : {})}
-                        onClick={e => { if (!x.frei || x.n === 0) { blinke(e.currentTarget); return; } schliesseQuizBereiche(null); x.set(v => !v); setStartLeerHinweis(false); }}
-                        {...tt(`${x.text}: ${x.n} – ${x.an ? "werden abgefragt; antippen schaltet aus" : "ausgeschaltet; antippen schaltet ein"}`)}>
-                        {x.plus && x.an && x.n > 0 && "+ "}{x.zeichen && <>{x.zeichen} </>}{x.n}
-                      </button></div>
-                    ))}
-                    {faelligKnopf}
+                    {(() => {
+                      // 310: Stufen-Knöpfe – antippen schaltet weiter (Kreislauf)
+                      const auswahlAlle = gruppenAnz.nie + gruppenAnz.abgefragt + gruppenAnz.negativ, auswahlAbg = gruppenAnz.abgefragt + gruppenAnz.negativ;
+                      const kn = [
+                        { k: "grund", label: quizGrund === "abgefragt" ? "Bereits abgefragte" : "Auswahl", stufe: quizGrund === true ? "alle" : quizGrund || "aus",
+                          n: quizGrund === "abgefragt" ? auswahlAbg : auswahlAlle, an: quizGrund !== false, frei: auswahlAlle > 0,
+                          weiter: () => setQuizGrund(g => g === true ? "abgefragt" : g === "abgefragt" ? false : true),
+                          text: quizGrund === "abgefragt" ? "Bereits abgefragte der Auswahl (ohne die gelernten und die nie abgefragten)" : "Auswahl ohne die gelernten",
+                          naechste: quizGrund === true ? "nur bereits abgefragte" : quizGrund === "abgefragt" ? "aus" : "alle der Auswahl" },
+                        { k: "faellig", label: langStufe === "gelernt" ? "Gelernte" : "Fällige", stufe: langStufe, zeichen: langStufe === "gelernt" ? "✓" : <SymWdh/>, plus: true,
+                          n: langStufe === "gelernt" ? gruppenAnz.gelernt + eigeneFAnz : eigeneFAnz, an: langStufe !== "aus", frei: schwelle > 0 && gruppenAnz.gelernt + eigeneFAnz > 0,
+                          weiter: () => { if (langStufe === "faellig") { setQuizFaellig(f => ({ ...f, an: false })); setQuizGelerntEinschliessen(true); }
+                            else if (langStufe === "gelernt") { setQuizFaellig(f => ({ ...f, an: false })); setQuizGelerntEinschliessen(false); }
+                            else { setQuizFaellig(f => ({ ...f, an: true })); setQuizGelerntEinschliessen(false); } },
+                          text: langStufe === "gelernt" ? "Alle gelernten der Auswahl" : "Gelernte der Auswahl, die jetzt zur Prüfung fällig sind",
+                          naechste: langStufe === "faellig" ? "alle gelernten" : langStufe === "gelernt" ? "aus" : "die fälligen" },
+                        { k: "heute", label: "Heute", stufe: quizHeuteEinschliessen ? "an" : "aus", n: gruppenAnz.heute, an: quizHeuteEinschliessen, frei: heuteSperre && gruppenAnz.heute > 0, plus: true,
+                          weiter: () => setQuizHeuteEinschliessen(v => !v), text: "Heute schon abgefragte Vokabeln – sonst kommen sie erst morgen wieder",
+                          naechste: quizHeuteEinschliessen ? "aus" : "ein" },
+                      ];
+                      return kn.map(x => (
+                        <div key={x.k} className="quiz-zeile-zelle"><span className="quiz-zeile-label">{x.label}</span>
+                        <button className={`quiz-zeile-knopf${x.an ? " an" : ""}`} data-schalter={x.k} data-an={x.an ? "an" : "aus"} data-filter-stufe={x.stufe} {...gesperrtAttr(!x.frei)}
+                          {...(x.k === "heute" ? { "data-heute": x.an ? "an" : "aus" } : x.k === "faellig" ? { "data-gelernte": x.stufe === "gelernt" ? "an" : "aus" } : {})}
+                          onClick={e => { if (!x.frei) { blinke(e.currentTarget); return; } schliesseQuizBereiche(null); x.weiter(); setStartLeerHinweis(false); }}
+                          {...tt(`${x.text}: ${x.n} – ${x.an ? "werden abgefragt" : "ausgeschaltet"}; antippen: ${x.naechste}`)}>
+                          {x.plus && x.an && x.n > 0 && "+ "}{x.zeichen && <>{x.zeichen} </>}{x.n}
+                        </button></div>
+                      ));
+                    })()}
                   </div>
                 )}
 
@@ -563,13 +585,6 @@ export function QuizTab(app) {
                 {/* ZEILE 2: Umfang | Abfrage-Ziel (274: die Vokabel-Schalter haben eine eigene Zeile) */}
                 {kombiListe && fokusZeigt("zeile2") && (
                   <div ref={sessionRef} className={`quiz-zeile${quizSessionAufgeklappt === "umfang" || quizSessionAufgeklappt === "ziel" ? " hat-offen" : ""}`} style={{position: quizFokus === "zeile2" ? "sticky" : "relative", top: quizFokus === "zeile2" ? headerH + slotH : 0, zIndex:6}}>
-                    <div className={`quiz-zeile-zelle${quizSessionAufgeklappt === "umfang" ? " offen" : ""}`}><span className="quiz-zeile-label">Anzahl je Runde</span>
-                    <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "umfang" ? " offen bestaetigen-knopf" : ""}${leuchtet("umfang")}`} data-umfang
-                      onClick={() => toggleSessionBereich("umfang")}
-                      {...tt(quizSessionAufgeklappt === "umfang" ? "Bestätigen – klappt den Umfang zu" : "Umfang: alle Vokabeln auf einmal oder in Paketen – antippen zum Einstellen")}>
-                      {quizSessionAufgeklappt === "umfang" ? offenText(true, isPakete && quizPaketGroesse != null && quizPaketGroesse < PAKET_ALLE ? `Je ${quizPaketGroesse}` : "Alle")
-                        : isPakete && quizPaketGroesse != null && quizPaketGroesse < PAKET_ALLE ? `Je ${quizPaketGroesse} Vokabeln` : "Alle Vokabeln"}
-                    </button></div>
                     <div className={`quiz-zeile-zelle${quizSessionAufgeklappt === "ziel" ? " offen" : ""}`}><span className="quiz-zeile-label">Wie oft</span>
                     <button className={`quiz-zeile-knopf${quizSessionAufgeklappt === "ziel" ? " offen bestaetigen-knopf" : ""}${leuchtet("ziel")}`} data-abfrageziel
                       onClick={() => toggleSessionBereich("ziel")}
@@ -577,6 +592,7 @@ export function QuizTab(app) {
                       {offenText(quizSessionAufgeklappt === "ziel", abfrageZielModus === "blitz" ? "⚡ Blitz 60 s" : abfrageZielModus === "serie" ? "🔥 Serie" : abfrageZielModus === "wiederholung" ? `${abfrageZielWiederholung}× richtig`
                         : abfrageZielModus === "score" ? (abfrageZielScoreTyp === "session" ? `Quiz ${abfrageZielScore > 0 ? "+" : ""}${abfrageZielScore}` : `Score < ${abfrageZielScore > 0 ? "+" : ""}${abfrageZielScore}`) : `${abfrageZielAnzahl}×`)}
                     </button></div>
+                    {langzeitKnopf}
                   </div>
                 )}
                 {quizSessionAufgeklappt && kombiListe && (
@@ -698,9 +714,9 @@ export function QuizTab(app) {
                       {lernAktiv && !aufteilen ? (
                         <button className="btn btn-primary start-knopf" data-start-knopf data-lernen-start={lernStand ? "weiter" : "neu"} data-start-anzahl={lernAnzahl}
                           onClick={() => starteLernen(lernVokabeln(), isPakete ? quizPaketGroesse : null, lernSpalten, lernInfo, lernStand)} disabled={!kannStarten || (lernAnzahl === 0 && !lernStand)}
-                          {...tt(lernStand ? `Weiter lernen an der Stelle, an der du aufgehört hast (${lernAngesehen} von ${lernGesamt} angesehen)` : "Lernen starten: Wort zeigen, nach einer Pause die Übersetzung – ohne Score, des Quiz-Fortschritt bleibt", sessionSpeicherAktionen())}>
-                          {lernStand ? <><b>Weiter lernen</b><span>{lernAngesehen} von {lernGesamt} angesehen</span></>
-                            : <><b>Lernen starten</b><span>{lernAnzahl} Vokabel{lernAnzahl !== 1 ? "n" : ""}</span></>}
+                          {...tt((lernStand ? `Weiter lernen an der Stelle, an der du aufgehört hast (${lernAngesehen} von ${lernGesamt} angesehen)` : "Lernen starten: Wort zeigen, nach einer Pause die Übersetzung – ohne Score, des Quiz-Fortschritt bleibt") + umfangTipp, umfangMenue, { langText: "Anzahl je Runde" })}>
+                          {lernStand ? <><b>Weiter lernen – {umfangText}</b><span>{lernAngesehen} von {lernGesamt} angesehen</span></>
+                            : <><b>Lernen starten – {umfangText}</b><span>{lernAnzahl} Vokabel{lernAnzahl !== 1 ? "n" : ""}</span></>}
                         </button>
                       ) : aufteilen ? (() => {
                         const neu = (aufteilenStand()?.gruppen || []).filter(g => !g.vorhanden).length;
@@ -725,7 +741,7 @@ export function QuizTab(app) {
                           </button>
                         )}
                         </>
-                      ) : !startbar && faelligeAlle.length > 0 && !lernAktiv ? (
+                      ) : verfuegbar === 0 && faelligeAlle.length > 0 && !lernAktiv ? (   // 310: nur Fällige übrig → „Nur Fällige“
                         <button className="btn btn-primary start-knopf" data-nur-faellige={faelligeAlle.length} onClick={starteNurFaellige}
                           {...tt(`Keine neuen Vokabeln offen – nur die ${faelligeAlle.length} fälligen abfragen (eine Runde) – der Quiz-Fortschritt bleibt`)}>
                           <b><SymWdh/> Nur Fällige</b><span>{faelligeAlle.length} fällig</span>
@@ -733,8 +749,8 @@ export function QuizTab(app) {
                       ) : (
                         <button className={`btn btn-primary start-knopf${!startbar ? " leer" : ""}`} data-start-knopf data-start-anzahl={verfuegbar} data-start-rest={startRest} data-start-faellig={fRest}
                           onClick={() => !startbar ? setStartLeerHinweis(h => !h) : starteQuiz()} disabled={!kannStarten}
-                          {...tt(isPakete ? `${START_TEXT[quizArt] || "Quiz starten"} – in dieses Quiz sind noch ${startRest} Vokabeln übrig; abgefragt wird ${quizPaketGroesse >= PAKET_ALLE ? "alles in einem Paket" : `in Paketen zu ${quizPaketGroesse}`}; lang drücken: speichern` : `${START_TEXT[quizArt] || "Quiz starten"} – die Zahl nennt die Vokabeln dieser Fragerunde; lang drücken: speichern`, sessionSpeicherAktionen())}>
-                          <b>{START_TEXT[quizArt] || "Quiz starten"}</b><span>{startRest} Vokabel{startRest !== 1 ? "n" : ""}{isPakete && fRest > 0 ? <> + <SymWdh/> {fRest}</> : ""}</span>
+                          {...tt((isPakete ? `${START_TEXT[quizArt] || "Quiz starten"} – in dieses Quiz sind noch ${startRest} Vokabeln übrig; abgefragt wird ${quizPaketGroesse >= PAKET_ALLE ? "alles in einem Paket" : `in Paketen zu ${quizPaketGroesse}`}` : `${START_TEXT[quizArt] || "Quiz starten"} – die Zahl nennt die Vokabeln dieser Fragerunde`) + umfangTipp, umfangMenue, { langText: "Anzahl je Runde" })}>
+                          <b data-start-umfang={umfangText}>{START_TEXT[quizArt] || "Quiz starten"} – {umfangText}</b><span>{startRest} Vokabel{startRest !== 1 ? "n" : ""}{isPakete && fRest > 0 ? <> + <SymWdh/> {fRest}</> : ""}</span>
                         </button>
                       )}
                     </div>
@@ -769,7 +785,7 @@ export function QuizTab(app) {
                     {startLeerHinweis && !lernAktiv && !aufteilen && !alleAbgefragt && verfuegbar === 0 && (() => {
                       const gel = quizGelerntEinschliessen ? 0 : gelernteAnzahl, heu = quizHeuteEinschliessen ? 0 : heuteAnzahl;
                       const teile = [gel && `${gel} gelernt`, heu && `${heu} heute schon abgefragt`].filter(Boolean);
-                      const knoepfe = [gel && "„Gelernte“", heu && "„Heute“"].filter(Boolean);
+                      const knoepfe = [gel && "„Fällige“ (antippen bis „Gelernte“)", heu && "„Heute“"].filter(Boolean);
                       return (
                         <div className="start-hinweis" data-start-hinweis onClick={() => setStartLeerHinweis(false)}>
                           {teile.length ? <span><b>{teile.join(" · ")}</b> – oben bei {knoepfe.join(" / ")} dazunehmen</span> : <span>Keine Vokabeln ausgewählt</span>}

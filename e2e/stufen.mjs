@@ -46,7 +46,10 @@ await page.evaluate(() => document.querySelector("[data-info-blase]")?.click());
 await klick('[data-slot-id="g_1"]'); await sleep(900);
 const schalter = async (k, soll) => { const ist = await page.evaluate(k => { const b = document.querySelector(`[data-schalter-zeile] [data-schalter="${k}"]`); return b ? (b.dataset.an || b.dataset.faellig) : null; }, k);
   if (ist && ist !== soll) { await page.evaluate(k => document.querySelector(`[data-schalter-zeile] [data-schalter="${k}"]`).click(), k); await sleep(300); } };
-await schalter("grund", "aus"); await schalter("negativ", "aus"); await schalter("faellig", "an");
+// 310: Stufen-Knöpfe – Auswahl bis „aus“ weiterschalten, Fällige auf Stufe „Fällige“
+const stufe = async (k, soll) => { for (let i = 0; i < 3; i++) { const ist = await page.evaluate(k => document.querySelector(`[data-schalter-zeile] [data-schalter="${k}"]`)?.dataset.filterStufe, k);
+  if (!ist || ist === soll) break; await page.evaluate(k => document.querySelector(`[data-schalter-zeile] [data-schalter="${k}"]`).click(), k); await sleep(300); } };
+await stufe("grund", "aus"); await stufe("faellig", "faellig");
 ok(await page.evaluate(() => document.querySelector("[data-nur-faellige]")?.dataset.nurFaellige) === "1", "geladen: nur die fällige Vokabel (1)");
 
 // Abfrage: „two“ (fällig) gewusst → Stufe 2 (Score 4)

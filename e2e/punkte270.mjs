@@ -58,12 +58,12 @@ const r = await page.evaluate(() => ({ balken: [...document.querySelectorAll("[d
 ok(r.balken === "nie,negativ,gelernt" && r.legende === "nie,negativ,gelernt", `275: Reihenfolge links nie → rechts gelernt (${JSON.stringify(r)})`);
 // ── 270: eigenes Zeichen in Schriftfarbe ──
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
-const z = await page.evaluate(() => { const b = document.querySelector("[data-faellig]"), s = b?.querySelector("svg[data-sym='wiederholung']");
+const z = await page.evaluate(() => { const b = document.querySelector('[data-schalter-zeile] [data-schalter="faellig"]'), s = b?.querySelector("svg[data-sym='wiederholung']");
   return { sym: !!s, emoji: /🔁/.test(b?.textContent || ""), farbe: s && getComputedStyle(s).color === getComputedStyle(b).color, strich: s?.getAttribute("stroke"),
     titel: !!document.querySelector("[data-start-titel] svg[data-sym]"), start: !!document.querySelector("[data-start-knopf] svg[data-sym]") }; });
 ok(z.sym && !z.emoji && z.farbe && z.strich === "currentColor" && z.titel && z.start, `270: Knopf, Titel und Start mit eigenem Zeichen in Schriftfarbe, kein Emoji (${JSON.stringify(z)})`);
 // Menü-Texte (Info-Tafel): 🔁 im Text wird beim Anzeigen zum Zeichen
-await page.evaluate(() => { const el = document.querySelector("[data-faellig]"); const r = el.getBoundingClientRect();
+await page.evaluate(() => { const el = document.querySelector("[data-langzeit]"); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(400);
 const blase = await page.evaluate(() => { const b = document.querySelector("[data-info-blase]"); return { sym: !!b?.querySelector("svg[data-sym]"), emoji: /🔁/.test(b?.textContent || "") }; });
 ok(blase.sym && !blase.emoji, `270: Info-Tafel zeigt das Zeichen statt des Emojis (${JSON.stringify(blase)})`);

@@ -105,7 +105,7 @@ export function gruppenQuizPasst(app, g) {
   }
 
 export function starteGruppenQuiz(app, g) {
-  const { getKombinierteListe, gruppenQuizPasst, gruppenQuizStartRef, setAktiverSlot, setGespeicherteVokabelgruppe, setGruppenAenderungsDialog, setGruppenQuiz, setGruppenQuizTick, setQuiz, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizGelerntEinschliessen, setQuizReihenfolge, setQuizSchlechtesteMaxScore, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSessionUeberschreibenModal, setSlotSektionAufgeklappt, setStatistikVollbild, setTab, starteQuiz, wechsleQuizArt } = app;
+  const { setQuizFaellig, getKombinierteListe, gruppenQuizPasst, gruppenQuizStartRef, setAktiverSlot, setGespeicherteVokabelgruppe, setGruppenAenderungsDialog, setGruppenQuiz, setGruppenQuizTick, setQuiz, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizGelerntEinschliessen, setQuizReihenfolge, setQuizSchlechtesteMaxScore, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSessionUeberschreibenModal, setSlotSektionAufgeklappt, setStatistikVollbild, setTab, starteQuiz, wechsleQuizArt } = app;
     setGruppenQuiz(null);
     if (gruppenQuizPasst(g)) {
       setStatistikVollbild(false);
@@ -128,6 +128,7 @@ export function starteGruppenQuiz(app, g) {
     setQuizReihenfolge("schlechteste");
     setQuizSchlechtesteMaxScore("");
     setQuizGelerntEinschliessen(true);
+    setQuizFaellig(f => ({ ...f, modus: "quiz" }));   // 313: nur die Gruppe – keine Fälligen außerhalb
     wechsleQuizArt(g.art, getKombinierteListe(g.listenIds)?.spalten);
     setSlotSektionAufgeklappt(false);
     setQuiz(null);

@@ -175,20 +175,20 @@ export function renderSlotKopf(app, statistik) {
     const lwahl = !zu && auswahlListen && listenWahl;   // 294: auch in der Statistik   // 226: Listen-Mehrfach-Auswahl im Quiz-Tab
     // Angetippte Quiz: der Name wird zum grünen „✓ ‹Name› laden“
     const vorschauE = !zu && !wahl && slotVorschau ? getSlotEintrag(slotVorschau.typ, slotVorschau.id) : null;
-    const vorschauName = vorschauE ? (vorschauE.multi ? `🧩 ${vorschauE.name}` : vorschauE.istListe ? `📋 ${vorschauE.name}` : vorschauE.name || "Abfrage") : "";
+    const vorschauName = vorschauE ? (vorschauE.multi ? `🧩 ${vorschauE.name}` : vorschauE.istListe ? vorschauE.name : vorschauE.name || "Abfrage") : "";
     // 234: genau ein Element ausgewählt → „‹Name› laden“ (Ordner: mit seinem ganzen Inhalt)
     const einzelName = id => { const o = (getSlotsData().ordner || []).find(x => x.id === id); return o ? `📁 ${o.name}` : getSlotEintrag("gespeichert", id)?.name || "Quiz"; };
     const wahlText = wahl ? (vonBis?.art === "slot" ? "Von–Bis: Ende antippen"
       : multiAuswahl.length === 1 ? `${einzelName(multiAuswahl[0])} laden`
       : multiAuswahl.length ? (statistik ? `${multiAuswahl.length} ausgewählt · ${multiZusammenstellung(multiAuswahl)?.anzahl || 0} Vokabeln`
-        : (() => { const z = schalterZaehlung(wahlQuizIds(multiAuswahl)); return `${multiAuswahl.length} ausgewählt · ${z.regulaer} Vokabeln${quizFaellig.an && z.faellig ? ` + 🔁 ${z.faellig}` : ""}`; })())   // 274
+        : (() => { const z = schalterZaehlung(wahlQuizIds(multiAuswahl)); return `${multiAuswahl.length} ausgewählt · ${z.regulaer} Vokabeln${z.faellig ? ` + 🔁 ${z.faellig}` : ""}`; })())   // 274
       : "Nichts ausgewählt") : "";
     // 299: die Tafel zeigt, was schon geladen ist (z. B. nach dem Bereich) → ohne „laden“
     const tafelGeladen = lwahl && listenWahl.length === 1 && !statistik && aktiverSlot?.typ === "listen" && aktiverSlot.id === listenWahl[0] && (tafelBereich
       ? quizBereichTyp === "bereich" && quizCheckboxAuswahl.size === tafelBereich.auswahl.size && [...tafelBereich.auswahl].every(k => quizCheckboxAuswahl.has(k))
       : !(quizBereichTyp === "bereich" && quizCheckboxAuswahl.size));
     const lEinzelName = id => { const o = (listenOrdner || []).find(x => x.id === id); if (o) return `📁 ${o.name}`;
-      const n = `📋 ${listenIndex.find(l => l.id === id)?.name || "Liste"}`;
+      const n = listenIndex.find(l => l.id === id)?.name || "Liste";   // 308: ohne 📋
       return n; };   // 301: der Bereich steht rechts in der Anzahl
     // 169: Fortschrittsbalken immer – bei offener Auswahl für das, was der Kopf zeigt (Vorschau bzw. Mehrfachauswahl)
     const kopfVoks = e => { const k = e?.konfiguration || {};
@@ -230,11 +230,11 @@ export function renderSlotKopf(app, statistik) {
         if (!listenWahl.length) return null;
         const ids = wahlListenIds(listenWahl), tb = tafelBereich && [...tafelBereich.ids].sort().join() === [...ids].sort().join() ? tafelBereich.auswahl : null;
         const n = tb ? tb.size : ids.reduce((s, id) => s + (lsLesen(SK.liste(id))?.vokabeln?.length || 0), 0);
-        return { n, text: tb ? nrKurz(ids, tb) : "Alle", lang: () => waehleListenBereich(), tipp: klapp,
+        return { n, text: tb ? "Auswahl" : "Alle", lang: () => waehleListenBereich(), tipp: klapp,
           erklaerung: `${tb ? "Bereich" : "Alle Vokabeln"} der gewählten Liste${ids.length > 1 ? "n" : ""}: ${n} – ${klapp ? "antippen: Filter ein-/ausblenden; " : ""}lang drücken: Bereich wählen` };
       }
       if (!statistik && !quizTabListen.length) return null;
-      const text = bereichAktiv && !multi ? bereichText : "Alle";   // Multiquiz: kein eigener Bereich
+      const text = bereichAktiv && !multi ? "Auswahl" : "Alle";   // Multiquiz: kein eigener Bereich; 309: ohne Nr.
       return { n: voks.length, text,
         lang: multi ? null : statistik ? (statistikListenIds ? () => waehleBereichGeladen("statistik") : null) : () => waehleBereichGeladen("quiz"),
         tipp: statistik ? () => setStatistikFilter(new Set(["negativ", "nie", "arbeit", "gelernt"])) : () => setSchalterZeileZu(z => !z),
@@ -257,19 +257,19 @@ export function renderSlotKopf(app, statistik) {
               : geaendert ? `${name} – Vokabelauswahl geändert, noch nicht gespeichert; lang drücken: überspeichern, als neues Quiz speichern, verwerfen, umbenennen, duplizieren, Vokabeln ändern oder löschen`
               : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern, umbenennen, duplizieren, Vokabeln ändern, löschen" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, (lwahl ? (listenWahl.length ? (auswahlTafelDaten.current.liste?.()?.aktionen || listenWahlMenue(listenWahl)) : null) : wahl ? (auswahlTafelDaten.current.slot?.()?.aktionen || null) : aktionen), { langText: name })}>
             {balkenPct !== null && <span className="kopf-balken" data-kopf-balken={balkenPct}><span style={{width:`${balkenPct}%`}}/></span>}
-            {lwahl ? <span data-wahl-anzahl={listenWahl.length} data-listen-wahl-kopf>{listenWahl.length === 1 ? `${lEinzelName(listenWahl[0])}${tafelGeladen ? "" : " laden"}` : listenWahl.length
+            <span className="slot-kopf-text">{lwahl ? <span data-wahl-anzahl={listenWahl.length} data-listen-wahl-kopf>{listenWahl.length === 1 ? `${lEinzelName(listenWahl[0])}${tafelGeladen ? "" : " laden"}` : listenWahl.length
                 ? statistik ? `${listenWahl.length} ausgewählt · ${wahlListenIds(listenWahl).reduce((s, id) => s + (lsLesen(SK.liste(id))?.vokabeln?.length || 0), 0)} Vokabeln`
-                : mitSymbolen((() => { const z = schalterZaehlung(wahlListenIds(listenWahl), "liste"); return `${listenWahl.length} ausgewählt · ${z.regulaer} Vokabeln${quizFaellig.an && z.faellig ? ` + 🔁 ${z.faellig}` : ""}`; })())   // 288
+                : mitSymbolen((() => { const z = schalterZaehlung(wahlListenIds(listenWahl), "liste"); return `${listenWahl.length} ausgewählt · ${z.regulaer} Vokabeln${z.faellig ? ` + 🔁 ${z.faellig}` : ""}`; })())   // 288
                 : "Nichts ausgewählt"}</span>
               : wahl ? <span data-wahl-anzahl={multiAuswahl.length}>{mitSymbolen(wahlText)}</span> : vorschauE ? <span data-bestaetigen>{vorschauName} laden</span> : aendern ? <span data-bestaetigen>Bestätigen</span>
               : erstellen && zu ? <span data-bestaetigen>＋ Quiz erstellen</span>
-              : <>{alsListe && <span aria-hidden="true" data-kopf-liste>📋 {listeE ? listenFlagge(listeE) : ""}</span>}{name}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}</>}
+              : <>{alsListe && listeE && <span aria-hidden="true" data-kopf-liste>{listenFlagge(listeE)} </span>}{name}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}</>}</span>
           </button>
           {anzahlSeg && (
             <button className={`toggle-opt aktiv slot-kopf-anzahl${eckigKopf ? " eckig" : ""}`} data-auswahl-durchlass data-kopf-anzahl={anzahlSeg.n} data-kopf-bereich={anzahlSeg.text} onClick={anzahlSeg.tipp || undefined}
               {...(!statistik ? { "data-schalter-klapp": schalterZeileZu ? "zu" : "auf" } : {})}
               {...tt(anzahlSeg.erklaerung, null, anzahlSeg.lang ? { lang: anzahlSeg.lang } : {})}>
-              <span>{anzahlSeg.text}</span><b>{anzahlSeg.n}</b>
+              <b>{anzahlSeg.n} V</b><span>{anzahlSeg.text}</span>
             </button>
           )}
           {voks.length > 0 && !zu && statistik && (
@@ -281,16 +281,13 @@ export function renderSlotKopf(app, statistik) {
         </div>
         {filterTeile && !schalterZeileZu && (
           <div className="quiz-zeile schalter-zeile kopf-filter" data-schalter-raster data-kopf-filter>
-            {filterTeile.map(x => { const KOPF = { grund: "Neue", negativ: "Negative", gelernt: "Gelernte", heute: "Heute", faellig: "Fällige" };
-              const ZEICHEN = { negativ: "✗ ", gelernt: "✓ ", faellig: "🔁 " };
-              const plus = x.an && x.n > 0 && ["gelernt", "heute", "faellig"].includes(x.schalter) ? "+ " : "";
-              return (
-              <div key={x.schalter} className="quiz-zeile-zelle"><span className="quiz-zeile-label">{KOPF[x.schalter]}</span>
-                <button className={`quiz-zeile-knopf${x.an ? " an" : ""}`} data-schalter={x.schalter} data-an={x.an ? "an" : "aus"} data-raster-text={x.label} data-auswahl-durchlass {...(x.aus ? { "data-gesperrt": "", "aria-disabled": true } : {})}
+            {filterTeile.map(x => (
+              <div key={x.schalter} className="quiz-zeile-zelle"><span className="quiz-zeile-label">{x.titel}</span>
+                <button className={`quiz-zeile-knopf${x.an ? " an" : ""}`} data-schalter={x.schalter} data-an={x.an ? "an" : "aus"} data-filter-stufe={x.stufe} data-raster-text={x.label} data-auswahl-durchlass {...(x.aus ? { "data-gesperrt": "", "aria-disabled": true } : {})}
                   onClick={e => { if (x.aus) { blinke(e.currentTarget); return; } x.fn(); }}
-                  {...tt(`${KOPF[x.schalter]}: ${x.n} – ${x.an ? "werden abgefragt; antippen schaltet aus" : "ausgeschaltet; antippen schaltet ein"}${x.lang ? "; lang drücken: Einstellungen" : ""}`, null, x.lang ? { lang: x.lang } : {})}>
-                  {mitSymbolen(`${plus}${ZEICHEN[x.schalter] || ""}${x.n}`)}
-                </button></div>); })}
+                  {...tt(`${x.titel}: ${x.n} – ${x.an ? "werden abgefragt" : "ausgeschaltet"}; antippen: ${x.naechste}`)}>
+                  {mitSymbolen(x.label)}
+                </button></div>))}
           </div>
         )}
       </div>

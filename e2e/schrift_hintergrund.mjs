@@ -68,7 +68,7 @@ ok(schriften.every(n => vorher[n]), "eigene Schrift-Rollen je farbigem Hintergru
 await clickText(".tab", "Einstellungen"); await oeffneEinst("farben");
 await farbZeige(page, "[data-farbmodus-start]"); await page.evaluate(() => document.querySelector("[data-farbmodus-start]").click()); await sleep(300);
 await clickText(".tab", "Quiz");
-const p = await mitte("[data-umfang]");
+const p = await mitte("[data-abfrageziel]");
 await rechtsklick(p.x, p.y);
 await setzeFarbe("auf-haupt", "#ff0000");
 const nachher = await werte();

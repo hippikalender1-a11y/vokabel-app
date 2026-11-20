@@ -69,7 +69,7 @@ ok(b1.liste && b1.zeilen === 15 && /🎯 Unit 1 \+ Unit 2/.test(b1.kopf), `298: 
 await zeilen([1, 2, 15]);   // zwei neue aus Unit 1, die negative aus Unit 2
 await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]").click()); await sleep(1000);
 t = await tafel();
-ok(t.raster[0] === "grund:Neue (2)" && t.raster[1] === "negativ:✗ Negative (1)" && /^2 ausgewählt · 3 Vokabeln/.test(t.kopf), `298: zurück in der Tafel – „Vokabeln (2)“, „Negative (1)“ (${t.raster[0]}, ${t.kopf})`);
+ok(t.raster[0] === "grund:3" && /^2 ausgewählt · 3 Vokabeln/.test(t.kopf), `298/310: zurück in der Tafel – „Auswahl 3“ (2 neue + 1 negative) (${t.raster[0]}, ${t.kopf})`);
 // das Geladene ist unverändert (Teil A), solange nicht geladen wird
 await page.evaluate(() => document.querySelector("[data-listen-wahl-kopf]").click()); await sleep(1200);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);

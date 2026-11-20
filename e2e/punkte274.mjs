@@ -50,66 +50,58 @@ const tafel = async () => { await filterAuf(); return tafelRoh(); };
 const tafelRoh = () => page.evaluate(() => ({ raster: [...document.querySelectorAll("[data-schalter-raster] button")].map(b => `${b.dataset.schalter}:${b.dataset.rasterText || __txt(b)}:${b.dataset.an}${b.hasAttribute("data-gesperrt") ? ":x" : ""}`),
   rest: [...document.querySelectorAll("[data-info-menue] > div:not([data-schalter-raster]) button")].map(b => b.dataset.infoAktion || "🎨"),
   breit: document.querySelector('[data-schalter-raster] [data-schalter="grund"]')?.style.gridColumn, kopf: __txt(document.querySelector("[data-wahl-anzahl]")) }));
-// ── Auswahl A + B ──
+// ── Auswahl A + B (310: Auswahl · Fällige · Heute; Fällige der Auswahl ganz, keine außerhalb: A und B sind alle englischen) ──
 await menue('[data-slot-id="sA"]'); await menue('[data-slot-id="sB"]');
 let t = await tafel();
 console.log("     ", JSON.stringify(t));
-ok(t.raster.join("|") === "grund:Neue (8):an|negativ:✗ Negative (2):an|gelernt:✓ Gelernt (0):aus:x|heute:Heute (0):aus:x|faellig:+ 🔁 Fällige (3):an",   // 305: Filter-Zeile unter dem Kopf (nicht mehr breit in der Tafel)
-  "Raster: Multiquiz breit, Negative · Gelernt / Heute · Fällige – mit Anzahlen, nicht verfügbare ausgegraut");
-ok(t.rest.join("|") === "🎨|🗂 Ablage ›|↔ Von–Bis", `darunter Farbe · Ablage · Von–Bis; Multiquiz starten / Fällige wiederholen / Negative abfragen entfallen (${t.rest.join("|")})`);
-ok(t.kopf === "2 ausgewählt · 10 Vokabeln + 🔁 3", `Kopf: 8 + 2 = 10 Vokabeln + 🔁 3 (25 % von 10), nichts doppelt (${t.kopf})`);
-// 283: gesperrter Schalter in der Tafel leuchtet kurz, Tafel bleibt offen, nichts umgeschaltet
+ok(t.raster.join("|") === "grund:10:an|faellig:+ 🔁 5:an|heute:0:aus:x", `Filter: Auswahl 10 (8 neue + 2 negative) · Fällige 5 · Heute gesperrt (${t.raster.join("|")})`);
+ok(t.rest.join("|") === "🎨|🗂 Ablage ›|↔ Von–Bis", `darunter Farbe · Ablage · Von–Bis (${t.rest.join("|")})`);
+ok(t.kopf === "2 ausgewählt · 10 Vokabeln + 🔁 5", `Kopf: 10 Vokabeln + 🔁 5, nichts doppelt (${t.kopf})`);
+// 283: gesperrter Schalter leuchtet kurz, nichts umgeschaltet
 { const r = await page.evaluate(async () => { const b = document.querySelector('[data-schalter-raster] [data-schalter="heute"]'); b.click();
     const sofort = b.classList.contains("leuchten"); await new Promise(r => setTimeout(r, 600));
     return { sofort, danach: b.classList.contains("leuchten"), an: document.querySelector('[data-schalter-raster] [data-schalter="heute"]')?.dataset.an }; });
-  ok(r.sofort && !r.danach && r.an === "aus", `283: Tafel – gesperrter Schalter leuchtet kurz, Tafel offen (${JSON.stringify(r)})`); }
-// Multiquiz aus → Tafel bleibt offen, Kopf zählt neu
+  ok(r.sofort && !r.danach && r.an === "aus", `283: gesperrter Schalter leuchtet kurz (${JSON.stringify(r)})`); }
+// Auswahl antippen → „Bereits abgefragte“ (ohne die nie abgefragten)
 await page.evaluate(() => document.querySelector('[data-schalter-raster] [data-schalter="grund"]').click()); await sleep(400);
 t = await tafel();
-ok(t.raster[0] === "grund:Neue (8):aus" && t.kopf === "2 ausgewählt · 2 Vokabeln + 🔁 1", `Multiquiz aus: Tafel bleibt, Kopf „2 Vokabeln + 🔁 1“ (${t.kopf})`);
-// Fällige lang drücken → Einstellungen; „Nur diese Quiz“ → zurück zur Tafel
-await menue('[data-schalter-raster] [data-schalter="faellig"]', 20);
-const fm = await page.evaluate(() => ({ akt: [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion), regler: !!document.querySelector("[data-info-regler]") }));
-ok(fm.akt.includes("◉ Alle Engl") && fm.akt.includes("○ Nur diese Quiz") && fm.regler, `Fällige lang drücken: Herkunft + Anteil (${fm.akt.join("|")})`);
-await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion === "○ Nur diese Quiz").click()); await sleep(500);
-t = await tafel();
-ok(t.raster.length === 5, "nach der Wahl wieder die Auswahl-Tafel");
-// Kopf antippen → Multiquiz geladen, Schalter bleiben (Vokabeln aus, Fällige nur dieses Quiz)
+const titelG = await page.evaluate(() => document.querySelector('[data-schalter-raster] [data-schalter="grund"]')?.closest(".quiz-zeile-zelle")?.querySelector(".quiz-zeile-label")?.textContent);
+ok(t.raster[0] === "grund:2:an" && titelG === "Bereits abgefragte" && t.kopf === "2 ausgewählt · 2 Vokabeln + 🔁 5", `310: „Bereits abgefragte“ 2, Kopf „2 Vokabeln + 🔁 5“ (${titelG}, ${t.kopf})`);
+// Kopf antippen → Multiquiz geladen, Schalter bleiben
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]").click()); await sleep(900);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
-const q = () => page.evaluate(() => ({ s: [...document.querySelectorAll("[data-schalter-zeile] [data-schalter]")].map(b => `${b.dataset.schalter}:${__txt(b).trim()}:${b.dataset.an || b.dataset.faellig}${b.hasAttribute("data-gesperrt") ? ":x" : ""}`).join("|"),
-  modus: document.querySelector("[data-faellig]")?.dataset.faelligModus, titel: __txt(document.querySelector("[data-start-titel]")), nurF: document.querySelector("[data-nur-faellige]")?.dataset.nurFaellige || null }));
-// 278: Auswahl schon in der Tafel getroffen → Schalter-Zeile eingeklappt, Pfeil an der Überschrift klappt sie auf
-ok(!(await page.$("[data-schalter-zeile]")) && await page.evaluate(() => document.querySelector("[data-schalter-klapp]")?.dataset.schalterKlapp) === "zu", "278: Schalter-Zeile eingeklappt, Pfeil an der Überschrift");
+const q = () => page.evaluate(() => ({ s: [...document.querySelectorAll("[data-schalter-zeile] [data-schalter]")].map(b => `${b.dataset.schalter}:${__txt(b).trim()}:${b.dataset.filterStufe}${b.hasAttribute("data-gesperrt") ? ":x" : ""}`).join("|"),
+  titel: __txt(document.querySelector("[data-start-titel]")), nurF: document.querySelector("[data-nur-faellige]")?.dataset.nurFaellige || null }));
+// 278: Auswahl schon in der Tafel getroffen → Schalter-Zeile eingeklappt
+ok(!(await page.$("[data-schalter-zeile]")) && await page.evaluate(() => document.querySelector("[data-schalter-klapp]")?.dataset.schalterKlapp) === "zu", "278: Schalter-Zeile eingeklappt");
 await page.evaluate(() => document.querySelector("[data-schalter-klapp]").click()); await sleep(300);
 let z = await q();
-// 279: nicht verfügbare Schalter gesperrt, aber nicht ausgegraut
-ok(await page.evaluate(() => { const b = document.querySelector('[data-schalter-zeile] [data-schalter="gelernt"]'); return b.hasAttribute("data-gesperrt") && getComputedStyle(b).opacity === "1"; }), "279: gesperrt, nicht ausgegraut");
-// 283: gesperrten Schalter antippen → leuchtet kurz auf, schaltet nichts um
-{ const r = await page.evaluate(async () => { const b = document.querySelector('[data-schalter-zeile] [data-schalter="gelernt"]'); b.click();
+ok(await page.evaluate(() => { const b = document.querySelector('[data-schalter-zeile] [data-schalter="heute"]'); return b.hasAttribute("data-gesperrt") && getComputedStyle(b).opacity === "1"; }), "279: gesperrt, nicht ausgegraut");
+{ const r = await page.evaluate(async () => { const b = document.querySelector('[data-schalter-zeile] [data-schalter="heute"]'); b.click();
     const sofort = b.classList.contains("leuchten"); await new Promise(r => setTimeout(r, 600)); return { sofort, danach: b.classList.contains("leuchten"), an: b.dataset.an }; });
   ok(r.sofort && !r.danach && r.an === "aus", `283: gesperrter Schalter leuchtet kurz, bleibt aus (${JSON.stringify(r)})`); }
 console.log("     ", JSON.stringify(z));
-ok(/^grund:8:aus\|negativ:✗ 2:an\|gelernt:✓ 0:aus:x\|heute:0:aus:x\|faellig:\+ 🔁 1:an$/.test(z.s) && z.modus === "quiz",
-  `Quiz-Tab: Schalter-Zeile übernimmt die Auswahl (Vokabeln aus, Fällige nur dieses Quiz) (${z.s})`);
-ok(z.titel === "0/2 Vokabeln + 🔁 0/1", `Titel: nur die 2 Negativen + 🔁 1 (${z.titel})`);
-// Negative auch aus → keine anderen: „Nur Fällige“
-await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="negativ"]').click()); await sleep(300);
+ok(z.s === "grund:2:abgefragt|faellig:+ 🔁 5:faellig|heute:0:aus:x", `Quiz-Tab: Filter-Zeile übernimmt die Auswahl (${z.s})`);
+ok(z.titel === "0/2 Vokabeln + 🔁 0/5", `Titel: die 2 Negativen + 🔁 5 (${z.titel})`);
+// Auswahl weiter → aus: nur Fällige übrig → „Nur Fällige“
+await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="grund"]').click()); await sleep(300);
 z = await q();
-ok(/faellig:\+ 🔁 5:an/.test(z.s) && z.nurF === "5", `nur Fällige an: Knopf zeigt alle 5, Start „Nur Fällige“ (${JSON.stringify(z)})`);
-// Negative wieder an, starten → abgefragt werden nur Negative + 1 Fällige
-await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="negativ"]').click()); await sleep(300);
+ok(/^grund:10:aus/.test(z.s) && z.nurF === "5", `310: Auswahl aus – Start „Nur Fällige“ (${JSON.stringify(z)})`);
+// Kreislauf: aus → alle → bereits abgefragte; starten → die 2 Negativen + 5 Fällige
+await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="grund"]').click()); await sleep(300);
+ok(/^grund:10:alle/.test((await q()).s), "310: Kreislauf – wieder „Auswahl“");
+await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="grund"]').click()); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-start-knopf]").click()); await sleep(800);
 const gefragt = [];
-for (let i = 0; i < 6; i++) {
+for (let i = 0; i < 10; i++) {
   const f = await page.evaluate(() => document.querySelector("[data-karte-frage] .quiz-frage-text")?.textContent.trim());
   if (!f) break; gefragt.push(f);
   await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click()); await sleep(150);
   await page.evaluate(() => [...document.querySelectorAll(".karte-btn-ja")].find(b => /Gewusst/.test(b.textContent))?.click()); await sleep(1300);
 }
 console.log("      gefragt:", gefragt.join(", "));
-ok(gefragt.length === 3 && gefragt.filter(f => /Negativ/.test(f)).length === 2 && gefragt.filter(f => /Fällig/.test(f)).length === 1 && !gefragt.some(f => /Neu/.test(f)),
-  "Abfrage: nur die 2 Negativen + 1 Fällige, keine regulären");
+ok(gefragt.length === 7 && gefragt.filter(f => /Negativ/.test(f)).length === 2 && gefragt.filter(f => /Fällig/.test(f)).length === 5 && !gefragt.some(f => /Neu/.test(f)),
+  "Abfrage: die 2 Negativen + 5 Fällige, keine nie abgefragten");
 
 console.log(`\n${fehler ? fehler + " FEHLER" : "ALLES OK"}`);
 await browser.close();

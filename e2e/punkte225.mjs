@@ -42,7 +42,7 @@ ok(!(await page.$('[data-einst-kopf="listen"]')) && await page.$('[data-einst-ko
 // ── 234: kurz halten beginnt die Listen-Auswahl, weiteres kurz halten nimmt dazu/heraus ──
 await zuListen(page);
 await halte('[data-liste-id="l_a"]', 450);
-ok(await wahl() === "l_a" && /📋 Unit A laden/.test((await kopf()).text || ""), `kurz halten: Auswahl mit „Unit A“, Kopf „📋 Unit A laden“ (${await wahl()} | ${(await kopf()).text})`);
+ok(await wahl() === "l_a" && /^Unit A laden/.test((await kopf()).text || ""), `kurz halten: Auswahl mit „Unit A“, Kopf „📋 Unit A laden“ (${await wahl()} | ${(await kopf()).text})`);
 await halte('[data-liste-id="l_b"]', 450);
 ok(await wahl() === "l_a,l_b", `kurz halten nimmt „Unit B“ dazu (${await wahl()})`);
 ok(/^2 ausgewählt · \d+ Vokabeln/.test((await kopf()).text || ""), `226/288: grüner Kopf „2 ausgewählt · n Vokabeln“ (${(await kopf()).text})`);

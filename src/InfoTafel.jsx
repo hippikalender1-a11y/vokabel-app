@@ -101,7 +101,7 @@ export default function InfoTafel() {
     // Platz unten: Seite (body) und eigene Scroll-Bereiche (var(--tafel-platz), z. B. die maximierte Vokabelliste);
     // die gedrückte Kachel (≈ 60 px hoch) ganz über die Tafel, falls die Tafel sie verdeckt
     const freilegen = () => { if (zielRef.current == null) return; const frei = window.innerHeight - el.offsetHeight - 24, y = zielRef.current - window.scrollY;
-      if (y > frei - 120) window.scrollBy({ top: y - frei + 130, behavior: "smooth" }); };   // 305: Kacheln sind bis ~110 px hoch
+      if (y > frei - 135) window.scrollBy({ top: y - frei + 145, behavior: "smooth" }); };   // 305/312: Kacheln bis ~110 px hoch, der Kopf (zweizeilig) wächst mit den Filtern
     // 305: unten genug Platz, um die unterste Kachel über die (kleine) Tafel zu holen
     const anpassen = () => { document.body.style.paddingBottom = `${el.offsetHeight + 104}px`; document.documentElement.style.setProperty("--tafel-platz", `${el.offsetHeight + 24}px`); freilegen(); };
     if (!warUntenRef.current) { warUntenRef.current = true; zielRef.current = info.y != null ? info.y + window.scrollY : null; }

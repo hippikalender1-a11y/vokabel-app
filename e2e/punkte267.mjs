@@ -43,45 +43,42 @@ const ladeQuiz = async () => {
   await page.evaluate(() => document.querySelector('[data-slot-id="sA"]').click()); await sleep(900);
 };
 await ladeQuiz();
-const stand = () => page.evaluate(() => ({ knopf: __txt(document.querySelector("[data-faellig]")), an: document.querySelector("[data-faellig]")?.dataset.faellig,
-  modus: document.querySelector("[data-faellig]")?.dataset.faelligModus, titel: __txt(document.querySelector("[data-start-titel]")),
+// 310/313: Fällige der Auswahl über den Filter-Knopf (ganz), Fällige außerhalb über „Langzeitgedächtnis“ (Anteil)
+const stand = () => page.evaluate(() => ({ knopf: __txt(document.querySelector("[data-langzeit]")), an: document.querySelector("[data-langzeit]")?.dataset.langzeit,
+  modus: document.querySelector("[data-langzeit]")?.dataset.faelligModus, titel: __txt(document.querySelector("[data-start-titel]")),
+  eigene: (b => b ? `${b.dataset.filterStufe}:${__txt(b)}` : null)(document.querySelector('[data-schalter-zeile] [data-schalter="faellig"]')),
   start: __txt(document.querySelector("[data-start-knopf] span")), nurF: document.querySelector("[data-nur-faellige]")?.dataset.nurFaellige || null }));
 
-// ── Standard: an, alle Listen der Sprache (A 2 + B 3 = 5 fällig; fr nicht), 25 % von 9 neuen (8 + die negative) = 2 ──
+// ── Standard: die 2 fälligen von Unit 1 ganz; außerhalb (Unit 2: 3; fr nicht) 25 % von 9 (8 neue + die negative) = 2 ──
 let s = await stand();
-ok(s.an === "an" && s.modus === "sprache" && s.knopf === "+ 🔁 2" && /^0\/9 Vokabeln \+ 🔁 0\/2$/.test(s.titel), `Standard: Fällige an, alle der Sprache, 9 neue + 🔁 2 (${JSON.stringify(s)})`);
+ok(s.an === "an" && s.modus === "sprache" && s.knopf === "+ 🔁 2" && s.eigene === "faellig:+ 🔁 2" && /^0\/9 Vokabeln \+ 🔁 0\/4$/.test(s.titel), `Standard: eigene 2 + Langzeit 2 (${JSON.stringify(s)})`);
 
-// ── lang drücken: Herkunft und Anteil ──
-const lang = async () => { await page.evaluate(() => { const el = document.querySelector("[data-faellig]"); const r = el.getBoundingClientRect();
+// ── lang drücken (Langzeitgedächtnis): nur der Anteil (Herkunft fest) + Info je Sprache ──
+const lang = async () => { await page.evaluate(() => { const el = document.querySelector("[data-langzeit]"); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 5 })); }); await sleep(400); };
 await lang();
 const menue = await page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
-ok(menue.includes("◉ Alle Engl") && menue.includes("○ Nur dieses Quiz") && !!(await page.$("[data-info-regler]")), `Lang drücken: Herkunft + Regler Anteil (${menue.join(" | ")})`);
+ok(!menue.some(x => /◉|○/.test(x)) && !!(await page.$("[data-info-regler]")), `Lang drücken: Regler Anteil, keine Herkunft-Wahl (${menue.join(" | ")})`);
+const jeSprache = await page.evaluate(() => [...document.querySelectorAll("[data-faellig-sprache]")].map(x => `${x.dataset.faelligSprache}:${x.dataset.n}:${x.style.fontWeight || ""}`).join(","));
+ok(/en:5:800/.test(jeSprache) && /fr:2:$/.test(jeSprache), `272: Info „Jetzt fällig“ je Sprache – Engl hervorgehoben (${jeSprache})`);
 await page.evaluate(() => { const i = document.querySelector("[data-info-regler] input"); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, "100"); i.dispatchEvent(new Event("input", { bubbles: true })); }); await sleep(300);
 await page.mouse.click(5, 400); await sleep(300);
 s = await stand();
-ok(s.knopf === "+ 🔁 5", `Anteil 100 %: alle 5 Fälligen der Sprache (${s.knopf})`);
-await lang();
-await page.evaluate(() => __aktion("○ Nur dieses Quiz").click()); await sleep(300);
+ok(s.knopf === "+ 🔁 3" && /\+ 🔁 0\/5$/.test(s.titel), `Anteil 100 %: alle 3 außerhalb, zusammen 🔁 5 (${JSON.stringify(s)})`);
+// Langzeit antippen: aus – nur noch die eigenen
+await page.evaluate(() => document.querySelector("[data-langzeit]").click()); await sleep(200);
 s = await stand();
-ok(s.modus === "quiz" && s.knopf === "+ 🔁 2", `Nur dieses Quiz: 2 Fällige (${JSON.stringify(s)})`);
-await lang();
-await page.evaluate(() => __aktion("○ Alle Engl").click()); await sleep(300);
-await page.evaluate(() => document.querySelector("[data-faellig]").click()); await sleep(200);
-s = await stand();
-ok(s.knopf === "🔁 5" && /^9 Vokabeln$/.test(s.start), `antippen: Fällige aus – nur die 9 neuen; Knopf zeigt weiter „🔁 5“ (273) (${JSON.stringify(s)})`);
-ok(await page.evaluate(() => { const b = document.querySelector("[data-faellig]"), c = getComputedStyle(b); return c.backgroundColor !== c.color && !b.classList.contains("an"); }), "273: ausgeschaltet invertiert (Klasse ohne „an“)");
-// 272: lang drücken zeigt die Fälligen je Sprache (Engl 5 hervorgehoben, Frz 0)
-await lang();
-const jeSprache = await page.evaluate(() => [...document.querySelectorAll("[data-faellig-sprache]")].map(x => `${x.dataset.faelligSprache}:${x.dataset.n}:${x.style.fontWeight || ""}`).join(","));
-ok(/en:5:800/.test(jeSprache) && /fr:2:$/.test(jeSprache), `272: Info „Jetzt fällig“ je Sprache – Engl hervorgehoben (${jeSprache})`);
-await page.mouse.click(5, 400); await sleep(300);
-// 271: Fortschritt zweizeilig – Fällige in eigener Zeile
-await page.evaluate(() => document.querySelector("[data-faellig]").click()); await sleep(200);
-const zw = await page.evaluate(() => { const b = document.querySelector("[data-anzahl='faellig']"); const f = b?.closest(".start-fortschritt"); return f ? getComputedStyle(f).flexDirection : null; });
-ok(zw === "column" || zw === null, `271: Fortschritt-Kachel zweizeilig (${zw})`);
-await page.evaluate(() => document.querySelector("[data-faellig]").click()); await sleep(200);
-await page.evaluate(() => document.querySelector("[data-faellig]").click()); await sleep(200);
+ok(s.an === "aus" && s.modus === "quiz" && s.knopf === "🔁 3" && /\+ 🔁 0\/2$/.test(s.titel), `Langzeit aus: nur die 2 eigenen, Knopf zeigt „🔁 3“ (${JSON.stringify(s)})`);
+ok(await page.evaluate(() => { const b = document.querySelector("[data-langzeit]"), c = getComputedStyle(b); return c.backgroundColor !== c.color && !b.classList.contains("an"); }), "273: ausgeschaltet invertiert (Klasse ohne „an“)");
+await page.evaluate(() => document.querySelector("[data-langzeit]").click()); await sleep(200);
+// Fällige-Knopf der Filterzeile: Fällige → Gelernte → aus → Fällige (Kreislauf)
+const fk = async () => { await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="faellig"]').click()); await sleep(250); return stand(); };
+s = await fk();
+ok(s.eigene === "gelernt:+ ✓ 2" && /^0\/11 Vokabeln \+ 🔁 0\/3$/.test(s.titel), `310: „Gelernte“ – alle gelernten (2) bei den übrigen (${JSON.stringify(s)})`);
+s = await fk();
+ok(s.eigene === "aus:🔁 2" && /^0\/9 Vokabeln \+ 🔁 0\/3$/.test(s.titel), `310: aus – keine eigenen (${JSON.stringify(s)})`);
+s = await fk();
+ok(s.eigene === "faellig:+ 🔁 2", `310: Kreislauf – wieder „Fällige“ (${JSON.stringify(s)})`);
 
 // ── Runde: alle Abfragen (9 neue + 5 fällige, Fällige anderer Listen werden in ihrer Liste gespeichert) ──
 s = await stand();
@@ -123,7 +120,7 @@ ok(/Ø Score/.test(ausw.zusatz) && /Verbessert/.test(ausw.zusatz) && /Auf Anhieb
 for (let i = 0; i < 3 && await page.$(".topbar-back"); i++) { await page.evaluate(() => document.querySelector(".topbar-back")?.click()); await sleep(300);
   await page.evaluate(() => [...document.querySelectorAll("button")].find(x => /Zur Übersicht|Weiter/.test(x.textContent))?.click()); await sleep(300); }
 await page.evaluate(() => document.querySelector('[data-quiz-art="diktat"]')?.click()); await sleep(400);
-ok(!(await page.$("[data-faellig]")), "Diktat: kein Fällige-Knopf");
+ok(await page.evaluate(() => { const b = document.querySelector("[data-langzeit]"); return !b || b.hasAttribute("data-gesperrt"); }), "Diktat: Langzeitgedächtnis gesperrt");
 await page.evaluate(() => document.querySelector('[data-quiz-art="uebersetzung"]')?.click()); await sleep(400);
 
 // ── Nur Fällige: Quiz ohne neue Vokabeln ──

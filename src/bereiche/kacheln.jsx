@@ -107,32 +107,23 @@ export function listenNavi(app) {
 // (der Kopf lädt die Auswahl); unten nur eine kleine Zeile (🎨 · Ablage › · Von–Bis). art: "slot" (ids = Quiz) | "liste" (ids = Listen)
 // 305: die Filter der Auswahl (Neue · Negative · Gelernte · Heute · Fällige) stehen unter dem Kopf (koepfe.jsx) – hier nur die Teile
 export function schalterRaster(app, art, ids) {
-  const { schalterZaehlung, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots } = app;
+  const { schalterZaehlung, quizGrund, setQuizGrund, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, setQuizFaellig } = app;
   if (!ids.length) return null;
   const z = schalterZaehlung(ids, art);
-  const sk = sprachKuerzelFuer(art === "liste" ? ids : art === "konfig" ? [...new Set(ids.flatMap(k => k.listenIds || []))]   // 306: das Geladene
-    : [...new Set(ids.flatMap(id => slots.gespeichert.find(g => g.id === id)?.konfiguration?.listenIds || []))]);
-  const nur = art === "liste" ? (ids.length >= 2 ? "diese Listen" : "diese Liste") : ids.length >= 2 ? "diese Quiz" : "dieses Quiz";
-  // 277: zusätzliche (Gelernt, Heute, Fällige) eingeschaltet mit „+“
-  const s = (k, label, n, an, set, frei, extra = {}) => ({ label: `${an && n > 0 && ["gelernt", "heute", "faellig"].includes(k) ? "+ " : ""}${label} (${n})`, raster: true, schalter: k, an, n,
-    aus: !frei || (n === 0 && k !== "faellig"), fn: () => set(v => !v), ...extra });
-  const zurueck = () => setTimeout(() => zeigeAuswahlTafel(art), 0);
-  const raster = [
-    s("grund", "Neue", z.grund, quizGrund, setQuizGrund, true, { breit: true }),   // 282; 301: „Neue“ – den Bereich wählt die Anzahl im Kopf
-    s("negativ", "✗ Negative", z.negativ, quizNegativ, setQuizNegativ, true),
-    s("gelernt", "✓ Gelernt", z.gelernt, quizGelerntEinschliessen, setQuizGelerntEinschliessen, z.faelligMoeglich),
-    s("heute", "Heute", z.heute, quizHeuteEinschliessen, setQuizHeuteEinschliessen, tagesSperre()),
-    s("faellig", "🔁 Fällige", z.faellig, quizFaellig.an, null, z.faelligMoeglich && z.pool > 0, {
-      fn: () => setQuizFaellig(f => ({ ...f, an: !f.an })),
-      // lang drücken: dieselben Einstellungen wie im Quiz-Tab (Herkunft, Anteil); danach zurück zur Tafel
-      lang: (x, y) => zeigeInfo(`🔁 Fällige: ${quizFaellig.anteil} % zusätzlich zu den anderen, aus ${quizFaellig.modus === "sprache" ? `allen Listen (${sk})` : nur} – jetzt ${z.pool} fällig`, x, y, [
-        { label: `${quizFaellig.modus === "sprache" ? "◉" : "○"} Alle ${sk || "der Sprache"}`, fn: () => { setQuizFaellig(f => ({ ...f, modus: "sprache" })); zurueck(); } },
-        { label: `${quizFaellig.modus === "quiz" ? "◉" : "○"} Nur ${nur}`, fn: () => { setQuizFaellig(f => ({ ...f, modus: "quiz" })); zurueck(); } },
-        { label: "‹ zurück", zurueckTafel: true, fn: zurueck }],
-        { regler: { label: "Anteil (zusätzlich zu den anderen)", min: 5, max: 100, step: 5, wert: quizFaellig.anteil, format: v => `${v} %`, aendern: v => setQuizFaellig(f => ({ ...f, anteil: v })) } }),
-    }),
-  ];
-  return raster;
+  // 310: Stufen-Knöpfe (antippen schaltet weiter, Kreislauf): Auswahl → Bereits abgefragte → aus; Fällige → Gelernte → aus; Heute
+  const st = z.stufe;
+  return [
+    { schalter: "grund", titel: quizGrund === "abgefragt" ? "Bereits abgefragte" : "Auswahl", stufe: quizGrund === true ? "alle" : quizGrund || "aus",
+      n: quizGrund === "abgefragt" ? z.auswahlAbgefragt : z.auswahlAlle, an: quizGrund !== false, aus: z.auswahlAlle === 0,
+      fn: () => setQuizGrund(g => g === true ? "abgefragt" : g === "abgefragt" ? false : true),
+      naechste: quizGrund === true ? "nur bereits abgefragte" : quizGrund === "abgefragt" ? "aus" : "alle der Auswahl" },
+    { schalter: "faellig", titel: st === "gelernt" ? "Gelernte" : "Fällige", stufe: st, zeichen: st === "gelernt" ? "✓ " : "🔁 ", plus: true,
+      n: st === "gelernt" ? z.gelernt + z.eigeneF : z.eigeneF, an: st !== "aus", aus: !z.faelligMoeglich || z.gelernt + z.eigeneF === 0,
+      fn: () => { setQuizFaellig(f => ({ ...f, an: st === "aus" })); setQuizGelerntEinschliessen(st === "faellig"); },
+      naechste: st === "faellig" ? "alle gelernten" : st === "gelernt" ? "aus" : "die fälligen" },
+    { schalter: "heute", titel: "Heute", stufe: quizHeuteEinschliessen ? "an" : "aus", plus: true, n: z.heute, an: quizHeuteEinschliessen, aus: !tagesSperre() || z.heute === 0,
+      fn: () => setQuizHeuteEinschliessen(v => !v), naechste: quizHeuteEinschliessen ? "aus" : "ein" },
+  ].map(x => ({ ...x, raster: true, label: `${x.plus && x.an && x.n > 0 ? "+ " : ""}${x.zeichen || ""}${x.n}` }));
 }
 
 export function mitSchalterRaster(app, d, art, ids) {

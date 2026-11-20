@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { quizEinstellungen, listenZu, bereichZu, auswahlZu, listeWaehlen } from "./hilfen.mjs";
+import { quizEinstellungen, listenZu, bereichZu, auswahlZu, listeWaehlen, paketGroesse } from "./hilfen.mjs";
 
 // Paket-Ende: Knopf nennt die echte Restzahl („Letzte 2 Vokabeln“), Größen über dem Rest fehlen;
 // „Zur Übersicht“/„Beenden“/„Schließen“ kehren eingeklappt zurück (Quiz-Auswahl offen, 190), „Pause“ nicht;
@@ -48,11 +48,10 @@ await page.reload(); await sleep(500); await page.evaluate(() => { const u = doc
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await listeWaehlen(page, "Vocabulaire");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
-await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await sleep(300);
-await page.click('[data-umfang-wahl="5"]'); await sleep(500);
+await paketGroesse(page, 5); await sleep(500);
 
 // Start-Knopf: Abfrageart und Farbe
-ok(await startText() === "Übersetzung starten", `Start-Knopf „Übersetzung starten“ (${await startText()})`);
+ok(await startText() === "Übersetzung starten – Je 5", `Start-Knopf „Übersetzung starten – Je 5“ (${await startText()})`);
 const farben = await page.evaluate(() => { const v = n => getComputedStyle(document.documentElement).getPropertyValue("--" + n).trim(); return { haupt: v("haupt"), start: v("start"), aufStart: v("auf-start"), gruen: v("bestaetigen") }; });
 console.log("     Farben:", JSON.stringify(farben));
 const startBg = await bg("[data-start-knopf]"), nameBg = await bg("[data-slot-kopf-name]");
@@ -63,7 +62,7 @@ ok(startBg === gruenBg, `134: Start-Knopf in der Farbe „Auswahl / Bestätigen�
 ok(!andererBg || andererBg !== startBg, "andere Knöpfe bleiben in der Hauptfarbe");
 await page.screenshot({ path: "uebersicht_farbe.png", clip: { x: 0, y: 0, width: 390, height: 900 } });
 await page.evaluate(() => document.querySelector('[data-quiz-art="diktat"]')?.click()); await sleep(400);
-if (await page.$('[data-quiz-art="diktat"]')) ok(await startText() === "Diktat starten", `Diktat: „Diktat starten“ (${await startText()})`);
+if (await page.$('[data-quiz-art="diktat"]')) ok(await startText() === "Diktat starten – Je 5", `Diktat: „Diktat starten – Je 5“ (${await startText()})`);
 await page.evaluate(() => document.querySelector('[data-quiz-art="uebersetzung"]')?.click()); await sleep(400);
 
 // Paket 1 (5 von 7) → Rest 2

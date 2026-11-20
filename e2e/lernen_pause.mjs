@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { slotLaden, auswahlZu } from "./hilfen.mjs";
+import { slotLaden, auswahlZu, paketGroesse } from "./hilfen.mjs";
 import { stufeWaehlen } from "./hilfen.mjs";
 
 // Lernen pausieren: Schließen merkt den Lernstand je Konfiguration (getrennt vom Abfrage-Fortschritt);
@@ -48,7 +48,7 @@ await page.evaluate(() => {
 await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz")).click()); await sleep(300);
 await ladeSlot("Verben");
-await page.click("[data-umfang]"); await sleep(200); await page.click('[data-umfang-wahl="5"]'); await sleep(300);
+await paketGroesse(page, 5); await sleep(300);
 await stufeWaehlen(page, "lernen");   // Schwer → Lernen
 ok((await knopf()).art === "neu", "Verben: „Lernen starten“");
 

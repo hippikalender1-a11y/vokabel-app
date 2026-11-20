@@ -3927,3 +3927,46 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   (schalterZaehlung art „konfig“); Anzahl antippen klappt sie auf/zu – wie im Quiz-Tab. Filter-Bereich im Kopf über die
   ganze Breite (war „kaputt“: weißer Kasten). Aufgeklappte Filter (Quiz-Tab und Auswahl) mit abgestuftem Hintergrund
   (--filter-flaeche = 16 % Hauptfarbe auf Kartenfarbe).
+- 307 GESTRICHEN (2026-11-19): Kopf
+  · Bereich (z. B. „Nr. 4–18“) wieder im Namen: „E6 · Nr. 4–18“; das Listen-Symbol 📋 im Kopf entfällt (Form = eckig zeigt Liste).
+  · Rechte Fläche nur noch die Anzahl (ohne „Alle“/„Nr. …“), und zwar die effektiv gewählten Vokabeln – nach den Filtern
+    (Neue/Negative/Gelernte/Heute/Fällige), also wie viele gerade abgefragt würden.
+  Offen: Fällige mitzählen (z. B. 15 + 🔁 3 → „18“ oder „15 + 🔁 3“)? Statistik: Anzahl nach deren Filtern (Balken)?
+- 308 UMGESETZT: Kopf – das Listen-Symbol 📋 vor dem Listennamen entfällt (die eckige Form zeigt schon, dass es eine Liste ist).
+- 309 UMGESETZT: Kopf – rechte Fläche (Bereich/Anzahl) zweizeilig: ganze Liste(n) → „Alle“ / „220 V“; Bereich gewählt →
+  „Auswahl“ / „21 V“ (statt „Nr. 4–18“ / „21“). Die Nr.-Angabe fällt im Kopf zunächst ganz weg.
+- 310 UMGESETZT: Filterzeile neu – Schalter mit Stufen (antippen schaltet weiter)
+  · 1. Knopf „Auswahl“ (statt „Neue“): Bereich ohne die gelernten → antippen: „Bereits abgefragte“ (ohne die nie
+    abgefragten) → antippen: aus.
+  · 2. Knopf „Fällige“: gelernte und fällige Vokabeln nur der Auswahl (keine aus anderen Listen) → antippen: „Gelernte“
+    (alle gelernten der Auswahl) → antippen: aus. Keine Einstellung mehr für den Anteil der fälligen – fester Wert.
+  · „Heute“ bleibt wie bisher.
+  · Die Knöpfe sind ein Kreislauf: nach „aus“ wieder die erste Stufe.
+  · „Negative“ entfällt als Filter (stecken in „Auswahl“). Nur Negative: lang auf „Negativ“ in der Statistik startet ein
+    Quiz damit; außerdem „Schlechteste zuerst“ beim Abfragen.
+  Fester Wert bei den fälligen der Auswahl: alle (siehe 313).
+- 311 UMGESETZT: Quiz-Tab – Knopf „Anzahl je Runde“ (Zeile 2) entfällt; die Wahl (Alle/5/10/…/50) kommt auf den langen
+  Druck des Start-Knopfs. Start-Knopf zeigt z. B. „Übersetzung starten – Je 5 Vokabeln“.
+  Offen: Lang auf Start zeigt heute das Speichern-Menü (💾 Speichern / Überspeichern / Verwerfen) – zusammen in ein Menü
+  oder Speichern woandershin? Restzahl (heute „15 Vokabeln + 🔁 3“ im Start-Knopf) entfällt (steht in der Überschrift)?
+  Text bei „Alle“?
+  Befund: das Speichern-Menü steht auch lang auf dem Namen im Kopf → am Start-Knopf kann es entfallen.
+  → Geklärt: die schwächer geschriebene Vokabel-Anzahl im Start-Knopf bleibt. Bei „Alle“ steht „– Alle“ dabei (Hinweis,
+    dass man auch Pakete wählen kann). Z. B. „Übersetzung starten – Je 5“ bzw. „Übersetzung starten – Alle“, darunter
+    schwächer „15 Vokabeln + 🔁 3“.
+- 312 UMGESETZT: Kopf – Gestaltung Namens-Knopf (Flagge bleibt). Text/Flagge zu dicht am Fortschrittsbalken → mehr Abstand;
+  Inhalt schöner verteilen; Namens-Knopf und rechte Fläche sollen als Einheit wirken (gleiche Zeilen, gleiche Platzierung).
+  Vorschlag: beide Knöpfe zweizeilig mit gleichem Raster – oben die große Zeile (Name ↔ Anzahl „220 V“), unten die kleine
+  (Balken ↔ „Alle“/„Auswahl“); gleiche Höhe, gleiche Innenabstände, Balken mittig in der unteren Zeile.
+  → so beschlossen (rechts also Anzahl oben, „Alle“/„Auswahl“ unten – ersetzt die Reihenfolge aus 309).
+- 313 UMGESETZT: Quiz-Tab Zeile 2 – „Wie oft“ rückt nach links (an die Stelle von „Anzahl je Runde“, 311); rechts neuer
+  Knopf „Langzeitgedächtnis“: antippen schaltet fällige aus anderen Listen derselben Sprache dazu/weg; lang drücken:
+  Schieber, in welchem Maß (Anteil) – die Einstellung, die aus dem Fällige-Knopf der Filterzeile (310) herausgenommen wurde.
+  → Geklärt: der Schieber gilt nur für fällige außerhalb der Auswahl (andere Listen bzw. außerhalb des Bereichs).
+    Die fälligen der Auswahl (Fällige-Knopf, 310) kommen immer ganz dazu – damit ist auch die offene Frage aus 310 geklärt.
+  Umsetzung 308–313 (2026-11-20): quiz.jsx imFilter/langStufeVon; App faelligePool → { eigene, fremde } (fremde = gleiche
+  Sprache, außerhalb der Auswahl, auch die übrigen der geladenen Listen), schalterZaehlung mit Stufen; quizGrund true |
+  "abgefragt" | false; Fällige-Knopf = quizFaellig.an + quizGelerntEinschliessen (Stufe), Langzeit = quizFaellig.modus
+  ("sprache" an / "quiz" aus), Anteil nur für fremde. Filter-Knöpfe: data-schalter grund/faellig/heute, data-filter-stufe.
+  Start lang → Raster „Alle · Je 5 … Je 50“ (data-start-umfang); Speichern bleibt lang auf dem Namen im Kopf.
+  „Nur Fällige“, sobald keine regulären übrig sind. Kopf: .slot-kopf-text + Balken darunter, rechts „n V“ / „Alle|Auswahl“.

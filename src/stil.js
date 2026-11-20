@@ -428,6 +428,13 @@ export const CSS_BASIS = `
   .slot-kopf-name{position:relative;}
   .kopf-balken{position:absolute;left:14px;right:14px;bottom:4px;height:4px;border-radius:2px;background:rgba(0,0,0,0.18);overflow:hidden;}
   .kopf-balken > span{display:block;height:100%;background:currentColor;opacity:0.85;}
+  /* 312: Kopf – Name und Anzahl im gleichen Raster: oben die große Zeile (18 px), unten die kleine (12 px: Balken bzw. „Alle“) */
+  .slot-kopf-name{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:6px 12px;}
+  .slot-kopf-text{display:block;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .slot-kopf-name .kopf-balken{position:static;order:2;display:block;flex:0 0 auto;width:auto;height:5px;margin:3px 2px 4px;border-radius:3px;}
+  .slot-kopf-anzahl{gap:3px;padding:6px 10px;line-height:1;}
+  .slot-kopf-anzahl b{display:block;font-size:0.95rem;line-height:18px;}
+  .slot-kopf-anzahl span{display:block;font-size:0.7rem;line-height:12px;font-weight:600;opacity:0.9;}
   .score-symbole{display:inline-flex;align-items:center;gap:4px;margin-right:4px;}
   .score-symbole .sym{width:10px;height:10px;box-sizing:border-box;border:1.6px solid var(--bestaetigen);display:inline-block;}
   .score-symbole .sym.kreis{border-radius:50%;}

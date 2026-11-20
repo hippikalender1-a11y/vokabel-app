@@ -510,6 +510,14 @@ export function schalterGruppe(f, schwelle, faellig = false, heuteSperre = false
   if ((sc ?? 0) < 0) return "negativ";
   return "grund";
 }
+// 310: Filter-Stufen – Auswahl (grund): true = alle nicht gelernten | "abgefragt" = ohne die nie abgefragten | false = aus;
+// Gelernte (gelernt): an/aus. Negative gehören zur Auswahl (sie sind immer schon abgefragt)
+export function imFilter(f, schwelle, grund, gelernt) {
+  const g = schalterGruppe(f, schwelle);
+  return g === "gelernt" ? gelernt : g === "negativ" ? grund !== false : grund === true || (grund === "abgefragt" && !!f);
+}
+// 310: Stufe des Fällige-Knopfs: "faellig" (die fälligen der Auswahl ganz) → "gelernt" (alle gelernten) → "aus"
+export const langStufeVon = (gelernt, faelligAn) => gelernt ? "gelernt" : faelligAn ? "faellig" : "aus";
 export function tagesSperre() { try { return !localStorage.getItem("vokabel_test_ohne_tagessperre"); } catch { return true; } }
 // 172: fällige Vokabeln zwischen die übrigen einstreuen – je Karte mit faelligAnteil() % eine fällige (Reihenfolge je Teil bleibt)
 export const STANDARD_FAELLIG_ANTEIL = 25;   // 267

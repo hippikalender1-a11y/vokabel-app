@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen, listeWaehlen } from "./hilfen.mjs";
+import { listeOeffnen, listeWaehlen, paketGroesse } from "./hilfen.mjs";
 import { zuListen, quizEinstellungen, listenZu, bereichZu, bereichOeffnen } from "./hilfen.mjs";
 
 const URL = "http://localhost:4199/vokabel-app/";
@@ -68,8 +68,7 @@ if (start === "preset") {
   await sleep(300);
   await page.click("[data-vok-bestaetigen]"); await sleep(500);   // Liste zu → Quiz-Optionen wieder sichtbar (299: Bereich gilt sofort)
 }
-await page.evaluate(() => document.querySelector("[data-umfang]")?.click()); await sleep(300);
-await page.click('[data-umfang-wahl="5"]'); await sleep(300);
+await paketGroesse(page, 5); await sleep(300);
 await sleep(300);
 if (start === "preset") {
   await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => (document.querySelector('[data-info-aktion="💾 Als Quiz speichern"]') || document.querySelector('[data-info-aktion="💾 Speichern"]')).click()); await new Promise(r => setTimeout(r, 300));

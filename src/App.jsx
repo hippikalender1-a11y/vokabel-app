@@ -4,7 +4,7 @@ import { GRUPPE, gruppe, zeigeInfo, schliesseInfo, schalteInfoModus, setzeFarbeI
 import { F, FARB_BASIS, FARB_ROLLEN, FLAECHEN, STUFE_VON, TEXT_FLAECHEN, flaecheVon, flaechenRegeln, kontrast, kontrastText, FARB_VORLAGEN, TEIL_EIGENSCHAFT, elementCSS, elementName, elementSchluessel, farbVariablen, farbeZuHex, farbenAus, fv, hervorgehoben, mische, mitFestenSchriften, schemaVon, setzeSystemLeiste, teilName, zufallsFarben, setzeF } from "./farben.js";
 import { SPALTEN_TAG, dateiVorschau, findeJsonListen, generiereExportText, generierePrompt, istBinaer, parseKolumne, parseKopfZeile, parseZeile } from "./importexport.js";
 import { FarbRad, GelerntSterne, IcoBack, IcoCollapse, IcoDown, IcoExpand, IcoPencil, IcoSpk, IcoSpkOn, IcoUp, IcoX, MiniKreis } from "./komponenten.jsx";
-import { ABFRAGE_ART_NAMEN, AKZENTE_FUER_LISTE, AKZENT_HINWEIS, AKZENT_OHNE_ANTEILE, ANTWORT_MODUS_NAMEN, ART_KURZ, BLITZ_SEKUNDEN, FAELLIG_ANTEIL_WAHL, FESTES_ZEICHEN, FORTSCHRITT_BALKEN, GELERNT_SCHWELLE, GRUPPE_BALKEN, LERNEN_STANDARD, LERNEN_TIPPEN, LIGATUR_TEILE, MAX_STUFE, MC_FEHLKLICK_HINWEIS, MODI_REIHENFOLGE, PAKET_ALLE, QUIZ_ARTEN, REKORDE_KEY, SATZ_ARTEN, SATZ_CACHE, SCORE_FELD, STANDARD_ABFRAGE_ZIEL, STANDARD_ANTWORT_GEWICHTE, STANDARD_ANTWORT_MODUS, STANDARD_MAX_SCORE, STANDARD_PAKET_GROESSE, STANDARD_REIHENFOLGE, STANDARD_SESSION_MODUS, STANDARD_UNBEANTWORTET_ZUERST, START_TEXT, STATISTIK_ARTEN, STUFEN_REGELN, WIEDERHOL_TAGE_WAHL, ZUORDNUNG_FARBEN, ZUORDNUNG_SEKUNDEN, ZUORDNUNG_ZEITEN, ZUORDNUNG_ZEITFAKTOR, akzentKacheln, akzentOhneAnteil, akzentVarianten, alternativen, antwortSpaltenFuer, antwortStatus, artBereinigt, artFelderAus, artVonKonfig, artikelInfo, berechneDiktatScore, berechneNeuenScore, clampScore, diktatHint, ersteAlt, faelligAnteil, gelerntScore, generiereButtons, getQuizFeedback, gewichtetWaehlen, hatAkzentWort, hatAkzente, heuteAbgefragt, heuteAnteil, hinweiseAus, istFaellig, istMC, istRichtigeAntwort, istRichtigeEinzeln, istRunde, jubelText, lernLesezeit, lernProzent, loeseSpaltenModusAuf, lueckenPositionen, mischeFaellige, mitHinweis, modiVon, modusErlaubt, negativUmstellen, nrText, ohneAkzent, ohneHinweis, ordneVokabeln, puzzleKacheln, satzFuer, schalterGruppe, scoreSymbole, slotKonfigArt, slotSFAlle, speichereAkzentScore, speichereDiktatScore, speichereScore, standardArtEinstellungen, statistikSicht, stufenRegeln, stufenUmstellen, tagesSperre, umbruch, vokSprache, wiederholTage, zufallMitSeed, zuordnungEinst, setzeAKZENTE_FUER_LISTE, setzeANTWORT_GEWICHTE } from "./quiz.jsx";
+import { ABFRAGE_ART_NAMEN, AKZENTE_FUER_LISTE, AKZENT_HINWEIS, AKZENT_OHNE_ANTEILE, ANTWORT_MODUS_NAMEN, ART_KURZ, BLITZ_SEKUNDEN, FAELLIG_ANTEIL_WAHL, FESTES_ZEICHEN, FORTSCHRITT_BALKEN, GELERNT_SCHWELLE, GRUPPE_BALKEN, LERNEN_STANDARD, LERNEN_TIPPEN, LIGATUR_TEILE, MAX_STUFE, MC_FEHLKLICK_HINWEIS, MODI_REIHENFOLGE, PAKET_ALLE, QUIZ_ARTEN, REKORDE_KEY, SATZ_ARTEN, SATZ_CACHE, SCORE_FELD, STANDARD_ABFRAGE_ZIEL, STANDARD_ANTWORT_GEWICHTE, STANDARD_ANTWORT_MODUS, STANDARD_MAX_SCORE, STANDARD_PAKET_GROESSE, STANDARD_REIHENFOLGE, STANDARD_SESSION_MODUS, STANDARD_UNBEANTWORTET_ZUERST, START_TEXT, STATISTIK_ARTEN, STUFEN_REGELN, WIEDERHOL_TAGE_WAHL, ZUORDNUNG_FARBEN, ZUORDNUNG_SEKUNDEN, ZUORDNUNG_ZEITEN, ZUORDNUNG_ZEITFAKTOR, akzentKacheln, akzentOhneAnteil, akzentVarianten, alternativen, antwortSpaltenFuer, antwortStatus, artBereinigt, artFelderAus, artVonKonfig, artikelInfo, berechneDiktatScore, berechneNeuenScore, clampScore, diktatHint, ersteAlt, faelligAnteil, gelerntScore, generiereButtons, getQuizFeedback, gewichtetWaehlen, hatAkzentWort, hatAkzente, heuteAbgefragt, heuteAnteil, hinweiseAus, istFaellig, istMC, istRichtigeAntwort, istRichtigeEinzeln, istRunde, jubelText, lernLesezeit, lernProzent, loeseSpaltenModusAuf, lueckenPositionen, mischeFaellige, mitHinweis, modiVon, modusErlaubt, negativUmstellen, nrText, ohneAkzent, ohneHinweis, ordneVokabeln, puzzleKacheln, satzFuer, schalterGruppe, scoreSymbole, slotKonfigArt, slotSFAlle, speichereAkzentScore, speichereDiktatScore, speichereScore, standardArtEinstellungen, statistikSicht, stufenRegeln, stufenUmstellen, tagesSperre, umbruch, vokSprache, wiederholTage, zufallMitSeed, zuordnungEinst, setzeAKZENTE_FUER_LISTE, setzeANTWORT_GEWICHTE, imFilter, langStufeVon } from "./quiz.jsx";
 import { AUFTEILEN_GROESSEN, GRUPPE_VERWEILEN_MS, haltenHaptik, KACHEL_WAEHLEN_MS, KACHEL_ZIEHEN_MS, KACHEL_LASSO_FREI, MISCH_ARTEN, ORDNER_KNOPF, ORDNER_TIEFE_MAX, RASTER_FREI_ZEILEN, SUCHE_LEER, SUCH_SPALTEN, aufteilenGruppen, ebeneVon, ebenenSpalten, eintraegeImOrdner, gruppenName, nachPlatz, legeInOrdner, loeseOrdnerDaten, nachOrdnerBaum, nameVergleich, neuerOrdnerIn, ordneEbeneAn, ordneRaster, ordnerBereinigen, ordnerPasst, ordnerPfad, ordnerUnter, platziereGruppe, belegteZeilen, rasterGroesse, setzeEbene, sucheVokabeln, zahlDe, zielUnter } from "./raster.js";
 import { SATZ_ANZAHLEN, SATZ_BEGLEITSATZ, SATZ_PORTION, istSynonymSpalte, listenInhalt, saetzeAusAntwort, saetzeLaden, saetzeSpeichern, satzPrompt, satzStandAlle, synPrompt, synonymeAus, synonymeAusAntwort } from "./saetze.js";
 import { APP_VERSION, BLITZ_MS, SICHERUNG_TAGE, SICHERUNG_TAG_MS, SK, SLOT_ZU_VERZOEGERUNG, TYPEN, WAHL_ZU_MS, defaultEinstellungen, defaultSlots, ergaenzeSpalten, erstelleSicherung, formatDatum, formatSlotDatum, formatTag, istSicherung, leseDateiAlsText, listenAusSicherung, lsDel, lsGet, lsSet, neueListeObjekt, neuerSlotId, splitInSeiten, stelleSicherungWiederHer, lsLesen } from "./speicher.js";
@@ -1649,7 +1649,7 @@ export default function VokabelApp() {
   // Passt die Gruppe zur Quiz-Auswahl (gleiche Abfrageart, Listen enthalten), läuft eine einmalige Runde,
   // die Auswahl, Konfiguration und Quiz unberührt lässt – sonst wird der Quiz-Tab umgestellt.
   function gruppenQuizPasst(...args) { return gruppenQuizPasstTeil({ aktiveListeId, quizAbfrageArt, quizTabListen }, ...args); }
-  function starteGruppenQuiz(...args) { return starteGruppenQuizTeil({ getKombinierteListe, gruppenQuizPasst, gruppenQuizStartRef, setAktiverSlot, setGespeicherteVokabelgruppe, setGruppenAenderungsDialog, setGruppenQuiz, setGruppenQuizTick, setQuiz, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizGelerntEinschliessen, setQuizReihenfolge, setQuizSchlechtesteMaxScore, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSessionUeberschreibenModal, setSlotSektionAufgeklappt, setStatistikVollbild, setTab, starteQuiz, wechsleQuizArt }, ...args); }
+  function starteGruppenQuiz(...args) { return starteGruppenQuizTeil({ setQuizFaellig, getKombinierteListe, gruppenQuizPasst, gruppenQuizStartRef, setAktiverSlot, setGespeicherteVokabelgruppe, setGruppenAenderungsDialog, setGruppenQuiz, setGruppenQuizTick, setQuiz, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizGelerntEinschliessen, setQuizReihenfolge, setQuizSchlechtesteMaxScore, setQuizSessionModus, setQuizTabListen, setSessionSlotAktiv, setSessionUeberschreibenModal, setSlotSektionAufgeklappt, setStatistikVollbild, setTab, starteQuiz, wechsleQuizArt }, ...args); }
   const [gruppenQuizTick, setGruppenQuizTick] = useState(0);
   useEffect(() => {
     if (gruppenQuizStartRef.current === 0 || tab !== "quiz") return;
@@ -2565,7 +2565,7 @@ export default function VokabelApp() {
   function beendeMultiAuswahl(ids, ...rest) { return beendeMultiAuswahlTeil({ setMultiAuswahl, stelleMultiquizEin }, wahlQuizIds(ids), ...rest); }
   // Speichern-Menü des Quiz (lang drücken auf den Quiz-Namen bzw. den Start-Knopf)
   function sessionSpeicherAktionen(...args) { return sessionSpeicherAktionenTeil({ aktiverSlot, getSlotEintrag, ladeSlot, oeffneModal, quizKombiListe, setModal, setModalInput, slotNamenVorschlag, ueberspeichereSession, vokabelgruppeGeaendert }, ...args); }
-  function schalterRaster(...args) { return schalterRasterTeil({ schalterZaehlung, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots }, ...args); }   // 305
+  function schalterRaster(...args) { return schalterRasterTeil({ schalterZaehlung, quizGrund, setQuizGrund, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots }, ...args); }   // 305
   function renderSlotKopf(...args) { return renderSlotKopfTeil({ schalterRaster, tab, schalterZeileZu, setStatistikFilter, waehleBereichGeladen, waehleListenBereich, aendereQuizVokabeln, bereichWahl, tafelBereich, nichtsGeladen, zeigeListenStatistik, wahlListenIds, setSchalterZeileZu, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt }, ...args); }
 
   // Lernfortschritt je Art (Mini-Kreise) für eine Vokabelmenge; aus = keine passenden Vokabeln
@@ -2639,8 +2639,7 @@ export default function VokabelApp() {
     }
     const schwelleDiktat = einstellungen.gelerntSchwelle ?? 0;
     if (!gruppe) { const sperre = tagesSperre();   // 274: Schalter wie beim Quiz (Diktat ohne Fällige)
-      voks = voks.filter(v => { const k = schalterGruppe(v.diktatFortschritt, schwelleDiktat);
-        return (k === "grund" ? quizGrund : k === "negativ" ? quizNegativ : quizGelerntEinschliessen) || (quizHeuteEinschliessen && sperre && heuteAbgefragt(v.diktatFortschritt)); }); }
+      voks = voks.filter(v => imFilter(v.diktatFortschritt, schwelleDiktat, quizGrund, quizGelerntEinschliessen) || (quizHeuteEinschliessen && sperre && heuteAbgefragt(v.diktatFortschritt))); }   // 310
     const sessionGesamt = isPakete ? voks.length : 0;
     const sessionIds = isPakete ? voks.map(v => v.id) : null;
     if (isPakete) {
@@ -2701,22 +2700,27 @@ export default function VokabelApp() {
   // stufe (optional): "lernen" = Quiz nach dem Lernen (nur Verbesserung möglich)
   // 267: fällige gelernte Vokabeln für das aktuelle Quiz – aus dem Quiz selbst (basisVoks) bzw. aus allen Listen der
   // abgefragten Sprache(n); nur mit den Spalten, die das Quiz abfragt; die am längsten wartenden zuerst
+  // 310/313: getrennt – eigene (fällige der Auswahl, kommen ganz dazu) und fremde (außerhalb der Auswahl: übrige der
+  // geladenen Listen und andere Listen derselben Sprache; Anteil per Schieber am Knopf „Langzeitgedächtnis“)
   function faelligePool(basisVoks) {
+    const leer = { eigene: [], fremde: [] };
     const schwelle = einstellungen.gelerntSchwelle ?? 0;
-    if (schwelle <= 0 || quizModus === "diktat") return [];
+    if (schwelle <= 0 || quizModus === "diktat") return leer;
     const spalten = quizModus === "rotierend" ? quizAusgewaehlt : quizAntwortTypenGeordnet;
-    if (quizModus !== "rotierend" && spalten.length && spalten.every(t => quizSpalteModus[t] === "akzent")) return [];   // Akzente: keine Fälligen
+    if (quizModus !== "rotierend" && spalten.length && spalten.every(t => quizSpalteModus[t] === "akzent")) return leer;   // Akzente: keine Fälligen
     const alleAbfragbar = quizModus === "rotierend" ? quizAusgewaehlt : [quizFrageTyp, ...quizAntwortTypenGeordnet].filter(Boolean);
-    let pool = basisVoks;
-    if (quizFaellig.modus === "sprache" && quizTabListen.length) {
-      const sprachen = new Set(quizTabListen.map(spracheVonListe));
-      const ids = listenIndex.filter(l => !quizTabListen.includes(l.id) && sprachen.has(listeSprache(l))).map(l => l.id);
-      if (ids.length) pool = [...basisVoks, ...(getKombinierteListe(ids)?.vokabeln || [])];
-    }
     const akzentOhne = !quizRegeln().akzentOhneMischen;
-    return pool.filter(v => !v.herausgenommen && alleAbfragbar.every(t => v[t]) && (v.fortschritt?.score ?? -Infinity) >= schwelle && istFaellig(v.fortschritt)
-      && antwortSpaltenFuer(v, spalten, quizSpalteModus, akzentOhne).length > 0)
-      .sort((a, b) => (a.fortschritt?.stufeSeit || a.fortschritt?.letzteAbfrage || "").localeCompare(b.fortschritt?.stufeSeit || b.fortschritt?.letzteAbfrage || ""));
+    const ok = v => !v.herausgenommen && alleAbfragbar.every(t => v[t]) && (v.fortschritt?.score ?? -Infinity) >= schwelle && istFaellig(v.fortschritt)
+      && antwortSpaltenFuer(v, spalten, quizSpalteModus, akzentOhne).length > 0;
+    const ordne = a => a.sort((x, y) => (x.fortschritt?.stufeSeit || x.fortschritt?.letzteAbfrage || "").localeCompare(y.fortschritt?.stufeSeit || y.fortschritt?.letzteAbfrage || ""));
+    const eigene = ordne(basisVoks.filter(ok));
+    let fremde = [];
+    if (quizTabListen.length) {   // auch ausgeschaltet – der Knopf zeigt, wie viele dazukämen
+      const basis = new Set(basisVoks.map(v => v.id)), sprachen = new Set(quizTabListen.map(spracheVonListe));
+      const ids = listenIndex.filter(l => sprachen.has(listeSprache(l))).map(l => l.id);   // auch die geladenen (außerhalb des Bereichs)
+      fremde = ordne((getKombinierteListe(ids)?.vokabeln || []).filter(v => !basis.has(v.id) && ok(v)));
+    }
+    return { eigene, fremde };
   }
   const starteNurFaellige = () => { nurFaelligRef.current = true; starteQuiz(); };
   // 274: Schalter-Stand – die Auswahl-Tafel stellt ihn ein, das Laden aus der Auswahl behält ihn
@@ -2733,20 +2737,24 @@ export default function VokabelApp() {
       const a = k.bereichTyp === "bereich" && k.vokabelAuswahl?.length ? new Set(k.vokabelAuswahl) : null;
       (k.listenIds || []).forEach(lid => vonListe(lid).forEach(v => { const key = `${lid}__${v.id}`; if (!v.herausgenommen && (!a || a.has(key))) voks.set(key, v); })); });
     const faellig = v => schwelle > 0 && (v.fortschritt?.score ?? -Infinity) >= schwelle && istFaellig(v.fortschritt, jetzt);
-    const anz = { grund: 0, negativ: 0, gelernt: 0, heute: 0 };
-    let eigeneF = 0;
-    voks.forEach(v => { const f = faellig(v); if (f) eigeneF++;   // Fällige aus → sie zählen zu den Gelernten
-      const g = schalterGruppe(v.fortschritt, schwelle, f && quizFaellig.an, sperre); if (g !== "faellig") anz[g]++; });
-    let pool = eigeneF;
-    if (quizFaellig.modus === "sprache") {
+    // 310: Gruppen ohne Doppelungen – fällig > heute > gelernt > negativ > nie bzw. schon abgefragt
+    const anz = { nie: 0, abgefragt: 0, negativ: 0, gelernt: 0, heute: 0, eigeneF: 0 };
+    voks.forEach(v => { if (faellig(v)) { anz.eigeneF++; return; }
+      const g = schalterGruppe(v.fortschritt, schwelle, false, sperre);
+      anz[g === "grund" ? (v.fortschritt ? "abgefragt" : "nie") : g]++; });
+    let pool = 0;   // 313: fällige außerhalb der Auswahl
+    if (quizFaellig.modus === "sprache" && schwelle > 0) {
       const eigene = new Set([...voks.keys()].map(k => k.split("__")[0]));
       const sprachen = new Set(listenIndex.filter(l => eigene.has(l.id)).map(listeSprache));
-      listenIndex.filter(l => !eigene.has(l.id) && sprachen.has(listeSprache(l))).forEach(l => { pool += vonListe(l.id).filter(v => !v.herausgenommen && faellig(v)).length; });
+      listenIndex.filter(l => sprachen.has(listeSprache(l))).forEach(l => { pool += vonListe(l.id).filter(v => !v.herausgenommen && !voks.has(`${l.id}__${v.id}`) && faellig(v)).length; });
     }
-    const an = { grund: quizGrund, negativ: quizNegativ, gelernt: quizGelerntEinschliessen, heute: quizHeuteEinschliessen };
-    const regulaer = Object.keys(anz).reduce((s, g) => s + (an[g] ? anz[g] : 0), 0);
-    const f = schwelle <= 0 ? 0 : regulaer > 0 ? Math.min(pool, Math.round(regulaer * quizFaellig.anteil / 100)) : pool;
-    return { ...anz, faellig: f, pool, regulaer, summe: regulaer + (quizFaellig.an ? f : 0), faelligMoeglich: schwelle > 0 };
+    const stufe = langStufeVon(quizGelerntEinschliessen, quizFaellig.an);
+    const auswahlAlle = anz.nie + anz.abgefragt + anz.negativ, auswahlAbgefragt = anz.abgefragt + anz.negativ;
+    const regulaer = (quizGrund === true ? auswahlAlle : quizGrund === "abgefragt" ? auswahlAbgefragt : 0)
+      + (stufe === "gelernt" ? anz.gelernt + anz.eigeneF : 0) + (quizHeuteEinschliessen ? anz.heute : 0);
+    const eigeneDazu = stufe === "faellig" ? anz.eigeneF : 0;
+    const fremde = quizFaellig.modus === "sprache" ? Math.min(pool, Math.round(regulaer * quizFaellig.anteil / 100)) : 0;
+    return { ...anz, auswahlAlle, auswahlAbgefragt, stufe, pool, fremde, faellig: eigeneDazu + fremde, regulaer, summe: regulaer + eigeneDazu + fremde, faelligMoeglich: schwelle > 0 };
   }
   // 272: fällige Vokabeln (Übersetzung) je Sprache über alle Listen – nur beim langen Drücken berechnet
   function faelligJeSprache() {
@@ -2798,14 +2806,19 @@ export default function VokabelApp() {
     // 267: Fällige laufen getrennt (Schalter „🔁 Fällige“) – unter den neuen Vokabeln stehen sie nie
     const nurFaellig = nurFaelligRef.current; nurFaelligRef.current = false;
     // 274: Fällige an → sie stehen nie unter den anderen; aus → sie zählen zu den Gelernten
-    const faelligAn = !gruppe && scoreFeld === "fortschritt" && schwelleQ > 0 && (quizFaellig.an || nurFaellig);
-    const faelligPool = faelligAn ? faelligePool(voks) : [];
-    if (faelligAn) { const fIds = new Set(faelligPool.map(v => v.id)); voks = voks.filter(v => !fIds.has(v.id)); }
+    // 310/313: eigene Fällige (Stufe „Fällige“) kommen ganz dazu, fremde (Langzeitgedächtnis) mit dem Anteil
+    const faelligGeht = !gruppe && scoreFeld === "fortschritt" && schwelleQ > 0;
+    const eigeneAn = faelligGeht && (langStufeVon(quizGelerntEinschliessen, quizFaellig.an) === "faellig" || nurFaellig);
+    const fremdeAn = faelligGeht && quizFaellig.modus === "sprache";
+    const faelligAn = eigeneAn || fremdeAn;
+    const fp = faelligAn ? faelligePool(voks) : { eigene: [], fremde: [] };
+    const eigeneFQ = eigeneAn ? fp.eigene : [], fremdeFQ = fremdeAn ? fp.fremde : [];
+    const faelligPool = [...eigeneFQ, ...fremdeFQ];
+    if (eigeneAn) { const fIds = new Set(eigeneFQ.map(v => v.id)); voks = voks.filter(v => !fIds.has(v.id)); }
     if (nurFaellig) voks = [];
     // 274: Schalter Vokabeln · Negative · Gelernte; heute abgefragte kommen mit „Heute“ dazu (sonst bleiben sie für später im Quiz)
     if (!gruppe) { const sperre = tagesSperre();
-      voks = voks.filter(v => { const k = schalterGruppe(v[scoreFeld], schwelleQ);
-        return (k === "grund" ? quizGrund : k === "negativ" ? quizNegativ : quizGelerntEinschliessen) || (quizHeuteEinschliessen && sperre && heuteAbgefragt(v[scoreFeld])); }); }
+      voks = voks.filter(v => imFilter(v[scoreFeld], schwelleQ, quizGrund, quizGelerntEinschliessen) || (quizHeuteEinschliessen && sperre && heuteAbgefragt(v[scoreFeld]))); }   // 310
     // eingeschaltete Gelernte gehören zur Quiz – die Score-Grenzen gelten für sie nicht
     const gelerntDabei = v => !gruppe && quizGelerntEinschliessen && schwelleQ > 0 && (v[scoreFeld]?.score ?? -Infinity) >= schwelleQ;
     // Abfrage-Ziel Score (global): nur Vokabeln unter dem Ziel kommen in die Quiz
@@ -2821,7 +2834,7 @@ export default function VokabelApp() {
     const isPaketeQ = isPakete && !nurFaellig;   // „Nur Fällige“: eine Runde, der Quiz-Fortschritt bleibt
     const sessionGesamt = isPaketeQ ? voks.length : 0;
     const sessionIds = isPaketeQ ? voks.map(v => v.id) : null;
-    const faelligZielNeu = Math.min(faelligPool.length, Math.round(voks.length * quizFaellig.anteil / 100));   // 267: bezogen auf die neuen
+    const faelligZielNeu = eigeneFQ.length + Math.min(fremdeFQ.length, Math.round(voks.length * quizFaellig.anteil / 100));   // 267/313: eigene ganz, fremde bezogen auf die übrigen
 
     if (isPaketeQ) {
       const existingSlot = lsGet(SK.sessionAktiv);
@@ -2860,7 +2873,7 @@ export default function VokabelApp() {
     if (faelligAn) {
       const s = isPaketeQ ? lsGet(SK.sessionAktiv) : null;
       const ziel = nurFaellig ? (quizPaketGroesse && quizPaketGroesse < PAKET_ALLE ? quizPaketGroesse : faelligPool.length)
-        : isPaketeQ ? Math.max(0, (s?.faelligZiel ?? Math.round((s?.gesamt ?? restNeu) * quizFaellig.anteil / 100)) - (s?.faelligIds?.length || 0)) : faelligZielNeu;
+        : isPaketeQ ? Math.max(0, (s?.faelligZiel ?? eigeneFQ.length + Math.round((s?.gesamt ?? restNeu) * quizFaellig.anteil / 100)) - (s?.faelligIds?.length || 0)) : faelligZielNeu;
       faelligQ = faelligPool.slice(0, Math.min(faelligPool.length, ziel));
     }
     if (faelligQ.length) {

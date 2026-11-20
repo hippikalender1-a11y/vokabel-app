@@ -62,7 +62,7 @@ await page.evaluate(() => document.querySelector('[data-auswahl-umschalter]').cl
 // kurz halten wählt nur, antippen übernimmt
 await kurzHalten(page, '[data-liste-id="l_b"]');
 k = await kopf();
-ok(k.zustand === "offen" && /📋 Unit 2 laden/.test(k.text), `kurz halten: „📋 Unit 2 laden“ (${k.text})`);
+ok(k.zustand === "offen" && /^Unit 2 laden/.test(k.text), `kurz halten: „Unit 2 laden“ (308: ohne 📋) (${k.text})`);
 await page.evaluate(() => document.querySelector("[data-slot-laden]").click()); await sleep(600);
 k = await kopf();
 ok(k.zustand !== "offen" && k.art === "liste" && /Unit 2/.test(k.text), `grüner Kopf lädt „Unit 2“ als Liste (${JSON.stringify(k)})`);

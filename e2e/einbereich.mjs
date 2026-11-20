@@ -19,7 +19,6 @@ const offen = () => page.evaluate(() => [
   document.querySelector("[data-stufe]")?.classList.contains("offen") && "stufe",
   document.querySelector("[data-abfragemodus]")?.classList.contains("offen") && "modus",
   document.querySelector("[data-reihenfolge]")?.classList.contains("offen") && "reihenfolge",
-  document.querySelector("[data-umfang]")?.classList.contains("offen") && "umfang",
   document.querySelector("[data-abfrageziel]")?.classList.contains("offen") && "ziel",
 ].filter(Boolean).join(","));
 const tippe = async sel => { await page.evaluate(sel => document.querySelector(sel).click(), sel); await sleep(300); };
@@ -42,16 +41,14 @@ await page.evaluate(() => window.scrollTo(0, 0));
 
 const da = sel => page.evaluate(sel => !!document.querySelector(sel), sel);
 const fokus = () => page.evaluate(() => document.querySelector("[data-quiz-fokus]")?.dataset.quizFokus);
-await tippe("[data-umfang]");
-ok(await offen() === "umfang", `Umfang offen (${await offen()})`);
+await tippe("[data-abfrageziel]");   // 311: „Anzahl je Runde“ liegt jetzt auf dem Start-Knopf (lang)
+ok(await offen() === "ziel", `Abfrage-Ziel offen (${await offen()})`);
 ok(await fokus() === "zeile2" && await da("[data-reihenfolge]") && !(await da("[data-start-knopf]")) ,
   "Fokus: Zeile 1 bleibt darüber, Start darunter ausgeblendet");
 await tippe("[data-abfrageziel]");
-ok(await offen() === "ziel", `Abfrage-Ziel (gleiche Zeile) wechselt von Umfang (${await offen()})`);
-await tippe("[data-abfrageziel]");
 ok(await offen() === "" && await da("[data-reihenfolge]") && await da("[data-start-knopf]"), "Abfrage-Ziel nochmal: zu, alles wieder sichtbar");
 await tippe("[data-reihenfolge]");
-ok(await offen() === "reihenfolge" && await fokus() === "zeile1" && !(await da("[data-umfang]")), `Reihenfolge offen, Zeile 2 ausgeblendet (${await offen()})`);
+ok(await offen() === "reihenfolge" && await fokus() === "zeile1" && !(await da("[data-abfrageziel]")), `Reihenfolge offen, Zeile 2 ausgeblendet (${await offen()})`);
 await tippe("[data-abfragemodus]");
 ok(await offen() === "modus", `Modus (gleiche Zeile) wechselt von Reihenfolge (${await offen()})`);
 await tippe("[data-abfragemodus]");
