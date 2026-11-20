@@ -37,12 +37,12 @@ ok(await page.evaluate(() => document.querySelector(".tab.aktiv")?.textContent.t
 // ── 76: Kopf ──
 await zuListen(page);
 await page.click('[data-liste-id="l_a"]'); await sleep(500); await listeOeffnen(page);
-const kopf = await page.evaluate(() => ({ name: document.querySelector("[data-liste-kopf-name]")?.textContent, info: document.querySelector("[data-liste-kopf-info]")?.textContent,
+const kopf = await page.evaluate(() => ({ name: document.querySelector("[data-liste-kopf-name] .slot-kopf-text")?.textContent, info: document.querySelector("[data-liste-kopf-info]")?.textContent,
   stift: !!document.querySelector(".liste-detail-header .btn-ghost-filled"), pfeil: !!document.querySelector(".liste-detail-header .btn-icon") }));
-ok(kopf.name === "Unit 1" && /Englisch · 60 Vokabeln/.test(kopf.info) && !kopf.stift && !kopf.pfeil, `Kopf: Namens-Knopf mit Info-Zeile, ohne Pfeil und Stift (${JSON.stringify(kopf)})`);
+ok(/Unit 1$/.test(kopf.name) && /Englisch · 60 Vokabeln/.test(kopf.info) && !kopf.stift && !kopf.pfeil, `Kopf: Namens-Knopf mit Info-Zeile, ohne Pfeil und Stift (${JSON.stringify(kopf)})`);
 await langDruck("[data-liste-kopf-name]"); await sleep(300);
 const menue = await page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
-ok(menue.includes("✎ Umbenennen") && menue.includes("⇲ Zusammenführen"), `lang drücken: Menü mit Umbenennen und Zusammenführen (${menue.length} Einträge)`);
+ok(!menue.includes("✎ Umbenennen") && menue.includes("⇲ Zusammenführen"), `lang drücken: Menü mit Zusammenführen, ohne Ablage (327) (${menue.length} Einträge)`);
 await page.keyboard.press("Escape"); await page.mouse.click(5, 400); await sleep(200);
 
 // ── 77: Knopfzeile ──
@@ -70,8 +70,8 @@ await listeBereich(page, "vokabeln");
 const kn = await page.evaluate(() => { const b = document.querySelector('[data-liste-bereich="vokabeln"]'); return { t: b.textContent, farbe: getComputedStyle(b).backgroundColor }; });
 const gruen = await page.evaluate(() => { const d = document.createElement("div"); d.style.background = "var(--bestaetigen)"; document.body.appendChild(d); const c = getComputedStyle(d).backgroundColor; d.remove(); return c; });
 ok(kn.t === "60▲" && kn.farbe === gruen, `Vokabeln offen: Knopf grün mit Pfeil (${JSON.stringify(kn)})`);
-const leiste = await page.evaluate(() => ["[data-gelernte-ausblenden]", "[data-vokabel-neu]"].map(s => Math.round(document.querySelector(s).getBoundingClientRect().right)));
-ok(leiste.every(r => r <= 390), `„Gelernte“ und ＋ im Bild (${leiste.join(", ")})`);
+const leiste = await page.evaluate(() => ["[data-gelernte-ausblenden]"].map(s => Math.round(document.querySelector(s).getBoundingClientRect().right)));
+ok(leiste.every(r => r <= 390) && !(await page.$("[data-listen-zeile] ~ * [data-vokabel-neu]")), `„Gelernte“ im Bild, kein ＋ mehr (331) (${leiste.join(", ")})`);
 const zeilen = () => page.evaluate(() => document.querySelectorAll('[data-such-ziel="liste"]').length);
 ok(await zeilen() === 60, `60 Vokabeln (${await zeilen()})`);
 await page.click("[data-gelernte-ausblenden]"); await sleep(200);

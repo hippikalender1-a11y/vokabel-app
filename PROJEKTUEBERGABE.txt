@@ -3993,3 +3993,45 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   sein (die Aus-Darstellung gilt bisher nur in der Schalter-Zeile).
   Umsetzung 314–321: .slot-kopf-name.bestaetigen-knopf ohne ::before, min-height 68px; umfangAuf (App) → Kasten
   [data-umfang-kasten] unter dem Start-Knopf (tt lang); Langzeit aus: [data-langzeit]:not(.an) invertiert.
+- 322 UMGESETZT: Lang auf Start klappte auf dem Handy sofort wieder zu (Android meldet den
+  langen Druck zusätzlich als Kontextmenü → zweimal umgeschaltet). Jetzt: lang öffnet den Kasten nur. Im Kasten rechts
+  unten „🎨 Farbe ändern“ in der runden Tafel-Form (data-umfang-farbe, nur wenn farbeImMenueAn) → farbeHier(Start-Knopf).
+  Tests anpassen: elementfarben / farbfeld_namen über [data-umfang-farbe]; knoepfe: doppelter Lang-Druck lässt offen.
+- 323 UMGESETZT: Menü der Listen-Kachel (lang, Auswahl-Tafel im Quiz-Tab) und Kopf-Menü der Liste sollen sich unterscheiden.
+  In der Kachel entfallen „📚 Inhalt ›“ (ganze Gruppe) und „💾 Als Quiz speichern“. Bleiben: 📂 Liste öffnen · 🗂 Ablage › ·
+  ↔ Von–Bis (· 🎨). Kopf-Menü bleibt (Liste öffnen · Als Quiz speichern · 🎨). Nur die Kachel (kacheln.jsx Z. ~190);
+  „Inhalt ›“ bleibt in der geöffneten Liste (lang auf ihren Namen, App.jsx listenMenue(…, true)) und koepfe.jsx Z. 64.
+- 324 UMGESETZT: Anordnung im Menü der Listen-Kachel (unten in der Tafel): Zeile 1 „📂 Liste öffnen“ breit und hervorgehoben;
+  Zeile 2 links „↔ Von–Bis“, rechts „🗂 Ablage ›“. Offen: Platz für „🎨 Farbe ändern“ (wenn eingeschaltet).
+- 325 UMGESETZT: Kopf bei offener Listen-Auswahl (Liste gewählt, „E6“) – lang auf den Namen zeigt heute das Kachel-Menü
+  (Liste öffnen · Ablage › · Inhalt › · Von–Bis · Als Quiz speichern · 🎨). Soll nur: 📂 Liste öffnen · 💾 Als Quiz
+  speichern · 🎨 Farbe ändern (wie das Kopf-Menü der geladenen Liste). koepfe.jsx: lwahl → auswahlTafelDaten…liste().aktionen.
+- 326 UMGESETZT: Geöffnete Liste (Liste-Detail) – Kopf wie der Quiz-Kopf (Namens-Knopf eckig: Flagge + Name, darunter
+  Fortschrittsbalken), aber ohne die Anzahl/Bereich rechts, über die ganze Breite (statt des flachen Balkens „E6“).
+  → Grün (wie geladen). Groß (wie aufgeklappt, 314) mit der Infozeile im Knopf: oben Flagge + Name, darunter der Balken,
+    darunter die Infozeile „Englisch · 1060 Vokabeln · 💬 1060 mit Sätzen“ (Schrift wie bisher). Die Zeile unter dem Kopf entfällt.
+- 327 UMGESETZT: Geöffnete Liste – lang auf den Kopf (Name): „🗂 Ablage ›“ entfällt (Umbenennen, Duplizieren, In Ordner,
+  Löschen … bleiben über die Listen-Kachel › Ablage). Bleiben: ↺ Lernstand zurücksetzen · 📚 Inhalt › · 🎨 Farbe ändern.
+  (App.jsx listenMenue(…, true) bzw. quizStart.jsx listenMenue mit imKopf)
+- 328 UMGESETZT: Mehrfachauswahl (Listen) bleibt ein Entwurf (nicht sofort laden – sonst wäre das geladene Quiz weg,
+  Zwischenstände im Verlauf, wechselnde Einstellungen). Aber der Kopf rechnet live mit: Fortschrittsbalken (heute leer bei
+  Listen-Wahl; koepfe.jsx balkenVoks nur für Quiz-Wahl/Vorschau) sowie Anzahl/Filter folgen der Auswahl.
+- 329 UMGESETZT: Listen-Auswahl – die ganze Info-Sektion unter dem Kopf entfällt (📋 Name, n Vokabeln, % gelernt, Balken,
+  „Zuletzt abgefragt“, nie/in Arbeit, und die aufklappbare Vokabelliste „F6 · alle 796“) – steht anderswo bzw. wird nicht gebraucht.
+- 330 UMGESETZT: Geöffnete Liste (Liste-Detail) – Vokabelliste im kompakten Aussehen der bisherigen Auswahl-Liste
+  (Nr · Fremdwort fett · Übersetzung · Kreise), mehr Text sichtbar, Platz besser genutzt. Gleichartige Symbole in festen
+  Spalten untereinander (Kreise verrücken heute, wenn das Score-Kästchen „+1“ erscheint).
+  Sprach-Kennzeichen kurz („Frz“, „Deu“ statt „Französisch“-Chip).
+  Vorlesen · Bearbeiten · Löschen erst nach langem Druck auf den Klapp-Knopf „Vokabeln“ ein- bzw. wieder ausblenden.
+  → Score-Kästchen „+1“ entfällt: nur die Score-Symbole (rote Kreise … gefüllte Kreise … gefüllte Rauten) – in fester Spalte.
+- 331 UMGESETZT: Geöffnete Liste – der „＋“-Knopf (Neue Vokabel / Import) entfällt; dasselbe steht im Kopf-Menü unter
+  „📚 Inhalt › ＋ Vokabeln importieren“.
+- 332 UMGESETZT: Statistik-Tab – bei offener Auswahl (Kopf angetippt) steht heute die Statistik unter der Auswahl. Wie im
+  Quiz-Tab: Kopf offen → nur die Auswahl; zugeklappt → nur die Statistik. Die Info-Zeile („📋 F6 · ✓ 0 % gelernt“) entfällt
+  auch hier (wie 329).
+  Umsetzung 322–332 (2026-11-20): tt langEinmal (Touch + Kontextmenü desselben Drucks nur einmal, 900 ms, je Quelle);
+  mitSchalterRaster Listen: ohne Speichern, Sortierung 📂 (haupt) · Von–Bis · Ablage; InfoTafel „haupt“ breit, 🎨 rechts unten;
+  Kopf lwahl-Menü nur 📂 + 💾; listenMenue(imKopf) ohne Ablage; Liste-Detail-Kopf .liste-kopf-gross (grün, Balken, Info);
+  koepfe balkenVoks für Listen-Wahl; Listen-Auswahl ohne renderListeInfo/renderSlotInfo; Statistik offen ohne StatistikTab,
+  zurRundenStatistik klappt die Auswahl zu; Liste-Detail .liste-zeile kompakt, Werkzeuge (listeWerkzeuge) lang auf „Vokabeln“;
+  ohne ＋. Tests: hilfen listenKopfMenue(), listeBereich("vokabeln") blendet die Werkzeuge ein.

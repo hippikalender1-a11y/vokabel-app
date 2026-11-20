@@ -24,6 +24,8 @@ const cdp = await page.createCDPSession();
 const finger = (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
 // Auswahl-Tafel ohne schwarze Box (147): offen = Menü-Knöpfe da; der Name der Auswahl steht oben in der Info-Fläche
 const tafel = () => page.evaluate(() => document.querySelector("[data-auswahl-tafel]") ? (document.querySelector("[data-slot-info-name]")?.innerText.trim() || "") : null);
+// 329: Listen-Auswahl ohne Info-Sektion – der Kopf nennt die Auswahl
+const tafelL = () => page.evaluate(() => document.querySelector("[data-auswahl-tafel]") ? (document.querySelector("[data-listen-wahl-kopf]")?.innerText.trim() || "") : null);
 const tafelZu = async () => { await auswahlEnde(page); await sleep(100); };
 const menue = () => page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
 const gewaehlt = () => page.evaluate(() => [...document.querySelectorAll("[data-multi-nr]")].map(b => b.dataset.slotId).join(","));
@@ -205,13 +207,13 @@ await page.click("[data-ordner-zurueck]"); await sleep(300);
 await page.evaluate(() => [...document.querySelectorAll(".typ-btn.aktiv")].find(b => b.textContent.trim() === "Fertig")?.click()); await sleep(200);
 await zuListen(page);
 await kontext('[data-liste-id="l_a"]');
-ok((await tafel())?.includes("Unité 1") && (await menue()).includes("▦ In mehrere Quiz aufteilen"), "Listen: Lang-Druck → Tafel mit dem Listen-Menü");
+ok((await tafelL())?.includes("Unité 1") && (await menue()).includes("📂 Liste öffnen"), "Listen: Lang-Druck → Tafel mit dem Listen-Menü (323: ohne Inhalt ›)");
 await page.evaluate(() => document.querySelector('[data-liste-id="l_c"]').scrollIntoView({ block: "center" })); await sleep(300);   // Kachel über die Tafel scrollen
 await kontext('[data-liste-id="l_c"]');
-ok(/^2 Listen ausgewählt/.test(await tafel() || "") && (await menue()).includes("📤 Exportieren (2)"), `Listen: Lang-Druck nimmt dazu (${await tafel()})`);
+ok(/^2 ausgewählt/.test(await tafelL() || "") && (await menue()).includes("📤 Exportieren (2)"), `Listen: Lang-Druck nimmt dazu (${await tafelL()})`);
 ok(await page.evaluate(() => !document.querySelector("[data-vokabel-liste], .liste-detail-header")), "Listen: öffnet die Liste nicht");
 await tafelZu();
-ok(!(await tafel()) && !(await page.$("[data-wahl-nr]")), "Listen: Tafel beendet die Auswahl");
+ok(!(await tafelL()) && !(await page.$("[data-wahl-nr]")), "Listen: Tafel beendet die Auswahl");
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300);   // Unité 1 nicht unter dem feststehenden Kopf
 const b1 = await mitte('[data-liste-id="l_a"]'), b3 = await mitte('[data-liste-id="l_c"]');
 // Listen: Von–Bis
@@ -220,7 +222,7 @@ await page.evaluate(() => [...__aktionen()].find(b => b.dataset.infoAktion === "
 await kontext('[data-liste-id="l_c"]');
 const lw = await page.evaluate(() => [...document.querySelectorAll("[data-wahl-nr]")].map(e => e.closest("[data-liste-id]").dataset.listeId).join(","));
 ok(lw === "l_a,l_b,l_c", `Listen: Von–Bis Unité 1 bis 3 (${lw})`);
-ok(/^3 Listen ausgewählt/.test(await tafel() || ""), "Listen: danach Auswahl-Tafel „3 ausgewählt“");
+ok(/^3 ausgewählt/.test(await tafelL() || ""), "Listen: danach Auswahl-Tafel „3 ausgewählt“");
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();

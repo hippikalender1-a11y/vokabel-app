@@ -84,7 +84,10 @@ await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.tex
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
 await page.evaluate(() => { const b = document.querySelector('[data-auswahl-umschalter]'); if (b && b.dataset.auswahlUmschalter === "quiz") b.click(); }); await sleep(400);
 await page.evaluate(() => document.querySelector('[data-liste-id="l_b"]').click()); await sleep(600);   // in der (wiederhergestellten) Auswahl: neu mit Unit 2
-ok(!!(await page.$('[data-info-aktion="💾 Als Quiz speichern"]')), "298: Tafel einer Liste hat „💾 Als Quiz speichern“");
+ok(!(await page.$('[data-info-aktion="💾 Als Quiz speichern"]')), "323: Tafel einer Liste ohne „💾 Als Quiz speichern“");
+await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"), r = el.getBoundingClientRect();   // 325: im Kopf-Menü
+  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(400);
+ok(!!(await page.$('[data-info-aktion="💾 Als Quiz speichern"]')), "325: Kopf-Menü der Liste hat „💾 Als Quiz speichern“");
 await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Als Quiz speichern"]').click()); await sleep(700);
 ok(!!(await page.$("[data-erstellen-dialog]")), "298: Fenster „Als Quiz speichern“ (Name, Ordner)");
 await page.evaluate(() => { const i = document.querySelector("[data-erstellen-name]"); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(i, "Unit 2 Quiz"); i.dispatchEvent(new Event("input", { bubbles: true })); }); await sleep(200);

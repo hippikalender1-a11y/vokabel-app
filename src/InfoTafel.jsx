@@ -141,7 +141,10 @@ export default function InfoTafel() {
             // „🎨 Farbe ändern“, dann die übrigen Knöpfe
             const raster = menue.filter(a => a.raster);
             let rest = menue.filter(a => !a.raster);
-            if (unten && (raster.length || info.auswahl)) rest = [...rest.filter(a => a.farbe), ...rest.filter(a => !a.farbe)];
+            const mitHaupt = rest.some(a => a.haupt);   // 324: ein Hauptknopf (breit oben), 🎨 klein rechts unten
+            if (unten && (raster.length || info.auswahl) && !mitHaupt) rest = [...rest.filter(a => a.farbe), ...rest.filter(a => !a.farbe)];
+            const farbeRechts = mitHaupt ? rest.filter(a => a.farbe) : [];
+            if (mitHaupt) rest = rest.filter(a => !a.farbe);
             const klein = unten && (raster.length > 0 || !!info.auswahl) && !grp;   // 281/305: Auswahl-Tafel nur eine kleine Zeile
             const knopf = a => (
                 <button key={a.label} className={a.schalter ? `quiz-zeile-knopf${a.an ? " an" : ""}` : undefined} data-info-aktion={a.farbe ? undefined : a.label} data-info-farbe={a.farbe ? "" : undefined}
@@ -162,7 +165,8 @@ export default function InfoTafel() {
                   }} style={a.schalter ? { gridColumn: a.breit ? "1 / -1" : undefined } : {   // 280: Schalter wie im Quiz-Tab (Klasse quiz-zeile-knopf)
                   opacity: a.aus ? 0.45 : 1,
                   background: a.schalter && a.an ? "var(--haupt)" : "var(--karte)", color: a.schalter && a.an ? "var(--auf-haupt)" : a.gefahr ? "var(--falsch)" : a.farbe || a.zurueck ? "var(--text2)" : "var(--haupt)",
-                  textAlign: a.schalter ? "center" : "left", whiteSpace: "nowrap", gridColumn: a.breit ? "1 / -1" : undefined,
+                  textAlign: a.schalter || mitHaupt ? "center" : "left", whiteSpace: "nowrap", gridColumn: a.breit ? "1 / -1" : undefined,
+                  ...(mitHaupt && !a.farbe ? (a.haupt ? { flexBasis: "100%", background: "var(--haupt)", color: "var(--auf-haupt)", fontSize: "0.92rem", padding: "9px 12px" } : { flex: "1 1 0" }) : {}),
                   border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: klein ? "4px 10px" : unten ? "8px 12px" : "11px 18px",
                   fontSize: klein ? "0.78rem" : unten ? "0.85rem" : "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: a.aus ? "default" : "pointer",
                   boxShadow: klein ? "0 2px 8px rgba(0,0,0,0.18)" : "0 4px 16px rgba(0,0,0,0.22)",
@@ -172,6 +176,7 @@ export default function InfoTafel() {
               <div data-info-menue data-info-gruppe-offen={grp ? grp.label : undefined} style={{ display: "flex", flexDirection: "column", gap: unten ? 6 : 8 }}>
                 {raster.length > 0 && <div data-schalter-raster style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>{raster.map(knopf)}</div>}
                 {rest.length > 0 && <div data-tafel-unten={klein ? "klein" : undefined} style={{ display: "flex", flexDirection: unten ? "row" : "column", flexWrap: unten ? "wrap" : undefined, gap: unten ? 6 : 8, justifyContent: klein ? "center" : undefined }}>{rest.map(knopf)}</div>}
+                {farbeRechts.length > 0 && <div style={{ display: "flex", justifyContent: "flex-end" }}>{farbeRechts.map(knopf)}</div>}
               </div>
             );
           })()}

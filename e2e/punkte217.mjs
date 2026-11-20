@@ -76,6 +76,8 @@ await page.evaluate(() => { const b = document.querySelector('[data-kopf-anzahl]
   b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(900);
 await page.evaluate(() => [...document.querySelectorAll(".vok-zeile")].slice(0, 2).forEach(e => e.click())); await sleep(400);   // Nr. 1–2
 await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]").click()); await sleep(1000);
+await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"), r = el.getBoundingClientRect();   // 325: „Als Quiz speichern“ im Kopf-Menü
+  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(400);
 await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Als Quiz speichern"]').click()); await sleep(700);
 const fenster = await page.evaluate(() => ({ da: !!document.querySelector("[data-erstellen-dialog]"), name: document.querySelector("[data-erstellen-name]")?.value,
   ordner: [...document.querySelectorAll("[data-erstellen-ordner-wahl]")].map(b => b.textContent.trim()) }));
@@ -92,6 +94,8 @@ ok(k.art === "quiz" && /^Unit 1/.test(k.text), `danach geladen (${k.text})`);
 const anzahlVorher = (await slots()).gespeichert.length;
 await oeffneListe("l_b");
 await page.evaluate(() => document.querySelector("[data-liste-quiz-erstellen]").click()); await sleep(900);
+await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"), r = el.getBoundingClientRect();   // 325: „Als Quiz speichern“ im Kopf-Menü
+  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(400);
 await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Als Quiz speichern"]').click()); await sleep(700);
 ok(!!(await page.$("[data-erstellen-abbrechen]")), "Fenster „Als Quiz speichern“ hat „Abbrechen“");
 await page.evaluate(() => document.querySelector("[data-erstellen-abbrechen]").click()); await sleep(600);

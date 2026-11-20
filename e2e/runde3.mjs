@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen, menueShim, auswahlEnde, listeWaehlen } from "./hilfen.mjs";
+import { listeOeffnen, menueShim, auswahlEnde, listeWaehlen, listenKopfMenue } from "./hilfen.mjs";
 import { zuListen, neueEineSession, listenZu, quizEinstellungen } from "./hilfen.mjs";
 
 // Runde 3: Speichern-Fenster (Knöpfe oben, Eingabetaste), Vokabelbereich einer gespeicherten Quiz ändern (rot,
@@ -159,7 +159,7 @@ await page.goto(URL); await sleep(800);
 
 // ── 11 + 12: Listen-Menü, Exportieren-Fenster, Listenkopf ohne Aktionszeile ──
 await zuListen(page);
-await lang("[data-liste-id]");
+await listenKopfMenue(page, await page.evaluate(() => document.querySelector("[data-liste-id]").dataset.listeId));   // 323: Inhalt › im Kopf der geöffneten Liste
 ak = await aktionen();
 ok(["📤 Exportieren", "＋ Vokabeln importieren", "( ) → Info"].every(a => ak.includes(a)), `Listen-Menü: ${ak.join(" | ")}`);
 await aktion("📤 Exportieren");
@@ -170,14 +170,14 @@ ok(await page.$('[data-datei-export="txt"]') && await page.evaluate(() => docume
 await page.click('[data-export-art="kopieren"]'); await sleep(300);
 ok(await page.$("[data-kopier-export]"), "Kopieren gewählt: Fenster mit „📋 Kopieren“");
 await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b => b.textContent.trim() === "Abbrechen")?.click()); await sleep(300);
-await lang("[data-liste-id]"); await aktion("📤 Exportieren");
+await listenKopfMenue(page); await aktion("📤 Exportieren");   // 323: noch in der geöffneten Liste
 ok(await page.$("[data-kopier-export]"), "zuletzt gewählte Art (Kopieren) ist beim nächsten Mal vorausgewählt");
 await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b => b.textContent.trim() === "Abbrechen")?.click()); await sleep(300);
-await page.click("[data-liste-id]"); await sleep(300); await listeOeffnen(page); await sleep(200);
+// 323: die Liste ist schon geöffnet (Export über ihren Kopf)
 ok(!(await page.$(".liste-detail-header .btn-toggle")) && !(await page.$("[data-klammern-werkzeug]")), "geöffnete Liste: keine Aktionszeile, kein Pfeil-Knopf");
 await lang("[data-liste-kopf-name]");
 ak = await aktionen();
-ok(ak.includes("📤 Exportieren") && ak.includes("🗑 Löschen") && !ak.includes("⇄ Verschieben") && !ak.includes("☑ Auswählen"), `Listenkopf lang drücken: ${ak.join(" | ")}`);
+ok(ak.includes("📤 Exportieren") && !ak.includes("🗑 Löschen") && !ak.includes("⇄ Verschieben") && !ak.includes("☑ Auswählen"), `Listenkopf lang drücken: ${ak.join(" | ")}`);
 await aktion("( ) → Info");
 ok(await page.evaluate(() => /Klammer/i.test(document.querySelector(".modal")?.innerText || "")), "„( ) → Info“ öffnet das Klammer-Werkzeug");
 await page.evaluate(() => [...document.querySelectorAll(".modal button")].find(b => /Abbrechen|Schließen/.test(b.textContent))?.click()); await sleep(300);

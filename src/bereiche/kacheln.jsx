@@ -127,7 +127,7 @@ export function schalterRaster(app, art, ids) {
 }
 
 export function mitSchalterRaster(app, d, art, ids) {
-  const { alsQuizSpeichern, tab } = app;
+  const { tab } = app;
   if (!d || tab !== "quiz" || !ids.length) return d;
   const LERNEN_ALT = /^(🧩 Multiquiz|🔁 |✗ Negative abfragen)/;
   const ohneLernen = akt => akt.map(a => a?.gruppe ? { ...a, gruppe: a.gruppe.filter(u => !LERNEN_ALT.test(u.label)) } : a)
@@ -143,8 +143,11 @@ export function mitSchalterRaster(app, d, art, ids) {
     if (!ohne.some(a => a.gruppe && a.label === AB)) return [{ label: AB, gruppe: weg }, ...ohne];
     return ohne.map(a => a.gruppe && a.label === AB ? { ...a, gruppe: [...weg, ...a.gruppe] } : a);
   };
-  const speichern = art === "liste" ? [{ label: "💾 Als Quiz speichern", fn: () => alsQuizSpeichern() }] : [];   // 298
-  return { ...d, aktionen: inAblage(ohneLernen([...d.aktionen, ...speichern])) };   // 305: Filter unter dem Kopf
+  // 323: „💾 Als Quiz speichern“ steht im Kopf; 324: Listen – „📂 Liste öffnen“ breit oben, darunter Von–Bis · Ablage
+  const akt = inAblage(ohneLernen(d.aktionen));
+  if (art !== "liste") return { ...d, aktionen: akt };
+  const rang = a => a.label.startsWith("📂") ? 0 : a.label === "↔ Von–Bis" ? 1 : a.label === AB ? 2 : 3;
+  return { ...d, aktionen: [...akt].sort((x, y) => rang(x) - rang(y)).map(a => a.label.startsWith("📂") ? { ...a, haupt: true } : a) };
 }
 
 export function renderListenRaster(app) {
@@ -214,7 +217,9 @@ export function renderListenRaster(app) {
       const o = ids.length === 1 && listenOrdner.find(x => x.id === ids[0]);   // 234: ein Ordner → sein Menü
       if (o) return { text: `📁 ${o.name}`, aktionen: inGruppe(lordnerMenue(o), GRUPPE.ablage, alleWahl) };
       const l = ids.length === 1 && listenIndex.find(x => x.id === ids[0]);
-      if (l) return { text: l.name, aktionen: [...inGruppe(menue(l).filter(a => a.label !== "☑ Auswählen"), GRUPPE.ablage, alleWahl), { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "liste", id: l.id }) }] };
+      // 323: ohne „Inhalt ›“ (steht in der geöffneten Liste); „Lernen ›“ geht in die Ablage
+      if (l) return { text: l.name, aktionen: [...inGruppe(menue(l).filter(a => a.label !== "☑ Auswählen" && a.label !== `${GRUPPE.inhalt} ›`)
+        .flatMap(a => a.gruppe && a.label === `${GRUPPE.lernen} ›` ? a.gruppe : [a]), GRUPPE.ablage, alleWahl), { label: "↔ Von–Bis", behalten: true, fn: () => setVonBis({ art: "liste", id: l.id }) }] };
       return ids.length ? { text: `${ids.length} ausgewählt: ${wahlNamen(ids)}`, aktionen: inGruppe(wahlMenue(ids), GRUPPE.ablage, alleWahl) } : { text: "Nichts ausgewählt – Listen antippen", aktionen: [] };
     };
     auswahlTafelDaten.current.liste = () => listenWahl && mitSchalterRaster(app, tafelInhalt(listenWahl), "liste", wahlListenIds(listenWahl));   // 288: wie die Quiz-Auswahl

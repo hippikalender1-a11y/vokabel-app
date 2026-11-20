@@ -435,7 +435,14 @@ export const CSS_BASIS = `
   .slot-kopf-anzahl{gap:3px;padding:6px 10px;line-height:1;}
   .slot-kopf-anzahl b{display:block;font-size:0.95rem;line-height:18px;}
   .slot-kopf-anzahl span{display:block;font-size:0.7rem;line-height:12px;font-weight:600;opacity:0.9;}
-  .slot-kopf-name.bestaetigen-knopf::before{content:none;}   /* 314: offen ohne Haken, dafür größer (wirkt aufgeklappt) */
+  .slot-kopf-name.bestaetigen-knopf::before{content:none;}
+  .slot-kopf-name .liste-kopf-info{order:3;display:block;font-size:0.75rem;font-weight:500;line-height:16px;opacity:0.9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}   /* 326 */
+  .liste-zeile{display:flex;align-items:center;gap:8px;padding:6px 2px;border-bottom:1px solid var(--rahmen);font-size:0.88rem;}   /* 330: kompakt */
+  .liste-zeile .vorschau-de{flex:0 1 auto;}
+  .liste-zeile-werte{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px;row-gap:1px;}
+  .liste-zeile-wert3{color:var(--text3);font-size:0.8rem;}
+  .liste-zeile-symbole{flex:0 0 52px;display:flex;justify-content:flex-end;}
+  .liste-zeile-symbole .score-symbole{margin-right:0;}   /* 314: offen ohne Haken, dafür größer (wirkt aufgeklappt) */
   .slot-kopf-name.bestaetigen-knopf,.slot-kopf-name.ohne-haken{min-height:68px;}
   .quiz-zeile-knopf[data-langzeit]:not(.an){background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);}   /* 321 */
   .score-symbole{display:inline-flex;align-items:center;gap:4px;margin-right:4px;}

@@ -68,14 +68,14 @@ export function listenMenue(app, l, imKopf = false) {
         herausN && { label: `🚫 Herausgenommene (${herausN})`, fn: () => { oeffneListeDetail(l.id); setListenBereich("vokabeln"); setListeNurAus(true); } },
         { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },
       ]),
-      ...gruppe(GRUPPE.ablage, [
+      ...(imKopf ? [] : gruppe(GRUPPE.ablage, [   // 327: im Kopf der geöffneten Liste ohne Ablage
         { label: "✎ Umbenennen", fn: () => { setListeMenueId(l.id); setModalInput(l.name); setModalFehler(""); setModal("umbenennen"); } },
         { label: "⧉ Duplizieren", fn: () => { setListeMenueId(l.id); setModalInput(listenKopieName(l.name)); setModalFehler(""); setModal("liste-duplizieren"); } },
         !gefiltert && !imKopf && { label: "⇄ Verschieben", fn: () => { setListenSortModus(true); setListenAuswahl([l.id]); } },
         { label: "📁 In Ordner…", fn: () => setInGruppe({ art: "liste", ids: [l.id], name: "" }) },   // 193
         l.ordner && listenOrdner.some(o => o.id === l.ordner) && { label: "↑ Aus dem Ordner", fn: () => verschiebeListenInOrdner([l.id], listenOrdner.find(o => o.id === l.ordner)?.ordner || null) },
         { label: "🗑 Löschen", gefahr: true, fn: () => { setListeMenueId(l.id); setModal("loeschen"); } },
-      ]),
+      ])),
       ...gruppe(GRUPPE.inhalt, [
         { label: "＋ Vokabeln importieren", fn: () => { resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(l.id); setTab("listen"); setAnsicht("import"); } },
         { label: "📤 Exportieren", fn: () => oeffneExport([l.id]) },
@@ -200,7 +200,7 @@ export function zurueckZumLernen(app) {
   }
 
 export function zurRundenStatistik(app, abschluss) {
-  const { aktiveListeId, aktiverSlot, getSlotEintrag, ladeSlotStatistik, quiz, setStatistikArt, setStatistikFilter, setStatistikVollbild, setTab, zurueckZurStatistik } = app;
+  const { setSlotSektionAufgeklappt, aktiveListeId, aktiverSlot, getSlotEintrag, ladeSlotStatistik, quiz, setStatistikArt, setStatistikFilter, setStatistikVollbild, setTab, zurueckZurStatistik } = app;
     const q = quiz;
     if (q?.ausStatistik) { zurueckZurStatistik(); return; }
     abschluss();
@@ -210,6 +210,7 @@ export function zurRundenStatistik(app, abschluss) {
     
     setStatistikFilter(new Set(['negativ', 'nie', 'arbeit', 'gelernt']));
     setStatistikArt(q?.modus === "diktat" ? "diktat" : q?.scoreFeld === "akzentFortschritt" ? "akzente" : "uebersetzung");
+    setSlotSektionAufgeklappt(false);   // 332: offen zeigt die Statistik nur die Auswahl
     setTab("statistik");
   }
 

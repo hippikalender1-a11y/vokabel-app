@@ -82,6 +82,11 @@ await page.evaluate(() => { const el = document.querySelector("[data-start-knopf
 const wahl = await page.evaluate(() => { const k = document.querySelector("[data-umfang-kasten]"), s = document.querySelector("[data-start-knopf]");
   return { n: [...document.querySelectorAll("[data-umfang-wahl]")].map(b => b.dataset.umfangWahl).join("|"), unter: !!k && k.getBoundingClientRect().top >= s.getBoundingClientRect().bottom, eckig: !!k && !document.querySelector("[data-info-aktion]") }; });
 ok(wahl.n === "alle|5|10|15|20|25|30|40|50" && wahl.unter && wahl.eckig, `311/316: lang drücken auf „Start“: Kasten „Anzahl je Runde“ unter dem Start-Knopf (${JSON.stringify(wahl)})`);
+// 322: Android meldet den langen Druck zusätzlich als Kontextmenü – der Kasten bleibt offen; „🎨 Farbe ändern“ rechts unten
+await page.evaluate(() => { const el = document.querySelector("[data-start-knopf]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 10 })); }); await sleep(300);
+const k322 = await page.evaluate(() => { const k = document.querySelector("[data-umfang-kasten]"), f = document.querySelector("[data-umfang-farbe]"); if (!k || !f) return { kasten: !!k, farbe: !!f };
+  const a = k.getBoundingClientRect(), b = f.getBoundingClientRect(); return { kasten: true, farbe: true, rechtsUnten: a.right - b.right < 40 && a.bottom - b.bottom < 40 }; });
+ok(k322.kasten && k322.farbe && k322.rechtsUnten, `322: zweiter langer Druck lässt den Kasten offen, „🎨 Farbe ändern“ rechts unten (${JSON.stringify(k322)})`);
 await page.click('[data-umfang-wahl="10"]'); await sleep(600);
 const st = await page.evaluate(() => document.querySelector("[data-start-knopf] b")?.textContent);
 ok(/– Je 10$/.test(st || "") && !(await page.$("[data-umfang-kasten]")), `316: gewählt – Kasten zu, Start „… – Je 10“ (${st})`);

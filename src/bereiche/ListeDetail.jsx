@@ -7,7 +7,7 @@ import { istSynonymSpalte } from "../saetze.js";
 // Phase 2 (Aufteilung): Bereich aus dem Haupt-return von App.jsx (tab === "listen" && ansicht === "liste-detail" && aktiveListe)
 // app = Zustände, Setter und Funktionen der Komponente (siehe „const app“ in App.jsx)
 export function ListeDetail(app) {
-  const { aktiveListe, aktiveListeId, ansichtSpaltenAn, ausListeRef, blitzt, einstellungen, handleTabWechsel, headerH, ladeSlot, listeDetailKopfH, listeNurAus, listenBereich, listenGelerntAusblenden, listenSaetze, listenZeileH, listenZeileRef, oeffneModal, oeffneSatzFenster, oeffneSynFenster, oeffneVokabelBearbeiten, renderSprachAuswahl, renderSuchleiste, resetImport, setAnsicht, setAnsichtSpaltenAn, setBearbeiteVokabel, setImportBestehendId, setImportZielTyp, setListeNurAus, setListenBereich, setListenGelerntAusblenden, setModal, setQuiz, setQuizSessionAufgeklappt, setSlotSektionAufgeklappt, setSucheListe, setTab, setzeHerausgenommen, setzeListenSprache, setzeSpaltenArt, oeffneListenTafel, suchInfo, suchMarke, sucheListe, tt, vokabelAufgeklappt } = app;
+  const { listeWerkzeuge, setListeWerkzeuge, aktiveListe, aktiveListeId, ansichtSpaltenAn, ausListeRef, blitzt, einstellungen, handleTabWechsel, headerH, ladeSlot, listeDetailKopfH, listeNurAus, listenBereich, listenGelerntAusblenden, listenSaetze, listenZeileH, listenZeileRef, oeffneModal, oeffneSatzFenster, oeffneSynFenster, oeffneVokabelBearbeiten, renderSprachAuswahl, renderSuchleiste, resetImport, setAnsicht, setAnsichtSpaltenAn, setBearbeiteVokabel, setImportBestehendId, setImportZielTyp, setListeNurAus, setListenBereich, setListenGelerntAusblenden, setModal, setQuiz, setQuizSessionAufgeklappt, setSlotSektionAufgeklappt, setSucheListe, setTab, setzeHerausgenommen, setzeListenSprache, setzeSpaltenArt, oeffneListenTafel, suchInfo, suchMarke, sucheListe, tt, vokabelAufgeklappt } = app;
   return (
 (() => {
           const aktiveSpalten = TYPEN.filter(t => aktiveListe.spalten[t].aktiv);
@@ -44,7 +44,10 @@ export function ListeDetail(app) {
           const zelle = (k, label, zuText, offenText2, hilfe, bestaetigen = false) => (
             <div key={k} className={`quiz-zeile-zelle${lb === k ? " offen" : ""}`} style={k === "sprache" ? {flex:1.5} : undefined}><span className="quiz-zeile-label">{label}</span>
               <button data-liste-bereich={k} className={`quiz-zeile-knopf${lb === k ? (bestaetigen ? " offen bestaetigen-knopf" : " offen") : ""}${lb ? "" : blitzt(`lb:${k}`)}`}
-                onClick={() => setListenBereich(b => b === k ? null : k)} {...tt(hilfe)}>{lb === k ? offenText2 : zuText}</button>
+                onClick={() => setListenBereich(b => b === k ? null : k)}
+                {...tt(k === "vokabeln" ? `${hilfe}; lang drücken: Vorlesen · Bearbeiten · Löschen ${listeWerkzeuge ? "ausblenden" : "einblenden"}` : hilfe, null,
+                  k === "vokabeln" ? { lang: () => { setListenBereich("vokabeln"); setListeWerkzeuge(v => !v); } } : {})}
+                {...(k === "vokabeln" ? { "data-liste-werkzeuge": listeWerkzeuge ? "an" : "aus" } : {})}>{lb === k ? offenText2 : zuText}</button>
             </div>
           );
           return (
@@ -181,45 +184,28 @@ export function ListeDetail(app) {
                           {listenGelerntAusblenden ? `✓ −${gelernteInListe}` : "✓ ausblenden"}
                         </button>
                       )}
-                      <button data-vokabel-neu className="typ-btn aktiv" style={{fontSize:"0.8rem", padding:"3px 12px"}} onClick={() => {
-                        resetImport(); setImportZielTyp("bestehend"); setImportBestehendId(aktiveListeId); setAnsicht("import");
-                      }} {...tt("Neue Vokabel hinzufügen oder aus Datei importieren")}>＋</button>
                     </span>
                   </div>
                   <div className="karte" style={{overflow:"visible"}}>
                     {renderSuchleiste("liste", anzeigeVoks, sucheListe, setSucheListe, headerH + listeDetailKopfH + listenZeileH)}
-                    {anzeigeVoks.map(vok => {
+                    {(() => { const platz = new Map(aktiveListe.vokabeln.map((v, i) => [v.id, i + 1]));   // 330: kompakt wie die Vorschau, feste Symbol-Spalte
+                      return anzeigeVoks.map(vok => {
                       if (listenSuche.filter && !listenSuche.ids.has(vok.id)) return null;   // „nur Treffer“
-                      const score = vok.fortschritt != null ? clampScore(vok.fortschritt.score) : null;
-                      const istGelernt = schwelleL > 0 && (vok.fortschritt?.score ?? -Infinity) >= schwelleL;
                       return (
-                        <div key={vok.id} className="karte-zeile" data-such-ziel="liste" data-such-id={vok.id} data-herausgenommen={vok.herausgenommen ? "" : undefined}
-                          style={{flexDirection:"column", alignItems:"flex-start", gap:4, ...(vok.herausgenommen ? { opacity: 0.5 } : {}), ...suchMarke(listenSuche, vok.id)}}
+                        <div key={vok.id} className="liste-zeile" data-such-ziel="liste" data-such-id={vok.id} data-herausgenommen={vok.herausgenommen ? "" : undefined}
+                          style={{...(vok.herausgenommen ? { opacity: 0.5 } : {}), ...suchMarke(listenSuche, vok.id)}}
                           {...tt(vok.herausgenommen ? "Herausgenommen – wird nicht abgefragt" : "Lang drücken: Vokabel herausnehmen (nicht mehr abfragen)",
                             [vok.herausgenommen ? { label: "↩ Wieder abfragen", fn: () => setzeHerausgenommen(aktiveListeId, vok.id, false) }
                               : { label: "🚫 Nicht mehr abfragen", fn: () => setzeHerausgenommen(aktiveListeId, vok.id, true) }])}>
-                          <div style={{display:"flex", width:"100%", justifyContent:"space-between", alignItems:"flex-start"}}>
-                            <div style={{display:"flex", flexDirection:"column", gap:3, flex:1}}>
-                              {anzeigeSpalten.map(typ => vok[typ] ? (
-                                <div key={typ} style={{display:"flex", alignItems:"baseline", gap:6}}>
-                                  <span className="spalten-badge aktiv">{aktiveListe.spalten[typ].name || typ}</span>
-                                  <span style={{fontSize:"0.88rem"}}>{vok[typ].wert}</span>
-                                  {vok[typ].falsch?.length > 0 && <span style={{fontSize:"0.75rem", color:"var(--text2)"}}>(+{vok[typ].falsch.length})</span>}
-                                </div>
-                              ) : null)}
-                            </div>
-                            <div style={{display:"flex", alignItems:"center", gap:2, flexShrink:0, marginLeft:8}}>
-                              {vok.herausgenommen && <span data-aus-marke style={{marginRight:4}}>🚫</span>}
-                              {istGelernt && (
-                                <span style={{background:"var(--haupt-flaeche)", color:"var(--haupt)", borderRadius:4,
-                                  fontSize:"0.65rem", padding:"1px 5px", fontWeight:700, marginRight:2}}>✓</span>
-                              )}
-                              {scoreSymbole(vok.fortschritt?.score, true)}
-                              {score !== null && (
-                                <span className={`score-badge ${score > 0 ? "score-pos" : score < 0 ? "score-neg" : "score-null"}`} style={{marginRight:4}}>
-                                  {score > 0 ? "+" : ""}{score}
-                                </span>
-                              )}
+                          <span className="vorschau-nr">{platz.get(vok.id)}</span>
+                          <span className="liste-zeile-werte">
+                            {anzeigeSpalten.map((typ, i) => vok[typ]?.wert ? (
+                              <span key={typ} data-liste-spalte={typ} className={i === 0 ? "vorschau-wort" : i === 1 ? "vorschau-de" : "liste-zeile-wert3"}>{vok[typ].wert}</span>) : null)}
+                          </span>
+                          {vok.herausgenommen && <span data-aus-marke>🚫</span>}
+                          <span className="liste-zeile-symbole">{scoreSymbole(vok.fortschritt?.score, true)}</span>
+                          {listeWerkzeuge && (
+                            <span data-liste-werkzeug style={{display:"flex", alignItems:"center", gap:2, flexShrink:0}}>
                               {aktiveSpalten.some(typ => typ.startsWith('E') && vok[typ]?.wert) && (
                                 <button {...tt("Fremdsprachige Spalten vorlesen")} className="btn-icon" title="Vorlesen" onClick={() => {
                                   if (!window.speechSynthesis) return;
@@ -233,11 +219,11 @@ export function ListeDetail(app) {
                               <button {...tt("Vokabel bearbeiten")} className="btn-icon" title="Bearbeiten" onClick={() => oeffneVokabelBearbeiten(vok)}><IcoPencil s={14}/></button>
                               <button {...tt("Vokabel löschen")} className="btn-icon" title="Löschen" style={{color:"var(--falsch)"}}
                                 onClick={() => { setBearbeiteVokabel(vok); setModal('vokabel-loeschen'); }}>✕</button>
-                            </div>
-                          </div>
+                            </span>
+                          )}
                         </div>
                       );
-                    })}
+                    }); })()}
                   </div>
                 </>)
               )}

@@ -4,6 +4,7 @@ import { IcoDown, IcoUp, IcoX } from "../komponenten.jsx";
 import { SymWdh } from "../symbole.jsx";
 import { SK, TYPEN, WAHL_ZU_MS, blinke, lsGet } from "../speicher.js";
 import { SPRACH_KUERZEL, sprachInfo } from "../sprache.js";
+import { farbeImMenueAn, farbeHier } from "../infoEreignisse.js";
 
 // Phase 2 (Aufteilung): Bereich aus dem Haupt-return von App.jsx (tab === "quiz")
 // app = Zustände, Setter und Funktionen der Komponente (siehe „const app“ in App.jsx)
@@ -173,7 +174,7 @@ export function QuizTab(app) {
                         // Listen-Ansicht: Mehrfach-Auswahl bzw. gewählte Liste (225) zeigen die Listen-Info (Inhalt, Sätze, Synonyme)
                         const ids = auswahlListen ? (listenWahl?.length ? listenWahl : slotVorschau?.typ === "listen" ? [slotVorschau.id] : null) : null;
                         const ls = (ids || []).map(id => listenIndex.find(x => x.id === id)).filter(Boolean);
-                        return ls.length ? renderListeInfo(ls[0], ls.length > 1 ? ls : null) : renderSlotInfo(false);
+                        return auswahlListen ? null : renderSlotInfo(false);   // 329: Listen-Auswahl ohne Info-Sektion
                       })()}
                       {/* Aufklappbarer Chips-Bereich */}
                       {listenIndex.length === 0 && (
@@ -701,7 +702,7 @@ export function QuizTab(app) {
                       {lernAktiv && !aufteilen ? (
                         <button className="btn btn-primary start-knopf" data-start-knopf data-lernen-start={lernStand ? "weiter" : "neu"} data-start-anzahl={lernAnzahl}
                           onClick={() => starteLernen(lernVokabeln(), isPakete ? quizPaketGroesse : null, lernSpalten, lernInfo, lernStand)} disabled={!kannStarten || (lernAnzahl === 0 && !lernStand)}
-                          {...tt((lernStand ? `Weiter lernen an der Stelle, an der du aufgehört hast (${lernAngesehen} von ${lernGesamt} angesehen)` : "Lernen starten: Wort zeigen, nach einer Pause die Übersetzung – ohne Score, des Quiz-Fortschritt bleibt") + umfangTipp, null, { lang: () => setUmfangAuf(v => !v) })}>
+                          {...tt((lernStand ? `Weiter lernen an der Stelle, an der du aufgehört hast (${lernAngesehen} von ${lernGesamt} angesehen)` : "Lernen starten: Wort zeigen, nach einer Pause die Übersetzung – ohne Score, des Quiz-Fortschritt bleibt") + umfangTipp, null, { lang: () => setUmfangAuf(true) })}>
                           {lernStand ? <><b>Weiter lernen – {umfangText}</b><span>{lernAngesehen} von {lernGesamt} angesehen</span></>
                             : <><b>Lernen starten – {umfangText}</b><span>{lernAnzahl} Vokabel{lernAnzahl !== 1 ? "n" : ""}</span></>}
                         </button>
@@ -736,7 +737,7 @@ export function QuizTab(app) {
                       ) : (
                         <button className={`btn btn-primary start-knopf${!startbar ? " leer" : ""}`} data-start-knopf data-start-anzahl={verfuegbar} data-start-rest={startRest} data-start-faellig={fRest}
                           onClick={() => !startbar ? setStartLeerHinweis(h => !h) : starteQuiz()} disabled={!kannStarten}
-                          {...tt((isPakete ? `${START_TEXT[quizArt] || "Quiz starten"} – in dieses Quiz sind noch ${startRest} Vokabeln übrig; abgefragt wird ${quizPaketGroesse >= PAKET_ALLE ? "alles in einem Paket" : `in Paketen zu ${quizPaketGroesse}`}` : `${START_TEXT[quizArt] || "Quiz starten"} – die Zahl nennt die Vokabeln dieser Fragerunde`) + umfangTipp, null, { lang: () => setUmfangAuf(v => !v) })}>
+                          {...tt((isPakete ? `${START_TEXT[quizArt] || "Quiz starten"} – in dieses Quiz sind noch ${startRest} Vokabeln übrig; abgefragt wird ${quizPaketGroesse >= PAKET_ALLE ? "alles in einem Paket" : `in Paketen zu ${quizPaketGroesse}`}` : `${START_TEXT[quizArt] || "Quiz starten"} – die Zahl nennt die Vokabeln dieser Fragerunde`) + umfangTipp, null, { lang: () => setUmfangAuf(true) })}>
                           <b data-start-umfang={umfangText}>{START_TEXT[quizArt] || "Quiz starten"} – {umfangText}</b><span>{startRest} Vokabel{startRest !== 1 ? "n" : ""}{isPakete && fRest > 0 ? <> + <SymWdh/> {fRest}</> : ""}</span>
                         </button>
                       )}
@@ -753,6 +754,15 @@ export function QuizTab(app) {
                               {...tt(`Je ${n} Vokabeln pro Paket – der Fortschritt bleibt zwischen den Paketen erhalten`)}>{n}</button>
                           ))}
                         </div>
+                        {farbeImMenueAn() && (   // 322: „🎨 Farbe ändern“ wie in der Tafel – rechts unten im Kasten
+                          <div style={{display:"flex", justifyContent:"flex-end", marginTop:10}}>
+                            <button data-umfang-farbe onClick={() => { const r = document.querySelector("[data-start-knopf]")?.getBoundingClientRect();
+                                setUmfangAuf(false); if (r) farbeHier(r.x + r.width / 2, r.y + r.height / 2); }}
+                              style={{background:"var(--karte)", color:"var(--text2)", border:"1.5px solid var(--haupt-zart)", borderRadius:22, padding:"8px 12px",
+                                fontSize:"0.85rem", fontWeight:700, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 4px 16px rgba(0,0,0,0.22)", whiteSpace:"nowrap"}}
+                              {...tt("Farbe des Start-Knopfs ändern")}>🎨 Farbe ändern</button>
+                          </div>
+                        )}
                       </div>
                     )}
                     {lernStand && lernResetFrage ? (

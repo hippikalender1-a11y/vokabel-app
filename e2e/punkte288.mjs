@@ -57,7 +57,7 @@ await menue('[data-liste-id="l_a"]'); await menue('[data-liste-id="l_b"]');
 let t = await tafel();
 console.log("     ", JSON.stringify(t));
 ok(/^grund:10:an\|faellig:[^|]*\|heute:0:aus:x$/.test(t.raster.join("|")), `288/310: Filter wie in der Quiz-Auswahl – Auswahl · Fällige · Heute (${t.raster.join("|")})`);
-ok(t.klein && t.rest[0] === "🎨" && t.rest.includes("🗂 Ablage ›") && t.rest.includes("↔ Von–Bis") && t.rest.includes("💾 Als Quiz speichern") && t.rest.length === 4, `288: unten kleine Zeile 🎨 · Ablage · Von–Bis (${t.rest.join("|")})`);
+ok(t.klein && t.rest[0] === "🎨" && t.rest.includes("🗂 Ablage ›") && t.rest.includes("↔ Von–Bis") && t.rest.length === 3, `288/323: unten kleine Zeile 🎨 · Von–Bis · Ablage (Speichern im Kopf) (${t.rest.join("|")})`);
 ok(/^2 ausgewählt · \d+ Vokabeln/.test(t.kopf), `288: Kopf „2 ausgewählt · n Vokabeln …“ (${t.kopf})`);
 const ablage = await page.evaluate(() => document.querySelector('[data-info-aktion="🗂 Ablage ›"]')?.dataset.infoGruppe);
 ok(/📤 Exportieren/.test(ablage || "") && /🗑 Löschen/.test(ablage || ""), `288: Exportieren und Löschen in der Ablage (${ablage})`);
@@ -88,7 +88,7 @@ await menue('[data-liste-id="l_b"]');
 for (let i = 0; i < 2; i++) { await filterAuf(); await page.evaluate(() => document.querySelector('[data-schalter-raster] [data-schalter="grund"]').click()); await sleep(300); }
 t = await tafel();
 console.log("     ", JSON.stringify(t));
-ok(t.raster.length === 3 && t.klein && t.rest.includes("🗂 Ablage ›") && t.rest.at(-1) === "💾 Als Quiz speichern" && /Unit 1 laden/.test(t.kopf), `288: eine Liste – Raster, kleine Zeile, „Unit 1 laden“ (${t.rest.join("|")}, ${t.kopf})`);
+ok(t.raster.length === 3 && t.klein && t.rest.join("|") === "📂 Liste öffnen|↔ Von–Bis|🗂 Ablage ›|🎨" && /Unit 1 laden/.test(t.kopf), `288: eine Liste – Raster, kleine Zeile, „Unit 1 laden“ (${t.rest.join("|")}, ${t.kopf})`);
 // 296: eine Liste – lang drücken auf „Vokabeln (n)“ öffnet die Bereichswahl (wie „🎯 Bereich wählen…“)
 await page.evaluate(() => { const b = document.querySelector('[data-kopf-anzahl]'), r = b.getBoundingClientRect();
   b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(900);

@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { listeOeffnen, menueShim, listeWaehlen, bereichOeffnen, bereichBestaetigen } from "./hilfen.mjs";
+import { listeOeffnen, menueShim, listeWaehlen, bereichOeffnen, bereichBestaetigen, listenKopfMenue } from "./hilfen.mjs";
 import { zuListen, neueEineSession, listenZu, listeBereich } from "./hilfen.mjs";
 
 // Vokabel-Suche: Einzelauswahl (Quiz + Statistik), Aufteilen (🔍 bei Von/Bis), Listenansicht.
@@ -97,8 +97,7 @@ ok(await page.evaluate(() => document.querySelector('[data-suchleiste="quiz"] [d
 
 // ── Aufteilen: 🔍 bei Von und Bis ──
 await zuListen(page);
-await page.evaluate(() => { const el = document.querySelector('[data-liste-id="l_a"]'); const r = el.getBoundingClientRect();
-  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 20 })); }); await sleep(300);
+await listenKopfMenue(page, "l_a");   // 323
 await page.evaluate(() => __aktion('▦ In mehrere Quiz aufteilen').click()); await sleep(600);
 ok(await page.$("[data-aufteilen]"), "Aufteilen-Kasten offen");
 await page.click('[data-aufteilen-suche="von"]'); await sleep(300);

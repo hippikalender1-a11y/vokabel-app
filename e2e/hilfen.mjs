@@ -110,6 +110,11 @@ export async function fremdAlsFrage(page) {
 // Geöffnete Liste: Bereich (sprache | saetze | spalten | vokabeln) über die Knopfzeile aufklappen
 export async function listeBereich(page, k) {
   await page.evaluate(k => { const b = document.querySelector(`[data-liste-bereich="${k}"]`); if (b && !b.classList.contains("offen")) b.click(); }, k);
+  if (k === "vokabeln") {   // 330: Vorlesen · Bearbeiten · Löschen – lang auf „Vokabeln“ einblenden
+    await new Promise(r => setTimeout(r, 200));
+    await page.evaluate(() => { const b = document.querySelector('[data-liste-bereich="vokabeln"]'); if (!b || b.dataset.listeWerkzeuge === "an") return; const r = b.getBoundingClientRect();
+      b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); });
+  }
   await new Promise(r => setTimeout(r, 300));
 }
 // Einstellungen: Bereich (listen | lernen | stimmen | raster | farben | app) öffnen und darin den Knopf der Knopfzeile (k) aufklappen
@@ -192,6 +197,14 @@ export async function neueListe(page) {
   await new Promise(r => setTimeout(r, 300));
 }
 
+// 323: „Inhalt ›“ (Export, Import, Aufteilen, Sätze …) steht im Kopf der geöffneten Liste – Liste öffnen, lang auf ihren Namen
+export async function listenKopfMenue(page, id) {
+  const s = ms => new Promise(r => setTimeout(r, ms));
+  if (id) await listeKachelOeffnen(page, id);
+  await page.evaluate(() => { const el = document.querySelector("[data-liste-kopf-name]"); if (!el) return; const r = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); });
+  await s(350);
+}
 // 225: eine Liste über das Menü ihrer Kachel öffnen (antippen fragt sie ab)
 export async function listeKachelOeffnen(page, id) {
   const s = ms => new Promise(r => setTimeout(r, ms));

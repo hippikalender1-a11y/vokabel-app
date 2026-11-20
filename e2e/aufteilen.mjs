@@ -1,5 +1,5 @@
 import puppeteer from "puppeteer-core";
-import { slotLaden, menueShim } from "./hilfen.mjs";
+import { slotLaden, menueShim, listenKopfMenue } from "./hilfen.mjs";
 import { zuListen, bereichZu } from "./hilfen.mjs";
 
 // Liste in mehrere Quiz aufteilen: Lang-Druck → „In mehrere Quiz aufteilen“ → Quiz-Tab mit gelbem Kasten
@@ -46,9 +46,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await zuListen(page);
-await page.evaluate(() => { const el = document.querySelector("[data-liste-id]"); const r = el.getBoundingClientRect();
-  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 20 })); });
-await sleep(250);
+await listenKopfMenue(page, await page.evaluate(() => document.querySelector("[data-liste-id]").dataset.listeId));   // 323: Inhalt › im Kopf der geöffneten Liste
 ok(await page.evaluate(() => !!__aktion('▦ In mehrere Quiz aufteilen')), "Lang-Druck-Menü: „In mehrere Quiz aufteilen“");
 await page.evaluate(() => __aktion('▦ In mehrere Quiz aufteilen').click()); await sleep(500);
 
@@ -102,9 +100,7 @@ if (await page.evaluate(() => /Zur Übersicht/.test(document.body.innerText))) a
 
 // erneut aufteilen: vorhandene Namen werden übersprungen
 await zuListen(page);
-await page.evaluate(() => { const el = document.querySelector("[data-liste-id]"); const r = el.getBoundingClientRect();
-  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 20 })); });
-await sleep(250);
+await listenKopfMenue(page, await page.evaluate(() => document.querySelector("[data-liste-id]").dataset.listeId));   // 323: Inhalt › im Kopf der geöffneten Liste
 await page.evaluate(() => __aktion('▦ In mehrere Quiz aufteilen').click()); await sleep(500);
 await page.click('[data-aufteilen-groesse="10"]'); await sleep(200);
 await setzeFeld("[data-aufteilen-name]", "Verben Teil 2");

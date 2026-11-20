@@ -100,17 +100,15 @@ await aktion("‹ zurück"); await tafelZu();
 await zuListen(page);
 await halte('[data-liste-id="l_a"]', 450);
 m = await menue();
-ok(m.filter(x => !/^(Neue \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "📂 Liste öffnen|🗂 Ablage ›|📚 Inhalt ›|↔ Von–Bis|💾 Als Quiz speichern", `Liste: Hauptebene (317: ohne „Lernen ›“ – nur noch ein Eintrag, der in die Ablage geht) (${m.join(" | ")})`);
+ok(m.filter(x => !/^(Neue \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "📂 Liste öffnen|↔ Von–Bis|🗂 Ablage ›", `Liste: Hauptebene (323/324: Öffnen oben, Von–Bis · Ablage; Inhalt › und Speichern stehen im Kopf) (${m.join(" | ")})`);
 await aktion("🗂 Ablage ›");
 ok((await menue()).join("|") === "‹ zurück|↺ Lernstand zurücksetzen|✎ Umbenennen|⧉ Duplizieren|⇄ Verschieben|📁 In Ordner…|🗑 Löschen|☑ Alle auswählen", `Liste: Ablage (${(await menue()).join(" | ")})`);
-await aktion("‹ zurück"); await aktion("📚 Inhalt ›");
-ok((await menue()).join("|") === "‹ zurück|＋ Vokabeln importieren|📤 Exportieren|✨ Beispielsätze ergänzen|≈ Synonyme ergänzen|( ) → Info|▦ In mehrere Quiz aufteilen", `Liste: Inhalt (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück");
 
 // ── mehrere Listen: Export, Fällige direkt, Ablage-Gruppe ──
 await halte('[data-liste-id="l_b"]', 450);
 m = await menue();
-ok(m.filter(x => !/^(Neue \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "🗂 Ablage ›|↔ Von–Bis|💾 Als Quiz speichern", `mehrere Listen: Hauptebene (${m.join(" | ")})`);
+ok(m.filter(x => !/^(Neue \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "↔ Von–Bis|🗂 Ablage ›", `mehrere Listen: Hauptebene (${m.join(" | ")})`);
 await aktion("🗂 Ablage ›");
 ok((await menue()).join("|") === "‹ zurück|📤 Exportieren (2)|⇄ Verschieben|📁 In Ordner… (2)|🗑 Löschen (2)|☑ Alle auswählen", `mehrere Listen: Ablage (${(await menue()).join(" | ")})`);
 await aktion("‹ zurück"); await tafelZu();
@@ -118,7 +116,7 @@ await aktion("‹ zurück"); await tafelZu();
 // ── Listen-Ordner ──
 await halte('[data-lordner-id="lo1"]', 450);
 m = await menue();
-ok(m.filter(x => !/^(Neue \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "📂 Öffnen|🗂 Ablage ›|💾 Als Quiz speichern", `Listen-Ordner: Hauptebene (${m.join(" | ")})`);
+ok(m.filter(x => !/^(Neue \(|✗ Negative \(|✓ Gelernt \(|Heute \(|(\+ )?(🔁 )?Fällige \()/.test(x)).join("|") === "📂 Öffnen|🗂 Ablage ›", `Listen-Ordner: Hauptebene (${m.join(" | ")})`);
 await tafelZu();
 
 await browser.close();

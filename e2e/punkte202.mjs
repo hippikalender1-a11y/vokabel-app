@@ -84,9 +84,9 @@ ok(pl["Unit 2"] === "0|0" && pl["Unit 10"] === "0|1", `208: nach Name (natürlic
 // ── 202: Info ausführlich (kurz halten wählt) ──
 const r = await page.evaluate(() => { const b = document.querySelector('[data-liste-id="liste_1700000000002"]').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
 await page.mouse.move(r.x, r.y); await page.mouse.down(); await sleep(400); await page.mouse.up(); await sleep(400);
-await page.evaluate(() => { if (document.querySelector("[data-slot-info-zu]")) document.querySelector("[data-liste-info]")?.click(); }); await sleep(300);
-const info = await page.evaluate(() => document.querySelector("[data-liste-info-inhalt]")?.textContent.trim());
-ok(info === "💬 6 Beispielsätze≈ 6 Synonyme", `202: Info „6 Beispielsätze · 6 Synonyme“ (${info})`);
+// 329: die Info-Sektion der Listen-Auswahl entfällt – Sätze und Synonyme stehen kurz auf der Kachel
+const info = await page.evaluate(() => document.querySelector('[data-liste-id="liste_1700000000002"] [data-listen-inhalt]')?.dataset.listenInhalt);
+ok(info === "6|6" && !(await page.$("[data-liste-info-inhalt]")), `202/329: Kachel „💬 6 · ≈ 6“, keine Info-Sektion (${info})`);
 
 // ── 209: Knopfzeile der geöffneten Liste ──
 await auswahlEnde(page); await sleep(250);   // 234: die kurz gehaltene Liste ist ausgewählt
