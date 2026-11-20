@@ -74,7 +74,7 @@ ok(t.raster[0] === "grund:3" && /^2 ausgewählt · 3 Vokabeln/.test(t.kopf), `29
 await page.evaluate(() => document.querySelector("[data-listen-wahl-kopf]").click()); await sleep(1200);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
 k = await kopf();
-ok(k.start === "3" && /2 Listen \(Auswahl\)$/.test(k.text) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl", `298: laden – zwei Listen mit Bereich, 3 Vokabeln (${JSON.stringify(k)})`);
+ok(k.start === "3" && /2 Listen$/.test(k.text) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl", `298: laden – zwei Listen mit Bereich, 3 Vokabeln (${JSON.stringify(k)})`);
 // ── Statistik zeigt das Geladene ──
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Statistik"))?.click()); await sleep(600);
 const stat = await page.evaluate(() => __txt(document.querySelector("[data-slot-kopf-name]")));

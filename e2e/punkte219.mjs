@@ -54,12 +54,18 @@ await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]").cl
 // ── 223: Pfad-Zeile klebt unter Kopf und Info ──
 await page.evaluate(() => { if (document.querySelector("[data-ordner-zurueck]")) document.querySelector("[data-ordner-zurueck]").click(); }); await sleep(300);
 await page.evaluate(() => window.scrollTo(0, 400)); await sleep(300);
-const a223 = await page.evaluate(() => { const p = document.querySelector('[data-ordner-navi="liste"]').getBoundingClientRect(), i = document.querySelector("[data-slot-kopf]").getBoundingClientRect();
-  return { pfad: Math.round(p.top), info: Math.round(i.bottom), infoDa: !!document.querySelector("[data-slot-info]") }; });
-ok(Math.abs(a223.pfad - a223.info) <= 1 && !a223.infoDa, `223/329: beim Scrollen bleibt die Pfad-Zeile direkt unter dem Kopf stehen, keine Info-Sektion (${JSON.stringify(a223)})`);
+const a223 = await page.evaluate(() => { const p = document.querySelector('[data-ordner-navi="liste"]').getBoundingClientRect(), i = document.querySelector("[data-slot-info]").getBoundingClientRect();
+  return { pfad: Math.round(p.top), info: Math.round(i.bottom) }; });
+ok(Math.abs(a223.pfad - a223.info) <= 1, `223: beim Scrollen bleibt die Pfad-Zeile direkt unter der Info stehen (${JSON.stringify(a223)})`);
 await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 
-// 219 (Info zuklappen schließt die Vokabel-Liste) entfällt in der Listen-Auswahl: keine Info-Sektion mehr (329)
+// ── 219: Info zuklappen schließt die Vokabel-Liste ──
+await page.evaluate(() => { if (document.querySelector("[data-slot-info-zu]")) document.querySelector("[data-slot-info]").click(); }); await sleep(300);
+await page.evaluate(() => document.querySelector("[data-vorschau-vokabeln]")?.click()); await sleep(300);
+const offen = !!(await page.$("[data-vorschau-vokliste]"));
+await page.evaluate(() => document.querySelector("[data-slot-info]").click()); await sleep(300);   // zu
+await page.evaluate(() => document.querySelector("[data-slot-info]").click()); await sleep(300);   // wieder auf
+ok(offen && !(await page.$("[data-vorschau-vokliste]")), "219: Info zu und wieder auf – die Vokabel-Liste ist mit zugeklappt");
 
 // 223 (Einstellungen › Listen) entfällt: Listen liegen im Quiz-Tab (225), dort oben geprüft
 

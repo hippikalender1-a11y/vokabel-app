@@ -78,7 +78,7 @@ await langVokabeln(); await sleep(900);
 await zeilen([4]);   // die negative von Unit 2
 await page.click("[data-vok-bestaetigen]"); await sleep(1200);
 let t = await tafel();
-ok(t.raster[0] === "grund:1" && /Unit 2 \(Auswahl\)$/.test(t.kopf) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl" && !/laden/.test(t.kopf), `299: zurück in der Tafel, schon geladen – Kopf ohne „laden“ (${t.kopf})`);
+ok(t.raster[0] === "grund:1" && /Unit 2$/.test(t.kopf) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl" && !/laden/.test(t.kopf), `299: zurück in der Tafel, schon geladen – Kopf ohne „laden“ (${t.kopf})`);
 await zuAuswahl(); await sleep(500);
 k = await kopf();
 ok(k.art === "liste" && /Unit 2/.test(k.text) && k.start === "1", `299: Bereich aus der Tafel ist geladen (${JSON.stringify(k)})`);

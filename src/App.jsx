@@ -3314,7 +3314,7 @@ export default function VokabelApp() {
           return (
             <>
               {renderSlotKopf(true)}
-              {slotSektionAufgeklappt && !auswahlListen && renderSlotInfo(true)}   {/* 329: Listen-Auswahl ohne Info */}
+              {slotSektionAufgeklappt && renderSlotInfo(true)}
               <div ref={slotContainerRef} style={{overflow:'clip', paddingTop: slotSektionAufgeklappt ? 12 : 0, paddingBottom: slotSektionAufgeklappt ? 8 : 0}}>
                 {slotSektionAufgeklappt && (<>
                   {auswahlListen ? <div style={{margin:"0 16px"}}>{listenNavi()}</div> : ordnerNavi({margin:"0 16px 8px"}, true)}

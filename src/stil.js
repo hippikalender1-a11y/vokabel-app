@@ -433,8 +433,9 @@ export const CSS_BASIS = `
   .slot-kopf-text{display:block;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .slot-kopf-name .kopf-balken{position:static;order:2;display:block;flex:0 0 auto;width:auto;height:5px;margin:3px 2px 4px;border-radius:3px;}
   .slot-kopf-anzahl{gap:3px;padding:6px 10px;line-height:1;}
-  .slot-kopf-anzahl b{display:block;font-size:0.95rem;line-height:12px;}   /* 335: Anzahl auf Höhe des Balkens */
-  .slot-kopf-anzahl span{display:block;font-size:0.7rem;line-height:18px;font-weight:600;opacity:0.9;}
+  .slot-kopf-anzahl b{display:block;font-size:0.95rem;line-height:18px;}
+  .slot-kopf-anzahl span{display:block;font-size:0.7rem;line-height:12px;font-weight:600;opacity:0.9;}
+  .slot-kopf-anzahl.toggle-opt.aktiv.mit-auswahl{background:var(--bestaetigen);color:var(--auf-bestaetigen);border-color:var(--bestaetigen);}   /* 336: Bereich gewählt = grün */
   .slot-kopf-name.bestaetigen-knopf::before{content:none;}
   .slot-kopf-name .liste-kopf-info{order:3;display:block;font-size:0.75rem;font-weight:500;line-height:16px;opacity:0.9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}   /* 326 */
   .liste-zeile{display:flex;align-items:center;gap:8px;padding:6px 2px;border-bottom:1px solid var(--rahmen);font-size:0.88rem;}   /* 330: kompakt */

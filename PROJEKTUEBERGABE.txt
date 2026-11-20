@@ -4042,3 +4042,8 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
 - 335 UMGESETZT: Kopf – bei einer Liste mit Bereich steht „(Auswahl)“ im Namen („E6 (Auswahl)“, auch „… laden“ in der Tafel);
   rechts dann nur die Anzahl. Rechte Fläche: oben „Alle“ (Höhe Name), unten „n V“ auf Höhe des Balkens. Gespeicherte Quiz:
   Name ohne „(Auswahl)“, rechts oben weiter „Alle“/„Auswahl“ (nur Listen = eckiger Kopf).
+- 336 UMGESETZT: 335 zurückgenommen – Name wieder ohne „(Auswahl)“, rechts wieder „n V“ oben und „Alle“/„Auswahl“ darunter.
+  Ist ein Bereich gewählt („Auswahl“), ist der Bereichsknopf rechts grün (Bestätigen-Farbe).
+- 337 UMGESETZT: 329 zurückgenommen – die Listen-Auswahl hat wieder ihre Info-Sektion unter dem Kopf (wie bei Quiz).
+- 338 UMGESETZT: Kachel-Menü (lang auf die Listen-Kachel) – „📂 Liste öffnen“ so hoch wie die Knöpfe im Kopf-Menü
+  (gleiche Innenabstände und Schriftgröße); Von–Bis und Ablage bleiben klein.

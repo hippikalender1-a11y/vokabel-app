@@ -170,6 +170,7 @@ export default function InfoTafel() {
                   border: `1.5px solid ${a.gefahr ? "var(--falsch-zart)" : "var(--haupt-zart)"}`, borderRadius: 22, padding: klein ? "4px 10px" : unten ? "8px 12px" : "11px 18px",
                   fontSize: klein ? "0.78rem" : unten ? "0.85rem" : "0.95rem", fontWeight: 700, fontFamily: "inherit", cursor: a.aus ? "default" : "pointer",
                   boxShadow: klein ? "0 2px 8px rgba(0,0,0,0.18)" : "0 4px 16px rgba(0,0,0,0.22)",
+                  ...(mitHaupt && a.haupt ? { padding: "11px 18px", fontSize: "0.95rem" } : {}),   /* 338: Liste öffnen so hoch wie die Knöpfe im Kopf-Menü */
                 }}>{mitSymbolen(a.label)}</button>
             );
             return (

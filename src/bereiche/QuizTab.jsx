@@ -174,7 +174,7 @@ export function QuizTab(app) {
                         // Listen-Ansicht: Mehrfach-Auswahl bzw. gewählte Liste (225) zeigen die Listen-Info (Inhalt, Sätze, Synonyme)
                         const ids = auswahlListen ? (listenWahl?.length ? listenWahl : slotVorschau?.typ === "listen" ? [slotVorschau.id] : null) : null;
                         const ls = (ids || []).map(id => listenIndex.find(x => x.id === id)).filter(Boolean);
-                        return auswahlListen ? null : renderSlotInfo(false);   // 329: Listen-Auswahl ohne Info-Sektion
+                        return ls.length ? renderListeInfo(ls[0], ls.length > 1 ? ls : null) : renderSlotInfo(false);   // 336: Info-Sektion wieder da
                       })()}
                       {/* Aufklappbarer Chips-Bereich */}
                       {listenIndex.length === 0 && (

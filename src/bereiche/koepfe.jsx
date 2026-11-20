@@ -260,19 +260,19 @@ export function renderSlotKopf(app, statistik) {
               : gespeichert ? `${name} – antippen: gespeicherte Konfigurationen anzeigen${aktionen ? "; lang drücken: speichern, umbenennen, duplizieren, Vokabeln ändern, löschen" : ""}` : `Verlauf und Gespeichert anzeigen${aktionen ? "; lang drücken: speichern" : ""}`, (lwahl ? (listenWahl.length ? [listenWahl.length === 1 && listenIndex.some(l => l.id === listenWahl[0]) && { label: "📂 Liste öffnen", fn: () => oeffneListeDetail(listenWahl[0]) },
                 { label: "💾 Als Quiz speichern", fn: () => alsQuizSpeichern() }].filter(Boolean) : null) : wahl ? (auswahlTafelDaten.current.slot?.()?.aktionen || null) : aktionen), { langText: name })}>
             {balkenPct !== null && <span className="kopf-balken" data-kopf-balken={balkenPct}><span style={{width:`${balkenPct}%`}}/></span>}
-            <span className="slot-kopf-text">{lwahl ? <span data-wahl-anzahl={listenWahl.length} data-listen-wahl-kopf>{listenWahl.length === 1 ? `${lEinzelName(listenWahl[0])}${eckigKopf && anzahlSeg?.text === "Auswahl" ? " (Auswahl)" : ""}${tafelGeladen ? "" : " laden"}` : listenWahl.length
+            <span className="slot-kopf-text">{lwahl ? <span data-wahl-anzahl={listenWahl.length} data-listen-wahl-kopf>{listenWahl.length === 1 ? `${lEinzelName(listenWahl[0])}${tafelGeladen ? "" : " laden"}` : listenWahl.length
                 ? statistik ? `${listenWahl.length} ausgewählt · ${wahlListenIds(listenWahl).reduce((s, id) => s + (lsLesen(SK.liste(id))?.vokabeln?.length || 0), 0)} Vokabeln`
                 : mitSymbolen((() => { const z = schalterZaehlung(wahlListenIds(listenWahl), "liste"); return `${listenWahl.length} ausgewählt · ${z.regulaer} Vokabeln${z.faellig ? ` + 🔁 ${z.faellig}` : ""}`; })())   // 288
                 : "Nichts ausgewählt"}</span>
               : wahl ? <span data-wahl-anzahl={multiAuswahl.length}>{mitSymbolen(wahlText)}</span> : vorschauE ? <span data-bestaetigen>{vorschauName} laden</span> : aendern ? <span data-bestaetigen>Bestätigen</span>
               : erstellen && zu ? <span data-bestaetigen>＋ Quiz erstellen</span>
-              : <>{alsListe && listeE && <span aria-hidden="true" data-kopf-liste>{listenFlagge(listeE)} </span>}{name}{eckigKopf && anzahlSeg?.text === "Auswahl" && <span data-kopf-auswahl> (Auswahl)</span>}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}</>}</span>
+              : <>{alsListe && listeE && <span aria-hidden="true" data-kopf-liste>{listenFlagge(listeE)} </span>}{name}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}</>}</span>
           </button>
           {anzahlSeg && (
-            <button className={`toggle-opt aktiv slot-kopf-anzahl${eckigKopf ? " eckig" : ""}`} data-auswahl-durchlass data-kopf-anzahl={anzahlSeg.n} data-kopf-bereich={anzahlSeg.text} onClick={anzahlSeg.tipp || undefined}
+            <button className={`toggle-opt aktiv slot-kopf-anzahl${eckigKopf ? " eckig" : ""}${anzahlSeg.text === "Auswahl" ? " mit-auswahl" : ""}`} data-auswahl-durchlass data-kopf-anzahl={anzahlSeg.n} data-kopf-bereich={anzahlSeg.text} onClick={anzahlSeg.tipp || undefined}
               {...(!statistik ? { "data-schalter-klapp": schalterZeileZu ? "zu" : "auf" } : {})}
               {...tt(anzahlSeg.erklaerung, null, anzahlSeg.lang ? { lang: anzahlSeg.lang } : {})}>
-              <span>{eckigKopf && anzahlSeg.text === "Auswahl" ? " " : anzahlSeg.text}</span><b>{anzahlSeg.n} V</b>   {/* 335: oben „Alle“ (Höhe Name), unten die Anzahl (Höhe Balken); Bereich steht im Namen */}
+              <b>{anzahlSeg.n} V</b><span>{anzahlSeg.text}</span>
             </button>
           )}
           {voks.length > 0 && !zu && statistik && (
