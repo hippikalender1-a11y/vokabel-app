@@ -68,7 +68,7 @@ await new Promise(r => setTimeout(r, 400));
 ok(!(await page.$("[data-reihenfolge-wahl]")) && await text("[data-reihenfolge]") === "Listenplatz", `… dann zu, Knopf „Listenplatz“ (${await text("[data-reihenfolge]")})`);
 // Beschriftungen über den Knöpfen, gleich hohe Knöpfe
 const labels = await page.evaluate(() => [...document.querySelectorAll(".quiz-zeile-label")].map(l => l.textContent).join("|"));
-ok(/^(Auswahl\|Fällige\|Heute\|)?Lern-Modus\|\w+ – \w+\|Reihenfolge\|Wie oft\|Langzeitgedächtnis/.test(labels), `Beschriftungen, über „Art der Antwort“ die Sprachen Frage – Antwort (${labels})`);
+ok(/^(Zu lernen\|Fällige\|Heute\|)?Lern-Modus\|\w+ – \w+\|Reihenfolge\|Wie oft\|\d+ % Langzeitgedächtnis/.test(labels), `Beschriftungen, über „Art der Antwort“ die Sprachen Frage – Antwort (${labels})`);
 const hoehe = s => page.evaluate(s => Math.round(document.querySelector(s).getBoundingClientRect().height), s);
 const zu1 = [await hoehe("[data-stufe]"), await hoehe("[data-abfragemodus]"), await hoehe("[data-reihenfolge]"), await hoehe("[data-abfrageziel]"), await hoehe("[data-langzeit]")];
 await page.click("[data-reihenfolge]"); await sleep(300);
@@ -79,11 +79,12 @@ ok(!(await page.$("[data-start-fortschritt]")), "163: keine großen Kreise mehr 
 
 // 311: Start lang drücken → Anzahl je Runde (Alle · Je 5 … Je 50); der Knopf nennt sie („– Alle“ / „– Je 10“)
 await page.evaluate(() => { const el = document.querySelector("[data-start-knopf]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 10 })); }); await sleep(300);
-const wahl = await page.evaluate(() => [...document.querySelectorAll("[data-info-aktion]")].map(b => b.dataset.infoAktion).join("|"));
-ok(wahl === "✓ Alle|Je 5|Je 10|Je 15|Je 20|Je 25|Je 30|Je 40|Je 50", `311: lang drücken auf „Start“: Anzahl je Runde (${wahl})`);
-await page.click('[data-info-aktion="Je 10"]'); await sleep(300);
+const wahl = await page.evaluate(() => { const k = document.querySelector("[data-umfang-kasten]"), s = document.querySelector("[data-start-knopf]");
+  return { n: [...document.querySelectorAll("[data-umfang-wahl]")].map(b => b.dataset.umfangWahl).join("|"), unter: !!k && k.getBoundingClientRect().top >= s.getBoundingClientRect().bottom, eckig: !!k && !document.querySelector("[data-info-aktion]") }; });
+ok(wahl.n === "alle|5|10|15|20|25|30|40|50" && wahl.unter && wahl.eckig, `311/316: lang drücken auf „Start“: Kasten „Anzahl je Runde“ unter dem Start-Knopf (${JSON.stringify(wahl)})`);
+await page.click('[data-umfang-wahl="10"]'); await sleep(600);
 const st = await page.evaluate(() => document.querySelector("[data-start-knopf] b")?.textContent);
-ok(/– Je 10$/.test(st || "") && !(await page.$("[data-info-aktion]")), `311: gewählt – Tafel zu, Start „… – Je 10“ (${st})`);
+ok(/– Je 10$/.test(st || "") && !(await page.$("[data-umfang-kasten]")), `316: gewählt – Kasten zu, Start „… – Je 10“ (${st})`);
 
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 await browser.close();

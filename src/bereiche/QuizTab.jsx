@@ -8,7 +8,7 @@ import { SPRACH_KUERZEL, sprachInfo } from "../sprache.js";
 // Phase 2 (Aufteilung): Bereich aus dem Haupt-return von App.jsx (tab === "quiz")
 // app = Zustände, Setter und Funktionen der Komponente (siehe „const app“ in App.jsx)
 export function QuizTab(app) {
-  const { vokAuswahlZurTafel, schalterZeileZu, setSchalterZeileZu, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, faelligJeSprache, faelligePool, quizFaellig, setQuizFaellig, starteNurFaellige, istPaketQuiz, abfrageModusContainerRef, abfrageModusRef, abfrageZielAnzahl, abfrageZielModus, abfrageZielScore, abfrageZielScoreTyp, abfrageZielWiederholung, aktiverSlot, alleBereichH, alleBereichRef, antwortMehrfach, artenMehrfach, aufteilen, aufteilenStand, auswahlListen, auswahlOrdnerZelle, begrenzeOhneAkzent, blitzt, einstellungen, einzelauswahlRef, fokusZeigt, headerH, ladeSlot, legeAufteilenAn, lernEinstellungen, lernResetFrage, lernStandVon, lernstandJeArt, leuchte, leuchtet, listenAuswahlPfad, listenContainerRef, listenFlagge, listenIndex, listenNavi, listenOrdner, listenRasterPlaetze, listenSortModus, listenWahl, listenauswahlHeaderH, listenauswahlHeaderRef, loescheSessionSlot, maxFenster, maxSpalte, offenText, ordnerNavi, quizAbfrageArt, quizAbfrageModusAufgeklappt, quizAntwortTypenGeordnet, quizArt, quizAusgewaehlt, quizBasisVoks, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizFokus, quizFrageTyp, quizGefilterteVoks, quizGelerntEinschliessen, quizHeuteEinschliessen, quizInfoTypenSession, quizKombiListe, quizListeAufgeklappt, quizModus, quizModusInfoAufgeklappt, quizPaketGroesse, quizReihenfolge, quizReihenfolgeAufgeklappt, quizSchlechtesteMaxScore, quizSessionAufgeklappt, quizSessionModus, quizSpalteModus, quizStufeAufgeklappt, quizTabListen, quizUnbeantwortetZuerst, quizVokMax, quizVonBisErster, quizVonBisModus, quizZeigeInfo, reihenfolgeContainerRef, renderAufteilenKasten, renderListeInfo, renderListenRaster, renderModusKnoepfe, renderSlotBereiche, renderSlotInfo, renderSlotKopf, renderSuchleiste, resetImport, schliesseQuizBereiche, sessionContainerRef, sessionRef, sessionResetFrage, sessionSlotAktiv, sessionSlotKonflikt, sessionSpeicherAktionen, setAbfrageZielAnzahl, setAbfrageZielModus, setAbfrageZielScore, setAbfrageZielScoreTyp, setAbfrageZielWiederholung, setAnsicht, setAufteilen, setLernResetFrage, setModal, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizDiktatSpalte, setQuizDiktatUebersetzung, setQuizGelerntEinschliessen, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizModus, setQuizModusInfoAufgeklappt, setQuizPaketGroesse, setQuizReihenfolge, setQuizReihenfolgeAufgeklappt, setQuizSchlechtesteMaxScore, setQuizSessionAufgeklappt, setQuizSessionModus, setQuizStufeAufgeklappt, setQuizTabListen, setQuizUnbeantwortetZuerst, setQuizVonBisErster, setQuizVonBisModus, setSessionResetFrage, setStartLeerHinweis, setSucheQuiz, setTab, setzeLernStand, sicherungErinnerungUI, sichtbareListen, slotContainerRef, slotH, slotSektionAufgeklappt, slotVorschau, speichereEinst, spracheVonListe, sprungKnopf, startLeerHinweis, starteLernen, starteQuiz, suchInfo, suchMarke, sucheQuiz, toggleAbfrageModus, toggleEinzelauswahl, toggleInfoSpalte, toggleQuizSpalte, toggleQuizTabListe, toggleReihenfolge, toggleSessionBereich, toggleSpalteRolle, toggleVokCheckbox, tt, ttFeld, vonBisLangDruck, wahlLeiste, wechsleQuizArt, zeileImBlick } = app;
+  const { umfangAuf, setUmfangAuf, vokAuswahlZurTafel, schalterZeileZu, setSchalterZeileZu, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, faelligJeSprache, faelligePool, quizFaellig, setQuizFaellig, starteNurFaellige, istPaketQuiz, abfrageModusContainerRef, abfrageModusRef, abfrageZielAnzahl, abfrageZielModus, abfrageZielScore, abfrageZielScoreTyp, abfrageZielWiederholung, aktiverSlot, alleBereichH, alleBereichRef, antwortMehrfach, artenMehrfach, aufteilen, aufteilenStand, auswahlListen, auswahlOrdnerZelle, begrenzeOhneAkzent, blitzt, einstellungen, einzelauswahlRef, fokusZeigt, headerH, ladeSlot, legeAufteilenAn, lernEinstellungen, lernResetFrage, lernStandVon, lernstandJeArt, leuchte, leuchtet, listenAuswahlPfad, listenContainerRef, listenFlagge, listenIndex, listenNavi, listenOrdner, listenRasterPlaetze, listenSortModus, listenWahl, listenauswahlHeaderH, listenauswahlHeaderRef, loescheSessionSlot, maxFenster, maxSpalte, offenText, ordnerNavi, quizAbfrageArt, quizAbfrageModusAufgeklappt, quizAntwortTypenGeordnet, quizArt, quizAusgewaehlt, quizBasisVoks, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizFokus, quizFrageTyp, quizGefilterteVoks, quizGelerntEinschliessen, quizHeuteEinschliessen, quizInfoTypenSession, quizKombiListe, quizListeAufgeklappt, quizModus, quizModusInfoAufgeklappt, quizPaketGroesse, quizReihenfolge, quizReihenfolgeAufgeklappt, quizSchlechtesteMaxScore, quizSessionAufgeklappt, quizSessionModus, quizSpalteModus, quizStufeAufgeklappt, quizTabListen, quizUnbeantwortetZuerst, quizVokMax, quizVonBisErster, quizVonBisModus, quizZeigeInfo, reihenfolgeContainerRef, renderAufteilenKasten, renderListeInfo, renderListenRaster, renderModusKnoepfe, renderSlotBereiche, renderSlotInfo, renderSlotKopf, renderSuchleiste, resetImport, schliesseQuizBereiche, sessionContainerRef, sessionRef, sessionResetFrage, sessionSlotAktiv, sessionSlotKonflikt, sessionSpeicherAktionen, setAbfrageZielAnzahl, setAbfrageZielModus, setAbfrageZielScore, setAbfrageZielScoreTyp, setAbfrageZielWiederholung, setAnsicht, setAufteilen, setLernResetFrage, setModal, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizDiktatSpalte, setQuizDiktatUebersetzung, setQuizGelerntEinschliessen, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizModus, setQuizModusInfoAufgeklappt, setQuizPaketGroesse, setQuizReihenfolge, setQuizReihenfolgeAufgeklappt, setQuizSchlechtesteMaxScore, setQuizSessionAufgeklappt, setQuizSessionModus, setQuizStufeAufgeklappt, setQuizTabListen, setQuizUnbeantwortetZuerst, setQuizVonBisErster, setQuizVonBisModus, setSessionResetFrage, setStartLeerHinweis, setSucheQuiz, setTab, setzeLernStand, sicherungErinnerungUI, sichtbareListen, slotContainerRef, slotH, slotSektionAufgeklappt, slotVorschau, speichereEinst, spracheVonListe, sprungKnopf, startLeerHinweis, starteLernen, starteQuiz, suchInfo, suchMarke, sucheQuiz, toggleAbfrageModus, toggleEinzelauswahl, toggleInfoSpalte, toggleQuizSpalte, toggleQuizTabListe, toggleReihenfolge, toggleSessionBereich, toggleSpalteRolle, toggleVokCheckbox, tt, ttFeld, vonBisLangDruck, wahlLeiste, wechsleQuizArt, zeileImBlick } = app;
   return (
 (() => {
           const kombiListe = quizKombiListe;
@@ -142,7 +142,7 @@ export function QuizTab(app) {
           const gesperrtAttr = g => g ? { "aria-disabled": true, "data-gesperrt": "" } : {};
           // 313: Langzeitgedächtnis – fällige außerhalb der Auswahl (andere Listen derselben Sprache, übrige der Liste) dazu; lang: Anteil
           const langzeitKnopf = (
-            <div className="quiz-zeile-zelle"><span className="quiz-zeile-label">Langzeitgedächtnis</span>
+            <div className="quiz-zeile-zelle"><span className="quiz-zeile-label">{quizFaellig.anteil} % Langzeitgedächtnis</span>
             <button className={`quiz-zeile-knopf${fremdeAn && faelligMoeglich ? " an" : ""}`} data-langzeit={fremdeAn ? "an" : "aus"} data-faellig-modus={quizFaellig.modus} data-faellig-anteil-quiz={quizFaellig.anteil}
               data-langzeit-n={fp.fremde.length} {...gesperrtAttr(!faelligMoeglich)}
               onClick={e => { if (!faelligMoeglich) { blinke(e.currentTarget); return; } schliesseQuizBereiche(null); setQuizFaellig(f => ({ ...f, modus: f.modus === "sprache" ? "quiz" : "sprache" })); setStartLeerHinweis(false); }}
@@ -158,8 +158,6 @@ export function QuizTab(app) {
           );
           // 311: Anzahl je Runde – lang auf den Start-Knopf (Raster in der Tafel)
           const umfangText = isPakete && quizPaketGroesse != null && quizPaketGroesse < PAKET_ALLE ? `Je ${quizPaketGroesse}` : "Alle";
-          const umfangMenue = [{ label: `${umfangText === "Alle" ? "✓ " : ""}Alle`, raster: true, breit: true, fn: () => { setQuizSessionModus("pakete"); setQuizPaketGroesse(PAKET_ALLE); } },
-            ...[5, 10, 15, 20, 25, 30, 40, 50].map(n => ({ label: `${umfangText === `Je ${n}` ? "✓ " : ""}Je ${n}`, raster: true, fn: () => { setQuizSessionModus("pakete"); setQuizPaketGroesse(n); } }))];
           const umfangTipp = "; lang drücken: Anzahl je Runde (alle oder in Paketen)";
 
           return (
@@ -326,17 +324,17 @@ export function QuizTab(app) {
                       // 310: Stufen-Knöpfe – antippen schaltet weiter (Kreislauf)
                       const auswahlAlle = gruppenAnz.nie + gruppenAnz.abgefragt + gruppenAnz.negativ, auswahlAbg = gruppenAnz.abgefragt + gruppenAnz.negativ;
                       const kn = [
-                        { k: "grund", label: quizGrund === "abgefragt" ? "Bereits abgefragte" : "Auswahl", stufe: quizGrund === true ? "alle" : quizGrund || "aus",
+                        { k: "grund", label: quizGrund === "abgefragt" ? "Schon geübt" : "Zu lernen", stufe: quizGrund === true ? "alle" : quizGrund || "aus",
                           n: quizGrund === "abgefragt" ? auswahlAbg : auswahlAlle, an: quizGrund !== false, frei: auswahlAlle > 0,
                           weiter: () => setQuizGrund(g => g === true ? "abgefragt" : g === "abgefragt" ? false : true),
-                          text: quizGrund === "abgefragt" ? "Bereits abgefragte der Auswahl (ohne die gelernten und die nie abgefragten)" : "Auswahl ohne die gelernten",
-                          naechste: quizGrund === true ? "nur bereits abgefragte" : quizGrund === "abgefragt" ? "aus" : "alle der Auswahl" },
-                        { k: "faellig", label: langStufe === "gelernt" ? "Gelernte" : "Fällige", stufe: langStufe, zeichen: langStufe === "gelernt" ? "✓" : <SymWdh/>, plus: true,
-                          n: langStufe === "gelernt" ? gruppenAnz.gelernt + eigeneFAnz : eigeneFAnz, an: langStufe !== "aus", frei: schwelle > 0 && gruppenAnz.gelernt + eigeneFAnz > 0,
+                          text: quizGrund === "abgefragt" ? "Schon geübt: zu lernende, die schon einmal abgefragt wurden" : "Zu lernen: alle noch nicht gelernten Vokabeln",
+                          naechste: quizGrund === true ? "nur schon geübte" : quizGrund === "abgefragt" ? "aus" : "alle zu lernenden" },
+                        { k: "faellig", label: langStufe === "gelernt" ? "Gelernte" : langStufe === "aus" ? "Bereits gelernte" : "Fällige", stufe: langStufe, zeichen: langStufe === "faellig" ? <SymWdh/> : "✓", plus: true,   // 319
+                          n: langStufe === "faellig" ? eigeneFAnz : gruppenAnz.gelernt + eigeneFAnz, an: langStufe !== "aus", frei: schwelle > 0 && gruppenAnz.gelernt + eigeneFAnz > 0,
                           weiter: () => { if (langStufe === "faellig") { setQuizFaellig(f => ({ ...f, an: false })); setQuizGelerntEinschliessen(true); }
                             else if (langStufe === "gelernt") { setQuizFaellig(f => ({ ...f, an: false })); setQuizGelerntEinschliessen(false); }
                             else { setQuizFaellig(f => ({ ...f, an: true })); setQuizGelerntEinschliessen(false); } },
-                          text: langStufe === "gelernt" ? "Alle gelernten der Auswahl" : "Gelernte der Auswahl, die jetzt zur Prüfung fällig sind",
+                          text: langStufe === "gelernt" ? "Alle gelernten der Auswahl" : langStufe === "aus" ? "Bereits gelernte – werden nicht abgefragt" : "Gelernte der Auswahl, die jetzt zur Prüfung fällig sind",
                           naechste: langStufe === "faellig" ? "alle gelernten" : langStufe === "gelernt" ? "aus" : "die fälligen" },
                         { k: "heute", label: "Heute", stufe: quizHeuteEinschliessen ? "an" : "aus", n: gruppenAnz.heute, an: quizHeuteEinschliessen, frei: heuteSperre && gruppenAnz.heute > 0, plus: true,
                           weiter: () => setQuizHeuteEinschliessen(v => !v), text: "Heute schon abgefragte Vokabeln – sonst kommen sie erst morgen wieder",
@@ -597,18 +595,7 @@ export function QuizTab(app) {
                 )}
                 {quizSessionAufgeklappt && kombiListe && (
                   <div ref={sessionContainerRef} className="karte" data-wahl-bereich style={{marginBottom:8, marginTop:8}}>
-                    {quizSessionAufgeklappt === "umfang" ? (
-                      <div className="umfang-raster" data-umfang-auswahl>
-                        <button className={`typ-btn${!isPakete || quizPaketGroesse >= PAKET_ALLE ? " aktiv" : ""}`} data-umfang-wahl="alle"
-                          onClick={() => { setQuizSessionModus("pakete"); setQuizPaketGroesse(PAKET_ALLE); setTimeout(() => setQuizSessionAufgeklappt(false), WAHL_ZU_MS); }}
-                          {...tt("Alle Vokabeln des Quiz in einem Paket – der Fortschritt bleibt gespeichert")}>Alle</button>
-                        {[5,10,15,20,25,30,40,50].map(n => (
-                          <button key={n} className={`typ-btn${isPakete && quizPaketGroesse === n ? " aktiv" : ""}`} data-umfang-wahl={n}
-                            onClick={() => { setQuizSessionModus("pakete"); setQuizPaketGroesse(n); setTimeout(() => setQuizSessionAufgeklappt(false), WAHL_ZU_MS); }}
-                            {...tt(`Je ${n} Vokabeln pro Paket – der Fortschritt bleibt zwischen den Paketen erhalten`)}>{n}</button>
-                        ))}
-                      </div>
-                    ) : (<>
+                    {(<>
                     <div style={{padding:"12px 16px 8px", fontWeight:600, fontSize:"0.82rem", color:"var(--text2)"}}>Abfrage-Ziel</div>
                     <div style={{display:"flex", gap:6, flexWrap:"wrap", padding:"0 16px 8px"}}>
                       {[["anzahl","Anzahl","Jede Vokabel 1–3× pro Runde abfragen"],["wiederholung","Mit Wiederholung","Vokabeln wiederholen bis jede N-mal in Folge richtig beantwortet wurde"],["score","Score","Vokabeln wiederholen bis ihr Score das Ziel erreicht"],
@@ -714,7 +701,7 @@ export function QuizTab(app) {
                       {lernAktiv && !aufteilen ? (
                         <button className="btn btn-primary start-knopf" data-start-knopf data-lernen-start={lernStand ? "weiter" : "neu"} data-start-anzahl={lernAnzahl}
                           onClick={() => starteLernen(lernVokabeln(), isPakete ? quizPaketGroesse : null, lernSpalten, lernInfo, lernStand)} disabled={!kannStarten || (lernAnzahl === 0 && !lernStand)}
-                          {...tt((lernStand ? `Weiter lernen an der Stelle, an der du aufgehört hast (${lernAngesehen} von ${lernGesamt} angesehen)` : "Lernen starten: Wort zeigen, nach einer Pause die Übersetzung – ohne Score, des Quiz-Fortschritt bleibt") + umfangTipp, umfangMenue, { langText: "Anzahl je Runde" })}>
+                          {...tt((lernStand ? `Weiter lernen an der Stelle, an der du aufgehört hast (${lernAngesehen} von ${lernGesamt} angesehen)` : "Lernen starten: Wort zeigen, nach einer Pause die Übersetzung – ohne Score, des Quiz-Fortschritt bleibt") + umfangTipp, null, { lang: () => setUmfangAuf(v => !v) })}>
                           {lernStand ? <><b>Weiter lernen – {umfangText}</b><span>{lernAngesehen} von {lernGesamt} angesehen</span></>
                             : <><b>Lernen starten – {umfangText}</b><span>{lernAnzahl} Vokabel{lernAnzahl !== 1 ? "n" : ""}</span></>}
                         </button>
@@ -749,11 +736,25 @@ export function QuizTab(app) {
                       ) : (
                         <button className={`btn btn-primary start-knopf${!startbar ? " leer" : ""}`} data-start-knopf data-start-anzahl={verfuegbar} data-start-rest={startRest} data-start-faellig={fRest}
                           onClick={() => !startbar ? setStartLeerHinweis(h => !h) : starteQuiz()} disabled={!kannStarten}
-                          {...tt((isPakete ? `${START_TEXT[quizArt] || "Quiz starten"} – in dieses Quiz sind noch ${startRest} Vokabeln übrig; abgefragt wird ${quizPaketGroesse >= PAKET_ALLE ? "alles in einem Paket" : `in Paketen zu ${quizPaketGroesse}`}` : `${START_TEXT[quizArt] || "Quiz starten"} – die Zahl nennt die Vokabeln dieser Fragerunde`) + umfangTipp, umfangMenue, { langText: "Anzahl je Runde" })}>
+                          {...tt((isPakete ? `${START_TEXT[quizArt] || "Quiz starten"} – in dieses Quiz sind noch ${startRest} Vokabeln übrig; abgefragt wird ${quizPaketGroesse >= PAKET_ALLE ? "alles in einem Paket" : `in Paketen zu ${quizPaketGroesse}`}` : `${START_TEXT[quizArt] || "Quiz starten"} – die Zahl nennt die Vokabeln dieser Fragerunde`) + umfangTipp, null, { lang: () => setUmfangAuf(v => !v) })}>
                           <b data-start-umfang={umfangText}>{START_TEXT[quizArt] || "Quiz starten"} – {umfangText}</b><span>{startRest} Vokabel{startRest !== 1 ? "n" : ""}{isPakete && fRest > 0 ? <> + <SymWdh/> {fRest}</> : ""}</span>
                         </button>
                       )}
                     </div>
+                    {umfangAuf && !aufteilen && (
+                      <div className="karte" data-wahl-bereich data-umfang-kasten style={{marginTop:10, marginBottom:0}}>
+                        <div className="umfang-raster" data-umfang-auswahl>
+                          <button className={`typ-btn${!isPakete || quizPaketGroesse >= PAKET_ALLE ? " aktiv" : ""}`} data-umfang-wahl="alle"
+                            onClick={() => { setQuizSessionModus("pakete"); setQuizPaketGroesse(PAKET_ALLE); setTimeout(() => setUmfangAuf(false), WAHL_ZU_MS); }}
+                            {...tt("Alle Vokabeln des Quiz in einem Paket – der Fortschritt bleibt gespeichert")}>Alle</button>
+                          {[5,10,15,20,25,30,40,50].map(n => (
+                            <button key={n} className={`typ-btn${isPakete && quizPaketGroesse === n ? " aktiv" : ""}`} data-umfang-wahl={n}
+                              onClick={() => { setQuizSessionModus("pakete"); setQuizPaketGroesse(n); setTimeout(() => setUmfangAuf(false), WAHL_ZU_MS); }}
+                              {...tt(`Je ${n} Vokabeln pro Paket – der Fortschritt bleibt zwischen den Paketen erhalten`)}>{n}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {lernStand && lernResetFrage ? (
                       <div data-lern-reset-frage style={{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", minHeight:31, fontSize:"0.82rem", marginTop:10}}>
                         <span style={{color:"var(--text)", fontWeight:600}}>Lernstand löschen?</span>

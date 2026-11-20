@@ -165,7 +165,7 @@ export function renderSlotKopf(app, statistik) {
       { label: "🗑 Löschen", gefahr: true, fn: () => setLoescheSlotNr({ typ: "gespeichert", id: eintrag.id }) },
     ] : [];
     // 217: Liste – öffnen bzw. daraus ein Quiz erstellen (kein Speichern)
-    const listenAktionen = alsListe ? [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(slot.id) }, { label: "🎯 Bereich wählen…", fn: () => waehleBereichGeladen(statistik ? "statistik" : "quiz") }, { label: "💾 Als Quiz speichern", fn: () => setErstellenFenster({ name: einListenName() || listeE?.name || "Quiz", ordner: slotOrdner || null }) }] : [];
+    const listenAktionen = alsListe ? [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(slot.id) }, { label: "💾 Als Quiz speichern", fn: () => setErstellenFenster({ name: einListenName() || listeE?.name || "Quiz", ordner: slotOrdner || null }) }] : [];
     const alleAktionen = alsListe ? listenAktionen
       : [...(!statistik ? sessionSpeicherAktionen() || [] : []), ...verwaltung];
     const aktionen = alleAktionen.length ? alleAktionen : null;

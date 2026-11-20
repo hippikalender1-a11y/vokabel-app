@@ -65,7 +65,7 @@ export function tt(app, text, aktionen, opts = {}) {
       onContextMenu(e) { e.preventDefault(); if (e.nativeEvent._ttMenue) return; if (aktionen) e.nativeEvent._ttMenue = true;
         // 171: Android meldet den Lang-Druck zusätzlich als Kontextmenü – bei Kacheln läuft schon die eigene Geste (sonst rein + wieder heraus)
         if (opts.eigeneGeste && (kachelGesteRef.current || lassoRef.current?.aktiv || e.nativeEvent.sourceCapabilities?.firesTouchEvents || e.nativeEvent.pointerType === "touch")) return;
-        if (opts.lang) { opts.lang(); return; }   // 299: langer Druck = Aktion (z. B. Bereich wählen)
+        if (opts.lang && !farbModusRef.current) { opts.lang(); return; }   // 299: langer Druck = Aktion (z. B. Bereich wählen); Farbmodus: Farbfeld
         opts.beimLang?.();
         if (aktionen) opts.beimMenue?.(); zeigeInfo(langText, e.clientX, e.clientY, aktionen, { ...(opts.auswahl ? { auswahl: opts.auswahl } : {}), ...(opts.regler ? { regler: opts.regler() } : {}), ...(opts.zusatz ? { zusatz: opts.zusatz() } : {}) }); },
       title: text,

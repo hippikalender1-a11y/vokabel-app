@@ -65,7 +65,6 @@ export function listenMenue(app, l, imKopf = false) {
     return [
       ...(imKopf ? [] : [{ label: "📂 Liste öffnen", fn: () => oeffneListeDetail(l.id) }]),   // 225: antippen fragt ab, öffnen über das Menü
       ...gruppe(GRUPPE.lernen, [
-        { label: "🎯 Bereich wählen…", fn: () => waehleListenBereich([l.id]) },   // 262/298
         herausN && { label: `🚫 Herausgenommene (${herausN})`, fn: () => { oeffneListeDetail(l.id); setListenBereich("vokabeln"); setListeNurAus(true); } },
         { label: "↺ Lernstand zurücksetzen", fn: () => { setListeMenueId(l.id); setZuruecksetzenArten(new Set(Object.keys(SCORE_FELD))); setModal("liste-zuruecksetzen"); } },
       ]),

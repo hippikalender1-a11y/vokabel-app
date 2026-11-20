@@ -3970,3 +3970,26 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   ("sprache" an / "quiz" aus), Anteil nur für fremde. Filter-Knöpfe: data-schalter grund/faellig/heute, data-filter-stufe.
   Start lang → Raster „Alle · Je 5 … Je 50“ (data-start-umfang); Speichern bleibt lang auf dem Namen im Kopf.
   „Nur Fällige“, sobald keine regulären übrig sind. Kopf: .slot-kopf-text + Balken darunter, rechts „n V“ / „Alle|Auswahl“.
+- 314 UMGESETZT: Kopf bei offener Auswahl – der Name-Knopf wird größer, weil der Haken ✓ (bestaetigen-knopf, seit 312
+  zweizeilig) eine eigene Zeile bekommt. Die Vergrößerung bleibt (wirkt wie „Quiz aufgeklappt“, Unterschied zum Quiz-Tab),
+  der Haken entfällt; Name/Flagge und Balken stehen mittig in dem größeren Knopf – wie rechts „175 V / Auswahl“.
+- 315 UMGESETZT: Filter-Knopf „Auswahl“ umbenennen (missverständlich, auch weil rechts im Kopf „Auswahl“ = Bereich steht).
+  → Beschlossen: Stufe 1 „Zu lernen“, Stufe 2 „Schon geübt“ (statt „Bereits abgefragte“).
+- 316 UMGESETZT: Anzahl je Runde – statt der Tafel (runde Menüpunkte, „Farbe ändern“) wieder der alte Kasten mit den
+  eckigen Knöpfen (Alle · 5 · 10 … 50, data-umfang-auswahl), aufgeklappt direkt unter dem Start-Knopf (lang auf Start).
+  Wahl antippen → übernimmt und klappt zu. (Der alte Kasten steckt noch in QuizTab.jsx – wiederverwenden.)
+- 317 UMGESETZT: Kopf-Menü (lang auf den Namen) einer geladenen Liste – „🎯 Bereich wählen…“ entfällt (den Bereich wählt
+  lang auf die Anzahl rechts im Kopf). Bleiben: 📂 Liste öffnen · 💾 Als Quiz speichern · 🎨 Farbe ändern.
+  → Auch im Listen-Menü (Kachel, Gruppe „📊 Lernen ›“, quizStart.jsx listenMenue) entfernen.
+- 318 GESTRICHEN (2026-11-20, bleibt wie es ist): „Als Quiz speichern“ – der Ordner, in dem man sich befindet, soll vorausgewählt sein. Heute: nur die in der
+  Quiz-Auswahl geöffnete Gruppe (slotOrdner); kommt man aus der Listen-Auswahl, steht „Alle Quiz (oben)“.
+  Vorschlag: 1. geöffnete Quiz-Gruppe; sonst 2. der Listen-Ordner der geladenen Liste → Quiz-Ordner mit gleichem Namen
+  (z. B. Listen „Englisch 6“ → Quiz „Englisch 6“); sonst oben. Auch für den zweiten Speichern-Dialog (slot-speichern).
+- 319 UMGESETZT: Fällige-Knopf im ausgeschalteten Zustand heißt „Bereits gelernte“ (statt „Fällige“; Platz reicht – so
+  lang wie „Bereits abgefragte“). Zahl im Aus-Zustand: alle gelernten „✓ n“ (die weggelassen werden) statt „🔁 n“.
+  Stufen: Fällige „+ 🔁 4“ → Gelernte „+ ✓ 30“ → aus: Bereits gelernte „✓ 30“.
+- 320 UMGESETZT: Beschriftung über dem Langzeit-Knopf mit dem eingestellten Anteil: „25 % Langzeitgedächtnis“.
+- 321 UMGESETZT (Fehler): Langzeit-Knopf ausgeschaltet behält die gefüllte Farbe – muss wie die Filter-Knöpfe invertiert
+  sein (die Aus-Darstellung gilt bisher nur in der Schalter-Zeile).
+  Umsetzung 314–321: .slot-kopf-name.bestaetigen-knopf ohne ::before, min-height 68px; umfangAuf (App) → Kasten
+  [data-umfang-kasten] unter dem Start-Knopf (tt lang); Langzeit aus: [data-langzeit]:not(.an) invertiert.

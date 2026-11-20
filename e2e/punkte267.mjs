@@ -76,7 +76,7 @@ const fk = async () => { await page.evaluate(() => document.querySelector('[data
 s = await fk();
 ok(s.eigene === "gelernt:+ ✓ 2" && /^0\/11 Vokabeln \+ 🔁 0\/3$/.test(s.titel), `310: „Gelernte“ – alle gelernten (2) bei den übrigen (${JSON.stringify(s)})`);
 s = await fk();
-ok(s.eigene === "aus:🔁 2" && /^0\/9 Vokabeln \+ 🔁 0\/3$/.test(s.titel), `310: aus – keine eigenen (${JSON.stringify(s)})`);
+ok(s.eigene === "aus:✓ 2" && /^0\/9 Vokabeln \+ 🔁 0\/3$/.test(s.titel), `310: aus – keine eigenen (${JSON.stringify(s)})`);
 s = await fk();
 ok(s.eigene === "faellig:+ 🔁 2", `310: Kreislauf – wieder „Fällige“ (${JSON.stringify(s)})`);
 

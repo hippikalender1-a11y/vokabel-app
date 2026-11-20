@@ -57,10 +57,13 @@ await listeWaehlen(page, "Unité 1");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 ok(await variable("auf-start") === "#24382d", `Pastelle: Schrift auf Liste & Start aus der Vorlage (${await variable("auf-start")})`);
 
-// Lang-Druck auf den Start-Knopf → 🎨 Farbe ändern
-const knopf = await page.evaluate(() => { const r = document.querySelector("[data-start-knopf] b").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
-await rechtsklick(knopf.x, knopf.y);
+// 316: lang auf Start öffnet die Paketwahl – den Farbmodus über „Wie oft“ starten, dann lang auf den Start-Knopf
+await page.evaluate(() => { const el = document.querySelector("[data-abfrageziel]"); const r = el.getBoundingClientRect();
+  el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2 })); }); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-info-farbe]").click()); await sleep(500);
+await page.evaluate(() => [...document.querySelectorAll("[data-farbfeld] button")].find(b => b.textContent.trim() === "Schließen")?.click()); await sleep(300);
+const knopf = await page.evaluate(() => { const r = document.querySelector("[data-start-knopf] b").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+await rechtsklick(knopf.x, knopf.y); await sleep(500);
 const titel = await page.evaluate(() => [...document.querySelectorAll("[data-farbfeld-titel]")].map(z => z.dataset.farbfeldTitel));
 console.log("     Zeilen:", titel.join(" | "));
 ok(["Start-Knopf · Text groß", "Start-Knopf · Text klein", "Start-Knopf · Hintergrund"].every(t => titel.includes(t)), "Zeilen nennen Element und Teil: Text groß, Text klein, Hintergrund");

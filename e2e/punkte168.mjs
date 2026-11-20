@@ -92,7 +92,7 @@ const startText = () => page.evaluate(() => __txt(document.querySelector("[data-
 ok(/2 Vokabeln \+ 🔁 1$/.test(await startText()) && await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="faellig"]')?.dataset.filterStufe) === "faellig",
   `267/310: 2 neue + die 1 fällige der Auswahl – Stufe „Fällige“ (${await startText()})`);
 await klick('[data-schalter-zeile] [data-schalter="faellig"]'); await klick('[data-schalter-zeile] [data-schalter="faellig"]');   // → Gelernte → aus
-ok(await startText() === "2 Vokabeln" && await page.evaluate(() => __txt(document.querySelector('[data-schalter-zeile] [data-schalter="faellig"]'))) === "🔁 1", `267/273/310: Fällige aus – nur die neuen, Knopf zeigt trotzdem „🔁 1“ (${await startText()})`);
+ok(await startText() === "2 Vokabeln" && await page.evaluate(() => __txt(document.querySelector('[data-schalter-zeile] [data-schalter="faellig"]'))) === "✓ 1", `267/273/310: Fällige aus – nur die neuen, Knopf zeigt trotzdem „🔁 1“ (${await startText()})`);
 await klick('[data-schalter-zeile] [data-schalter="faellig"]');
 
 // ── 170: nichts fällig → inaktiver Knopf ──

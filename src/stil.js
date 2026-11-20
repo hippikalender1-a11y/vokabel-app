@@ -435,6 +435,9 @@ export const CSS_BASIS = `
   .slot-kopf-anzahl{gap:3px;padding:6px 10px;line-height:1;}
   .slot-kopf-anzahl b{display:block;font-size:0.95rem;line-height:18px;}
   .slot-kopf-anzahl span{display:block;font-size:0.7rem;line-height:12px;font-weight:600;opacity:0.9;}
+  .slot-kopf-name.bestaetigen-knopf::before{content:none;}   /* 314: offen ohne Haken, dafür größer (wirkt aufgeklappt) */
+  .slot-kopf-name.bestaetigen-knopf,.slot-kopf-name.ohne-haken{min-height:68px;}
+  .quiz-zeile-knopf[data-langzeit]:not(.an){background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);}   /* 321 */
   .score-symbole{display:inline-flex;align-items:center;gap:4px;margin-right:4px;}
   .score-symbole .sym{width:10px;height:10px;box-sizing:border-box;border:1.6px solid var(--bestaetigen);display:inline-block;}
   .score-symbole .sym.kreis{border-radius:50%;}

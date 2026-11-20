@@ -72,7 +72,7 @@ ok(await zeileDa() !== vorher, "301: antippen der Anzahl klappt die Filter-Zeile
 if (!(await zeileDa())) { await page.click("[data-kopf-anzahl]"); await sleep(300); }
 const z = await page.evaluate(() => ({ labels: [...document.querySelectorAll("[data-schalter-zeile] .quiz-zeile-label")].map(l => l.textContent).join("|"),
   ueber: document.querySelector("[data-schalter-zeile]").getBoundingClientRect().top < document.querySelector("[data-reihenfolge]").getBoundingClientRect().top }));
-ok(z.labels === "Auswahl|Fällige|Heute" && z.ueber, `301/310: Filter-Zeile „Auswahl · Fällige · Heute“ direkt unter dem Kopf (${z.labels}, ${z.ueber})`);
+ok(z.labels === "Zu lernen|Fällige|Heute" && z.ueber, `301/310: Filter-Zeile „Auswahl · Fällige · Heute“ direkt unter dem Kopf (${z.labels}, ${z.ueber})`);
 // Start-Knopf über die ganze Breite, kein Kasten daneben, kein Klapp-Pfeil
 const st = await page.evaluate(() => { const k = document.querySelector("[data-start-knopf]"), b = document.querySelector(".start-bereich");
   const rk = k.getBoundingClientRect(), rb = b.getBoundingClientRect(); return { breit: rk.width > rb.width - 50, kasten: !!document.querySelector(".start-fortschritt"), pfeil: !!document.querySelector(".schalter-klapp") }; });

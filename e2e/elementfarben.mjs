@@ -44,10 +44,12 @@ await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 const haupt = await variable("haupt");
 const neuBgVorher = await bg("[data-start-knopf]");
 
-// Farbmodus über „🎨 Farbe ändern“ am Start-Knopf
-await page.evaluate(() => { const el = document.querySelector("[data-start-knopf]"); const r = el.getBoundingClientRect();
+// 316: lang auf Start öffnet die Paketwahl – den Farbmodus über „Wie oft“ starten, dann lang auf den Start-Knopf
+await page.evaluate(() => { const el = document.querySelector("[data-abfrageziel]"); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2 })); }); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-info-farbe]").click()); await sleep(500);
+await page.evaluate(() => [...document.querySelectorAll("[data-farbfeld] button")].find(b => b.textContent.trim() === "Schließen")?.click()); await sleep(300);
+await rechtsklickAuf("[data-start-knopf]");
 const knoepfe = await page.evaluate(() => [...document.querySelectorAll("[data-farbfeld-element]")].map(b => b.dataset.farbfeldElement));
 console.log("     Element-Knöpfe:", knoepfe.join(" | "));
 ok(knoepfe.includes("[data-start-knopf]|background-color") && await page.$("[data-farbfeld-rolle]"), "Farbfeld: je Teil „Alle Stellen“ und „Nur dieses Element“");

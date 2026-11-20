@@ -63,13 +63,12 @@ export async function farbZeige(page, sel) {
   return false;
 }
 // Quiz-Tab: Paketgröße wählen (Standard ist „Alle“ = ein Paket); danach den Umfang-Bereich wieder zuklappen
-// 311: lang auf den Start-Knopf → Raster „Alle · Je 5 … Je 50“ in der Tafel
+// 311/316: lang auf den Start-Knopf → Kasten „Alle · 5 … 50“ unter dem Start-Knopf
 export async function paketGroesse(page, n) {
   const warte = ms => new Promise(r => setTimeout(r, ms));
   await page.evaluate(() => { const el = document.querySelector("[data-start-knopf]"); if (!el) return; const r = el.getBoundingClientRect();
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 20, clientY: r.y + 10 })); }); await warte(350);
-  const da = await page.evaluate(n => { const z = n === "alle" ? "Alle" : `Je ${n}`;
-    const b = [...document.querySelectorAll("[data-info-aktion]")].find(b => b.dataset.infoAktion.replace(/^✓ /, "") === z); b?.click(); return !!b; }, String(n));
+  const da = await page.evaluate(n => { const b = document.querySelector(`[data-umfang-wahl="${n}"]`); b?.click(); return !!b; }, String(n));   // 316: Kasten unter dem Start-Knopf
   if (!da) throw new Error(`Paketgröße ${n}: Wahl fehlt (lang auf Start)`);
   await warte(300);
 }
@@ -252,8 +251,13 @@ export async function bereichOeffnen(page) {
   await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k?.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await s(600);
   await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"), r = el.getBoundingClientRect();
     el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await s(400);
-  const da = await page.evaluate(() => { const b = [...document.querySelectorAll("[data-info-aktion]")].find(b => /🎯 Bereich wählen|📝 Vokabeln ändern/.test(b.dataset.infoAktion)); b?.click(); return !!b; });
-  if (!da) throw new Error("„🎯 Bereich wählen…“ fehlt im Kopf-Menü");
+  let da = await page.evaluate(() => { const b = [...document.querySelectorAll("[data-info-aktion]")].find(b => /📝 Vokabeln ändern/.test(b.dataset.infoAktion)); b?.click(); return !!b; });
+  if (!da) {   // 317: Liste – den Bereich wählt lang auf die Anzahl im Kopf
+    await page.mouse.click(5, 830); await s(300);
+    da = await page.evaluate(() => { const b = document.querySelector("[data-kopf-anzahl]"); if (!b) return false; const r = b.getBoundingClientRect();
+      b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); return true; });
+  }
+  if (!da) throw new Error("Bereichswahl nicht erreichbar");
   await s(800);
 }
 // 298: „Bestätigen“ der Bereichswahl; kam sie aus der Tafel, wird dort geladen

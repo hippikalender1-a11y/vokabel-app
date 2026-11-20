@@ -66,7 +66,7 @@ ok(t.kopf === "2 ausgewählt · 10 Vokabeln + 🔁 5", `Kopf: 10 Vokabeln + 🔁
 await page.evaluate(() => document.querySelector('[data-schalter-raster] [data-schalter="grund"]').click()); await sleep(400);
 t = await tafel();
 const titelG = await page.evaluate(() => document.querySelector('[data-schalter-raster] [data-schalter="grund"]')?.closest(".quiz-zeile-zelle")?.querySelector(".quiz-zeile-label")?.textContent);
-ok(t.raster[0] === "grund:2:an" && titelG === "Bereits abgefragte" && t.kopf === "2 ausgewählt · 2 Vokabeln + 🔁 5", `310: „Bereits abgefragte“ 2, Kopf „2 Vokabeln + 🔁 5“ (${titelG}, ${t.kopf})`);
+ok(t.raster[0] === "grund:2:an" && titelG === "Schon geübt" && t.kopf === "2 ausgewählt · 2 Vokabeln + 🔁 5", `310: „Bereits abgefragte“ 2, Kopf „2 Vokabeln + 🔁 5“ (${titelG}, ${t.kopf})`);
 // Kopf antippen → Multiquiz geladen, Schalter bleiben
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]").click()); await sleep(900);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
