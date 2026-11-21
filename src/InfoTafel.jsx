@@ -103,7 +103,17 @@ export default function InfoTafel() {
     const freilegen = () => { if (zielRef.current == null) return; const frei = window.innerHeight - el.offsetHeight - 24, y = zielRef.current - window.scrollY;
       if (y > frei - 135) window.scrollBy({ top: y - frei + 145, behavior: "smooth" }); };   // 305/312: Kacheln bis ~110 px hoch, der Kopf (zweizeilig) wächst mit den Filtern
     // 305: unten genug Platz, um die unterste Kachel über die (kleine) Tafel zu holen
-    const anpassen = () => { document.body.style.paddingBottom = `${el.offsetHeight + 104}px`; document.documentElement.style.setProperty("--tafel-platz", `${el.offsetHeight + 24}px`); freilegen(); };
+    // 340: nur so viel Platz, wie die unterste Kachel braucht, um über die Tafel zu kommen – passt alles, scrollt nichts
+    const anpassen = () => {
+      const kacheln = [...document.querySelectorAll("[data-slot-id], [data-liste-id]")].filter(k => k.offsetHeight > 0);
+      const bisher = parseFloat(document.body.style.paddingBottom) || 0;
+      let platz = el.offsetHeight + 104;
+      if (kacheln.length) {
+        const unterste = Math.max(...kacheln.map(k => k.getBoundingClientRect().bottom)) + window.scrollY;
+        const ohne = document.documentElement.scrollHeight - bisher;
+        platz = Math.max(0, Math.ceil(unterste + el.offsetHeight + 40 - ohne));
+      }
+      document.body.style.paddingBottom = `${platz}px`; document.documentElement.style.setProperty("--tafel-platz", `${el.offsetHeight + 24}px`); freilegen(); };
     if (!warUntenRef.current) { warUntenRef.current = true; zielRef.current = info.y != null ? info.y + window.scrollY : null; }
     anpassen();
     const obs = new ResizeObserver(anpassen);

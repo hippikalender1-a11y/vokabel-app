@@ -59,7 +59,6 @@ await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 await kontext(kachel("s4")); await sleep(600);
 const tafelLage = await page.evaluate(() => { const k = document.querySelector('[data-slot-id="s4"]').getBoundingClientRect(), t = document.querySelector("[data-auswahl-tafel]").getBoundingClientRect(); return { k: Math.round(k.bottom), t: Math.round(t.top), pad: document.body.style.paddingBottom }; });
 ok(tafelLage.k <= tafelLage.t, `unterste Kachel über die Tafel gescrollt (Kachel unten ${tafelLage.k}, Tafel oben ${tafelLage.t})`);
-ok(parseInt(tafelLage.pad) > 100, `unten Platz zum Hochscrollen (${tafelLage.pad})`);
 await tafelZu();
 ok(await page.evaluate(() => document.body.style.paddingBottom === ""), "Tafel zu: Platz unten wieder weg");
 await page.setViewport({ width: 390, height: 844, hasTouch: true, isMobile: true }); await sleep(300);
@@ -68,6 +67,7 @@ await page.evaluate(() => window.scrollTo(0, 0)); await sleep(200);
 // ── Auswahl-Tafel ──
 await kontext(kachel("s1"));
 ok((await tafel())?.startsWith("Teil 1"), `Lang-Druck: Auswahl-Tafel unten mit „Teil 1“ (${await tafel()})`);
+ok(await page.evaluate(() => document.body.style.paddingBottom === "0px"), `340: alles passt über die Tafel – unten kein zusätzlicher Platz (${await page.evaluate(() => document.body.style.paddingBottom)})`);
 ok((await menue()).includes("✎ Umbenennen") && !(await menue()).includes("☑ Auswählen"), "ein Quiz: ihr Menü (ohne „☑ Auswählen“ – sie ist schon ausgewählt)");
 ok(await gewaehlt() === "s1", "Teil 1 ist ausgewählt");
 await kontext(kachel("s2"));

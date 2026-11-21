@@ -23,7 +23,7 @@ import { gruppenKurz as gruppenKurzTeil, listeOeffnenKopf as listeOeffnenKopfTei
 import { renderFarbschemata as renderFarbschemataTeil } from "./bereiche/farbenAnsicht.jsx";
 import { auswahlOrdnerZelle as auswahlOrdnerZelleTeil, listenAuswahlPfad as listenAuswahlPfadTeil, listenNavi as listenNaviTeil, listenRasterPlaetze as listenRasterPlaetzeTeil, ordnerNavi as ordnerNaviTeil, pfadTeile as pfadTeileTeil, quizListenUmschalter as quizListenUmschalterTeil, renderListenRaster as renderListenRasterTeil, renderSlotBereiche as renderSlotBereicheTeil, wahlLeiste as wahlLeisteTeil, schalterRaster as schalterRasterTeil } from "./bereiche/kacheln.jsx";
 import { DialogErstellenFenster, DialogGruppenAenderungsDialog, DialogInGruppe, DialogJsonExport, DialogKlammern, DialogLernenEinst, DialogListeZuruecksetzen, DialogListeZusammenfuehren, DialogNeueSession, DialogSaetze, DialogSlotSpeichern, DialogSlotUmbenennen, DialogStimmenHilfe, DialogStufenRegeln, DialogSynonyme, DialogVorlesen, KiPromptAnsicht } from "./bereiche/dialoge.jsx";
-import { klappeFreieZu as klappeFreieZuTeil, ordneAn as ordneAnTeil, setzeMinSpalten as setzeMinSpaltenTeil, tt as ttTeil, ttFeld as ttFeldTeil, wechsleStimme as wechsleStimmeTeil } from "./logik/allgemein.jsx";
+import { ordneAn as ordneAnTeil, setzeMinSpalten as setzeMinSpaltenTeil, tt as ttTeil, ttFeld as ttFeldTeil, wechsleStimme as wechsleStimmeTeil } from "./logik/allgemein.jsx";
 import { auswahlTafel as auswahlTafelTeil, benenneListenOrdnerUm as benenneListenOrdnerUmTeil, dupliziereListe as dupliziereListeTeil, erstelleListe as erstelleListeTeil, gruppiereListen as gruppiereListenTeil, importOrdnerWahl as importOrdnerWahlTeil, importZielOrdner as importZielOrdnerTeil, legeGezogenAb as legeGezogenAbTeil, listenKopieName as listenKopieNameTeil, listenOrdnerDaten as listenOrdnerDatenTeil, loeschen as loeschenTeil, loeseListenOrdnerAuf as loeseListenOrdnerAufTeil, oeffneModal as oeffneModalTeil, oeffneSynFenster as oeffneSynFensterTeil, setzeListeZurueck as setzeListeZurueckTeil, setzeListenSprache as setzeListenSpracheTeil, setzeSpaltenArt as setzeSpaltenArtTeil, speichereEinst as speichereEinstTeil, speichereIndex as speichereIndexTeil, speichereSpaltenname as speichereSpaltennameTeil, synPortion as synPortionTeil, synZiel as synZielTeil, uebernehmeSynonyme as uebernehmeSynonymeTeil, umbenennen as umbenennenTeil, verweilGeht as verweilGehtTeil, wechsleSprache as wechsleSpracheTeil, zeigeAuswahlTafel as zeigeAuswahlTafelTeil } from "./logik/listen.jsx";
 import { fuehreListenZusammen as fuehreListenZusammenTeil, loescheVokabel as loescheVokabelTeil, nimmVokabelHeraus as nimmVokabelHerausTeil, schliesseVokabelBearbeiten as schliesseVokabelBearbeitenTeil, setzeHerausgenommen as setzeHerausgenommenTeil, speichereVokabelBearbeitung as speichereVokabelBearbeitungTeil } from "./logik/vokabeln.jsx";
 import { bestaetigeDateiExport as bestaetigeDateiExportTeil, exportStandardName as exportStandardNameTeil, generiereKombiniertenExport as generiereKombiniertenExportTeil, gruppenQuizPasst as gruppenQuizPasstTeil, handleTabWechsel as handleTabWechselTeil, kopiereListen as kopiereListenTeil, oeffneDateiExport as oeffneDateiExportTeil, starteGruppenQuiz as starteGruppenQuizTeil, teileAlsDatei as teileAlsDateiTeil } from "./logik/export.jsx";
@@ -395,15 +395,8 @@ export default function VokabelApp() {
     return () => obs.disconnect();
   }, []);
 
-  // ── Rolladen-Bereiche: Zuklappen beim Weiterscrollen, mit Bremse am Bereichsende ──
-  // Ein offener Bereich klappt erst zu, wenn sein Ende sichtbar war und das Scrollen dort
-  // angehalten hat ("freigegeben"). Schwung, der unfreigegeben übers Ende hinausläuft,
-  // klappt nicht zu, sondern gleitet zurück, bis das Ende wieder unten sichtbar ist.
-  const [zuklappHinweis, setZuklappHinweis] = useState(false);
-  const zuklappFreiRef = useRef(new Set());
-  const kontexteRef = useRef(() => []);
   // Bereich-Modus mit offener Vokabelliste: nur Kopfzeile, „Alle | Bereich“ und die Liste – der Rest des Quiz ist ausgeblendet
-  // (früh berechnet: Closures wie kontexteRef lesen es auch nach Renders, die vorzeitig zurückkehren)
+  // (früh berechnet: Closures lesen es auch nach Renders, die vorzeitig zurückkehren)
   const quizVokMax = tab === "quiz" && quizTabListen.length > 0 && quizListeAufgeklappt && quizBereichTyp === "bereich"
     && !aufteilen && !slotSektionAufgeklappt;
   // sichtbarer Ausschnitt (iOS: mit Tastatur kleiner und ggf. verschoben) – die maximierte Liste liegt fest darin
@@ -484,51 +477,6 @@ export default function VokabelApp() {
   }, [offenerKnopf]);   // eslint-disable-line react-hooks/exhaustive-deps
   const leuchtet = k => blitz[k] && !offenerKnopf ? " leuchten" : "";
   useEffect(() => { if (tab === "quiz") window.scrollTo(0, 0); }, [quizFokus]);   // Bereich auf/zu: von oben
-  kontexteRef.current = () => {
-    const q = headerH + slotH + listenauswahlHeaderH;
-    return [
-      ["slot",      slotContainerRef,            headerH + slotH,                         () => setSlotSektionAufgeklappt(false)],
-      ["info",      infoKontextContainerRef,     infoHeaderRef.current?.getBoundingClientRect().bottom ?? 0, () => setInfoModus("uebersicht"), infoModus !== "uebersicht"],
-    ].filter(([, ref, , , offen = true]) => offen && ref.current && ref.current.offsetHeight > 0)
-     .map(([key, ref, linie, schliessen]) => ({ key, el: ref.current, linie, schliessen }));
-  };
-  const haltPruefenRef = useRef(() => {});
-  haltPruefenRef.current = () => {
-    if (dropdownImmuneRef.current) return;
-    const frei = new Set();
-    let zurueck = null, hinweis = false;
-    for (const k of kontexteRef.current()) {
-      const r = k.el.getBoundingClientRect();
-      if (r.bottom > window.innerHeight) continue;                 // Ende noch nicht sichtbar
-      if (r.bottom > k.linie || zuklappFreiRef.current.has(k.key)) {
-        frei.add(k.key);
-        if (r.top < k.linie) hinweis = true;                       // langer, gescrollter Bereich
-      } else if (zurueck === null) zurueck = r.bottom;             // Schwung zu weit, ohne Freigabe
-    }
-    if (zurueck !== null) window.scrollBy({ top: zurueck - (window.innerHeight - 96), behavior: "smooth" });
-    zuklappFreiRef.current = frei;
-    setZuklappHinweis(hinweis);
-  };
-  function klappeFreieZu(...args) { return klappeFreieZuTeil({ kontexteRef, setZuklappHinweis, zuklappFreiRef }, ...args); }
-  useEffect(() => {
-    let timer = null;
-    const onScroll = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => haltPruefenRef.current(), 200);
-      if (dropdownImmuneRef.current) return;
-      kontexteRef.current().forEach(k => {
-        if (zuklappFreiRef.current.has(k.key) && k.el.getBoundingClientRect().bottom <= k.linie) k.schliessen();
-      });
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => { clearTimeout(timer); window.removeEventListener('scroll', onScroll); };
-  }, []);
-  // Beim Auf-/Zuklappen neu prüfen (kurze Bereiche sind sofort freigegeben)
-  useEffect(() => {
-    const t = setTimeout(() => haltPruefenRef.current(), 350);
-    return () => clearTimeout(t);
-  }, [tab, slotSektionAufgeklappt, quizListeAufgeklappt, quizAbfrageModusAufgeklappt, quizReihenfolgeAufgeklappt,
-      quizEinstellungenAufgeklappt, quizSessionAufgeklappt, infoModus]);
 
 
   // Aufteilen endet, sobald andere Listen oder eine gespeicherte Konfiguration gewählt werden
@@ -3640,14 +3588,6 @@ export default function VokabelApp() {
         </div>
       )}
 
-      {zuklappHinweis && !quiz && (
-        <button {...tt("Bereich zuklappen")} onClick={klappeFreieZu}
-          style={{position:"fixed", left:"50%", bottom:16, transform:"translateX(-50%)", zIndex:50,
-            background:"var(--haupt)", color:"var(--auf-haupt)", border:"none", borderRadius:20, padding:"7px 14px",
-            fontSize:"0.75rem", fontWeight:600, fontFamily:"inherit", boxShadow:"0 2px 10px rgba(0,0,0,0.2)", cursor:"pointer", whiteSpace:"nowrap"}}>
-          ▲ Weiter ziehen oder hier tippen zum Zuklappen
-        </button>
-      )}
       {rueckgaengig && (
         <button data-rueckgaengig data-auswahl-durchlass {...tt("Das letzte Verschieben zurücknehmen – verschwindet mit der nächsten Berührung")}
           onClick={macheRueckgaengig}

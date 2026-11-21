@@ -4047,3 +4047,17 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
 - 337 UMGESETZT: 329 zurückgenommen – die Listen-Auswahl hat wieder ihre Info-Sektion unter dem Kopf (wie bei Quiz).
 - 338 UMGESETZT: Kachel-Menü (lang auf die Listen-Kachel) – „📂 Liste öffnen“ so hoch wie die Knöpfe im Kopf-Menü
   (gleiche Innenabstände und Schriftgröße); Von–Bis und Ablage bleiben klein.
+- 339 UMGESETZT: Bereichsknopf rechts im Kopf misst am Gespeicherten. Ein geladenes Quiz, das mit einem Bereich gespeichert
+  ist (z. B. „Englisch 6 (151 - 175)“): sind alle Vokabeln des Quiz gewählt, steht dort „Alle“ (statt „Auswahl“) und der Knopf
+  ist nicht grün. Erst eine davon abweichende Auswahl zeigt „Auswahl“ und färbt ihn grün (ändert 336). Bei Listen ist das
+  Gespeicherte die ganze Liste (bleibt wie bisher).
+- 340 UMGESETZT (Fehler): Quiz-Auswahl im Mehrfach-Modus (lang auf eine Kachel, Kopf „… laden“, Tafel unten) – das Raster
+  lässt sich unter dem Kopf hindurchscrollen bzw. ist hochgeschoben, obwohl genug Platz auf dem Bildschirm ist (oberste
+  Kachelreihe verschwindet unter der Pfad-Zeile). Im normalen Auswahl-Modus steht das Raster fest. Soll im Mehrfach-Modus
+  genauso fest stehen. Ursache: pauschal 130 px Platz unten für die Tafel – jetzt nur so viel, wie die unterste Kachel braucht,
+  um über der Tafel zu stehen (InfoTafel anpassen).
+- 341 ERLEDIGT durch 342 (Fehler): Am unteren Bildschirmrand überlappen sich Knöpfe – die Tafel-Knöpfe „🗂️ Ablage ›“ / „↔ Von–Bis“
+  liegen über dem Knopf „▲ Weitere … einklappen“. Dürfen sich nicht überdecken (einer weicht aus bzw. wird ausgeblendet).
+- 342 UMGESETZT: Zuklappen durch Weiterziehen entfällt ganz – Hinweis „▲ Weiter ziehen oder hier tippen zum Zuklappen“,
+  das Zuklappen von Auswahl und Info beim Darüberhinaus-Ziehen und das Zurückschieben („Schwung zu weit“ → scrollBy).
+  Auswahl/Info gehen nur noch per Tippen auf den Kopf zu. Das Zurückschieben ist ein Verdächtiger für 340.

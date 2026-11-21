@@ -103,9 +103,3 @@ export function tt(app, text, aktionen, opts = {}) {
 export function ttFeld(app, text) {
   const {  } = app; return text ? { title: text, "data-info": text } : {}; }
 
-export function klappeFreieZu(app) {
-  const { kontexteRef, setZuklappHinweis, zuklappFreiRef } = app;
-    kontexteRef.current().forEach(k => k.schliessen());
-    zuklappFreiRef.current = new Set();
-    setZuklappHinweis(false);
-  }

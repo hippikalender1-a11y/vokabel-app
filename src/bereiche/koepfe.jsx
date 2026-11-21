@@ -236,11 +236,14 @@ export function renderSlotKopf(app, statistik) {
           erklaerung: `${tb ? "Bereich" : "Alle Vokabeln"} der gewählten Liste${ids.length > 1 ? "n" : ""}: ${n} – ${klapp ? "antippen: Filter ein-/ausblenden; " : ""}lang drücken: Bereich wählen` };
       }
       if (!statistik && !quizTabListen.length) return null;
-      const text = bereichAktiv && !multi ? "Auswahl" : "Alle";   // Multiquiz: kein eigener Bereich; 309: ohne Nr.
+      // 339: ein gespeichertes Quiz misst am Gespeicherten – seine gespeicherte Auswahl ist „Alle“, nur Abweichungen sind „Auswahl“
+      const wieGespeichert = gespeichert && (statistik ? (() => { const k = getSlotEintrag("gespeichert", slot.id)?.konfiguration;
+        const g = k?.bereichTyp === "bereich" ? (k.vokabelAuswahl || []) : []; return g.length === statistikCheckboxAuswahl.size && g.every(id => statistikCheckboxAuswahl.has(id)); })() : !geaendert);
+      const text = bereichAktiv && !multi && !wieGespeichert ? "Auswahl" : "Alle";   // Multiquiz: kein eigener Bereich; 309: ohne Nr.
       return { n: voks.length, text,
         lang: multi ? null : statistik ? (statistikListenIds ? () => waehleBereichGeladen("statistik") : null) : () => waehleBereichGeladen("quiz"),
         tipp: statistik ? () => setStatistikFilter(new Set(["negativ", "nie", "arbeit", "gelernt"])) : () => setSchalterZeileZu(z => !z),
-        erklaerung: `${bereichAktiv ? "Bereich" : "Alle Vokabeln"}: ${voks.length} – ${statistik ? "antippen: alle Gruppen einblenden" : "antippen: Filter (Neue, Negative, Gelernte, Heute, Fällige) ein-/ausblenden"}${!multi && (statistik ? statistikListenIds : true) ? "; lang drücken: Bereich wählen" : ""}` };
+        erklaerung: `${text === "Auswahl" ? "Bereich" : "Alle Vokabeln"}: ${voks.length} – ${statistik ? "antippen: alle Gruppen einblenden" : "antippen: Filter (Neue, Negative, Gelernte, Heute, Fällige) ein-/ausblenden"}${!multi && (statistik ? statistikListenIds : true) ? "; lang drücken: Bereich wählen" : ""}` };
     })();
     return (
       <div ref={slotSektionRef} data-slot-kopf={zu ? (gruen ? "gruen" : "zu") : "offen"} className={`slot-kopf${gruen ? " gruen" : ""}`}
