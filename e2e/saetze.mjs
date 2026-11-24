@@ -73,6 +73,8 @@ fs.writeFileSync(datei, "1 // Je rentre à la *maison*. // Ich gehe nach Hause.\
 const input = await page.$("[data-satz-datei]");
 await input.uploadFile(datei); await sleep(800);
 ok(/3 Sätze für 3 Vokabeln/.test(await page.evaluate(() => document.querySelector("[data-satz-meldung]")?.textContent)), "„📄 Datei laden“: 3 Sätze übernommen");
+{ const z = await page.evaluate(() => ({ liste: document.querySelector("[data-fenster-liste]")?.textContent || "", meldung: document.querySelector("[data-satz-meldung]")?.textContent || "" }));
+  ok(z.liste.length > 3 && z.meldung.startsWith(`📄 saetze_test.txt → ${z.liste}`), `343: Ziel-Liste groß im Fenster, Meldung „Datei → Liste“ (${z.meldung.split("\n")[0]})`); }
 await browser.defaultBrowserContext().overridePermissions(URL, ["clipboard-read", "clipboard-write", "clipboard-sanitized-write"]);
 await page.evaluate(() => navigator.clipboard.writeText("4 // Nous *mangeons* ensemble. // Wir essen zusammen."));
 await page.click("[data-satz-einfuegen]"); await sleep(600);

@@ -28,7 +28,8 @@ export function satzPortion(app, listeId, saetze, n) {
       prompt: satzPrompt(sprachName, teil.map(v => `${v.id} // ${ohneHinweis(v[fremd].wert)} // ${ohneHinweis(v[deutsch]?.wert || "")}`), n, alsDatei) };
   }
 
-export async function uebernehmeSaetze(app, text) {
+// 343: quelle = Herkunft (Dateinamen / Zwischenablage) – die Meldung nennt Herkunft → Liste
+export async function uebernehmeSaetze(app, text, quelle = "✍️ Textfeld") {
   const { ladeSatzStand, listenSaetze, satzFenster, setListenSaetze, setSatzFenster } = app;
     const f = satzFenster;
     if (!f) return;
@@ -46,7 +47,7 @@ export async function uebernehmeSaetze(app, text) {
     ladeSatzStand();   // 202
     const saetze = await saetzeLaden(f.listeId);
     setListenSaetze({ listeId: f.listeId, saetze });
-    setSatzFenster({ ...f, antwort: "", meldung: Object.keys(eintraege).length ? `${anzSaetze} Sätze für ${Object.keys(eintraege).length} Vokabeln übernommen.` : "Keine passenden Zeilen gefunden – Format „ID // Satz // Übersetzung“ mit *Wort*." });
+    setSatzFenster({ ...f, antwort: "", meldung: `${quelle} → 📂 ${liste?.name || ""}\n` + (Object.keys(eintraege).length ? `${anzSaetze} Sätze für ${Object.keys(eintraege).length} Vokabeln übernommen.` : "Keine passenden Zeilen gefunden – Format „ID // Satz // Übersetzung“ mit *Wort*.") });
   }
 
 // eslint-disable-line react-hooks/exhaustive-deps

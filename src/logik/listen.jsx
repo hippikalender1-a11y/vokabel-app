@@ -290,7 +290,8 @@ export function synPortion(app, listeId) {
 export function oeffneSynFenster(app, listeId) {
   const { setModal, setSynFenster } = app; setSynFenster({ listeId, antwort: "", meldung: "" }); setModal("synonyme"); }
 
-export function uebernehmeSynonyme(app, text) {
+// 343: quelle wie bei uebernehmeSaetze
+export function uebernehmeSynonyme(app, text, quelle = "✍️ Textfeld") {
   const { aktiveListeId, listenIndex, setAktiveListe, setSynFenster, speichereIndex, synFenster, synZiel } = app;
     const f = synFenster;
     if (!f) return;
@@ -307,7 +308,7 @@ export function uebernehmeSynonyme(app, text) {
       if (f.listeId === aktiveListeId) setAktiveListe(upd);
       speichereIndex(listenIndex);
     }
-    setSynFenster({ ...f, antwort: "", meldung: n ? `Synonyme für ${n} Vokabeln übernommen.` : "Keine passenden Zeilen gefunden – Format „ID // Synonym1, Synonym2“." });
+    setSynFenster({ ...f, antwort: "", meldung: `${quelle} → 📂 ${liste.name}\n` + (n ? `Synonyme für ${n} Vokabeln übernommen.` : "Keine passenden Zeilen gefunden – Format „ID // Synonym1, Synonym2“.") });
   }
 
 export function oeffneModal(app, typ, extra) {

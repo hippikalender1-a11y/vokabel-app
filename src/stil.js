@@ -63,6 +63,7 @@ export const CSS_BASIS = `
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-start;justify-content:center;z-index:100;padding:max(16px, env(safe-area-inset-top)) 16px 16px;overflow-y:auto;}
   .modal{background:var(--dialog);color:var(--dialog-schrift);border-radius:16px;width:100%;max-width:500px;padding:24px;margin-top:4vh;box-sizing:border-box;}
   .modal-titel{font-size:1.1rem;font-weight:700;margin-bottom:16px;}
+  .modal-liste{font-size:1.05rem;font-weight:700;padding:10px 12px;margin:-6px 0 10px;border-radius:10px;background:var(--haupt-zart);border-left:4px solid var(--haupt);color:var(--text-stark);overflow-wrap:anywhere;}   /* 343: Ziel-Liste im Sätze-/Synonyme-Fenster */
   .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
   .leer{text-align:center;padding:48px 24px;color:var(--text2);}
   .leer-text{font-size:0.9rem;line-height:1.5;margin-top:8px;}

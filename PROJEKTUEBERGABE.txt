@@ -4061,3 +4061,21 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
 - 342 UMGESETZT: Zuklappen durch Weiterziehen entfällt ganz – Hinweis „▲ Weiter ziehen oder hier tippen zum Zuklappen“,
   das Zuklappen von Auswahl und Info beim Darüberhinaus-Ziehen und das Zurückschieben („Schwung zu weit“ → scrollBy).
   Auswahl/Info gehen nur noch per Tippen auf den Kopf zu. Das Zurückschieben ist ein Verdächtiger für 340.
+- 343 UMGESETZT: Fenster „✨ Beispielsätze ergänzen“ (und „≈ Synonyme ergänzen“) – deutlich zeigen, für welche Liste eingelesen wird.
+  Bisher steht der Name nur klein und grau in der Stand-Zeile („A1 · 08 Farben & Formen: 25 von 25 …“). Idee: Listenname
+  groß unter dem Titel; die Meldung nennt Liste und Datei („250 Sätze aus ‚A1-08_…_saetze.txt‘ in ‚A1 · 08 Farben & Formen‘
+  übernommen“).
+  Umgesetzt: Kasten „📂 Listenname“ groß unter dem Titel (.modal-liste), Stand-Zeile ohne Namen; die Meldung beginnt mit
+  „📄 Datei(en) → 📂 Liste“ (bzw. „📋 Zwischenablage“ / „✍️ Textfeld“), darunter das Ergebnis.
+- 344 GESAMMELT (zurückgestellt): Beispielsätze für viele Listen auf einmal statt Liste für Liste. Problem: Die Satzdateien
+  („ID // Satz // Übersetzung“) kennen nur die Vokabel-ID innerhalb einer Liste, nicht die Liste selbst.
+  Möglichkeiten:
+  a) Kopfzeile je Liste in der Satzdatei („# A1 · 08 Farben & Formen {fr}“, wie beim TXT-Import). Die App ordnet jeden
+     Abschnitt der gleichnamigen Liste zu. Mehrere Dateien oder eine Sammeldatei je Stufe in einem Rutsch einlesen
+     (z. B. bei Listen → Import oder im Kopf-Menü). Danach eine Übersicht: welche Liste wie viele Sätze bekommen hat,
+     welche Abschnitte keine passende Liste fanden.
+  b) Sätze gleich in der Listen-JSON mitliefern (je Vokabel „saetze“). Der Listen-Import übernimmt sie mit – Liste und
+     Sätze kommen in einer Datei, kein zweiter Schritt.
+  c) Zuordnung über den Dateinamen (A1-08_… ↔ „A1 · 08 …“) – unsicher, eher nicht.
+  Empfehlung: b) für die fertigen Wortschatz-Dateien, a) für Sätze, die man später nachliefert. Für die
+  Französisch-Listen (A1/A2) die Dateien dann entsprechend neu bauen (baue.py).

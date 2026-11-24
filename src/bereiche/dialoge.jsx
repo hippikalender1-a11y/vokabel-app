@@ -697,6 +697,9 @@ export function DialogJsonExport(app) {
   );
 }
 
+// 343: Herkunft für die Meldung – „📄 a.txt, b.txt“
+const dateiQuelle = dateien => `📄 ${dateien.map(d => d.name).join(", ")}`;
+
 // aus App.jsx: {modal === "saetze" && satzFenster && …}
 export function DialogSaetze(app) {
   const { dateiName, einstellungen, listenSaetze, satzFenster, satzPortion, setModal, setSatzFenster, speichereEinst, teileAlsDatei, tt, uebernehmeSaetze } = app;
@@ -710,7 +713,8 @@ export function DialogSaetze(app) {
           <div className="overlay" onClick={() => setModal(null)}>
             <div className="modal" data-saetze-fenster onClick={e => e.stopPropagation()} style={{maxHeight:"90vh", overflowY:"auto"}}>
               <div className="modal-titel">✨ Beispielsätze ergänzen</div>
-              <p style={{fontSize:"0.85rem", color:"var(--text2)", margin:"0 0 10px"}} data-saetze-stand>{portion.liste.name}: {mitSaetzen} von {portion.gesamt} Vokabeln haben {n} Sätze</p>
+              <div className="modal-liste" data-fenster-liste {...tt("Die Sätze werden in diese Liste übernommen")}>📂 {portion.liste.name}</div>
+              <p style={{fontSize:"0.85rem", color:"var(--text2)", margin:"0 0 10px"}} data-saetze-stand>{mitSaetzen} von {portion.gesamt} Vokabeln haben {n} Sätze</p>
               <div className="inp-label">Sätze je Vokabel</div>
               <div style={{display:"flex", gap:6, marginBottom:12}}>
                 {SATZ_ANZAHLEN.map(a => <button key={a} className={`typ-btn${a === n ? " aktiv" : ""}`} data-satz-anzahl={a}
@@ -742,14 +746,14 @@ export function DialogSaetze(app) {
                 <div className="inp-label">2. Antwort der KI übernehmen</div>
                 <div style={{display:"flex", gap:6, marginBottom:6, flexWrap:"wrap"}}>
                   <button className="btn btn-ghost btn-sm" data-satz-einfuegen
-                    onClick={async () => { try { const t = await navigator.clipboard.readText(); if (t) await uebernehmeSaetze(t); else setSatzFenster(f => ({ ...f, meldung: "Die Zwischenablage ist leer." })); }
+                    onClick={async () => { try { const t = await navigator.clipboard.readText(); if (t) await uebernehmeSaetze(t, "📋 Zwischenablage"); else setSatzFenster(f => ({ ...f, meldung: "Die Zwischenablage ist leer." })); }
                       catch { setSatzFenster(f => ({ ...f, meldung: "Kein Zugriff auf die Zwischenablage – bitte ins Textfeld einfügen." })); } }}
                     {...tt("Antwort direkt aus der Zwischenablage übernehmen")}>📋 Einfügen</button>
                   <label className="btn btn-ghost btn-sm" style={{cursor:"pointer"}} {...tt("Eine oder mehrere Textdateien der KI einlesen (Format „ID // Satz // Übersetzung“)")}>
                     📄 Datei laden
                     <input type="file" data-satz-datei accept=".txt,.csv,text/plain" multiple style={{display:"none"}}
                       onChange={async e => { const dateien = [...(e.target.files || [])]; e.target.value = "";
-                        const texte = await Promise.all(dateien.map(d => d.text())); await uebernehmeSaetze(texte.join("\n")); }}/>
+                        const texte = await Promise.all(dateien.map(d => d.text())); await uebernehmeSaetze(texte.join("\n"), dateiQuelle(dateien)); }}/>
                   </label>
                 </div>
                 <textarea className="inp" data-satz-antwort rows={3} value={satzFenster.antwort} placeholder="… oder hier einfügen: 12 // Je vais à la *maison*. // Ich gehe nach Hause."
@@ -757,7 +761,7 @@ export function DialogSaetze(app) {
                 <button className="btn btn-primary" data-satz-uebernehmen disabled={!satzFenster.antwort.trim()} style={{width:"100%"}} onClick={() => uebernehmeSaetze()}
                   {...tt("Sätze übernehmen – danach steht hier die nächste Portion")}>Übernehmen</button>
               </>)}
-              {satzFenster.meldung && <div data-satz-meldung style={{marginTop:10, fontSize:"0.85rem", fontWeight:600, color:"var(--text)"}}>{satzFenster.meldung}</div>}
+              {satzFenster.meldung && <div data-satz-meldung style={{marginTop:10, fontSize:"0.85rem", fontWeight:600, color:"var(--text)", whiteSpace:"pre-line", overflowWrap:"anywhere"}}>{satzFenster.meldung}</div>}
               <div className="modal-actions"><button className="btn btn-ghost" onClick={() => setModal(null)} {...tt("Fenster schließen")}>Schließen</button></div>
             </div>
           </div>
@@ -777,8 +781,9 @@ export function DialogSynonyme(app) {
           <div className="overlay" onClick={() => setModal(null)}>
             <div className="modal" data-syn-fenster onClick={e => e.stopPropagation()} style={{maxHeight:"90vh", overflowY:"auto"}}>
               <div className="modal-titel">≈ Synonyme ergänzen</div>
+              <div className="modal-liste" data-fenster-liste {...tt("Die Synonyme werden in diese Liste übernommen")}>📂 {portion.liste.name}</div>
               <p style={{fontSize:"0.85rem", color:"var(--text2)", margin:"0 0 10px"}} data-syn-stand>
-                {portion.liste.name}: {portion.gesamt - portion.offen} von {portion.gesamt} Vokabeln haben Synonyme{portion.ziel ? ` · Spalte ${portion.ziel.neu ? `${portion.ziel.typ} (wird „Synonyme“)` : (portion.liste.spalten[portion.ziel.typ]?.name || portion.ziel.typ)}` : ""}</p>
+                {portion.gesamt - portion.offen} von {portion.gesamt} Vokabeln haben Synonyme{portion.ziel ? ` · Spalte ${portion.ziel.neu ? `${portion.ziel.typ} (wird „Synonyme“)` : (portion.liste.spalten[portion.ziel.typ]?.name || portion.ziel.typ)}` : ""}</p>
               {!portion.ziel ? <div style={{fontWeight:700, color:"var(--falsch)", marginBottom:12}} data-syn-kein-platz>Beide Info-Spalten sind belegt – eine leeren oder als „Synonyme“ einstellen.</div>
               : portion.offen === 0 ? <div style={{fontWeight:700, color:"var(--richtig)", marginBottom:12}} data-syn-fertig>✓ Alle Vokabeln haben Synonyme.</div> : (<>
                 <div className="toggle-btn" style={{display:"flex", marginBottom:10}}>
@@ -805,14 +810,14 @@ export function DialogSynonyme(app) {
                 <div className="inp-label">2. Antwort der KI übernehmen</div>
                 <div style={{display:"flex", gap:6, marginBottom:6, flexWrap:"wrap"}}>
                   <button className="btn btn-ghost btn-sm" data-syn-einfuegen
-                    onClick={async () => { try { const x = await navigator.clipboard.readText(); if (x) uebernehmeSynonyme(x); else setSynFenster(f => ({ ...f, meldung: "Die Zwischenablage ist leer." })); }
+                    onClick={async () => { try { const x = await navigator.clipboard.readText(); if (x) uebernehmeSynonyme(x, "📋 Zwischenablage"); else setSynFenster(f => ({ ...f, meldung: "Die Zwischenablage ist leer." })); }
                       catch { setSynFenster(f => ({ ...f, meldung: "Kein Zugriff auf die Zwischenablage – bitte ins Textfeld einfügen." })); } }}
                     {...tt("Antwort direkt aus der Zwischenablage übernehmen")}>📋 Einfügen</button>
                   <label className="btn btn-ghost btn-sm" style={{cursor:"pointer"}} {...tt("Eine oder mehrere Textdateien der KI einlesen (Format „ID // Synonym1, Synonym2“)")}>
                     📄 Datei laden
                     <input type="file" data-syn-datei accept=".txt,.csv,text/plain" multiple style={{display:"none"}}
                       onChange={async e => { const dateien = [...(e.target.files || [])]; e.target.value = "";
-                        const texte = await Promise.all(dateien.map(d => d.text())); uebernehmeSynonyme(texte.join("\n")); }}/>
+                        const texte = await Promise.all(dateien.map(d => d.text())); uebernehmeSynonyme(texte.join("\n"), dateiQuelle(dateien)); }}/>
                   </label>
                 </div>
                 <textarea className="inp" data-syn-antwort rows={3} value={synFenster.antwort} placeholder="… oder hier einfügen: 12 // start, begin, head"
@@ -820,7 +825,7 @@ export function DialogSynonyme(app) {
                 <button className="btn btn-primary" data-syn-uebernehmen disabled={!synFenster.antwort.trim()} style={{width:"100%"}} onClick={() => uebernehmeSynonyme()}
                   {...tt("Synonyme übernehmen – danach steht hier die nächste Portion")}>Übernehmen</button>
               </>)}
-              {synFenster.meldung && <div data-syn-meldung style={{marginTop:10, fontSize:"0.85rem", fontWeight:600, color:"var(--text)"}}>{synFenster.meldung}</div>}
+              {synFenster.meldung && <div data-syn-meldung style={{marginTop:10, fontSize:"0.85rem", fontWeight:600, color:"var(--text)", whiteSpace:"pre-line", overflowWrap:"anywhere"}}>{synFenster.meldung}</div>}
               <div className="modal-actions"><button className="btn btn-ghost" onClick={() => setModal(null)} {...tt("Fenster schließen")}>Schließen</button></div>
             </div>
           </div>
