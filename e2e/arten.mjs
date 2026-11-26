@@ -66,14 +66,14 @@ ok(!/Akzente/.test(await modusName()), "Übersetzung ohne Akzente-Modus (gemisch
 
 // Ü: Reihenfolge ändern
 await page.click("[data-reihenfolge]"); await sleep(300);
-await clickText(".toggle-opt", "Zufällig", true); await sleep(300);   // Wahl antippen schließt
-ok(await reihenfolge() === "Zufällig", "Übersetzung: Reihenfolge auf Zufällig gestellt");
+await clickText(".toggle-opt", "Schlechteste zuerst", true); await sleep(700);   // Wahl antippen schließt (352: Standard ist Zufällig, geladen Listenplatz)
+ok(await reihenfolge() === "Schlechteste zuerst", `Übersetzung: Reihenfolge auf Schlechteste zuerst gestellt (${await reihenfolge()})`);
 
 // D: eigene Einstellungen (Standard), Diktat-Konfiguration
 await waehleArt("diktat");
 console.log("     Modus D:", await modusName());
 ok(await art() === "diktat" && await modusName() === "Diktat", "D: Diktat");
-ok(await reihenfolge() === "Schlechteste zuerst", `D: eigene Reihenfolge (Standard Schlechteste, ist ${await reihenfolge()})`);
+ok(await reihenfolge() === "Zufällig", `D: eigene Reihenfolge (Standard Zufällig, ist ${await reihenfolge()})`);
 if (!(await page.evaluate(() => /Diktat-Spalte/.test(document.body.innerText)))) await page.click("[data-abfragemodus]");
 await sleep(300);
 ok(await page.evaluate(() => /Diktat-Spalte/.test(document.body.innerText) && ![...document.querySelectorAll(".toggle-opt")].some(b => b.textContent.trim() === "Frage – Antwort")), "D: Diktat-Konfiguration, kein Frage–Antwort-Schalter");
@@ -86,9 +86,9 @@ const rollen = await page.evaluate(() => [...document.querySelectorAll(".spalten
 console.log("     Rollen A:", rollen.join(" | "));
 ok(await page.evaluate(() => [...document.querySelectorAll(".spalten-modus-btn")].every(b => b.textContent.trim() === "Akzente")), "A: Antwort-Modus nur Akzente");
 
-// zurück zu Ü: Zufällig noch da
+// zurück zu Ü: Schlechteste zuerst noch da
 await waehleArt("uebersetzung");
-ok(await reihenfolge() === "Zufällig", "zurück zu Ü: eigene Einstellung (Zufällig) erhalten");
+ok(await reihenfolge() === "Schlechteste zuerst", "zurück zu Ü: eigene Einstellung (Schlechteste zuerst) erhalten");
 
 // speichern: alle drei Arten in der Konfiguration
 await waehleArt("diktat");
@@ -98,7 +98,7 @@ await page.type(".modal input", "Drei Arten");
 await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].pop()?.click()); await sleep(400);
 const neu = (await gespeichert()).find(x => x.name.includes("Drei Arten"));
 console.log("     gespeichert:", neu?.name, neu?.konfiguration?.art, Object.keys(neu?.konfiguration?.arten || {}).join(","));
-ok(neu && neu.konfiguration.art === "diktat" && neu.konfiguration.arten.uebersetzung?.quizReihenfolge === "zufall"
+ok(neu && neu.konfiguration.art === "diktat" && neu.konfiguration.arten.uebersetzung?.quizReihenfolge === "schlechteste"
   && neu.konfiguration.arten.diktat?.quizModus === "diktat" && neu.konfiguration.arten.akzente?.quizSpalteModus?.E1 === "akzent", "gespeichert: Art + Einstellungen aller drei Arten");
 
 // neu laden: Konfiguration öffnet in Diktat, Ü behält Zufällig
@@ -108,7 +108,7 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 await clickText(".slot-chip", "Drei Arten"); await sleep(500); await slotLaden(page);
 ok(await art() === "diktat", "geladen: zuletzt gewählte Art (Diktat)");
 await waehleArt("uebersetzung");
-ok(await reihenfolge() === "Zufällig", "geladen → Ü: Zufällig gespeichert");
+ok(await reihenfolge() === "Schlechteste zuerst", "geladen → Ü: Schlechteste zuerst gespeichert");
 
 // Kachel: Balken = Lernfortschritt Übersetzung; Kreise Ü/D/A in der Kopfzeile, antippen wechselt die Art
 const kreise = attr => page.evaluate(attr => [...document.querySelectorAll(`[data-start-arten] [${attr}]`)].map(k => `${k.getAttribute(attr)}:${k.dataset.pct}`).join(","), attr);

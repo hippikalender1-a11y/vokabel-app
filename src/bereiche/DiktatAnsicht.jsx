@@ -19,9 +19,10 @@ export function DiktatAnsicht(app) {
         const doBeende = (letzteRunde, pause = false) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], letzteRunde); beendeQuiz(!pause); };
         const doWeiter = (n) => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], false); setQuizPaketGroesse(n); starteDiktat(); };
         if (istLetzteBatch && quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, (<>
-          <button data-nochmal {...tt("Quiz gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}}
+          {/* 347: Zur Übersicht zuerst (hervorgehoben), Nochmal! darunter */}
+          <button data-zur-uebersicht {...tt("Durchlauf beenden und zur Übersicht")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
+          <button data-nochmal {...tt("Quiz gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-ghost-filled" style={{width:"100%"}}
             onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteDiktat(true); }}><SymWdh/> Nochmal!</button>
-          <button {...tt("Durchlauf beenden und zur Übersicht")} className="btn btn-ghost-filled" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
           <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button>
         </>), () => doBeende(true));
         return (

@@ -127,6 +127,8 @@ export const CSS_BASIS = `
   .nach-oben{position:fixed;right:max(16px, calc(50vw - 284px));bottom:calc(20px + env(safe-area-inset-bottom, 0px));z-index:30;width:46px;height:46px;border-radius:50%;border:none;background:var(--haupt);color:var(--auf-haupt);font-size:1.3rem;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.25);opacity:0.92;}
   .schalter-zeile .quiz-zeile-label{text-align:center;}
   .schalter-zeile .quiz-zeile-zelle .quiz-zeile-knopf{padding-left:2px;padding-right:2px;}
+  .schalter-zeile[data-schalter-zeile]{background:var(--kopfzeile);padding:2px 16px 8px;margin-bottom:10px;}   /* 351: Filter gehören zum Kopf, danach Abstand */
+  .schalter-zeile[data-schalter-zeile] .quiz-zeile-knopf{min-height:30px;padding-top:3px;padding-bottom:3px;}
   .quiz-zeile-knopf[data-schalter][data-gesperrt]{cursor:default;}   /* 279/283: nicht verfügbar – nicht ausgegraut, nur gesperrt (Antippen: kurzes Aufleuchten) */
   .start-titel-zeile{position:relative;}
   .start-titel-zeile .start-titel{padding:0 34px;}
@@ -237,6 +239,10 @@ export const CSS_BASIS = `
   .st-spalte{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;}
   .st-balken{position:relative;width:min(64px, 100%);height:140px;border:1.5px solid var(--rahmen);border-radius:6px;background:var(--karte);overflow:hidden;padding:0;cursor:pointer;}
   [data-st-langzeit] .st-balken,[data-ausw-langzeit-balken] .st-balken{height:90px;}   /* 293 */
+  [data-session-auswertung] [data-auswertung-balken] .st-balken{height:64px;}   /* 348: Auswertung kompakt */
+  [data-session-auswertung] [data-ausw-langzeit-balken] .st-balken{height:36px;}
+  [data-session-auswertung] .st-name{white-space:nowrap;font-size:0.7rem;}
+  [data-session-auswertung] .st-spalte{gap:1px;}
   .st-teil{position:absolute;left:0;right:0;}
   .st-hohl{box-sizing:border-box;border:3px solid var(--gelernt);min-height:6px;}   /* 285: fällige hohl – Rand in Balkenfarbe */
   .st-abgefragt{flex:3;min-width:0;display:flex;flex-direction:column;}   /* 286: die drei abgefragten Balken mit Klammer */
@@ -413,6 +419,8 @@ export const CSS_BASIS = `
   .karten-knopf{min-width:40px;height:40px;border-radius:20px;border:1.5px solid var(--rahmen);background:var(--karte);color:var(--text2);display:flex;align-items:center;justify-content:center;padding:0 10px;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;}
   .karten-knopf.laut.an{color:var(--haupt);border-color:var(--haupt-zart);}
   .karten-knopf.gedimmt{opacity:.5;}
+  .karten-laut-spalte{position:relative;display:flex;}   /* 345: Stimmen-Knopf unter dem Lautsprecher, ohne Platz zu nehmen */
+  .karten-laut-spalte > .karten-knopf.stimme{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);z-index:2;height:32px;min-width:40px;padding:0 8px;font-size:0.85rem;}
   .quiz-vorig{cursor:pointer;}
   .quiz-vorig.offen{background:var(--karte);border-color:var(--rahmen);color:var(--text-stark);}
   .quiz-vorig.offen .quiz-vorig-label{color:var(--abfrage-schrift-leise);}
@@ -445,7 +453,6 @@ export const CSS_BASIS = `
   .liste-zeile-wert3{color:var(--text3);font-size:0.8rem;}
   .liste-zeile-symbole{flex:0 0 52px;display:flex;justify-content:flex-end;}
   .liste-zeile-symbole .score-symbole{margin-right:0;}   /* 314: offen ohne Haken, dafür größer (wirkt aufgeklappt) */
-  .slot-kopf-name.bestaetigen-knopf,.slot-kopf-name.ohne-haken{min-height:68px;}
   .quiz-zeile-knopf[data-langzeit]:not(.an){background:var(--haupt-flaeche);color:var(--haupt);border-color:var(--haupt);}   /* 321 */
   .score-symbole{display:inline-flex;align-items:center;gap:4px;margin-right:4px;}
   .score-symbole .sym{width:10px;height:10px;box-sizing:border-box;border:1.6px solid var(--bestaetigen);display:inline-block;}
@@ -456,6 +463,10 @@ export const CSS_BASIS = `
   .score-symbole .sym.negativ.voll{background:var(--falsch);}
   .score-symbole .sym.puls{animation:symPuls 0.45s ease-out;}
   @keyframes symPuls{0%{scale:1;}40%{scale:1.6;}100%{scale:1;}}
+  .score-symbole .sym.welle{animation:symPuls 0.3s ease-out both;}   /* 346: Welle zu „gelernt“ */
+  .score-symbole .sym.welle.fuellen{animation-name:symFuellen;}
+  @keyframes symFuellen{0%{scale:1;background:transparent;}40%{scale:1.6;background:var(--bestaetigen);}100%{scale:1;background:var(--bestaetigen);}}
+  .score-symbole .sym.zusammen{animation:symPuls 0.32s ease-in-out both;}
   .rueck-wahl.andere{opacity:.4;}
   .rueck-wahl.gewaehlt{box-shadow:0 0 0 3px var(--bestaetigen);}
   .rueck-eingabe{margin-top:6px;font-size:0.82rem;color:var(--text2);text-align:center;}

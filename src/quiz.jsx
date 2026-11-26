@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { SK, TYPEN, lsGet, lsLesen, lsSet } from "./speicher.js";
 
 
@@ -399,8 +400,8 @@ export const GRUPPE_BALKEN = [["nie", "var(--nie)"], ["negativ", "var(--negativ)
 export const FORTSCHRITT_BALKEN = [["nie", "var(--fortschritt-nie)"], ["negativ", "var(--fortschritt-negativ)"], ["arbeit", "var(--fortschritt-arbeit)"], ["gelernt", "var(--fortschritt-gelernt)"]];
 // Quiz-Standard: in Paketen abfragen
 export const STANDARD_SESSION_MODUS = "pakete";
-// Standard-Reihenfolge: schlechteste zuerst, nur Score ≤ 3, unbeantwortete zuerst
-export const STANDARD_REIHENFOLGE = "schlechteste";
+// Standard-Reihenfolge: zufällig (352; vorher schlechteste zuerst), nur Score ≤ 3, unbeantwortete zuerst
+export const STANDARD_REIHENFOLGE = "zufall";
 export const STANDARD_MAX_SCORE = "3";
 export const STANDARD_UNBEANTWORTET_ZUERST = { zufall: true, schlechteste: true, listennr: true };
 // „Alle“: ein Paket mit allen Vokabeln des Quiz (Fortschritt, Fortsetzen und Auswertung bleiben) – Standard
@@ -553,16 +554,38 @@ export function scoreSymbole(score, klein = false, puls = null, n = 0) {
 }
 // 252: auf der Abfragekarte skaliert das Symbol, das sich gerade ändert, kurz hoch. Der letzte Stand liegt außerhalb
 // der Komponente, damit er auch hält, wenn die Symbole zwischendurch kurz nicht gezeigt werden.
+// 346: Schritt zu „gelernt“ (Kreise → Rauten) als Welle: die Kreise skalieren nacheinander hoch, der letzte füllt sich dabei;
+// kurz danach skalieren alle drei gemeinsam, und mit der Landung auf Größe 1 werden sie zu den drei leeren Rauten.
+export const WELLE_ZUSAMMEN_MS = 640, WELLE_ENDE_MS = 960;   // ab Beginn: gemeinsames Skalieren · Rauten
 let pulsStand = null;
 export function ScoreSymbolePuls({ score, id }) {
   const s = score ?? 0;
+  const [, neuZeichnen] = useState(0);
   let p = pulsStand;
   if (!p || p.id !== id) p = pulsStand = { id, score: s, puls: null, n: 0, zeit: 0 };
   else if (p.score !== s) {
     const alt = symKlassen(p.score), neu = symKlassen(s);
-    p = pulsStand = { id, score: s, n: p.n + 1, zeit: Date.now(), puls: new Set([0, 1, 2].filter(i => alt[i] !== neu[i])) };
+    const welle = p.score >= 0 && p.score < GELERNT_SCHWELLE && s >= GELERNT_SCHWELLE;
+    p = pulsStand = { id, score: s, n: p.n + 1, zeit: Date.now(), welle, puls: new Set([0, 1, 2].filter(i => alt[i] !== neu[i])) };
   }
-  return scoreSymbole(s, false, p.puls && Date.now() - p.zeit < 700 ? p.puls : null, p.n);
+  const { welle, n, zeit } = p;
+  useEffect(() => {   // Phasenwechsel der Welle neu zeichnen
+    if (!welle) return;
+    const rest = ms => setTimeout(() => neuZeichnen(x => x + 1), Math.max(0, zeit + ms - Date.now()));
+    const t = [rest(WELLE_ZUSAMMEN_MS), rest(WELLE_ENDE_MS)];
+    return () => t.forEach(clearTimeout);
+  }, [welle, n, zeit]);
+  const vergangen = Date.now() - zeit;
+  if (welle && vergangen < WELLE_ENDE_MS) {
+    const zusammen = vergangen >= WELLE_ZUSAMMEN_MS;
+    return (
+      <span className="score-symbole" data-score-symbole={s} data-welle={zusammen ? "zusammen" : "welle"} title={`Gelernt, Stufe 1 von ${MAX_STUFE}`}>
+        {[0, 1, 2].map(i => zusammen
+          ? <span key={`z${i}${n}`} className="sym kreis voll zusammen"/>
+          : <span key={`w${i}${n}`} className={`sym kreis welle${i === 2 ? " fuellen" : " voll"}`} style={{ animationDelay: `${i * 110}ms` }}/>)}
+      </span>);
+  }
+  return scoreSymbole(s, false, !welle && p.puls && vergangen < 700 ? p.puls : null, n);
 }
 // Stufen als Punkte (●●○○) neben dem Score
 export function stufenPunkte(score) {

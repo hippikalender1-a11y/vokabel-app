@@ -49,8 +49,7 @@ const tafelRoh = () => page.evaluate(() => ({ raster: [...document.querySelector
   kopf: __txt(document.querySelector("[data-wahl-anzahl]")) }));
 const kopf = () => page.evaluate(() => ({ text: __txt(document.querySelector("[data-slot-kopf-name]")), art: document.querySelector("[data-slot-kopf-name]")?.dataset.kopfArt || "",
   start: document.querySelector("[data-start-knopf]")?.dataset.startAnzahl }));
-const langVokabeln = () => page.evaluate(() => { const b = document.querySelector('[data-kopf-anzahl]'), r = b.getBoundingClientRect();
-  b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); });
+const langVokabeln = () => page.evaluate(() => document.querySelector('[data-kopf-anzahl]').click());   // 351: antippen
 const zeilen = async nr => { for (const i of nr) { await page.evaluate(i => document.querySelectorAll(".vok-zeile")[i - 1].click(), i); await sleep(150); } };
 await ladeQuiz();
 let k = await kopf();
@@ -63,18 +62,16 @@ await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="quiz
 await menue('[data-liste-id="l_a"]'); await menue('[data-liste-id="l_b"]');
 let t = await tafel();
 ok(/^2 ausgewählt/.test(t.kopf), `zwei Listen gewählt (${t.kopf})`);
-await langVokabeln(); await sleep(900);
-const b1 = await page.evaluate(() => ({ zeilen: document.querySelectorAll(".vok-zeile").length, liste: !!document.querySelector("[data-vok-bestaetigen]"), kopf: __txt(document.querySelector("[data-slot-kopf-name]")) }));
-ok(b1.liste && b1.zeilen === 15 && /🎯 Unit 1 \+ Unit 2/.test(b1.kopf), `298: lang auf „Vokabeln“ bei zwei Listen → Bereichswahl über beide (${JSON.stringify(b1)})`);
-await zeilen([1, 2, 15]);   // zwei neue aus Unit 1, die negative aus Unit 2
-await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]").click()); await sleep(1000);
-t = await tafel();
-ok(t.raster[0] === "grund:3" && /^2 ausgewählt · 3 Vokabeln/.test(t.kopf), `298/310: zurück in der Tafel – „Auswahl 3“ (2 neue + 1 negative) (${t.raster[0]}, ${t.kopf})`);
-// das Geladene ist unverändert (Teil A), solange nicht geladen wird
+// 351: erst laden, dann „n V“ antippen → Bereichswahl über beide Listen
 await page.evaluate(() => document.querySelector("[data-listen-wahl-kopf]").click()); await sleep(1200);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
+await langVokabeln(); await sleep(900);
+const b1 = await page.evaluate(() => ({ zeilen: document.querySelectorAll(".vok-zeile").length, liste: !!document.querySelector("[data-vok-bestaetigen]") }));
+ok(b1.liste && b1.zeilen === 15, `298/351: „n V“ bei zwei Listen → Bereichswahl über beide (${JSON.stringify(b1)})`);
+await zeilen([1, 2, 15]);   // zwei neue aus Unit 1, die negative aus Unit 2
+await page.evaluate(() => document.querySelector("[data-vok-bestaetigen]").click()); await sleep(1000);
 k = await kopf();
-ok(k.start === "3" && /2 Listen$/.test(k.text) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl", `298: laden – zwei Listen mit Bereich, 3 Vokabeln (${JSON.stringify(k)})`);
+ok(k.start === "3" && /2 Listen$/.test(k.text) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl", `298: zwei Listen mit Bereich, 3 Vokabeln (${JSON.stringify(k)})`);
 // ── Statistik zeigt das Geladene ──
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Statistik"))?.click()); await sleep(600);
 const stat = await page.evaluate(() => __txt(document.querySelector("[data-slot-kopf-name]")));

@@ -64,12 +64,12 @@ const seg = () => page.evaluate(() => { const s = document.querySelector("[data-
 let s = await seg();
 ok(s && s.n === "11" && s.b === "Alle", `301: rechts im Kopf „Alle“ / 11 (${JSON.stringify(s)})`);
 ok(await page.evaluate(() => document.querySelector("[data-kopf-anzahl]").classList.contains("eckig")), "302: Liste geladen – Anzahl im Kopf eckig");
-// antippen: Filter-Zeile auf/zu
-const zeileDa = () => page.evaluate(() => !!document.querySelector("[data-schalter-zeile]"));
-const vorher = await zeileDa();
-await page.click("[data-kopf-anzahl]"); await sleep(300);
-ok(await zeileDa() !== vorher, "301: antippen der Anzahl klappt die Filter-Zeile um");
-if (!(await zeileDa())) { await page.click("[data-kopf-anzahl]"); await sleep(300); }
+// 351: Filter-Zeile immer offen; antippen der Anzahl öffnet die Vokabelauswahl, unverändert „← Zurück“
+ok(await page.evaluate(() => !!document.querySelector("[data-schalter-zeile]")) && s.klapp === undefined, "351: Filter-Zeile immer offen, ohne Auf-/Zuklappen");
+await page.click("[data-kopf-anzahl]"); await sleep(800);
+ok(!!(await page.$("[data-vok-zurueck]")), "351/350: antippen der Anzahl öffnet die Vokabelauswahl (unverändert: „← Zurück“)");
+await page.click("[data-vok-zurueck]"); await sleep(800);
+ok(!(await page.$("[data-vok-bestaetigen]")) && (await seg())?.b === "Alle", "350: „← Zurück“ – zurück, Bereich unverändert „Alle“");
 const z = await page.evaluate(() => ({ labels: [...document.querySelectorAll("[data-schalter-zeile] .quiz-zeile-label")].map(l => l.textContent).join("|"),
   ueber: document.querySelector("[data-schalter-zeile]").getBoundingClientRect().top < document.querySelector("[data-reihenfolge]").getBoundingClientRect().top }));
 ok(z.labels === "Zu lernen|Fällige|Heute" && z.ueber, `301/310: Filter-Zeile „Auswahl · Fällige · Heute“ direkt unter dem Kopf (${z.labels}, ${z.ueber})`);
@@ -91,9 +91,10 @@ await zuAuswahl(); await sleep(400);
 ok(/^[1-9]\/9/.test(await balken()), `300: nach einem Paket der Fortschritt im Balken (${await balken()})`);
 await lang("[data-start-titel]"); await sleep(400);
 ok(!!(await page.$("[data-reset-frage]")), "300: lang auf die Überschrift – Rückfrage zum Zurücksetzen");
-// lang auf die Anzahl → Bereichswahl
-await lang("[data-kopf-anzahl]"); await sleep(800);
-ok(await page.evaluate(() => !!document.querySelector("[data-vok-bestaetigen]")), "301: lang auf die Anzahl öffnet die Bereichswahl");
+// 351: antippen der Anzahl → Bereichswahl (die Rückfrage von eben schließen)
+await page.evaluate(() => [...document.querySelectorAll(".modal button, [data-reset-frage] button")].find(b => /Abbrechen|Nein/.test(b.textContent))?.click()); await sleep(300);
+await page.click("[data-kopf-anzahl]"); await sleep(800);
+ok(await page.evaluate(() => !!document.querySelector("[data-vok-bestaetigen]")), "351: antippen der Anzahl öffnet die Bereichswahl");
 // 302: Statistik – Langzeit-Balken filtern mit, Anzahl und Lernfortschritt folgen den Filtern
 await page.click("[data-vok-bestaetigen]"); await sleep(600);
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Statistik"))?.click()); await sleep(700);

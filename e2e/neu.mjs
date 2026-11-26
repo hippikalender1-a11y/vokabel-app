@@ -50,20 +50,20 @@ await page.reload(); await sleep(500); await page.evaluate(() => { const u = doc
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await listeWaehlen(page, "Verbes");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
-// Bereich: 2 Vokabeln, Reihenfolge Zufällig (Standard: Schlechteste), speichern
+// Bereich: 2 Vokabeln, Reihenfolge Listenplatz (352: Standard Zufällig), speichern
 await bereichOeffnen(page);   // 298: statt „Alle | Bereich“
 await page.evaluate(() => [...document.querySelectorAll(".vok-nr")].slice(0, 2).forEach(z => z.parentElement.click()));
 await sleep(300);
 await bereichBestaetigen(page);   // Liste zu → Quiz-Optionen wieder sichtbar
 await page.click("[data-reihenfolge]"); await sleep(300);
-await clickText(".toggle-opt", "Zufällig", true);
+await clickText(".toggle-opt", "Listenplatz", true);
 await bereichZu(page);   // Reihenfolge zu → Start wieder sichtbar
 await page.evaluate(() => { const el = document.querySelector("[data-slot-kopf-name]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await new Promise(r => setTimeout(r, 250)); await page.evaluate(() => document.querySelector('[data-info-aktion="💾 Als Quiz speichern"]').click()); await new Promise(r => setTimeout(r, 300));
 await page.evaluate(() => [...document.querySelectorAll(".modal .btn-primary")].pop()?.click());
 await sleep(400);
 let z = await zustand();
 console.log("     Preset aktiv:", JSON.stringify(z));
-ok(z.start === "2" && z.reihenfolge === "Zufällig", "Preset: 2 Vokabeln, Zufällig");
+ok(z.start === "2" && z.reihenfolge === "Listenplatz", "Preset: 2 Vokabeln, Listenplatz");
 
 // Neu
 await page.evaluate(() => window.scrollTo(0, 0));
@@ -79,7 +79,7 @@ await listeWaehlen(page, "Verbes");
 await listenZu(page);   // Listen-Auswahl zu → Quiz-Optionen sichtbar
 z = await zustand();
 ok(z.start === "3", `Liste neu gewählt: alle 3 Vokabeln (${z.start})`);
-ok(z.reihenfolge === "Schlechteste zuerst", `Neu: Reihenfolge zurück auf Schlechteste (${z.reihenfolge})`);
+ok(z.reihenfolge === "Zufällig", `Neu: Reihenfolge zurück auf den Standard Zufällig (${z.reihenfolge})`);
 
 // Statistik: Preset laden, dann Neu
 await clickText(".tab", "Statistik");

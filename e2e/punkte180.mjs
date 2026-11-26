@@ -70,7 +70,7 @@ const gew = await page.evaluate(() => { const k = document.querySelector('[data-
 ok(gew.gewaehlt && /linear-gradient/.test(gew.bild) && /bestaetigen|color-mix/.test(gew.farbe) && !/haupt\)/.test(gew.farbe), `182: gewählte Kachel: Füllung sichtbar, grün (${JSON.stringify(gew)})`);
 // ── 184–186: Info der gewählten Quiz ──
 await page.evaluate(() => { if (document.querySelector("[data-slot-info-zu]")) document.querySelector("[data-slot-info]").click(); }); await sleep(250);
-ok(await page.evaluate(() => document.querySelector("[data-vorschau-zuletzt]")?.innerText.trim()) === "Zuletzt abgefragt: Heute (50 %)", `184: „Zuletzt abgefragt: Heute (50 %)“ (${await page.evaluate(() => document.querySelector("[data-vorschau-zuletzt]")?.innerText.trim())})`);
+ok(await page.evaluate(() => document.querySelector("[data-vorschau-zuletzt]")?.innerText.trim()) === "Heute 50 %", `184/349: „Heute 50 %“ (${await page.evaluate(() => document.querySelector("[data-vorschau-zuletzt]")?.innerText.trim())})`);
 const punkte = await page.evaluate(() => [...document.querySelectorAll("[data-vorschau-gruppen] [data-gruppe-text]")].map(s => s.dataset.gruppeText + ":" + (getComputedStyle(s.querySelector(".gruppen-punkt")).backgroundColor === getComputedStyle(document.querySelector(`[data-vorschau-balken] [data-gruppe="${s.dataset.gruppeText}"]`)).backgroundColor)));
 ok(punkte.length === 1 && punkte.every(p => p.endsWith(":true")), `185: Punkt vor jedem Wert in der Farbe des Balken-Abschnitts (${punkte})`);
 const zeile = await page.evaluate(() => ({ klapp: document.querySelector("[data-vorschau-vokabeln]")?.innerText.trim(), alt: /Vokabeln ansehen/.test(document.querySelector("[data-slot-info]").innerText) }));

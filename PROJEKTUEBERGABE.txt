@@ -4079,3 +4079,69 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
   c) Zuordnung über den Dateinamen (A1-08_… ↔ „A1 · 08 …“) – unsicher, eher nicht.
   Empfehlung: b) für die fertigen Wortschatz-Dateien, a) für Sätze, die man später nachliefert. Für die
   Französisch-Listen (A1/A2) die Dateien dann entsprechend neu bauen (baue.py).
+- 345 UMGESETZT: Abfrage-Karte, Kopfzeile rechts – der Stimmen-Knopf („5/5“, stimmeKnopf in AbfrageAnsicht.jsx) sitzt
+  zwischen der Score-Anzeige (●○○) und dem Lautsprecher. Er erscheint nur zeitweise (erst ab 2 aktivierten Stimmen;
+  die Stimmen lädt der Browser verzögert nach), dadurch springen die Score-Punkte hin und her. Den Stimmen-Knopf unter
+  den Lautsprecher setzen (eigene Zeile darunter, rechtsbündig), damit Score und Lautsprecher immer an derselben Stelle
+  bleiben.
+- 346 UMGESETZT: Abfrage-Karte, Score-Symbole beim Schritt zu „gelernt“ (Score 2 → 3: ●●○ → drei leere Rauten ◇◇◇)
+  effektvoller. Bisher pulsieren alle drei Symbole gleichzeitig und stehen sofort als Rauten da (ScoreSymbolePuls in quiz.jsx,
+  symPuls 0,45 s). Gewünscht als Ablauf:
+  1. Welle: die drei Kreise skalieren nacheinander hoch (1 → 2 → 3, versetzt); wenn der dritte hochskaliert, füllt er sich
+     (●●●).
+  2. Ganz kurze Pause.
+  3. Alle drei skalieren noch einmal gleichzeitig hoch; wenn sie wieder bei Größe 1 ankommen, werden sie zu den drei leeren
+     Rauten.
+  Hinweis: Der Stimmen-Knopf darf die Symbole währenddessen nicht verschieben (siehe 345).
+- 347 UMGESETZT: Ende eines Durchlaufs (Quiz-Auswertung, AbfrageAnsicht.jsx ~Z. 33; gleich im Diktat, DiktatAnsicht.jsx ~Z. 23) –
+  Knopf-Reihenfolge: 1. „Zur Übersicht“ (hervorgehoben, grün gefüllt wie bisher „Nochmal!“), 2. „🔁 Nochmal!“ (Rahmen-Knopf),
+  3. „📊 Zur Statistik“ (Rahmen-Knopf, bleibt unten). Info-Text in EinstellungenTab („Darunter: Nochmal!, Zur Übersicht,
+  Zur Statistik“) anpassen.
+- 348 UMGESETZT: Quiz-Auswertung (Ende „Ganzes Quiz“) kompakter – passt selbst auf ein großes Handy nicht auf einen
+  Bildschirm (Zur Statistik nur nach Scrollen erreichbar). Ziel: alles samt den drei Knöpfen (347) ohne Scrollen sichtbar.
+  Ansatzpunkte:
+  - Balken „Negativ / Auf einem guten Weg / Gelernt“ deutlich niedriger (etwa halbe Höhe); Beschriftung einzeilig
+    („Auf einem guten Weg“ bricht um).
+  - Langzeitgedächtnis-Balken ebenfalls niedriger.
+  - Kacheln „Lernfortschritt“ und „Neu gelernt“ flacher (weniger Innenabstand, kleinere Zahl).
+  - Zusatzzeilen (Vokabeln, Ø Score, Verbessert…, Auf Anhieb, Dauer) enger, ggf. zweispaltig.
+  - Abstände zwischen den Blöcken kleiner.
+- 349 UMGESETZT: Info-Sektion unter dem Kopf (Vorschau eines Quiz/einer Liste, koepfe.jsx ~Z. 365–372):
+  - „· ▶ 0/25 abgefragt“ (data-vorschau-runde) hinter „25 Vokabeln“ entfernt.
+  - Zeile darunter statt „Zuletzt abgefragt: Heute (100 %)“ nur „Heute 100 %“.
+  Bestätigt: an anderen Tagen ebenso ohne „Zuletzt abgefragt:“ – nur „Gestern“ / „vor 3 Tagen“ / Datum / „noch nie“. Gleiche Zeile auch in koepfe.jsx ~Z. 108 prüfen (einheitlich halten).
+- 350 UMGESETZT: Vokabel-Auswahl (Bereichswahl mit Von–Bis / ✕ / ↓ / „(25 V.)“ / „✓ Bestätigen“, geöffnet über die
+  Vokabelauswahl):
+  a) Beim Öffnen: sind schon Vokabeln ausgewählt, steht die erste ausgewählte oben im Blick (statt immer Nr. 1).
+     Ohne Auswahl wie bisher ganz oben.
+  b) Knopf oben rechts: solange die Auswahl gegenüber dem Öffnen unverändert ist, „← Zurück“ in Grün (verlässt ohne
+     Änderung); sobald die Auswahl geändert wurde, „✓ Bestätigen“ in Orange (wie bisher). Wird die Änderung wieder
+     rückgängig gemacht (gleiche Auswahl wie beim Öffnen), wieder „← Zurück“.
+- 351 UMGESETZT: Kopf und Filter im Quiz-Tab
+  a) Listen-/Quiz-Auswahl sichtbar: der Kopf wird nicht mehr größer, sondern behält die normale Höhe. Der rechte
+     Bereichsknopf („25 V / Alle“) entfällt in der Auswahl – die Filter-Zeile ist dort nicht aufrufbar. Der Name mit
+     Balken geht über die ganze Breite.
+  b) Nach dem Übernehmen (zurück im Quiz-Tab mit Einstellungen): die Filter-Zeile (Zu lernen / Fällige / Heute) ist immer
+     offen – das Auf-/Zuklappen (Antippen der Anzahl) entfällt samt Mechanismus.
+  c) Rechter Bereichsknopf („25 V / Alle“): Antippen öffnet jetzt die Vokabelauswahl (Bereichswahl, bisher langer Druck).
+     Langer Druck hat dort danach keine Funktion mehr (tt-Text anpassen).
+  d) Filter-Knöpfe (Zu lernen / Fällige / Heute) niedriger, optisch Teil des Kopfes; danach ein kleiner Abstand, bevor der
+     nächste Bereich (Info-Sektion / Knöpfe darunter) beginnt.
+  Hinweis: berührt 300/301/305/306/336/339 (Bereichsknopf, Filter auf/zu) und Tests punkte288/298/299 u. a.
+- 352 UMGESETZT: Reihenfolge – Standard „Zufällig“ statt „Schlechteste zuerst“. Stellen: STANDARD_REIHENFOLGE in quiz.jsx
+  (Z. 403, gilt für App-Start und lernenSessions), export.jsx ~Z. 128 setzt fest „schlechteste“ (prüfen, ob dort bewusst –
+  sonst auch auf den Standard). Gespeicherte Quiz behalten ihre gespeicherte Reihenfolge (slots.jsx fällt schon auf
+  „zufall“ zurück). Tests, die die Standard-Reihenfolge voraussetzen, anpassen.
+  Umsetzung 345–352:
+  345: Stimmen-Knopf in .karten-laut-spalte, absolut unter dem Lautsprecher (nimmt keinen Platz).
+  346: ScoreSymbolePuls – Welle (data-welle="welle", Versatz 110 ms, der dritte füllt sich), ab 640 ms gemeinsam
+       („zusammen“), ab 960 ms Rauten. mitFlash wartet bei gelerntBlitz 1500 statt 1000 ms.
+  347: data-zur-uebersicht (btn-primary) zuerst, data-nochmal als btn-ghost-filled.
+  348: Auswertung: Balken 64/36 px, kompakte Kacheln/Zeilen; Test prüft 360×690 ohne Scrollen.
+  349: „Heute 50 %“ / „Gestern“ / „Noch nie“ ohne „Zuletzt abgefragt:“; „▶ x/n abgefragt“ entfernt.
+  350: vokWahlStartRef (Stand beim Öffnen) → vokWahlGeaendert; unverändert „← Zurück“ (grün, data-vok-zurueck,
+       vokAuswahlZurueck: aus der Tafel ohne Laden zurück in die Tafel). Erste gewählte Vokabel unter die Suchleiste.
+  351: Auswahl offen: kein Bereichsknopf, keine Filter im Kopf (kopf-filter entfernt), Kopf ohne min-height 68.
+       schalterZeileZu entfällt ganz (Filter-Zeile immer offen). Bereichsknopf antippen = waehleBereichGeladen("quiz"),
+       lang ohne Funktion. Filter-Zeile niedriger (min-height 30), Hintergrund wie Kopf, 10 px Abstand danach.
+  352: STANDARD_REIHENFOLGE = "zufall" (Gruppen-Quiz aus der Statistik bleibt bewusst „schlechteste zuerst“).

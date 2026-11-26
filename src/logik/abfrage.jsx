@@ -356,7 +356,7 @@ export function mitVerzoegerung(app, quizUpdates, advanceFn, ms) {
 
 export function mitFlash(app, quizUpdates, advanceFn) {
   const { mitVerzoegerung } = app;
-    mitVerzoegerung({...quizUpdates, flash: true, eingabe: ""}, advanceFn, 1000);
+    mitVerzoegerung({...quizUpdates, flash: true, eingabe: ""}, advanceFn, quizUpdates.gelerntBlitz ? 1500 : 1000);   // 346: Zeit für die Welle
   }
 
 // Antippen während der Verzögerung: sofort weiter

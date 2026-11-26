@@ -43,7 +43,7 @@ const ladeQuiz = async () => {
 };
 const menue = async (sel, dx = 10) => { await page.evaluate((sel, dx) => { const el = document.querySelector(sel); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + dx, clientY: r.y + 10 })); }, sel, dx); await sleep(400); };
-const filterAuf = async () => { if (await page.$('[data-kopf-anzahl][data-schalter-klapp="zu"]')) { await page.click("[data-kopf-anzahl]"); await new Promise(r => setTimeout(r, 300)); } };   // 305
+const filterAuf = async () => {};   // 351
 const tafel = async () => { await filterAuf(); return tafelRoh(); };
 const tafelRoh = () => page.evaluate(() => ({ raster: [...document.querySelectorAll("[data-schalter-raster] button")].map(b => `${b.dataset.schalter}:${b.dataset.rasterText || __txt(b)}`),
   kopf: __txt(document.querySelector("[data-wahl-anzahl]")) }));
@@ -62,26 +62,20 @@ await offeneAuswahl(); await sleep(400);
 await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter === "quiz") b.click(); }); await sleep(300);
 await page.evaluate(() => document.querySelector('[data-liste-id="l_a"]').click()); await sleep(1200);   // Unit 1 laden
 await zuAuswahl(); await sleep(400);
-if (await page.$('[data-schalter-klapp="zu"]')) { await page.click("[data-schalter-klapp]"); await sleep(300); }
-await lang('[data-kopf-anzahl]'); await sleep(800);
-ok(await page.evaluate(() => !!document.querySelector("[data-vok-bestaetigen]") && document.querySelectorAll(".vok-zeile").length === 11), "299: lang auf „Vokabeln“ – Bereichswahl der geladenen Liste");
+await page.click("[data-kopf-anzahl]"); await sleep(800);   // 351: antippen
+ok(await page.evaluate(() => !!document.querySelector("[data-vok-bestaetigen]") && document.querySelectorAll(".vok-zeile").length === 11), "299/351: „n V“ antippen – Bereichswahl der geladenen Liste");
 await zeilen([2, 3, 4]);
 await page.click("[data-vok-bestaetigen]"); await sleep(800);
 let k = await kopf();
 ok(!(await page.$("[data-vok-bestaetigen]")) && k.art === "liste" && /Unit 1/.test(k.text) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl" && k.start === "3" && !(await page.evaluate(() => document.querySelector("[data-slot-kopf]")?.dataset.slotKopf === "offen")),
   `299: „Bestätigen“ – zurück im Quiz-Tab, Bereich gilt (${JSON.stringify(k)})`);
-// ── B: Tafel – Bereich bestätigen lädt sofort ──
+// ── B (351): die Tafel einer Liste hat keinen Bereichsknopf – der Bereich wird nach dem Laden gewählt ──
 await offeneAuswahl(); await sleep(400);
 await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter === "quiz") b.click(); }); await sleep(300);
 await menue('[data-liste-id="l_b"]');
-await langVokabeln(); await sleep(900);
-await zeilen([4]);   // die negative von Unit 2
-await page.click("[data-vok-bestaetigen]"); await sleep(1200);
-let t = await tafel();
-ok(t.raster[0] === "grund:1" && /Unit 2$/.test(t.kopf) && (await page.evaluate(() => document.querySelector("[data-kopf-anzahl]")?.dataset.kopfBereich)) === "Auswahl" && !/laden/.test(t.kopf), `299: zurück in der Tafel, schon geladen – Kopf ohne „laden“ (${t.kopf})`);
+ok(!(await page.$("[data-kopf-anzahl]")), "351: Tafel ohne Bereichsknopf im Kopf");
 await zuAuswahl(); await sleep(500);
-k = await kopf();
-ok(k.art === "liste" && /Unit 2/.test(k.text) && k.start === "1", `299: Bereich aus der Tafel ist geladen (${JSON.stringify(k)})`);
+let t;
 // ── C: Tabwechsel mit offener Listen-Tafel übernimmt die Auswahl ──
 await offeneAuswahl(); await sleep(400);
 await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter === "quiz") b.click(); }); await sleep(300);

@@ -69,7 +69,7 @@ ok(await page.evaluate(() => document.querySelector("[data-start-knopf]")?.datas
 await page.evaluate(() => document.querySelector("[data-start-knopf]")?.click()); await sleep(600);
 for (let i = 0; i < 2; i++) {
   await page.evaluate(() => document.querySelector("[data-frei-klick]")?.click()); await sleep(200);
-  await page.evaluate(() => [...document.querySelectorAll(".karte-btn")].find(b => /Gewusst/.test(b.textContent) && !/Nicht/.test(b.textContent))?.click()); await sleep(1300);
+  await page.evaluate(() => [...document.querySelectorAll(".karte-btn")].find(b => /Gewusst/.test(b.textContent) && !/Nicht/.test(b.textContent))?.click()); await sleep(1800);   // 346: Welle zu „gelernt“ verlängert die Pause
 }
 f = await vok(1);
 ok(f.score === 3 && f.stufeSeit, `„one“ von 2 auf 3: gelernt, Stufe 1 (${f.score})`);

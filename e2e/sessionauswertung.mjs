@@ -85,6 +85,12 @@ await paket([]);
 ok(await page.$("[data-zur-auswertung]"), "Quiz fertig: „Weiter →“");
 await page.click("[data-zur-auswertung]"); await sleep(400);
 let a = await auswertung();
+{ await page.setViewport({ width: 360, height: 690 }); await sleep(300);   // 348: Handy-Größe – alles samt Knöpfen ohne Scrollen
+  const unten = await page.evaluate(() => { window.scrollTo(0, 0); const b = [...document.querySelectorAll(".sektion button")].pop(); return { bottom: Math.round(b.getBoundingClientRect().bottom), text: b.textContent.trim(), reihe: [...document.querySelectorAll(".sektion button")].map(x => x.textContent.trim()).join(" | ") }; });
+  if (process.env.BILD) await page.screenshot({ path: process.env.BILD });
+  ok(unten.bottom <= 690 && /Statistik/.test(unten.text), `348: Auswertung passt auf 360×690 (unterster Knopf „${unten.text}“ endet bei ${unten.bottom})`);
+  ok(/^Zur Übersicht \| .*Nochmal! \| .*Zur Statistik$/.test(unten.reihe), `347: Reihenfolge Übersicht · Nochmal · Statistik (${unten.reihe})`);
+  await page.setViewport({ width: 390, height: 900 }); await sleep(200); }
 if (process.env.SHOT) await page.screenshot({ path: "auswertung_shot.png", fullPage: true });
 console.log("     Auswertung:", a.text);
 console.log("     Start:", JSON.stringify(a.start), "Ende:", JSON.stringify(a.ende));

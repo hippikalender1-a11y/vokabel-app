@@ -37,7 +37,7 @@ ok(await text("[data-reihenfolge]") === "Bestätigen" && bestFarbe !== zu && /�
 ok(await sichtbar("[data-stufe]") && await sichtbar("[data-abfragemodus]") && await sichtbar("[data-reihenfolge]"), "übrige Knöpfe der Zeile bleiben sichtbar");
 ok(!(await sichtbar("[data-abfrageziel]")) && !(await sichtbar("[data-start-knopf]")), "Zeilen darunter ausgeblendet");
 await page.click("[data-reihenfolge]"); await sleep(1300);   // nach dem kurzen Aufleuchten
-ok(await text("[data-reihenfolge]") === "Schlechteste zuerst" && await farbe("[data-reihenfolge]") === zu && await sichtbar("[data-stufe]") && await sichtbar("[data-abfragemodus]"),
+ok(await text("[data-reihenfolge]") === "Zufällig" && await farbe("[data-reihenfolge]") === zu && await sichtbar("[data-stufe]") && await sichtbar("[data-abfragemodus]"),
   "„Bestätigen“ klappt zu: wieder der volle Text, alte Farbe, alle Knöpfe da");
 await page.click("[data-abfrageziel]"); await sleep(300);
 ok(await text("[data-abfrageziel]") === "Bestätigen" && await farbe("[data-abfrageziel]") === bestFarbe && await sichtbar("[data-langzeit]") && await sichtbar("[data-stufe]"), `Abfrage-Ziel offen: „Bestätigen“, Langzeitgedächtnis und Zeile darüber bleiben (${await text("[data-abfrageziel]")})`);
@@ -56,11 +56,11 @@ await sleep(900);
 ok(!(await page.evaluate(() => document.querySelector("[data-stufe]").classList.contains("leuchten"))) && await farbe("[data-stufe]") === zu, "danach wieder die normale Farbe");
 // Reihenfolge: Wahl antippen schließt
 await page.click("[data-reihenfolge]"); await sleep(300);
-await page.click('[data-reihenfolge-wahl="zufall"]'); await sleep(450);
-ok(await text("[data-reihenfolge]") === "Zufällig" && !(await page.$('[data-reihenfolge-wahl]')), `Reihenfolge „Zufällig“ antippen: übernommen und zu (${await text("[data-reihenfolge]")})`);
+await page.click('[data-reihenfolge-wahl="schlechteste"]'); await sleep(450);
+ok(await text("[data-reihenfolge]") === "Schlechteste zuerst" && !(await page.$('[data-reihenfolge-wahl]')), `Reihenfolge „Schlechteste zuerst“ antippen: übernommen und zu (${await text("[data-reihenfolge]")})`);
 // 139: aufgeklappt ist die aktuelle Wahl grün; neue Wahl bleibt 0,3 s sichtbar, dann zu
 await page.click("[data-reihenfolge]"); await sleep(300);
-const gruen = await page.evaluate(() => { const b = document.querySelector('[data-reihenfolge-wahl="zufall"]'); const d = document.createElement("div"); d.style.background = getComputedStyle(document.documentElement).getPropertyValue("--bestaetigen"); document.body.appendChild(d); const g = getComputedStyle(d).backgroundColor; d.remove(); return getComputedStyle(b).backgroundColor === g; });
+const gruen = await page.evaluate(() => { const b = document.querySelector('[data-reihenfolge-wahl="schlechteste"]'); const d = document.createElement("div"); d.style.background = getComputedStyle(document.documentElement).getPropertyValue("--bestaetigen"); document.body.appendChild(d); const g = getComputedStyle(d).backgroundColor; d.remove(); return getComputedStyle(b).backgroundColor === g; });
 ok(gruen, "139: aktuelle Wahl in der Auswahl-Farbe");
 await page.evaluate(() => document.querySelector('[data-reihenfolge-wahl="listennr"]').click()); await new Promise(r => setTimeout(r, 120));
 ok(await page.$('[data-reihenfolge-wahl="listennr"].aktiv'), "139: neue Wahl kurz sichtbar (noch offen)");

@@ -267,8 +267,7 @@ export async function bereichOeffnen(page) {
   let da = await page.evaluate(() => { const b = [...document.querySelectorAll("[data-info-aktion]")].find(b => /📝 Vokabeln ändern/.test(b.dataset.infoAktion)); b?.click(); return !!b; });
   if (!da) {   // 317: Liste – den Bereich wählt lang auf die Anzahl im Kopf
     await page.mouse.click(5, 830); await s(300);
-    da = await page.evaluate(() => { const b = document.querySelector("[data-kopf-anzahl]"); if (!b) return false; const r = b.getBoundingClientRect();
-      b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); return true; });
+    da = await page.evaluate(() => { const b = document.querySelector("[data-kopf-anzahl]"); if (!b) return false; b.click(); return true; });   // 351: antippen
   }
   if (!da) throw new Error("Bereichswahl nicht erreichbar");
   await s(800);

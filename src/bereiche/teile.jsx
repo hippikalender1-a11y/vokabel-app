@@ -157,7 +157,7 @@ export function renderSessionAuswertung(app, d) {
     const gelV = lzV.filter(sc => stufe(sc) != null).length, gelN = lzN.filter(sc => stufe(sc) != null).length, basis = Math.max(gelV, gelN);
     const langzeitBalken = basis > 0 && (
       <>
-        <div className="st-titel" style={{marginTop:14}}>Langzeitgedächtnis <span style={{fontWeight:500, color:"var(--text3)"}}>· {gelV} → {gelN} gelernte</span></div>
+        <div className="st-titel" style={{marginTop:8}}>Langzeitgedächtnis <span style={{fontWeight:500, color:"var(--text3)"}}>· {gelV} → {gelN} gelernte</span></div>
         <div className="st-reihe" data-ausw-langzeit-balken>
           {[[3, "◇◇◇"], [4, "◆◇◇"], [5, "◆◆◇"], [6, "◆◆◆"]].map(([s, sym]) => {
             const vN = lzV.filter(sc => stufe(sc) === s).length, nN = lzN.filter(sc => stufe(sc) === s).length, dd = nN - vN;
@@ -179,14 +179,14 @@ export function renderSessionAuswertung(app, d) {
     const fae = d.faellig || [];
     const fWeiter = fae.filter(x => (x.jetzt ?? 0) > (x.vorher ?? 0)).length, fZurueck = fae.filter(x => (x.jetzt ?? 0) < (x.vorher ?? 0)).length;
     const zeile = (k, v) => (
-      <div style={{display:"flex", justifyContent:"space-between", gap:10, padding:"5px 0", borderBottom:"1px solid var(--flaeche)"}}>
+      <div style={{display:"flex", justifyContent:"space-between", gap:10, padding:"2px 0", borderBottom:"1px solid var(--flaeche)"}}>
         <span>{k}</span><span style={{fontWeight:600, color:"var(--text)"}}>{v}</span>
       </div>
     );
     return (
       <div data-session-auswertung>
-        <div className="karte" style={{padding:"14px 16px", margin:"8px 0 14px"}}>
-          <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--text2)", marginBottom:12}}>
+        <div className="karte" style={{padding:"10px 12px", margin:"4px 0 10px"}}>   {/* 348: kompakt – passt samt Knöpfen auf einen Bildschirm */}
+          <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--text2)", marginBottom:8}}>
             {d.mitSession ? "Ganzes Quiz" : "Diese Runde"} · {d.ohneAkzent != null ? `${n} ${n === 1 ? "Wort" : "Wörter"} mit Akzent` : `${n} Vokabel${n !== 1 ? "n" : ""}`}
           </div>
           {lernBalken}
@@ -194,7 +194,7 @@ export function renderSessionAuswertung(app, d) {
           {langzeitBalken}
         </div>
         {fae.length > 0 && (
-          <div className="karte" data-ausw-langzeit={fae.length} style={{padding:"12px 14px", margin:"0 0 14px"}}>
+          <div className="karte" data-ausw-langzeit={fae.length} style={{padding:"8px 12px", margin:"0 0 10px"}}>
             <div style={{fontSize:"0.72rem", fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:"var(--text2)", marginBottom:8}}><SymWdh/> Langzeit trainiert · {fae.length} Fällige</div>
             <div className="st-kacheln">
               <div className="st-kachel" data-ausw-faellig="weiter"><b style={{color:"var(--haupt)"}}>{fWeiter}</b><span>◆ weiter</span></div>
@@ -203,19 +203,17 @@ export function renderSessionAuswertung(app, d) {
             </div>
           </div>
         )}
-        <div style={{display:"flex", gap:10, marginBottom:14}}>
-          <div className="karte" style={{flex:1, padding:"12px 14px", margin:0, textAlign:"center"}} data-kennzahl="lernfortschritt">
-            <div style={{fontSize:"0.72rem", color:"var(--text2)", fontWeight:600}}>Lernfortschritt</div>
-            <div style={{fontSize:"1.25rem", fontWeight:800, color:"var(--haupt)", marginTop:2}}>{Math.round(pV)} % → {Math.round(pN)} %</div>
-            <div style={{fontSize:"0.78rem", color: pN - pV >= 0 ? "var(--haupt)" : "var(--falsch)", fontWeight:700}}>{pN - pV >= 0 ? "+" : ""}{Math.round(pN - pV)} %</div>
+        <div style={{display:"flex", gap:8, marginBottom:8}}>
+          <div className="karte" style={{flex:1, padding:"6px 10px", margin:0, textAlign:"center"}} data-kennzahl="lernfortschritt">
+            <div style={{fontSize:"0.7rem", color:"var(--text2)", fontWeight:600}}>Lernfortschritt</div>
+            <div style={{fontSize:"1.05rem", fontWeight:800, color:"var(--haupt)", whiteSpace:"nowrap"}}>{Math.round(pV)} % → {Math.round(pN)} % <span style={{fontSize:"0.75rem", color: pN - pV >= 0 ? "var(--haupt)" : "var(--falsch)", fontWeight:700}}>{pN - pV >= 0 ? "+" : ""}{Math.round(pN - pV)} %</span></div>
           </div>
-          <div className="karte" style={{flex:1, padding:"12px 14px", margin:0, textAlign:"center"}} data-kennzahl="neu-gelernt">
-            <div style={{fontSize:"0.72rem", color:"var(--text2)", fontWeight:600}}>Neu gelernt</div>
-            <div style={{fontSize:"1.25rem", fontWeight:800, color:"var(--haupt)", marginTop:2}}>{neuGelernt}</div>
-            <div style={{fontSize:"0.72rem", color:"var(--text3)"}}>Score +{schwelle} erreicht</div>
+          <div className="karte" style={{flex:1, padding:"6px 10px", margin:0, textAlign:"center"}} data-kennzahl="neu-gelernt" {...ttFeld(`Neu gelernt: Score +${schwelle} erreicht`)}>
+            <div style={{fontSize:"0.7rem", color:"var(--text2)", fontWeight:600}}>Neu gelernt</div>
+            <div style={{fontSize:"1.05rem", fontWeight:800, color:"var(--haupt)"}}>{neuGelernt}</div>
           </div>
         </div>
-        <div data-zusatzdaten style={{fontSize:"0.8rem", color:"var(--text3)", margin:"0 2px 18px"}}>
+        <div data-zusatzdaten style={{fontSize:"0.78rem", color:"var(--text3)", margin:"0 2px 12px"}}>
           {zeile(d.ohneAkzent != null ? "Wörter mit Akzent" : "Vokabeln", d.pakete ? `${n} in ${d.pakete} Paket${d.pakete !== 1 ? "en" : ""}` : n)}
           {d.ohneAkzent > 0 && zeile("Dazu geübt ohne Akzent", `${d.ohneAkzent} (zählen nicht mit)`)}
           {zeile("Ø Score", `${fmt(sV)} → ${fmt(sN)}`)}

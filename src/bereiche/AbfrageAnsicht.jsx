@@ -29,9 +29,10 @@ export function AbfrageAnsicht(app) {
         const heuteGesperrt = istLetzteBatch ? 0 : heuteGesperrtOffen(quiz, schonAbgefragt);
         const heuteFertig = heuteGesperrt > 0 && schonAbgefragt.size + heuteGesperrt >= (quiz.sessionGesamt || 0);
         if (istLetzteBatch && !quiz.abgebrochen && quiz.sessionAuswertung) return sessionAuswertungSeite(quiz, (<>
-          <button data-nochmal {...tt("Quiz gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}}
+          {/* 347: Zur Übersicht zuerst (hervorgehoben), Nochmal! darunter */}
+          <button data-zur-uebersicht {...tt("Durchlauf beenden und zur Quiz-Übersicht")} className="btn btn-primary" style={{width:"100%", marginBottom:8, fontSize:"1.05rem"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
+          <button data-nochmal {...tt("Quiz gleich noch einmal von vorn durchlaufen – Scores bleiben, der Abgefragt-Stand beginnt neu")} className="btn btn-ghost-filled" style={{width:"100%"}}
             onClick={() => { updateSessionSlotFortschritt(quiz.sessionVokIds || [], true); starteQuiz(true); }}><SymWdh/> Nochmal!</button>
-          <button {...tt("Durchlauf beenden und zur Quiz-Übersicht")} className="btn btn-ghost-filled" style={{width:"100%"}} onClick={() => doBeende(true)}>Zur Übersicht</button>
           <button className="btn btn-ghost" style={{width:"100%", marginTop:8}} onClick={() => zurRundenStatistik(() => doBeende(true))} {...tt("Statistik zu dieser Abfragerunde öffnen")}>📊 Zur Statistik</button>
         </>), () => doBeende(true));
         return (
@@ -378,9 +379,10 @@ export function AbfrageAnsicht(app) {
           {...tt(`${spaltenName(typ)} automatisch vorlesen: ${an ? "an" : "aus"} – antippen schaltet um (gilt für alle weiteren Karten)${haupt ? "" : ". Das automatische Vorlesen ist oben gerade ausgeschaltet."}`)}>
           {an ? <IcoSpkOn s={20}/> : <IcoSpk s={16}/>}</button>);
     };
-    // Rechte Seite der Kopfzeile: (Score) · Stimme · Vorlesen
+    // Rechte Seite der Kopfzeile: (Score) · Vorlesen, die Stimme schwebend darunter (345: erscheint erst mit der Antwort –
+    // so verschiebt sie weder die Score-Symbole noch die Höhe der Kopfzeile)
     const kartenKnoepfe = (typ, text, wo, stimme = true, vorne = null) => (
-      <span className="karten-knoepfe" onClick={e => e.stopPropagation()}>{vorne}{stimme && stimmeKnopf(text, typ, wo)}{lautKnopf(typ)}</span>);
+      <span className="karten-knoepfe" onClick={e => e.stopPropagation()}>{vorne}<span className="karten-laut-spalte">{lautKnopf(typ)}{stimme && stimmeKnopf(text, typ, wo)}</span></span>);
     // Antwort-Text: Teile mit „/“, Alternativen („;“) als „auch: …“ (die getippte zuerst)
     const antwortText = (teile, treffer) => (teile || []).map((teil, i) => {
       const alts = alternativen(teil);

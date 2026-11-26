@@ -19,7 +19,7 @@ const seite = () => page.evaluate(() => document.body.innerText.replace(/\s+/g, 
 const session = () => page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_session_aktiv")));
 const symbole = () => page.evaluate(() => { const s = document.querySelector("[data-karte-antwort] .score-symbole"); if (!s) return null;
   return { score: +s.dataset.scoreSymbole, k: [...s.querySelectorAll(".sym")].map(e => (e.classList.contains("raute") ? "r" : "k") + (e.classList.contains("voll") ? "1" : "0")).join(""),
-    puls: [...s.querySelectorAll(".sym")].map((e, i) => e.classList.contains("puls") ? i : null).filter(i => i !== null).join("") }; });
+    puls: [...s.querySelectorAll(".sym")].map((e, i) => e.classList.contains("puls") ? i : null).filter(i => i !== null).join(""), welle: s.dataset.welle || "" }; });
 const gewusst = async () => {
   await page.evaluate(() => document.querySelector(".sektion").click()); await sleep(200);
   await page.evaluate(() => [...document.querySelectorAll(".karte-btn-ja")].find(b => /Gewusst/.test(b.textContent))?.click());
@@ -53,13 +53,14 @@ for (let i = 0; i < 10 && !(gesehen.a && gesehen.b); i++) {
   if (!vor) break;
   await gewusst(); await sleep(120);
   const nach = await symbole();
-  if (vor.score === 2 && !gesehen.a) gesehen.a = { vor, nach };
+  if (vor.score === 2 && !gesehen.a) { await sleep(600); const zus = await symbole(); await sleep(400); gesehen.a = { vor, welle: nach, zus, nach: await symbole() }; }
   if (vor.score === 3 && !gesehen.b) gesehen.b = { vor, nach };
   await sleep(1300);
 }
 console.log("     ", JSON.stringify(gesehen));
-ok(gesehen.a?.vor.k === "k1k1k0" && gesehen.a?.nach.score === 3 && gesehen.a?.nach.k === "r0r0r0" && gesehen.a?.nach.puls === "012",
-  "252: 2 → 3: aus zwei vollen Kreisen werden drei LEERE Rauten, alle drei pulsieren");
+ok(gesehen.a?.vor.k === "k1k1k0" && gesehen.a?.welle.welle === "welle" && gesehen.a?.welle.k === "k1k1k0" && gesehen.a?.zus.welle === "zusammen" && gesehen.a?.zus.k === "k1k1k1"
+  && gesehen.a?.nach.score === 3 && gesehen.a?.nach.k === "r0r0r0" && gesehen.a?.nach.welle === "",
+  "252/346: 2 → 3: Welle über die Kreise (der dritte füllt sich), dann alle drei gemeinsam, danach drei LEERE Rauten");
 ok(gesehen.b?.vor.k === "r0r0r0" && gesehen.b?.nach.score === 4 && gesehen.b?.nach.k === "r1r0r0" && gesehen.b?.nach.puls === "0",
   "252: 3 → 4 (fällig, gewusst): eine Raute füllt sich und nur sie pulsiert");
 

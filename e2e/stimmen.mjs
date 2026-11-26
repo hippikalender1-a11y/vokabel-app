@@ -97,6 +97,10 @@ ok(!(await page.$('[data-stimme-wechsel="frage"]')), "Deutsch: nur 1 aktive Stim
 // aufdecken → Antwort (Französisch, 2 aktive Stimmen)
 await page.evaluate(() => document.querySelector(".sektion[style*='pointer']")?.click()); await sleep(400);
 ok(await page.evaluate(() => document.querySelector('[data-stimme-wechsel="antwort"]')?.textContent.trim()) === "1/2", "Antwort Französisch: Stimmen-Knopf „1/2“ statt Pfeil");
+{ const lage = await page.evaluate(() => { const st = document.querySelector('[data-stimme-wechsel="antwort"]').getBoundingClientRect(), la = document.querySelector('[data-karte-antwort] [data-spalte-vorlesen]').getBoundingClientRect();
+    return { unter: st.top >= la.bottom - 1, mitte: Math.abs((st.left + st.right) / 2 - (la.left + la.right) / 2) < 2 }; });
+  ok(lage.unter && lage.mitte, `345: Stimmen-Knopf mittig unter dem Lautsprecher (${JSON.stringify(lage)})`);
+  if (process.env.BILD) await page.screenshot({ path: process.env.BILD }); }
 const antwort = await page.evaluate(() => document.querySelector("[data-karte-antwort] .quiz-frage-text")?.textContent.trim());
 await page.click("[data-karte-antwort]"); await sleep(200);
 const vorher = (await letztes())?.voice;

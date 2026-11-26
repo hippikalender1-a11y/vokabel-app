@@ -45,7 +45,7 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "quiz") b.click(); }); await sleep(300);
 const menue = async (sel, dx = 10) => { await page.evaluate((sel, dx) => { const el = document.querySelector(sel); const r = el.getBoundingClientRect();
   el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + dx, clientY: r.y + 10 })); }, sel, dx); await sleep(400); };
-const filterAuf = async () => { if (await page.$('[data-kopf-anzahl][data-schalter-klapp="zu"]')) { await page.click("[data-kopf-anzahl]"); await new Promise(r => setTimeout(r, 300)); } };   // 305
+const filterAuf = async () => {};   // 351: keine Filter in der Auswahl
 const tafel = async () => { await filterAuf(); return tafelRoh(); };
 const tafelRoh = () => page.evaluate(() => ({ raster: [...document.querySelectorAll("[data-schalter-raster] button")].map(b => `${b.dataset.schalter}:${b.dataset.rasterText || __txt(b)}:${b.dataset.an}${b.hasAttribute("data-gesperrt") ? ":x" : ""}`),
   rest: [...document.querySelectorAll("[data-info-menue] > div:not([data-schalter-raster]) button")].map(b => b.dataset.infoAktion || "🎨"),
@@ -54,34 +54,25 @@ const tafelRoh = () => page.evaluate(() => ({ raster: [...document.querySelector
 await menue('[data-slot-id="sA"]'); await menue('[data-slot-id="sB"]');
 let t = await tafel();
 console.log("     ", JSON.stringify(t));
-ok(t.raster.join("|") === "grund:10:an|faellig:+ 🔁 5:an|heute:0:aus:x", `Filter: Auswahl 10 (8 neue + 2 negative) · Fällige 5 · Heute gesperrt (${t.raster.join("|")})`);
 ok(t.rest.join("|") === "🎨|🗂 Ablage ›|↔ Von–Bis", `darunter Farbe · Ablage · Von–Bis (${t.rest.join("|")})`);
 ok(t.kopf === "2 ausgewählt · 10 Vokabeln + 🔁 5", `Kopf: 10 Vokabeln + 🔁 5, nichts doppelt (${t.kopf})`);
-// 283: gesperrter Schalter leuchtet kurz, nichts umgeschaltet
-{ const r = await page.evaluate(async () => { const b = document.querySelector('[data-schalter-raster] [data-schalter="heute"]'); b.click();
-    const sofort = b.classList.contains("leuchten"); await new Promise(r => setTimeout(r, 600));
-    return { sofort, danach: b.classList.contains("leuchten"), an: document.querySelector('[data-schalter-raster] [data-schalter="heute"]')?.dataset.an }; });
-  ok(r.sofort && !r.danach && r.an === "aus", `283: gesperrter Schalter leuchtet kurz (${JSON.stringify(r)})`); }
-// Auswahl antippen → „Bereits abgefragte“ (ohne die nie abgefragten)
-await page.evaluate(() => document.querySelector('[data-schalter-raster] [data-schalter="grund"]').click()); await sleep(400);
-t = await tafel();
-const titelG = await page.evaluate(() => document.querySelector('[data-schalter-raster] [data-schalter="grund"]')?.closest(".quiz-zeile-zelle")?.querySelector(".quiz-zeile-label")?.textContent);
-ok(t.raster[0] === "grund:2:an" && titelG === "Schon geübt" && t.kopf === "2 ausgewählt · 2 Vokabeln + 🔁 5", `310: „Bereits abgefragte“ 2, Kopf „2 Vokabeln + 🔁 5“ (${titelG}, ${t.kopf})`);
-// Kopf antippen → Multiquiz geladen, Schalter bleiben
+ok(t.raster.length === 0, "351: keine Filter in der Auswahl");
+// Kopf antippen → Multiquiz geladen; 351: die Filter-Zeile ist immer offen
 await page.evaluate(() => document.querySelector("[data-wahl-fertig]").click()); await sleep(900);
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
 const q = () => page.evaluate(() => ({ s: [...document.querySelectorAll("[data-schalter-zeile] [data-schalter]")].map(b => `${b.dataset.schalter}:${__txt(b).trim()}:${b.dataset.filterStufe}${b.hasAttribute("data-gesperrt") ? ":x" : ""}`).join("|"),
   titel: __txt(document.querySelector("[data-start-titel]")), nurF: document.querySelector("[data-nur-faellige]")?.dataset.nurFaellige || null }));
-// 278: Auswahl schon in der Tafel getroffen → Schalter-Zeile eingeklappt
-ok(!(await page.$("[data-schalter-zeile]")) && await page.evaluate(() => document.querySelector("[data-schalter-klapp]")?.dataset.schalterKlapp) === "zu", "278: Schalter-Zeile eingeklappt");
-await page.evaluate(() => document.querySelector("[data-schalter-klapp]").click()); await sleep(300);
+ok(!!(await page.$("[data-schalter-zeile]")) && !(await page.$("[data-schalter-klapp]")), "351: Filter-Zeile offen, ohne Auf-/Zuklappen");
+ok((await q()).s === "grund:10:alle|faellig:+ 🔁 5:faellig|heute:0:aus:x", `Filter: Auswahl 10 (8 neue + 2 negative) · Fällige 5 · Heute gesperrt (${(await q()).s})`);
+// Auswahl antippen → „Schon geübt“ (ohne die nie abgefragten)
+await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="grund"]').click()); await sleep(400);
 let z = await q();
 ok(await page.evaluate(() => { const b = document.querySelector('[data-schalter-zeile] [data-schalter="heute"]'); return b.hasAttribute("data-gesperrt") && getComputedStyle(b).opacity === "1"; }), "279: gesperrt, nicht ausgegraut");
 { const r = await page.evaluate(async () => { const b = document.querySelector('[data-schalter-zeile] [data-schalter="heute"]'); b.click();
     const sofort = b.classList.contains("leuchten"); await new Promise(r => setTimeout(r, 600)); return { sofort, danach: b.classList.contains("leuchten"), an: b.dataset.an }; });
   ok(r.sofort && !r.danach && r.an === "aus", `283: gesperrter Schalter leuchtet kurz, bleibt aus (${JSON.stringify(r)})`); }
 console.log("     ", JSON.stringify(z));
-ok(z.s === "grund:2:abgefragt|faellig:+ 🔁 5:faellig|heute:0:aus:x", `Quiz-Tab: Filter-Zeile übernimmt die Auswahl (${z.s})`);
+ok(z.s === "grund:2:abgefragt|faellig:+ 🔁 5:faellig|heute:0:aus:x", `310: „Schon geübt“ 2 (${z.s})`);
 ok(z.titel === "0/2 Vokabeln + 🔁 0/5", `Titel: die 2 Negativen + 🔁 5 (${z.titel})`);
 // Auswahl weiter → aus: nur Fällige übrig → „Nur Fällige“
 await page.evaluate(() => document.querySelector('[data-schalter-zeile] [data-schalter="grund"]').click()); await sleep(300);

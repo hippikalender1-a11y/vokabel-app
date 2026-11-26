@@ -74,7 +74,8 @@ const gew = await page.evaluate(() => { const el = document.querySelector('[data
 ok(gew.gew && gew.ecke === "0px" && gew.nr === "0px" && gew.kopf, `263: ausgewählte Liste – Rahmen und Nummer eckig, Kopf eckig (${JSON.stringify(gew)})`);
 m = await page.evaluate(() => [...__aktionen()].map(b => b.dataset.infoAktion));
 ok(!m.includes("🎯 Bereich wählen…"), "317: kein „🎯 Bereich wählen…“ mehr im Menü der Liste");
-await page.evaluate(() => { const b = document.querySelector("[data-kopf-anzahl]"), r = b.getBoundingClientRect(); b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 10, clientY: r.y + 10 })); }); await sleep(900);   // 317: lang auf die Anzahl im Kopf
+await page.evaluate(() => document.querySelector("[data-wahl-fertig]").click()); await sleep(900);   // 351: erst laden, dann den Bereich über „n V“
+await page.evaluate(() => document.querySelector("[data-kopf-anzahl]").click()); await sleep(900);   // 317: lang auf die Anzahl im Kopf
 const qa = await page.evaluate(() => ({ tab: document.querySelector(".tab.aktiv")?.textContent.trim(), bestaetigen: !!document.querySelector("[data-vok-bestaetigen]"),
   zeilen: document.querySelectorAll('.vok-zeile[data-such-ziel="quiz"]').length, wahl: !!document.querySelector("[data-wahl-fertig]") }));
 ok(/Quiz/.test(qa.tab) && qa.bestaetigen && qa.zeilen === 3 && !qa.wahl, `262: Quiz-Tab, Vokabelliste von „Unit 2“ offen zum Auswählen (${JSON.stringify(qa)})`);
