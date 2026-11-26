@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { LESBAR_SOLL, fv, hexZuHsv, hexZuRgb, hsvZuHex, kontrast, kontrastText } from "./farben.js";
 
 
-// Gelernt-Effekt: Sternenregen von der Antwort-Karte nach außen (8 Sterne, leicht versetzt)
+// Gelernt-Effekt: Sternenregen nach außen (8 Sterne, leicht versetzt) – 353: Zentrum über den Score-Punkten
 export function GelerntSterne() {
   return (
     <span className="gelernt-sterne" data-gelernt-sterne aria-hidden="true">
@@ -11,6 +11,25 @@ export function GelerntSterne() {
       ))}
     </span>
   );
+}
+// 355: Zahl zählt vom alten zum neuen Stand (Quiz-Auswertung); endung z. B. " %"; ohne Bewegung (reduced motion) sofort
+export const AUSW_ANIM_VERZ = 300, AUSW_ANIM_MS = 1000;
+export function ZaehlZahl({ von, nach, endung = "" }) {
+  const ruhig = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const [w, setW] = useState(ruhig || von === nach ? nach : von);
+  useEffect(() => {
+    if (ruhig || von === nach) { setW(nach); return; }
+    let raf, start = null;
+    const schritt = t => {
+      if (start === null) start = t + AUSW_ANIM_VERZ;
+      const x = Math.min(1, Math.max(0, (t - start) / AUSW_ANIM_MS)), e = 1 - Math.pow(1 - x, 3);
+      setW(von + (nach - von) * e);
+      if (x < 1) raf = requestAnimationFrame(schritt);
+    };
+    raf = requestAnimationFrame(schritt);
+    return () => cancelAnimationFrame(raf);
+  }, [von, nach, ruhig]);
+  return <span data-zaehl-ziel={nach}>{Math.round(w)}{endung}</span>;
 }
 // Mini-Kreis im Raster: Lernfortschritt einer Abfrageart (Ü/D/A); aus = keine passenden Vokabeln
 // groesse: Pixel; aufGruen: Farben für die grüne Kopfzeile

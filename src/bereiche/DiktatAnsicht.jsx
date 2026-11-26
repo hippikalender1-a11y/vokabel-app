@@ -1,6 +1,6 @@
 import { CSS } from "../stil.js";
 import { SymWdh } from "../symbole.jsx";
-import { GelerntSterne, IcoDown, IcoSpkOn, IcoUp } from "../komponenten.jsx";
+import { IcoDown, IcoSpkOn, IcoUp } from "../komponenten.jsx";
 import { SK, lsGet } from "../speicher.js";
 import { ScoreSymbolePuls, diktatHint, jubelText, mitHinweis, ohneHinweis } from "../quiz.jsx";
 import { sprich } from "../sprache.js";
@@ -162,7 +162,7 @@ export function DiktatAnsicht(app) {
                 gap: 10,
               }}>
               <div className={antwortBoxKlasse}>
-                {antwortBoxKlasse.includes("gelernt-blitz") && <GelerntSterne/>}
+                
                 {quiz.phase === "eingabe" && <div className="quiz-label">Deine Eingabe</div>}
                 {quiz.phase === "eingabe" && hint && <div className="diktat-hint">{hint}</div>}
                 {quiz.phase === "eingabe" && (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { SK, TYPEN, lsGet, lsLesen, lsSet } from "./speicher.js";
+import { GelerntSterne } from "./komponenten.jsx";
 
 
 // ── Quiz-Feedback ───────────────────────────────────────────────────────────
@@ -395,9 +396,9 @@ export const LERNSTAND_TEILE = {
   negativ: [["-2", sc => sc <= -4, "var(--falsch-dunkel, var(--falsch))"], ["-1", sc => sc < 0 && sc > -4, "color-mix(in srgb, var(--arbeit) 25%, var(--falsch))"]],
   arbeit: [["0", sc => sc === 0, "var(--arbeit)"], ["1", sc => sc === 1, "color-mix(in srgb, var(--gelernt) 15%, var(--arbeit))"], ["2", sc => sc === 2, "color-mix(in srgb, var(--gelernt) 30%, var(--arbeit))"]],
 };
-export const GRUPPE_BALKEN = [["nie", "var(--nie)"], ["negativ", "var(--negativ)"], ["arbeit", "var(--arbeit)"], ["gelernt", "var(--gelernt)"]];
+export const GRUPPE_BALKEN = [["negativ", "var(--negativ)"], ["arbeit", "var(--arbeit)"], ["gelernt", "var(--gelernt)"], ["nie", "var(--nie)"]];   // 354: nie ganz rechts
 // Fortschrittsbalken im Statistik-Kopf: eigene Rollen, unabhängig vom Kreisdiagramm
-export const FORTSCHRITT_BALKEN = [["nie", "var(--fortschritt-nie)"], ["negativ", "var(--fortschritt-negativ)"], ["arbeit", "var(--fortschritt-arbeit)"], ["gelernt", "var(--fortschritt-gelernt)"]];
+export const FORTSCHRITT_BALKEN = [["negativ", "var(--fortschritt-negativ)"], ["arbeit", "var(--fortschritt-arbeit)"], ["gelernt", "var(--fortschritt-gelernt)"], ["nie", "var(--fortschritt-nie)"]];   // 354: nie abgefragt ganz rechts
 // Quiz-Standard: in Paketen abfragen
 export const STANDARD_SESSION_MODUS = "pakete";
 // Standard-Reihenfolge: zufällig (352; vorher schlechteste zuerst), nur Score ≤ 3, unbeantwortete zuerst
@@ -583,6 +584,7 @@ export function ScoreSymbolePuls({ score, id }) {
         {[0, 1, 2].map(i => zusammen
           ? <span key={`z${i}${n}`} className="sym kreis voll zusammen"/>
           : <span key={`w${i}${n}`} className={`sym kreis welle${i === 2 ? " fuellen" : " voll"}`} style={{ animationDelay: `${i * 110}ms` }}/>)}
+        <GelerntSterne key={`s${n}`}/>   {/* 353: Sternenregen mit dem Zentrum über den Punkten */}
       </span>);
   }
   return scoreSymbole(s, false, !welle && p.puls && vergangen < 700 ? p.puls : null, n);

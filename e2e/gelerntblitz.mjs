@@ -57,8 +57,10 @@ for (let i = 0; i < 2; i++) {
   await clickText(".karte-btn-ja", "Gewusst");
   gesehen[f] = await blitz();
   if (gesehen[f]) effekt = await page.evaluate(() => { const b = document.querySelector(".quiz-antwort-box.gelernt-blitz");
-    return { sterne: b.querySelectorAll("[data-gelernt-sterne] .stern").length, dauer: getComputedStyle(b).animationDuration,
+    const w = document.querySelector("[data-score-symbole][data-welle]");   // 353: Sterne über den Score-Punkten
+    return { sterne: w ? w.querySelectorAll("[data-gelernt-sterne] .stern").length : 0, imKasten: b.querySelectorAll(":scope > [data-gelernt-sterne]").length, dauer: getComputedStyle(b).animationDuration,
       farbe: getComputedStyle(document.documentElement).getPropertyValue("--gelernt-effekt").trim() }; });
+  if (gesehen[f]) effekt.breite = await page.evaluate(async () => { let m = 0; for (let t = 0; t < 8; t++) { m = Math.max(m, document.documentElement.scrollWidth); await new Promise(r => setTimeout(r, 80)); } return m; });   // 353: Sterne ohne seitliches Scrollen
   if (process.env.SHOT && f === "gehen") { await sleep(60); await page.screenshot({ path: "blitz_shot.png", clip: { x: 0, y: 60, width: 390, height: 420 } }); }
   await sleep(1200);
 }
@@ -66,7 +68,8 @@ console.log("     Aufleuchten:", JSON.stringify(gesehen));
 ok(gesehen.gehen === true, "„gehen“ (Score 2 → 3, Schwelle 3): Karte leuchtet hellgelb");
 ok(gesehen.kommen === false, "„kommen“ (Score −2 → −1): kein Aufleuchten");
 console.log("     Effekt:", JSON.stringify(effekt));
-ok(effekt?.sterne === 8 && effekt?.dauer === "0.4s" && effekt?.farbe === "#fff176", "Gelernt-Effekt: Sternenregen (8), 0,4 s, eigene Farbe (kräftiges Hellgelb)");
+ok(effekt?.breite <= 390, `353: Sterne lösen kein seitliches Scrollen aus (Breite ${effekt?.breite})`);
+ok(effekt?.sterne === 8 && effekt?.imKasten === 0 && effekt?.dauer === "0.4s" && effekt?.farbe === "#fff176", "Gelernt-Effekt: Sternenregen (8), 0,4 s, eigene Farbe (kräftiges Hellgelb)");
 
 // Mini-Kreis Ü bei 100 %: komplett grün
 await clickText("button", "Zur Übersicht").catch(() => {});

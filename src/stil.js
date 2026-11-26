@@ -31,8 +31,8 @@ export const CSS_BASIS = `
   .eckig{border-radius:var(--liste-ecke) !important;}
   .listen-raster .karte-zeile > .auswahl-nr, .eckig > .auswahl-nr{border-radius:var(--liste-ecke);}   /* 263: Nummer der Listen-Auswahl eckig */
   .liste-detail-header{background:var(--kopfzeile);color:var(--kopf-schrift);border-bottom:1px solid var(--rahmen);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;z-index:9;}
-  .tab{flex:1;padding:12px 4px;font-size:0.82rem;font-weight:600;color:var(--app-kopf-schrift-leise);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;}
-  .tab.aktiv{color:var(--tab-aktiv);border-bottom-color:var(--tab-aktiv);}
+  .tab{flex:1;padding:12px 4px;font-size:0.82rem;font-weight:600;color:var(--app-kopf-schrift-leise);background:none;border:none;cursor:pointer;}
+  .tab.aktiv{color:var(--tab-aktiv);background:var(--tab-aktiv-flaeche);}   /* 356: hinterlegt statt unterstrichen */
   .sektion{padding:20px 16px 0;}
   .sektion-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
   .sektion-label{font-size:0.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text2);}
@@ -244,6 +244,9 @@ export const CSS_BASIS = `
   [data-session-auswertung] .st-name{white-space:nowrap;font-size:0.7rem;}
   [data-session-auswertung] .st-spalte{gap:1px;}
   .st-teil{position:absolute;left:0;right:0;}
+  .st-teil.ausw-wachsen{animation:auswWachsen 1s cubic-bezier(.33,1,.68,1) .3s both;}   /* 355: vom alten Stand (--b0/--h0) zum neuen */
+  @keyframes auswWachsen{from{bottom:var(--b0);height:var(--h0);}}
+  @media (prefers-reduced-motion: reduce){.st-teil.ausw-wachsen{animation:none;}}
   .st-hohl{box-sizing:border-box;border:3px solid var(--gelernt);min-height:6px;}   /* 285: fällige hohl – Rand in Balkenfarbe */
   .st-abgefragt{flex:3;min-width:0;display:flex;flex-direction:column;}   /* 286: die drei abgefragten Balken mit Klammer */
   [data-st-lernstand] > .st-spalte{flex:1;margin-right:14px;padding-right:8px;border-right:1px dashed var(--rahmen);}   /* Nie abgesetzt */
@@ -274,8 +277,10 @@ export const CSS_BASIS = `
   .gelernt-blitz{animation:gelerntBlitz .4s ease-out;position:relative;}
   @keyframes gelerntBlitz{0%,40%{background:var(--gelernt-effekt);border-color:var(--gelernt-effekt);box-shadow:0 0 0 4px var(--gelernt-effekt),0 0 22px var(--gelernt-effekt);}100%{box-shadow:0 0 0 0 transparent;}}
   .gelernt-sterne{position:absolute;inset:0;pointer-events:none;z-index:3;}
+  .score-symbole[data-welle]{position:relative;}   /* 353: Sterne um die Punkte */
+  .sektion:has(.gelernt-sterne){overflow-x:clip;}   /* 353: Sterne am Rand ohne seitliches Scrollen */
   .gelernt-sterne .stern{position:absolute;left:50%;top:50%;color:var(--gelb);font-size:1.2rem;line-height:1;opacity:0;text-shadow:0 0 6px var(--gelernt-effekt);animation:sternFlug .75s ease-out forwards;animation-delay:var(--v);}
-  @keyframes sternFlug{0%{opacity:1;transform:translate(-50%,-50%) rotate(var(--w)) translateX(40px) rotate(calc(-1 * var(--w))) scale(.5);}65%{opacity:1;}100%{opacity:0;transform:translate(-50%,-50%) rotate(var(--w)) translateX(var(--r)) rotate(calc(-1 * var(--w))) scale(1.15);}}
+  @keyframes sternFlug{0%{opacity:1;transform:translate(-50%,-50%) rotate(var(--w)) translateX(12px) rotate(calc(-1 * var(--w))) scale(.5);}65%{opacity:1;}100%{opacity:0;transform:translate(-50%,-50%) rotate(var(--w)) translateX(var(--r)) rotate(calc(-1 * var(--w))) scale(1.15);}}
   .lernen-karte{position:relative;display:flex;flex-direction:column;justify-content:center;min-height:280px;padding:24px 16px;cursor:pointer;}
   .lernen-inhalt{display:flex;flex-direction:column;gap:8px;}
   .lernen-teil{opacity:0;transition:opacity .5s ease-out;}

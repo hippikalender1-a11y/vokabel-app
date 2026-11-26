@@ -2,7 +2,7 @@ import { BLITZ_MS, TYPEN } from "../speicher.js";
 import { fv } from "../farben.js";
 import { ABFRAGE_ART_NAMEN, AKZENTE_FUER_LISTE, ARTIKEL_KAT, ART_KURZ, artikelInfo, vokSprache, GRUPPE_BALKEN, MODI_REIHENFOLGE, QUIZ_ARTEN, STANDARD_ANTWORT_MODUS, hatAkzentWort, istRunde, LERNSTAND_TEILE, lernProzent, mitHinweis, modiVon, modusErlaubt, scoreSymbole, umbruch } from "../quiz.jsx";
 import { AUFTEILEN_GROESSEN, SUCH_SPALTEN, sucheVokabeln } from "../raster.js";
-import { MiniKreis } from "../komponenten.jsx";
+import { MiniKreis, ZaehlZahl } from "../komponenten.jsx";
 import { CSS } from "../stil.js";
 import { SymWdh } from "../symbole.jsx";
 
@@ -124,7 +124,7 @@ export function renderSessionAuswertung(app, d) {
     const dauer = d.startZeit ? Date.now() - d.startZeit : null;
     const dauerText = dauer == null ? null : dauer < 60000 ? "unter 1 Minute" : dauer < 3600000 ? `${Math.round(dauer / 60000)} Minuten`
       : dauer < 86400000 ? `${Math.floor(dauer / 3600000)} Std. ${Math.round((dauer % 3600000) / 60000)} Min.` : `${Math.round(dauer / 86400000)} Tage`;
-    // 268: Lernstand-Balken wie in der Statistik (ganzes Quiz), gestrichelte Linie = Stand vorher, daneben die Veränderung
+    // 268: Lernstand-Balken wie in der Statistik (ganzes Quiz), gestrichelte Linie = Stand vorher; 355: Balken/Zahlen wachsen vom alten zum neuen Stand
     const anz = (werte, f) => werte.filter(sc => sc != null && f(sc)).length;
     const BALKEN = [
       { k: "negativ", name: "Negativ", farbe: "var(--falsch)", teile: LERNSTAND_TEILE.negativ },   // 284
@@ -134,16 +134,17 @@ export function renderSessionAuswertung(app, d) {
     const lernBalken = (
       <div className="st-reihe" data-auswertung-balken>
         {BALKEN.map(b => {
-          const vorN = b.teile.reduce((x, [, f]) => x + anz(vorher, f), 0), nachN = b.teile.reduce((x, [, f]) => x + anz(nachher, f), 0), d = nachN - vorN;
-          let unten = 0;
+          const vorN = b.teile.reduce((x, [, f]) => x + anz(vorher, f), 0), nachN = b.teile.reduce((x, [, f]) => x + anz(nachher, f), 0);
+          let unten = 0, unten0 = 0;
           return (
             <div key={b.k} className="st-spalte">
               <div className="st-balken" data-ausw-balken={b.k} data-vorher={vorN} data-nachher={nachN} {...ttFeld(`${b.name}: vorher ${vorN}, jetzt ${nachN}`)}>
-                {b.teile.map(([k, f, farbe]) => { const h = n ? anz(nachher, f) / n * 100 : 0; const el = h > 0 && <span key={k} className="st-teil" style={{bottom:`${unten}%`, height:`${h}%`, background:farbe}}/>; unten += h; return el; })}
+                {b.teile.map(([k, f, farbe]) => { const h = n ? anz(nachher, f) / n * 100 : 0, h0 = n ? anz(vorher, f) / n * 100 : 0;   // 355: wächst vom alten Stand
+                  const el = (h > 0 || h0 > 0) && <span key={k} className="st-teil ausw-wachsen" style={{bottom:`${unten}%`, height:`${h}%`, "--b0":`${unten0}%`, "--h0":`${h0}%`, background:farbe}}/>; unten += h; unten0 += h0; return el; })}
                 {n > 0 && vorN > 0 && <span className="st-vorher" data-ausw-vorher={vorN} style={{bottom:`${vorN / n * 100}%`}}/>}
               </div>
               <div className="st-name" style={{color:b.farbe}}>{b.name}</div>
-              <div className="st-zahl">{nachN} <span data-ausw-diff={d} style={{fontWeight:700, color: d === 0 ? "var(--text3)" : (d > 0) === (b.k === "gelernt") ? "var(--haupt)" : b.k === "arbeit" ? "var(--text2)" : "var(--falsch)"}}>{d > 0 ? `+${d}` : d < 0 ? `−${-d}` : "±0"}</span></div>
+              <div className="st-zahl"><ZaehlZahl von={vorN} nach={nachN}/></div>   {/* 355: nur der aktuelle Wert, zählt vom alten */}
             </div>
           );
         })}
@@ -157,18 +158,18 @@ export function renderSessionAuswertung(app, d) {
     const gelV = lzV.filter(sc => stufe(sc) != null).length, gelN = lzN.filter(sc => stufe(sc) != null).length, basis = Math.max(gelV, gelN);
     const langzeitBalken = basis > 0 && (
       <>
-        <div className="st-titel" style={{marginTop:8}}>Langzeitgedächtnis <span style={{fontWeight:500, color:"var(--text3)"}}>· {gelV} → {gelN} gelernte</span></div>
+        <div className="st-titel" style={{marginTop:8}}>Langzeitgedächtnis <span style={{fontWeight:500, color:"var(--text3)"}} data-ausw-gelernte data-vorher={gelV} data-nachher={gelN}>· <ZaehlZahl von={gelV} nach={gelN}/> gelernte</span></div>
         <div className="st-reihe" data-ausw-langzeit-balken>
           {[[3, "◇◇◇"], [4, "◆◇◇"], [5, "◆◆◇"], [6, "◆◆◆"]].map(([s, sym]) => {
-            const vN = lzV.filter(sc => stufe(sc) === s).length, nN = lzN.filter(sc => stufe(sc) === s).length, dd = nN - vN;
+            const vN = lzV.filter(sc => stufe(sc) === s).length, nN = lzN.filter(sc => stufe(sc) === s).length;
             return (
               <div key={s} className="st-spalte">
                 <div className="st-balken" data-ausw-stufe={s} data-vorher={vN} data-nachher={nN} {...ttFeld(`${sym}: vorher ${vN}, jetzt ${nN} (100 % = ${basis} gelernte)`)}>
-                  {nN > 0 && <span className="st-teil" style={{bottom:0, height:`${nN / basis * 100}%`, background:"var(--gelernt)"}}/>}
+                  {(nN > 0 || vN > 0) && <span className="st-teil ausw-wachsen" style={{bottom:0, height:`${nN / basis * 100}%`, "--b0":"0%", "--h0":`${vN / basis * 100}%`, background:"var(--gelernt)"}}/>}
                   {vN > 0 && <span className="st-vorher" style={{bottom:`${vN / basis * 100}%`}}/>}
                 </div>
                 <div className="st-name" style={{color:"var(--haupt)"}}>{sym}</div>
-                <div className="st-zahl">{nN} <span data-ausw-diff={dd} style={{fontWeight:700, color: dd === 0 ? "var(--text3)" : "var(--text2)"}}>{dd > 0 ? `+${dd}` : dd < 0 ? `−${-dd}` : "±0"}</span></div>
+                <div className="st-zahl"><ZaehlZahl von={vN} nach={nN}/></div>
               </div>
             );
           })}
@@ -190,7 +191,7 @@ export function renderSessionAuswertung(app, d) {
             {d.mitSession ? "Ganzes Quiz" : "Diese Runde"} · {d.ohneAkzent != null ? `${n} ${n === 1 ? "Wort" : "Wörter"} mit Akzent` : `${n} Vokabel${n !== 1 ? "n" : ""}`}
           </div>
           {lernBalken}
-          {zv.nie + zn.nie > 0 && <div style={{fontSize:"0.72rem", color:"var(--text3)", textAlign:"center", marginTop:6}} data-ausw-nie>nie abgefragt: {zv.nie} → {zn.nie}</div>}
+          {zv.nie + zn.nie > 0 && <div style={{fontSize:"0.72rem", color:"var(--text3)", textAlign:"center", marginTop:6}} data-ausw-nie data-vorher={zv.nie} data-nachher={zn.nie}>nie abgefragt: <ZaehlZahl von={zv.nie} nach={zn.nie}/></div>}
           {langzeitBalken}
         </div>
         {fae.length > 0 && (
@@ -206,7 +207,7 @@ export function renderSessionAuswertung(app, d) {
         <div style={{display:"flex", gap:8, marginBottom:8}}>
           <div className="karte" style={{flex:1, padding:"6px 10px", margin:0, textAlign:"center"}} data-kennzahl="lernfortschritt">
             <div style={{fontSize:"0.7rem", color:"var(--text2)", fontWeight:600}}>Lernfortschritt</div>
-            <div style={{fontSize:"1.05rem", fontWeight:800, color:"var(--haupt)", whiteSpace:"nowrap"}}>{Math.round(pV)} % → {Math.round(pN)} % <span style={{fontSize:"0.75rem", color: pN - pV >= 0 ? "var(--haupt)" : "var(--falsch)", fontWeight:700}}>{pN - pV >= 0 ? "+" : ""}{Math.round(pN - pV)} %</span></div>
+            <div style={{fontSize:"1.05rem", fontWeight:800, color:"var(--haupt)", whiteSpace:"nowrap"}} data-ausw-prozent data-vorher={Math.round(pV)} data-nachher={Math.round(pN)}><ZaehlZahl von={Math.round(pV)} nach={Math.round(pN)} endung=" %"/></div>   {/* 355: nur der Endwert, zählt hoch */}
           </div>
           <div className="karte" style={{flex:1, padding:"6px 10px", margin:0, textAlign:"center"}} data-kennzahl="neu-gelernt" {...ttFeld(`Neu gelernt: Score +${schwelle} erreicht`)}>
             <div style={{fontSize:"0.7rem", color:"var(--text2)", fontWeight:600}}>Neu gelernt</div>
@@ -216,7 +217,7 @@ export function renderSessionAuswertung(app, d) {
         <div data-zusatzdaten style={{fontSize:"0.78rem", color:"var(--text3)", margin:"0 2px 12px"}}>
           {zeile(d.ohneAkzent != null ? "Wörter mit Akzent" : "Vokabeln", d.pakete ? `${n} in ${d.pakete} Paket${d.pakete !== 1 ? "en" : ""}` : n)}
           {d.ohneAkzent > 0 && zeile("Dazu geübt ohne Akzent", `${d.ohneAkzent} (zählen nicht mit)`)}
-          {zeile("Ø Score", `${fmt(sV)} → ${fmt(sN)}`)}
+          {zeile("Ø Score", fmt(sN))}   {/* 355: nur der aktuelle Wert */}
           {zeile("Verbessert · gleich · verschlechtert", `${besser} · ${gleich} · ${schlechter}`)}
           {erstIds.length > 0 && zeile("Auf Anhieb gewusst", `${anhieb} von ${erstIds.length} (${Math.round(anhieb / erstIds.length * 100)} %)`)}
           {dauerText && zeile("Dauer", dauerText)}

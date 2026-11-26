@@ -29,7 +29,7 @@ export const FARB_ROLLEN = [
   ["auf-gelernt", "Schrift auf Statistik: Gelernt", "Häkchen auf 100 %-Kacheln"],
   ["bestaetigen", "Auswahl / Bestätigen", "Bestätigen-Knöpfe, Start-Knopf und alle Auswahl-Markierungen (Rahmen, Nummern, Ziele)"], ["auf-bestaetigen", "Schrift auf Auswahl / Bestätigen", "Text auf Bestätigen- und Start-Knopf, Auswahl-Nummern"],
   ["ordner", "Ordner", "„Alle Quiz“ / „Alle Listen“ im Pfad über den Kacheln"], ["auf-ordner", "Schrift auf Ordner", "Text auf dem Ordner-Knopf"],
-  ["tab-aktiv", "Aktiver Tab", "Schrift und Unterstrich des gewählten Tabs"], ["app-kopf-schrift", "Schrift im App-Kopf", "Titel „Vokabel-Trainer“"], ["app-kopf-schrift-leise", "Schrift im App-Kopf leise", "nicht gewählte Tabs"],
+  ["tab-aktiv", "Aktiver Tab", "Schrift des gewählten Tabs"], ["tab-aktiv-flaeche", "Aktiver Tab: Fläche", "dezent hinterlegter gewählter Tab"], ["app-kopf-schrift", "Schrift im App-Kopf", "Titel „Vokabel-Trainer“"], ["app-kopf-schrift-leise", "Schrift im App-Kopf leise", "nicht gewählte Tabs"],
   ["kopf-schrift", "Schrift auf Kopfzeilen", "Überschriften der Einstellungs-Köpfe, Quiz-, Listen- und Statistik-Kopf"],
   ["kopf-schrift-leise", "Schrift auf Kopfzeilen leise", "Unterzeilen und Pfeile der Kopfzeilen, Info-Zeile im Quiz-Kopf"],
   ["kopf-offen", "Geöffneter Kopf", "Hintergrund eines aufgeklappten Einstellungs-Kopfs"], ["kopf-offen-schrift", "Schrift auf geöffnetem Kopf", "Überschrift und Pfeil eines aufgeklappten Einstellungs-Kopfs"],
@@ -320,7 +320,8 @@ export function farbenAus(f) {
     "dialog-schrift": f["dialog-schrift"] || f["text-stark"],
     "abfrage-schrift": f["abfrage-schrift"] || f["text-stark"], "abfrage-schrift-leise": f["abfrage-schrift-leise"] || f.text2, "leiste": f.leiste || f.haupt, "gelernt-effekt": f["gelernt-effekt"] || "#fff176",
     // eigene Rollen für Flächen; ohne eigenen Wert wie bisher bzw. mit einem Hauch der Hauptfarbe
-    "app-kopf": f["app-kopf"] || k, "kopfzeile": f.kopfzeile || mische(f["haupt-hell"], k, 0.93),
+    "app-kopf": f["app-kopf"] || k, "tab-aktiv-flaeche": f["tab-aktiv-flaeche"] || (f["tab-aktiv"] ? mische(f["tab-aktiv"], f["app-kopf"] || k, 0.86) : mische(f["haupt-hell"], f["app-kopf"] || k, 0.78)),   // 356
+    "kopfzeile": f.kopfzeile || mische(f["haupt-hell"], k, 0.93),
     "abfrage-karte": f["abfrage-karte"] || k, "dialog": f.dialog || k,
     "knopf": f.knopf || f.hintergrund, "info-kasten": f["info-kasten"] || mische(f["haupt-hell"], k, 0.9),
     "haupt-zart": mische(f["haupt-hell"], k, 0.5), "haupt-flaeche": f["haupt-flaeche"] || mische(f["haupt-hell"], k, 0.88), "kopf-offen": f["kopf-offen"] || f["haupt-flaeche"] || mische(f["haupt-hell"], k, 0.88),

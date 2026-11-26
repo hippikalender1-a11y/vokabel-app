@@ -55,7 +55,7 @@ await page.evaluate(() => { if (!document.querySelector("[data-vorschau-gruppen]
 const r = await page.evaluate(() => ({ balken: [...document.querySelectorAll("[data-vorschau-balken] [data-gruppe]")].map(x => x.dataset.gruppe).join(","),
   legende: [...document.querySelectorAll("[data-vorschau-gruppen] [data-gruppe-text]")].map(x => x.dataset.gruppeText).join(","),
   fae: __txt(document.querySelector("[data-vorschau-gruppen] [data-faellig-text]")) }));
-ok(r.balken === "nie,negativ,gelernt" && r.legende === "nie,negativ,gelernt", `275: Reihenfolge links nie → rechts gelernt (${JSON.stringify(r)})`);
+ok(r.balken === "negativ,gelernt,nie" && r.legende === "negativ,gelernt,nie", `275/354: Reihenfolge negativ … gelernt, nie ganz rechts (${JSON.stringify(r)})`);
 // ── 270: eigenes Zeichen in Schriftfarbe ──
 await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") document.querySelector("[data-slot-kopf-name]").click(); }); await sleep(400);
 const z = await page.evaluate(() => { const b = document.querySelector('[data-schalter-zeile] [data-schalter="faellig"]'), s = b?.querySelector("svg[data-sym='wiederholung']");

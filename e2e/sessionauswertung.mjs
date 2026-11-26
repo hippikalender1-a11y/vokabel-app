@@ -39,7 +39,7 @@ const paket = async (nicht = []) => {
 };
 const auswertung = () => page.evaluate(() => {
   const b = [...document.querySelectorAll("[data-ausw-balken]")];
-  const nie = (document.querySelector("[data-ausw-nie]")?.textContent.match(/(\d+) → (\d+)/) || []);
+  const nE = document.querySelector("[data-ausw-nie]"), nie = nE ? [null, nE.dataset.vorher, nE.dataset.nachher] : [];   // 355: nur Endwert im Text
   const map = feld => Object.fromEntries([...b.filter(x => +x.dataset[feld] > 0).map(x => [x.dataset.auswBalken, x.dataset[feld]]), ...(nie.length && +nie[feld === "vorher" ? 1 : 2] > 0 ? [["nie", nie[feld === "vorher" ? 1 : 2]]] : [])]);
   return { text: document.querySelector("[data-session-auswertung]")?.innerText.replace(/\s+/g, " ") || "", start: map("vorher"), ende: map("nachher") };
 });
@@ -83,7 +83,15 @@ await sleep(400);
 ok(await kopf() === "10/12", `zweites Paket: Balken zählt die ganze Quiz weiter (${await kopf()})`);
 await paket([]);
 ok(await page.$("[data-zur-auswertung]"), "Quiz fertig: „Weiter →“");
-await page.click("[data-zur-auswertung]"); await sleep(400);
+await page.click("[data-zur-auswertung]"); await sleep(120);
+// 355: nur aktuelle Werte (kein „+2“/„−1“/„±0“), Balken und Zahlen laufen vom alten zum neuen Stand
+const zahlen = () => page.evaluate(() => ({ gel: document.querySelector('[data-ausw-balken="gelernt"]')?.closest(".st-spalte")?.querySelector(".st-zahl")?.textContent.trim(),
+  hoehe: (b => b ? Math.round(b.getBoundingClientRect().height) : -1)(document.querySelector('[data-ausw-balken="gelernt"] .st-teil')),
+  prozent: document.querySelector("[data-ausw-prozent]")?.textContent.trim(), diff: document.querySelectorAll("[data-ausw-diff]").length }));
+const frueh = await zahlen(); await sleep(1600); const spaet = await zahlen();
+console.log("     355 früh/spät:", JSON.stringify(frueh), JSON.stringify(spaet));
+ok(frueh.gel === "0" && frueh.hoehe <= 2 && spaet.gel === "2" && spaet.hoehe > 5, "355: Gelernt zählt von 0 auf 2, der Balken wächst vom alten Stand");
+ok(spaet.diff === 0 && /^\d+ %$/.test(spaet.prozent || ""), `355: keine Veränderungen als Text, Lernfortschritt nur Endwert („${spaet.prozent}“)`);
 let a = await auswertung();
 { await page.setViewport({ width: 360, height: 690 }); await sleep(300);   // 348: Handy-Größe – alles samt Knöpfen ohne Scrollen
   const unten = await page.evaluate(() => { window.scrollTo(0, 0); const b = [...document.querySelectorAll(".sektion button")].pop(); return { bottom: Math.round(b.getBoundingClientRect().bottom), text: b.textContent.trim(), reihe: [...document.querySelectorAll(".sektion button")].map(x => x.textContent.trim()).join(" | ") }; });

@@ -40,6 +40,13 @@ ok(await variable("gelernt") === "#2d6a4f", "Kreisdiagramm-Farbe Gelernt bleibt 
 const diagrammText = await page.evaluate(() => { const t = [...document.querySelectorAll("svg text, .sektion div, .sektion span")].find(e => /Nie abgefragt|In Arbeit|Gelernt/.test(e.textContent) && !e.closest("[data-statistik-kopf-balken]")); return t ? getComputedStyle(t).color : null; });
 ok(diagrammText && diagrammText !== "rgb(255, 255, 255)", `Texte am Kreisdiagramm nicht in der Kopf-Schrift (${diagrammText})`);
 
+// 354: im Fortschrittsbalken „nie abgefragt“ ganz rechts; 356: aktiver Tab hinterlegt statt unterstrichen
+const reihe = await page.evaluate(() => [...document.querySelectorAll("[data-statistik-kopf-balken] > div")].map(d => d.dataset.gruppe).join(","));
+ok(/nie$/.test(reihe) && !/nie,/.test(reihe), `354: Fortschrittsbalken – nie abgefragt ganz rechts (${reihe})`);
+const tab = await page.evaluate(() => { const t = document.querySelector(".tab.aktiv"), u = [...document.querySelectorAll(".tab")].find(x => !x.classList.contains("aktiv")), cs = getComputedStyle(t);
+  return { bg: cs.backgroundColor, rand: cs.borderBottomWidth, andere: getComputedStyle(u).backgroundColor }; });
+ok(tab.bg !== "rgba(0, 0, 0, 0)" && tab.bg !== tab.andere && tab.rand === "0px", `356: aktiver Tab hinterlegt, ohne Unterstrich (${JSON.stringify(tab)})`);
+
 await browser.close();
 console.log(fehler ? `\n${fehler} FEHLER` : "\nALLES OK");
 process.exit(fehler ? 1 : 0);

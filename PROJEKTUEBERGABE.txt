@@ -4145,3 +4145,35 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
        schalterZeileZu entfällt ganz (Filter-Zeile immer offen). Bereichsknopf antippen = waehleBereichGeladen("quiz"),
        lang ohne Funktion. Filter-Zeile niedriger (min-height 30), Hintergrund wie Kopf, 10 px Abstand danach.
   352: STANDARD_REIHENFOLGE = "zufall" (Gruppen-Quiz aus der Statistik bleibt bewusst „schlechteste zuerst“).
+- 353 UMGESETZT: Gelernt-Sternenregen (GelerntSterne, komponenten.jsx) – das Zentrum des Effekts soll über den Score-Punkten
+  selbst liegen (dort, wo die Welle aus 346 läuft), nicht über der Antwort-Karte. Heute: <GelerntSterne/> in der
+  Antwort-Box (AbfrageAnsicht Z. ~522, DiktatAnsicht Z. ~165). Info-Text in EinstellungenTab („fliegt heraus“) mit anpassen.
+- 354 UMGESETZT: „Nie abgefragt“ (ungelernte) im Fortschrittsbalken ganz nach rechts
+  Reihenfolge Negativ · Auf einem guten Weg · Gelernt · Nie abgefragt (grau rechts) – in BEIDEN Balken: Statistik-Kopf
+  (StatistikTab Z. ~100) und Listen-Kopf (koepfe.jsx Z. 27). Stelle: FORTSCHRITT_BALKEN in quiz.jsx Z. ~400 (gemeinsam).
+  tt-Text am Balken (StatistikTab Z. ~99) in derselben Reihenfolge. Die Lernstand-Karte (Säulen „Nie abgefragt“ links,
+  dann Klammer „n abgefragt“) bleibt UNVERÄNDERT.
+- 355 UMGESETZT: Quiz-Auswertung nur mit aktuellen Werten, ohne Veränderungen („+3“, „−5“, „±0“)
+  Stellen: teile.jsx renderSessionAuswertung – Lernstand-Balken Z. ~146 und Langzeit-Balken Z. ~171 (span data-ausw-diff
+  entfernen, nur nachN/nN stehen lassen). Offen: Kachel „Lernfortschritt 8 % → 10 % +2 %“ (Z. ~209) – „+2 %“ ebenfalls
+  weg? (Vorher → nachher bleibt vermutlich, da das die Kachel ausmacht.) Test sessionauswertung (data-ausw-diff) anpassen.
+  Zusatz 355: Beim Öffnen der Auswertung den alten Stand in den neuen animieren – Balkenhöhen wachsen/schrumpfen von
+  vorher auf nachher, Zahlen zählen hoch/runter (z. B. 45 → 48), Lernfortschritt-Prozent ebenso (8 % → 10 %). So bleibt
+  die Veränderung sichtbar, ohne „+3“ als Text. Dauer ca. 0,8–1,2 s, kurz nach dem Erscheinen starten; bei
+  prefers-reduced-motion sofort Endstand. Test: Endstand nach Animation prüfen (bzw. data-Attribut mit Zielwert).
+  Entschieden 355: Kachel Lernfortschritt zeigt nur noch den Endwert (z. B. „10 %“), der von 8 % hochzählt – kein
+  „8 % → 10 %“ und kein „+2 %“ mehr.
+- 356 UMGESETZT: Tab-Leiste (Statistik / Quiz / Einstellungen) – aktiver Tab nicht mehr unterstrichen, sondern dezent
+  hellgrün hinterlegt (ganze Tab-Fläche). Stelle: stil.js Z. 34/35 (.tab border-bottom, .tab.aktiv border-bottom-color →
+  background z. B. var(--haupt-zart)). Schriftfarbe grün bleibt. Evtl. eigene Farbe „Tab aktiv Hintergrund“ im Farbmodus
+  (farben.js), Dunkelmodus prüfen.
+  Umsetzung 353–356:
+  353: <GelerntSterne/> jetzt in ScoreSymbolePuls (Wellen-Phase, Zentrum über den drei Punkten, Start-Radius 12 px);
+       aus der Antwort-Box entfernt. .sektion:has(.gelernt-sterne){overflow-x:clip} verhindert seitliches Scrollen.
+  354: FORTSCHRITT_BALKEN und GRUPPE_BALKEN (Info-Sektion) samt Legende gruppenKurz: negativ, arbeit, gelernt, nie.
+       Lernstand-Säulen der Statistik unverändert.
+  355: ZaehlZahl (komponenten.jsx, 300 ms Verzögerung, 1 s) für Säulen-Zahlen, Langzeit, „nie abgefragt“, Lernfortschritt
+       (nur Endwert); Säulen wachsen per @keyframes auswWachsen von --b0/--h0. Ø Score nur aktueller Wert.
+       data-ausw-diff entfällt; Vorher-Werte als data-vorher/data-nachher (Tests).
+  356: .tab ohne Unterstrich, .tab.aktiv background var(--tab-aktiv-flaeche) (neue Farbrolle, Standard: haupt-hell
+       zu 78 % in den App-Kopf gemischt; bei eigener Tab-Schriftfarbe diese zu 86 %).

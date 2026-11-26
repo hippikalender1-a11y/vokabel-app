@@ -96,9 +96,9 @@ export function StatistikTab(app) {
                     <span data-statistik-kopf-prozent style={{fontWeight:800, fontSize:"1.25rem", color: keineAkzente ? "var(--kopf-schrift-leise)" : "var(--kopf-schrift)"}}>{keineAkzente ? "–" : `${Math.round(lernFortschritt)} %`}</span>
                   </div>
                   <div data-statistik-kopf-balken style={{display:"flex", width:"min(260px, 100%)", height:6, borderRadius:3, overflow:"hidden", background:"var(--fortschritt-balken)", margin:"3px 0 2px"}}
-                    {...tt(`Nie abgefragt ${kopfAnzahl.nie} · Negativ ${kopfAnzahl.negativ} · In Arbeit ${kopfAnzahl.arbeit} · Gelernt ${kopfAnzahl.gelernt}`)}>
+                    {...tt(`Negativ ${kopfAnzahl.negativ} · In Arbeit ${kopfAnzahl.arbeit} · Gelernt ${kopfAnzahl.gelernt} · Nie abgefragt ${kopfAnzahl.nie}`)}>
                     {kopfVoks.length > 0 && FORTSCHRITT_BALKEN.map(([g, farbe]) => kopfAnzahl[g] > 0 && (
-                      <div key={g} style={{width:`${kopfAnzahl[g] / kopfVoks.length * 100}%`, background:farbe}}/>
+                      <div key={g} data-gruppe={g} style={{width:`${kopfAnzahl[g] / kopfVoks.length * 100}%`, background:farbe}}/>
                     ))}
                   </div>
                   <div data-statistik-kopf-zahl style={{fontSize:"0.7rem", color:"var(--kopf-schrift-leise)", whiteSpace:"nowrap"}}>

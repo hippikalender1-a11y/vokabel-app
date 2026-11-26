@@ -70,12 +70,12 @@ await sleep(600);
 await page.screenshot({ path: "jubel.png" });
 
 ok(await page.$("[data-zur-auswertung]") && !(await page.$("[data-nochmal]")), "erster Bildschirm: nur „Weiter →“, kein „Nochmal!“");
-await weiterZurAuswertung();
+await weiterZurAuswertung(); await new Promise(r => setTimeout(r, 1600));   // 355: Zahlen zählen hoch
 const ausw = await page.evaluate(() => ({ titel: document.querySelector(".topbar-title")?.textContent.trim(), text: document.querySelector("[data-session-auswertung]")?.innerText.replace(/\s+/g, " ") || "",
   balken: [...document.querySelectorAll("[data-ausw-balken]")].map(b => b.dataset.auswBalken).join(",") }));
 console.log("     Auswertung:", ausw.text.slice(0, 260));
 ok(ausw.titel === "Quiz-Auswertung" && ausw.balken === "negativ,arbeit,gelernt", "„Weiter →“: Quiz-Auswertung mit den Lernstand-Balken (268)");
-ok(/Ganzes Quiz · 4 Vokabeln/i.test(ausw.text) && /Neu gelernt/.test(ausw.text) && /Lernfortschritt 0 % → 33 %/.test(ausw.text), "Kennzahlen: ganze Quiz, Lernfortschritt 0 % → 33 %");
+ok(/Ganzes Quiz · 4 Vokabeln/i.test(ausw.text) && /Neu gelernt/.test(ausw.text) && /Lernfortschritt 33 %/.test(ausw.text), "Kennzahlen: ganze Quiz, Lernfortschritt zählt auf 33 % (355)");
 ok(/Auf Anhieb gewusst 4 von 4/.test(ausw.text) && /Vokabeln 4 in 1 Paket/.test(ausw.text) && /Dauer/.test(ausw.text), "Zusatzdaten: auf Anhieb 4 von 4, 1 Paket, Dauer");
 ok(await page.$("[data-nochmal]"), "darunter die gewohnten Knöpfe (Nochmal!)");
 await page.click("[data-nochmal]"); await sleep(600);

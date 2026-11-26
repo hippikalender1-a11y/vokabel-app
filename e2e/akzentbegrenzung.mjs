@@ -101,7 +101,7 @@ await page.evaluate(() => document.querySelector("[data-zur-auswertung]")?.click
 const ausw = await page.evaluate(() => document.querySelector("[data-session-auswertung]")?.innerText.replace(/\s+/g, " ") || "");
 console.log("     Auswertung:", ausw);
 ok(/4 Wörter mit Akzent/i.test(ausw) && /Dazu geübt ohne Akzent 4 \(zählen nicht mit\)/.test(ausw), "Auswertung: 4 Wörter mit Akzent, 4 ohne nur geübt");
-const segStart = await page.evaluate(() => { const m = document.querySelector("[data-ausw-nie]")?.textContent.match(/(\d+) →/); const b = [...document.querySelectorAll("[data-ausw-balken]")].filter(x => +x.dataset.vorher > 0).map(x => x.dataset.auswBalken + ":" + x.dataset.vorher);
+const segStart = await page.evaluate(() => { const e = document.querySelector("[data-ausw-nie]"), m = e && [null, e.dataset.vorher]; const b = [...document.querySelectorAll("[data-ausw-balken]")].filter(x => +x.dataset.vorher > 0).map(x => x.dataset.auswBalken + ":" + x.dataset.vorher);
   return [...b, ...(m && +m[1] > 0 ? ["nie:" + m[1]] : [])].join(","); });
 ok(segStart === "nie:4", `Balken Start: nur die 4 Wörter mit Akzent (${segStart})`);
 

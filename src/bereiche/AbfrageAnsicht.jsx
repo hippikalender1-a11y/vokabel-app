@@ -2,7 +2,7 @@ import { BLITZ_SEKUNDEN, FESTES_ZEICHEN, SATZ_ARTEN, STANDARD_ANTWORT_MODUS, ZUO
 import { CSS } from "../stil.js";
 import { SymWdh } from "../symbole.jsx";
 import { Fragment } from "react";
-import { GelerntSterne, IcoSpk, IcoSpkOn } from "../komponenten.jsx";
+import { IcoSpk, IcoSpkOn } from "../komponenten.jsx";
 import { SK, lsGet, splitInSeiten } from "../speicher.js";
 import { STIMMEN_WAHL, aktiveStimmen, gewaehlteStimme, normLang, sprich, stimmeFuer } from "../sprache.js";
 import { istSynonymSpalte, synonymeAus } from "../saetze.js";
@@ -519,7 +519,7 @@ export function AbfrageAnsicht(app) {
 
                     <div className={antwortBoxKlasse} style={{marginBottom:0, position:"relative", ...(antwortSichtbar ? { cursor:"pointer" } : {})}} data-karte-antwort data-karte-verdeckt={isKarteEingabe ? "" : undefined} {...antwortBearbeiten}
                       {...(antwortSichtbar ? { onClick: e => { e.stopPropagation(); sprich(antwortGanz, vokLang(aktVok, aktAntwortTyp)); } } : {})}>
-                      {antwortBoxKlasse.includes("gelernt-blitz") && <GelerntSterne/>}
+                      
                       <div className="karten-kopf">
                         <span className="quiz-label" style={{display:"inline-flex", alignItems:"center"}}>{antwortStatus(antwortBoxKlasse)}{antwortLabel}{isWeitere && <span style={{color:"var(--info)", marginLeft:8}}>— weitere Antwort</span>}</span>
                         {kartenKnoepfe(aktAntwortTyp, antwortGanz, "antwort", antwortSichtbar, <ScoreSymbolePuls score={akz ? aktVok?.akzentFortschritt?.score : aktVok?.fortschritt?.score} id={`${aktVok?.id}${akz ? "|a" : ""}`}/>)}   {/* 252 */}

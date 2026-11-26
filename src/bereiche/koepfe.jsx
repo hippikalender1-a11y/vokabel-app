@@ -293,7 +293,7 @@ export function renderSlotKopf(app, statistik) {
 export function gruppenKurz(app, anz, vorn = null, hinten = null) {
   const {  } = app;
     const farbe = Object.fromEntries(GRUPPE_BALKEN);
-    const teile = [["nie", "nie"], ["negativ", "✗"], ["arbeit", "in Arbeit"], ["gelernt", "✓"]].filter(([g]) => anz[g])
+    const teile = [["negativ", "✗"], ["arbeit", "in Arbeit"], ["gelernt", "✓"], ["nie", "nie"]].filter(([g]) => anz[g])
       .map(([g, l]) => <span key={g} data-gruppe-text={g}><span className="gruppen-punkt" style={{background:farbe[g]}}/>{anz[g]} {l}</span>);
     return [vorn, ...teile, hinten].filter(Boolean).flatMap((x, i) => i ? [" · ", x] : [x]);
   }
