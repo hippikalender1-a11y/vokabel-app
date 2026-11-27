@@ -89,12 +89,14 @@ ok(await page.evaluate(() => document.querySelector(".quiz-frage-text").getBound
 await zurueck();
 ok(await page.$('[data-rueckblick="3"]') && await frage() === "vier", `nach rechts wischen: vorige Karte „vier“ (${await frage()})`);
 ok(await page.evaluate(() => document.querySelector('[data-rueck-bewertung="falsch"]')?.dataset.gewaehlt) === "ja", "Rückblick: „Nicht gewusst“ als Wertung markiert");
-await page.evaluate(() => document.querySelector('[data-rueck-bewertung="richtig"]').click()); await sleep(300);
-ok((await vok(4)).fortschritt.score === -1, "antippen der anderen Bewertung ändert nichts");
-await kontext('[data-rueck-bewertung="richtig"]');
-ok(await page.evaluate(() => !!__aktion('✓ Doch gewusst – umwerten')), "Lang-Druck auf „Gewusst“: Rückfrage „✓ Doch gewusst – umwerten“");
-await aktion("✓ Doch gewusst – umwerten");
-ok((await vok(4)).fortschritt.score === 1, `umgewertet: Score aus dem Stand vor der Antwort neu (0 + richtig = 1) (${(await vok(4)).fortschritt.score})`);
+// 357: ein Antippen des anderen Knopfs wertet um – beliebig oft hin und her
+const klickRueck = async w => { await page.evaluate(w => document.querySelector(`[data-rueck-bewertung="${w}"]`).click(), w); await sleep(300); };
+await klickRueck("richtig");
+ok((await vok(4)).fortschritt.score === 1, `357: antippen „Gewusst“ wertet um – Score aus dem Stand vor der Antwort neu (0 + richtig = 1) (${(await vok(4)).fortschritt.score})`);
+await klickRueck("falsch");
+const zurueckGewertet = (await vok(4)).fortschritt.score, ohneMarke = !(await page.$("[data-rueck-geaendert]"));
+await klickRueck("richtig");
+ok(zurueckGewertet === -1 && ohneMarke && (await vok(4)).fortschritt.score === 1, `357: hin und her – wieder −1 (ohne „geändert“), dann wieder 1 (${zurueckGewertet}, ${(await vok(4)).fortschritt.score})`);
 ok(await page.evaluate(() => document.querySelector('[data-rueck-bewertung="richtig"]')?.dataset.gewaehlt) === "ja" && await page.$("[data-rueck-geaendert]"), "Rückblick zeigt jetzt „Gewusst“, als geändert markiert");
 await zurueck(); await zurueck();
 ok(await page.$('[data-rueckblick="1"]') && await frage() === "zwei", `zwei weitere Karten zurück: „zwei“ (${await frage()})`);

@@ -4177,3 +4177,83 @@ Gemeldet (offen, Rückfrage): nach „Auswahl beenden“ ist eine andere Kachel 
        data-ausw-diff entfällt; Vorher-Werte als data-vorher/data-nachher (Tests).
   356: .tab ohne Unterstrich, .tab.aktiv background var(--tab-aktiv-flaeche) (neue Farbrolle, Standard: haupt-hell
        zu 78 % in den App-Kopf gemischt; bei eigener Tab-Schriftfarbe diese zu 86 %).
+- 357 UMGESETZT: Rückblick (zurückwischen) – Bewertung ändern und Kartentext bearbeiten
+  Befund im Code: Im Rückblick (renderRueckblick, teile.jsx ~Z. 541) lässt sich die Bewertung nur per langem Druck auf den
+  NICHT gewählten Knopf ändern („Doch gewusst – umwerten“). In der Wiederholung (erstbewertung false, abfrage.jsx Z. 418)
+  entsteht keine Wertung (wertung null, zaehlt false) → umwerten dreht nur die Anzeige um (außer Ziel „n× richtig“:
+  richtigMap); ob die Vokabel erneut wiederholt wird, ändert sich nicht. Kartentext bearbeiten gibt es im Rückblick gar
+  nicht (nur auf der aktuellen Karte: langer Druck auf Frage/Antwort → „Frage/Antwort bearbeiten“, AbfrageAnsicht Z. 396/400).
+  Wunsch:
+  a) Bewertung im Rückblick auch in der Wiederholung wirksam ändern (Vokabel kommt dann (nicht) noch einmal dran; Zählung
+     der Wiederholung mitziehen). Prüfen, ob einfaches Antippen des anderen Knopfs reichen soll.
+  b) Im Rückblick Frage und Antworten per langem Druck bearbeiten wie auf der aktuellen Karte (Vorlesen/Tempo dazu).
+  Entschieden 357a: Umwerten per einfachem Antippen des anderen Knopfs (kein langer Druck mehr nötig); beliebig oft hin
+  und her schaltbar, jede Umschaltung rechnet Score/Zählung/Wiederholung korrekt neu (umwerten ist schon umkehrbar –
+  „↺ nachträglich geändert“ nur, solange es vom ursprünglichen Ergebnis abweicht). tt-Text anpassen.
+- 358 UMGESETZT: Statistik-Kopf – Pfeile statt Vokabel-Auswahl-Knopf
+  Der rechte Knopf („n V / Alle|Auswahl“, anzahlSeg in koepfe.jsx; Statistik: antippen = alle Gruppen einblenden, lang =
+  Bereich) entfällt im Statistik-Tab. Stattdessen links und rechts vom Namen je ein Pfeil-Knopf (‹ ›): blättert zur
+  vorherigen/nächsten Liste bzw. zum vorherigen/nächsten Quiz im selben Ordner (Reihenfolge wie in der Übersicht).
+  Damit fällt im Statistik-Tab weg: Bereich wählen (bisher lang) – „alle einblenden“ geht weiter über „Lernstand · n
+  Vokabeln“. Offene Fragen: Rand (am Ende anhalten/ausgegraut oder von vorn), Listen ohne Ordner (oberste Ebene
+  durchblättern?), geladener Ordner/mehrere Listen (Pfeile aus?), wirkt das Blättern auch auf den Quiz-Tab (geteilte
+  Auswahl wie bisher)?
+  Entschieden 358: Am Rand von vorn (im Kreis). Geblättert wird durch genau das, was auf der aktuellen Ebene der
+  Listen- bzw. Quiz-Auswahl zu sehen ist (geöffneter Ordner oder oberste Ebene, in deren Reihenfolge; ein Ordner auf
+  dieser Ebene vermutlich mit seinem ganzen Inhalt wie beim Laden – beim Umsetzen klären/zeigen). Das Blättern wechselt
+  auch die Auswahl im Quiz-Tab (geteilt wie bisher).
+- 359 UMGESETZT: Ansicht der Listen-/Quiz-Auswahl – neuer Standard und „nur diese Ebene / alle Ebenen“
+  a) Standard für Listen UND Quiz: automatische Anordnung (lueckenlos), dauerhaft sortiert nach Name, 2 Spalten.
+     Heute: lueckenlos global in einstellungen (Standard aus = frei), Spalten je Ordner bzw. einstellungen.ebenenSpalten
+     (Standard 1, minSpalten App.jsx Z. 178), „⇅ Anordnen…“ ist nur eine einmalige Aktion (Name/Datum/Lernstand/Lücken).
+     Neu: Automatisch = lückenlos UND dauerhaft sortiert; Sortierung standardmäßig Name, über „Anordnen…“ weiter auf
+     Datum / Lernstand umstellbar (dann bleibt diese Sortierung, neue Listen/Quiz sortieren sich von selbst ein).
+     Freie Anordnung bleibt wie bisher (eigene Plätze).
+  b) Bestand: einmalig beim nächsten Start alles auf automatisch, nach Name, 2 Spalten umstellen (Migrations-Merker wie
+     vokabel_negativ_v1); danach frei änderbar.
+  c) Bei den Ansichts-Aktionen im Ebenen-Menü (▥ Spalten, ⇅ Anordnen…, Automatische/Freie Anordnung) wählen können:
+     „nur diese Ebene“ oder „alle Ebenen“ (oberste Ebene + alle Ordner/Unterordner). Dafür Anordnung/Sortierung je Ebene
+     speichern (heute global bzw. einmalig). Gilt getrennt für Listen und Quiz.
+- 360 UMGESETZT: Multi-Quiz (🧩) – rechten Knopf „n V / Alle“ im Quiz-Tab ausblenden
+  Befund: Für Multi-Quiz ist das Antippen bewusst ohne Funktion (koepfe.jsx Z. 240: tipp: multi ? null), der Knopf steht
+  aber da. Grund: ein Multi-Quiz besteht aus mehreren gespeicherten Quiz mit je eigener Liste(n) und eigenem Bereich – eine
+  gemeinsame Vokabelauswahl müsste über alle Teile gehen und deren Bereiche überschreiben (machbar, aber großer Umbau).
+  Wunsch: bei Multi-Quiz den Knopf ganz weglassen; der Name geht dann über die ganze Breite (wie in der Auswahl, 351).
+  Anzahl der Vokabeln steht weiter in der Info-Sektion.
+- 361 UMGESETZT: Von–Bis in der Vokabelauswahl (QuizTab ~Z. 296–315, vonBisLangDruck in logik/auswertung.jsx Z. 160)
+  a) Langer Druck startet Von–Bis (wie bisher). Ein zweiter langer Druck auf eine andere Vokabel setzt das „Bis“ und
+     schließt den Bereich ab (Antippen geht weiter); langer Druck auf den Anfang selbst bricht Von–Bis ab.
+     Heute setzt jeder lange Druck nur einen neuen Anfang.
+  b) Von–Bis kehrt die Auswahl um: jedes Element im Bereich (einschließlich Anfang und Ende) einzeln umschalten –
+     gewählte werden abgewählt, nicht gewählte gewählt. Heute werden alle nur hinzugefügt (neu.add).
+  tt-Texte anpassen; Test vonbis_langdruck erweitern.
+- 362 UMGESETZT: Vokabelauswahl – „Abbrechen“ neben „Bestätigen“
+  Wie bisher (350): unverändert „← Zurück“ (grün), nach einer Änderung „✓ Bestätigen“ (orange). Neu: sobald geändert,
+  steht neben „Bestätigen“ zusätzlich „✕ Abbrechen“ – verwirft die Änderungen (Auswahl auf den Stand beim Öffnen,
+  vokWahlStartRef, inkl. Bereichstyp) und geht zurück wie „Zurück“. Stelle: QuizTab rechte Werkzeugleiste
+  (data-vok-bestaetigen/data-vok-zurueck). Von–Bis-Modus dabei mit beenden.
+  Umsetzung 357–362:
+  357: Rückblick – anderer Knopf antippen = umwerten (umwerten ist umkehrbar, „geändert“ nur bei Abweichung); Frage und
+       Antworten lang drücken → „✎ … bearbeiten“ (oeffneVokabelBearbeiten, renderVokabelEditor im Rückblick), angezeigt
+       wird der aktuelle Text. Wiederholung: Ziel „n× richtig“ zieht richtigMap mit (war schon so); ohne Ziel wird in der
+       Wiederholung nicht gewertet → nur die Anzeige.
+  358: Statistik-Kopf (zu): statt anzahlSeg die Pfeile ‹ › (data-kopf-pfeil). statistikBlaettern (App.jsx): Elemente der
+       aktuellen Ebene der Auswahl (auswahlListen → Listen/listenOrdnerOffen, sonst Quiz/slotOrdner), Reihenfolge wie
+       angezeigt (autoReihe), Sprachfilter; im Kreis; Ordner = ganzer Inhalt (zeigeListenStatistik bzw. beendeMultiAuswahl
+       → Multiquiz). Wechselt den Quiz-Tab mit. Bereich wählen gibt es in der Statistik nicht mehr (nur im Quiz-Tab).
+  359: raster.js ansichtVon / autoReihe / sortVergleich. Je Ebene: Ordner-Felder anordnung ("auto"|"frei"), sortierung
+       ("name"|"datum"|"lernstand"), spalten; oberste Ebene einstellungen.ebenenAnordnung/ebenenSortierung/ebenenSpalten
+       [liste|slot]. Standard auto/name/2. Automatisch = Anzeige sortiert (name, datum live; lernstand: einmal als Plätze
+       gespeichert, Anzeige nach Plätzen). „Frei“ zeigt die gespeicherten eigenen Plätze (bleiben erhalten). Menü:
+       „⇅ Anordnen (Name|Datum|Lernstand|Frei)…“, der Schalter Automatische/Freie Anordnung entfällt. Fenster Spalten und
+       Anordnen mit „Nur diese Ebene | Alle Ebenen“. Einmalige Umstellung ansichtUmstellen() (Merker vokabel_ansicht_v359).
+       Ältere Tests: localStorage „vokabel_test_alte_ansicht“ = frei/1 Spalte als Standard.
+  360: koepfe.jsx anzahlSeg: Quiz-Tab + Multi → null.
+  361: vonBisAbschliessen (App.jsx) kehrt jede Vokabel im Bereich um; vonBisLangDruck: Anfang gesetzt → langer Druck =
+       „Bis“ (auf dem Anfang: abbrechen, Tafel zu).
+  362: vokAuswahlAbbrechen: Stand beim Öffnen (vokWahlStartRef) zurück, sonst wie „← Zurück“; mittlere Anzahl dann aus.
+- 363 GESAMMELT: Langer Druck schließt, was er geöffnet hat
+  Löst ein langer Druck etwas aus (Menü/Info-Tafel anzeigen, Regler wie „Vokabeln je Paket“, Auswahl-Tafel o. ä.), soll ein
+  erneuter langer Druck auf DASSELBE Objekt den Kontext wieder schließen (Umschalten). Stellen: tt() in logik/allgemein.jsx
+  (onContextMenu/Touch-Timer → zeigeInfo), InfoTafel.jsx (offene Tafel merkt sich ihr Ursprungs-Element; gleicher Ursprung →
+  schließen statt neu öffnen), Sonderfälle mit opts.lang (Aktion statt Tafel) prüfen.

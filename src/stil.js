@@ -155,6 +155,8 @@ export const CSS_BASIS = `
   .kopf-filter{position:static;margin:10px -16px -10px;padding:8px 16px 10px;border-top:1px solid var(--rahmen);border-bottom:none;}   /* 305/306: Filter unter dem Kopf, ganze Breite */
   .slot-kopf-anzahl.toggle-opt.aktiv{background:var(--start);color:var(--auf-start);}
   .slot-kopf.gruen .slot-kopf-anzahl{border:1.5px solid rgba(255,255,255,0.45);}
+  .kopf-pfeil{flex:0 0 44px;padding:0 0 3px;font-size:2.1rem;font-weight:800;line-height:1;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;}   /* 358 */
+  .slot-kopf.gruen .kopf-pfeil{border:1.5px solid rgba(255,255,255,0.45);}
   .start-fortschritt{flex:0 0 auto;min-width:86px;border-radius:12px;border:1.5px solid var(--haupt-zart);background:var(--haupt-flaeche);color:var(--haupt);font-family:inherit;font-weight:800;font-size:1rem;cursor:pointer;}
   .start-fortschritt:disabled{cursor:default;opacity:0.7;}
   .start-fortschritt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.15;}   /* 271: Fällige in eigener Zeile */
@@ -209,6 +211,8 @@ export const CSS_BASIS = `
   .neue-session-wahl b{font-size:0.98rem;}
   .neue-session-wahl span{font-size:0.78rem;color:var(--text2);}
   .neue-session-wahl:hover{border-color:var(--haupt);}
+  .neue-session-wahl.gewaehlt{border-color:var(--haupt);background:var(--haupt-flaeche);}   /* 359: aktuelle Anordnung */
+  [data-anordnen-dialog] .neue-session-wahl{padding:8px 12px;margin-bottom:2px;}
   .einst-unterkopf{margin:18px 0 8px;}
   .einst-inhalt > .einst-unterkopf:first-child{margin-top:4px;}
   .einst-titel-knopf{background:none;border:none;padding:0;font-family:inherit;font-weight:700;font-size:0.88rem;color:var(--haupt);cursor:pointer;}

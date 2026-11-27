@@ -38,7 +38,7 @@ await page.goto(URL);
 
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_alte_ansicht", "1");
   localStorage.setItem("vokabel_stufen_v1", "1");
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Englisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const liste = (id, name) => ({ id, name, sprache:"en", spalten: sp, naechste_id: 11,
@@ -98,7 +98,7 @@ ok(/2 ausgewählt/.test(await seite()) && await page.evaluate(() => [...document
 await page.evaluate(() => document.querySelector("[data-auswahl-umschalter]").click()); await sleep(500);   // zu den Quiz
 await kontext('[data-freier-platz]');
 let m = await menue();
-ok(m.includes("＋ Neues Quiz aus Listen") && m.includes("📁 Neuer Ordner") && m.some(x => x.startsWith("▥ Spalten")) && m.includes("⇅ Anordnen…") && m.some(x => /Gelernte/.test(x)) && !m.some(x => /[Ff]ällig/.test(x)),   // 290: ohne Fällige
+ok(m.includes("＋ Neues Quiz aus Listen") && m.includes("📁 Neuer Ordner") && m.some(x => x.startsWith("▥ Spalten")) && m.some(x => /^⇅ Anordnen/.test(x)) && m.some(x => /Gelernte/.test(x)) && !m.some(x => /[Ff]ällig/.test(x)),   // 290: ohne Fällige
   `247: freier Platz – Menü der Ebene (${m.join(" | ")})`);
 await page.keyboard.press("Escape"); await page.mouse.click(5, 300); await sleep(300);
 await page.evaluate(() => document.querySelector('[data-slot-id="o1"]').click()); await sleep(500);   // in die Mappe
@@ -108,7 +108,7 @@ ok(m.length === 1 && m.some(x => /Gelernte/.test(x)), `248/290: „← Alle Quiz
 await page.mouse.click(5, 300); await sleep(300);
 await kontext("[data-pfad-hier]");
 m = await menue();
-ok(m.includes("＋ Neues Quiz aus Listen") && m.includes("⇅ Anordnen…"), `248: aktueller Ordner im Pfad – volles Menü (${m.join(" | ")})`);
+ok(m.includes("＋ Neues Quiz aus Listen") && m.some(x => /^⇅ Anordnen/.test(x)), `248: aktueller Ordner im Pfad – volles Menü (${m.join(" | ")})`);
 await page.mouse.click(5, 300); await sleep(300);
 await page.evaluate(() => document.querySelector("[data-alle-sessions]").click()); await sleep(500);
 

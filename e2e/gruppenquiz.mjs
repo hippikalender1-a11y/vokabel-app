@@ -108,7 +108,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await clickText(".slot-chip", "Mein Paket"); await sleep(500); await slotLaden(page);
 await clickText("[data-start-knopf]", "");
 for (let i = 0; i < 2; i++) {
@@ -139,7 +139,7 @@ ok(/^1 \/ \d+$/.test(await titel() || ""), `Gruppen-Quiz läuft (${await titel()
 await durchlaufen();
 await clickText("button", "Zur Übersicht"); await sleep(500);
 await auswahlZu(page);   // 190: Quiz-Auswahl ist offen
-const kopf = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); return k?.dataset.slotKopf + " " + k?.querySelector("button.toggle-opt.aktiv")?.textContent.trim(); });
+const kopf = await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); return k?.dataset.slotKopf + " " + k?.querySelector("[data-slot-kopf-name]")?.textContent.trim(); });
 console.log("     Quiz danach:", kopf, "| Quiz:", await fortschritt());
 ok(kopf === "gruen Mein Paket", "Konfiguration „Mein Paket“ bleibt gewählt");
 ok(vorher && await fortschritt() === vorher, `Quiz-Fortschritt unverändert (${vorher})`);
@@ -147,7 +147,7 @@ ok(vorher && await fortschritt() === vorher, `Quiz-Fortschritt unverändert (${v
 // ── Nach der Runde zurück in genau die Statistik, aus der man kam ──
 await clickText(".tab", "Statistik"); await sleep(400);
 const legendeAus = () => page.evaluate(() => [...document.querySelectorAll("[data-legende]")].filter(b => b.style.textDecoration.includes("line-through")).map(b => b.dataset.legende).join(","));
-const vorStat = await page.evaluate(() => document.querySelector("[data-slot-kopf]").dataset.slotKopf + " " + document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv").textContent.trim());
+const vorStat = await page.evaluate(() => document.querySelector("[data-slot-kopf]").dataset.slotKopf + " " + document.querySelector("[data-slot-kopf-name]").textContent.trim());
 await page.click('[data-legende="arbeit"]'); await sleep(300);   // Filter setzen: „In Arbeit“ ausblenden
 const vorAus = await legendeAus();
 await menue('[data-kreis-gruppe="negativ"]');
@@ -159,7 +159,7 @@ await weiterZurAuswertung();
 ok(await page.$("[data-session-auswertung]") && await page.$("[data-zurueck-statistik]"), "Auswertung: Balken und Knopf „Zurück zur Statistik“");
 await page.click("[data-zurueck-statistik]"); await sleep(500);
 const nachStat = await page.evaluate(() => ({ tab: document.querySelector(".tab.aktiv")?.textContent.trim(),
-  kopf: document.querySelector("[data-slot-kopf]").dataset.slotKopf + " " + document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv").textContent.trim() }));
+  kopf: document.querySelector("[data-slot-kopf]").dataset.slotKopf + " " + document.querySelector("[data-slot-kopf-name]").textContent.trim() }));
 console.log("     zurück:", JSON.stringify(nachStat), "| ausgeblendet:", await legendeAus());
 ok(nachStat.tab === "Statistik" && nachStat.kopf === vorStat, `zurück in der Statistik mit „${vorStat}“`);
 ok(vorAus === "arbeit" && await legendeAus() === vorAus, "Filter (In Arbeit ausgeblendet) unverändert");

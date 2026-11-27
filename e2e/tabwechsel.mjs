@@ -32,13 +32,13 @@ const stand = async () => { if (await page.evaluate(() => { const b = document.q
   const k = document.querySelector("[data-slot-kopf]");
   const listen = [...document.querySelectorAll("button.zeile-rechts")].find(b => /Listen für|Gewählte Listen/.test(b.getAttribute("title") || ""));
   // gespeicherte Konfiguration: Listen-Auswahl ausgeblendet
-  return { kopf: k?.dataset.slotKopf, name: k?.querySelector("button.toggle-opt.aktiv")?.textContent.trim(), listen: listen ? listen.textContent.trim() : "(ausgeblendet)" };
+  return { kopf: k?.dataset.slotKopf, name: k?.querySelector("[data-slot-kopf-name]")?.textContent.trim(), listen: listen ? listen.textContent.trim() : "(ausgeblendet)" };
 }); };
-const oeffneKopf = async () => { await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300); };
+const oeffneKopf = async () => { await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300); };
 
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_alte_ansicht", "1");
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const liste = (id, name, w) => ({ id, name, sprache:"fr", spalten: sp, naechste_id: w.length + 1, vokabeln: w.map(([e, d], i) => ({ id:i+1, E1:{wert:e,falsch:[]}, D1:{wert:d,falsch:[]} })) });
   const a = liste("l_a", "Tiere", [["chat","Katze"],["chien","Hund"]]);

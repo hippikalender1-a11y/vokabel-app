@@ -108,6 +108,31 @@ export function ordneEbeneAn(data, ordnerId, vergleich, spalten) {
 const ZAHL_DE = new Intl.NumberFormat("de-DE");   // 238: einmal anlegen (toLocaleString legt es jedes Mal neu an)
 export const zahlDe = n => ZAHL_DE.format(Number(n || 0));   // 210: 4.000
 export const nameVergleich = (a, b) => String(a.name || "").localeCompare(String(b.name || ""), "de", { numeric: true, sensitivity: "base" });
+// 359: Ansicht einer Ebene (oberste Ebene: Einstellungen, sonst der Ordner) – Standard automatisch, nach Name, 2 Spalten
+export const ANSICHT_SPALTEN = 2;
+// nur für ältere Tests (freie Anordnung, 1 Spalte als Standard): localStorage „vokabel_test_alte_ansicht“
+const ALTE_ANSICHT = (() => { try { return localStorage.getItem("vokabel_test_alte_ansicht") === "1"; } catch { return false; } })();
+export function ansichtVon(einst, ordnerListe, art, ordnerId) {
+  const o = ordnerId ? (ordnerListe || []).find(x => x.id === ordnerId) : null;
+  const anordnung = (o ? o.anordnung : einst?.ebenenAnordnung?.[art]) || (ALTE_ANSICHT ? "frei" : "auto");
+  return { auto: anordnung !== "frei",
+    sort: (o ? o.sortierung : einst?.ebenenSortierung?.[art]) || "name",
+    spalten: (o ? o.spalten : einst?.ebenenSpalten?.[art]) || (ALTE_ANSICHT ? 1 : ANSICHT_SPALTEN) };
+}
+// 359: Vergleich für die automatische Sortierung (name | datum); lernstand bzw. ohne: die gespeicherten Plätze
+export const datumVon = (x, art) => art === "liste" ? Number(String(x.id).match(/(\d{10,})/)?.[1] || 0) : (x.timestamp || 0);
+export function sortVergleich(sort, art) {
+  return sort === "name" ? nameVergleich
+    : sort === "datum" ? (a, b) => (a.istOrdner || b.istOrdner ? nameVergleich(a, b) : datumVon(a, art) - datumVon(b, art)) : null;
+}
+// 359: automatische Anordnung – Ordner zuerst, dann die Einträge, je nach Sortierung (sonst Plätze spaltenweise)
+export function autoReihe(eintraege, sort, art) {
+  const p = x => x.platz || { z: Infinity, s: Infinity };
+  const bisher = (a, b) => p(a).s - p(b).s || p(a).z - p(b).z;
+  const v = sortVergleich(sort, art);
+  const s = arr => [...arr].sort(v ? (a, b) => v(a, b) || bisher(a, b) : bisher);
+  return [...s(eintraege.filter(x => x.istOrdner)), ...s(eintraege.filter(x => !x.istOrdner))];
+}
 // Pfad von oben bis zum Ordner id (Ordner-Objekte); [] = oberste Ebene
 export function ordnerPfad(ordner, id) {
   const pfad = [], gesehen = new Set();

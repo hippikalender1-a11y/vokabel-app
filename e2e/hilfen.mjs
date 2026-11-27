@@ -154,7 +154,7 @@ export async function sessionLaden(page, name) {
   const s = ms => new Promise(r => setTimeout(r, ms));
   await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Quiz"))?.click()); await s(300);
   await quizEinstellungen(page);
-  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv")?.click(); }); await s(300);
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") k.querySelector("[data-slot-kopf-name]")?.click(); }); await s(300);
   await page.evaluate(n => [...document.querySelectorAll(".slot-chip, [data-slot-id]")].find(e => e.textContent.includes(n))?.click(), name); await s(400);
   if (await page.$("[data-slot-laden]")) { await page.evaluate(() => document.querySelector("[data-slot-laden]").click()); await s(500); }
 }

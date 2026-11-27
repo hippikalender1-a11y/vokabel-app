@@ -3,6 +3,7 @@ import { hatAkzentWort } from "../quiz.jsx";
 import { CSS } from "../stil.js";
 import { SPRACH_KUERZEL, sprachInfo } from "../sprache.js";
 import { sucheVokabeln } from "../raster.js";
+import { schliesseInfo } from "../infoEreignisse.js";
 
 // Stufe 2 (Aufteilung): Logik aus App.jsx. app = die Namen der Komponente, die eine Funktion braucht
 // (die Hülle in App.jsx baut das Objekt beim Aufruf).
@@ -158,10 +159,14 @@ export function zeileImBlick(app, art, id) {
 
 // Lang-Druck auf eine Vokabelzeile: Von–Bis mit dieser Vokabel als Anfang
 export function vonBisLangDruck(app, art, vok, nr, w1, w2) {
-  const { setQuizVonBisErster, setQuizVonBisModus, tt, vonBisTafelRef, zeileImBlick } = app;
+  const { quizVonBisErster, quizVonBisModus, setQuizVonBisErster, setQuizVonBisModus, tt, vonBisAbschliessen, vonBisTafelRef, zeileImBlick } = app;
     const [setModus, setErster] = [setQuizVonBisModus, setQuizVonBisErster];   // nur noch die Vokabel-Auswahl des Quiz
     const abbrechen = () => { vonBisTafelRef.current = null; setModus(false); setErster(null); };
-    return tt("Vokabel aus- oder abwählen (bei Von–Bis: Anfang bzw. Ende des Bereichs) – lang drücken: Von–Bis ab hier",
+    // 361: Anfang gesetzt → langer Druck setzt das „Bis“ (auf dem Anfang selbst: abbrechen)
+    if (quizVonBisModus && quizVonBisErster != null)
+      return tt(vok.id === quizVonBisErster ? "Anfang des Von–Bis – lang drücken: Von–Bis abbrechen" : "Antippen oder lang drücken: Von–Bis bis hier – kehrt die Auswahl im Bereich um",
+        null, { lang: () => { if (vok.id === quizVonBisErster) { abbrechen(); schliesseInfo(); } else vonBisAbschliessen(vok.id); } });
+    return tt("Vokabel aus- oder abwählen – lang drücken: Von–Bis ab hier (Ende antippen oder lang drücken; kehrt die Auswahl im Bereich um)",
       [{ label: "✕ Von–Bis abbrechen", fn: abbrechen }],
       { auswahl: { zu: () => abbrechen(), ohneText: true },
         beimMenue: () => { vonBisTafelRef.current = art; setModus(true); setErster(vok.id); zeileImBlick(art, vok.id); } });

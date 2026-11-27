@@ -93,7 +93,7 @@ await sleep(600)   // Auswahl klappt kurz verzögert zu;
 let t = await page.evaluate(() => document.body.innerText);
 ok(await page.evaluate(() => document.querySelector('[data-st-anzahl]')?.textContent) === "2", "Statistik: Preset zeigt 2 Vokabeln");   // 269: Gesamtübersicht
 // nach dem Laden ist der Bereich zu → wieder öffnen
-await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
+await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.click());
 await sleep(300);
 await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="listen"]')?.click()); await sleep(300);   // 298: Liste geladen → Auswahl zeigt Listen; zu den Quiz
 await page.evaluate(() => { const el = document.querySelector("[data-alle-sessions]"); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.x + 5, clientY: r.y + 5 })); }); await sleep(250);

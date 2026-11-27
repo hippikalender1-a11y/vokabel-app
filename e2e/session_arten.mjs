@@ -54,7 +54,7 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
-if (!(await text()).includes("Mein Paket")) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
+if (!(await text()).includes("Mein Paket")) await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.click());
 await sleep(300);
 ok(!(await text()).includes("Verlauf & Gespeichert") && await page.$("[data-slot-info]"), "Aufgeklappt: keine Überschrift mehr, dafür die Info-Fläche");
 await kurzHalten(page, '[data-slot-id="g_1"]');   // 192: kurz halten wählt nur aus (antippen lädt sofort)
@@ -64,7 +64,7 @@ await sleep(400);
 const t0 = await text();
 ok(await kopf() === "gruen" && !t0.includes("Verlauf & Gespeichert") && !t0.includes("📌 Gespeichert"),
   "Nach Auswahl: Liste zu, Überschrift weg, Kopfzeile grün");
-ok(await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); const b = k.querySelector("button.toggle-opt.aktiv");
+ok(await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); const b = k.querySelector("[data-slot-kopf-name]");
   const r = k.getBoundingClientRect(), rb = b.getBoundingClientRect();
   const seg = k.querySelector("[data-kopf-anzahl]")?.getBoundingClientRect();   // 301: rechts die Anzahl
   return !k.querySelector("[data-quiz-arten]") && rb.left - r.left <= 20 && seg && r.right - seg.right <= 20 && seg.left > rb.right; }),
@@ -148,7 +148,7 @@ ok(await kopf() === "gruen" && (await text()).includes("Mein Paket") && await fo
 await clickText(".tab", "Statistik");
 await sleep(400);
 ok(await kopf() === "gruen" && !(await text()).includes("Verlauf & Gespeichert"), "Statistik: gespeicherte Konfiguration → Kopfzeile grün, ohne Überschrift");
-await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
+await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.click());
 await sleep(300);
 ok(await kopf() === "offen" && await page.$("[data-slot-info]"), "Statistik: Antippen öffnet die Auswahl (mit Info-Fläche)");
 await clickText(".slot-chip", "Mein Paket"); await sleep(500); await slotLaden(page);
@@ -158,7 +158,7 @@ await page.screenshot({ path: "statistik_kopf.png", clip: { x: 0, y: 0, width: 8
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
 await sleep(300);
 // „Neu“ → beim nächsten Start nichts automatisch laden
-await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
+await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.click());
 await sleep(300);
 await neueEineSession(page);
 await page.reload(); await sleep(600); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz

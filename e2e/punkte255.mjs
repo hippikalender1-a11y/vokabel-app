@@ -22,7 +22,7 @@ const aktion = async label => { await page.evaluate(l => [...__aktionen()].find(
 
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_alte_ansicht", "1");
   localStorage.setItem("vokabel_stufen_v1", "1");
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Englisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const jetzt = new Date().toISOString(), gestern = new Date(Date.now() - 86400000).toISOString();
@@ -48,8 +48,8 @@ const vorher = await lage();
 ok(vorher.sB[0] > vorher.sC[0] && vorher.sC[0] > vorher.sA[0], `eigene Anordnung mit Lücken (${JSON.stringify(vorher)})`);
 await kontext("[data-freier-platz]");
 let m = await menue();
-ok(m.includes("▤ Automatische Anordnung"), `256: Schalter im Menü der Ebene (${m.join(" | ")})`);
-await aktion("▤ Automatische Anordnung");
+ok(m.includes("⇅ Anordnen (Frei)…"), `256/359: Anordnen im Menü der Ebene zeigt „Frei“ (${m.join(" | ")})`);
+await aktion("⇅ Anordnen (Frei)…"); await page.evaluate(() => document.querySelector('[data-anordnen="name"]')?.click()); await sleep(300);   // 359: automatisch = nach Name
 await page.mouse.click(5, 300); await sleep(300);
 let nachher = await lage();
 // 291/292: gewählte Spaltenzahl (hier 1) gilt – spaltenweise A (0|0), B (3|0), C (1|1) untereinander
@@ -65,11 +65,11 @@ ok(nachher.sA[0] === nachher.sC[0] && nachher.sC[1] > nachher.sA[1] && nachher.s
   `256/291/292: automatisch, 2 Spalten gewählt: A, B in Spalte 1, C in Spalte 2 (${JSON.stringify(nachher)})`);
 // 292: „Anordnen…“ wirkt auch in der automatischen Anordnung – mit der gewählten Spaltenzahl (2), spaltenweise
 await kontext("[data-freier-platz]");
-await aktion("🖼 Ansicht ›"); await aktion("⇅ Anordnen…");
+await aktion("⇅ Anordnen (Name)…");
 await page.evaluate(() => document.querySelector('[data-anordnen="name"]')?.click()); await sleep(400);
 const plaetzeN = await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_slots")).gespeichert.map(g => `${g.id}:${g.platz.z}|${g.platz.s}`).sort().join(","));
-const lageN = await lage();
-ok(plaetzeN === "sA:0|0,sB:1|0,sC:0|1" && lageN.sA[0] === lageN.sC[0] && lageN.sB[1] === lageN.sA[1] && lageN.sB[0] > lageN.sA[0],
+const lageN = await lage();   // 359: automatisch nach Name – nur die Anzeige, die eigenen Plätze bleiben
+ok(plaetzeN === "sA:0|0,sB:3|0,sC:1|1" && lageN.sA[0] === lageN.sC[0] && lageN.sB[1] === lageN.sA[1] && lageN.sB[0] > lageN.sA[0],
   `292: Anordnen nach Name in 2 Spalten: A, B | C (${plaetzeN}, ${JSON.stringify(lageN)})`);
 // zurück auf die Ausgangsplätze (für die folgenden Prüfungen)
 await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("vokabel_slots")); const p = { sA: {z:0,s:0}, sB: {z:3,s:0}, sC: {z:1,s:1} }; d.gespeichert.forEach(g => g.platz = p[g.id]); localStorage.setItem("vokabel_slots", JSON.stringify(d)); });
@@ -80,8 +80,8 @@ const plaetze = await page.evaluate(() => JSON.parse(localStorage.getItem("vokab
 ok(plaetze === "sA:0|0,sB:3|0,sC:1|1", `256: gespeicherte Plätze unverändert (${plaetze})`);
 await kontext("[data-freier-platz]");
 m = await menue();
-ok(m.includes("▦ Freie Anordnung"), "256: Schalter zurück heißt „Eigene Anordnung zeigen“");
-await aktion("▦ Freie Anordnung");
+ok(m.includes("⇅ Anordnen (Name)…"), "256/359: Menü zeigt die automatische Anordnung „Name“");
+await aktion("⇅ Anordnen (Name)…"); await page.evaluate(() => document.querySelector('[data-anordnen="frei"]')?.click()); await sleep(300);
 await page.mouse.click(5, 300); await sleep(300);
 ok(JSON.stringify(await lage()) === JSON.stringify(vorher), "256: eigene Anordnung wieder da");
 

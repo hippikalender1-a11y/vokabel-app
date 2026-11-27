@@ -1,4 +1,4 @@
-import { ORDNER_KNOPF, ORDNER_TIEFE_MAX, RASTER_FREI_ZEILEN, ebeneVon, ebenenSpalten, eintraegeImOrdner, ordneRaster, ordnerPfad, rasterGroesse, rueckendeIds, zahlDe } from "../raster.js";
+import { ORDNER_KNOPF, ORDNER_TIEFE_MAX, RASTER_FREI_ZEILEN, ansichtVon, autoReihe, ebeneVon, ebenenSpalten, eintraegeImOrdner, ordneRaster, ordnerPfad, rasterGroesse, rueckendeIds, zahlDe } from "../raster.js";
 import { Fragment } from "react";
 import { BLITZ_MS, SK, TYPEN, lsGet, lsLesen } from "../speicher.js";
 import { listenInhalt } from "../saetze.js";
@@ -25,7 +25,6 @@ function kachelBalken(pct, n, ges) {
 // 193: die geöffnete Ebene (Listen-Ordner) – Ordner kommen als { istOrdner } mit
 // 256: Lesereihenfolge der gespeicherten Plätze (Zeile, dann Spalte) – für die lückenlose Anzeige
 // 256/292: automatische Anordnung – spaltenweise (wie „Anordnen…“ und Von–Bis): Spalte für Spalte von oben nach unten
-const lueckenlosReihe = eintraege => [...eintraege].filter(e => e.platz).sort((a, b) => a.platz.s - b.platz.s || a.platz.z - b.platz.z);
 const autoPlatz = (i, n, spalten) => { const zeilen = Math.max(1, Math.ceil(n / spalten)); return `${i % zeilen}|${Math.floor(i / zeilen)}`; };
 
 export function listenRasterPlaetze(app) {
@@ -166,8 +165,9 @@ export function renderListenRaster(app) {
     const gefiltert = sprachFilter !== "alle";
     const sortModus = listenSortModus && !gefiltert;
     const minS = minSpalten("liste", offen);   // 203
+    const ansL = ansichtVon(einstellungen, listenOrdner, "liste", offen);   // 359: Anordnung je Ebene
     // 291: automatische Anordnung – genau die gewählte Spaltenzahl (gespeicherte Plätze weiter rechts zählen nicht)
-    const anzSpalten = gefiltert ? 1 : einstellungen.lueckenlos && !sortModus ? Math.max(1, minS || 1) : ebenenSpalten(ebene, sortModus && zugRand !== false, minS);   // 196; 231: beim Finger-Zug erst am Rand
+    const anzSpalten = gefiltert ? 1 : ansL.auto && !sortModus ? Math.max(1, minS || 1) : ebenenSpalten(ebene, sortModus && zugRand !== false, minS);   // 196; 231: beim Finger-Zug erst am Rand
     // Kachel-Aufbau nur nach den belegten Spalten: die freie Spalte beim Verschieben darf ihn nicht ändern
     // (sonst baut React den Inhalt unter dem Finger neu auf und das Ziehen verliert den Finger)
     const eng = (gefiltert ? 1 : ebenenSpalten(ebene, false, minS)) > 1;
@@ -281,7 +281,7 @@ export function renderListenRaster(app) {
     const ziehIds = slotDragId ? (listenAuswahl.includes(slotDragId) ? listenAuswahl : [slotDragId]) : [];
     const ring = key => (<span className={`gruppen-ring${gruppenZiel === key ? " fertig" : ""}`} data-gruppen-ring={gruppenZiel === key ? "fertig" : "laeuft"}>
       <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15"/></svg><span data-ring-symbol={gruppenZiel === key ? "ordner" : "einfuegen"}>{gruppenZiel === key ? "📁" : "↓"}</span></span>);
-    const kurzL = (gefiltert ? 1 : einstellungen.lueckenlos && !sortModus ? Math.max(1, minS || 1) : ebenenSpalten(ebene, false, minS)) > 1;   // 291   // 210: ab 2 Spalten „L.“ / „V.“
+    const kurzL = (gefiltert ? 1 : ansL.auto && !sortModus ? Math.max(1, minS || 1) : ebenenSpalten(ebene, false, minS)) > 1;   // 291   // 210: ab 2 Spalten „L.“ / „V.“
     const ordnerZelle = (o, key) => {
       const drin = ordnerListen(o.id);
       const vokDrin = drin.reduce((m, l) => m + vokabelAnzahl(l.id), 0);
@@ -318,8 +318,8 @@ export function renderListenRaster(app) {
         .forEach(x => zellen.push(x.istOrdner ? ordnerZelle(x, x.id) : zelle(x, x.id)));
     } else {
       // 256: „Lückenlos anzeigen“ – Kacheln in Lesereihenfolge ihrer Plätze ohne Lücken (nur Anzeige; beim Verschieben die echten Plätze)
-      const lueckenlos = !!einstellungen.lueckenlos && !sortModus;
-      const reihe = lueckenlos ? lueckenlosReihe(ebene) : null;
+      const lueckenlos = ansL.auto && !sortModus;
+      const reihe = lueckenlos ? autoReihe(ebene, ansL.sort, "liste") : null;   // 359: automatisch sortiert
       const platzMap = lueckenlos ? new Map(reihe.map((l, i) => [autoPlatz(i, reihe.length, anzSpalten), l]))
         : new Map(ebene.filter(l => l.platz).map(l => [`${l.platz.z}|${l.platz.s}`, l]));
       const belegtBis = lueckenlos ? Math.ceil(reihe.length / anzSpalten) : ebene.reduce((m, l) => Math.max(m, (l.platz?.z ?? 0) + 1), 0);
@@ -496,7 +496,7 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     slotSichtbarRef.current = sichtbar.map(x => x.id);
     plaetzeRef.current.slot = sichtbar.map(x => ({ id: x.id, z: x.platz.z, s: x.platz.s }));
     const ebeneLeer = raster.gespeichert.length === 0;   // 194: leerer Ordner – eine Zeile freier Plätze zeigen
-    const minSS = minSpalten("slot", ordnerOffen?.id || null), autoAnordnung = !!einstellungen.lueckenlos && !slotSortModus;   // 291: automatisch – gewählte Spaltenzahl
+    const minSS = minSpalten("slot", ordnerOffen?.id || null), ansS = ansichtVon(einstellungen, slots.ordner, "slot", ordnerOffen?.id || null), autoAnordnung = ansS.auto && !slotSortModus;   // 359   // 291: automatisch – gewählte Spaltenzahl
     const anzSpalten = autoAnordnung ? Math.max(1, minSS || 1) : ebenenSpalten(raster.gespeichert, slotSortModus && zugRand !== false, minSS);   // 231: beim Finger-Zug erst am Rand   // 196/203: belegt bzw. gewählt (+1 beim Verschieben)
     const kurzText = (autoAnordnung ? Math.max(1, minSS || 1) : ebenenSpalten(raster.gespeichert, false, minSS)) > 1;   // 210: ab 2 Spalten abgekürzt
     const ordnerHierGeht = ordnerPfad(slots.ordner, ordnerOffen?.id || null).length < ORDNER_TIEFE_MAX;
@@ -505,8 +505,8 @@ export function renderSlotBereiche(app, neuChip, onLaden, slotRef, abstand = 0) 
     const alleBelegt = zeilenSichtbar > 0 && raster.gespeichert.filter(x => x.platz.z < zeilenSichtbar && x.platz.s < anzSpalten).length >= zeilenSichtbar * anzSpalten;
     // 256: „Lückenlos anzeigen“ – sichtbare Kacheln in Lesereihenfolge ihrer Plätze ohne Lücken (nur Anzeige; beim
     // Verschieben – auch beim Finger-Zug – die echten Plätze, wie bei „Gelernte ausblenden“)
-    const lueckenlos = !!einstellungen.lueckenlos && !slotSortModus;
-    const reihe = lueckenlos ? lueckenlosReihe(raster.gespeichert.filter(sichtbarE)) : null;
+    const lueckenlos = autoAnordnung;
+    const reihe = lueckenlos ? autoReihe(raster.gespeichert.filter(sichtbarE), ansS.sort, "slot") : null;   // 359: automatisch sortiert
     const platzMap = lueckenlos ? new Map(reihe.map((x, i) => [autoPlatz(i, reihe.length, anzSpalten), x]))
       : new Map(raster.gespeichert.map(x => [`${x.platz.z}|${x.platz.s}`, x]));
     const zeilenAnzeige = slotSortModus ? raster.gespeichert.reduce((m, x) => Math.max(m, x.platz.z + 1), 0) + RASTER_FREI_ZEILEN

@@ -33,7 +33,7 @@ const quizUndZurueck = async () => {
 
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_alte_ansicht", "1");
   localStorage.setItem("vokabel_stufen_v1", "1");
   localStorage.setItem("vokabel_einstellungen", JSON.stringify({ wiederholTage: [1, 1, 1, 1] }));
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Englisch",D1:"Deutsch",i1:"Synonyme"}[t] || "", aktiv: ["E1","D1","i1"].includes(t) }]));
@@ -74,11 +74,13 @@ ok(anz === "3", `203: mindestens 3 Spalten in „Alle Listen“ (${anz})`);
 
 // ── 208: Anordnen nach Name (Unit 2 vor Unit 10, spaltenweise) ──
 await kontext("[data-alle-listen]");
-ok((await menue()).includes("⇅ Anordnen…"), "208: „⇅ Anordnen…“ im Menü von „Alle Listen“");
+ok((await menue()).some(x => /^⇅ Anordnen/.test(x)), "208: „⇅ Anordnen…“ im Menü von „Alle Listen“");
 await aktion("Anordnen");
 await page.evaluate(() => document.querySelector('[data-anordnen="name"]')?.click()); await sleep(500);
 let ix = await idx();
-const pl = Object.fromEntries(ix.map(l => [l.name, `${l.platz.z}|${l.platz.s}`]));
+// 359: „Nach Name“ = automatisch sortiert (Anzeige), die gespeicherten Plätze bleiben
+const namen = Object.fromEntries(ix.map(l => [l.id, l.name]));
+const pl = await page.evaluate(n => Object.fromEntries([...document.querySelectorAll(".listen-raster [data-raster-zelle]")].map(z => [n[z.querySelector("[data-liste-id]")?.dataset.listeId || z.dataset.listeId], z.dataset.rasterZelle]).filter(([k]) => k)), namen);
 ok(pl["Unit 2"] === "0|0" && pl["Unit 10"] === "0|1", `208: nach Name (natürlich), spaltenweise bei 3 Spalten (${JSON.stringify(pl)})`);
 
 // ── 202: Info ausführlich (kurz halten wählt) ──
@@ -108,7 +110,7 @@ await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]")
 await page.evaluate(() => { const b = document.querySelector("[data-auswahl-umschalter]"); if (b && b.dataset.auswahlUmschalter !== "quiz") b.click(); }); await sleep(300);
 await kontext("[data-alle-sessions]");
 const sm = await menue();
-ok(sm.some(m => /^▥ Spalten/.test(m)) && sm.includes("⇅ Anordnen…"), `203/208: Quiz-Menü mit Spalten und Anordnen (${sm.join(" | ")})`);
+ok(sm.some(m => /^▥ Spalten/.test(m)) && sm.some(x => /^⇅ Anordnen/.test(x)), `203/208: Quiz-Menü mit Spalten und Anordnen (${sm.join(" | ")})`);
 await aktion("Anordnen");
 await page.evaluate(() => document.querySelector('[data-anordnen="luecken"]')?.click()); await sleep(500);
 const sp = await page.evaluate(() => Object.fromEntries(JSON.parse(localStorage.getItem("vokabel_slots")).gespeichert.map(x => [x.name, `${x.platz.z}|${x.platz.s}`])));

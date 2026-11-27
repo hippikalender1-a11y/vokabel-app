@@ -80,7 +80,7 @@ ok(frageNach && frageNach === frageVor, `253: Fortsetzen – weiter bei derselbe
 ok((nachFort?.pakete ?? 0) === (vorPause?.pakete ?? 0), `253: Paket nicht doppelt gezählt (vor ${vorPause?.pakete}, Pause ${inPause?.pakete}, danach ${nachFort?.pakete})`);
 
 // ── 251: Pausieren → Zur Übersicht: die Listen des Pakets sind wieder ausgewählt; übernehmen behält den Fortschritt ──
-await gewusst(); await sleep(1300);
+await gewusst(); await sleep(1800);   // 346: nach „gelernt“ 1,5 s
 await page.evaluate(() => document.querySelector("[data-quiz-pause]")?.click()); await sleep(700);
 await page.evaluate(() => [...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Zur Übersicht")?.click()); await sleep(900);
 const wahl = () => page.evaluate(() => [...document.querySelectorAll("[data-wahl-nr]")].map(e => e.closest("[data-liste-id]")?.dataset.listeId + ":" + e.dataset.wahlNr).sort().join(","));

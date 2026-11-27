@@ -51,7 +51,7 @@ const seed = async () => {
 };
 // Auswahlbereich ist nach dem Laden zugeklappt → zum Prüfen der Chips öffnen
 const statistikInfo = async () => {
-  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") k.querySelector("button.toggle-opt.aktiv")?.click(); });   // 332: zu – sonst nur die Auswahl
+  await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf === "offen") k.querySelector("[data-slot-kopf-name]")?.click(); });   // 332: zu – sonst nur die Auswahl
   await sleep(300);
   await page.evaluate(() => document.querySelector('[data-verlauf-kopf="zu"]')?.click()); await sleep(200);   // Verlauf ist anfangs zu
   return statistikInfoRoh();

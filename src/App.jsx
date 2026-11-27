@@ -5,7 +5,7 @@ import { F, FARB_BASIS, FARB_ROLLEN, FLAECHEN, STUFE_VON, TEXT_FLAECHEN, flaeche
 import { SPALTEN_TAG, dateiVorschau, findeJsonListen, generiereExportText, generierePrompt, istBinaer, parseKolumne, parseKopfZeile, parseZeile } from "./importexport.js";
 import { FarbRad, GelerntSterne, IcoBack, IcoCollapse, IcoDown, IcoExpand, IcoPencil, IcoSpk, IcoSpkOn, IcoUp, IcoX, MiniKreis } from "./komponenten.jsx";
 import { ABFRAGE_ART_NAMEN, AKZENTE_FUER_LISTE, AKZENT_HINWEIS, AKZENT_OHNE_ANTEILE, ANTWORT_MODUS_NAMEN, ART_KURZ, BLITZ_SEKUNDEN, FAELLIG_ANTEIL_WAHL, FESTES_ZEICHEN, FORTSCHRITT_BALKEN, GELERNT_SCHWELLE, GRUPPE_BALKEN, LERNEN_STANDARD, LERNEN_TIPPEN, LIGATUR_TEILE, MAX_STUFE, MC_FEHLKLICK_HINWEIS, MODI_REIHENFOLGE, PAKET_ALLE, QUIZ_ARTEN, REKORDE_KEY, SATZ_ARTEN, SATZ_CACHE, SCORE_FELD, STANDARD_ABFRAGE_ZIEL, STANDARD_ANTWORT_GEWICHTE, STANDARD_ANTWORT_MODUS, STANDARD_MAX_SCORE, STANDARD_PAKET_GROESSE, STANDARD_REIHENFOLGE, STANDARD_SESSION_MODUS, STANDARD_UNBEANTWORTET_ZUERST, START_TEXT, STATISTIK_ARTEN, STUFEN_REGELN, WIEDERHOL_TAGE_WAHL, ZUORDNUNG_FARBEN, ZUORDNUNG_SEKUNDEN, ZUORDNUNG_ZEITEN, ZUORDNUNG_ZEITFAKTOR, akzentKacheln, akzentOhneAnteil, akzentVarianten, alternativen, antwortSpaltenFuer, antwortStatus, artBereinigt, artFelderAus, artVonKonfig, artikelInfo, berechneDiktatScore, berechneNeuenScore, clampScore, diktatHint, ersteAlt, faelligAnteil, gelerntScore, generiereButtons, getQuizFeedback, gewichtetWaehlen, hatAkzentWort, hatAkzente, heuteAbgefragt, heuteAnteil, hinweiseAus, istFaellig, istMC, istRichtigeAntwort, istRichtigeEinzeln, istRunde, jubelText, lernLesezeit, lernProzent, loeseSpaltenModusAuf, lueckenPositionen, mischeFaellige, mitHinweis, modiVon, modusErlaubt, negativUmstellen, nrText, ohneAkzent, ohneHinweis, ordneVokabeln, puzzleKacheln, satzFuer, schalterGruppe, scoreSymbole, slotKonfigArt, slotSFAlle, speichereAkzentScore, speichereDiktatScore, speichereScore, standardArtEinstellungen, statistikSicht, stufenRegeln, stufenUmstellen, tagesSperre, umbruch, vokSprache, wiederholTage, zufallMitSeed, zuordnungEinst, setzeAKZENTE_FUER_LISTE, setzeANTWORT_GEWICHTE, imFilter, langStufeVon } from "./quiz.jsx";
-import { AUFTEILEN_GROESSEN, GRUPPE_VERWEILEN_MS, haltenHaptik, KACHEL_WAEHLEN_MS, KACHEL_ZIEHEN_MS, KACHEL_LASSO_FREI, MISCH_ARTEN, ORDNER_KNOPF, ORDNER_TIEFE_MAX, RASTER_FREI_ZEILEN, SUCHE_LEER, SUCH_SPALTEN, aufteilenGruppen, ebeneVon, ebenenSpalten, eintraegeImOrdner, gruppenName, nachPlatz, legeInOrdner, loeseOrdnerDaten, nachOrdnerBaum, nameVergleich, neuerOrdnerIn, ordneEbeneAn, ordneRaster, ordnerBereinigen, ordnerPasst, ordnerPfad, ordnerUnter, platziereGruppe, belegteZeilen, rasterGroesse, setzeEbene, sucheVokabeln, zahlDe, zielUnter } from "./raster.js";
+import { ansichtVon, autoReihe, AUFTEILEN_GROESSEN, GRUPPE_VERWEILEN_MS, haltenHaptik, KACHEL_WAEHLEN_MS, KACHEL_ZIEHEN_MS, KACHEL_LASSO_FREI, MISCH_ARTEN, ORDNER_KNOPF, ORDNER_TIEFE_MAX, RASTER_FREI_ZEILEN, SUCHE_LEER, SUCH_SPALTEN, aufteilenGruppen, ebeneVon, ebenenSpalten, eintraegeImOrdner, gruppenName, nachPlatz, legeInOrdner, loeseOrdnerDaten, nachOrdnerBaum, nameVergleich, neuerOrdnerIn, ordneEbeneAn, ordneRaster, ordnerBereinigen, ordnerPasst, ordnerPfad, ordnerUnter, platziereGruppe, belegteZeilen, rasterGroesse, setzeEbene, sucheVokabeln, zahlDe, zielUnter } from "./raster.js";
 import { SATZ_ANZAHLEN, SATZ_BEGLEITSATZ, SATZ_PORTION, istSynonymSpalte, listenInhalt, saetzeAusAntwort, saetzeLaden, saetzeSpeichern, satzPrompt, satzStandAlle, synPrompt, synonymeAus, synonymeAusAntwort } from "./saetze.js";
 import { APP_VERSION, BLITZ_MS, SICHERUNG_TAGE, SICHERUNG_TAG_MS, SK, SLOT_ZU_VERZOEGERUNG, TYPEN, WAHL_ZU_MS, defaultEinstellungen, defaultSlots, ergaenzeSpalten, erstelleSicherung, formatDatum, formatSlotDatum, formatTag, istSicherung, leseDateiAlsText, listenAusSicherung, lsDel, lsGet, lsSet, neueListeObjekt, neuerSlotId, splitInSeiten, stelleSicherungWiederHer, lsLesen } from "./speicher.js";
 import { SPRACHEN, SPRACH_KUERZEL, mitKuerzel, sprachKuerzelFuer, STIMMEN_PROBE, STIMMEN_WAHL, aeusserung, aktiveStimmen, erkenneSprache, gewaehlteStimme, listeSprache, naechsteStimme, normLang, setzeStimmenWahl, spalteLang, sprachInfo, sprich, sprichAuto, stimmeFuer, stimmeGeschlecht, stimmenFuerSprache, stimmenVarianten, varianteText, vorleseTeile } from "./sprache.js";
@@ -37,6 +37,18 @@ import { akzentFehlgriff as akzentFehlgriffTeil, akzentStand as akzentStandTeil,
 
 const LEERE_AUSWAHL = new Set();   // Statistik „▦ Alle Listen“: kein Bereich
 
+// 359: einmalig – Listen- und Quiz-Ansicht auf den neuen Standard (automatisch, nach Name, 2 Spalten): eigene Werte entfernen
+const ANSICHT_FELDER = ["spalten", "anordnung", "sortierung"];
+function ansichtUmstellen() {
+  try { if (localStorage.getItem("vokabel_ansicht_v359")) return; localStorage.setItem("vokabel_ansicht_v359", "1"); } catch { return; }
+  const ohne = o => Object.fromEntries(Object.entries(o).filter(([k]) => !ANSICHT_FELDER.includes(k)));
+  const lo = lsGet(SK.listenOrdner, null);
+  if (Array.isArray(lo) && lo.length) lsSet(SK.listenOrdner, lo.map(ohne));
+  const sd = lsGet(SK.slots, null);
+  if (sd?.ordner?.length) lsSet(SK.slots, { ...sd, ordner: sd.ordner.map(ohne) });
+  const e = lsGet(SK.einstellungen, null);
+  if (e) { const { lueckenlos, ebenenSpalten, ebenenAnordnung, ebenenSortierung, ...rest } = e; lsSet(SK.einstellungen, rest); }   // eslint-disable-line no-unused-vars
+}
 export default function VokabelApp() {
   const [tab, setTab] = useState("quiz");
   const [listenIndex, setListenIndex] = useState([]);
@@ -88,7 +100,7 @@ export default function VokabelApp() {
   const [listeWerkzeuge, setListeWerkzeuge] = useState(false);   // 330: Vorlesen · Bearbeiten · Löschen in der Vokabelliste   // 316: Kasten „Anzahl je Runde“ unter dem Start-Knopf
   const [slotOrdner, setSlotOrdner] = useState(null);            // geöffnete Quiz-Gruppe (Quiz- und Statistik-Tab)
   const slotOrdnerRef = useRef(null); slotOrdnerRef.current = slotOrdner;
-  const [listenOrdner, setListenOrdner] = useState(() => lsGet(SK.listenOrdner, []));   // 193: Listen-Ordner
+  const [listenOrdner, setListenOrdner] = useState(() => { ansichtUmstellen(); return lsGet(SK.listenOrdner, []); });   // 359: vorher einmal umstellen   // 193: Listen-Ordner
   const [listenOrdnerOffen, setListenOrdnerOffen] = useState(null);                    // geöffneter Listen-Ordner (Listen-Tab und Listenauswahl)
   const listenOrdnerOffenRef = useRef(null); listenOrdnerOffenRef.current = listenOrdnerOffen;
   const [inGruppe, setInGruppe] = useState(null);                // Dialog „In Gruppe…“: { ids, name }
@@ -175,10 +187,8 @@ export default function VokabelApp() {
   const [faelligTick, setFaelligTick] = useState(0);
   const ausListeRef = useRef(null);       // 204: { listeId, ziel: "liste" | "raster" } – Quiz aus einer Liste gestartet → am Ende dorthin zurück
   // 203: Mindest-Spalten je Ebene – oberste Ebene in den Einstellungen (ebenenSpalten.slot / .liste), Ordner am Ordner (spalten)
-  const minSpalten = (art, ordnerId) => {
-    if (ordnerId) return ((art === "liste" ? listenOrdner : slots.ordner) || []).find(o => o.id === ordnerId)?.spalten || 1;
-    return einstellungen.ebenenSpalten?.[art] || 1;
-  };
+  const minSpalten = (art, ordnerId) => ansichtVon(einstellungen, art === "liste" ? listenOrdner : slots.ordner, art, ordnerId).spalten;   // 359: Standard 2
+  const ebenenAnsicht = (art, ordnerId) => ansichtVon(einstellungen, art === "liste" ? listenOrdner : slots.ordner, art, ordnerId);
   function setzeMinSpalten(...args) { return setzeMinSpaltenTeil({ einstellungen, getSlotsData, listenOrdnerDaten, setSlotsData, speichereEinst, speichereListenOrdnerDaten }, ...args); }
   const [spaltenWahl, setSpaltenWahl] = useState(null);
   const [anordnen, setAnordnen] = useState(null);
@@ -193,7 +203,7 @@ export default function VokabelApp() {
   const slotInfoRefCb = useMemo(() => hoeheBeobachten(setSlotInfoH), []);   // eslint-disable-line react-hooks/exhaustive-deps
   const listenKopfRefCb = useMemo(() => hoeheBeobachten(setListenKopfH), []);   // eslint-disable-line react-hooks/exhaustive-deps       // 217: Quiz-Auswahl zeigt die Listen (Umschalter „Quiz | Listen“)   // 208: { art, ordner } – Fenster „Anordnen“
   // 208: anordnen nach name | datum | lernstand | luecken (Spalten = gewählte bzw. belegte)
-  function ordneAn(...args) { return ordneAnTeil({ einstellungen, getSlotsData, lernstandJeArt, listenOrdnerDaten, minSpalten, rasterEinordnen, setAnordnen, setSlotsData, speichereListenOrdnerDaten }, ...args); }   // 203: { art, ordner } – Fenster „Spalten“ (Quiz)
+  function ordneAn(...args) { return ordneAnTeil({ einstellungen, getSlotsData, lernstandJeArt, listenOrdnerDaten, rasterEinordnen, setAnordnen, setSlotsData, speichereEinst, speichereListenOrdnerDaten }, ...args); }   // 203: { art, ordner } – Fenster „Spalten“ (Quiz)
   const [satzStand, setSatzStand] = useState({});   // 202: { listeId: { vokId: Anzahl Sätze } }
   const ladeSatzStand = () => satzStandAlle().then(setSatzStand);
   useEffect(() => { ladeSatzStand(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -629,6 +639,7 @@ export default function VokabelApp() {
   // 350: Vokabel-Auswahl – Stand beim Öffnen merken (unverändert: „← Zurück“ statt „Bestätigen“) und die erste
   // gewählte Vokabel oben unter die Suchleiste holen
   const vokWahlStartRef = useRef(null);
+  const blaetternRef = useRef(null);   // 358: zuletzt per ‹ › geladenes Element
   useEffect(() => {
     if (!(quizListeAufgeklappt && quizBereichTyp === "bereich")) { vokWahlStartRef.current = null; return; }
     if (vokWahlStartRef.current) return;
@@ -1938,6 +1949,14 @@ export default function VokabelApp() {
     setTimeout(() => clearTimeout(slotZuTimerRef.current), 0);
     return true;
   }
+  // 362: „✕ Abbrechen“ – Änderungen verwerfen (Stand beim Öffnen) und zurück wie „← Zurück“
+  function vokAuswahlAbbrechen() {
+    const start = new Set(vokWahlStartRef.current || []);
+    setQuizCheckboxAuswahl(start); setQuizVonBisModus(false); setQuizVonBisErster(null);
+    if (!start.size) setQuizBereichTyp("alle");
+    if (vokAuswahlZurueck()) return;
+    setQuizListeAufgeklappt(false);
+  }
   // 298: Bereichswahl anders verlassen (Kopf, Tab, …) → das Geladene zurück, nichts übernommen
   useEffect(() => {
     if (bereichWahl && !quizListeAufgeklappt) { stelleStandHer(bereichWahl.stand); setBereichWahl(null); }
@@ -2185,7 +2204,16 @@ export default function VokabelApp() {
   function sichtbarHalten(...args) { return sichtbarHaltenTeil({  }, ...args); }
   function zeileImBlick(...args) { return zeileImBlickTeil({ sichtbarHalten }, ...args); }
   // Lang-Druck auf eine Vokabelzeile: Von–Bis mit dieser Vokabel als Anfang
-  function vonBisLangDruck(...args) { return vonBisLangDruckTeil({ setQuizVonBisErster, setQuizVonBisModus, tt, vonBisTafelRef, zeileImBlick }, ...args); }
+  function vonBisLangDruck(...args) { return vonBisLangDruckTeil({ quizVonBisErster, quizVonBisModus, setQuizVonBisErster, setQuizVonBisModus, tt, vonBisAbschliessen, vonBisTafelRef, zeileImBlick }, ...args); }
+  // 361: Von–Bis abschließen – jede Vokabel im Bereich (samt Anfang und Ende) einzeln umschalten
+  function vonBisAbschliessen(bisId) {
+    const ids = quizBasisVoks.map(v => v.id), a = ids.indexOf(quizVonBisErster), b = ids.indexOf(bisId);
+    if (a >= 0 && b >= 0) {
+      const [lo, hi] = a <= b ? [a, b] : [b, a];
+      setQuizCheckboxAuswahl(prev => { const neu = new Set(prev); ids.slice(lo, hi + 1).forEach(id => neu.has(id) ? neu.delete(id) : neu.add(id)); return neu; });
+    }
+    setQuizVonBisModus(false); setQuizVonBisErster(null);
+  }
   function renderSuchleiste(...args) { return renderSuchleisteTeil({ springeZuTreffer, suchInfo, tt, ttFeld }, ...args); }
 
   // Kasten „In mehrere Quiz aufteilen“ im Quiz-Tab: Name, Gruppengröße, Bereich, Rest, Vorschau
@@ -2507,8 +2535,19 @@ export default function VokabelApp() {
   // Spalten, Anordnen, Gelernte); Ordner darüber im Pfad: nur Fällige + Gelernte (Quiz) bzw. kein Menü (Listen).
   // platz: auf einem freien Platz – Neues landet genau dort.
   // 256: Anzeige ohne Lücken (Lesereihenfolge) bzw. die eigene Anordnung – global, nur Anzeige
-  const lueckenlosSchalter = { label: einstellungen.lueckenlos ? "▦ Freie Anordnung" : "▤ Automatische Anordnung",   // 290
-    fn: () => speichereEinst({ ...einstellungen, lueckenlos: !einstellungen.lueckenlos }) };
+  // 359: Anordnung je Ebene – automatisch (Name/Datum/Lernstand) oder frei; im Menü steht die aktuelle
+  const ANORDNUNG_NAMEN = { name: "Name", datum: "Datum", lernstand: "Lernstand" };
+  // 359: „Nur diese Ebene | Alle Ebenen“ in den Fenstern Spalten und Anordnen
+  const ebenenWahl = (st, setSt) => (
+    <div className="toggle-btn" data-ebenen-wahl={st.alle ? "alle" : "diese"} style={{display:"flex", width:"100%", marginBottom:12}}>
+      {[[false, "Nur diese Ebene"], [true, "Alle Ebenen"]].map(([alle, text]) => (
+        <button key={text} className={`toggle-opt${!!st.alle === alle ? " aktiv" : ""}`} data-ebenen={alle ? "alle" : "diese"} style={{flex:1}}
+          onClick={() => setSt(x => x && { ...x, alle })}
+          {...tt(alle ? `Für alle Ebenen: oberste Ebene und alle Ordner der ${st.art === "liste" ? "Listen" : "Quiz"}` : "Nur für die Ebene, in der du gerade bist")}>{text}</button>
+      ))}
+    </div>);
+  const anordnenEintrag = (art, ordnerId) => { const a = ebenenAnsicht(art, ordnerId);
+    return { label: `⇅ Anordnen (${a.auto ? ANORDNUNG_NAMEN[a.sort] || "Name" : "Frei"})…`, fn: () => setAnordnen({ art, ordner: ordnerId, alle: false }) }; };
   function slotEbenenMenue(ordnerId, { voll = true, platz = null, ohneNeu = false } = {}) {
     const daten = getSlotsData();
     const gelernt = { label: einstellungen.gelernteAusblenden ? "👁 Gelernte einblenden" : "🙈 Gelernte ausblenden",
@@ -2518,9 +2557,8 @@ export default function VokabelApp() {
       ...(ohneNeu ? [] : [{ label: "＋ Neues Quiz aus Listen", fn: () => { neuImOrdnerRef.current = ordnerId; if (platz) neuPlatzRef.current = { ordner: ordnerId, platz }; setNeueSessionSchritt("art"); setModal("neue-session"); } }]),
       ...(ordnerPfad(daten.ordner || [], ordnerId).length < ORDNER_TIEFE_MAX ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe(platz ? { ids: [], name: "", platz } : { ids: [], name: "", eltern: ordnerId }) }] : []),
       ...gruppe(GRUPPE.ansicht, [   // 261: Spalten, Anordnen, Lückenlos unter „Ansicht“
-        { label: `▥ Spalten (${minSpalten("slot", ordnerId)})`, fn: () => setSpaltenWahl({ art: "slot", ordner: ordnerId }) },   // 203
-        { label: "⇅ Anordnen…", fn: () => setAnordnen({ art: "slot", ordner: ordnerId }) },   // 208
-        lueckenlosSchalter,
+        { label: `▥ Spalten (${minSpalten("slot", ordnerId)})`, fn: () => setSpaltenWahl({ art: "slot", ordner: ordnerId, alle: false }) },   // 203
+        anordnenEintrag("slot", ordnerId),   // 208/359
         gelernt,   // 290: unter „Ansicht“
       ]),
     ];
@@ -2531,9 +2569,8 @@ export default function VokabelApp() {
       { label: "＋ Neue Liste", fn: () => { setListenOrdnerOffen(ordnerId); resetImport(); if (platz) neuListePlatzRef.current = { ordner: ordnerId, platz }; setTab("listen"); setAnsicht("import"); } },
       ...(ordnerPfad(listenOrdner, ordnerId).length < ORDNER_TIEFE_MAX ? [{ label: "📁 Neuer Ordner", fn: () => setInGruppe(platz ? { art: "liste", ids: [], name: "", platz } : { art: "liste", ids: [], name: "", eltern: ordnerId }) }] : []),
       ...gruppe(GRUPPE.ansicht, [   // 261
-        { label: `▥ Spalten (${minSpalten("liste", ordnerId)})`, fn: () => setSpaltenWahl({ art: "liste", ordner: ordnerId }) },
-        { label: "⇅ Anordnen…", fn: () => setAnordnen({ art: "liste", ordner: ordnerId }) },
-        lueckenlosSchalter,
+        { label: `▥ Spalten (${minSpalten("liste", ordnerId)})`, fn: () => setSpaltenWahl({ art: "liste", ordner: ordnerId, alle: false }) },
+        anordnenEintrag("liste", ordnerId),   // 359
       ]),
     ];
   }
@@ -2544,11 +2581,38 @@ export default function VokabelApp() {
   // Kopfzeile Verlauf & Gespeichert (Quiz- und Statistik-Tab): zu und auf gleich aufgebaut – Name + Ü/D/A;
   // aufgeklappt zusätzlich eine Info-Zeile (Listen · Nr. · Anzahl). Langer Druck (Quiz): Speichern.
   // Mehrfach-Auswahl übernehmen: mehrere → Multiquiz einstellen, eine → laden, keine → Auswahl beenden
+  // 358: Statistik-Kopf ‹ › – blättert durch das, was auf der aktuellen Ebene der Listen- bzw. Quiz-Auswahl zu sehen ist
+  // (Reihenfolge wie angezeigt, im Kreis); ein Ordner zählt mit seinem ganzen Inhalt. Wechselt auch den Quiz-Tab (geteilt).
+  function statistikBlaetterElemente() {
+    const art = auswahlListen ? "liste" : "slot";
+    const daten = art === "liste" ? { ordner: listenOrdner, gespeichert: listenIndex } : { ordner: slots.ordner || [], gespeichert: slots.gespeichert || [] };
+    const offen = art === "liste" ? listenOrdnerOffen : slotOrdner;
+    const sichtbarL = new Set(sichtbareListen.map(l => l.id));
+    const sichtbar = x => x.istOrdner ? eintraegeImOrdner(daten, x.id).some(y => art === "liste" ? sichtbarL.has(y.id) : slotSichtbar(y))
+      : art === "liste" ? sichtbarL.has(x.id) : slotSichtbar(x);
+    const a = ebenenAnsicht(art, offen);
+    return { art, elemente: autoReihe(ebeneVon(daten, offen), a.auto ? a.sort : null, art).filter(sichtbar) };
+  }
+  function statistikBlaettern(richtung) {
+    const { art, elemente } = statistikBlaetterElemente();
+    if (!elemente.length) return;
+    const gleich = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+    const geladen = x => art === "liste"
+      ? (x.istOrdner ? gleich(wahlListenIds([x.id]), quizTabListen) : quizTabListen.length === 1 && quizTabListen[0] === x.id)
+      : (x.istOrdner ? blaetternRef.current?.id === x.id : statistikAktiverSlot?.typ === "gespeichert" && statistikAktiverSlot.id === x.id);
+    let i = elemente.findIndex(x => blaetternRef.current?.art === art && blaetternRef.current.id === x.id && geladen(x));
+    if (i < 0) i = elemente.findIndex(geladen);
+    const n = elemente.length, ziel = elemente[i < 0 ? (richtung > 0 ? 0 : n - 1) : (i + richtung + n) % n];
+    blaetternRef.current = { art, id: ziel.id };
+    if (art === "liste") zeigeListenStatistik([ziel.id]);
+    else beendeMultiAuswahl([ziel.id], ladeSlotStatistik);
+    leuchte("slotkopf");
+  }
   function beendeMultiAuswahl(ids, ...rest) { return beendeMultiAuswahlTeil({ setMultiAuswahl, stelleMultiquizEin }, wahlQuizIds(ids), ...rest); }
   // Speichern-Menü des Quiz (lang drücken auf den Quiz-Namen bzw. den Start-Knopf)
   function sessionSpeicherAktionen(...args) { return sessionSpeicherAktionenTeil({ aktiverSlot, getSlotEintrag, ladeSlot, oeffneModal, quizKombiListe, setModal, setModalInput, slotNamenVorschlag, ueberspeichereSession, vokabelgruppeGeaendert }, ...args); }
   function schalterRaster(...args) { return schalterRasterTeil({ schalterZaehlung, quizGrund, setQuizGrund, quizGelerntEinschliessen, setQuizGelerntEinschliessen, quizHeuteEinschliessen, setQuizHeuteEinschliessen, quizFaellig, setQuizFaellig, zeigeAuswahlTafel, slots }, ...args); }   // 305
-  function renderSlotKopf(...args) { return renderSlotKopfTeil({ alsQuizSpeichern, schalterRaster, tab, setStatistikFilter, waehleBereichGeladen, waehleListenBereich, aendereQuizVokabeln, bereichWahl, tafelBereich, nichtsGeladen, zeigeListenStatistik, wahlListenIds, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt }, ...args); }
+  function renderSlotKopf(...args) { return renderSlotKopfTeil({ statistikBlaettern, statistikBlaetterElemente, alsQuizSpeichern, schalterRaster, tab, setStatistikFilter, waehleBereichGeladen, waehleListenBereich, aendereQuizVokabeln, bereichWahl, tafelBereich, nichtsGeladen, zeigeListenStatistik, wahlListenIds, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt }, ...args); }
 
   // Lernfortschritt je Art (Mini-Kreise) für eine Vokabelmenge; aus = keine passenden Vokabeln
   function lernstandJeArt(...args) { return lernstandJeArtTeil({ einstellungen }, ...args); }
@@ -3032,7 +3096,7 @@ export default function VokabelApp() {
   function umwerten(...args) { return umwertenTeil({ setQuiz }, ...args); }
   // Wischen im Quiz: nach rechts = eine Karte zurück, nach links = vorwärts bis zur aktuellen
   function rueckblickWischen(...args) { return rueckblickWischenTeil({ setQuiz }, ...args); }
-  function renderRueckblick(...args) { return renderRueckblickTeil({ farbModusUI, farbRadUI, quiz, setQuiz, tt, umwerten }, ...args); }
+  function renderRueckblick(...args) { return renderRueckblickTeil({ farbModusUI, farbRadUI, oeffneVokabelBearbeiten, quiz, renderVokabelEditor, setQuiz, tt, umwerten }, ...args); }
   function naechsteVokabel(...args) { return naechsteVokabelTeil({ flashTimerRef, flashWeiterRef, naechsteVokabelState, quiz, setQuiz, weiterNachSpalte }, ...args); }
 
   // Zwischenkarte "Wiederholung": weiter zu den zu wiederholenden Vokabeln oder direkt zur Auswertung
@@ -3148,7 +3212,7 @@ export default function VokabelApp() {
 
   // ── Render: Haupt (Tabs immer sichtbar) ──────────────────────────────────
   // Phase 2: alles, was die ausgelagerten Bereiche (src/bereiche/) brauchen
-  const app = { vokWahlGeaendert, vokAuswahlZurueck, listeWerkzeuge, setListeWerkzeuge, umfangAuf, setUmfangAuf, waehleBereichGeladen, bereichWahl, oeffneListenTafel, alsQuizSpeichern, aendereQuizVokabeln, setStatistikGesamt, vokAuswahlZurTafel, tafelBereich, waehleListenBereich, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, faelligJeSprache, faelligePool, quizFaellig, setQuizFaellig, starteNurFaellige, istPaketQuiz, abfrageModusContainerRef, abfrageModusRef, abfrageZielAnzahl, abfrageZielModus, abfrageZielScore, abfrageZielScoreTyp, abfrageZielWiederholung, aendereStimmen, aktiveListe, aktiveListeId, aktiverSlot, akzenteAn, alleBereichH, alleBereichRef, ansichtSpaltenAn, antwortMehrfach, artenMehrfach, aufteilen, aufteilenStand, ausListeRef, auswahlListen, auswahlOrdnerZelle, begrenzeOhneAkzent, benenneSlotUm, bestaetigeWiederherstellen, blitzt, dateiName, dupliziereSlot, einstBereich, einstKopf, einstUnter, einstWahl, einstZeile, einstellungen, einzelauswahlRef, erstelleQuiz, erstelleVerlaufEintrag, erstellenFenster, exportiereAlsJsonBestaetigt, fileInputRef, fokusZeigt, fuehreImportDurch, fuehreListenZusammen, getBestehendZielOptionen, getBestehendeListe, getSlotEintrag, handleTabWechsel, headerH, importBestehendId, importDateiname, importFehler, importJsonData, importMapping, importMehrfachListen, importNeuName, importOrdnerWahl, importParsed, importSprache, importText, importZielTyp, importiereAlleListen, importiereAusJsonDaten, inGruppe, infoHeaderRef, infoKontextContainerRef, infoModus, jsonExportIds, jsonExportOptionen, klammerAenderungen, klammerZiel, ladeSicherungsDatei, ladeSlot, legeAufteilenAn, legeListenOrdnerAn, legeOrdnerAn, lernEinstellungen, lernResetFrage, lernStandVon, lernstandJeArt, letzteSicherung, leuchte, leuchtet, listeDetailKopfH, listeMenueId, listeNurAus, listeOeffnenKopf, listeVorschau, listenAuswahlPfad, listenBereich, listenContainerRef, listenFlagge, listenGelerntAusblenden, listenIndex, listenKopfRefCb, listenNavi, listenOrdner, listenOrdnerOffen, listenRasterPlaetze, listenSaetze, listenSortModus, listenWahl, listenWahlKopf, listenZeileH, listenZeileRef, listenauswahlHeaderH, listenauswahlHeaderRef, loescheSessionSlot, maxFenster, maxSpalte, mergeQuelleId, minSpalten, modalInput, neueSessionSchritt, oeffneModal, oeffneSatzFenster, oeffneSynFenster, oeffneVokabelBearbeiten, offenText, ordnerNavi, promptAnzahl, promptBeispiele, promptFalsch, promptModus, promptSprache, promptSynonyme, promptThema, quizAbfrageArt, quizAbfrageModusAufgeklappt, quizAntwortTypenGeordnet, quizArt, quizAusgewaehlt, quizBasisVoks, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizFokus, quizFrageTyp, quizGefilterteVoks, quizGelerntEinschliessen, quizHeuteEinschliessen, quizInfoTypenSession, quizKombiListe, quizListeAufgeklappt, quizModus, quizModusInfoAufgeklappt, quizPaketGroesse, quizReihenfolge, quizReihenfolgeAufgeklappt, quizSchlechtesteMaxScore, quizSessionAufgeklappt, quizSessionModus, quizSpalteModus, quizStufeAufgeklappt, quizTabListen, quizUnbeantwortetZuerst, quizVokMax, quizVonBisErster, quizVonBisModus, quizZeigeInfo, reihenfolgeContainerRef, renderAufteilenKasten, renderExportArtWahl, renderExportNamensFeld, renderFarbschemata, renderListeInfo, renderListenRaster, renderModusKnoepfe, renderSlotBereiche, renderSlotInfo, renderSlotKopf, renderSprachAuswahl, renderSuchleiste, resetImport, satzFenster, satzPortion, schalteEinstBereich, schliesseQuizBereiche, sessionContainerRef, sessionRef, sessionResetFrage, sessionSlotAktiv, sessionSlotKonflikt, sessionSpeicherAktionen, setAbfrageZielAnzahl, setAbfrageZielModus, setAbfrageZielScore, setAbfrageZielScoreTyp, setAbfrageZielWiederholung, setAnsicht, setAnsichtSpaltenAn, setAufteilen, setBearbeiteVokabel, setErstellenFenster, setFaelligTick, setGruppenAenderungsDialog, setGruppenQuiz, setImportBestehendId, setImportDateiname, setImportFehler, setImportJsonData, setImportMapping, setImportMehrfachListen, setImportNeuName, setImportParsed, setImportSprache, setImportText, setImportZielTyp, setInGruppe, setInfoModus, setJsonExportIds, setJsonExportOptionen, setKlammerZiel, setLernResetFrage, setListeNurAus, setListenBereich, setListenGelerntAusblenden, setMergeQuelleId, setModal, setModalInput, setNeueSessionSchritt, setPromptAnzahl, setPromptBeispiele, setPromptFalsch, setPromptModus, setPromptSprache, setPromptSynonyme, setPromptThema, setQuiz, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizDiktatSpalte, setQuizDiktatUebersetzung, setQuizGelerntEinschliessen, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizModus, setQuizModusInfoAufgeklappt, setQuizPaketGroesse, setQuizReihenfolge, setQuizReihenfolgeAufgeklappt, setQuizSchlechtesteMaxScore, setQuizSessionAufgeklappt, setQuizSessionModus, setQuizStufeAufgeklappt, setQuizTabListen, setQuizUnbeantwortetZuerst, setQuizVonBisErster, setQuizVonBisModus, setSatzFenster, setSessionResetFrage, setSicherungLaden, setSlotSektionAufgeklappt, setSlotUmbenennen, setSpeicherDauerhaft, setStartLeerHinweis, setStatistikArt, setStatistikFilter, setStatistikListeZu, setStatistikSort, setStatistikVollbild, setSucheListe, setSucheQuiz, setSucheStatistik, setSynFenster, setTab, setUpdateStatus, setZuruecksetzenArten, setzeHerausgenommen, setzeLernEinst, setzeLernStand, setzeListeZurueck, setzeListenSprache, setzeMapping, setzeMinSpalten, setzeSpaltenArt, sichereAlles, sicherungErinnerungUI, sicherungFehler, sicherungInputRef, sicherungLaden, sicherungTage, sichtbareListen, slotContainerRef, slotH, slotNamenVorschlag, slotOrdner, slotSektionAufgeklappt, slotUmbenennen, slotVorschau, slots, speicherDauerhaft, speichereAlsGespeichert, speichereEinst, spracheVonListe, sprungKnopf, startLeerHinweis, starteAufteilen, starteLernen, starteQuiz, statistikAktiverSlot, statistikAlleListenObjekte, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikFilter, statistikGefilterteVoks, statistikGewaehlteListenObjekte, statistikListeZu, statistikListenIds, statistikSort, statistikVollbild, stimmenWahl, suchInfo, suchMarke, sucheListe, sucheQuiz, sucheStatistik, synFenster, synPortion, teileAlsDatei, toggleAbfrageModus, toggleEinzelauswahl, toggleInfoSpalte, toggleQuizSpalte, toggleQuizTabListe, toggleReihenfolge, toggleSessionBereich, toggleSpalteRolle, toggleVokCheckbox, tt, ttFeld, uebernehmeSaetze, uebernehmeSynonyme, ueberspeichereSession, updateStatus, verschiebeInOrdner, verschiebeKlammern, verschiebeListenInOrdner, vokabelAufgeklappt, vonBisLangDruck, vorhandeneSprachen, wahlLeiste, wechsleQuizArt, zeileImBlick, zuruecksetzenArten };
+  const app = { vonBisAbschliessen, vokWahlGeaendert, vokAuswahlZurueck, vokAuswahlAbbrechen, listeWerkzeuge, setListeWerkzeuge, umfangAuf, setUmfangAuf, waehleBereichGeladen, bereichWahl, oeffneListenTafel, alsQuizSpeichern, aendereQuizVokabeln, setStatistikGesamt, vokAuswahlZurTafel, tafelBereich, waehleListenBereich, quizGrund, setQuizGrund, quizNegativ, setQuizNegativ, faelligJeSprache, faelligePool, quizFaellig, setQuizFaellig, starteNurFaellige, istPaketQuiz, abfrageModusContainerRef, abfrageModusRef, abfrageZielAnzahl, abfrageZielModus, abfrageZielScore, abfrageZielScoreTyp, abfrageZielWiederholung, aendereStimmen, aktiveListe, aktiveListeId, aktiverSlot, akzenteAn, alleBereichH, alleBereichRef, ansichtSpaltenAn, antwortMehrfach, artenMehrfach, aufteilen, aufteilenStand, ausListeRef, auswahlListen, auswahlOrdnerZelle, begrenzeOhneAkzent, benenneSlotUm, bestaetigeWiederherstellen, blitzt, dateiName, dupliziereSlot, einstBereich, einstKopf, einstUnter, einstWahl, einstZeile, einstellungen, einzelauswahlRef, erstelleQuiz, erstelleVerlaufEintrag, erstellenFenster, exportiereAlsJsonBestaetigt, fileInputRef, fokusZeigt, fuehreImportDurch, fuehreListenZusammen, getBestehendZielOptionen, getBestehendeListe, getSlotEintrag, handleTabWechsel, headerH, importBestehendId, importDateiname, importFehler, importJsonData, importMapping, importMehrfachListen, importNeuName, importOrdnerWahl, importParsed, importSprache, importText, importZielTyp, importiereAlleListen, importiereAusJsonDaten, inGruppe, infoHeaderRef, infoKontextContainerRef, infoModus, jsonExportIds, jsonExportOptionen, klammerAenderungen, klammerZiel, ladeSicherungsDatei, ladeSlot, legeAufteilenAn, legeListenOrdnerAn, legeOrdnerAn, lernEinstellungen, lernResetFrage, lernStandVon, lernstandJeArt, letzteSicherung, leuchte, leuchtet, listeDetailKopfH, listeMenueId, listeNurAus, listeOeffnenKopf, listeVorschau, listenAuswahlPfad, listenBereich, listenContainerRef, listenFlagge, listenGelerntAusblenden, listenIndex, listenKopfRefCb, listenNavi, listenOrdner, listenOrdnerOffen, listenRasterPlaetze, listenSaetze, listenSortModus, listenWahl, listenWahlKopf, listenZeileH, listenZeileRef, listenauswahlHeaderH, listenauswahlHeaderRef, loescheSessionSlot, maxFenster, maxSpalte, mergeQuelleId, minSpalten, modalInput, neueSessionSchritt, oeffneModal, oeffneSatzFenster, oeffneSynFenster, oeffneVokabelBearbeiten, offenText, ordnerNavi, promptAnzahl, promptBeispiele, promptFalsch, promptModus, promptSprache, promptSynonyme, promptThema, quizAbfrageArt, quizAbfrageModusAufgeklappt, quizAntwortTypenGeordnet, quizArt, quizAusgewaehlt, quizBasisVoks, quizBereichTyp, quizCheckboxAuswahl, quizDiktatSpalte, quizDiktatUebersetzung, quizFokus, quizFrageTyp, quizGefilterteVoks, quizGelerntEinschliessen, quizHeuteEinschliessen, quizInfoTypenSession, quizKombiListe, quizListeAufgeklappt, quizModus, quizModusInfoAufgeklappt, quizPaketGroesse, quizReihenfolge, quizReihenfolgeAufgeklappt, quizSchlechtesteMaxScore, quizSessionAufgeklappt, quizSessionModus, quizSpalteModus, quizStufeAufgeklappt, quizTabListen, quizUnbeantwortetZuerst, quizVokMax, quizVonBisErster, quizVonBisModus, quizZeigeInfo, reihenfolgeContainerRef, renderAufteilenKasten, renderExportArtWahl, renderExportNamensFeld, renderFarbschemata, renderListeInfo, renderListenRaster, renderModusKnoepfe, renderSlotBereiche, renderSlotInfo, renderSlotKopf, renderSprachAuswahl, renderSuchleiste, resetImport, satzFenster, satzPortion, schalteEinstBereich, schliesseQuizBereiche, sessionContainerRef, sessionRef, sessionResetFrage, sessionSlotAktiv, sessionSlotKonflikt, sessionSpeicherAktionen, setAbfrageZielAnzahl, setAbfrageZielModus, setAbfrageZielScore, setAbfrageZielScoreTyp, setAbfrageZielWiederholung, setAnsicht, setAnsichtSpaltenAn, setAufteilen, setBearbeiteVokabel, setErstellenFenster, setFaelligTick, setGruppenAenderungsDialog, setGruppenQuiz, setImportBestehendId, setImportDateiname, setImportFehler, setImportJsonData, setImportMapping, setImportMehrfachListen, setImportNeuName, setImportParsed, setImportSprache, setImportText, setImportZielTyp, setInGruppe, setInfoModus, setJsonExportIds, setJsonExportOptionen, setKlammerZiel, setLernResetFrage, setListeNurAus, setListenBereich, setListenGelerntAusblenden, setMergeQuelleId, setModal, setModalInput, setNeueSessionSchritt, setPromptAnzahl, setPromptBeispiele, setPromptFalsch, setPromptModus, setPromptSprache, setPromptSynonyme, setPromptThema, setQuiz, setQuizBereichTyp, setQuizCheckboxAuswahl, setQuizDiktatSpalte, setQuizDiktatUebersetzung, setQuizGelerntEinschliessen, setQuizHeuteEinschliessen, setQuizListeAufgeklappt, setQuizModus, setQuizModusInfoAufgeklappt, setQuizPaketGroesse, setQuizReihenfolge, setQuizReihenfolgeAufgeklappt, setQuizSchlechtesteMaxScore, setQuizSessionAufgeklappt, setQuizSessionModus, setQuizStufeAufgeklappt, setQuizTabListen, setQuizUnbeantwortetZuerst, setQuizVonBisErster, setQuizVonBisModus, setSatzFenster, setSessionResetFrage, setSicherungLaden, setSlotSektionAufgeklappt, setSlotUmbenennen, setSpeicherDauerhaft, setStartLeerHinweis, setStatistikArt, setStatistikFilter, setStatistikListeZu, setStatistikSort, setStatistikVollbild, setSucheListe, setSucheQuiz, setSucheStatistik, setSynFenster, setTab, setUpdateStatus, setZuruecksetzenArten, setzeHerausgenommen, setzeLernEinst, setzeLernStand, setzeListeZurueck, setzeListenSprache, setzeMapping, setzeMinSpalten, setzeSpaltenArt, sichereAlles, sicherungErinnerungUI, sicherungFehler, sicherungInputRef, sicherungLaden, sicherungTage, sichtbareListen, slotContainerRef, slotH, slotNamenVorschlag, slotOrdner, slotSektionAufgeklappt, slotUmbenennen, slotVorschau, slots, speicherDauerhaft, speichereAlsGespeichert, speichereEinst, spracheVonListe, sprungKnopf, startLeerHinweis, starteAufteilen, starteLernen, starteQuiz, statistikAktiverSlot, statistikAlleListenObjekte, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikFilter, statistikGefilterteVoks, statistikGewaehlteListenObjekte, statistikListeZu, statistikListenIds, statistikSort, statistikVollbild, stimmenWahl, suchInfo, suchMarke, sucheListe, sucheQuiz, sucheStatistik, synFenster, synPortion, teileAlsDatei, toggleAbfrageModus, toggleEinzelauswahl, toggleInfoSpalte, toggleQuizSpalte, toggleQuizTabListe, toggleReihenfolge, toggleSessionBereich, toggleSpalteRolle, toggleVokCheckbox, tt, ttFeld, uebernehmeSaetze, uebernehmeSynonyme, ueberspeichereSession, updateStatus, verschiebeInOrdner, verschiebeKlammern, verschiebeListenInOrdner, vokabelAufgeklappt, vonBisLangDruck, vorhandeneSprachen, wahlLeiste, wechsleQuizArt, zeileImBlick, zuruecksetzenArten };
   return (
     <>
       <style>{CSS}</style>{farbModusUI}{farbRadUI}
@@ -3320,14 +3384,24 @@ export default function VokabelApp() {
         <div className="overlay" onClick={() => setAnordnen(null)}>
           <div className="modal" data-anordnen-dialog onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Anordnen{anordnen.ordner ? ` – „${((anordnen.art === "liste" ? listenOrdner : slots.ordner) || []).find(o => o.id === anordnen.ordner)?.name || ""}“` : ""}</div>
+            {ebenenWahl(anordnen, setAnordnen)}
+            {(() => { const a = ebenenAnsicht(anordnen.art, anordnen.ordner), akt = k => k === "frei" ? !a.auto : a.auto && a.sort === k;   // 359
+              return (
             <div style={{display:"flex", flexDirection:"column", gap:6}}>
+              <div className="inp-label" style={{margin:"2px 0 0"}}>Automatisch – lückenlos, Neues sortiert sich ein</div>
               {[["name", "Nach Name", "A–Z, Zahlen der Reihe nach (A1-02 vor A1-10)"], ["datum", "Nach Datum", "älteste zuerst"],
-                ["lernstand", "Nach Lernstand", "am meisten gelernt zuerst"], ["luecken", "Lücken schließen", "Reihenfolge bleibt, leere Plätze fallen weg"]].map(([k, titel, sub]) => (
-                <button key={k} className="neue-session-wahl" data-anordnen={k} onClick={() => ordneAn(anordnen.art, anordnen.ordner, k)} {...tt(`${titel} – Ordner zuerst, spaltenweise von oben nach unten`)}>
-                  <b>{titel}</b><span>{sub}</span>
-                </button>
+                ["lernstand", "Nach Lernstand", "am meisten gelernt zuerst (Stand von jetzt)"], ["frei", "Frei", "eigene Plätze (wie zuletzt frei angeordnet) – verschieben, Lücken lassen"], ["luecken", "Lücken schließen", "freie Plätze: Reihenfolge bleibt, leere Plätze fallen weg"]].map(([k, titel, sub]) => (
+                <Fragment key={k}>
+                  {k === "frei" && <div className="inp-label" style={{margin:"8px 0 0"}}>Frei</div>}
+                  <button className={`neue-session-wahl${!anordnen.alle && akt(k) ? " gewaehlt" : ""}`} data-anordnen={k} data-anordnen-aktiv={!anordnen.alle && akt(k) ? "" : undefined}
+                    onClick={() => ordneAn(anordnen.art, anordnen.ordner, k, !!anordnen.alle)}
+                    {...tt(k === "frei" ? "Frei anordnen – die Kacheln stehen auf ihren eigenen Plätzen (wie zuletzt frei angeordnet) und lassen sich verschieben"
+                      : k === "luecken" ? "Freie Plätze zusammenrücken – die Reihenfolge bleibt" : `${titel} – Ordner zuerst, spaltenweise von oben nach unten; bleibt so sortiert`)}>
+                    <b>{titel}</b><span>{sub}</span>
+                  </button>
+                </Fragment>
               ))}
-            </div>
+            </div>); })()}
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setAnordnen(null)} {...tt("Schließen, ohne etwas zu ändern")}>Abbrechen</button>
             </div>
@@ -3338,10 +3412,11 @@ export default function VokabelApp() {
         <div className="overlay" onClick={() => setSpaltenWahl(null)}>
           <div className="modal" data-spalten-dialog onClick={e => e.stopPropagation()}>
             <div className="modal-titel">Spalten{spaltenWahl.ordner ? ` in „${((spaltenWahl.art === "liste" ? listenOrdner : slots.ordner) || []).find(o => o.id === spaltenWahl.ordner)?.name || ""}“` : ""}</div>
+            {ebenenWahl(spaltenWahl, setSpaltenWahl)}
             <div className="toggle-btn" data-wahl-bereich style={{display:"flex", width:"100%"}}>
               {[1, 2, 3, 4, 5].map(n => (
-                <button key={n} className={`toggle-opt${minSpalten(spaltenWahl.art, spaltenWahl.ordner) === n ? " aktiv" : ""}`} data-spalten-wahl={n} style={{flex:1}}
-                  onClick={() => { setzeMinSpalten(spaltenWahl.art, spaltenWahl.ordner, n); setSpaltenWahl(null); }}
+                <button key={n} className={`toggle-opt${!spaltenWahl.alle && minSpalten(spaltenWahl.art, spaltenWahl.ordner) === n ? " aktiv" : ""}`} data-spalten-wahl={n} style={{flex:1}}
+                  onClick={() => { setzeMinSpalten(spaltenWahl.art, spaltenWahl.ordner, n, !!spaltenWahl.alle); setSpaltenWahl(null); }}
                   {...tt(`Mindestens ${n} Spalte${n > 1 ? "n" : ""} – belegte Spalten können mehr ergeben`)}>{n}</button>
               ))}
             </div>

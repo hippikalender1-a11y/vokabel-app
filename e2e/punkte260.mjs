@@ -31,7 +31,7 @@ const setze = async (sel, wert) => page.evaluate((sel, wert) => { const el = doc
 
 await page.goto(URL);
 await page.evaluate(async () => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_alte_ansicht", "1");
   await new Promise(r => { const d = indexedDB.deleteDatabase("vokabel_saetze"); d.onsuccess = d.onerror = d.onblocked = () => r(); });
   localStorage.setItem("vokabel_stufen_v1", "1");
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Englisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
@@ -62,10 +62,10 @@ let m = await menue();
 ok(m.includes("🖼 Ansicht ›") && !m.includes("⇅ Anordnen…") && !m.some(x => x.startsWith("▥ Spalten")) && !m.includes("▤ Automatische Anordnung"), `261: Hauptebene mit „🖼 Ansicht ›“ statt der drei Punkte (${m.join(" | ")})`);
 await page.evaluate(() => document.querySelector('[data-info-aktion="🖼 Ansicht ›"]')?.click()); await sleep(250);
 m = await menue();
-ok(m.join("|") === "‹ zurück|▥ Spalten (1)|⇅ Anordnen…|▤ Automatische Anordnung", `261: Ansicht – ${m.join(" | ")}`);
-await page.evaluate(() => document.querySelector('[data-info-aktion="▤ Automatische Anordnung"]')?.click()); await sleep(300);
-ok(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}").lueckenlos) === true, "261: „Lückenlos anzeigen“ aus dem Untermenü schaltet um");
-await page.mouse.click(5, 300); await sleep(300);
+ok(m.join("|") === "‹ zurück|▥ Spalten (1)|⇅ Anordnen (Frei)…", `261/359: Ansicht – ${m.join(" | ")}`);
+await page.evaluate(() => document.querySelector('[data-info-aktion="⇅ Anordnen (Frei)…"]')?.click()); await sleep(300);
+await page.evaluate(() => document.querySelector('[data-anordnen="name"]')?.click()); await sleep(300);
+ok(Object.values(await page.evaluate(() => JSON.parse(localStorage.getItem("vokabel_einstellungen") || "{}").ebenenAnordnung || {})).includes("auto"), "261/359: „Anordnen › Nach Name“ schaltet auf automatisch");
 
 // ── 263: Auswahlrahmen eckig, Kopf eckig ── / ── 262: Quiz mit Auswahl ──
 await halte('[data-liste-id="l_b"]');

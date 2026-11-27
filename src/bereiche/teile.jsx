@@ -539,38 +539,44 @@ export function renderMiniKreise(app, ls, { aktiv = null, beiKlick = null, groes
   }
 
 export function renderRueckblick(app) {
-  const { farbModusUI, farbRadUI, quiz, setQuiz, tt, umwerten } = app;
+  const { farbModusUI, farbRadUI, oeffneVokabelBearbeiten, quiz, renderVokabelEditor, setQuiz, tt, umwerten } = app;
     const rb = quiz.rueckblick, i = quiz.rueckIdx, e = rb[i];
     const ja = e.ergebnis === "richtig";
     const vok = quiz.liste.vokabeln.find(v => v.id === e.vokId) || quiz.vokabeln.find(v => v.id === e.vokId);
     const feld = e.art === "diktat" ? "diktatFortschritt" : e.wertung?.normal == null && e.wertung?.akzent != null ? "akzentFortschritt" : "fortschritt";
+    // 357: antippen schaltet die Bewertung um (beliebig oft hin und her)
     const knopf = gewusst => {
       const gewaehlt = gewusst === ja;
       return (
         <button className={`karte-btn ${gewusst ? "karte-btn-ja" : "karte-btn-nein"} rueck-wahl${gewaehlt ? " gewaehlt" : " andere"}`}
           data-rueck-bewertung={gewusst ? "richtig" : "falsch"} data-gewaehlt={gewaehlt ? "ja" : "nein"}
-          {...tt(gewaehlt ? "So wurde gewertet" : "Lang drücken: Bewertung nachträglich ändern",
-            gewaehlt ? null : [{ label: gewusst ? "✓ Doch gewusst – umwerten" : "✗ Doch nicht gewusst – umwerten", fn: () => umwerten(i) }],
-            { langText: `Bewertung nachträglich ändern: ${gewusst ? "gewusst" : "nicht gewusst"}?` })}>
+          onClick={gewaehlt ? undefined : () => umwerten(i)}
+          {...tt(gewaehlt ? "So ist es gewertet – der andere Knopf ändert die Bewertung" : `Antippen: Bewertung ändern auf „${gewusst ? "gewusst" : "nicht gewusst"}“`)}>
           {gewusst ? "✓ Gewusst" : "✗ Nicht gewusst"}</button>);
     };
+    // 357: Frage und Antworten per langem Druck bearbeiten (wie auf der aktuellen Karte); angezeigt wird der aktuelle Text
+    const roh = quiz.vokabeln.find(v => v.id === e.vokId) || vok;
+    const listeId = roh?._listeId ?? quiz.liste.id;
+    const text = (typ, gemerkt) => (typ && vok?.[typ]?.wert) || gemerkt;
+    const bearbeiten = (typ, label) => typ && roh ? tt(`${label} – lang drücken: bearbeiten`,
+      [{ label: `✎ ${label} bearbeiten`, fn: () => oeffneVokabelBearbeiten(roh, listeId, typ) }], { langText: `${label}: bearbeiten` }) : {};
     return (
       <>
-        <style>{CSS}</style>{farbModusUI}{farbRadUI}
+        <style>{CSS}</style>{farbModusUI}{farbRadUI}{renderVokabelEditor()}
         <div className="app">
           <div className="topbar">
             <span className="topbar-title" data-rueckblick-titel>↩ {i + 1} / {rb.length}</span>
             <span className="quiz-fortschritt">{scoreSymbole(vok?.[feld]?.score)}</span>
           </div>
           <div className="sektion" data-rueckblick={i} style={{minHeight:"70vh"}}>
-            <div className="quiz-frage-box rueck-karte" style={{marginBottom:10}}>
+            <div className="quiz-frage-box rueck-karte" style={{marginBottom:10}} data-rueck-frage {...bearbeiten(e.frage.typ, "Frage")}>
               <div className="quiz-label">{e.frage.label}</div>
-              <div className="quiz-frage-text" style={{textAlign:"center"}}>{mitHinweis(umbruch(e.frage.wert))}</div>
+              <div className="quiz-frage-text" style={{textAlign:"center"}}>{mitHinweis(umbruch(text(e.frage.typ, e.frage.wert)))}</div>
             </div>
             {e.antworten.map((a, k) => (
-              <div key={k} className={`quiz-vorig rueck-karte${a.richtig === false ? " nicht" : ""}`} data-rueck-antwort={a.richtig === false ? "falsch" : "richtig"}>
+              <div key={k} className={`quiz-vorig rueck-karte${a.richtig === false ? " nicht" : ""}`} data-rueck-antwort={a.richtig === false ? "falsch" : "richtig"} {...bearbeiten(a.typ, a.label || "Antwort")}>
                 <div className="quiz-vorig-label">{a.richtig === false ? "✗ " : "✓ "}{a.label}</div>
-                <div style={{textAlign:"center", fontSize:"1rem"}}><strong>{mitHinweis(umbruch(a.wert))}</strong></div>
+                <div style={{textAlign:"center", fontSize:"1rem"}}><strong>{mitHinweis(umbruch(text(a.typ, a.wert)))}</strong></div>
                 {a.eingaben?.length > 0 && <div className="rueck-eingabe" data-rueck-eingabe>Deine Antwort: {a.eingaben.join(" · ")}</div>}
               </div>
             ))}

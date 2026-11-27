@@ -33,7 +33,7 @@ const heute = (() => { const d = new Date(); return `${String(d.getDate()).padSt
 
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear(); localStorage.setItem("vokabel_test_ohne_tagessperre", "1");
+  localStorage.clear(); localStorage.setItem("vokabel_test_alte_ansicht", "1"); localStorage.setItem("vokabel_test_ohne_tagessperre", "1");
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const l = { id:"l_fr", name:"Verbes", sprache:"fr", spalten: sp, naechste_id:4, vokabeln: [
     { id:1, E1:{wert:"aller",falsch:[]}, D1:{wert:"gehen",falsch:[]} },
@@ -173,7 +173,7 @@ ok(JSON.stringify(await plaetze()) === JSON.stringify(pl), "Plätze bleiben nach
 
 // Umbenennen über das Menü: Name ändert sich, Platz bleibt; doppelter Name wird abgelehnt
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
-if (!(await page.$("[data-raster-zelle]"))) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
+if (!(await page.$("[data-raster-zelle]"))) await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.click());
 await sleep(300);
 const platzN1 = pl[n1];
 await menue(platzN1);
@@ -213,7 +213,7 @@ pl = await plaetze();
 const neuName = Object.keys(pl).find(n => !(n in plVor));
 console.log("     nach 4. Speichern:", JSON.stringify(pl));
 ok(neuName && pl[neuName] === `${unten + 1}|0`, `neuer Eintrag unter dem untersten (${pl[neuName]})`);
-if (!(await page.$("[data-raster-zelle]"))) await page.evaluate(() => document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv")?.click());
+if (!(await page.$("[data-raster-zelle]"))) await page.evaluate(() => document.querySelector("[data-slot-kopf-name]")?.click());
 await sleep(300);
 // Verschieben: unter dem untersten Eintrag immer zwei freie Zeilen – setzt man etwas hinein, wächst das Raster mit
 const maxZeile = () => page.evaluate(() => Math.max(...[...document.querySelectorAll("[data-raster-zelle]")].map(e => +e.dataset.rasterZelle.split("|")[0])));

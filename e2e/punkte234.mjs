@@ -38,7 +38,7 @@ await page.goto(URL);
 
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_alte_ansicht", "1");
   localStorage.setItem("vokabel_stufen_v1", "1");
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Englisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const liste = (id, name) => ({ id, name, sprache:"en", spalten: sp, naechste_id: 11,

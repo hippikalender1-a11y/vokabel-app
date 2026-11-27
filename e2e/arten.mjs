@@ -42,7 +42,7 @@ const artWaehlen = async a => {
 };
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_alte_ansicht", "1");
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",E2:"Plural",D1:"Deutsch"}[t] || "", aktiv: ["E1","E2","D1"].includes(t) }]));
   const w = [["élève","élèves","Schüler"],["cœur","cœurs","Herz"],["chat","chats","Katze"]];
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify({ id:"l_fr", name:"Nomen", sprache:"fr", spalten: sp, naechste_id: 4,
@@ -55,11 +55,11 @@ await page.evaluate(() => {
 });
 await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await clickText(".slot-chip", "Alt gemischt"); await sleep(500); await slotLaden(page);
 
 // 163: ok(await page.evaluate(() => [...document.querySelectorAll("[data-start-arten] [data-quiz-art]")].map(b => b.querySelector("svg text")?.textContent.trim()).join("|")) === "Ü|D|A", "Umschalter Ü | D | A im Quiz-Tab (Start-Sektion)");
-if (process.env.SHOT) { await page.evaluate(() => { const b = document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv"); b.textContent = "Unregelmäßige Verben Kapitel 3 – Wiederholung (21 - 40)"; }); await page.screenshot({ path: "lang_shot.png", clip: { x: 0, y: 0, width: 390, height: 160 } }); }
+if (process.env.SHOT) { await page.evaluate(() => { const b = document.querySelector("[data-slot-kopf-name]"); b.textContent = "Unregelmäßige Verben Kapitel 3 – Wiederholung (21 - 40)"; }); await page.screenshot({ path: "lang_shot.png", clip: { x: 0, y: 0, width: 390, height: 160 } }); }
 ok(await art() === "uebersetzung", "alte gemischte Konfiguration lädt als Übersetzung");
 console.log("     Modus Ü:", await modusName());
 ok(!/Akzente/.test(await modusName()), "Übersetzung ohne Akzente-Modus (gemischte Akzent-Spalte → Karte)");
@@ -104,7 +104,7 @@ ok(neu && neu.konfiguration.art === "diktat" && neu.konfiguration.arten.ueberset
 // neu laden: Konfiguration öffnet in Diktat, Ü behält Zufällig
 await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await clickText(".slot-chip", "Drei Arten"); await sleep(500); await slotLaden(page);
 ok(await art() === "diktat", "geladen: zuletzt gewählte Art (Diktat)");
 await waehleArt("uebersetzung");
@@ -116,7 +116,7 @@ const balken = name => page.evaluate(n => [...document.querySelectorAll(".raster
 await page.evaluate(() => { const l = JSON.parse(localStorage.getItem("vokabel_liste_l_fr")); l.vokabeln[0].fortschritt = { score: 3 }; l.vokabeln[1].akzentFortschritt = { score: 3 }; localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l)); });
 await page.reload(); await sleep(500); await page.evaluate(() => { const u = document.querySelector('[data-auswahl-umschalter="listen"]'), n = document.querySelector("[data-slot-kopf-name]"); if (u && n && /Liste oder Quiz wählen/.test(n.textContent)) u.click(); }); await sleep(300);   // 289: Start mit Listen-Auswahl → Quiz
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 const bk = await balken("Alt gemischt");
 console.log("     Kachel-Balken:", bk);
 ok(bk === "33" && !(await page.$(".raster-chip [data-mini-kreis]")), "Kachel: Balken Übersetzung 33 %, keine Kreise mehr");
@@ -131,14 +131,14 @@ await bereichZu(page); await page.evaluate(() => document.querySelector('[data-s
 // 163: ok(await page.evaluate(() => { const b = document.querySelector('[data-start-arten] [data-quiz-art="diktat"]'); return b.classList.contains("aktiv") && b.getBoundingClientRect().height > 90 && /Diktat · 0 %/.test(b.textContent); }), "gewählte Art groß, mit Name und Prozent („Diktat · 0 %“)");
 // Statistik: Kreis A zeigt die Akzente-Statistik
 await clickText(".tab", "Statistik"); await sleep(300);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv, button.toggle-opt")?.click(); }); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") k.querySelector("[data-slot-kopf-name]")?.click(); }); await sleep(300);
 await clickText(".slot-chip", "Alt gemischt"); await sleep(500); await slotLaden(page);
 await sleep(400);
 ok(!(await page.$("[data-slot-kopf] [data-statistik-art]")), "Statistik: zugeklappte Kopfzeile ohne Kreise");
 for (let i = 0; i < 3 && (await page.evaluate(() => document.querySelector("[data-kreismitte] [data-st-art-name]")?.textContent.replace("⇄", "").trim())) !== "Akzente"; i++) { await page.click("[data-kreismitte]"); await sleep(300); }
 ok(await page.evaluate(() => document.querySelector("[data-kreismitte] [data-st-art-name]")?.textContent.replace("⇄", "").trim()) === "Akzente", "Statistik: Wechsel über die Mitte des Kreisdiagramms zu Akzente");
 await clickText(".tab", "Quiz"); await quizEinstellungen(page);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("button.toggle-opt.aktiv").click(); }); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k.dataset.slotKopf !== "offen") k.querySelector("[data-slot-kopf-name]").click(); }); await sleep(300);
 await clickText(".slot-chip", "Drei Arten"); await sleep(500); await slotLaden(page);
 
 // Quiz in A: Akzent-Abfrage

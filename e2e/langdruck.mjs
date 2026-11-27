@@ -32,7 +32,7 @@ const plaetze = () => page.evaluate(() => Object.fromEntries(JSON.parse(localSto
 
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_alte_ansicht", "1");
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const l = { id:"l_fr", name:"Wörter", sprache:"fr", spalten: sp, naechste_id:3, vokabeln: [{ id:1, E1:{wert:"chat",falsch:[]}, D1:{wert:"Katze",falsch:[]} }] };
   localStorage.setItem("vokabel_liste_l_fr", JSON.stringify(l));

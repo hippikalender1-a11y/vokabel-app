@@ -1,28 +1,31 @@
 import { SK, lsGet } from "../speicher.js";
-import { ebeneVon, ebenenSpalten, eintraegeImOrdner, nameVergleich, ordneEbeneAn } from "../raster.js";
+import { ansichtVon, ebeneVon, ebenenSpalten, eintraegeImOrdner, ordneEbeneAn } from "../raster.js";
 import { STIMMEN_WAHL, aeusserung, naechsteStimme, normLang, vorleseTeile } from "../sprache.js";
 import { zeigeInfo } from "../infoEreignisse.js";
 
 // Stufe 2 (Aufteilung): Logik aus App.jsx. app = die Namen der Komponente, die eine Funktion braucht
 // (die Hülle in App.jsx baut das Objekt beim Aufruf).
 
-export function setzeMinSpalten(app, art, ordnerId, n) {
+// 359: alle = für die oberste Ebene und alle Ordner (Listen bzw. Quiz getrennt)
+export function setzeMinSpalten(app, art, ordnerId, n, alle = false) {
   const { einstellungen, getSlotsData, listenOrdnerDaten, setSlotsData, speichereEinst, speichereListenOrdnerDaten } = app;
-    if (!ordnerId) { speichereEinst({ ...einstellungen, ebenenSpalten: { ...(einstellungen.ebenenSpalten || {}), [art]: n } }); return; }
-    if (art === "liste") { const d = listenOrdnerDaten(); speichereListenOrdnerDaten({ ...d, ordner: d.ordner.map(o => o.id === ordnerId ? { ...o, spalten: n } : o) }); }
-    else { const d = getSlotsData(); setSlotsData({ ...d, ordner: (d.ordner || []).map(o => o.id === ordnerId ? { ...o, spalten: n } : o) }); }
+    if (alle || !ordnerId) speichereEinst({ ...einstellungen, ebenenSpalten: { ...(einstellungen.ebenenSpalten || {}), [art]: n } });
+    if (!alle && !ordnerId) return;
+    const pass = o => alle || o.id === ordnerId ? { ...o, spalten: n } : o;
+    if (art === "liste") { const d = listenOrdnerDaten(); speichereListenOrdnerDaten({ ...d, ordner: d.ordner.map(pass) }); }
+    else { const d = getSlotsData(); setSlotsData({ ...d, ordner: (d.ordner || []).map(pass) }); }
   }
 
 // eslint-disable-line react-hooks/exhaustive-deps       // 217: Quiz-Auswahl zeigt die Listen (Umschalter „Quiz | Listen“)   // 208: { art, ordner } – Fenster „Anordnen“
-// 208: anordnen nach name | datum | lernstand | luecken (Spalten = gewählte bzw. belegte)
-export function ordneAn(app, art, ordnerId, nach) {
-  const { einstellungen, getSlotsData, lernstandJeArt, listenOrdnerDaten, minSpalten, rasterEinordnen, setAnordnen, setSlotsData, speichereListenOrdnerDaten } = app;
+// 208/359: anordnen – name | datum | lernstand: automatisch (lückenlos) und dauerhaft so sortiert; frei: die eigenen
+// gespeicherten Plätze (bleiben in der automatischen Anordnung erhalten); luecken: freie Plätze einmal zusammenrücken.
+// alle = oberste Ebene und alle Ordner (Listen bzw. Quiz getrennt)
+export function ordneAn(app, art, ordnerId, nach, alle = false) {
+  const { einstellungen, getSlotsData, lernstandJeArt, listenOrdnerDaten, rasterEinordnen, setAnordnen, setSlotsData, speichereEinst, speichereListenOrdnerDaten } = app;
     const liste = art === "liste";
-    const data = liste ? listenOrdnerDaten() : rasterEinordnen(getSlotsData());
-    const ebene = ebeneVon(data, ordnerId);
-    // 292: automatische Anordnung – genau die gewählte Spaltenzahl (wie die Anzeige)
-    const spalten = einstellungen?.lueckenlos ? Math.max(1, minSpalten(art, ordnerId) || 1) : ebenenSpalten(ebene, false, minSpalten(art, ordnerId));
-    const datum = x => liste ? Number(String(x.id).match(/(\d{10,})/)?.[1] || 0) : (x.timestamp || 0);
+    let data = liste ? listenOrdnerDaten() : rasterEinordnen(getSlotsData());
+    const ebenen = alle ? [null, ...(data.ordner || []).map(o => o.id)] : [ordnerId || null];
+    const ansicht = id => ansichtVon(einstellungen, data.ordner, art, id);
     const pctListe = id => lernstandJeArt(lsGet(SK.liste(id))?.vokabeln || [], id).uebersetzung.pct || 0;
     const pctSession = x => { const k = x.konfiguration || {};
       let v = (k.listenIds || []).flatMap(id => (lsGet(SK.liste(id))?.vokabeln || []).map(y => ({ ...y, _key: `${id}__${y.id}` })));
@@ -31,12 +34,22 @@ export function ordneAn(app, art, ordnerId, nach) {
     const pct = x => x.istOrdner
       ? (() => { const e = eintraegeImOrdner(data, x.id); return e.length ? e.reduce((m, y) => m + (liste ? pctListe(y.id) : pctSession(y)), 0) / e.length : 0; })()
       : liste ? pctListe(x.id) : pctSession(x);
-    const vergleich = nach === "name" ? nameVergleich
-      : nach === "datum" ? (a, b) => (a.istOrdner || b.istOrdner ? nameVergleich(a, b) : datum(a) - datum(b))
-      : nach === "lernstand" ? (a, b) => pct(b) - pct(a)
-      : null;
-    const neu = ordneEbeneAn(data, ordnerId, vergleich, spalten);
-    if (liste) speichereListenOrdnerDaten(neu); else setSlotsData(rasterEinordnen(neu));
+    const nachLernstand = (a, b) => pct(b) - pct(a);
+    let werte = null;
+    ebenen.forEach(id => {
+      const a = ansicht(id), frei = ebenenSpalten(ebeneVon(data, id), false, a.spalten);
+      if (nach === "frei") return;   // die eigenen (gespeicherten) Plätze bleiben – wie zuletzt frei angeordnet
+      if (nach === "luecken") data = ordneEbeneAn(data, id, null, a.auto ? a.spalten : frei);
+      else if (nach === "lernstand") data = ordneEbeneAn(data, id, nachLernstand, a.spalten);   // Lernstand: als Plätze festgehalten
+    });
+    if (nach === "frei") werte = { anordnung: "frei" };
+    else if (nach !== "luecken") werte = { anordnung: "auto", sortierung: nach };
+    if (werte) {
+      if (alle || ordnerId) data = { ...data, ordner: (data.ordner || []).map(o => ebenen.includes(o.id) ? { ...o, ...werte } : o) };
+      if (ebenen.includes(null)) speichereEinst({ ...einstellungen, ebenenAnordnung: { ...(einstellungen.ebenenAnordnung || {}), [art]: werte.anordnung },
+        ...(werte.sortierung ? { ebenenSortierung: { ...(einstellungen.ebenenSortierung || {}), [art]: werte.sortierung } } : {}) });
+    }
+    if (liste) speichereListenOrdnerDaten(data); else setSlotsData(rasterEinordnen(data));
     setAnordnen(null);
   }
 

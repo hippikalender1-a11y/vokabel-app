@@ -28,7 +28,7 @@ const kachel = name => `[data-slot-id="${name}"]`;
 
 await page.goto(URL);
 await page.evaluate(() => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_alte_ansicht", "1");
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Französisch",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   localStorage.setItem("vokabel_liste_l_a", JSON.stringify({ id:"l_a", name:"Unité 1", sprache:"fr", spalten: sp, naechste_id: 41,
     vokabeln: Array.from({length:40},(_, i) => ({ id: i+1, E1: { wert: "mot"+i, falsch: [] }, D1: { wert: "Wort"+i, falsch: [] } })) }));
@@ -129,7 +129,7 @@ ok(await page.$("[data-ordner-zurueck]"), "danach ist die neue Gruppe geöffnet"
 
 // Statistik-Tab zeigt die Gruppen ebenfalls
 await page.evaluate(() => [...document.querySelectorAll(".tab")].find(t => t.textContent.includes("Statistik")).click()); await sleep(400);
-await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf] button.toggle-opt.aktiv, [data-slot-kopf-name]")?.click(); }); await sleep(300);
+await page.evaluate(() => { const k = document.querySelector("[data-slot-kopf]"); if (k && k.dataset.slotKopf !== "offen") document.querySelector("[data-slot-kopf-name]")?.click(); }); await sleep(300);
 await page.evaluate(() => document.querySelector('[data-auswahl-umschalter="listen"]')?.click()); await sleep(300);   // 298: Liste geladen → Auswahl zeigt Listen
 if (await page.$("[data-ordner-zurueck]")) { await page.click("[data-ordner-zurueck]"); await sleep(300); }
 ok(await page.$(`[data-ordner-id="${g2.id}"]`), "Statistik-Tab: Gruppen-Kachel vorhanden");

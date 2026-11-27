@@ -123,7 +123,7 @@ export function renderListeInfo(app, l, mehrere = null) {
   }
 
 export function renderSlotKopf(app, statistik) {
-  const { alsQuizSpeichern, schalterRaster, tab, setStatistikFilter, waehleBereichGeladen, waehleListenBereich, aendereQuizVokabeln, bereichWahl, tafelBereich, nichtsGeladen, zeigeListenStatistik, wahlListenIds, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
+  const { statistikBlaettern, statistikBlaetterElemente, alsQuizSpeichern, schalterRaster, tab, setStatistikFilter, waehleBereichGeladen, waehleListenBereich, aendereQuizVokabeln, bereichWahl, tafelBereich, nichtsGeladen, zeigeListenStatistik, wahlListenIds, schalterZaehlung, schalterStand, setzeSchalter, quizFaellig, getSlotsData, kommtAusListen, wahlQuizIds, listenOrdner, aktiverSlot, auswahlListen, auswahlTafelDaten, beendeMultiAuswahl, blitzt, einListenName, getSlotEintrag, headerH, kopieName, ladeSlot, ladeSlotStatistik, lernstandJeArt, leuchte, listenFlagge, listenIndex, listenWahl, listenWahlMenue, multiAuswahl, multiVonSlot, multiZusammenstellung, oeffneListeDetail, quizArt, quizBereichTyp, quizCheckboxAuswahl, quizKombiListe, quizTabListen, quizVokMax, renderMiniKreise, sessionSpeicherAktionen, setErstellenFenster, setLoescheSlotNr, setQuizListeAufgeklappt, setSlotSektionAufgeklappt, setSlotUmbenennen, setSlotVorschau, setSlotVorschauListe, setStatistikArt, sichtbareListen, slotOrdner, slotSektionAufgeklappt, slotSektionRef, slotVorschau, statistikAktiverSlot, statistikArt, statistikBasisVoks, statistikBereichTyp, statistikCheckboxAuswahl, statistikListenIds, toggleSlotSektion, tt, uebernimmListenWahl, vokabelgruppeGeaendert, vonBis, wechsleQuizArt } = app;
     const zu = !slotSektionAufgeklappt;
     const slot = statistik ? statistikAktiverSlot : aktiverSlot;
     const bw = !statistik && bereichWahl;   // 298: laufende Bereichswahl – der Kopf zeigt ihre Listen
@@ -219,6 +219,7 @@ export function renderSlotKopf(app, statistik) {
     const anzahlSeg = (() => {
       if (bw || vorschauE || aendern) return null;
       if (!statistik && !zu) return null;   // 351: in der Auswahl kein Bereichsknopf – der Name geht über die ganze Breite
+      if (statistik && zu) return null;   // 358: Statistik – statt des Knopfs die Pfeile ‹ ›
       const klapp = null;
       if (wahl) {
         if (!multiAuswahl.length) return null;
@@ -237,6 +238,7 @@ export function renderSlotKopf(app, statistik) {
         const g = k?.bereichTyp === "bereich" ? (k.vokabelAuswahl || []) : []; return g.length === statistikCheckboxAuswahl.size && g.every(id => statistikCheckboxAuswahl.has(id)); })() : !geaendert);
       const text = bereichAktiv && !multi && !wieGespeichert ? "Auswahl" : "Alle";   // Multiquiz: kein eigener Bereich; 309: ohne Nr.
       // 351: Quiz-Tab – antippen öffnet die Vokabelauswahl (die Filter-Zeile ist immer offen), lang ohne Funktion
+      if (!statistik && multi) return null;   // 360: Multi-Quiz – keine eigene Vokabelauswahl, der Name geht über die ganze Breite
       if (!statistik) return { n: voks.length, text, lang: null, tipp: multi ? null : () => waehleBereichGeladen("quiz"),
         erklaerung: `${text === "Auswahl" ? "Bereich" : "Alle Vokabeln"}: ${voks.length}${multi ? "" : " – antippen: Vokabeln auswählen"}` };
       return { n: voks.length, text,
@@ -244,10 +246,16 @@ export function renderSlotKopf(app, statistik) {
         tipp: () => setStatistikFilter(new Set(["negativ", "nie", "arbeit", "gelernt"])),
         erklaerung: `${text === "Auswahl" ? "Bereich" : "Alle Vokabeln"}: ${voks.length} – antippen: alle Gruppen einblenden${!multi && statistikListenIds ? "; lang drücken: Bereich wählen" : ""}` };
     })();
+    // 358: Statistik – ‹ › blättern durch die aktuelle Ebene der Auswahl (im Kreis)
+    const pfeile = statistik && zu && !wahl && !lwahl && !vorschauE && !aendern && !bw && statistikBlaetterElemente().elemente.length > 1;
+    const pfeil = r => (
+      <button className={`toggle-opt aktiv kopf-pfeil${eckigKopf ? " eckig" : ""}`} data-kopf-pfeil={r < 0 ? "zurueck" : "weiter"} onClick={() => statistikBlaettern(r)}
+        {...tt(r < 0 ? "Vorherige Liste bzw. vorheriges Quiz dieser Ebene (wie in der Auswahl)" : "Nächste Liste bzw. nächstes Quiz dieser Ebene (wie in der Auswahl)")}>{r < 0 ? "‹" : "›"}</button>);
     return (
       <div ref={slotSektionRef} data-slot-kopf={zu ? (gruen ? "gruen" : "zu") : "offen"} className={`slot-kopf${gruen ? " gruen" : ""}`}
         style={{top:headerH, ...(statistik ? {} : {marginLeft:"-16px", marginRight:"-16px"}), ...(!statistik && quizVokMax ? {display:"none"} : {})}}>
         <div style={{display:"flex", alignItems:"stretch", gap:8}}>
+          {pfeile && pfeil(-1)}
           <button onClick={kopfKlick} className={`toggle-opt aktiv slot-kopf-name${wahl || lwahl || aendern || vorschauE || !zu || (erstellen && zu) ? " bestaetigen-knopf" : ""}${nichtsGeladen && !zu && !wahl && !lwahl && !vorschauE ? " ohne-haken" : ""}${eckigKopf ? " eckig" : ""}${blitzt("slotkopf")}${lwahl ? blitzt("wahl") : ""}`} data-slot-kopf-name data-geaendert={geaendert ? "" : undefined}
             data-kopf-art={alsListe ? "liste" : erstellen ? "erstellen" : gespeichert ? "quiz" : undefined}
             {...(wahl || lwahl ? { "data-wahl-fertig": true, "data-wahl-hinweis": true, "data-auswahl-durchlass": true } : {})} {...(aendern ? { "data-aendern-bestaetigen": true } : {})}
@@ -270,6 +278,7 @@ export function renderSlotKopf(app, statistik) {
               : erstellen && zu ? <span data-bestaetigen>＋ Quiz erstellen</span>
               : <>{alsListe && listeE && <span aria-hidden="true" data-kopf-liste>{listenFlagge(listeE)} </span>}{name}{ungespeichert && <span data-nicht-gespeichert style={{fontSize:"0.72em", fontWeight:500, opacity:0.8, marginLeft:8}}>nicht gespeichert</span>}</>}</span>
           </button>
+          {pfeile && pfeil(1)}
           {anzahlSeg && (
             <button className={`toggle-opt aktiv slot-kopf-anzahl${eckigKopf ? " eckig" : ""}${anzahlSeg.text === "Auswahl" ? " mit-auswahl" : ""}`} data-auswahl-durchlass data-kopf-anzahl={anzahlSeg.n} data-kopf-bereich={anzahlSeg.text} onClick={anzahlSeg.tipp || undefined}
               {...tt(anzahlSeg.erklaerung, null, anzahlSeg.lang ? { lang: anzahlSeg.lang } : {})}>

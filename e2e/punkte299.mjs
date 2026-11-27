@@ -18,7 +18,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const alt = "2026-01-01T10:00:00.000Z";
 await page.goto(URL);
 await page.evaluate(alt => {
-  localStorage.clear();
+  localStorage.clear(); localStorage.setItem("vokabel_test_alte_ansicht", "1");
   localStorage.setItem("vokabel_stufen_v1", "1");
   const sp = Object.fromEntries(["E1","E2","E3","D1","D2","i1","i2"].map(t => [t, { name: {E1:"Fremd",D1:"Deutsch"}[t] || "", aktiv: ["E1","D1"].includes(t) }]));
   const f = s => ({ score: s, streak: 0, aufgedecktStreak: 0, letzteAbfrage: alt, stufeSeit: alt });
@@ -85,16 +85,9 @@ ok(/^2 ausgewählt/.test(t.kopf), `Tafel mit zwei Listen (${t.kopf})`);
 await tab("Statistik"); await sleep(900);
 const st = await page.evaluate(() => ({ n: document.querySelector("[data-st-anzahl]")?.textContent, kopf: __txt(document.querySelector("[data-slot-kopf-name]")) }));
 ok(st.n === "15" && /2 Listen/.test(st.kopf), `299: Tabwechsel übernimmt die Tafel – Statistik zeigt beide Listen (${JSON.stringify(st)})`);
-// ── D (301): Statistik – Anzahl rechts im Kopf, lang drücken = Bereich, zurück in die Statistik ──
-const knopf = await page.evaluate(() => ({ seg: document.querySelector("[data-kopf-anzahl]")?.dataset.kopfAnzahl, art: __txt(document.querySelector("[data-kreismitte]")) }));
-ok(knopf.seg === "15" && /^Übersetzung ⇄$/.test(knopf.art.trim()), `301: Anzahl im Kopf, Art-Knopf ohne Zahl (${JSON.stringify(knopf)})`);
-await lang("[data-kopf-anzahl]"); await sleep(900);
-ok(await page.evaluate(() => document.querySelector(".tab.aktiv")?.textContent.includes("Quiz") && !!document.querySelector("[data-vok-bestaetigen]") && document.querySelectorAll(".vok-zeile").length === 15),
-  "299: lang auf die Anzahl → Bereichswahl über das Geladene");
-await zeilen([1, 2, 3, 4, 5]);
-await page.click("[data-vok-bestaetigen]"); await sleep(900);
-const st2 = await page.evaluate(() => ({ tab: document.querySelector(".tab.aktiv")?.textContent.trim(), n: document.querySelector("[data-st-anzahl]")?.textContent }));
-ok(st2.tab.includes("Statistik") && st2.n === "5", `299: „Bestätigen“ – zurück in der Statistik mit 5 Vokabeln (${JSON.stringify(st2)})`);
+// ── D (301/358): Statistik – statt der Anzahl rechts die Pfeile ‹ › (Bereich wählt man im Quiz-Tab) ──
+const knopf = await page.evaluate(() => ({ seg: document.querySelector("[data-kopf-anzahl]")?.dataset.kopfAnzahl ?? null, art: __txt(document.querySelector("[data-kreismitte]")) }));
+ok(knopf.seg === null && /^Übersetzung ⇄$/.test(knopf.art.trim()), `301/358: keine Anzahl im Statistik-Kopf, Art-Knopf ohne Zahl (${JSON.stringify(knopf)})`);
 await browser.close();
 console.log(fehler ? `${fehler} FEHLER` : "ALLES OK");
 process.exit(fehler ? 1 : 0);
